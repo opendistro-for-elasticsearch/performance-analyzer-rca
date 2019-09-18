@@ -1,0 +1,41 @@
+<FindBugsFilter>
+    <Match>
+        <Bug pattern="DM_DEFAULT_ENCODING" />
+    </Match>
+    <Match>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.hwnet.Disks"/>
+        <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>
+    </Match>
+    <Match>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor"/>
+        <Bug pattern="MS_CANNOT_BE_FINAL"/>
+    </Match>
+    <Match>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.hwnet.NetworkInterface"/>
+        <Bug pattern="LI_LAZY_INIT_STATIC"/>
+    </Match>
+    <Match>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.hwnet.NetworkInterface"/>
+        <Bug pattern="REC_CATCH_EXCEPTION"/>
+    </Match>
+    <Match>
+	<Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector"/>
+        <Bug pattern="LI_LAZY_INIT_STATIC"/>
+    </Match>
+    <Match>
+	<Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector"/>
+        <Bug pattern="MS_CANNOT_BE_FINAL"/>
+    </Match>
+    <Match>
+	<Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector"/>
+        <Bug pattern="MS_SHOULD_BE_FINAL"/>
+    </Match>
+    <Match>
+	<Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector"/>
+        <Bug pattern="REC_CATCH_EXCEPTION"/>
+    </Match>
+    <Match>
+	<Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector"/>
+        <Bug pattern="DC_DOUBLECHECK"/>
+    </Match>
+</FindBugsFilter>
