@@ -6,64 +6,68 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class CopyTestResource implements AutoCloseable {
-    private String path;
+  private String path;
 
-    public String getPath() {
-        return path;
+  public CopyTestResource(String srcPath, String desPath) {
+    if (srcPath.equals(desPath)) {
+      throw new RuntimeException("srcPath and desPath cannot be same");
     }
 
-    public CopyTestResource(String srcPath, String desPath) {
-        if (srcPath.equals(desPath)) {
-            throw new RuntimeException("srcPath and desPath cannot be same");
-        }
+    System.out.println(
+        "copying from "
+            + Paths.get(srcPath).toAbsolutePath().toString()
+            + " to "
+            + Paths.get(desPath).toAbsolutePath().toString());
 
-        System.out.println("copying from " + Paths.get(srcPath).toAbsolutePath().toString() +
-                " to " + Paths.get(desPath).toAbsolutePath().toString());
-
-        path = desPath;
-        try {
-            Files.walk(Paths.get(srcPath)).forEach((Path a) -> {
+    path = desPath;
+    try {
+      Files.walk(Paths.get(srcPath))
+          .forEach(
+              (Path a) -> {
                 Path b = Paths.get(desPath, a.toString().substring(srcPath.length()));
                 try {
-                    Files.copy(a, b,  REPLACE_EXISTING, COPY_ATTRIBUTES);
+                  Files.copy(a, b, REPLACE_EXISTING, COPY_ATTRIBUTES);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                  e.printStackTrace();
                 }
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
+              });
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  public String getPath() {
+    return path;
+  }
+
+  @Override
+  public void close() throws Exception {
+    try {
+      delete(new File(path));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  private void delete(File file) throws IOException {
+
+    for (File childFile : file.listFiles()) {
+
+      if (childFile.isDirectory()) {
+        delete(childFile);
+      } else {
+        if (!childFile.delete()) {
+          throw new IOException();
         }
+      }
     }
 
-    @Override
-    public void close() throws Exception {
-        try {
-            delete(new File(path));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    if (!file.delete()) {
+      throw new IOException();
     }
-
-    private void delete(File file) throws IOException {
-
-        for (File childFile : file.listFiles()) {
-
-            if (childFile.isDirectory()) {
-                delete(childFile);
-            } else {
-                if (!childFile.delete()) {
-                    throw new IOException();
-                }
-            }
-        }
-
-        if (!file.delete()) {
-            throw new IOException();
-        }
-    }
+  }
 }
-

@@ -22,58 +22,59 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 // all metrics are per-time-unit
 public class NetInterfaceSummary extends MetricStatus {
 
-    public enum Direction {
-        in, out;
-    }
+  private Direction direction;
+  private double packetRate4;
+  private double dropRate4;
+  private double packetRate6;
+  private double dropRate6;
+  private double bps;
+  public NetInterfaceSummary(
+      Direction direction,
+      double packetRate4,
+      double dropRate4,
+      double packetRate6,
+      double dropRate6,
+      double bps) {
+    this.direction = direction;
+    this.packetRate4 = packetRate4;
+    this.dropRate4 = dropRate4;
+    this.packetRate6 = packetRate6;
+    this.dropRate6 = dropRate6;
+    this.bps = bps;
+  }
 
-    private Direction direction;
-    private double packetRate4;
-    private double dropRate4;
-    private double packetRate6;
-    private double dropRate6;
-    private double bps;
+  @JsonProperty(IPDimension.Constants.DIRECTION_VALUE)
+  public Direction getDirection() {
+    return direction;
+  }
 
-    public NetInterfaceSummary(Direction direction,
-                               double packetRate4,
-                               double dropRate4,
-                               double packetRate6,
-                               double dropRate6,
-                               double bps) {
-        this.direction = direction;
-        this.packetRate4 = packetRate4;
-        this.dropRate4 = dropRate4;
-        this.packetRate6 = packetRate6;
-        this.dropRate6 = dropRate6;
-        this.bps = bps;
-    }
+  @JsonProperty(IPValue.Constants.PACKET_RATE4_VALUE)
+  public double getPacketRate4() {
+    return packetRate4;
+  }
 
-    @JsonProperty(IPDimension.Constants.DIRECTION_VALUE)
-    public Direction getDirection() {
-        return direction;
-    }
+  @JsonProperty(IPValue.Constants.DROP_RATE4_VALUE)
+  public double getDropRate4() {
+    return dropRate4;
+  }
 
-    @JsonProperty(IPValue.Constants.PACKET_RATE4_VALUE)
-    public double getPacketRate4() {
-        return packetRate4;
-    }
+  @JsonProperty(IPValue.Constants.PACKET_RATE6_VALUE)
+  public double getPacketRate6() {
+    return packetRate6;
+  }
 
-    @JsonProperty(IPValue.Constants.DROP_RATE4_VALUE)
-    public double getDropRate4() {
-        return dropRate4;
-    }
+  @JsonProperty(IPValue.Constants.DROP_RATE6_VALUE)
+  public double getDropRate6() {
+    return dropRate6;
+  }
 
-    @JsonProperty(IPValue.Constants.PACKET_RATE6_VALUE)
-    public double getPacketRate6() {
-        return packetRate6;
-    }
+  @JsonProperty(IPValue.Constants.THROUGHPUT_VALUE)
+  public double getBps() {
+    return bps;
+  }
 
-    @JsonProperty(IPValue.Constants.DROP_RATE6_VALUE)
-    public double getDropRate6() {
-        return dropRate6;
-    }
-
-    @JsonProperty(IPValue.Constants.THROUGHPUT_VALUE)
-    public double getBps() {
-        return bps;
-    }
+  public enum Direction {
+    in,
+    out
+  }
 }

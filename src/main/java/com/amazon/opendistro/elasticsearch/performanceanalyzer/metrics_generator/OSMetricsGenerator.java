@@ -19,13 +19,19 @@ import java.util.Set;
 
 public interface OSMetricsGenerator {
 
-    String getPid();
-    CPUPagingActivityGenerator getPagingActivityGenerator();
-    SchedMetricsGenerator getSchedMetricsGenerator();
-    Set<String> getAllThreadIds();
-    DiskIOMetricsGenerator getDiskIOMetricsGenerator();
-    TCPMetricsGenerator getTCPMetricsGenerator();
-    IPMetricsGenerator getIPMetricsGenerator();
-    DiskMetricsGenerator getDiskMetricsGenerator();
+  String getPid();
 
+  CPUPagingActivityGenerator getPagingActivityGenerator();
+
+  SchedMetricsGenerator getSchedMetricsGenerator();
+
+  Set<String> getAllThreadIds();
+
+  DiskIOMetricsGenerator getDiskIOMetricsGenerator();
+
+  TCPMetricsGenerator getTCPMetricsGenerator();
+
+  IPMetricsGenerator getIPMetricsGenerator();
+
+  DiskMetricsGenerator getDiskMetricsGenerator();
 }

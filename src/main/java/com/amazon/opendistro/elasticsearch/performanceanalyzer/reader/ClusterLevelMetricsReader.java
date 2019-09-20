@@ -25,86 +25,81 @@ import java.util.Map;
 
 public class ClusterLevelMetricsReader {
 
-    /**
-     *  Almost the same as NodeDetailsCollector.NodeDetailsStatus.
-     *  Consider keeping only one of them for easy maintenance.  Don't do it now
-     *  as we may separate reader and writer code later and we don't want many
-     *  refactoring before release.
-     *
-     */
-    public static class NodeDetails {
-        private String id;
-        private String hostAddress;
+  private static final Logger LOG = LogManager.getLogger(ClusterLevelMetricsReader.class);
+  private static int sPollTimeInterval = 60000;
+  private static int sBuckets = 60;
+  private static NodeDetails[] nodesDetails = new NodeDetails[0];
 
-        NodeDetails(String stringifiedMetrics) {
-            Map<String, Object> map = JsonConverter
-                    .createMapFrom(stringifiedMetrics);
-            id = (String) map.get(NodeDetailColumns.ID.toString());
-            hostAddress = (String) map.get(NodeDetailColumns.HOST_ADDRESS
-                    .toString());
-        }
+  static void setNodesDetails(NodeDetails[] nodesDetails) {
+    ClusterLevelMetricsReader.nodesDetails = nodesDetails;
+  }
 
-        @Override
-        public String toString() {
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append("{");
-            stringBuilder.append("id:" + id);
-            stringBuilder.append(" hostAddress:" + hostAddress);
-            stringBuilder.append("}");
-            return stringBuilder.toString();
-        }
+  public static NodeDetails[] getNodes() {
+    return nodesDetails.clone();
+  }
 
-        public String getId() {
-            return id;
-        }
+  public static void collectNodeMetrics(long startTime) throws Exception {
+    String sNodesDetails =
+        PerformanceAnalyzerMetrics.getMetric(startTime, PerformanceAnalyzerMetrics.sNodesPath);
 
-        public String getHostAddress() {
-            return hostAddress;
+    if (sNodesDetails != null) {
+      String[] lines = sNodesDetails.split("\\r?\\n");
+
+      if (lines.length < 2) {
+        LOG.error("Skip parsing. Number of lines: {}.", lines.length);
+        return;
+      }
+
+      NodeDetails[] tmpNodesDetails = new NodeDetails[lines.length - 1];
+
+      // line 0 is last modified time of the file
+
+      tmpNodesDetails[0] = new NodeDetails(lines[1]);
+      int tmpNodeDetailsIndex = 1;
+
+      for (int i = 2; i < lines.length; i++) {
+        NodeDetails tmp = new NodeDetails(lines[i]);
+
+        if (!tmp.id.equals(tmpNodesDetails[0].id)) {
+          tmpNodesDetails[tmpNodeDetailsIndex++] = tmp;
         }
+      }
+
+      nodesDetails = tmpNodesDetails;
+    }
+  }
+
+  /**
+   * Almost the same as NodeDetailsCollector.NodeDetailsStatus. Consider keeping only one of them
+   * for easy maintenance. Don't do it now as we may separate reader and writer code later and we
+   * don't want many refactoring before release.
+   */
+  public static class NodeDetails {
+    private String id;
+    private String hostAddress;
+
+    NodeDetails(String stringifiedMetrics) {
+      Map<String, Object> map = JsonConverter.createMapFrom(stringifiedMetrics);
+      id = (String) map.get(NodeDetailColumns.ID.toString());
+      hostAddress = (String) map.get(NodeDetailColumns.HOST_ADDRESS.toString());
     }
 
-    private static int sPollTimeInterval = 60000;
-    private static final Logger LOG = LogManager.getLogger(ClusterLevelMetricsReader.class);
-    private static int sBuckets = 60;
-
-    static void setNodesDetails(NodeDetails[] nodesDetails) {
-        ClusterLevelMetricsReader.nodesDetails = nodesDetails;
+    @Override
+    public String toString() {
+      StringBuilder stringBuilder = new StringBuilder();
+      stringBuilder.append("{");
+      stringBuilder.append("id:" + id);
+      stringBuilder.append(" hostAddress:" + hostAddress);
+      stringBuilder.append("}");
+      return stringBuilder.toString();
     }
 
-    private static NodeDetails[] nodesDetails = new NodeDetails[0];
-
-    public static NodeDetails[] getNodes() {
-        return nodesDetails.clone();
+    public String getId() {
+      return id;
     }
 
-    public static void collectNodeMetrics(long startTime) throws Exception {
-        String sNodesDetails = PerformanceAnalyzerMetrics.getMetric(startTime, PerformanceAnalyzerMetrics.sNodesPath);
-
-        if(sNodesDetails != null) {
-            String lines[] = sNodesDetails.split("\\r?\\n");
-
-
-            if(lines.length < 2) {
-                LOG.error("Skip parsing. Number of lines: {}.", lines.length);
-                return;
-            }
-
-            NodeDetails[] tmpNodesDetails = new NodeDetails[lines.length-1];
-
-            // line 0 is last modified time of the file
-
-            tmpNodesDetails[0] = new NodeDetails(lines[1]);
-            int tmpNodeDetailsIndex = 1;
-
-            for(int i = 2; i < lines.length; i++) {
-                NodeDetails tmp = new NodeDetails(lines[i]);
-
-                if(!tmp.id.equals(tmpNodesDetails[0].id)) {
-                    tmpNodesDetails[tmpNodeDetailsIndex++] = tmp;
-                }
-            }
-
-            nodesDetails = tmpNodesDetails;
-        }
+    public String getHostAddress() {
+      return hostAddress;
     }
+  }
 }

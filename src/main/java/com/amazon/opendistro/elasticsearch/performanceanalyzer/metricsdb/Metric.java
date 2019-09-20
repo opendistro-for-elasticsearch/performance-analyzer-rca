@@ -16,59 +16,59 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb;
 
 public class Metric<T> {
-    private String name;
-    private T sum;
-    private T avg;
-    private T min;
-    private T max;
+  private String name;
+  private T sum;
+  private T avg;
+  private T min;
+  private T max;
 
-    public Metric(String name, T value) {
-        this.name = name;
-        this.sum = value;
-        this.avg = value;
-        this.min = value;
-        this.max = value;
-    }
+  public Metric(String name, T value) {
+    this.name = name;
+    this.sum = value;
+    this.avg = value;
+    this.min = value;
+    this.max = value;
+  }
 
-    public Metric(String name, T sum, T avg, T min, T max) {
-        this.name = name;
-        this.sum = sum;
-        this.avg = avg;
-        this.min = min;
-        this.max = max;
-    }
+  public Metric(String name, T sum, T avg, T min, T max) {
+    this.name = name;
+    this.sum = sum;
+    this.avg = avg;
+    this.min = min;
+    this.max = max;
+  }
 
-    public String getName() {
-        return this.name;
-    }
+  // Unit test helper methods
+  public static Metric<Double> cpu(Double val) {
+    return new Metric<Double>("cpu", val);
+  }
 
-    public T getSum() {
-        return this.sum;
-    }
+  // Unit test helper methods
+  public static Metric<Double> rss(Double val) {
+    return new Metric<Double>("rss", val);
+  }
 
-    public T getAvg() {
-        return this.avg;
-    }
+  public String getName() {
+    return this.name;
+  }
 
-    public T getMin() {
-        return this.min;
-    }
+  public T getSum() {
+    return this.sum;
+  }
 
-    public T getMax() {
-        return this.max;
-    }
+  public T getAvg() {
+    return this.avg;
+  }
 
-    public Class<?> getValueType() {
-        return this.sum.getClass();
-    }
+  public T getMin() {
+    return this.min;
+  }
 
-    //Unit test helper methods
-    public static Metric<Double> cpu(Double val) {
-        return new Metric<Double>("cpu", val);
-    }
+  public T getMax() {
+    return this.max;
+  }
 
-    //Unit test helper methods
-    public static Metric<Double> rss(Double val) {
-        return new Metric<Double>("rss", val);
-    }
+  public Class<?> getValueType() {
+    return this.sum.getClass();
+  }
 }

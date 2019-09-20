@@ -13,24 +13,21 @@
  * permissions and limitations under the License.
  */
 
-
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.os;
 
 import org.junit.Test;
 
 public class ThreadDiskIOTests {
-    public static void main(String[] args) throws Exception {
-        runOnce();
-    }
+  public static void main(String[] args) throws Exception {
+    runOnce();
+  }
 
-    public static void runOnce() {
-        ThreadDiskIO.addSample();
-        System.out.println(ThreadDiskIO.getIOUtilization().toString());
-    }
+  public static void runOnce() {
+    ThreadDiskIO.addSample();
+    System.out.println(ThreadDiskIO.getIOUtilization().toString());
+  }
 
-    //- to enhance
-    @Test
-    public void testMetrics() {
-
-    }
+  // - to enhance
+  @Test
+  public void testMetrics() {}
 }
