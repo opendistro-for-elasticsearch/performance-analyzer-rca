@@ -15,16 +15,15 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.model;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertTrue;
 
+import org.junit.Test;
 
 public class ModelTests {
 
-    @Test
-    public void testBasicMetric() {
-        MetricsModel metricAndDimensions = new MetricsModel();
-        assertTrue(MetricsModel.ALL_METRICS.get("pseudocpu") == null);
-    }
+  @Test
+  public void testBasicMetric() {
+    MetricsModel metricAndDimensions = new MetricsModel();
+    assertTrue(MetricsModel.ALL_METRICS.get("pseudocpu") == null);
+  }
 }

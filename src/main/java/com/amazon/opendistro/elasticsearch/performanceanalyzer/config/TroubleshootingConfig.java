@@ -13,14 +13,12 @@
  * permissions and limitations under the License.
  */
 
-
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.config;
 
 public class TroubleshootingConfig {
-    public static final boolean enableDevAssert = false;
+  public static final boolean enableDevAssert = false;
 
-    public static final boolean getEnableDevAssert() {
-        return enableDevAssert;
-    }
+  public static final boolean getEnableDevAssert() {
+    return enableDevAssert;
+  }
 }
-

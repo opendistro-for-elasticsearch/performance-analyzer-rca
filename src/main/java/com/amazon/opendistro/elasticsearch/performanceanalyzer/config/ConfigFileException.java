@@ -13,11 +13,10 @@
  * permissions and limitations under the License.
  */
 
-
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.config;
 
 class ConfigFileException extends Exception {
-    ConfigFileException(Throwable cause) {
-        super(cause);
-    }
+  ConfigFileException(Throwable cause) {
+    super(cause);
+  }
 }

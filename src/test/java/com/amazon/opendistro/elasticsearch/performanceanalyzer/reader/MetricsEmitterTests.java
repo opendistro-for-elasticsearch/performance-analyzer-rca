@@ -21,6 +21,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.TroubleshootingConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonMetric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HttpMetric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MetricName;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.OSMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardBulkMetric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardOperationMetric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.TCPDimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.TCPValue;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Dimensions;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -35,24 +48,7 @@ import org.jooq.Result;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.junit.Test;
-//import org.junit.runner.RunWith;
 import org.powermock.api.mockito.PowerMockito;
-//import org.powermock.core.classloader.annotations.PowerMockIgnore;
-//import org.powermock.core.classloader.annotations.PrepareForTest;
-//import org.powermock.modules.junit4.PowerMockRunner;
-
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.TroubleshootingConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonMetric;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HttpMetric;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MetricName;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.OSMetrics;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardBulkMetric;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardOperationMetric;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.TCPDimension;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.TCPValue;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Dimensions;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 
 //@PowerMockIgnore({ "org.apache.logging.log4j.*" })
 //@RunWith(PowerMockRunner.class)
@@ -269,7 +265,7 @@ public class MetricsEmitterTests extends AbstractReaderTests {
     public void testThreadNameCategorization() {
         Dimensions dimensions = new Dimensions();
         assertEquals("GC", MetricsEmitter.categorizeThreadName("Gang worker#0 (Parallel GC Threads)", dimensions));
-        assertEquals(null , MetricsEmitter.categorizeThreadName("elasticsearch[I9AByra][search][T#4]", dimensions));
+        assertEquals(null, MetricsEmitter.categorizeThreadName("elasticsearch[I9AByra][search][T#4]", dimensions));
         assertEquals("refresh", MetricsEmitter.categorizeThreadName("elasticsearch[I9AByra][refresh][T#1]", dimensions));
         assertEquals("merge", MetricsEmitter.categorizeThreadName("elasticsearch[I9AByra][[nyc_taxis][1]: Lucene Merge", dimensions));
         assertEquals("management", MetricsEmitter.categorizeThreadName("elasticsearch[I9AByra][management]", dimensions));
