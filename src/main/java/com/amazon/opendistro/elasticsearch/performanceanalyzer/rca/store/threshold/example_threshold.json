@@ -1,0 +1,20 @@
+{
+  "name": "threshold1",
+  "overrides": {
+    "domain": {
+      "domain1": "value1",
+      "domain2": "value2",
+      "domain3": "value3"
+    },
+    "instance-type": {
+      "i3.8xl": "value4",
+      "m4.l": "value5"
+    },
+    "disk": {
+      "ssd": "val-ssd",
+      "spinning": "val-spin"
+    }
+  },
+  "default": "value6",
+  "override-precedence-order" : ["domain", "disk", "instance-type"]
+}
