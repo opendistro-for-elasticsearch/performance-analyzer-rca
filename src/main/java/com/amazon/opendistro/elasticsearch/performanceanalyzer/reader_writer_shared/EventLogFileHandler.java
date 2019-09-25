@@ -1,9 +1,5 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.EventDispatcher;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -19,7 +15,10 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.EventProcessor;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.EventDispatcher;
+
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
@@ -57,6 +56,10 @@ public class EventLogFileHandler {
      * @param epoch The epoch all the metrics belong to.
      */
     public void writeTmpFile(List<Event> dataEntries, long epoch) {
+        Util.invokePrivileged(() -> writeTmpFileWithPrivilege(dataEntries, epoch));
+    }
+
+    public void writeTmpFileWithPrivilege(List<Event> dataEntries, long epoch) {
 
         Path path = Paths.get(metricsLocation, String.valueOf(epoch));
         Path tmpPath = Paths.get(path.toString() + TMP_FILE_EXT);
@@ -77,6 +80,10 @@ public class EventLogFileHandler {
     }
 
     public void renameFromTmp(long epoch) {
+        Util.invokePrivileged(() -> renameFromTmpWithPrivilege(epoch));
+    }
+
+    public void renameFromTmpWithPrivilege(long epoch) {
         Path path = Paths.get(metricsLocation, String.valueOf(epoch));
         Path tmpPath = Paths.get(path.toString() + TMP_FILE_EXT);
         // This is done only when no exception is thrown.
