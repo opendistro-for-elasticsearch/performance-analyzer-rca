@@ -1,10 +1,5 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api;
 
-/*
- * This is the container for all the Analysis dependency graphs. Usually this is the first class that is created
- * and
- */
-
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import java.util.ArrayList;

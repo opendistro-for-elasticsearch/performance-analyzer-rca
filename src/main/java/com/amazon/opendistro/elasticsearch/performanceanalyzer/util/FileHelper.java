@@ -67,7 +67,8 @@ public class FileHelper {
     } catch (Exception ex) {
       StatsCollector.instance().logException();
       log.debug(
-          "Having issue to read current time from the content of file. Using file metadata; excpetion: {} ExceptionCode: {}",
+          "Having issue to read current time from the content of file. Using file metadata; "
+              + "excpetion: {} ExceptionCode: {}",
           () -> ex,
           () -> StatExceptionCode.OTHER.toString());
     }

@@ -688,7 +688,8 @@ public class ReaderMetricsProcessor implements Runnable {
 
     if (t2 < endTime) {
       LOG.error(
-          "Right window snapshot ends before endTime. rw: {}, lw: {}, startTime: {}, endTime: {}",
+          "Right window snapshot ends before endTime. rw: {}, lw: {}, startTime: {}, "
+              + "endTime: {}",
           t2,
           t1,
           startTime,
@@ -800,7 +801,8 @@ public class ReaderMetricsProcessor implements Runnable {
 
     if (t2 <= readerEndTime) {
       LOG.error(
-          "Right window {} snapshot ends at or before endTime. rw: {}, lw: {}, startTime: {}, endTime: {}",
+          "Right window {} snapshot ends at or before endTime. rw: {}, lw: {}, startTime: "
+              + "{}, endTime: {}",
           metricName,
           t2,
           t1,

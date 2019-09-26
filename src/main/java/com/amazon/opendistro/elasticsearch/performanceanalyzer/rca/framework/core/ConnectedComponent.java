@@ -12,7 +12,8 @@ import java.util.Set;
 public class ConnectedComponent {
   private List<Node> leafNodes;
 
-  /* The elements in the inner list can be executed in parallel. Two inner lists have to be executed in order. */
+  // The elements in the inner list can be executed in parallel. Two inner lists have to
+  // be executed in order.
   private List<List<Node>> dependencyOrderedNodes;
   private int graphId;
 

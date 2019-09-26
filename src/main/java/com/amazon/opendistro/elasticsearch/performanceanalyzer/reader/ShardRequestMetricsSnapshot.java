@@ -178,7 +178,7 @@ public class ShardRequestMetricsSnapshot implements Removable {
    * |2447804|7069|shardfetch|NA |1535065344729|1535065344732| 003|
    *
    * <p>Returned Table |shard|indexName|tid |operation |role|sum_lat|avg_lat|min_lat|max_lat|
-   * +-----+---------+----+----------+----+-------------+-------------+-------+-------+-------+-------+
+   * +-----+---------+----+----------+----+-------------+-------------+-------+-------+-------+----+
    * |0 |sonested |7069|shardquery|NA | 520| 260| 255| 265| |0 |sonested |7069|shardfetch|NA | 004|
    * 002| 001| 003|
    *

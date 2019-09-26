@@ -218,7 +218,8 @@ public final class MetricPropertiesConfig {
     // "Refresh_Time":0,"Flush_Event":0,"Flush_Time":0,"Merge_Event":0,"Merge_Time":0,
     // "Merge_CurrentEvent":0,"Indexing_Buffer":0,"Segments_Total":0,"Segments_Memory":0,
     // "Terms_Memory":0,"StoredFields_Memory":0,"TermVectors_Memory":0,"Norms_Memory":0,
-    // "Points_Memory":0,"DocValues_Memory":0,"IndexWriter_Memory":0,"VersionMap_Memory":0,"Bitset_Memory":0}$
+    // "Points_Memory":0,"DocValues_Memory":0,"IndexWriter_Memory":0,"VersionMap_Memory":0, \
+    // "Bitset_Memory":0}$
     public List<Event> getMetricData(Map<String, List<Event>> metricDataMap) {
       Objects.requireNonNull(metricDataMap);
       return metricDataMap.computeIfAbsent(
