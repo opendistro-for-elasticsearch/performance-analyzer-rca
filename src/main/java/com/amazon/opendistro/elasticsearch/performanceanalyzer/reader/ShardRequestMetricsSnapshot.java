@@ -52,43 +52,13 @@ public class ShardRequestMetricsSnapshot implements Removable {
           this.add(DSL.field(DSL.name(Fields.OPERATION.name()), String.class));
         }
       };
-
-  private final DSLContext create;
-  public final Long windowStartTime;
-  private final String tableName;
   private static final Long EXPIRE_AFTER = 600000L;
+  public final Long windowStartTime;
+  private final DSLContext create;
+  private final String tableName;
   private List<Field<?>> columns;
 
-  public enum Fields {
-    SHARD_ID(CommonDimension.SHARD_ID.toString()),
-    INDEX_NAME(CommonDimension.INDEX_NAME.toString()),
-    RID(HttpRequestMetricsSnapshot.Fields.RID.toString()),
-    TID("tid"),
-    OPERATION(CommonDimension.OPERATION.toString()),
-    SHARD_ROLE(CommonDimension.SHARD_ROLE.toString()),
-    ST(HttpRequestMetricsSnapshot.Fields.ST.toString()),
-    ET(HttpRequestMetricsSnapshot.Fields.ET.toString()),
-    LAT(HttpRequestMetricsSnapshot.Fields.LAT.toString()),
-    TUTIL("tUtil"),
-    TTIME("ttime"),
-    LATEST("latest"),
-    DOC_COUNT(ShardBulkMetric.DOC_COUNT.toString());
-
-    private final String fieldValue;
-
-    Fields(String fieldValue) {
-      this.fieldValue = fieldValue;
-    }
-
-    @Override
-    public String toString() {
-      return fieldValue;
-    }
-  }
-
-  ;
-
-  public ShardRequestMetricsSnapshot(Connection conn, Long windowStartTime) throws Exception {
+    public ShardRequestMetricsSnapshot(Connection conn, Long windowStartTime) throws Exception {
     this.create = DSL.using(conn, SQLDialect.SQLITE);
     this.windowStartTime = windowStartTime;
     this.tableName = "shard_rq_" + windowStartTime;
@@ -517,5 +487,32 @@ public class ShardRequestMetricsSnapshot implements Removable {
     create.insertInto(DSL.table(this.tableName)).select(prevSnap.fetchInflightSelect()).execute();
     LOG.debug("Inflight shard requests");
     LOG.debug(() -> fetchAll());
+  }
+
+public enum Fields {
+    SHARD_ID(CommonDimension.SHARD_ID.toString()),
+    INDEX_NAME(CommonDimension.INDEX_NAME.toString()),
+    RID(HttpRequestMetricsSnapshot.Fields.RID.toString()),
+    TID("tid"),
+    OPERATION(CommonDimension.OPERATION.toString()),
+    SHARD_ROLE(CommonDimension.SHARD_ROLE.toString()),
+    ST(HttpRequestMetricsSnapshot.Fields.ST.toString()),
+    ET(HttpRequestMetricsSnapshot.Fields.ET.toString()),
+    LAT(HttpRequestMetricsSnapshot.Fields.LAT.toString()),
+    TUTIL("tUtil"),
+    TTIME("ttime"),
+    LATEST("latest"),
+    DOC_COUNT(ShardBulkMetric.DOC_COUNT.toString());
+
+    private final String fieldValue;
+
+    Fields(String fieldValue) {
+      this.fieldValue = fieldValue;
+    }
+
+    @Override
+    public String toString() {
+      return fieldValue;
+    }
   }
 }

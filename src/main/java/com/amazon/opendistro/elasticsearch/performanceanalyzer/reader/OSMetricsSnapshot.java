@@ -40,19 +40,8 @@ import org.jooq.impl.DSL;
 @SuppressWarnings("serial")
 public class OSMetricsSnapshot implements Removable {
   private static final Logger LOG = LogManager.getLogger(OSMetricsSnapshot.class);
-
-  private final DSLContext create;
-  private final String tableName;
-  private Set<String> dimensionColumns;
   private static final String LAST_UPDATE_TIME_FIELD = "lastUpdateTime";
-
   private static final LinkedHashSet<String> METRIC_COLUMNS;
-
-  public enum Fields {
-    tid,
-    tName,
-    weight
-  }
 
   static {
     METRIC_COLUMNS = new LinkedHashSet<>();
@@ -61,9 +50,9 @@ public class OSMetricsSnapshot implements Removable {
     }
   }
 
-  public DSLContext getDSLContext() {
-    return create;
-  }
+  private final DSLContext create;
+  private final String tableName;
+  private Set<String> dimensionColumns;
 
   public OSMetricsSnapshot(Connection conn, String tableNamePrefix, Long windowEndTime) {
     this.tableName = tableNamePrefix + windowEndTime;
@@ -83,138 +72,6 @@ public class OSMetricsSnapshot implements Removable {
 
   public OSMetricsSnapshot(Connection conn, Long windowEndTime) {
     this(conn, "os_", windowEndTime);
-  }
-
-  public void putMetric(Map<String, Double> metrics, String tid, String tName) {
-    Map<Field<?>, Double> metricMap = new HashMap<Field<?>, Double>();
-
-    for (Map.Entry<String, Double> metricName : metrics.entrySet()) {
-      metricMap.put(DSL.field(DSL.name(metricName.getKey()), Double.class), metricName.getValue());
-    }
-
-    create
-        .insertInto(DSL.table(this.tableName))
-        .set(DSL.field(Fields.tid.toString()), tid)
-        .set(DSL.field(Fields.tName.toString()), tName)
-        .set(metricMap)
-        .execute();
-  }
-
-  public void putMetric(
-      Map<String, Double> metrics, Map<String, String> dimensions, long updateTime) {
-    Map<Field<?>, String> dimensionMap = new HashMap<Field<?>, String>();
-    Map<Field<?>, Double> metricMap = new HashMap<Field<?>, Double>();
-    Map<Field<?>, Long> updateTimeMap = new HashMap<Field<?>, Long>();
-
-    for (Map.Entry<String, String> dimension : dimensions.entrySet()) {
-      dimensionMap.put(DSL.field(DSL.name(dimension.getKey()), String.class), dimension.getValue());
-    }
-
-    for (Map.Entry<String, Double> metricName : metrics.entrySet()) {
-      metricMap.put(DSL.field(DSL.name(metricName.getKey()), Double.class), metricName.getValue());
-    }
-
-    updateTimeMap.put(DSL.field(LAST_UPDATE_TIME_FIELD, Long.class), updateTime);
-
-    create
-        .insertInto(DSL.table(this.tableName))
-        .set(metricMap)
-        .set(dimensionMap)
-        .set(updateTimeMap)
-        .execute();
-  }
-
-  public BatchBindStep startBatchPut() {
-    List<Object> dummyValues = new ArrayList<>();
-    for (int i = 0; i < dimensionColumns.size(); i++) {
-      dummyValues.add(null);
-    }
-    for (int i = 0; i < METRIC_COLUMNS.size(); i++) {
-      dummyValues.add(null);
-    }
-    // last update time column
-    dummyValues.add(null);
-    return create.batch(create.insertInto(DSL.table(this.tableName)).values(dummyValues));
-  }
-
-  public void deleteByTid(List<String> tids) {
-    create
-        .delete(DSL.table(this.tableName))
-        .where(DSL.field(Fields.tid.name(), String.class).in(tids))
-        .execute();
-  }
-
-  public List<Field<?>> getMetricColumnFields() {
-    return OSMetricsSnapshot.METRIC_COLUMNS.stream()
-        .map(s -> DSL.field(s, Double.class))
-        .collect(Collectors.toList());
-  }
-
-  public String getTableName() {
-    return this.tableName;
-  }
-
-  public Result<Record> fetchAll() {
-    return create.select().from(DSL.table(this.tableName)).fetch();
-  }
-
-  public Result<Record> fetchNegative() {
-    return create
-        .select()
-        .from(DSL.table(this.tableName))
-        .where(DSL.field(OSMetrics.CPU_UTILIZATION.toString()).lt(0L))
-        .fetch();
-  }
-
-  public SelectHavingStep<Record> selectAll() {
-    return create.select(getFields()).from(this.tableName);
-  }
-
-  @Override
-  public void remove() {
-    LOG.info("Dropping {}", this.tableName);
-    create.dropTable(DSL.table(this.tableName)).execute();
-  }
-
-  public void logSnap() {
-    LOG.debug(() -> getDebugSnap());
-  }
-
-  public Result<?> getDebugSnap() {
-    return create
-        .select(
-            DSL.field(Fields.tid.toString()).as(Fields.tid.toString()),
-            DSL.field(Fields.tName.toString()).as(Fields.tName.toString()),
-            DSL.field(OSMetrics.CPU_UTILIZATION.toString()),
-            DSL.field(OSMetrics.PAGING_MIN_FLT_RATE.toString()))
-        .from(this.tableName)
-        .where(DSL.field(OSMetrics.CPU_UTILIZATION.toString(), Double.class).ne(0d))
-        .fetch();
-  }
-
-  public Result<Record> getOSMetrics() {
-    List<SelectField<?>> fields = new ArrayList<SelectField<?>>();
-    fields.add(DSL.field(Fields.tid.toString()).as(Fields.tid.toString()));
-    fields.add(DSL.field(Fields.tName.toString()).as(Fields.tName.toString()));
-    for (String metricColumn : METRIC_COLUMNS) {
-      fields.add(DSL.field(metricColumn, Double.class).as(metricColumn));
-    }
-    return create.select(fields).from(this.tableName).fetch();
-  }
-
-  public Map<String, Long> getLastUpdateTimePerTid() {
-    List<SelectField<?>> fields = new ArrayList<SelectField<?>>();
-    fields.add(DSL.field(Fields.tid.name()).as(Fields.tid.name()));
-    fields.add(DSL.field(LAST_UPDATE_TIME_FIELD).as(LAST_UPDATE_TIME_FIELD));
-    Result<Record> ret = create.select(fields).from(this.tableName).fetch();
-
-    Map<String, Long> lastUpdateTimePerTid = new HashMap<>();
-    for (int i = 0; i < ret.size(); i++) {
-      lastUpdateTimePerTid.put(
-          ret.get(i).get(Fields.tid.name()).toString(),
-          Long.parseLong(ret.get(i).get(LAST_UPDATE_TIME_FIELD).toString()));
-    }
-    return lastUpdateTimePerTid;
   }
 
   /**
@@ -463,6 +320,142 @@ public class OSMetricsSnapshot implements Removable {
     return create.select(fields).from(tableName);
   }
 
+  public DSLContext getDSLContext() {
+    return create;
+  }
+
+  public void putMetric(Map<String, Double> metrics, String tid, String tName) {
+    Map<Field<?>, Double> metricMap = new HashMap<Field<?>, Double>();
+
+    for (Map.Entry<String, Double> metricName : metrics.entrySet()) {
+      metricMap.put(DSL.field(DSL.name(metricName.getKey()), Double.class), metricName.getValue());
+    }
+
+    create
+        .insertInto(DSL.table(this.tableName))
+        .set(DSL.field(Fields.tid.toString()), tid)
+        .set(DSL.field(Fields.tName.toString()), tName)
+        .set(metricMap)
+        .execute();
+  }
+
+  public void putMetric(
+      Map<String, Double> metrics, Map<String, String> dimensions, long updateTime) {
+    Map<Field<?>, String> dimensionMap = new HashMap<Field<?>, String>();
+    Map<Field<?>, Double> metricMap = new HashMap<Field<?>, Double>();
+    Map<Field<?>, Long> updateTimeMap = new HashMap<Field<?>, Long>();
+
+    for (Map.Entry<String, String> dimension : dimensions.entrySet()) {
+      dimensionMap.put(DSL.field(DSL.name(dimension.getKey()), String.class), dimension.getValue());
+    }
+
+    for (Map.Entry<String, Double> metricName : metrics.entrySet()) {
+      metricMap.put(DSL.field(DSL.name(metricName.getKey()), Double.class), metricName.getValue());
+    }
+
+    updateTimeMap.put(DSL.field(LAST_UPDATE_TIME_FIELD, Long.class), updateTime);
+
+    create
+        .insertInto(DSL.table(this.tableName))
+        .set(metricMap)
+        .set(dimensionMap)
+        .set(updateTimeMap)
+        .execute();
+  }
+
+  public BatchBindStep startBatchPut() {
+    List<Object> dummyValues = new ArrayList<>();
+    for (int i = 0; i < dimensionColumns.size(); i++) {
+      dummyValues.add(null);
+    }
+    for (int i = 0; i < METRIC_COLUMNS.size(); i++) {
+      dummyValues.add(null);
+    }
+    // last update time column
+    dummyValues.add(null);
+    return create.batch(create.insertInto(DSL.table(this.tableName)).values(dummyValues));
+  }
+
+  public void deleteByTid(List<String> tids) {
+    create
+        .delete(DSL.table(this.tableName))
+        .where(DSL.field(Fields.tid.name(), String.class).in(tids))
+        .execute();
+  }
+
+  public List<Field<?>> getMetricColumnFields() {
+    return OSMetricsSnapshot.METRIC_COLUMNS.stream()
+        .map(s -> DSL.field(s, Double.class))
+        .collect(Collectors.toList());
+  }
+
+  public String getTableName() {
+    return this.tableName;
+  }
+
+  public Result<Record> fetchAll() {
+    return create.select().from(DSL.table(this.tableName)).fetch();
+  }
+
+  public Result<Record> fetchNegative() {
+    return create
+        .select()
+        .from(DSL.table(this.tableName))
+        .where(DSL.field(OSMetrics.CPU_UTILIZATION.toString()).lt(0L))
+        .fetch();
+  }
+
+  public SelectHavingStep<Record> selectAll() {
+    return create.select(getFields()).from(this.tableName);
+  }
+
+  @Override
+  public void remove() {
+    LOG.info("Dropping {}", this.tableName);
+    create.dropTable(DSL.table(this.tableName)).execute();
+  }
+
+  public void logSnap() {
+    LOG.debug(() -> getDebugSnap());
+  }
+
+  public Result<?> getDebugSnap() {
+    return create
+        .select(
+            DSL.field(Fields.tid.toString()).as(Fields.tid.toString()),
+            DSL.field(Fields.tName.toString()).as(Fields.tName.toString()),
+            DSL.field(OSMetrics.CPU_UTILIZATION.toString()),
+            DSL.field(OSMetrics.PAGING_MIN_FLT_RATE.toString()))
+        .from(this.tableName)
+        .where(DSL.field(OSMetrics.CPU_UTILIZATION.toString(), Double.class).ne(0d))
+        .fetch();
+  }
+
+  public Result<Record> getOSMetrics() {
+    List<SelectField<?>> fields = new ArrayList<SelectField<?>>();
+    fields.add(DSL.field(Fields.tid.toString()).as(Fields.tid.toString()));
+    fields.add(DSL.field(Fields.tName.toString()).as(Fields.tName.toString()));
+    for (String metricColumn : METRIC_COLUMNS) {
+      fields.add(DSL.field(metricColumn, Double.class).as(metricColumn));
+    }
+    return create.select(fields).from(this.tableName).fetch();
+  }
+
+  public Map<String, Long> getLastUpdateTimePerTid() {
+    List<SelectField<?>> fields = new ArrayList<SelectField<?>>();
+    fields.add(DSL.field(Fields.tid.name()).as(Fields.tid.name()));
+    fields.add(DSL.field(LAST_UPDATE_TIME_FIELD).as(LAST_UPDATE_TIME_FIELD));
+    Result<Record> ret = create.select(fields).from(this.tableName).fetch();
+
+    Map<String, Long> lastUpdateTimePerTid = new HashMap<>();
+    for (int i = 0; i < ret.size(); i++) {
+      lastUpdateTimePerTid.put(
+          ret.get(i).get(Fields.tid.name()).toString(),
+          Long.parseLong(ret.get(i).get(LAST_UPDATE_TIME_FIELD).toString()));
+    }
+    return lastUpdateTimePerTid;
+  }
+
   public List<Field<?>> getFields() {
     List<Field<?>> fields = new ArrayList<Field<?>>();
     for (String dimension : dimensionColumns) {
@@ -477,5 +470,11 @@ public class OSMetricsSnapshot implements Removable {
 
   public Set<String> getMetricColumns() {
     return OSMetricsSnapshot.METRIC_COLUMNS;
+  }
+
+  public enum Fields {
+    tid,
+    tName,
+    weight
   }
 }

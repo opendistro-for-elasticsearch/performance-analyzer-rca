@@ -47,27 +47,19 @@ public class MemoryDBSnapshot implements Removable {
 
   protected final DSLContext create;
   protected final String tableName;
-
-  // the last update time of the /dev/shm/performanceanalyzer file that is the data
-  // source of our db table.
-  protected long lastUpdatedTime;
-
   private final List<String> dimensionNames;
-
   private final List<Field<String>> dimensionsFields;
-
   private final List<Field<Double>> metadata;
-
   // We have 1 table for every metadata in the disk database. This map stores
   // the mapping from table names to the fields used to retrieve table
   // contents from memory db to disk db.
   private final Map<String, List<Field<?>>> tableSelectFieldsMap;
-
   private final Map<String, List<Field<String>>> tableGroupByFieldsMap;
-
   private final Map<String, Condition> tableWhereClauseMap;
-
   private final boolean isAligned;
+  // the last update time of the /dev/shm/performanceanalyzer file that is the data
+  // source of our db table.
+  protected long lastUpdatedTime;
 
   /**
    * @param conn In-memory database connection

@@ -156,7 +156,6 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
    * <p>We use values in the future to represent values in the past. So if at t1, writer writes
    * values 1, the interval [t1-sample interval, t1] has value 1. So [2000, 7000] maps to 1, and
    * [7000, 12000] maps to 3. We end up having (1 * 2000 + 3 * 3000) / 5000 = 2.2
-   *
    */
   @Test
   public void testAlignNodeMetrics() throws Exception {
@@ -233,7 +232,6 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
    * 2001, 7001, 12001 Since the reader needs two windows to align: [7001 ~ 12001] and [12001 ~
    * 17001] and the window [12001 ~ 17001] does not exist, reader would skip aligning and use the
    * value of [7001 ~ 12001] instead.
-   *
    */
   @Test
   public void testMissingUpperWriterWindow() throws Exception {
@@ -278,7 +276,6 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
    * endTime. This is possible because writer writes in less than 5 seconds (writer does not
    * guarantee write every 5 seconds). Reader does not expect that. Changed to return null in this
    * case.
-   *
    */
   @Test
   public void testWriterWindowEndsBeforeReaderWindow() throws Exception {

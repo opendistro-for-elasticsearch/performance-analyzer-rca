@@ -43,12 +43,12 @@ import org.apache.logging.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class PerformanceAnalyzerApp {
+  public static final String QUERY_URL = "/_opendistro/_performanceanalyzer/metrics";
   private static final int WEBSERVICE_DEFAULT_PORT = 9600;
   private static final String WEBSERVICE_PORT_CONF_NAME = "webservice-listener-port";
   private static final String WEBSERVICE_BIND_HOST_NAME = "webservice-bind-host";
   // Use system default for max backlog.
   private static final int INCOMING_QUEUE_LENGTH = 1;
-  public static final String QUERY_URL = "/_opendistro/_performanceanalyzer/metrics";
   private static final Logger LOG = LogManager.getLogger(PerformanceAnalyzerApp.class);
   private static final ScheduledMetricCollectorsExecutor METRIC_COLLECTOR_EXECUTOR =
       new ScheduledMetricCollectorsExecutor(1, false);

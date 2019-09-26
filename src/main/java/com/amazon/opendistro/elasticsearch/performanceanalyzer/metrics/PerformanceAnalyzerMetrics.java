@@ -32,7 +32,6 @@ import org.apache.logging.log4j.util.Supplier;
 
 @SuppressWarnings("checkstyle:constantname")
 public class PerformanceAnalyzerMetrics {
-  private static final Logger LOG = LogManager.getLogger(PerformanceAnalyzerMetrics.class);
   public static final String sDevShmLocation = PluginSettings.instance().getMetricsLocation();
   public static final String sDevShmScratchLocation = "performanceanalyzer_scratch";
   public static final String sIndicesPath = "indices";
@@ -59,10 +58,9 @@ public class PerformanceAnalyzerMetrics {
   public static final String MASTER_META_DATA = "metadata";
   public static final String METRIC_CURRENT_TIME = "current_time";
   public static final int QUEUE_SIZE = PluginSettings.instance().getWriterQueueSize();
-
   // TODO: Comeup with a more sensible number.
   public static final BlockingQueue<Event> metricQueue = new ArrayBlockingQueue<>(QUEUE_SIZE);
-
+  private static final Logger LOG = LogManager.getLogger(PerformanceAnalyzerMetrics.class);
   private static final int NUM_RETRIES_FOR_TMP_FILE = 10;
 
   private static final boolean IS_METRICS_LOG_ENABLED =

@@ -38,19 +38,6 @@ public class MetricsConfiguration {
   public static final int STATS_ROTATION_INTERVAL = 60000;
   public static final int DELETION_INTERVAL =
       PluginSettings.instance().getMetricsDeletionInterval();
-
-  public static class MetricConfig {
-    public int samplingInterval;
-    public int rotationInterval;
-    public int deletionInterval;
-
-    public MetricConfig(int samplingInterval, int rotationInterval, int deletionInterval) {
-      this.samplingInterval = samplingInterval;
-      this.rotationInterval = rotationInterval;
-      this.deletionInterval = deletionInterval;
-    }
-  }
-
   public static final Map<Class, MetricConfig> CONFIG_MAP = new HashMap<>();
   public static final MetricConfig cdefault;
 
@@ -72,5 +59,17 @@ public class MetricsConfiguration {
     CONFIG_MAP.put(StatsCollector.class, new MetricConfig(STATS_ROTATION_INTERVAL, 0, 0));
     CONFIG_MAP.put(DisksCollector.class, cdefault);
     CONFIG_MAP.put(HeapMetricsCollector.class, cdefault);
+  }
+
+  public static class MetricConfig {
+    public int samplingInterval;
+    public int rotationInterval;
+    public int deletionInterval;
+
+    public MetricConfig(int samplingInterval, int rotationInterval, int deletionInterval) {
+      this.samplingInterval = samplingInterval;
+      this.rotationInterval = rotationInterval;
+      this.deletionInterval = deletionInterval;
+    }
   }
 }

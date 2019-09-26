@@ -9,7 +9,6 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
 
 public class Util {
-  private static final Logger LOG = LogManager.getLogger(Util.class);
   public static final String QUERY_URL = "/_opendistro/_performanceanalyzer/metrics";
   public static final String PLUGIN_LOCATION =
       System.getProperty("es.path.home")
@@ -18,6 +17,7 @@ public class Util {
           + File.separator
           + "opendistro_performance_analyzer"
           + File.separator;
+  private static final Logger LOG = LogManager.getLogger(Util.class);
 
   public static void invokePrivileged(Runnable runner) {
     AccessController.doPrivileged(

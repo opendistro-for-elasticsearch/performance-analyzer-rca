@@ -12,10 +12,6 @@ import java.nio.file.Paths;
 public class CopyTestResource implements AutoCloseable {
   private String path;
 
-  public String getPath() {
-    return path;
-  }
-
   public CopyTestResource(String srcPath, String desPath) {
     if (srcPath.equals(desPath)) {
       throw new RuntimeException("srcPath and desPath cannot be same");
@@ -42,6 +38,10 @@ public class CopyTestResource implements AutoCloseable {
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  public String getPath() {
+    return path;
   }
 
   @Override

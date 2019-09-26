@@ -30,16 +30,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class Disks {
+  private static final Logger LOG = LogManager.getLogger(Disks.class);
   private static Map<String, Map<String, Object>> diskKVMap = new HashMap<>();
   private static Map<String, Map<String, Object>> olddiskKVMap = new HashMap<>();
   private static long kvTimestamp = 0;
   private static long oldkvTimestamp = 0;
   private static Set<String> diskList = new HashSet<>();
-  private static final Logger LOG = LogManager.getLogger(Disks.class);
   private static LinuxDiskMetricsGenerator linuxDiskMetricsHandler =
       new LinuxDiskMetricsGenerator();
 
-  private static String statKeys[] = {
+  private static String[] statKeys = {
     "majno", // 1
     "minno",
     "name",
@@ -56,7 +56,7 @@ public class Disks {
     "weightedIOtime"
   };
 
-  private static SchemaFileParser.FieldTypes statTypes[] = {
+  private static SchemaFileParser.FieldTypes[] statTypes = {
     SchemaFileParser.FieldTypes.INT, // 1
     SchemaFileParser.FieldTypes.INT,
     SchemaFileParser.FieldTypes.STRING,
@@ -72,14 +72,13 @@ public class Disks {
     SchemaFileParser.FieldTypes.ULONG,
     SchemaFileParser.FieldTypes.ULONG
   };
+  private static StringBuilder value = new StringBuilder();
 
   static {
     Util.invokePrivileged(() -> listDisks());
     oldkvTimestamp = System.currentTimeMillis();
     kvTimestamp = oldkvTimestamp;
   }
-
-  private static StringBuilder value = new StringBuilder();
 
   private static void listDisks() {
     try {

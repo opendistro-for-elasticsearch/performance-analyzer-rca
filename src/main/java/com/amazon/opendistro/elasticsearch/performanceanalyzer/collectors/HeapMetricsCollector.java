@@ -32,9 +32,9 @@ import org.apache.logging.log4j.Logger;
 
 public class HeapMetricsCollector extends PerformanceAnalyzerMetricsCollector
     implements MetricsProcessor {
-  private static final Logger LOG = LogManager.getLogger(HeapMetricsCollector.class);
   public static final int SAMPLING_TIME_INTERVAL =
       MetricsConfiguration.CONFIG_MAP.get(HeapMetricsCollector.class).samplingInterval;
+  private static final Logger LOG = LogManager.getLogger(HeapMetricsCollector.class);
   private static final int KEYS_PATH_LENGTH = 0;
   private StringBuilder value;
 
@@ -99,13 +99,11 @@ public class HeapMetricsCollector extends PerformanceAnalyzerMetricsCollector
   }
 
   public static class HeapStatus extends MetricStatus {
-    // GC type like survivor
-    private final String type;
-
     // -2 means this metric is undefined for a memory pool.  For example,
     // The memory pool Eden has no collectionCount metric.
     private static final long UNDEFINED = -2;
-
+    // GC type like survivor
+    private final String type;
     // the total number of collections that have occurred
     private long collectionCount = UNDEFINED;
 

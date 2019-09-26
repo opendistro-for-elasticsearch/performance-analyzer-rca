@@ -38,6 +38,16 @@ public class Metric<T> {
     this.max = max;
   }
 
+  // Unit test helper methods
+  public static Metric<Double> cpu(Double val) {
+    return new Metric<Double>("cpu", val);
+  }
+
+  // Unit test helper methods
+  public static Metric<Double> rss(Double val) {
+    return new Metric<Double>("rss", val);
+  }
+
   public String getName() {
     return this.name;
   }
@@ -60,15 +70,5 @@ public class Metric<T> {
 
   public Class<?> getValueType() {
     return this.sum.getClass();
-  }
-
-  // Unit test helper methods
-  public static Metric<Double> cpu(Double val) {
-    return new Metric<Double>("cpu", val);
-  }
-
-  // Unit test helper methods
-  public static Metric<Double> rss(Double val) {
-    return new Metric<Double>("rss", val);
   }
 }

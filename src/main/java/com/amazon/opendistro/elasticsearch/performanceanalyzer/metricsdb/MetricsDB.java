@@ -52,25 +52,18 @@ import org.jooq.impl.DSL;
 @SuppressWarnings("serial")
 public class MetricsDB implements Removable {
 
-  private static final Logger LOG = LogManager.getLogger(MetricsDB.class);
-
-  private static final String DB_FILE_PREFIX_PATH_DEFAULT = "/tmp/metricsdb_";
-  private static final String DB_FILE_PREFIX_PATH_CONF_NAME = "metrics-db-file-prefix-path";
-  private static final String DB_URL = "jdbc:sqlite:";
-  private final Connection conn;
-  private final DSLContext create;
   public static final String SUM = "sum";
   public static final String AVG = "avg";
   public static final String MIN = "min";
   public static final String MAX = "max";
   public static final HashSet<String> AGG_VALUES = new HashSet<>(Arrays.asList(SUM, AVG, MIN, MAX));
+  private static final Logger LOG = LogManager.getLogger(MetricsDB.class);
+  private static final String DB_FILE_PREFIX_PATH_DEFAULT = "/tmp/metricsdb_";
+  private static final String DB_FILE_PREFIX_PATH_CONF_NAME = "metrics-db-file-prefix-path";
+  private static final String DB_URL = "jdbc:sqlite:";
+  private final Connection conn;
+  private final DSLContext create;
   private long windowStartTime;
-
-  public String getDBFilePath() {
-    return PluginSettings.instance()
-            .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT)
-        + Long.toString(windowStartTime);
-  }
 
   public MetricsDB(long windowStartTime) throws Exception {
     this.windowStartTime = windowStartTime;
@@ -78,6 +71,12 @@ public class MetricsDB implements Removable {
     conn = DriverManager.getConnection(url);
     conn.setAutoCommit(false);
     create = DSL.using(conn, SQLDialect.SQLITE);
+  }
+
+  public String getDBFilePath() {
+    return PluginSettings.instance()
+            .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT)
+        + windowStartTime;
   }
 
   public void close() throws Exception {

@@ -40,51 +40,19 @@ public class NetworkInterface {
    - [ip6]outRequests: sent from previous layer
    - [ip6]outDiscards + [ip6]outNoRoutes: sender-side drops
   */
-
-  static class NetInterfaceMetrics {
-    Map<String, Long> PHYmetrics = new HashMap<>();
-    Map<String, Long> IPmetrics = new HashMap<>();
-    // these three are currently unused;
-    // leaving them commented for now.
-    /*Map<String, Long> TCPmetrics =
-        new HashMap<>();
-    Map<String, Long> UDPmetrics =
-        new HashMap<>();
-    Map<String, Long> ICMPmetrics =
-        new HashMap<>();*/
-
-    public void clearAll() {
-      PHYmetrics.clear();
-      IPmetrics.clear();
-      /*TCPmetrics.clear();
-      UDPmetrics.clear();
-      ICMPmetrics.clear();*/
-    }
-
-    public void putAll(NetInterfaceMetrics m) {
-      PHYmetrics.putAll(m.PHYmetrics);
-      IPmetrics.putAll(m.IPmetrics);
-      /*TCPmetrics.putAll(m.TCPmetrics);
-      UDPmetrics.putAll(m.UDPmetrics);
-      ICMPmetrics.putAll(m.ICMPmetrics);*/
-    }
-  }
-
   private static NetInterfaceMetrics currentMetrics = new NetInterfaceMetrics();
   private static NetInterfaceMetrics oldMetrics = new NetInterfaceMetrics();
   private static Map<String, Long> currentMetrics6 = new HashMap<>();
   private static Map<String, Long> oldMetrics6 = new HashMap<>();
   private static long kvTimestamp = 0;
   private static long oldkvTimestamp = 0;
-
   private static StringBuilder ret = new StringBuilder();
-
   private static String[] IPkeys = null;
+  private static LinuxIPMetricsGenerator linuxIPMetricsGenerator = new LinuxIPMetricsGenerator();
+
   //    static private String[] TCPkeys = null;
   //    static private String[] UDPkeys = null;
   //    static private String[] ICMPkeys = null;
-
-  private static LinuxIPMetricsGenerator linuxIPMetricsGenerator = new LinuxIPMetricsGenerator();
 
   static {
     addSampleHelper();
@@ -215,7 +183,7 @@ public class NetworkInterface {
     kvTimestamp = System.currentTimeMillis();
 
     try (FileReader fileReader = new FileReader(new File("/proc/net/snmp"));
-        BufferedReader bufferedReader = new BufferedReader(fileReader); ) {
+        BufferedReader bufferedReader = new BufferedReader(fileReader)) {
       String line = null;
       while ((line = bufferedReader.readLine()) != null) {
         if (ln % 2 == 0) { // keys
@@ -240,7 +208,7 @@ public class NetworkInterface {
     currentMetrics6.clear();
 
     try (FileReader fileReader = new FileReader(new File("/proc/net/snmp6"));
-        BufferedReader bufferedReader = new BufferedReader(fileReader); ) {
+        BufferedReader bufferedReader = new BufferedReader(fileReader)) {
       String line = null;
       while ((line = bufferedReader.readLine()) != null) {
         String[] toks = line.split("[ \\t]+");
@@ -260,7 +228,7 @@ public class NetworkInterface {
   // this assumes that addSample4() is called
   private static void addDeviceStats() {
     try (FileReader fileReader = new FileReader(new File("/proc/net/dev"));
-        BufferedReader bufferedReader = new BufferedReader(fileReader); ) {
+        BufferedReader bufferedReader = new BufferedReader(fileReader)) {
       String line = null;
       long intotbytes = 0;
       long outtotbytes = 0;
@@ -302,6 +270,26 @@ public class NetworkInterface {
 
   public static void runOnce() {
     addSample();
+  }
+
+  @VisibleForTesting
+  static long getKvTimestamp() {
+    return kvTimestamp;
+  }
+
+  @VisibleForTesting
+  static void setKvTimestamp(long value) {
+    NetworkInterface.kvTimestamp = value;
+  }
+
+  @VisibleForTesting
+  static long getOldkvTimestamp() {
+    return oldkvTimestamp;
+  }
+
+  @VisibleForTesting
+  static void setOldkvTimestamp(long oldkvTimestamp) {
+    NetworkInterface.oldkvTimestamp = oldkvTimestamp;
   }
 
   @VisibleForTesting
@@ -364,23 +352,32 @@ public class NetworkInterface {
     oldMetrics6.put(key, value);
   }
 
-  @VisibleForTesting
-  static void setKvTimestamp(long value) {
-    NetworkInterface.kvTimestamp = value;
-  }
+  static class NetInterfaceMetrics {
+    Map<String, Long> PHYmetrics = new HashMap<>();
+    Map<String, Long> IPmetrics = new HashMap<>();
+    // these three are currently unused;
+    // leaving them commented for now.
+    /*Map<String, Long> TCPmetrics =
+        new HashMap<>();
+    Map<String, Long> UDPmetrics =
+        new HashMap<>();
+    Map<String, Long> ICMPmetrics =
+        new HashMap<>();*/
 
-  @VisibleForTesting
-  static void setOldkvTimestamp(long oldkvTimestamp) {
-    NetworkInterface.oldkvTimestamp = oldkvTimestamp;
-  }
+    public void clearAll() {
+      PHYmetrics.clear();
+      IPmetrics.clear();
+      /*TCPmetrics.clear();
+      UDPmetrics.clear();
+      ICMPmetrics.clear();*/
+    }
 
-  @VisibleForTesting
-  static long getKvTimestamp() {
-    return kvTimestamp;
-  }
-
-  @VisibleForTesting
-  static long getOldkvTimestamp() {
-    return oldkvTimestamp;
+    public void putAll(NetInterfaceMetrics m) {
+      PHYmetrics.putAll(m.PHYmetrics);
+      IPmetrics.putAll(m.IPmetrics);
+      /*TCPmetrics.putAll(m.TCPmetrics);
+      UDPmetrics.putAll(m.UDPmetrics);
+      ICMPmetrics.putAll(m.ICMPmetrics);*/
+    }
   }
 }

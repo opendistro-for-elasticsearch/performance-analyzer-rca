@@ -44,40 +44,10 @@ public class NetworkE2E {
 
   private static final Logger LOG = LogManager.getLogger(NetworkE2E.class);
   private static String pid = OSGlobals.getPid();
-
-  static class TCPFlowMetrics {
-    String destIP;
-
-    long txQueue;
-    long rxQueue;
-    long currentLost;
-    long sendCWND;
-    long SSThresh;
-  }
-
-  static class destTCPFlowMetrics {
-    long txQueueTot;
-    long rxQueueTot;
-    long currentLostTot;
-    long sendCWNDTot;
-    long SSThreshTot;
-    int numFlows;
-
-    destTCPFlowMetrics(TCPFlowMetrics m) {
-      txQueueTot = m.txQueue;
-      rxQueueTot = m.rxQueue;
-      currentLostTot = m.currentLost;
-      sendCWNDTot = m.sendCWND;
-      SSThreshTot = m.SSThresh;
-      numFlows = 1;
-    }
-  }
-
   private static Set<String> inodeSocketList = new HashSet<>();
   private static Map<String, TCPFlowMetrics> inodeFlowMetricsMap = new HashMap<>();
   private static Map<String, destTCPFlowMetrics> destnodeFlowMetricsMap = new HashMap<>();
   private static LinuxTCPMetricsGenerator linuxTCPMetricsHandler = new LinuxTCPMetricsGenerator();
-
   private static StringBuilder value = new StringBuilder();
 
   static void listSockets() {
@@ -214,5 +184,33 @@ public class NetworkE2E {
   protected static void setDestnodeFlowMetricsMap(
       Map<String, destTCPFlowMetrics> destnodeFlowMetricsMap) {
     NetworkE2E.destnodeFlowMetricsMap = destnodeFlowMetricsMap;
+  }
+
+  static class TCPFlowMetrics {
+    String destIP;
+
+    long txQueue;
+    long rxQueue;
+    long currentLost;
+    long sendCWND;
+    long SSThresh;
+  }
+
+  static class destTCPFlowMetrics {
+    long txQueueTot;
+    long rxQueueTot;
+    long currentLostTot;
+    long sendCWNDTot;
+    long SSThreshTot;
+    int numFlows;
+
+    destTCPFlowMetrics(TCPFlowMetrics m) {
+      txQueueTot = m.txQueue;
+      rxQueueTot = m.rxQueue;
+      currentLostTot = m.currentLost;
+      sendCWNDTot = m.sendCWND;
+      SSThreshTot = m.SSThresh;
+      numFlows = 1;
+    }
   }
 }

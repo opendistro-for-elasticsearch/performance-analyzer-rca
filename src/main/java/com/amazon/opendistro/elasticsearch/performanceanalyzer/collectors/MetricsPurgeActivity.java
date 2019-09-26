@@ -24,15 +24,14 @@ import org.apache.logging.log4j.Logger;
 
 public class MetricsPurgeActivity extends PerformanceAnalyzerMetricsCollector {
   private static final Logger LOG = LogManager.getLogger(MetricsPurgeActivity.class);
+  private static int purgeInterval =
+      MetricsConfiguration.CONFIG_MAP.get(MetricsPurgeActivity.class).deletionInterval;
 
   public MetricsPurgeActivity() {
     super(
         MetricsConfiguration.CONFIG_MAP.get(MetricsPurgeActivity.class).samplingInterval,
         "MetricsPurgeActivity");
   }
-
-  private static int purgeInterval =
-      MetricsConfiguration.CONFIG_MAP.get(MetricsPurgeActivity.class).deletionInterval;
 
   @Override
   public void collectMetrics(long startTime) {

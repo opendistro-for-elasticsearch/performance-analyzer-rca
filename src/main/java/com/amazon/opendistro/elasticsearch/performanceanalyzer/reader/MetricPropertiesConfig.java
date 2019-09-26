@@ -45,101 +45,8 @@ import java.util.Objects;
 
 public final class MetricPropertiesConfig {
 
-  /**
-   * Find files under /dev/shm/performanceanalyzer/TS_BUCKET/metricPathElements
-   *
-   * @param metricPathElements path element array
-   * @return a list of Files
-   */
-  static FileHandler createFileHandler(String... metricPathElements) {
-    return new FileHandler() {
-      @Override
-      public List<File> findFiles4Metric(long startTimeThirtySecondBucket) {
-        List<File> ret = new ArrayList<File>(1);
-        StringBuilder sb = new StringBuilder();
-        sb.append(getRootLocation());
-        sb.append(startTimeThirtySecondBucket);
-
-        for (String element : metricPathElements) {
-          sb.append(File.separator);
-          sb.append(element);
-        }
-        File metricFile = new File(sb.toString());
-        if (metricFile.exists()) {
-          ret.add(metricFile);
-        }
-        return ret;
-      }
-
-      public List<Event> getMetricData(Map<String, List<Event>> metricDataMap) {
-        Objects.requireNonNull(metricDataMap);
-        List<Event> entries = metricDataMap.get(metricPathElements[0]);
-        return (entries == null ? Collections.emptyList() : entries);
-      }
-    };
-  }
-
-  public static class ShardStatFileHandler extends FileHandler {
-    @Override
-    public List<File> findFiles4Metric(long timeBucket) {
-      File indicesFolder =
-          new File(
-              this.getRootLocation()
-                  + File.separator
-                  + timeBucket
-                  + File.separator
-                  + PerformanceAnalyzerMetrics.sIndicesPath);
-
-      if (!indicesFolder.exists()) {
-        return Collections.emptyList();
-      }
-
-      List<File> metricFiles = new ArrayList<>();
-
-      for (File indexFolder : indicesFolder.listFiles()) {
-        for (File shardIdFile : indexFolder.listFiles()) {
-          metricFiles.add(shardIdFile);
-        }
-      }
-      return metricFiles;
-    }
-
-    // An example shard data can be:
-    // ^indices/nyc_taxis/29
-    // {"current_time":1566413966497}
-    // {"Indexing_ThrottleTime":0,"Cache_Query_Hit":0,"Cache_Query_Miss":0,"Cache_Query_Size":0,
-    // "Cache_FieldData_Eviction":0,"Cache_FieldData_Size":0,"Cache_Request_Hit":0,
-    // "Cache_Request_Miss":0,"Cache_Request_Eviction":0,"Cache_Request_Size":0,"Refresh_Event":2,
-    // "Refresh_Time":0,"Flush_Event":0,"Flush_Time":0,"Merge_Event":0,"Merge_Time":0,
-    // "Merge_CurrentEvent":0,"Indexing_Buffer":0,"Segments_Total":0,"Segments_Memory":0,
-    // "Terms_Memory":0,"StoredFields_Memory":0,"TermVectors_Memory":0,"Norms_Memory":0,
-    // "Points_Memory":0,"DocValues_Memory":0,"IndexWriter_Memory":0,"VersionMap_Memory":0,"Bitset_Memory":0}$
-    public List<Event> getMetricData(Map<String, List<Event>> metricDataMap) {
-      Objects.requireNonNull(metricDataMap);
-      return metricDataMap.computeIfAbsent(
-          PerformanceAnalyzerMetrics.sIndicesPath, k -> Collections.emptyList());
-    }
-
-    @Override
-    public String filePathRegex() {
-      // getRootLocation() may or may not end with File.separator.  So
-      // I put ? next to File.separator.
-      return getRootLocation()
-          + File.separator
-          + "?\\d+"
-          + File.separator
-          + PerformanceAnalyzerMetrics.sIndicesPath
-          + File.separator
-          + "(.*)"
-          + File.separator
-          + "(\\d+)";
-    }
-  }
-
-  private final Map<MetricName, MetricProperties> metricName2Property;
-
   private static final MetricPropertiesConfig INSTANCE = new MetricPropertiesConfig();
-
+  private final Map<MetricName, MetricProperties> metricName2Property;
   private Map<AllMetrics.MetricName, String> metricPathMap;
   private Map<String, AllMetrics.MetricName> eventKeyToMetricNameMap;
 
@@ -222,6 +129,40 @@ public final class MetricPropertiesConfig {
                 PerformanceAnalyzerMetrics.MASTER_META_DATA)));
   }
 
+  /**
+   * Find files under /dev/shm/performanceanalyzer/TS_BUCKET/metricPathElements
+   *
+   * @param metricPathElements path element array
+   * @return a list of Files
+   */
+  static FileHandler createFileHandler(String... metricPathElements) {
+    return new FileHandler() {
+      @Override
+      public List<File> findFiles4Metric(long startTimeThirtySecondBucket) {
+        List<File> ret = new ArrayList<File>(1);
+        StringBuilder sb = new StringBuilder();
+        sb.append(getRootLocation());
+        sb.append(startTimeThirtySecondBucket);
+
+        for (String element : metricPathElements) {
+          sb.append(File.separator);
+          sb.append(element);
+        }
+        File metricFile = new File(sb.toString());
+        if (metricFile.exists()) {
+          ret.add(metricFile);
+        }
+        return ret;
+      }
+
+      public List<Event> getMetricData(Map<String, List<Event>> metricDataMap) {
+        Objects.requireNonNull(metricDataMap);
+        List<Event> entries = metricDataMap.get(metricPathElements[0]);
+        return (entries == null ? Collections.emptyList() : entries);
+      }
+    };
+  }
+
   public static MetricPropertiesConfig getInstance() {
     return INSTANCE;
   }
@@ -241,5 +182,62 @@ public final class MetricPropertiesConfig {
   @VisibleForTesting
   Map<MetricName, MetricProperties> getMetricName2Property() {
     return metricName2Property;
+  }
+
+  public static class ShardStatFileHandler extends FileHandler {
+    @Override
+    public List<File> findFiles4Metric(long timeBucket) {
+      File indicesFolder =
+          new File(
+              this.getRootLocation()
+                  + File.separator
+                  + timeBucket
+                  + File.separator
+                  + PerformanceAnalyzerMetrics.sIndicesPath);
+
+      if (!indicesFolder.exists()) {
+        return Collections.emptyList();
+      }
+
+      List<File> metricFiles = new ArrayList<>();
+
+      for (File indexFolder : indicesFolder.listFiles()) {
+        for (File shardIdFile : indexFolder.listFiles()) {
+          metricFiles.add(shardIdFile);
+        }
+      }
+      return metricFiles;
+    }
+
+    // An example shard data can be:
+    // ^indices/nyc_taxis/29
+    // {"current_time":1566413966497}
+    // {"Indexing_ThrottleTime":0,"Cache_Query_Hit":0,"Cache_Query_Miss":0,"Cache_Query_Size":0,
+    // "Cache_FieldData_Eviction":0,"Cache_FieldData_Size":0,"Cache_Request_Hit":0,
+    // "Cache_Request_Miss":0,"Cache_Request_Eviction":0,"Cache_Request_Size":0,"Refresh_Event":2,
+    // "Refresh_Time":0,"Flush_Event":0,"Flush_Time":0,"Merge_Event":0,"Merge_Time":0,
+    // "Merge_CurrentEvent":0,"Indexing_Buffer":0,"Segments_Total":0,"Segments_Memory":0,
+    // "Terms_Memory":0,"StoredFields_Memory":0,"TermVectors_Memory":0,"Norms_Memory":0,
+    // "Points_Memory":0,"DocValues_Memory":0,"IndexWriter_Memory":0,"VersionMap_Memory":0,"Bitset_Memory":0}$
+    public List<Event> getMetricData(Map<String, List<Event>> metricDataMap) {
+      Objects.requireNonNull(metricDataMap);
+      return metricDataMap.computeIfAbsent(
+          PerformanceAnalyzerMetrics.sIndicesPath, k -> Collections.emptyList());
+    }
+
+    @Override
+    public String filePathRegex() {
+      // getRootLocation() may or may not end with File.separator.  So
+      // I put ? next to File.separator.
+      return getRootLocation()
+          + File.separator
+          + "?\\d+"
+          + File.separator
+          + PerformanceAnalyzerMetrics.sIndicesPath
+          + File.separator
+          + "(.*)"
+          + File.separator
+          + "(\\d+)";
+    }
   }
 }

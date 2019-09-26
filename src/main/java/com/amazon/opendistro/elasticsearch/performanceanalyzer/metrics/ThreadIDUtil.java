@@ -18,9 +18,9 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.jvm.ThreadList;
 
 public final class ThreadIDUtil {
-  private ThreadIDUtil() {}
-
   public static final ThreadIDUtil INSTANCE = new ThreadIDUtil();
+
+  private ThreadIDUtil() {}
 
   public long getNativeCurrentThreadId() {
 

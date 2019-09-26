@@ -36,36 +36,13 @@ import org.jooq.impl.DSL;
 
 public class MasterEventMetricsSnapshot implements Removable {
   private static final Logger LOG = LogManager.getLogger(MasterEventMetricsSnapshot.class);
-
+  private static final Long EXPIRE_AFTER = 1200000L;
   private final DSLContext create;
   private final Long windowStartTime;
   private final String tableName;
-  private static final Long EXPIRE_AFTER = 1200000L;
   private List<Field<?>> columns;
 
-  public enum Fields {
-    TID("tid"),
-    IS_CURRENT("isCurrent"),
-    OLD_START("oldStart"),
-    ST("st"),
-    ET("et"),
-    LAT("lat");
-
-    private final String fieldValue;
-
-    Fields(String fieldValue) {
-      this.fieldValue = fieldValue;
-    }
-
-    @Override
-    public String toString() {
-      return fieldValue;
-    }
-  }
-
-  ;
-
-  public MasterEventMetricsSnapshot(Connection conn, Long windowStartTime) {
+    public MasterEventMetricsSnapshot(Connection conn, Long windowStartTime) {
     this.create = DSL.using(conn, SQLDialect.SQLITE);
     this.windowStartTime = windowStartTime;
     this.tableName = "master_event_" + windowStartTime;
@@ -483,5 +460,25 @@ public class MasterEventMetricsSnapshot implements Removable {
         };
 
     return fields;
+  }
+
+public enum Fields {
+    TID("tid"),
+    IS_CURRENT("isCurrent"),
+    OLD_START("oldStart"),
+    ST("st"),
+    ET("et"),
+    LAT("lat");
+
+    private final String fieldValue;
+
+    Fields(String fieldValue) {
+      this.fieldValue = fieldValue;
+    }
+
+    @Override
+    public String toString() {
+      return fieldValue;
+    }
   }
 }

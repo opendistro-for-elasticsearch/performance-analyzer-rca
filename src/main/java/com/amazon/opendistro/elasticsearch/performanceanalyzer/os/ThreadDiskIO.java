@@ -29,77 +29,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ThreadDiskIO {
+  private static final Logger LOGGER = LogManager.getLogger(ThreadDiskIO.class);
   private static String pid = OSGlobals.getPid();
   private static List<String> tids = null;
-  private static final Logger LOGGER = LogManager.getLogger(ThreadDiskIO.class);
-
   private static Map<String, Map<String, Long>> tidKVMap = new HashMap<>();
   private static Map<String, Map<String, Long>> oldtidKVMap = new HashMap<>();
   private static long kvTimestamp = 0;
   private static long oldkvTimestamp = 0;
 
-  public static class IOMetrics {
-    public double avgReadThroughputBps;
-    public double avgWriteThroughputBps;
-    public double avgTotalThroughputBps;
-
-    public double avgReadSyscallRate;
-    public double avgWriteSyscallRate;
-    public double avgTotalSyscallRate;
-
-    public double avgPageCacheReadThroughputBps;
-    public double avgPageCacheWriteThroughputBps;
-    public double avgPageCacheTotalThroughputBps;
-
-    @SuppressWarnings("checkstyle:parameternumber")
-    IOMetrics(
-        double avgReadThroughputBps,
-        double avgReadSyscallRate,
-        double avgWriteThroughputBps,
-        double avgWriteSyscallRate,
-        double avgTotalThroughputBps,
-        double avgTotalSyscallRate,
-        double avgPageCacheReadThroughputBps,
-        double avgPageCacheWriteThroughputBps,
-        double avgPageCacheTotalThroughputBps) {
-      this.avgReadThroughputBps = avgReadThroughputBps;
-      this.avgWriteThroughputBps = avgWriteThroughputBps;
-      this.avgTotalThroughputBps = avgTotalThroughputBps;
-      this.avgReadSyscallRate = avgReadSyscallRate;
-      this.avgWriteSyscallRate = avgWriteSyscallRate;
-      this.avgTotalSyscallRate = avgTotalSyscallRate;
-      this.avgPageCacheReadThroughputBps = avgPageCacheReadThroughputBps;
-      this.avgPageCacheWriteThroughputBps = avgPageCacheWriteThroughputBps;
-      this.avgPageCacheTotalThroughputBps = avgPageCacheTotalThroughputBps;
-    }
-
-    public String toString() {
-      return new StringBuilder()
-          .append("rBps:")
-          .append(avgReadThroughputBps)
-          .append(" wBps:")
-          .append(avgWriteThroughputBps)
-          .append(" totBps:")
-          .append(avgTotalThroughputBps)
-          .append(" rSysc:")
-          .append(avgReadSyscallRate)
-          .append(" wSysc:")
-          .append(avgWriteSyscallRate)
-          .append(" totSysc:")
-          .append(avgTotalSyscallRate)
-          .append(" rPcBps:")
-          .append(avgPageCacheReadThroughputBps)
-          .append(" wPcBps:")
-          .append(avgPageCacheWriteThroughputBps)
-          .append(" totPcBps:")
-          .append(avgPageCacheTotalThroughputBps)
-          .toString();
-    }
-  }
-
   private static void addSampleTid(String tid) {
     try (FileReader fileReader = new FileReader(new File("/proc/" + pid + "/task/" + tid + "/io"));
-        BufferedReader bufferedReader = new BufferedReader(fileReader); ) {
+        BufferedReader bufferedReader = new BufferedReader(fileReader)) {
       String line = null;
       Map<String, Long> kvmap = new HashMap<>();
       while ((line = bufferedReader.readLine()) != null) {
@@ -174,5 +114,64 @@ public class ThreadDiskIO {
       }
     }
     return linuxDiskIOMetricsHandler;
+  }
+
+  public static class IOMetrics {
+    public double avgReadThroughputBps;
+    public double avgWriteThroughputBps;
+    public double avgTotalThroughputBps;
+
+    public double avgReadSyscallRate;
+    public double avgWriteSyscallRate;
+    public double avgTotalSyscallRate;
+
+    public double avgPageCacheReadThroughputBps;
+    public double avgPageCacheWriteThroughputBps;
+    public double avgPageCacheTotalThroughputBps;
+
+    @SuppressWarnings("checkstyle:parameternumber")
+    IOMetrics(
+        double avgReadThroughputBps,
+        double avgReadSyscallRate,
+        double avgWriteThroughputBps,
+        double avgWriteSyscallRate,
+        double avgTotalThroughputBps,
+        double avgTotalSyscallRate,
+        double avgPageCacheReadThroughputBps,
+        double avgPageCacheWriteThroughputBps,
+        double avgPageCacheTotalThroughputBps) {
+      this.avgReadThroughputBps = avgReadThroughputBps;
+      this.avgWriteThroughputBps = avgWriteThroughputBps;
+      this.avgTotalThroughputBps = avgTotalThroughputBps;
+      this.avgReadSyscallRate = avgReadSyscallRate;
+      this.avgWriteSyscallRate = avgWriteSyscallRate;
+      this.avgTotalSyscallRate = avgTotalSyscallRate;
+      this.avgPageCacheReadThroughputBps = avgPageCacheReadThroughputBps;
+      this.avgPageCacheWriteThroughputBps = avgPageCacheWriteThroughputBps;
+      this.avgPageCacheTotalThroughputBps = avgPageCacheTotalThroughputBps;
+    }
+
+    public String toString() {
+      return new StringBuilder()
+          .append("rBps:")
+          .append(avgReadThroughputBps)
+          .append(" wBps:")
+          .append(avgWriteThroughputBps)
+          .append(" totBps:")
+          .append(avgTotalThroughputBps)
+          .append(" rSysc:")
+          .append(avgReadSyscallRate)
+          .append(" wSysc:")
+          .append(avgWriteSyscallRate)
+          .append(" totSysc:")
+          .append(avgTotalSyscallRate)
+          .append(" rPcBps:")
+          .append(avgPageCacheReadThroughputBps)
+          .append(" wPcBps:")
+          .append(avgPageCacheWriteThroughputBps)
+          .append(" totPcBps:")
+          .append(avgPageCacheTotalThroughputBps)
+          .toString();
+    }
   }
 }

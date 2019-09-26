@@ -72,7 +72,7 @@ public class PerformanceAnalyzerMetricsTests {
     String expectedPath =
         PerformanceAnalyzerMetrics.sDevShmLocation
             + "/"
-            + String.valueOf(PerformanceAnalyzerMetrics.getTimeInterval(startTimeInMillis))
+            + PerformanceAnalyzerMetrics.getTimeInterval(startTimeInMillis)
             + "/dir1/id/dir2";
     assertEquals(expectedPath, generatedPath);
   }

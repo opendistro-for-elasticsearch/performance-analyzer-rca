@@ -50,30 +50,6 @@ public class HttpRequestMetricsSnapshot implements Removable {
   private final String tableName;
   private List<String> columns;
 
-  public enum Fields {
-    RID("rid"),
-    OPERATION(CommonDimension.OPERATION.toString()),
-    INDICES(HttpDimension.INDICES.toString()),
-    HTTP_RESP_CODE(HttpDimension.HTTP_RESP_CODE.toString()),
-    EXCEPTION(CommonDimension.EXCEPTION.toString()),
-    HTTP_REQUEST_DOCS(HttpMetric.HTTP_REQUEST_DOCS.toString()),
-    ST("st"),
-    ET("et"),
-    LAT("lat"),
-    HTTP_TOTAL_REQUESTS(HttpMetric.HTTP_TOTAL_REQUESTS.toString());
-
-    private final String fieldValue;
-
-    Fields(String fieldValue) {
-      this.fieldValue = fieldValue;
-    }
-
-    @Override
-    public String toString() {
-      return fieldValue;
-    }
-  }
-
   public HttpRequestMetricsSnapshot(Connection conn, Long windowStartTime) throws Exception {
     this.create = DSL.using(conn, SQLDialect.SQLITE);
     this.windowStartTime = windowStartTime;
@@ -367,5 +343,29 @@ public class HttpRequestMetricsSnapshot implements Removable {
         .insertInto(DSL.table(this.tableName))
         .select(create.select().from(prevSnap.fetchInflightRequests()))
         .execute();
+  }
+
+  public enum Fields {
+    RID("rid"),
+    OPERATION(CommonDimension.OPERATION.toString()),
+    INDICES(HttpDimension.INDICES.toString()),
+    HTTP_RESP_CODE(HttpDimension.HTTP_RESP_CODE.toString()),
+    EXCEPTION(CommonDimension.EXCEPTION.toString()),
+    HTTP_REQUEST_DOCS(HttpMetric.HTTP_REQUEST_DOCS.toString()),
+    ST("st"),
+    ET("et"),
+    LAT("lat"),
+    HTTP_TOTAL_REQUESTS(HttpMetric.HTTP_TOTAL_REQUESTS.toString());
+
+    private final String fieldValue;
+
+    Fields(String fieldValue) {
+      this.fieldValue = fieldValue;
+    }
+
+    @Override
+    public String toString() {
+      return fieldValue;
+    }
   }
 }

@@ -26,48 +26,21 @@ import org.apache.logging.log4j.message.ParameterizedMessage;
 import org.apache.logging.log4j.util.Supplier;
 
 public final class ThreadSched {
-  private static final Logger LOGGER = LogManager.getLogger(ThreadSched.class);
   public static final ThreadSched INSTANCE = new ThreadSched();
+  private static final Logger LOGGER = LogManager.getLogger(ThreadSched.class);
+  private static String[] schedKeys = {"runticks", "waitticks", "totctxsws"};
+  private static SchemaFileParser.FieldTypes[] schedTypes = {
+    SchemaFileParser.FieldTypes.ULONG,
+    SchemaFileParser.FieldTypes.ULONG,
+    SchemaFileParser.FieldTypes.ULONG
+  };
   private String pid = null;
   private List<String> tids = null;
   private Map<String, Map<String, Object>> tidKVMap = new HashMap<>();
   private Map<String, Map<String, Object>> oldtidKVMap = new HashMap<>();
   private long kvTimestamp = 0;
   private long oldkvTimestamp = 0;
-
-  public static class SchedMetrics {
-    public final double avgRuntime;
-    public final double avgWaittime;
-    public final double contextSwitchRate; // both voluntary and involuntary
-
-    SchedMetrics(double avgRuntime, double avgWaittime, double contextSwitchRate) {
-      this.avgRuntime = avgRuntime;
-      this.avgWaittime = avgWaittime;
-      this.contextSwitchRate = contextSwitchRate;
-    }
-
-    @Override
-    public String toString() {
-      return new StringBuilder()
-          .append("avgruntime: ")
-          .append(avgRuntime)
-          .append(" avgwaittime: ")
-          .append(avgWaittime)
-          .append(" ctxrate: ")
-          .append(contextSwitchRate)
-          .toString();
-    }
-  }
-
   private LinuxSchedMetricsGenerator schedLatencyMap = new LinuxSchedMetricsGenerator();
-
-  private static String[] schedKeys = {"runticks", "waitticks", "totctxsws"};
-
-  private static SchemaFileParser.FieldTypes[] schedTypes = {
-    SchemaFileParser.FieldTypes.ULONG,
-    SchemaFileParser.FieldTypes.ULONG,
-    SchemaFileParser.FieldTypes.ULONG
-  };
 
   private ThreadSched() {
     try {
@@ -142,5 +115,29 @@ public final class ThreadSched {
   public synchronized SchedMetricsGenerator getSchedLatency() {
 
     return schedLatencyMap;
+  }
+
+  public static class SchedMetrics {
+    public final double avgRuntime;
+    public final double avgWaittime;
+    public final double contextSwitchRate; // both voluntary and involuntary
+
+    SchedMetrics(double avgRuntime, double avgWaittime, double contextSwitchRate) {
+      this.avgRuntime = avgRuntime;
+      this.avgWaittime = avgWaittime;
+      this.contextSwitchRate = contextSwitchRate;
+    }
+
+    @Override
+    public String toString() {
+      return new StringBuilder()
+          .append("avgruntime: ")
+          .append(avgRuntime)
+          .append(" avgwaittime: ")
+          .append(avgWaittime)
+          .append(" ctxrate: ")
+          .append(contextSwitchRate)
+          .toString();
+    }
   }
 }

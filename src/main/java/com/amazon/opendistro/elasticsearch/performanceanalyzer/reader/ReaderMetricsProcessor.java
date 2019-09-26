@@ -46,9 +46,25 @@ public class ReaderMetricsProcessor implements Runnable {
   private static final Logger LOG = LogManager.getLogger(ReaderMetricsProcessor.class);
 
   private static final String DB_URL = "jdbc:sqlite:";
+  private static final int MAX_DATABASES = 2;
+  private static final int OS_SNAPSHOTS = 4;
+  private static final int RQ_SNAPSHOTS = 4;
+  private static final int HTTP_RQ_SNAPSHOTS = 4;
+  private static final int MASTER_EVENT_SNAPSHOTS = 4;
+  private static final Map<String, Double> TIMING_STATS = new HashMap<>();
+  private static final Map<String, String> STATS_DATA = new HashMap<>();
+  private static ReaderMetricsProcessor current = null;
+
+  static {
+    STATS_DATA.put("MethodName", "ProcessMetrics");
+  }
+
   private final Connection conn;
   private final DSLContext create;
-
+  private final MetricsParser metricsParser;
+  private final String rootLocation;
+  private final boolean processNewFormat;
+  private final EventLogFileHandler eventLogFileHandler;
   // This semaphore is used to control access to metricsDBMap from threads outside of
   // ReaderMetricsProcessor.
   private NavigableMap<Long, MetricsDB> metricsDBMap;
@@ -57,31 +73,6 @@ public class ReaderMetricsProcessor implements Runnable {
   private NavigableMap<Long, HttpRequestMetricsSnapshot> httpRqMetricsMap;
   private NavigableMap<Long, MasterEventMetricsSnapshot> masterEventMetricsMap;
   private Map<AllMetrics.MetricName, NavigableMap<Long, MemoryDBSnapshot>> nodeMetricsMap;
-  private static final int MAX_DATABASES = 2;
-  private static final int OS_SNAPSHOTS = 4;
-  private static final int RQ_SNAPSHOTS = 4;
-  private static final int HTTP_RQ_SNAPSHOTS = 4;
-  private static final int MASTER_EVENT_SNAPSHOTS = 4;
-  private final MetricsParser metricsParser;
-  private final String rootLocation;
-  private static final Map<String, Double> TIMING_STATS = new HashMap<>();
-  private static final Map<String, String> STATS_DATA = new HashMap<>();
-
-  static {
-    STATS_DATA.put("MethodName", "ProcessMetrics");
-  }
-
-  private final boolean processNewFormat;
-  private final EventLogFileHandler eventLogFileHandler;
-  private static ReaderMetricsProcessor current = null;
-
-  public static void setCurrentInstance(ReaderMetricsProcessor currentInstance) {
-    current = currentInstance;
-  }
-
-  public static ReaderMetricsProcessor getInstance() {
-    return current;
-  }
 
   public ReaderMetricsProcessor(String rootLocation) throws Exception {
     this(rootLocation, false);
@@ -105,6 +96,34 @@ public class ReaderMetricsProcessor implements Runnable {
     }
     eventLogFileHandler = new EventLogFileHandler(new EventLog(), rootLocation);
     this.processNewFormat = processNewFormat;
+  }
+
+  public static void setCurrentInstance(ReaderMetricsProcessor currentInstance) {
+    current = currentInstance;
+  }
+
+  public static ReaderMetricsProcessor getInstance() {
+    return current;
+  }
+
+  /**
+   * Deletes the MetricsDB entries in the map till the size of the map is equal to maxSize. The
+   * actual on-disk files is deleted ony if the config is not set or set to true.
+   */
+  public static void trimDatabases(
+      NavigableMap<Long, MetricsDB> map, int maxSize, boolean deleteDBFiles) throws Exception {
+    // Remove the oldest entries from the map, upto maxSize.
+    while (map.size() > maxSize) {
+      Map.Entry<Long, MetricsDB> lowestEntry = map.firstEntry();
+      if (lowestEntry != null) {
+        MetricsDB value = lowestEntry.getValue();
+        map.remove(lowestEntry.getKey());
+        value.remove();
+        if (deleteDBFiles) {
+          value.deleteOnDiskFile();
+        }
+      }
+    }
   }
 
   @Override
@@ -216,26 +235,6 @@ public class ReaderMetricsProcessor implements Runnable {
         Removable value = (Removable) lowestEntry.getValue();
         value.remove();
         map.remove(lowestEntry.getKey());
-      }
-    }
-  }
-
-  /**
-   * Deletes the MetricsDB entries in the map till the size of the map is equal to maxSize. The
-   * actual on-disk files is deleted ony if the config is not set or set to true.
-   */
-  public static void trimDatabases(
-      NavigableMap<Long, MetricsDB> map, int maxSize, boolean deleteDBFiles) throws Exception {
-    // Remove the oldest entries from the map, upto maxSize.
-    while (map.size() > maxSize) {
-      Map.Entry<Long, MetricsDB> lowestEntry = map.firstEntry();
-      if (lowestEntry != null) {
-        MetricsDB value = lowestEntry.getValue();
-        map.remove(lowestEntry.getKey());
-        value.remove();
-        if (deleteDBFiles) {
-          value.deleteOnDiskFile();
-        }
       }
     }
   }

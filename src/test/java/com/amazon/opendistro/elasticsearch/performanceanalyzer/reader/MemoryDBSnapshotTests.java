@@ -38,14 +38,6 @@ public class MemoryDBSnapshotTests extends AbstractReaderTests {
 
   // - May change across versions, based on new/removed circuit breakers
 
-  enum CircuitBreakerType {
-    request,
-    fielddata,
-    in_flight_requests,
-    accounting,
-    parent;
-  }
-
   @SuppressWarnings("unchecked")
   public MemoryDBSnapshotTests() throws SQLException, ClassNotFoundException {
     super();
@@ -163,5 +155,13 @@ public class MemoryDBSnapshotTests extends AbstractReaderTests {
 
     Double limit = Double.parseDouble(res.get(0).get(fields[1]).toString());
     assertEquals(limit, 19607637196d, 0.001);
+  }
+
+  enum CircuitBreakerType {
+    request,
+    fielddata,
+    in_flight_requests,
+    accounting,
+    parent
   }
 }

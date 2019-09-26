@@ -25,7 +25,7 @@ public class SettingsHelper {
   public static Properties getSettings(final String fileRelativePath) throws IOException {
     Properties prop = new Properties();
 
-    try (InputStream input = new FileInputStream(Util.PLUGIN_LOCATION + fileRelativePath); ) {
+    try (InputStream input = new FileInputStream(Util.PLUGIN_LOCATION + fileRelativePath)) {
       // load a properties file
       prop.load(input);
     }

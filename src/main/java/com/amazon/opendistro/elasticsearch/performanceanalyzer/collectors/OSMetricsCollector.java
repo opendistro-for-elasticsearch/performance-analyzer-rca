@@ -35,10 +35,6 @@ public class OSMetricsCollector extends PerformanceAnalyzerMetricsCollector
   private StringBuilder value;
   private OSMetricsGenerator osMetricsGenerator;
 
-  public enum MetaDataFields {
-    threadName
-  }
-
   public OSMetricsCollector() {
     super(SAMPLING_TIME_INTERVAL, "OSMetrics");
     value = new StringBuilder();
@@ -176,5 +172,9 @@ public class OSMetricsCollector extends PerformanceAnalyzerMetricsCollector
         PerformanceAnalyzerMetrics.sThreadsPath,
         keysPath[0],
         PerformanceAnalyzerMetrics.sOSPath);
+  }
+
+  public enum MetaDataFields {
+    threadName
   }
 }

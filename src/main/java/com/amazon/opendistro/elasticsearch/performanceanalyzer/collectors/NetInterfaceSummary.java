@@ -22,11 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 // all metrics are per-time-unit
 public class NetInterfaceSummary extends MetricStatus {
 
-  public enum Direction {
-    in,
-    out;
-  }
-
   private Direction direction;
   private double packetRate4;
   private double dropRate4;
@@ -77,5 +72,10 @@ public class NetInterfaceSummary extends MetricStatus {
   @JsonProperty(IPValue.Constants.THROUGHPUT_VALUE)
   public double getBps() {
     return bps;
+  }
+
+  public enum Direction {
+    in,
+    out
   }
 }

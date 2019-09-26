@@ -68,6 +68,14 @@ public class AbstractReaderTests extends AbstractTests {
     conn = DriverManager.getConnection(DB_URL);
   }
 
+  static void setFinalStatic(Field field, Object newValue) throws Exception {
+    field.setAccessible(true);
+    Field modifiersField = Field.class.getDeclaredField("modifiers");
+    modifiersField.setAccessible(true);
+    modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+    field.set(null, newValue);
+  }
+
   protected Condition getDimensionEqCondition(
       MetricDimension dimentionHeader, String dimensionName) {
     return DSL.field(dimentionHeader.toString(), String.class).eq(dimensionName);
@@ -136,14 +144,6 @@ public class AbstractReaderTests extends AbstractTests {
     value.append(new NodeDetailsStatus(id, ipAddress).serialize());
 
     return value.toString();
-  }
-
-  static void setFinalStatic(Field field, Object newValue) throws Exception {
-    field.setAccessible(true);
-    Field modifiersField = Field.class.getDeclaredField("modifiers");
-    modifiersField.setAccessible(true);
-    modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-    field.set(null, newValue);
   }
 
   public static class MasterPendingStatus extends MetricStatus {

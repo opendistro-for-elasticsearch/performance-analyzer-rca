@@ -31,14 +31,14 @@ public abstract class FileHandler {
 
   private String rootLocation;
 
+  FileHandler() {
+    this.rootLocation = PerformanceAnalyzerMetrics.sDevShmLocation;
+  }
+
   // find all relevant files for a metric
   public abstract List<File> findFiles4Metric(long timeBucket);
 
   public abstract List<Event> getMetricData(Map<String, List<Event>> metricDataMap);
-
-  FileHandler() {
-    this.rootLocation = PerformanceAnalyzerMetrics.sDevShmLocation;
-  }
 
   public String[] processExtraDimensions(File file) throws IOException {
     if (filePathRegex().isEmpty()) {

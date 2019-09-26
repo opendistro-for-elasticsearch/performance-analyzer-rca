@@ -26,13 +26,12 @@ import org.apache.logging.log4j.message.ParameterizedMessage;
 import org.apache.logging.log4j.util.Supplier;
 
 public class OSGlobals {
-  private static long scClkTck;
-  private static String pid;
   private static final String CLK_TCK_SYS_PROPERTY_NAME = "clk.tck";
-
   private static final Logger LOGGER = LogManager.getLogger(OSGlobals.class);
   private static final long REFRESH_INTERVAL_MS =
       MetricsConfiguration.CONFIG_MAP.get(OSGlobals.class).samplingInterval;
+  private static long scClkTck;
+  private static String pid;
   private static List<String> tids = new ArrayList<>();
   private static long lastUpdated = -1;
 

@@ -31,15 +31,6 @@ import org.apache.logging.log4j.Logger;
 
 public class SchemaFileParser {
   private static final Logger LOGGER = LogManager.getLogger(SchemaFileParser.class);
-
-  public enum FieldTypes {
-    INT,
-    STRING,
-    CHAR,
-    ULONG,
-    DOUBLE;
-  }
-
   private String filename = null;
   private String[] keys = null;
   private FieldTypes[] types = null;
@@ -130,7 +121,7 @@ public class SchemaFileParser {
   public Map<String, Object> parse() {
     Map<String, Object> map = new HashMap<>();
     try (FileReader fileReader = new FileReader(new File(filename));
-        BufferedReader bufferedReader = new BufferedReader(fileReader); ) {
+        BufferedReader bufferedReader = new BufferedReader(fileReader)) {
       String line = bufferedReader.readLine();
       if (line == null) {
         return map;
@@ -154,7 +145,7 @@ public class SchemaFileParser {
   public List<Map<String, Object>> parseMultiple() {
     List<Map<String, Object>> mapList = new ArrayList<>();
     try (FileReader fileReader = new FileReader(new File(filename));
-        BufferedReader bufferedReader = new BufferedReader(fileReader); ) {
+        BufferedReader bufferedReader = new BufferedReader(fileReader)) {
       String line;
       while ((line = bufferedReader.readLine()) != null) {
         Map<String, Object> map = new HashMap<>();
@@ -171,5 +162,13 @@ public class SchemaFileParser {
       StatsCollector.instance().logException(StatExceptionCode.SCHEMA_PARSER_ERROR);
     }
     return mapList;
+  }
+
+  public enum FieldTypes {
+    INT,
+    STRING,
+    CHAR,
+    ULONG,
+    DOUBLE
   }
 }

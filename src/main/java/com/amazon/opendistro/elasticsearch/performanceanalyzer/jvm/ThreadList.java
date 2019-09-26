@@ -40,68 +40,19 @@ import sun.tools.attach.HotSpotVirtualMachine;
 
 /** Traverses and prints the stack traces for all Java threads in the remote VM */
 public class ThreadList {
+  static final Logger LOGGER = LogManager.getLogger(ThreadList.class);
+  static final int samplingInterval =
+      MetricsConfiguration.CONFIG_MAP.get(ThreadList.class).samplingInterval;
   private static final Map<Long, String> jTidNameMap = new ConcurrentHashMap<>();
   private static final Map<Long, ThreadState> nativeTidMap = new ConcurrentHashMap<>();
   private static final Map<Long, ThreadState> oldNativeTidMap = new ConcurrentHashMap<>();
   private static final Map<Long, ThreadState> jTidMap = new ConcurrentHashMap<>();
   private static final Map<String, ThreadState> nameMap = new ConcurrentHashMap<>();
   private static final String pid = OSMetricsGeneratorFactory.getInstance().getPid();
-  static final Logger LOGGER = LogManager.getLogger(ThreadList.class);
-  static final int samplingInterval =
-      MetricsConfiguration.CONFIG_MAP.get(ThreadList.class).samplingInterval;
   private static final long minRunInterval = samplingInterval;
   private static final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
   private static final Pattern linePattern = Pattern.compile("\"([^\"]*)\"");
   private static long lastRunTime = 0;
-
-  public static class ThreadState {
-    public long javaTid;
-    public long nativeTid;
-    public long heapUsage;
-    public String threadName;
-    public String tState;
-    public Thread.State state;
-    public long blockedCount;
-    public long blockedTime;
-
-    public double heapAllocRate;
-    public double avgBlockedTime;
-
-    ThreadState() {
-      javaTid = -1;
-      nativeTid = -1;
-      heapUsage = -1;
-      heapAllocRate = 0;
-      blockedCount = 0;
-      blockedTime = 0;
-      avgBlockedTime = 0;
-      threadName = "";
-      tState = "";
-    }
-
-    @Override
-    public String toString() {
-      return new StringBuilder()
-          .append("javatid:")
-          .append(javaTid)
-          .append(" nativetid:")
-          .append(nativeTid)
-          .append(" name:")
-          .append(threadName)
-          .append(" state:")
-          .append(tState)
-          .append("(")
-          .append(state)
-          .append(")")
-          .append(" heaprate: ")
-          .append(heapAllocRate)
-          .append(" bTime: ")
-          .append(avgBlockedTime)
-          .append(":")
-          .append(blockedCount)
-          .toString();
-    }
-  }
 
   public static Map<Long, ThreadState> getNativeTidMap() {
     synchronized (ThreadList.class) {
@@ -150,7 +101,7 @@ public class ThreadList {
       return;
     }
 
-    try (InputStream in = ((HotSpotVirtualMachine) vm).remoteDataDump((Object[]) args); ) {
+    try (InputStream in = ((HotSpotVirtualMachine) vm).remoteDataDump(args)) {
       createMap(in);
     } catch (Exception ex) {
       LOGGER.debug(
@@ -278,10 +229,59 @@ public class ThreadList {
     }
   }
 
+  public static class ThreadState {
+    public long javaTid;
+    public long nativeTid;
+    public long heapUsage;
+    public String threadName;
+    public String tState;
+    public Thread.State state;
+    public long blockedCount;
+    public long blockedTime;
+
+    public double heapAllocRate;
+    public double avgBlockedTime;
+
+    ThreadState() {
+      javaTid = -1;
+      nativeTid = -1;
+      heapUsage = -1;
+      heapAllocRate = 0;
+      blockedCount = 0;
+      blockedTime = 0;
+      avgBlockedTime = 0;
+      threadName = "";
+      tState = "";
+    }
+
+    @Override
+    public String toString() {
+      return new StringBuilder()
+          .append("javatid:")
+          .append(javaTid)
+          .append(" nativetid:")
+          .append(nativeTid)
+          .append(" name:")
+          .append(threadName)
+          .append(" state:")
+          .append(tState)
+          .append("(")
+          .append(state)
+          .append(")")
+          .append(" heaprate: ")
+          .append(heapAllocRate)
+          .append(" bTime: ")
+          .append(avgBlockedTime)
+          .append(":")
+          .append(blockedCount)
+          .toString();
+    }
+  }
+
   // currently stores thread states to track locking periods
   static class ThreadHistory {
-    public static Map<Long, CircularLongArray> tidHistoryMap = new HashMap<>();
     private static final int HISTORY_SIZE = 60; // 60 * samplingInterval
+    public static Map<Long, CircularLongArray> tidHistoryMap = new HashMap<>();
 
     public static void add(long tid, long value) {
       CircularLongArray arr = tidHistoryMap.get(tid);
@@ -311,8 +311,8 @@ public class ThreadList {
   // models a fixed-capacity queue that is append-only
   // not thread-safe
   static class CircularLongArray {
-    ArrayList<Long> list = null;
     public long lastWriteTimestamp;
+    ArrayList<Long> list = null;
     private long totalValue;
     private int startidx;
     private int capacity;

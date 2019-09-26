@@ -25,9 +25,9 @@ import org.apache.logging.log4j.Logger;
 
 public class ScheduledMetricCollectorsExecutor extends Thread {
   private static final Logger LOG = LogManager.getLogger(ScheduledMetricCollectorsExecutor.class);
-  private final int collectorThreadCount;
   private static final int DEFAULT_COLLECTOR_THREAD_COUNT = 5;
   private static final int COLLECTOR_THREAD_KEEPALIVE_SECS = 1000;
+  private final int collectorThreadCount;
   private final boolean checkFeatureDisabledFlag;
   private boolean paEnabled = false;
 

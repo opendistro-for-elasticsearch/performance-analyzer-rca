@@ -17,14 +17,11 @@ import org.apache.logging.log4j.Logger;
  * de-serialize the bytes it has read from disk.
  */
 public class EventLog {
-  private int metricLocPathLength;
   private static final Logger LOG = LogManager.getLogger(EventLog.class);
-
   private static final char startMarker = '^';
   private static final char endMarker = '$';
-
   private static final char[] separator = System.lineSeparator().toCharArray();
-
+  private int metricLocPathLength;
   private Ret ret;
 
   public EventLog() {
@@ -42,84 +39,6 @@ public class EventLog {
 
     // This accounts for the '/' characters at the end of the /dev/shm and after the time.
     metricLocPathLength += 2;
-  }
-
-  public byte[] write(Event metric) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(startMarker)
-        .append(metric.key.substring(metricLocPathLength))
-        .append(separator)
-        .append(metric.value.toCharArray())
-        .append(endMarker)
-        .append(separator);
-    return sb.toString().getBytes();
-  }
-
-  /**
-   * This functions interprets the bytes and creates Event objects from it.
-   *
-   * <p>A non-corrupted byte stream should start with the startMarker. It may not end with the
-   * endmarker based on how much of the actual bytes on the disk we are reading. This iterates
-   * through the bytes and tries to interpret them into Event members. A complete Event object can
-   * be something like this:
-   *
-   * <p>$heap_metrics {"current_time":1566110054768}
-   * {"MemType":"totYoungGC","GC_Collection_Event":1, \ "GC_Collection_Time":6,
-   * "Heap_Committed":-2,"Heap_Init":-2, \ "Heap_Max":-2,"Heap_Used":-2}
-   * {"MemType":"totFullGC","GC_Collection_Event":0,"GC_Collection_Time":0, \
-   * "Heap_Committed":-2,"Heap_Init":-2,"Heap_Max":-2,"Heap_Used":-2}
-   * {"MemType":"PermGen","GC_Collection_Event":-2,"GC_Collection_Time":-2, \
-   * "Heap_Committed":15335424,"Heap_Init":0,"Heap_Max":-1,"Heap_Used":14763104}
-   * {"MemType":"Survivor","GC_Collection_Event":-2, \ "GC_Collection_Time":-2,
-   * "Heap_Committed":11010048, \ "Heap_Init":11010048, "Heap_Max":11010048,"Heap_Used":6224432}
-   * {"MemType":"OldGen","GC_Collection_Event":-2,"GC_Collection_Time":-2, \
-   * "Heap_Committed":179306496,"Heap_Init":179306496, \ "Heap_Max":2863661056, "Heap_Used":16384}
-   * {"MemType":"Eden","GC_Collection_Event":-2,"GC_Collection_Time":-2, \
-   * "Heap_Committed":67108864,"Heap_Init":67108864,"Heap_Max":1409286144, \ "Heap_Used":30305704}
-   * {"MemType":"NonHeap","GC_Collection_Event":-2,"GC_Collection_Time":-2, \
-   * "Heap_Committed":21037056,"Heap_Init":2555904,"Heap_Max":-1, \ "Heap_Used":20207152}
-   * {"MemType":"Heap","GC_Collection_Event":-2,"GC_Collection_Time":-2, \
-   * "Heap_Committed":257425408,"Heap_Init":268435456, \ "Heap_Max":3817865216,
-   * "Heap_Used":36546520} # $heap_metrics {"current_time":1566110055024} {"MemType":"totYoun
-   *
-   * <p>A Event object has three members: key, value and epoch. The serializer does not store the
-   * epoch explicitly and its part of the data. In the above example: The bytes after '$' in the
-   * line, is the key and all the other bytes leading up to '#', but not including it, is the value.
-   * Sometimes the last few bytes in themselves cannot make a complete event object, so the return
-   * also includes the count of unused bytes. The sender is supposed to send them again, in the next
-   * iteration.
-   *
-   * <p>One corner case is, when the entirety of the bytes cannot create one Event object. This can
-   * happen when the value is too large to fit in the buffer. In this case, the de-serialize sends
-   * an empty list, The sender then has to read in more bytes and send it again. Sender essentially
-   * has to increase the buffer size.
-   *
-   * @param byteBuffer The raw bytes in the file.
-   * @return List of Event objects.
-   */
-  void read(final ByteBuffer byteBuffer, EventDispatcher processor) {
-    if (ret == null) {
-      ret = new Ret(new char[byteBuffer.limit()]);
-    }
-
-    while (byteBuffer.hasRemaining()) {
-      char b = (char) byteBuffer.get();
-      ret = processByte(b, ret, processor);
-    }
-  }
-
-  static class Ret {
-    String key;
-    String value;
-    int byteIdx;
-    char[] bytes;
-
-    Ret(char[] bytes) {
-      this.key = "";
-      this.value = "";
-      this.byteIdx = 0;
-      this.bytes = bytes;
-    }
   }
 
   private static Ret processByte(char b, Ret arg, EventDispatcher processor) {
@@ -218,7 +137,85 @@ public class EventLog {
     return arg;
   }
 
+  public byte[] write(Event metric) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(startMarker)
+        .append(metric.key.substring(metricLocPathLength))
+        .append(separator)
+        .append(metric.value.toCharArray())
+        .append(endMarker)
+        .append(separator);
+    return sb.toString().getBytes();
+  }
+
+  /**
+   * This functions interprets the bytes and creates Event objects from it.
+   *
+   * <p>A non-corrupted byte stream should start with the startMarker. It may not end with the
+   * endmarker based on how much of the actual bytes on the disk we are reading. This iterates
+   * through the bytes and tries to interpret them into Event members. A complete Event object can
+   * be something like this:
+   *
+   * <p>$heap_metrics {"current_time":1566110054768}
+   * {"MemType":"totYoungGC","GC_Collection_Event":1, \ "GC_Collection_Time":6,
+   * "Heap_Committed":-2,"Heap_Init":-2, \ "Heap_Max":-2,"Heap_Used":-2}
+   * {"MemType":"totFullGC","GC_Collection_Event":0,"GC_Collection_Time":0, \
+   * "Heap_Committed":-2,"Heap_Init":-2,"Heap_Max":-2,"Heap_Used":-2}
+   * {"MemType":"PermGen","GC_Collection_Event":-2,"GC_Collection_Time":-2, \
+   * "Heap_Committed":15335424,"Heap_Init":0,"Heap_Max":-1,"Heap_Used":14763104}
+   * {"MemType":"Survivor","GC_Collection_Event":-2, \ "GC_Collection_Time":-2,
+   * "Heap_Committed":11010048, \ "Heap_Init":11010048, "Heap_Max":11010048,"Heap_Used":6224432}
+   * {"MemType":"OldGen","GC_Collection_Event":-2,"GC_Collection_Time":-2, \
+   * "Heap_Committed":179306496,"Heap_Init":179306496, \ "Heap_Max":2863661056, "Heap_Used":16384}
+   * {"MemType":"Eden","GC_Collection_Event":-2,"GC_Collection_Time":-2, \
+   * "Heap_Committed":67108864,"Heap_Init":67108864,"Heap_Max":1409286144, \ "Heap_Used":30305704}
+   * {"MemType":"NonHeap","GC_Collection_Event":-2,"GC_Collection_Time":-2, \
+   * "Heap_Committed":21037056,"Heap_Init":2555904,"Heap_Max":-1, \ "Heap_Used":20207152}
+   * {"MemType":"Heap","GC_Collection_Event":-2,"GC_Collection_Time":-2, \
+   * "Heap_Committed":257425408,"Heap_Init":268435456, \ "Heap_Max":3817865216,
+   * "Heap_Used":36546520} # $heap_metrics {"current_time":1566110055024} {"MemType":"totYoun
+   *
+   * <p>A Event object has three members: key, value and epoch. The serializer does not store the
+   * epoch explicitly and its part of the data. In the above example: The bytes after '$' in the
+   * line, is the key and all the other bytes leading up to '#', but not including it, is the value.
+   * Sometimes the last few bytes in themselves cannot make a complete event object, so the return
+   * also includes the count of unused bytes. The sender is supposed to send them again, in the next
+   * iteration.
+   *
+   * <p>One corner case is, when the entirety of the bytes cannot create one Event object. This can
+   * happen when the value is too large to fit in the buffer. In this case, the de-serialize sends
+   * an empty list, The sender then has to read in more bytes and send it again. Sender essentially
+   * has to increase the buffer size.
+   *
+   * @param byteBuffer The raw bytes in the file.
+   * @return List of Event objects.
+   */
+  void read(final ByteBuffer byteBuffer, EventDispatcher processor) {
+    if (ret == null) {
+      ret = new Ret(new char[byteBuffer.limit()]);
+    }
+
+    while (byteBuffer.hasRemaining()) {
+      char b = (char) byteBuffer.get();
+      ret = processByte(b, ret, processor);
+    }
+  }
+
   public void clear() {
     ret = null;
+  }
+
+  static class Ret {
+    String key;
+    String value;
+    int byteIdx;
+    char[] bytes;
+
+    Ret(char[] bytes) {
+      this.key = "";
+      this.value = "";
+      this.byteIdx = 0;
+      this.bytes = bytes;
+    }
   }
 }

@@ -48,12 +48,9 @@ public class RequestEventProcessor implements EventProcessor {
 
   @Override
   public boolean shouldProcessEvent(Event event) {
-    if (event.key.contains(PerformanceAnalyzerMetrics.sShardBulkPath)
+    return event.key.contains(PerformanceAnalyzerMetrics.sShardBulkPath)
         || event.key.contains(PerformanceAnalyzerMetrics.sShardFetchPath)
-        || event.key.contains(PerformanceAnalyzerMetrics.sShardQueryPath)) {
-      return true;
-    }
-    return false;
+        || event.key.contains(PerformanceAnalyzerMetrics.sShardQueryPath);
   }
 
   public void initializeProcessing(long startTime, long endTime) {

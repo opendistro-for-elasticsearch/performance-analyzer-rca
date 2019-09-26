@@ -41,15 +41,15 @@ class CachedStats {
               ShardStatsValue.MERGE_TIME.toString()));
   private Map<String, Long> cachedValues = new HashMap<>();
 
+  static Set<String> getCachableValues() {
+    return CACHABLE_VALUES;
+  }
+
   long getValue(String statsName) {
     return cachedValues.getOrDefault(statsName, 0L);
   }
 
   void putValue(String statsName, long value) {
     cachedValues.put(statsName, value);
-  }
-
-  static Set<String> getCachableValues() {
-    return CACHABLE_VALUES;
   }
 }

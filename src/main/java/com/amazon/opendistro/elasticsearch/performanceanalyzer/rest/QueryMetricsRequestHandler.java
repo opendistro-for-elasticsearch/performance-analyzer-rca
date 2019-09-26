@@ -162,10 +162,7 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
   }
 
   private boolean isUnitLookUp(HttpExchange exchange) throws IOException {
-    if (exchange.getRequestURI().toString().equals(Util.QUERY_URL + "/units")) {
-      return true;
-    }
-    return false;
+    return exchange.getRequestURI().toString().equals(Util.QUERY_URL + "/units");
   }
 
   private void getMetricUnits(HttpExchange exchange) throws IOException {

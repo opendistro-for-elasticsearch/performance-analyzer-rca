@@ -25,18 +25,8 @@ import org.apache.logging.log4j.message.ParameterizedMessage;
 import org.apache.logging.log4j.util.Supplier;
 
 public final class ThreadCPU {
-  private static final Logger LOGGER = LogManager.getLogger(ThreadCPU.class);
   public static final ThreadCPU INSTANCE = new ThreadCPU();
-  private long scClkTck = 0;
-  private String pid = null;
-  private List<String> tids = null;
-  private Map<String, Map<String, Object>> tidKVMap = new HashMap<>();
-  private Map<String, Map<String, Object>> oldtidKVMap = new HashMap<>();
-  private long kvTimestamp = 0;
-  private long oldkvTimestamp = 0;
-  private LinuxCPUPagingActivityGenerator cpuPagingActivityMap =
-      new LinuxCPUPagingActivityGenerator();
-
+  private static final Logger LOGGER = LogManager.getLogger(ThreadCPU.class);
   // these two arrays map 1-1
   private static String[] statKeys = {
     "pid",
@@ -85,7 +75,6 @@ public final class ThreadCPU {
     "cvmtime"
     // more that we ignore
   };
-
   private static SchemaFileParser.FieldTypes[] statTypes = {
     SchemaFileParser.FieldTypes.INT,
     SchemaFileParser.FieldTypes.STRING,
@@ -132,6 +121,15 @@ public final class ThreadCPU {
     SchemaFileParser.FieldTypes.INT,
     SchemaFileParser.FieldTypes.INT
   };
+  private long scClkTck = 0;
+  private String pid = null;
+  private List<String> tids = null;
+  private Map<String, Map<String, Object>> tidKVMap = new HashMap<>();
+  private Map<String, Map<String, Object>> oldtidKVMap = new HashMap<>();
+  private long kvTimestamp = 0;
+  private long oldkvTimestamp = 0;
+  private LinuxCPUPagingActivityGenerator cpuPagingActivityMap =
+      new LinuxCPUPagingActivityGenerator();
 
   private ThreadCPU() {
     try {

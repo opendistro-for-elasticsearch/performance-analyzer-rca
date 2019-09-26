@@ -46,10 +46,8 @@ import org.jooq.Field;
 import org.jooq.impl.DSL;
 
 public class MetricProperties {
-  private static final Logger LOG = LogManager.getLogger(MetricProperties.class);
-
   public static final MetricDimension[] EMPTY_DIMENSION = new MetricDimension[] {};
-
+  private static final Logger LOG = LogManager.getLogger(MetricProperties.class);
   private FileHandler handler;
   // dimensions inferred else where (e.g., index name in file path).
   // The order should match the grouping parts in filePathRegex. For example,
@@ -57,28 +55,14 @@ public class MetricProperties {
   // element of derivedDimension should be index name and the 2nd element
   // should be shard id.
   private MetricDimension[] derivedDimension;
-
-  int getDirectDimensionsSize() {
-    return directDimensions.length;
-  }
-
   private MetricDimension[] directDimensions;
-
-  public int getMetadataSize() {
-    return metadata.length;
-  }
-
   private MetricValue[] metadata;
-
   // a list of dimension names
   private List<String> dimensionNames;
-
   // a list of dimension fields derived from dimensionNames
   private List<Field<String>> dimensionFields;
-
   // map from table prefix name to a list of metadata fields
   private List<Field<Double>> metadataFields;
-
   // We have 1 table for every metadata in the disk database. This list stores
   // table names for each metadata in metadata in order. Usually, we use
   // metadata name for table name. But it is possible we use the same medatada
@@ -87,13 +71,10 @@ public class MetricProperties {
   // We make it configurable on our end, so that we don't run into this
   // issue.
   private List<String> metadataTableNames;
-
   // disk db table name -> fields in select from memory db table to get
   // contents for the disk db table
   private Map<String, List<Field<?>>> inMemoryTableSelectFieldsMap = new HashMap<>();
-
   private Map<String, List<Field<String>>> inMemoryTableGroupByFieldsMap = new HashMap<>();
-
   private Map<String, Condition> inMemoryTableWhereClauseMap = new HashMap<>();
 
   public MetricProperties(
@@ -129,6 +110,14 @@ public class MetricProperties {
     this(EMPTY_DIMENSION, dimensions, values, handler);
   }
 
+  int getDirectDimensionsSize() {
+    return directDimensions.length;
+  }
+
+  public int getMetadataSize() {
+    return metadata.length;
+  }
+
   public List<Field<Double>> getMetricFields() {
     return metadataFields;
   }
@@ -137,13 +126,13 @@ public class MetricProperties {
     return dimensionFields;
   }
 
+  FileHandler getHandler() {
+    return handler;
+  }
+
   @VisibleForTesting
   void setHandler(FileHandler handler) {
     this.handler = handler;
-  }
-
-  FileHandler getHandler() {
-    return handler;
   }
 
   boolean processMetrics(
@@ -381,7 +370,7 @@ public class MetricProperties {
    */
   private void customizeMetricTableName(Map<String, String> tableName) {
     for (int i = 0; i < metadataTableNames.size(); i++) {
-      String metricName = metadataTableNames.get(i).toString();
+      String metricName = metadataTableNames.get(i);
       if (tableName.containsKey(metricName)) {
         metadataTableNames.set(i, tableName.get(metricName));
       }

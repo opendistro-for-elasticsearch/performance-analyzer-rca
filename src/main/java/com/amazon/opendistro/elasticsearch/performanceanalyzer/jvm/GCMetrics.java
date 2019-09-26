@@ -21,19 +21,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class GCMetrics {
+  private static final Logger LOGGER = LogManager.getLogger(GCMetrics.class);
   private static GarbageCollectorMXBean fullGC = null;
   private static GarbageCollectorMXBean youngGC = null;
-
   private static long totYoungGCCollectionCount = 0;
   private static long totYoungGCCollectionTime = 0;
   private static long totFullGCCollectionCount = 0;
   private static long totFullGCCollectionTime = 0;
-
   private static long lastYoungGCCollectionCount = 0;
   private static long lastYoungGCCollectionTime = 0;
   private static long lastFullGCCollectionCount = 0;
   private static long lastFullGCCollectionTime = 0;
-  private static final Logger LOGGER = LogManager.getLogger(GCMetrics.class);
 
   static {
     for (GarbageCollectorMXBean item : ManagementFactory.getGarbageCollectorMXBeans()) {

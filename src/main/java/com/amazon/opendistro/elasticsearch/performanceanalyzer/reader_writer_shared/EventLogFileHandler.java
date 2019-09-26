@@ -21,11 +21,10 @@ import org.apache.logging.log4j.Logger;
 
 public class EventLogFileHandler {
   private static final Logger LOG = LogManager.getLogger(EventLogFileHandler.class);
-
-  private final EventLog eventLog;
-  private final String metricsLocation;
   private static final int BUFFER_SIZE = 8192;
   private static final String TMP_FILE_EXT = ".tmp";
+  private final EventLog eventLog;
+  private final String metricsLocation;
   private long lastProcessed;
 
   public EventLogFileHandler(EventLog eventLog, String metricsLocation) {

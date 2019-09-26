@@ -50,6 +50,39 @@ public class MetricsParser {
     return PerformanceAnalyzerMetrics.getTimeInterval(startTime);
   }
 
+  private static Map<String, String> extrackKeyValFromData(String osMetricsData) {
+    String[] lines = osMetricsData.split(System.lineSeparator());
+    Map<String, String> osMetricsKeyValPairs = new HashMap<>();
+    for (String line : lines) {
+      String[] pair = line.split(PerformanceAnalyzerMetrics.sKeyValueDelimitor);
+      osMetricsKeyValPairs.put(pair[0], pair[1]);
+    }
+    return osMetricsKeyValPairs;
+  }
+
+  /**
+   * An example value is this: current_time:1566413987194 StartTime:1566413987194 ItemCount:359
+   * IndexName:nyc_taxis ShardID:25 Primary:true Each pair is separated by new line and the key and
+   * value within each pair is separated by ":" This function just parses the string and generates
+   * the map as such.
+   *
+   * @param eventValue The value input to the helper function.
+   * @return Returns a map of key value pairs
+   */
+  static Map<String, String> extractEntryData(String eventValue) {
+    String[] lines = eventValue.split(System.lineSeparator());
+    Map<String, String> keyValueMap = new HashMap<>();
+    for (String line : lines) {
+      String[] pair = line.split(PerformanceAnalyzerMetrics.sKeyValueDelimitor);
+      if (pair.length == 1) {
+        keyValueMap.put(pair[0], "");
+      } else {
+        keyValueMap.put(pair[0], pair[1]);
+      }
+    }
+    return keyValueMap;
+  }
+
   public void parseOSMetrics(
       String rootLocation, long startTime, long endTime, OSMetricsSnapshot osMetricsSnap)
       throws Exception {
@@ -130,7 +163,6 @@ public class MetricsParser {
       }
     }
     LOG.info("processOSMetricsForFile ret: {}", retVal);
-    ;
   }
 
   // TODO: change the name. It's no longer an file.
@@ -167,7 +199,6 @@ public class MetricsParser {
       }
     }
     LOG.info("processOSMetricsForFile ret: {}", retVal);
-    ;
   }
 
   public void parseRequestMetrics(
@@ -432,6 +463,10 @@ public class MetricsParser {
     handle.bind(threadId, insertOrder, null, null, null, null, null, finishTime);
   }
 
+  // TODO: As everything is now dumped in 1 single file per 5 seconds. We can check the last
+  // modified time
+  //  condition right at the start instead of in each process<XYZ> method.
+
   private void emitStartHttpMetric(
       File metricFile, String rid, String operation, BatchBindStep handle) {
 
@@ -486,22 +521,6 @@ public class MetricsParser {
       StatsCollector.instance().logException(StatExceptionCode.READER_PARSER_ERROR);
       throw e;
     }
-  }
-
-  
-
-  // TODO: As everything is now dumped in 1 single file per 5 seconds. We can check the last
-  // modified time
-  //  condition right at the start instead of in each process<XYZ> method.
-
-  private static Map<String, String> extrackKeyValFromData(String osMetricsData) {
-    String[] lines = osMetricsData.split(System.lineSeparator());
-    Map<String, String> osMetricsKeyValPairs = new HashMap<>();
-    for (String line : lines) {
-      String[] pair = line.split(PerformanceAnalyzerMetrics.sKeyValueDelimitor);
-      osMetricsKeyValPairs.put(pair[0], pair[1]);
-    }
-    return osMetricsKeyValPairs;
   }
 
   private boolean processOSMetrics(
@@ -737,28 +756,5 @@ public class MetricsParser {
         StatsCollector.instance().logException(StatExceptionCode.READER_PARSER_ERROR);
       }
     }
-  }
-
-  /**
-   * An example value is this: current_time:1566413987194 StartTime:1566413987194 ItemCount:359
-   * IndexName:nyc_taxis ShardID:25 Primary:true Each pair is separated by new line and the key and
-   * value within each pair is separated by ":" This function just parses the string and generates
-   * the map as such.
-   *
-   * @param eventValue The value input to the helper function.
-   * @return Returns a map of key value pairs
-   */
-  static Map<String, String> extractEntryData(String eventValue) {
-    String[] lines = eventValue.split(System.lineSeparator());
-    Map<String, String> keyValueMap = new HashMap<>();
-    for (String line : lines) {
-      String[] pair = line.split(PerformanceAnalyzerMetrics.sKeyValueDelimitor);
-      if (pair.length == 1) {
-        keyValueMap.put(pair[0], "");
-      } else {
-        keyValueMap.put(pair[0], pair[1]);
-      }
-    }
-    return keyValueMap;
   }
 }
