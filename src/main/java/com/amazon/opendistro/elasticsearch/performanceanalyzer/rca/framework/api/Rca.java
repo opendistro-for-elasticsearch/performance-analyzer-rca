@@ -4,7 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 
 public abstract class Rca extends NonLeafNode {
 
-    public Rca(long evaluationIntervalMins) {
-        super(0, evaluationIntervalMins);
-    }
+  public Rca(long evaluationIntervalMins) {
+    super(0, evaluationIntervalMins);
+  }
 }

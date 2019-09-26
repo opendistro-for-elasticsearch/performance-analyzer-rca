@@ -4,8 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class DocValues_Memory extends Metric {
-    public DocValues_Memory(long evaluationIntervalSeconds) {
-        super(AllMetrics.ShardStatsValue.DOC_VALUES_MEMORY.name(), evaluationIntervalSeconds);
-    }
+  public DocValues_Memory(long evaluationIntervalSeconds) {
+    super(AllMetrics.ShardStatsValue.DOC_VALUES_MEMORY.name(), evaluationIntervalSeconds);
+  }
 }
-

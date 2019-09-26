@@ -4,8 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class CB_EstimatedSize extends Metric {
-    public CB_EstimatedSize(long evaluationIntervalSeconds) {
-        super(AllMetrics.CircuitBreakerValue.CB_ESTIMATED_SIZE.name(), evaluationIntervalSeconds);
-    }
+  public CB_EstimatedSize(long evaluationIntervalSeconds) {
+    super(AllMetrics.CircuitBreakerValue.CB_ESTIMATED_SIZE.name(), evaluationIntervalSeconds);
+  }
 }
-

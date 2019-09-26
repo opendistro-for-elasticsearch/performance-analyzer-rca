@@ -22,9 +22,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -36,122 +33,133 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
- * This is the top level class for the RCA Scheduler. This initializes all the required objects such as the
- * AnalysisGraph framework, the Queryable instance to get data from MetricsDB, the Persistable instance to dump the
- * results of an RCA into a data store. This then creates an instance of the newScheduledThreadPool so that the Rcas
- * are evaluated with a periodicity. The newScheduledThreadPool takes an instance of RCASchedulerTask which is a
- * wrapper to execute the actual Graph nodes. RCASchedulerTask has its own thread pool which is used to execute the
+ * This is the top level class for the RCA Scheduler. This initializes all the required objects such
+ * as the AnalysisGraph framework, the Queryable instance to get data from MetricsDB, the
+ * Persistable instance to dump the results of an RCA into a data store. This then creates an
+ * instance of the newScheduledThreadPool so that the Rcas are evaluated with a periodicity. The
+ * newScheduledThreadPool takes an instance of RCASchedulerTask which is a wrapper to execute the
+ * actual Graph nodes. RCASchedulerTask has its own thread pool which is used to execute the
  * Analysis graph nodes in parallel.
  */
 public class RCAScheduler {
 
-    private final WireHopper net;
-    private boolean shutdownRequested;
-    final ThreadFactory schedThreadFactory = new ThreadFactoryBuilder()
-            .setNameFormat("sched-%d")
-            .setDaemon(true)
-            .build();
-    ScheduledExecutorService scheduledPool = Executors.newScheduledThreadPool(1, schedThreadFactory);
+  static final int PERIODICITY_SECONDS = 1;
+  private static final Logger LOG = LogManager.getLogger(RCAScheduler.class);
+  final ThreadFactory schedThreadFactory =
+      new ThreadFactoryBuilder().setNameFormat("sched-%d").setDaemon(true).build();
+  // TODO: Fix number of threads based on config.
+  final ThreadFactory taskThreadFactory =
+      new ThreadFactoryBuilder().setNameFormat("task-%d-").setDaemon(true).build();
+  private final WireHopper net;
+  ScheduledExecutorService scheduledPool = Executors.newScheduledThreadPool(1, schedThreadFactory);
+  ExecutorService executorPool = Executors.newFixedThreadPool(2, taskThreadFactory);
+  List<ConnectedComponent> connectedComponents;
+  Queryable db;
+  RcaConf rcaConf;
+  ThresholdMain thresholdMain;
+  Persistable persistable;
+  ScheduledFuture<?> futureHandle;
+  private boolean shutdownRequested;
 
-    //TODO: Fix number of threads based on config.
-    final ThreadFactory taskThreadFactory = new ThreadFactoryBuilder()
-            .setNameFormat("task-%d-")
-            .setDaemon(true)
-            .build();
-    ExecutorService executorPool = Executors.newFixedThreadPool(2, taskThreadFactory);
+  public RCAScheduler(
+      List<ConnectedComponent> connectedComponents,
+      Queryable db,
+      RcaConf rcaConf,
+      ThresholdMain thresholdMain,
+      Persistable persistable,
+      WireHopper net) {
+    this.connectedComponents = connectedComponents;
+    this.db = db;
+    this.rcaConf = rcaConf;
+    this.thresholdMain = thresholdMain;
+    this.persistable = persistable;
+    this.net = net;
+    this.shutdownRequested = false;
+  }
 
-    List<ConnectedComponent> connectedComponents;
-    Queryable db;
-    RcaConf rcaConf;
-    ThresholdMain thresholdMain;
-    Persistable persistable;
-    static final int PERIODICITY_SECONDS = 1;
-    ScheduledFuture<?> futureHandle;
+  public void start() {
+    // Implement multiple tasks scheduled at different ticks.
+    // Simulation service
+    LOG.info("RCA: Starting RCA scheduler ...........");
+    futureHandle =
+        scheduledPool.scheduleAtFixedRate(
+            new RCASchedulerTask(
+                10000, executorPool, connectedComponents, db, persistable, rcaConf, net),
+            1,
+            PERIODICITY_SECONDS,
+            TimeUnit.SECONDS);
+    startExceptionHandlerThread();
+  }
 
-    private static final Logger LOG = LogManager.getLogger(RCAScheduler.class);
-
-    public RCAScheduler(List<ConnectedComponent> connectedComponents, Queryable db, RcaConf rcaConf,
-                        ThresholdMain thresholdMain, Persistable persistable, WireHopper net) {
-        this.connectedComponents = connectedComponents;
-        this.db = db;
-        this.rcaConf = rcaConf;
-        this.thresholdMain = thresholdMain;
-        this.persistable = persistable;
-        this.net = net;
-        this.shutdownRequested = false;
-    }
-
-    public void start() {
-        //Implement multiple tasks scheduled at different ticks.
-        //Simulation service
-        LOG.info("RCA: Starting RCA scheduler ...........");
-        futureHandle = scheduledPool.scheduleAtFixedRate(
-                new RCASchedulerTask(10000, executorPool, connectedComponents, db, persistable, rcaConf, net),
-                1, PERIODICITY_SECONDS, TimeUnit.SECONDS);
-        startExceptionHandlerThread();
-    }
-
-    // This thread exists for exception handling and error recovery and safe shutdown. This is called from within
-    // the start method. This creates a new thread and waits on the future to complete. If it catches an exception,
-    // then it does a clean shutdown nd logs the shutdown event.
-    private void startExceptionHandlerThread() {
-        new Thread(() -> {
-            while (true) {
+  // This thread exists for exception handling and error recovery and safe shutdown. This is called
+  // from within
+  // the start method. This creates a new thread and waits on the future to complete. If it catches
+  // an exception,
+  // then it does a clean shutdown nd logs the shutdown event.
+  private void startExceptionHandlerThread() {
+    new Thread(
+            () -> {
+              while (true) {
                 try {
-                    futureHandle.get();
-                } catch (RejectedExecutionException|ExecutionException|CancellationException ex) {
-                    if (!shutdownRequested) {
-                        LOG.error("Exception cause : {}", ex.getMessage());
-                        ex.printStackTrace();
-                        shutdown();
-                    }
-                } catch (InterruptedException ix) {
-                    LOG.error("Interrupted exception cause : {}", ix.getMessage());
-                    ix.printStackTrace();
+                  futureHandle.get();
+                } catch (RejectedExecutionException
+                    | ExecutionException
+                    | CancellationException ex) {
+                  if (!shutdownRequested) {
+                    LOG.error("Exception cause : {}", ex.getMessage());
+                    ex.printStackTrace();
                     shutdown();
+                  }
+                } catch (InterruptedException ix) {
+                  LOG.error("Interrupted exception cause : {}", ix.getMessage());
+                  ix.printStackTrace();
+                  shutdown();
                 }
-            }
-        }).start();
-    }
+              }
+            })
+        .start();
+  }
 
-    public void simulate(int totalTicks) {
-        RCASchedulerTask task = new RCASchedulerTask(10000, executorPool, connectedComponents, db, persistable,
-                rcaConf, net);
-        for (int i = 0; i < totalTicks; i++) {
-            task.run();
-        }
+  public void simulate(int totalTicks) {
+    RCASchedulerTask task =
+        new RCASchedulerTask(
+            10000, executorPool, connectedComponents, db, persistable, rcaConf, net);
+    for (int i = 0; i < totalTicks; i++) {
+      task.run();
     }
+  }
 
-    /**
-     * Signal a shutdown on the scheduled pool first and then to the executor pool. Calling a shutdown on them does
-     * not lead to immediate shutdown instead, they stop taking new tasks and wait for the running tasks to complete.
-     * This is where the waitForShutdown is important. We want to wait for all the tasks to end their work before we
-     * close the database connection.
-     */
-    public void shutdown() {
-        shutdownRequested = true;
-        scheduledPool.shutdown();
-        executorPool.shutdown();
-        waitForShutdown(executorPool);
-        try {
-            persistable.close();
-        } catch (SQLException e) {
-            LOG.error("RCA: Error while closing the DB connection: {}::{}",
-                    e.getErrorCode(), e.getCause());
-        }
+  /**
+   * Signal a shutdown on the scheduled pool first and then to the executor pool. Calling a shutdown
+   * on them does not lead to immediate shutdown instead, they stop taking new tasks and wait for
+   * the running tasks to complete. This is where the waitForShutdown is important. We want to wait
+   * for all the tasks to end their work before we close the database connection.
+   */
+  public void shutdown() {
+    shutdownRequested = true;
+    scheduledPool.shutdown();
+    executorPool.shutdown();
+    waitForShutdown(executorPool);
+    try {
+      persistable.close();
+    } catch (SQLException e) {
+      LOG.error(
+          "RCA: Error while closing the DB connection: {}::{}", e.getErrorCode(), e.getCause());
     }
+  }
 
-    private void waitForShutdown(ExecutorService execPool) {
-        try {
-            if (!execPool.awaitTermination(PERIODICITY_SECONDS * 2, TimeUnit.SECONDS)) {
-                execPool.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            LOG.error("RCA: Error in call to shutdownNow. {}", e.getMessage());
-            execPool.shutdownNow();
-        }
+  private void waitForShutdown(ExecutorService execPool) {
+    try {
+      if (!execPool.awaitTermination(PERIODICITY_SECONDS * 2, TimeUnit.SECONDS)) {
+        execPool.shutdownNow();
+      }
+    } catch (InterruptedException e) {
+      LOG.error("RCA: Error in call to shutdownNow. {}", e.getMessage());
+      execPool.shutdownNow();
     }
+  }
 }
-

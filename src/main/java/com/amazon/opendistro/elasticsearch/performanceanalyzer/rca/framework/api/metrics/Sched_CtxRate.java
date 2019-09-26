@@ -4,8 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class Sched_CtxRate extends Metric {
-    public Sched_CtxRate(long evaluationIntervalSeconds) {
-        super(AllMetrics.OSMetrics.SCHED_CTX_RATE.name(), evaluationIntervalSeconds);
-    }
+  public Sched_CtxRate(long evaluationIntervalSeconds) {
+    super(AllMetrics.OSMetrics.SCHED_CTX_RATE.name(), evaluationIntervalSeconds);
+  }
 }
-

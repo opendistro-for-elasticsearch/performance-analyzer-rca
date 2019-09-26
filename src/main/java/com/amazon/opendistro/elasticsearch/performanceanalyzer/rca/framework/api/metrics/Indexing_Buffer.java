@@ -4,8 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class Indexing_Buffer extends Metric {
-    public Indexing_Buffer(long evaluationIntervalSeconds) {
-        super(AllMetrics.ShardStatsValue.INDEXING_BUFFER.name(), evaluationIntervalSeconds);
-    }
+  public Indexing_Buffer(long evaluationIntervalSeconds) {
+    super(AllMetrics.ShardStatsValue.INDEXING_BUFFER.name(), evaluationIntervalSeconds);
+  }
 }
-

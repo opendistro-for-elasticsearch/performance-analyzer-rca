@@ -5,16 +5,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.Data
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
 
 public class WireHopper {
-    public void sendIntent(IntentMsg msg) {
+  public void sendIntent(IntentMsg msg) {}
 
-    }
+  public void sendData(DataMsg dataMsg) {}
 
-    public void sendData(DataMsg dataMsg) {
-
-    }
-
-    public FlowUnit readFromWire(String nodeName) {
-        // TODO Needs to be filled. Currently just sending empty flowUnit.
-        return FlowUnit.generic();
-    }
+  public FlowUnit readFromWire(String nodeName) {
+    // TODO Needs to be filled. Currently just sending empty flowUnit.
+    return FlowUnit.generic();
+  }
 }

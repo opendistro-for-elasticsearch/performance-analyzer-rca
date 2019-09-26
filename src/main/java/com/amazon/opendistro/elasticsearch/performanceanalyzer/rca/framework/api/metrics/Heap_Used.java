@@ -4,8 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class Heap_Used extends Metric {
-    public Heap_Used(long evaluationIntervalSeconds) {
-        super(AllMetrics.HeapValue.HEAP_USED.name(), evaluationIntervalSeconds);
-    }
+  public Heap_Used(long evaluationIntervalSeconds) {
+    super(AllMetrics.HeapValue.HEAP_USED.name(), evaluationIntervalSeconds);
+  }
 }
-

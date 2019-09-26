@@ -4,8 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class Latency extends Metric {
-    public Latency(long evaluationIntervalSeconds) {
-        super(AllMetrics.ShardBulkMetric.LATENCY.name(), evaluationIntervalSeconds);
-    }
+  public Latency(long evaluationIntervalSeconds) {
+    super(AllMetrics.ShardBulkMetric.LATENCY.name(), evaluationIntervalSeconds);
+  }
 }
-

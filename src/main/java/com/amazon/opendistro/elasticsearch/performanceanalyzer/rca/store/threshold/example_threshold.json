@@ -16,5 +16,9 @@
     }
   },
   "default": "value6",
-  "override-precedence-order" : ["domain", "disk", "instance-type"]
+  "override-precedence-order": [
+    "domain",
+    "disk",
+    "instance-type"
+  ]
 }

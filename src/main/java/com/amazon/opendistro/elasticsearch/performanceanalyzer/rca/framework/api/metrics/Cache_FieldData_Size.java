@@ -4,8 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class Cache_FieldData_Size extends Metric {
-    public Cache_FieldData_Size(long evaluationIntervalSeconds) {
-        super(AllMetrics.ShardStatsValue.CACHE_FIELDDATA_SIZE.name(), evaluationIntervalSeconds);
-    }
+  public Cache_FieldData_Size(long evaluationIntervalSeconds) {
+    super(AllMetrics.ShardStatsValue.CACHE_FIELDDATA_SIZE.name(), evaluationIntervalSeconds);
+  }
 }
-

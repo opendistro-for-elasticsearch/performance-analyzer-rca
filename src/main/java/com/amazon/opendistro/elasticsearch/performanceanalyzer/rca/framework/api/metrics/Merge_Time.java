@@ -4,8 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class Merge_Time extends Metric {
-    public Merge_Time(long evaluationIntervalSeconds) {
-        super(AllMetrics.ShardStatsValue.MERGE_TIME.name(), evaluationIntervalSeconds);
-    }
+  public Merge_Time(long evaluationIntervalSeconds) {
+    super(AllMetrics.ShardStatsValue.MERGE_TIME.name(), evaluationIntervalSeconds);
+  }
 }
-

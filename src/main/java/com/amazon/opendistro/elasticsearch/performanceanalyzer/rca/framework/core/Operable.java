@@ -1,6 +1,5 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
-
 import java.util.Map;
 
 /*
@@ -9,5 +8,5 @@ import java.util.Map;
  * is list of lists.
  */
 public interface Operable {
-    FlowUnit operate(Map<Class, FlowUnit> dependencies);
+  FlowUnit operate(Map<Class, FlowUnit> dependencies);
 }

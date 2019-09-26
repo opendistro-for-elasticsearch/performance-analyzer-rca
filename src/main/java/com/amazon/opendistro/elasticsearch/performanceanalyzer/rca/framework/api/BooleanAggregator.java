@@ -2,5 +2,4 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Aggregator;
 
-public class BooleanAggregator extends Aggregator {
-}
+public class BooleanAggregator extends Aggregator {}

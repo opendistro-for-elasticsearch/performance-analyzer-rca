@@ -5,42 +5,45 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
-
 import java.util.Map;
 
 public class OperationArgWrapper {
-    private final Node node;
-    private final Queryable queryable;
-    private final Persistable persistable;
-    private final WireHopper wireHopper;
-    Map<Class, FlowUnit> upstreamDependencyMap;
+  private final Node node;
+  private final Queryable queryable;
+  private final Persistable persistable;
+  private final WireHopper wireHopper;
+  Map<Class, FlowUnit> upstreamDependencyMap;
 
-    public Node getNode() {
-        return node;
-    }
+  OperationArgWrapper(
+      Node node,
+      Queryable queryable,
+      Persistable persistable,
+      WireHopper wireHopper,
+      Map<Class, FlowUnit> upstreamDependencyMap) {
+    this.node = node;
+    this.queryable = queryable;
+    this.persistable = persistable;
+    this.wireHopper = wireHopper;
+    this.upstreamDependencyMap = upstreamDependencyMap;
+  }
 
-    public Queryable getQueryable() {
-        return queryable;
-    }
+  public Node getNode() {
+    return node;
+  }
 
-    Persistable getPersistable() {
-        return persistable;
-    }
+  public Queryable getQueryable() {
+    return queryable;
+  }
 
-    Map<Class, FlowUnit> getUpstreamDependencyMap() {
-        return upstreamDependencyMap;
-    }
+  Persistable getPersistable() {
+    return persistable;
+  }
 
-    public WireHopper getWireHopper() {
-        return wireHopper;
-    }
+  Map<Class, FlowUnit> getUpstreamDependencyMap() {
+    return upstreamDependencyMap;
+  }
 
-    OperationArgWrapper(Node node, Queryable queryable, Persistable persistable, WireHopper wireHopper,
-                        Map<Class, FlowUnit> upstreamDependencyMap) {
-        this.node = node;
-        this.queryable = queryable;
-        this.persistable = persistable;
-        this.wireHopper = wireHopper;
-        this.upstreamDependencyMap = upstreamDependencyMap;
-    }
+  public WireHopper getWireHopper() {
+    return wireHopper;
+  }
 }

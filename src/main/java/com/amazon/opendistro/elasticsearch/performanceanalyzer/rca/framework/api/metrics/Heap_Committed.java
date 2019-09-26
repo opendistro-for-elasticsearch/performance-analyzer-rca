@@ -4,8 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class Heap_Committed extends Metric {
-    public Heap_Committed(long evaluationIntervalSeconds) {
-        super(AllMetrics.HeapValue.HEAP_COMMITTED.name(), evaluationIntervalSeconds);
-    }
+  public Heap_Committed(long evaluationIntervalSeconds) {
+    super(AllMetrics.HeapValue.HEAP_COMMITTED.name(), evaluationIntervalSeconds);
+  }
 }
-

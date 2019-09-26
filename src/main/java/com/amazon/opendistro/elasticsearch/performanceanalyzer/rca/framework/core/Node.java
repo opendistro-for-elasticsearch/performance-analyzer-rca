@@ -7,87 +7,83 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class Node {
-    private List<Node> downStreams;
-    protected List<Node> upStreams;
-    private int level;
+  protected List<Node> upStreams;
+  protected long evaluationIntervalSeconds;
+  private List<Node> downStreams;
+  private int level;
+  private int graphId;
+  /**
+   * These are matched against the tags in the rca.conf, to determine if a node is to executed at a
+   * location.
+   */
+  private Map<String, String> tags;
 
-    private int graphId;
+  Node(int level, long evaluationIntervalSeconds) {
+    this.downStreams = new ArrayList<>();
+    this.level = level;
+    this.evaluationIntervalSeconds = evaluationIntervalSeconds;
+    this.tags = new HashMap<>();
+  }
 
-    protected long evaluationIntervalSeconds;
+  void addDownstream(Node downStreamNode) {
+    this.downStreams.add(downStreamNode);
+  }
 
-    /**
-     * These are matched against the tags in the rca.conf, to determine if a node is to executed at a location.
-     */
-    private Map<String, String> tags;
+  int getLevel() {
+    return level;
+  }
 
+  void setLevel(int level) {
+    this.level = level;
+  }
 
-    Node(int level, long evaluationIntervalSeconds) {
-        this.downStreams = new ArrayList<>();
-        this.level = level;
-        this.evaluationIntervalSeconds = evaluationIntervalSeconds;
-        this.tags = new HashMap<>();
+  public int getGraphId() {
+    return graphId;
+  }
+
+  public void setGraphId(int graphId) {
+    this.graphId = graphId;
+  }
+
+  public long getEvaluationIntervalSeconds() {
+    return evaluationIntervalSeconds;
+  }
+
+  int getUpStreamNodesCount() {
+    if (upStreams == null) {
+      return 0;
     }
+    return upStreams.size();
+  }
 
-
-    void addDownstream(Node downStreamNode) {
-        this.downStreams.add(downStreamNode);
+  List<Node> getDownStreams() {
+    if (downStreams == null) {
+      return Collections.emptyList();
     }
+    return Collections.unmodifiableList(downStreams);
+  }
 
-    void setLevel(int level) {
-        this.level = level;
+  public List<Node> getUpstreams() {
+    if (upStreams == null) {
+      return Collections.emptyList();
     }
+    return Collections.unmodifiableList(upStreams);
+  }
 
-    int getLevel() {
-        return level;
-    }
+  public Map<String, String> getTags() {
+    return Collections.unmodifiableMap(tags);
+  }
 
-    public void setGraphId(int graphId) {
-        this.graphId = graphId;
-    }
+  public void addTag(String key, String value) {
+    tags.put(key, value);
+  }
 
-    public int getGraphId() {
-        return graphId;
-    }
+  public String name() {
+    return getClass().getSimpleName();
+  }
 
-    public long getEvaluationIntervalSeconds() {
-        return evaluationIntervalSeconds;
-    }
-
-    int getUpStreamNodesCount() {
-        if (upStreams == null) {
-            return 0;
-        }
-        return upStreams.size();
-    }
-
-    List<Node> getDownStreams() {
-        if (downStreams == null) {
-            return Collections.emptyList();
-        }
-        return Collections.unmodifiableList(downStreams);
-    }
-
-    public List<Node> getUpstreams() {
-        if (upStreams == null) {
-            return Collections.emptyList();
-        }
-        return Collections.unmodifiableList(upStreams);
-    }
-
-    public Map<String, String> getTags() {
-        return Collections.unmodifiableMap(tags);
-    }
-
-    public void addTag(String key, String value) {
-       tags.put(key, value);
-    }
-
-    public String name() {
-        return getClass().getSimpleName();
-    }
-
-    @Override
-    public String toString() {
-        return name();
-    }
+  @Override
+  public String toString() {
+    return name();
+  }
 }
