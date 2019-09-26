@@ -16,19 +16,16 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer;
 
 public final class ConfigStatus {
-    private boolean configMissingOrIncorrect = false;
-    public static final ConfigStatus INSTANCE = new ConfigStatus();
+  private boolean configMissingOrIncorrect = false;
+  public static final ConfigStatus INSTANCE = new ConfigStatus();
 
-    private ConfigStatus() {
-    }
+  private ConfigStatus() {}
 
-    public boolean haveValidConfig() {
-        return !configMissingOrIncorrect;
-    }
+  public boolean haveValidConfig() {
+    return !configMissingOrIncorrect;
+  }
 
-    public void setConfigurationInvalid() {
-        configMissingOrIncorrect = true;
-    }
-
-
+  public void setConfigurationInvalid() {
+    configMissingOrIncorrect = true;
+  }
 }

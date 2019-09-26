@@ -18,9 +18,13 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generato
 import java.util.Set;
 
 public interface DiskMetricsGenerator {
-    Set<String> getAllDisks();
-    double getDiskUtilization(String disk);
-    double getAwait(String disk);
-    double getServiceRate(String disk);
-    void addSample();
+  Set<String> getAllDisks();
+
+  double getDiskUtilization(String disk);
+
+  double getAwait(String disk);
+
+  double getServiceRate(String disk);
+
+  void addSample();
 }
