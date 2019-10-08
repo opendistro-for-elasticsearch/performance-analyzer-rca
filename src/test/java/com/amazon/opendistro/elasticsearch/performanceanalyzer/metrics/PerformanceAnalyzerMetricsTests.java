@@ -48,19 +48,19 @@ public class PerformanceAnalyzerMetricsTests {
     System.setProperty("performanceanalyzer.metrics.log.enabled", "False");
     PerformanceAnalyzerMetrics.emitMetric(
         System.currentTimeMillis(),
-        PerformanceAnalyzerMetrics.sDevShmLocation + "/dir1/test1",
+            PluginSettings.instance().getMetricsLocation() + "/dir1/test1",
         "value1");
     assertEquals(
         "value1",
         PerformanceAnalyzerMetrics.getMetric(
-            PerformanceAnalyzerMetrics.sDevShmLocation + "/dir1/test1"));
+                PluginSettings.instance().getMetricsLocation() + "/dir1/test1"));
 
     assertEquals(
         "",
         PerformanceAnalyzerMetrics.getMetric(
-            PerformanceAnalyzerMetrics.sDevShmLocation + "/dir1/test2"));
+                PluginSettings.instance().getMetricsLocation() + "/dir1/test2"));
 
-    PerformanceAnalyzerMetrics.removeMetrics(PerformanceAnalyzerMetrics.sDevShmLocation + "/dir1");
+    PerformanceAnalyzerMetrics.removeMetrics(PluginSettings.instance().getMetricsLocation() + "/dir1");
   }
 
   // TODO: Turn it on later
@@ -70,7 +70,7 @@ public class PerformanceAnalyzerMetricsTests {
     String generatedPath =
         PerformanceAnalyzerMetrics.generatePath(startTimeInMillis, "dir1", "id", "dir2");
     String expectedPath =
-        PerformanceAnalyzerMetrics.sDevShmLocation
+            PluginSettings.instance().getMetricsLocation()
             + "/"
             + String.valueOf(PerformanceAnalyzerMetrics.getTimeInterval(startTimeInMillis))
             + "/dir1/id/dir2";
