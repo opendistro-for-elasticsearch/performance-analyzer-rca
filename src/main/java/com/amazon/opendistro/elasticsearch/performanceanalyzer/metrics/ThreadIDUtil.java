@@ -18,23 +18,23 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.jvm.ThreadList;
 
 public final class ThreadIDUtil {
-  private ThreadIDUtil() {}
+    private ThreadIDUtil() { }
 
-  public static final ThreadIDUtil INSTANCE = new ThreadIDUtil();
+    public static final ThreadIDUtil INSTANCE = new ThreadIDUtil();
 
-  public long getNativeCurrentThreadId() {
+    public long getNativeCurrentThreadId() {
 
-    return getNativeThreadId(Thread.currentThread().getId());
-  }
-
-  public long getNativeThreadId(long jTid) {
-    ThreadList.ThreadState threadState1 = ThreadList.getThreadState(jTid);
-
-    long nid = -1;
-    if (threadState1 != null) {
-      nid = threadState1.nativeTid;
+        return getNativeThreadId(Thread.currentThread().getId());
     }
 
-    return nid;
-  }
+    public long getNativeThreadId(long jTid) {
+        ThreadList.ThreadState threadState1 = ThreadList.getThreadState(jTid);
+
+        long nid = -1;
+        if (threadState1 != null) {
+            nid = threadState1.nativeTid;
+        }
+
+        return nid;
+    }
 }

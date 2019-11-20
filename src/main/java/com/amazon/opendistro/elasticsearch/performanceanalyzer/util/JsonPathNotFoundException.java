@@ -13,8 +13,9 @@
  * permissions and limitations under the License.
  */
 
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.util;
 
 public class JsonPathNotFoundException extends Exception {
-  public JsonPathNotFoundException() {}
+    public JsonPathNotFoundException() { }
 }

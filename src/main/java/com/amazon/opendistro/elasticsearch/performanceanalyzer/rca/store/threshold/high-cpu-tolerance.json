@@ -1,0 +1,4 @@
+{
+  "name": "high-cpu-tolerance",
+  "default": 90
+}

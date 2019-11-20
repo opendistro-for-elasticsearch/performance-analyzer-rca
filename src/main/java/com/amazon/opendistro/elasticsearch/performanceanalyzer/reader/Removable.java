@@ -15,7 +15,9 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
-/** Interface that should be implemented by snapshot holders that need to be trimmed. */
+/**
+ * Interface that should be implemented by snapshot holders that need to be trimmed.
+ */
 public interface Removable {
-  void remove() throws Exception;
+    void remove() throws Exception;
 }

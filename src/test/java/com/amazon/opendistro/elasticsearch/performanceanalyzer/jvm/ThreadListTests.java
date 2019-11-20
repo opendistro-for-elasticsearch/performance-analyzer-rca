@@ -16,10 +16,11 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.jvm;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.hwnet.NetworkInterface;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.os.OSGlobals;
-
 import org.junit.Test;
+
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.hwnet.NetworkInterface;
+//import org.apache.logging.log4j.core.config.Configurator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.os.OSGlobals;
 
 public class ThreadListTests {
     //XXX: standalone test code
@@ -35,7 +36,6 @@ public class ThreadListTests {
             }
         }
     }
-
     public static void main(String[] args) throws Exception {
         //Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.DEBUG);
         (new Thread(new HelloRunnable())).start();

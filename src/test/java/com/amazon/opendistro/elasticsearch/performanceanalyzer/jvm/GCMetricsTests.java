@@ -13,21 +13,24 @@
  * permissions and limitations under the License.
  */
 
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.jvm;
 
 import org.junit.Test;
 
 public class GCMetricsTests {
-  public static void main(String[] args) throws Exception {
-    runOnce();
-  }
+    public static void main(String[] args) throws Exception {
+        runOnce();
+    }
 
-  private static void runOnce() {
-    GCMetrics.runGCMetrics();
-    GCMetrics.printGCMetrics();
-  }
+    private static void runOnce() {
+        GCMetrics.runGCMetrics();
+        GCMetrics.printGCMetrics();
+    }
 
-  // - to enhance
-  @Test
-  public void testMetrics() {}
+    //- to enhance
+    @Test
+    public void testMetrics() {
+
+    }
 }
