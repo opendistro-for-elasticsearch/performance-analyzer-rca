@@ -14,7 +14,7 @@
         <Logger name="stats_log" level="info" additivity="false">
             <AppenderRef ref="StatsLog"/>
         </Logger>
-        <Root level="info">
+        <Root level="error">
             <AppenderRef ref="Console" />
             <AppenderRef ref="PerformanceAnalyzerLog"/>
         </Root>
