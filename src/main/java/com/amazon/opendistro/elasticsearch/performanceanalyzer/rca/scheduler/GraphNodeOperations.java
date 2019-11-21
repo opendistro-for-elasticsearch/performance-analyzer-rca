@@ -1,6 +1,5 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

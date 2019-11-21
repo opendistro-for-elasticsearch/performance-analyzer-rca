@@ -109,6 +109,21 @@ public class OSMetricsSnapshot implements Removable {
         .execute();
   }
 
+  public void putMetric(Map<String, Double> metrics, String tid, String tName) {
+    Map<Field<?>, Double> metricMap = new HashMap<Field<?>, Double>();
+
+    for (Map.Entry<String, Double> metricName : metrics.entrySet()) {
+      metricMap.put(DSL.field(DSL.name(metricName.getKey()), Double.class), metricName.getValue());
+    }
+
+    create
+        .insertInto(DSL.table(this.tableName))
+        .set(DSL.field(Fields.tid.toString()), tid)
+        .set(DSL.field(Fields.tName.toString()), tName)
+        .set(metricMap)
+        .execute();
+  }
+
   public BatchBindStep startBatchPut() {
     List<Object> dummyValues = new ArrayList<>();
     for (int i = 0; i < dimensionColumns.size(); i++) {
@@ -133,21 +148,6 @@ public class OSMetricsSnapshot implements Removable {
     return OSMetricsSnapshot.METRIC_COLUMNS.stream()
         .map(s -> DSL.field(s, Double.class))
         .collect(Collectors.toList());
-  }
-
-  public void putMetric(Map<String, Double> metrics, String tid, String tName) {
-    Map<Field<?>, Double> metricMap = new HashMap<Field<?>, Double>();
-
-    for (Map.Entry<String, Double> metricName : metrics.entrySet()) {
-      metricMap.put(DSL.field(DSL.name(metricName.getKey()), Double.class), metricName.getValue());
-    }
-
-    create
-        .insertInto(DSL.table(this.tableName))
-        .set(DSL.field(Fields.tid.toString()), tid)
-        .set(DSL.field(Fields.tName.toString()), tName)
-        .set(metricMap)
-        .execute();
   }
 
   public String getTableName() {

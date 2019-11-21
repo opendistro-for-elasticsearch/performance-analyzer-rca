@@ -84,21 +84,6 @@ public class NodeMetricsEventProcessor implements EventProcessor {
   }
 
   @Override
-  public void processEvent(Event nodeMetric) {
-    String key = nodeMetric.key.split(File.separatorChar == '\\' ? "\\\\" : File.separator)[0];
-    AllMetrics.MetricName name =
-        MetricPropertiesConfig.getInstance().getEventKeyToMetricNameMap().get(key);
-
-    MemoryDBSnapshot snap = metricsSnapshotMap.get(name);
-    BatchBindStep batchHandler =
-        metricsBatchBindMap.computeIfAbsent(name, k -> snap.startBatchPut());
-    MetricProperties currParser = MetricPropertiesConfig.getInstance().getProperty(name);
-    if (processEvent(nodeMetric, snap, startTime, batchHandler, currParser)) {
-      lastUpdatedMetric = name;
-    }
-  }
-
-  @Override
   public boolean shouldProcessEvent(Event event) {
     for (String metric : MetricPropertiesConfig.getInstance().getMetricPathMap().values()) {
       if (event.key.contains(metric)) {
@@ -117,6 +102,21 @@ public class NodeMetricsEventProcessor implements EventProcessor {
         metricsBatchBindMap.put(
             lastUpdatedMetric, metricsSnapshotMap.get(lastUpdatedMetric).startBatchPut());
       }
+    }
+  }
+
+  @Override
+  public void processEvent(Event nodeMetric) {
+    String key = nodeMetric.key.split(File.separatorChar == '\\' ? "\\\\" : File.separator)[0];
+    AllMetrics.MetricName name =
+        MetricPropertiesConfig.getInstance().getEventKeyToMetricNameMap().get(key);
+
+    MemoryDBSnapshot snap = metricsSnapshotMap.get(name);
+    BatchBindStep batchHandler =
+        metricsBatchBindMap.computeIfAbsent(name, k -> snap.startBatchPut());
+    MetricProperties currParser = MetricPropertiesConfig.getInstance().getProperty(name);
+    if (processEvent(nodeMetric, snap, startTime, batchHandler, currParser)) {
+      lastUpdatedMetric = name;
     }
   }
 

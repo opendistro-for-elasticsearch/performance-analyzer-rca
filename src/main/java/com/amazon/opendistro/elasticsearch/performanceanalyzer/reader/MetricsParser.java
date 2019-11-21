@@ -563,16 +563,6 @@ public class MetricsParser {
   // modified time
   //  condition right at the start instead of in each process<XYZ> method.
 
-  private static Map<String, String> extrackKeyValFromData(String osMetricsData) {
-    String[] lines = osMetricsData.split(System.lineSeparator());
-    Map<String, String> osMetricsKeyValPairs = new HashMap<>();
-    for (String line : lines) {
-      String[] pair = line.split(PerformanceAnalyzerMetrics.sKeyValueDelimitor);
-      osMetricsKeyValPairs.put(pair[0], pair[1]);
-    }
-    return osMetricsKeyValPairs;
-  }
-
   private boolean processOSMetrics(
       String osMetricsdata,
       String threadID,
@@ -637,6 +627,16 @@ public class MetricsParser {
 
     batchHandle.bind(metricVals);
     return true;
+  }
+
+  private static Map<String, String> extrackKeyValFromData(String osMetricsData) {
+    String[] lines = osMetricsData.split(System.lineSeparator());
+    Map<String, String> osMetricsKeyValPairs = new HashMap<>();
+    for (String line : lines) {
+      String[] pair = line.split(PerformanceAnalyzerMetrics.sKeyValueDelimitor);
+      osMetricsKeyValPairs.put(pair[0], pair[1]);
+    }
+    return osMetricsKeyValPairs;
   }
 
   private void handleESMetrics(

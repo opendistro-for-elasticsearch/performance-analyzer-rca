@@ -41,7 +41,8 @@ public class HighHeapUsageRca extends Rca {
   private static final int RCA_PERIOD = 12;
   private int counter;
   private double maxOldGenHeapSize;
-  private final Metric heap_Used, heap_Max;
+  private final Metric heap_Used;
+  private final Metric heap_Max;
   private final Metric gc_event;
   private final SamplingDataSlidingWindow samplingDataSlidingWindow;
   // Keep the sliding window large enough to avoid false positive

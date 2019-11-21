@@ -1,12 +1,17 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics;
 
 import java.security.InvalidParameterException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class MetricsRestUtil {
+
   private static final String WEBSERVICE_BIND_HOST_NAME = "webservice-bind-host";
   private static final Logger LOG = LogManager.getLogger(MetricsRestUtil.class);
   private static final int INCOMING_QUEUE_LENGTH = 1;

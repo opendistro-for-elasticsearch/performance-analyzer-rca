@@ -231,6 +231,10 @@ public class MetricsDB implements Removable {
     return create.select(allFields).from(finalTable).groupBy(groupByFields).fetch();
   }
 
+  public Result<Record> queryMetric(String metric) {
+    return create.select().from(DSL.table(metric)).fetch();
+  }
+
   public void commit() throws Exception {
     conn.commit();
   }
@@ -249,10 +253,6 @@ public class MetricsDB implements Removable {
           StatExceptionCode.OTHER.toString());
       StatsCollector.instance().logException();
     }
-  }
-
-  public Result<Record> queryMetric(String metric) {
-    return create.select().from(DSL.table(metric)).fetch();
   }
 
   public DSLContext getDSLContext() {

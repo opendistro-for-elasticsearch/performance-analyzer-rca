@@ -71,28 +71,27 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
 
   private Server buildHttpServer() {
     return NettyServerBuilder.forPort(port)
-        .addService(this)
-        .workerEventLoopGroup(new NioEventLoopGroup(numServerThreads))
-        .build();
+                             .addService(this)
+                             .workerEventLoopGroup(new NioEventLoopGroup(numServerThreads))
+                             .build();
   }
 
   private Server buildHttpsServer() {
     return NettyServerBuilder.forPort(port)
-        .addService(this)
-        .workerEventLoopGroup(new NioEventLoopGroup(numServerThreads))
-        .useTransportSecurity(
-            CertificateUtils.getCertificateFile(), CertificateUtils.getPrivateKeyFile())
-        .build();
+                             .addService(this)
+                             .workerEventLoopGroup(new NioEventLoopGroup(numServerThreads))
+                             .useTransportSecurity(
+                                 CertificateUtils.getCertificateFile(),
+                                 CertificateUtils.getPrivateKeyFile())
+                             .build();
   }
 
   /**
-   *
-   *
    * <pre>
    * Sends a flowunit to whoever is interested in it.
    * </pre>
    *
-   * @param responseObserver
+   * @param responseObserver The response stream.
    */
   @Override
   public StreamObserver<FlowUnitMessage> publish(
@@ -106,14 +105,12 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
   }
 
   /**
-   *
-   *
    * <pre>
    * Sends a subscription request to a node for a particular metric.
    * </pre>
    *
-   * @param request
-   * @param responseObserver
+   * @param request          The subscribe request.
+   * @param responseObserver The response stream to which subscription status is written to.
    */
   @Override
   public void subscribe(

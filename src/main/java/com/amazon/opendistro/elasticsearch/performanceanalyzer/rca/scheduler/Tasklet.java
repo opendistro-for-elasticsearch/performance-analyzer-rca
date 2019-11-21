@@ -39,9 +39,10 @@ public class Tasklet {
    * A tasklet is always built on top of a Node.
    *
    * @param predecessorNode The node the tasklet wraps.
-   * @param persistable
-   * @param remotelyDesirableNodeSet
-   * @param hopper
+   * @param persistable An object that implements the persistable interface.
+   * @param remotelyDesirableNodeSet The set of upstream nodes that are needed by remote
+   *                                 downstream nodes.
+   * @param hopper The object that is an abstraction for all cross-network activities.
    */
   Tasklet(
       final Node predecessorNode,

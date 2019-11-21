@@ -1,6 +1,5 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
-
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;

@@ -105,24 +105,28 @@ public class RcaSpecTests {
         super("test-metric1", 5);
       }
     }
+
     class TestMetric2 extends Metric {
 
       TestMetric2() {
         super("test-metric2", 5);
       }
     }
+
     class TestMetric3 extends Metric {
 
       TestMetric3() {
         super("test-metric3", 5);
       }
     }
+
     class TestMetric4 extends Metric {
 
       TestMetric4() {
         super("test-metric4", 5);
       }
     }
+
     class TestMetric5 extends Metric {
 
       TestMetric5() {
@@ -141,6 +145,7 @@ public class RcaSpecTests {
         return null;
       }
     }
+
     class TestSymptom2 extends Symptom {
 
       TestSymptom2() {
@@ -248,6 +253,7 @@ public class RcaSpecTests {
         r3.addAllUpstreams(Collections.singletonList(s3));
       }
     }
+
     AnalysisGraph field = new TestGraph();
     field.construct();
     field.validateAndProcess();

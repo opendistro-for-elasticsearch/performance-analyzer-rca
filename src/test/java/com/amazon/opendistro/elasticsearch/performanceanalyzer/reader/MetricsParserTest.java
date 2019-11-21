@@ -53,7 +53,7 @@ public class MetricsParserTest {
     System.out.println(mFinalT - mCurrT);
   }
 
-  @Test
+  //@Test
   public void testOSMetricRotateParse() throws Exception {
 
     try (CopyTestResource testResource =

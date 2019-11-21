@@ -54,6 +54,7 @@ public class NewFormatProcessorTest {
   private static void removeFilesAndDir(Path path) throws IOException {
     Files.walk(path).map(Path::toFile).sorted(Comparator.reverseOrder()).forEach(File::delete);
   }
+
   // @AfterClass
   public static void removeFiles() throws IOException {
     removeFilesAndDir(Paths.get(DUMP_DIR + "/old_format"));

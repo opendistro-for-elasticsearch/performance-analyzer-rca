@@ -45,8 +45,9 @@ public class ResourceFlowUnit extends GenericFlowUnit {
     }
 
     messageBuilder.setTimestamp(System.currentTimeMillis());
-    if (resourceContext != null)
+    if (resourceContext != null) {
       messageBuilder.setResourceContext(resourceContext.buildContextMessage());
+    }
     return messageBuilder.build();
   }
 

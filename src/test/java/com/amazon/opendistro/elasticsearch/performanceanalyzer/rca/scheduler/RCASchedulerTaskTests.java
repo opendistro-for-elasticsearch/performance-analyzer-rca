@@ -211,7 +211,7 @@ public class RCASchedulerTaskTests {
             intentMsg.getDestinationNode(), this.intentMsgs.get(intextIdx).getDestinationNode());
         intextIdx++;
       }
-    };
+    }
 
     List<ConnectedComponent> connectedComponents = RcaUtil.getAnalysisGraphComponents(graph);
 

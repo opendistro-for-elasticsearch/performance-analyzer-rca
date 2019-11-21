@@ -52,6 +52,7 @@ public class NetworkInterface {
         new HashMap<>();
     Map<String, Long> ICMPmetrics =
         new HashMap<>();*/
+
     public void clearAll() {
       PHYmetrics.clear();
       IPmetrics.clear();
@@ -261,8 +262,10 @@ public class NetworkInterface {
     try (FileReader fileReader = new FileReader(new File("/proc/net/dev"));
         BufferedReader bufferedReader = new BufferedReader(fileReader); ) {
       String line = null;
-      long intotbytes = 0, outtotbytes = 0;
-      long intotpackets = 0, outtotpackets = 0;
+      long intotbytes = 0;
+      long outtotbytes = 0;
+      long intotpackets = 0;
+      long outtotpackets = 0;
       while ((line = bufferedReader.readLine()) != null) {
         if (line.contains("Receive") || line.contains("packets")) {
           continue;

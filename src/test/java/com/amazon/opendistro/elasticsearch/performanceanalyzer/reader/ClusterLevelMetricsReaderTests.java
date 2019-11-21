@@ -18,9 +18,11 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
 import static org.junit.Assert.assertEquals;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterLevelMetricsReader.NodeDetails;
 import java.io.File;
 import java.sql.SQLException;
-
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
@@ -29,61 +31,57 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterLevelMetricsReader.NodeDetails;
-
-@PowerMockIgnore({ "org.apache.logging.log4j.*" })
+@PowerMockIgnore({"org.apache.logging.log4j.*"})
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({ PerformanceAnalyzerMetrics.class, PluginSettings.class })
-@SuppressStaticInitializationFor({ "PluginSettings" })
+@PrepareForTest({PerformanceAnalyzerMetrics.class, PluginSettings.class})
+@SuppressStaticInitializationFor({"PluginSettings"})
 public class ClusterLevelMetricsReaderTests extends AbstractReaderTests {
 
-    public ClusterLevelMetricsReaderTests() throws SQLException, ClassNotFoundException {
-        super();
-        // TODO Auto-generated constructor stub
-    }
+  public ClusterLevelMetricsReaderTests() throws SQLException, ClassNotFoundException {
+    super();
+    // TODO Auto-generated constructor stub
+  }
 
-    //@Test
-    public void testCollectNodeMetrics() throws Exception {
-        PluginSettings config = Mockito.mock(PluginSettings.class);
-        Mockito.when(config.getMetricsLocation()).thenReturn(rootLocation);
+  //@Test
+  public void testCollectNodeMetrics() throws Exception {
+    PluginSettings config = Mockito.mock(PluginSettings.class);
+    Mockito.when(config.getMetricsLocation()).thenReturn(rootLocation);
 
-        PowerMockito.mockStatic(PluginSettings.class);
-        PowerMockito.when(PluginSettings.instance()).thenReturn(config);
+    PowerMockito.mockStatic(PluginSettings.class);
+    PowerMockito.when(PluginSettings.instance()).thenReturn(config);
 
-        long currTimestamp = System.currentTimeMillis();
-        long currTimeBucket = PerformanceAnalyzerMetrics.getTimeInterval(currTimestamp);
-        String currentTimeBucketStr = String.valueOf(currTimeBucket);
-        temporaryFolder.newFolder(currentTimeBucketStr);
-        File output = temporaryFolder.newFile(createRelativePath(
-                currentTimeBucketStr, PerformanceAnalyzerMetrics.sNodesPath));
+    long currTimestamp = System.currentTimeMillis();
+    long currTimeBucket = PerformanceAnalyzerMetrics.getTimeInterval(currTimestamp);
+    String currentTimeBucketStr = String.valueOf(currTimeBucket);
+    temporaryFolder.newFolder(currentTimeBucketStr);
+    File output = temporaryFolder.newFile(createRelativePath(
+        currentTimeBucketStr, PerformanceAnalyzerMetrics.sNodesPath));
 
-        String nodeId1 = "s7gDCVnCSiuBgHoYLji1gw";
-        String address1 = "10.212.49.140";
+    String nodeId1 = "s7gDCVnCSiuBgHoYLji1gw";
+    String address1 = "10.212.49.140";
 
-        String nodeId2 = "Zn1QcSUGT--DciD1Em5wRg";
-        String address2 = "10.212.52.241";
+    String nodeId2 = "Zn1QcSUGT--DciD1Em5wRg";
+    String address2 = "10.212.52.241";
 
-        write(output, false,
-                PerformanceAnalyzerMetrics.getJsonCurrentMilliSeconds(),
-                createNodeDetailsMetrics(nodeId1, address1),
-                createNodeDetailsMetrics(nodeId2, address2)
-                );
+    write(output, false,
+        PerformanceAnalyzerMetrics.getJsonCurrentMilliSeconds(),
+        createNodeDetailsMetrics(nodeId1, address1),
+        createNodeDetailsMetrics(nodeId2, address2)
+    );
 
-//        setFinalStatic(PerformanceAnalyzerMetrics.class.getDeclaredField("sDevShmLocation"),
-//                rootLocation);
+    // setFinalStatic(PerformanceAnalyzerMetrics.class.getDeclaredField("sDevShmLocation"),
+    //                rootLocation);
 
-        ClusterLevelMetricsReader.collectNodeMetrics(currTimestamp);
+    ClusterLevelMetricsReader.collectNodeMetrics(currTimestamp);
 
-        NodeDetails[] nodes = ClusterLevelMetricsReader.getNodes();
+    NodeDetails[] nodes = ClusterLevelMetricsReader.getNodes();
 
-        assertEquals(nodeId1, nodes[0].getId());
-        assertEquals(address1, nodes[0].getHostAddress());
+    assertEquals(nodeId1, nodes[0].getId());
+    assertEquals(address1, nodes[0].getHostAddress());
 
-        assertEquals(nodeId2, nodes[1].getId());
-        assertEquals(address2, nodes[1].getHostAddress());
-    }
+    assertEquals(nodeId2, nodes[1].getId());
+    assertEquals(address2, nodes[1].getHostAddress());
+  }
 
 
 }

@@ -294,7 +294,9 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
 
   private void sendResponseWhenRequestCompleted(
       ConcurrentHashMap<String, String> nodeResponses, HttpExchange exchange) {
-    if (nodeResponses.size() == 0) return;
+    if (nodeResponses.size() == 0) {
+      return;
+    }
     String response = metricsRestUtil.nodeJsonBuilder(nodeResponses);
     try {
       sendResponse(exchange, response, HttpURLConnection.HTTP_OK);

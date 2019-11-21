@@ -1,7 +1,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
-
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
+
 
 /**
  * Tasklet is a wrapper on top of a node so that a node can be executed based on its dependency

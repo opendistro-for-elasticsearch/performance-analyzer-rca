@@ -32,21 +32,6 @@ public class MetricsDBProvider implements Queryable {
     return dbEntry.getValue();
   }
 
-  @Override
-  public List<List<String>> queryMetrics(MetricsDB db, String metricName) {
-    // LOG.info("RCA: About to get the query metric: {}", metricName);
-    try {
-      Result<Record> queryResult = db.queryMetric(metricName);
-      return parseResult(queryResult);
-    } catch (Exception e) {
-      LOG.error("kak: Having issues with the DB man! {}", e.getMessage());
-      e.printStackTrace();
-      return Collections.emptyList();
-    }
-    // LOG.info("RCA: result {}", queryResult);
-
-  }
-
   private List<List<String>> parseResult(final Result<Record> queryResult) {
     List<List<String>> retResults = new ArrayList<>();
     List<String> columnNames =
@@ -62,6 +47,21 @@ public class MetricsDBProvider implements Queryable {
       retResults.add(row);
     }
     return retResults;
+  }
+
+  @Override
+  public List<List<String>> queryMetrics(MetricsDB db, String metricName) {
+    // LOG.info("RCA: About to get the query metric: {}", metricName);
+    try {
+      Result<Record> queryResult = db.queryMetric(metricName);
+      return parseResult(queryResult);
+    } catch (Exception e) {
+      LOG.error("kak: Having issues with the DB man! {}", e.getMessage());
+      e.printStackTrace();
+      return Collections.emptyList();
+    }
+    // LOG.info("RCA: result {}", queryResult);
+
   }
 
   @Override

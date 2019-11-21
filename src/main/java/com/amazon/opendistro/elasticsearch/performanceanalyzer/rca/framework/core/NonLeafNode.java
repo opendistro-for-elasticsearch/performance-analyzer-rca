@@ -32,9 +32,9 @@ public abstract class NonLeafNode extends Node implements Operable {
   /**
    * TODO: Update
    *
-   * @param minId
-   * @param upstreams
-   * @return
+   * @param minId the current minimum id of the graph.
+   * @param upstreams The upstream vertices to update the graph with.
+   * @return The new minimum id of the graph post update.
    */
   private int updateGraphs(int minId, List<Node> upstreams) {
     final Queue<Node> bfsQueue = new LinkedList<>(upstreams);

@@ -84,7 +84,7 @@ public class ShardRequestMetricsSnapshot implements Removable {
     public String toString() {
       return fieldValue;
     }
-  };
+  }
 
   public ShardRequestMetricsSnapshot(Connection conn, Long windowStartTime) throws Exception {
     this.create = DSL.using(conn, SQLDialect.SQLITE);
