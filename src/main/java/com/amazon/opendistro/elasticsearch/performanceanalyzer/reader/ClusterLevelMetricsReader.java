@@ -32,20 +32,27 @@ public class ClusterLevelMetricsReader {
   public static class NodeDetails {
     private String id;
     private String hostAddress;
+    private String role;
 
     NodeDetails(String stringifiedMetrics) {
       Map<String, Object> map = JsonConverter.createMapFrom(stringifiedMetrics);
       id = (String) map.get(NodeDetailColumns.ID.toString());
       hostAddress = (String) map.get(NodeDetailColumns.HOST_ADDRESS.toString());
+      role = (String) map.get(NodeDetailColumns.ROLE.toString());
     }
 
     @Override
     public String toString() {
       StringBuilder stringBuilder = new StringBuilder();
-      stringBuilder.append("{");
-      stringBuilder.append("id:" + id);
-      stringBuilder.append(" hostAddress:" + hostAddress);
-      stringBuilder.append("}");
+      stringBuilder
+          .append("{")
+          .append("id:")
+          .append(id)
+          .append(" hostAddress:")
+          .append(hostAddress)
+          .append(" role:")
+          .append(role)
+          .append("}");
       return stringBuilder.toString();
     }
 
@@ -55,6 +62,10 @@ public class ClusterLevelMetricsReader {
 
     public String getHostAddress() {
       return hostAddress;
+    }
+
+    public String getRole() {
+      return role;
     }
   }
 
@@ -76,30 +87,28 @@ public class ClusterLevelMetricsReader {
     String sNodesDetails =
         PerformanceAnalyzerMetrics.getMetric(startTime, PerformanceAnalyzerMetrics.sNodesPath);
 
-    if (sNodesDetails != null) {
-      String lines[] = sNodesDetails.split("\\r?\\n");
+    String[] lines = sNodesDetails.split("\\r?\\n");
 
-      if (lines.length < 2) {
-        LOG.error("Skip parsing. Number of lines: {}.", lines.length);
-        return;
-      }
-
-      NodeDetails[] tmpNodesDetails = new NodeDetails[lines.length - 1];
-
-      // line 0 is last modified time of the file
-
-      tmpNodesDetails[0] = new NodeDetails(lines[1]);
-      int tmpNodeDetailsIndex = 1;
-
-      for (int i = 2; i < lines.length; i++) {
-        NodeDetails tmp = new NodeDetails(lines[i]);
-
-        if (!tmp.id.equals(tmpNodesDetails[0].id)) {
-          tmpNodesDetails[tmpNodeDetailsIndex++] = tmp;
-        }
-      }
-
-      nodesDetails = tmpNodesDetails;
+    if (lines.length < 2) {
+      LOG.debug("Skip parsing. Number of lines: {}.", lines.length);
+      return;
     }
+
+    NodeDetails[] tmpNodesDetails = new NodeDetails[lines.length - 1];
+
+    // line 0 is last modified time of the file
+
+    tmpNodesDetails[0] = new NodeDetails(lines[1]);
+    int tmpNodeDetailsIndex = 1;
+
+    for (int i = 2; i < lines.length; i++) {
+      NodeDetails tmp = new NodeDetails(lines[i]);
+
+      if (!tmp.id.equals(tmpNodesDetails[0].id)) {
+        tmpNodesDetails[tmpNodeDetailsIndex++] = tmp;
+      }
+    }
+
+    nodesDetails = tmpNodesDetails;
   }
 }

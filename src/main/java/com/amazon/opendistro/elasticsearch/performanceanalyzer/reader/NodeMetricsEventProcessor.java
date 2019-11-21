@@ -5,12 +5,12 @@
  * You may not use this file except in compliance with the License.
  * A copy of the License is located at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * or in the "license" file accompanying this file. This file is distributed
  * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
  * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+ *  permissions and limitations under the License.
  */
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
@@ -94,6 +94,28 @@ public class NodeMetricsEventProcessor implements EventProcessor {
         batchHandle.execute();
         NavigableMap<Long, MemoryDBSnapshot> currMap = nodeMetricsMap.get(metric);
         currMap.put(dbSnap.getLastUpdatedTime(), dbSnap);
+      }
+    }
+  }
+
+  @Override
+  public boolean shouldProcessEvent(Event event) {
+    for (String metric : MetricPropertiesConfig.getInstance().getMetricPathMap().values()) {
+      if (event.key.contains(metric)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public void commitBatchIfRequired() {
+    if (lastUpdatedMetric != null) {
+      BatchBindStep handle = metricsBatchBindMap.get(lastUpdatedMetric);
+      if (handle.size() > BATCH_LIMIT) {
+        handle.execute();
+        metricsBatchBindMap.put(
+            lastUpdatedMetric, metricsSnapshotMap.get(lastUpdatedMetric).startBatchPut());
       }
     }
   }
@@ -188,27 +210,5 @@ public class NodeMetricsEventProcessor implements EventProcessor {
               || processed;
     }
     return processed;
-  }
-
-  @Override
-  public boolean shouldProcessEvent(Event event) {
-    for (String metric : MetricPropertiesConfig.getInstance().getMetricPathMap().values()) {
-      if (event.key.contains(metric)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  @Override
-  public void commitBatchIfRequired() {
-    if (lastUpdatedMetric != null) {
-      BatchBindStep handle = metricsBatchBindMap.get(lastUpdatedMetric);
-      if (handle.size() > BATCH_LIMIT) {
-        handle.execute();
-        metricsBatchBindMap.put(
-            lastUpdatedMetric, metricsSnapshotMap.get(lastUpdatedMetric).startBatchPut());
-      }
-    }
   }
 }

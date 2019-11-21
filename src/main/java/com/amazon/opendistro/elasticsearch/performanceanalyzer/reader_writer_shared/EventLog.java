@@ -5,12 +5,12 @@
  * You may not use this file except in compliance with the License.
  * A copy of the License is located at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * or in the "license" file accompanying this file. This file is distributed
  * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
  * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+ *  permissions and limitations under the License.
  */
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared;
@@ -20,9 +20,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.EventDispa
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -110,7 +107,6 @@ public class EventLog {
    * has to increase the buffer size.
    *
    * @param byteBuffer The raw bytes in the file.
-   * @return List of Event objects.
    */
   void read(final ByteBuffer byteBuffer, EventDispatcher processor) {
     if (ret == null) {
@@ -162,54 +158,6 @@ public class EventLog {
       // So in this case, the key in the map will be just 'a'.
       Event event = new Event(arg.key, arg.value, 0);
       processor.processEvent(event);
-    } else if (b == startMarker) {
-      arg.key = "";
-      // reset
-      arg.byteIdx = 0;
-    } else {
-      arg.bytes[arg.byteIdx] = b;
-      arg.byteIdx += 1;
-
-      // If you run out of space, then grow the array and copy the data over.
-      if (arg.byteIdx == arg.bytes.length) {
-        // grow the bytebuffer
-        char[] newBytes = new char[arg.bytes.length * 2];
-        int i = 0;
-        for (char c : arg.bytes) {
-          newBytes[i] = c;
-          i += 1;
-        }
-        arg.bytes = newBytes;
-      }
-    }
-    return arg;
-  }
-
-  private static Ret processByte(char b, Ret arg, Map<String, List<Event>> entries) {
-    if (b == separator[0] && arg.key.isEmpty()) {
-      arg.key = new String(arg.bytes, 0, arg.byteIdx);
-      // reset bytes
-      arg.byteIdx = 0;
-    } else if (b == endMarker) {
-      // LOG.info("EndMarker found");
-      arg.value = new String(arg.bytes, 0, arg.byteIdx);
-
-      // Iterate through the key to figure out the index of the first file separator.
-      int indexOfFirstPathSep = arg.key.indexOf(File.separatorChar);
-      String mapKey;
-      if (indexOfFirstPathSep == -1) {
-        mapKey = arg.key;
-      } else {
-        mapKey = arg.key.substring(0, indexOfFirstPathSep);
-      }
-
-      // The keys as in the files can be of the format a/b/c. The full
-      // string goes inside the key of the Event but as part of the
-      // map's key we only take the string up to the first file Separator.
-      // So in this case, the key in the map will be just 'a'.
-      Event mapValue = new Event(arg.key, arg.value, 0);
-      entries.computeIfAbsent(mapKey, k -> new ArrayList<>());
-      entries.get(mapKey).add(mapValue);
     } else if (b == startMarker) {
       arg.key = "";
       // reset

@@ -17,21 +17,33 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rest;
 
 import static org.junit.Assert.assertEquals;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsResponse;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.OSMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsRestUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.handler.MetricsServerHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
+import io.grpc.stub.StreamObserver;
 import java.security.InvalidParameterException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import org.junit.Before;
 import org.junit.Test;
 
 @SuppressWarnings("serial")
 public class QueryMetricsRequestHandlerTests {
+  MetricsRestUtil metricsRestUtil;
 
   public QueryMetricsRequestHandlerTests() throws ClassNotFoundException {
     Class.forName("org.sqlite.JDBC");
     System.setProperty("java.io.tmpdir", "/tmp");
+  }
+
+  @Before
+  public void createObject() {
+    this.metricsRestUtil = new MetricsRestUtil();
   }
 
   @Test
@@ -39,9 +51,8 @@ public class QueryMetricsRequestHandlerTests {
     String rootLocation = "test_files/dev/shm";
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation);
     ReaderMetricsProcessor.setCurrentInstance(mp);
-    QueryMetricsRequestHandler qHandler = new QueryMetricsRequestHandler();
-    HashMap<String, String> nodeResponses =
-        new HashMap<String, String>() {
+    ConcurrentHashMap<String, String> nodeResponses =
+        new ConcurrentHashMap<String, String>() {
           {
             this.put("node1", "{'xyz':'abc'}");
             this.put("node2", "{'xyz':'abc'}");
@@ -49,7 +60,7 @@ public class QueryMetricsRequestHandlerTests {
         };
     assertEquals(
         "{\"node2\": {'xyz':'abc'}, \"node1\" :{'xyz':'abc'}}",
-        qHandler.nodeJsonBuilder(nodeResponses));
+        metricsRestUtil.nodeJsonBuilder(nodeResponses));
   }
 
   // Disabled on purpose
@@ -66,27 +77,43 @@ public class QueryMetricsRequestHandlerTests {
     mp.processMetrics(rootLocation, 1535065289000L);
     mp.processMetrics(rootLocation, 1535065319000L);
     mp.processMetrics(rootLocation, 1535065349000L);
-    QueryMetricsRequestHandler qHandler = new QueryMetricsRequestHandler();
-    String response =
-        qHandler.collectStats(
-            mp.getMetricsDB().getValue(),
-            1234L,
-            Arrays.asList(OSMetrics.CPU_UTILIZATION.toString()),
-            Arrays.asList("sum"),
-            Arrays.asList(
-                CommonDimension.SHARD_ID.toString(),
-                CommonDimension.INDEX_NAME.toString(),
-                CommonDimension.OPERATION.toString()),
-            null);
-    assertEquals(
-        "{\"timestamp\": 1234, \"data\": {\"fields\":[{\"name\":"
-            + "\"ShardID\",\"type\":\"VARCHAR\"},{\"name\":\"IndexName\","
-            + "\"type\":\"VARCHAR\"},{\"name\":\"Operation\",\"type\":"
-            + "\"VARCHAR\"},{\"name\":\"CPU_Utilization\",\"type\":\"DOUBLE\""
-            + "}],\"records\":[[null,null,\"GC\",0.0],[null,null,\"management\",0.0],[null,null,\"other\""
-            + ",0.0256],[null,null,\"refresh\",0.0],[\"0\",\"sonested\",\"shardfetch\",0.00159186808056345],"
-            + "[\"0\",\"sonested\",\"shardquery\",1.55800813191944]]}}",
-        response);
+    MetricsServerHandler serviceHandler = new MetricsServerHandler();
+
+    StreamObserver<MetricsResponse> responseObserver =
+        new StreamObserver<MetricsResponse>() {
+          String response = "";
+
+          @Override
+          public void onNext(MetricsResponse value) {
+            response = value.getMetricsResult();
+          }
+
+          @Override
+          public void onError(Throwable t) {}
+
+          @Override
+          public void onCompleted() {
+            assertEquals(
+                "{\"timestamp\": 1234, \"data\": {\"fields\":[{\"name\":"
+                    + "\"ShardID\",\"type\":\"VARCHAR\"},{\"name\":\"IndexName\","
+                    + "\"type\":\"VARCHAR\"},{\"name\":\"Operation\",\"type\":"
+                    + "\"VARCHAR\"},{\"name\":\"CPU_Utilization\",\"type\":\"DOUBLE\""
+                    + "}],\"records\":[[null,null,\"GC\",0.0],[null,null,\"management\",0.0],[null,null,\"other\""
+                    + ",0.0256],[null,null,\"refresh\",0.0],[\"0\",\"sonested\",\"shardfetch\",0.00159186808056345],"
+                    + "[\"0\",\"sonested\",\"shardquery\",1.55800813191944]]}}",
+                response);
+          }
+        };
+    serviceHandler.collectStats(
+        mp.getMetricsDB().getValue(),
+        1234L,
+        Arrays.asList(OSMetrics.CPU_UTILIZATION.toString()),
+        Arrays.asList("sum"),
+        Arrays.asList(
+            AllMetrics.CommonDimension.SHARD_ID.toString(),
+            AllMetrics.CommonDimension.INDEX_NAME.toString(),
+            AllMetrics.CommonDimension.OPERATION.toString()),
+        responseObserver);
   }
 
   @Test
@@ -94,18 +121,17 @@ public class QueryMetricsRequestHandlerTests {
     String rootLocation = "test_files/dev/shm";
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation);
     ReaderMetricsProcessor.setCurrentInstance(mp);
-    QueryMetricsRequestHandler qHandler = new QueryMetricsRequestHandler();
 
     HashMap<String, String> params = new HashMap<String, String>();
     params.put("metrics", "cpu");
 
-    List<String> ret = qHandler.parseArrayParam(params, "metrics", false);
+    List<String> ret = metricsRestUtil.parseArrayParam(params, "metrics", false);
     assertEquals(1, ret.size());
     assertEquals("cpu", ret.get(0));
 
     params.put("metrics", "cpu,rss");
 
-    ret = qHandler.parseArrayParam(params, "metrics", false);
+    ret = metricsRestUtil.parseArrayParam(params, "metrics", false);
     assertEquals(2, ret.size());
     assertEquals("cpu", ret.get(0));
     assertEquals("rss", ret.get(1));
@@ -116,14 +142,13 @@ public class QueryMetricsRequestHandlerTests {
     String rootLocation = "test_files/dev/shm";
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation);
     ReaderMetricsProcessor.setCurrentInstance(mp);
-    QueryMetricsRequestHandler qHandler = new QueryMetricsRequestHandler();
 
     HashMap<String, String> params = new HashMap<String, String>();
-    List<String> ret = qHandler.parseArrayParam(params, "metrics", true);
+    List<String> ret = metricsRestUtil.parseArrayParam(params, "metrics", true);
     assertEquals(0, ret.size());
 
     params.put("metrics", "");
-    ret = qHandler.parseArrayParam(params, "metrics", true);
+    ret = metricsRestUtil.parseArrayParam(params, "metrics", true);
     assertEquals(0, ret.size());
   }
 
@@ -132,10 +157,9 @@ public class QueryMetricsRequestHandlerTests {
     String rootLocation = "test_files/dev/shm";
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation);
     ReaderMetricsProcessor.setCurrentInstance(mp);
-    QueryMetricsRequestHandler qHandler = new QueryMetricsRequestHandler();
 
     HashMap<String, String> params = new HashMap<String, String>();
-    List<String> ret = qHandler.parseArrayParam(params, "metrics", false);
+    List<String> ret = metricsRestUtil.parseArrayParam(params, "metrics", false);
   }
 
   @Test(expected = InvalidParameterException.class)
@@ -143,10 +167,9 @@ public class QueryMetricsRequestHandlerTests {
     String rootLocation = "test_files/dev/shm";
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation);
     ReaderMetricsProcessor.setCurrentInstance(mp);
-    QueryMetricsRequestHandler qHandler = new QueryMetricsRequestHandler();
 
     HashMap<String, String> params = new HashMap<String, String>();
     params.put("metrics", "");
-    List<String> ret = qHandler.parseArrayParam(params, "metrics", false);
+    List<String> ret = metricsRestUtil.parseArrayParam(params, "metrics", false);
   }
 }

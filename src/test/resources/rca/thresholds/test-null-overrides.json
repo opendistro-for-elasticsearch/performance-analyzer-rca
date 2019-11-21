@@ -1,0 +1,5 @@
+{
+  "name": "test-null-overrides",
+  "default": "default-value",
+  "precedence-order" : ["domain", "disk", "instance-type"]
+}

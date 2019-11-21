@@ -120,7 +120,7 @@ public class MemoryDBSnapshot implements Removable {
 
   @Override
   public void remove() {
-    LOG.info("Dropping {}", this.tableName);
+    LOG.debug("Dropping {}", this.tableName);
     if (dbTableExists()) {
       create.dropTable(DSL.table(this.tableName)).execute();
     }

@@ -65,10 +65,7 @@ public class PerformanceAnalyzerMetrics {
 
   private static final int NUM_RETRIES_FOR_TMP_FILE = 10;
 
-  private static final boolean IS_METRICS_LOG_ENABLED =
-      System.getProperty("performanceanalyzer.metrics.log.enabled", "False")
-          .equalsIgnoreCase("True");
-
+  private static volatile boolean isMetricsLogEnabled = false;
   private static final int sTimeInterval =
       MetricsConfiguration.CONFIG_MAP.get(PerformanceAnalyzerMetrics.class).rotationInterval;
 
@@ -93,6 +90,10 @@ public class PerformanceAnalyzerMetrics {
                     String.valueOf(PerformanceAnalyzerMetrics.getTimeInterval(startTime)),
                     keysPath));
     return sDevShmLocationPath.toString();
+  }
+
+  public static void setIsMetricsLogEnabled(boolean enabled) {
+    isMetricsLogEnabled = enabled;
   }
 
   public static void addMetricEntry(StringBuilder value, String metricKey, String metricValue) {
@@ -120,7 +121,7 @@ public class PerformanceAnalyzerMetrics {
 
   static void emitMetric(long epoch, String metricKey, String value) {
     emitMetric(metricQueue, new Event(metricKey, value, epoch));
-    if (IS_METRICS_LOG_ENABLED) {
+    if (isMetricsLogEnabled) {
       LOG.info(metricKey + "\n" + value);
     }
   }

@@ -63,8 +63,6 @@ public class MasterEventMetricsSnapshot implements Removable {
     }
   }
 
-  ;
-
   public MasterEventMetricsSnapshot(Connection conn, Long windowStartTime) {
     this.create = DSL.using(conn, SQLDialect.SQLITE);
     this.windowStartTime = windowStartTime;

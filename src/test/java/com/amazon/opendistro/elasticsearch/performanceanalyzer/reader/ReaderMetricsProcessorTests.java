@@ -157,6 +157,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
    * values 1, the interval [t1-sample interval, t1] has value 1. So [2000, 7000] maps to 1, and
    * [7000, 12000] maps to 3. We end up having (1 * 2000 + 3 * 3000) / 5000 = 2.2
    *
+   * @throws Exception If something went wrong.
    */
   @Test
   public void testAlignNodeMetrics() throws Exception {
@@ -234,6 +235,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
    * 17001] and the window [12001 ~ 17001] does not exist, reader would skip aligning and use the
    * value of [7001 ~ 12001] instead.
    *
+   * @throws Exception if something went wrong.
    */
   @Test
   public void testMissingUpperWriterWindow() throws Exception {
@@ -279,6 +281,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
    * guarantee write every 5 seconds). Reader does not expect that. Changed to return null in this
    * case.
    *
+   * @throws Exception if something went wrong.
    */
   @Test
   public void testWriterWindowEndsBeforeReaderWindow() throws Exception {

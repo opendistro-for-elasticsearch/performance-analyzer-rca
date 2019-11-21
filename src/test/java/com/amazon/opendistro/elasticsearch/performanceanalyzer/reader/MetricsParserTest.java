@@ -20,10 +20,8 @@ import static org.junit.Assert.assertTrue;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.CopyTestResource;
 import java.io.File;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore
 public class MetricsParserTest {
   private static final String DB_URL = "jdbc:sqlite:";
 
@@ -55,7 +53,7 @@ public class MetricsParserTest {
     System.out.println(mFinalT - mCurrT);
   }
 
-  @Test
+  //@Test
   public void testOSMetricRotateParse() throws Exception {
 
     try (CopyTestResource testResource =

@@ -86,8 +86,6 @@ public class ShardRequestMetricsSnapshot implements Removable {
     }
   }
 
-  ;
-
   public ShardRequestMetricsSnapshot(Connection conn, Long windowStartTime) throws Exception {
     this.create = DSL.using(conn, SQLDialect.SQLITE);
     this.windowStartTime = windowStartTime;
