@@ -488,22 +488,6 @@ public class MetricsParser {
     }
   }
 
-  
-
-  // TODO: As everything is now dumped in 1 single file per 5 seconds. We can check the last
-  // modified time
-  //  condition right at the start instead of in each process<XYZ> method.
-
-  private static Map<String, String> extrackKeyValFromData(String osMetricsData) {
-    String[] lines = osMetricsData.split(System.lineSeparator());
-    Map<String, String> osMetricsKeyValPairs = new HashMap<>();
-    for (String line : lines) {
-      String[] pair = line.split(PerformanceAnalyzerMetrics.sKeyValueDelimitor);
-      osMetricsKeyValPairs.put(pair[0], pair[1]);
-    }
-    return osMetricsKeyValPairs;
-  }
-
   private boolean processOSMetrics(
       File opFile,
       String threadID,
@@ -575,6 +559,10 @@ public class MetricsParser {
     return true;
   }
 
+  // TODO: As everything is now dumped in 1 single file per 5 seconds. We can check the last
+  // modified time
+  //  condition right at the start instead of in each process<XYZ> method.
+
   private boolean processOSMetrics(
       String osMetricsdata,
       String threadID,
@@ -639,6 +627,16 @@ public class MetricsParser {
 
     batchHandle.bind(metricVals);
     return true;
+  }
+
+  private static Map<String, String> extrackKeyValFromData(String osMetricsData) {
+    String[] lines = osMetricsData.split(System.lineSeparator());
+    Map<String, String> osMetricsKeyValPairs = new HashMap<>();
+    for (String line : lines) {
+      String[] pair = line.split(PerformanceAnalyzerMetrics.sKeyValueDelimitor);
+      osMetricsKeyValPairs.put(pair[0], pair[1]);
+    }
+    return osMetricsKeyValPairs;
   }
 
   private void handleESMetrics(

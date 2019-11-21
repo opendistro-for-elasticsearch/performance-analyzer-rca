@@ -101,7 +101,6 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
       try (InputStream input =
           new FileInputStream(
               Util.PLUGIN_LOCATION + PluginSettings.CONFIG_FILES_PATH + fileLocation); ) {
-
         // load properties file
         props.load(input);
       } catch (Exception ex) {

@@ -85,21 +85,6 @@ public class OSMetricsSnapshot implements Removable {
     this(conn, "os_", windowEndTime);
   }
 
-  public void putMetric(Map<String, Double> metrics, String tid, String tName) {
-    Map<Field<?>, Double> metricMap = new HashMap<Field<?>, Double>();
-
-    for (Map.Entry<String, Double> metricName : metrics.entrySet()) {
-      metricMap.put(DSL.field(DSL.name(metricName.getKey()), Double.class), metricName.getValue());
-    }
-
-    create
-        .insertInto(DSL.table(this.tableName))
-        .set(DSL.field(Fields.tid.toString()), tid)
-        .set(DSL.field(Fields.tName.toString()), tName)
-        .set(metricMap)
-        .execute();
-  }
-
   public void putMetric(
       Map<String, Double> metrics, Map<String, String> dimensions, long updateTime) {
     Map<Field<?>, String> dimensionMap = new HashMap<Field<?>, String>();
@@ -121,6 +106,21 @@ public class OSMetricsSnapshot implements Removable {
         .set(metricMap)
         .set(dimensionMap)
         .set(updateTimeMap)
+        .execute();
+  }
+
+  public void putMetric(Map<String, Double> metrics, String tid, String tName) {
+    Map<Field<?>, Double> metricMap = new HashMap<Field<?>, Double>();
+
+    for (Map.Entry<String, Double> metricName : metrics.entrySet()) {
+      metricMap.put(DSL.field(DSL.name(metricName.getKey()), Double.class), metricName.getValue());
+    }
+
+    create
+        .insertInto(DSL.table(this.tableName))
+        .set(DSL.field(Fields.tid.toString()), tid)
+        .set(DSL.field(Fields.tName.toString()), tName)
+        .set(metricMap)
         .execute();
   }
 

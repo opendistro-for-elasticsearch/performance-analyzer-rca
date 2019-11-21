@@ -135,6 +135,8 @@ public class ReaderMetricsProcessor implements Runnable {
         }
         conn.setAutoCommit(false);
         startTime = System.currentTimeMillis();
+        ClusterLevelMetricsReader.collectNodeMetrics(
+            startTime - MetricsConfiguration.SAMPLING_INTERVAL);
         processMetrics(rootLocation, startTime);
         trimOldSnapshots();
         conn.commit();
@@ -352,11 +354,11 @@ public class ReaderMetricsProcessor implements Runnable {
 
       // LOG.info(() -> rqSnap.fetchAll());
       shardRqMetricsMap.put(currWindowStartTime, rqSnap);
-      LOG.info("Adding new RQ snapshot- currWindowStartTime {}", currWindowStartTime);
+      LOG.debug("Adding new RQ snapshot- currWindowStartTime {}", currWindowStartTime);
     }
 
     long mFinalT = System.currentTimeMillis();
-    LOG.info("Total time taken for parsing Request Metrics: {}", mFinalT - mCurrT);
+    LOG.debug("Total time taken for parsing Request Metrics: {}", mFinalT - mCurrT);
     TIMING_STATS.put("parseRequestMetrics", (double) (mFinalT - mCurrT));
   }
 

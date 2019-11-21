@@ -42,7 +42,8 @@ public class AllMetrics {
   // use the information as part of http response.
   public enum NodeDetailColumns {
     ID(Constants.ID_VALUE),
-    HOST_ADDRESS(Constants.HOST_ADDRESS_VALUE);
+    HOST_ADDRESS(Constants.HOST_ADDRESS_VALUE),
+    ROLE(Constants.ROLE_VALUE);
 
     private final String value;
 
@@ -58,6 +59,28 @@ public class AllMetrics {
     public static class Constants {
       public static final String ID_VALUE = "ID";
       public static final String HOST_ADDRESS_VALUE = "HOST_ADDRESS";
+      public static final String ROLE_VALUE = "ROLE";
+    }
+  }
+
+  /** Enumeration of the roles. */
+  public enum NodeRole {
+    MASTER(RoleConstants.MASTER),
+    ELECTED_MASTER(RoleConstants.ELECTED_MASTER),
+    DATA(RoleConstants.DATA),
+    UNKNOWN(RoleConstants.UNKNOWN);
+
+    private final String value;
+
+    NodeRole(final String value) {
+      this.value = value;
+    }
+
+    public static class RoleConstants {
+      public static final String MASTER = "MASTER";
+      public static final String ELECTED_MASTER = "ELECTED_MASTER";
+      public static final String DATA = "DATA";
+      public static final String UNKNOWN = "UNKNOWN";
     }
   }
 

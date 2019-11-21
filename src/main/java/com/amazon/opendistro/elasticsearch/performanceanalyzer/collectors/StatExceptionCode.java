@@ -32,6 +32,7 @@ public enum StatExceptionCode {
   REQUEST_REMOTE_ERROR("RequestRemoteError"),
   READER_PARSER_ERROR("ReaderParserError"),
   READER_RESTART_PROCESSING("ReaderRestartProcessing"),
+  RCA_SCHEDULER_RESTART_PROCESSING("RCASchedulerRestartProcessing"),
   OTHER("Other");
 
   private final String value;

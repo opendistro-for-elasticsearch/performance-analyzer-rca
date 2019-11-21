@@ -30,7 +30,6 @@ public class ScheduledMetricCollectorsExecutor extends Thread {
   private static final int COLLECTOR_THREAD_KEEPALIVE_SECS = 1000;
   private final boolean checkFeatureDisabledFlag;
   private boolean paEnabled = false;
-
   private int minTimeIntervalToSleep = Integer.MAX_VALUE;
   private Map<PerformanceAnalyzerMetricsCollector, Long> metricsCollectors;
   private ThreadPoolExecutor metricsCollectorsTP;
@@ -49,6 +48,10 @@ public class ScheduledMetricCollectorsExecutor extends Thread {
 
   public synchronized void setEnabled(final boolean enabled) {
     paEnabled = enabled;
+  }
+
+  public synchronized boolean getEnabled() {
+    return paEnabled;
   }
 
   public void addScheduledMetricCollector(PerformanceAnalyzerMetricsCollector task) {
@@ -84,7 +87,7 @@ public class ScheduledMetricCollectorsExecutor extends Thread {
 
       prevStartTimestamp = System.currentTimeMillis();
 
-      if (paEnabled) {
+      if (getEnabled()) {
         long currentTime = System.currentTimeMillis();
 
         for (Map.Entry<PerformanceAnalyzerMetricsCollector, Long> entry :

@@ -610,7 +610,7 @@ public class MetricsEmitter {
     emitRuntimeMetric(metricsDB, queueAndRunTimeResult, dims);
 
     long mFinalT = System.currentTimeMillis();
-    LOG.info(
+    LOG.debug(
         "Total time taken for writing master event queue metrics metricsdb: {}", mFinalT - mCurrT);
   }
 
@@ -762,10 +762,10 @@ public class MetricsEmitter {
       Result<Record> fetchedData = entry.getValue().fetch();
 
       long mFinalT = System.currentTimeMillis();
-      LOG.info("Total time taken for aggregating {} : {}", tableName, mFinalT - mCurrT);
+      LOG.debug("Total time taken for aggregating {} : {}", tableName, mFinalT - mCurrT);
 
       if (fetchedData == null || fetchedData.size() == 0) {
-        LOG.info("No data to emit: {}", tableName);
+        LOG.debug("No data to emit: {}", tableName);
         continue;
       }
 
@@ -787,7 +787,7 @@ public class MetricsEmitter {
       handle.execute();
 
       mFinalT = System.currentTimeMillis();
-      LOG.info(
+      LOG.debug(
           "Total time taken for writing {} metrics metricsdb: {}", tableName, mFinalT - mCurrT);
     }
   }

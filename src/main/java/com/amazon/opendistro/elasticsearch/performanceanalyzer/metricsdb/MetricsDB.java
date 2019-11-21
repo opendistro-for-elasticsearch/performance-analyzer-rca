@@ -255,6 +255,10 @@ public class MetricsDB implements Removable {
     }
   }
 
+  public DSLContext getDSLContext() {
+    return create;
+  }
+
   public boolean metricExists(String metric) {
     return DBUtils.checkIfTableExists(create, metric);
   }

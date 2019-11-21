@@ -5,12 +5,12 @@
  * You may not use this file except in compliance with the License.
  * A copy of the License is located at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * or in the "license" file accompanying this file. This file is distributed
  * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
  * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+ *  permissions and limitations under the License.
  */
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.core;
@@ -25,13 +25,28 @@ import org.apache.logging.log4j.message.ParameterizedMessage;
 
 public class Util {
   private static final Logger LOG = LogManager.getLogger(Util.class);
-  public static final String QUERY_URL = "/_opendistro/_performanceanalyzer/metrics";
+  public static final String METRICS_QUERY_URL = "/_opendistro/_performanceanalyzer/metrics";
+  public static final String RCA_QUERY_URL = "/_opendistro/_performanceanalyzer/rca";
   public static final String PLUGIN_LOCATION =
       System.getProperty("es.path.home")
           + File.separator
           + "plugins"
           + File.separator
           + "opendistro_performance_analyzer"
+          + File.separator;
+  public static final String READER_LOCATION =
+      System.getProperty("es.path.home")
+          + File.separator
+          + "opendistro_performance_analyzer"
+          + File.separator;
+  public static final String DATA_DIR =
+      System.getProperty("es.path.home")
+          + File.separator
+          + "var"
+          + File.separator
+          + "es"
+          + File.separator
+          + "data"
           + File.separator;
 
   public static void invokePrivileged(Runnable runner) {

@@ -5,12 +5,12 @@
  * You may not use this file except in compliance with the License.
  * A copy of the License is located at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * or in the "license" file accompanying this file. This file is distributed
  * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
  * express or implied. See the License for the specific language governing
- * permissions and limitations under the License.
+ *  permissions and limitations under the License.
  */
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared;
@@ -18,7 +18,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_sh
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.EventDispatcher;
 import java.io.File;
 import java.io.IOException;
@@ -69,10 +68,6 @@ public class EventLogFileHandler {
    * @param epoch The epoch all the metrics belong to.
    */
   public void writeTmpFile(List<Event> dataEntries, long epoch) {
-    Util.invokePrivileged(() -> writeTmpFileWithPrivilege(dataEntries, epoch));
-  }
-
-  public void writeTmpFileWithPrivilege(List<Event> dataEntries, long epoch) {
 
     Path path = Paths.get(metricsLocation, String.valueOf(epoch));
     Path tmpPath = Paths.get(path.toString() + TMP_FILE_EXT);
@@ -95,10 +90,6 @@ public class EventLogFileHandler {
   }
 
   public void renameFromTmp(long epoch) {
-    Util.invokePrivileged(() -> renameFromTmpWithPrivilege(epoch));
-  }
-
-  public void renameFromTmpWithPrivilege(long epoch) {
     Path path = Paths.get(metricsLocation, String.valueOf(epoch));
     Path tmpPath = Paths.get(path.toString() + TMP_FILE_EXT);
     // This is done only when no exception is thrown.
