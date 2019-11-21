@@ -17,30 +17,30 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rest;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsRequest;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsResponse;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsRestUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.model.MetricAttributes;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.model.MetricsModel;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterLevelMetricsReader;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.JsonConverter;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import java.io.BufferedReader;
+import io.grpc.stub.StreamObserver;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
 import java.security.InvalidParameterException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import javax.net.ssl.HttpsURLConnection;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
@@ -58,9 +58,15 @@ import org.jooq.Result;
 public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHandler {
 
   private static final Logger LOG = LogManager.getLogger(QueryMetricsRequestHandler.class);
-  private static final int HTTP_CLIENT_CONNECTION_TIMEOUT = 200;
+  private static final int TIME_OUT_VALUE = 2;
+  private static final TimeUnit TIME_OUT_UNIT = TimeUnit.SECONDS;
+  private NetClient netClient;
+  MetricsRestUtil metricsRestUtil;
 
-  public QueryMetricsRequestHandler() {}
+  public QueryMetricsRequestHandler(NetClient netClient, MetricsRestUtil metricsRestUtil) {
+    this.netClient = netClient;
+    this.metricsRestUtil = metricsRestUtil;
+  }
 
   @Override
   public void handle(HttpExchange exchange) throws IOException {
@@ -107,11 +113,12 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
       Map<String, String> params = getParamsMap(exchange.getRequestURI().getQuery());
 
       exchange.getResponseHeaders().set("Content-Type", "application/json");
-
       try {
-        List<String> metricList = parseArrayParam(params, "metrics", false);
-        List<String> aggList = parseArrayParam(params, "agg", false);
-        List<String> dimList = parseArrayParam(params, "dim", true);
+
+        String nodes = params.get("nodes");
+        List<String> metricList = metricsRestUtil.parseArrayParam(params, "metrics", false);
+        List<String> aggList = metricsRestUtil.parseArrayParam(params, "agg", false);
+        List<String> dimList = metricsRestUtil.parseArrayParam(params, "dim", true);
 
         if (metricList.size() != aggList.size()) {
           sendResponse(
@@ -125,9 +132,55 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
           return;
         }
 
-        String nodes = params.get("nodes");
-        String response = collectStats(db, dbTimestamp, metricList, aggList, dimList, nodes);
-        sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
+        String localResponse;
+        if (db != null) {
+          Result<Record> metricResult = db.queryMetric(metricList, aggList, dimList);
+          if (metricResult == null) {
+            localResponse = "{}";
+          } else {
+            localResponse = metricResult.formatJSON();
+          }
+        } else {
+          // Empty JSON.
+          localResponse = "{}";
+        }
+
+        String localResponseWithTimestamp =
+            String.format("{\"timestamp\": %d, \"data\": %s}", dbTimestamp, localResponse);
+        ConcurrentHashMap<String, String> nodeResponses = new ConcurrentHashMap<>();
+        ClusterLevelMetricsReader.NodeDetails[] allNodes = ClusterLevelMetricsReader.getNodes();
+        String localNodeId = "local";
+        if (allNodes.length != 0) {
+          localNodeId = allNodes[0].getId();
+        }
+        nodeResponses.put(localNodeId, localResponseWithTimestamp);
+        String response = metricsRestUtil.nodeJsonBuilder(nodeResponses);
+
+        if (nodes == null || !nodes.equals("all") || allNodes.length <= 1) {
+          sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
+        } else if (nodes.equals("all")) {
+          CountDownLatch doneSignal = new CountDownLatch(allNodes.length - 1);
+          for (int i = 1; i < allNodes.length; i++) {
+            ClusterLevelMetricsReader.NodeDetails node = allNodes[i];
+            LOG.debug("Collecting remote stats");
+            try {
+              collectRemoteStats(node, metricList, aggList, dimList, nodeResponses, doneSignal);
+            } catch (Exception e) {
+              LOG.error(
+                  "Unable to collect stats for node, addr:{}, exception: {} ExceptionCode: {}",
+                  node.getHostAddress(),
+                  e,
+                  StatExceptionCode.REQUEST_REMOTE_ERROR.toString());
+              StatsCollector.instance().logException(StatExceptionCode.REQUEST_REMOTE_ERROR);
+            }
+          }
+          boolean completed = doneSignal.await(TIME_OUT_VALUE, TIME_OUT_UNIT);
+          if (!completed) {
+            LOG.debug("Timeout while collecting remote stats");
+            StatsCollector.instance().logException(StatExceptionCode.REQUEST_REMOTE_ERROR);
+          }
+          sendResponseWhenRequestCompleted(nodeResponses, exchange);
+        }
       } catch (InvalidParameterException e) {
         LOG.error("DB file path : {}", db.getDBFilePath());
         LOG.error(
@@ -161,8 +214,32 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
     }
   }
 
+  void collectRemoteStats(
+      ClusterLevelMetricsReader.NodeDetails node,
+      List<String> metricList,
+      List<String> aggList,
+      List<String> dimList,
+      final ConcurrentHashMap<String, String> nodeResponses,
+      final CountDownLatch doneSignal)
+      throws Exception {
+    // create a request
+    MetricsRequest request =
+        MetricsRequest.newBuilder()
+            .addAllMetricList(metricList)
+            .addAllAggList(aggList)
+            .addAllDimList(dimList)
+            .build();
+    ThreadSafeStreamObserver responseObserver =
+        new ThreadSafeStreamObserver(node, nodeResponses, doneSignal);
+    try {
+      this.netClient.getMetrics(node.getHostAddress(), request, responseObserver);
+    } catch (Exception e) {
+      LOG.error("Metrics : Exception occurred while getting Metrics {}", e.getCause());
+    }
+  }
+
   private boolean isUnitLookUp(HttpExchange exchange) throws IOException {
-    if (exchange.getRequestURI().toString().equals(Util.QUERY_URL + "/units")) {
+    if (exchange.getRequestURI().toString().equals(Util.METRICS_QUERY_URL + "/units")) {
       return true;
     }
     return false;
@@ -179,7 +256,7 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
         exchange, JsonConverter.writeValueAsString(metricUnits), HttpURLConnection.HTTP_OK);
   }
 
-  public boolean validParams(
+  private boolean validParams(
       HttpExchange exchange, List<String> metricList, List<String> dimList, List<String> aggList)
       throws IOException {
     for (String metric : metricList) {
@@ -215,20 +292,20 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
     return true;
   }
 
-  public List<String> parseArrayParam(Map<String, String> params, String name, boolean optional) {
-    if (!optional) {
-      if (!params.containsKey(name) || params.get(name).isEmpty()) {
-        throw new InvalidParameterException(String.format("%s parameter needs to be set", name));
-      }
+  private void sendResponseWhenRequestCompleted(
+      ConcurrentHashMap<String, String> nodeResponses, HttpExchange exchange) {
+    if (nodeResponses.size() == 0) {
+      return;
     }
-
-    if (params.containsKey(name) && !params.get(name).isEmpty()) {
-      return Arrays.asList(params.get(name).split(","));
+    String response = metricsRestUtil.nodeJsonBuilder(nodeResponses);
+    try {
+      sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
+    } catch (Exception e) {
+      LOG.error("Exception occurred while sending response {}", e.getCause());
     }
-    return new ArrayList<>();
   }
 
-  public void sendResponse(HttpExchange exchange, String response, int status) throws IOException {
+  private void sendResponse(HttpExchange exchange, String response, int status) throws IOException {
     try (OutputStream os = exchange.getResponseBody()) {
       exchange.sendResponseHeaders(status, response.length());
       os.write(response.getBytes());
@@ -238,144 +315,33 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
     }
   }
 
-  public String getParamString(
-      List<String> metricList, List<String> aggList, List<String> dimList) {
-    String metricString = "metrics=" + String.join(",", metricList);
-    String aggString = "agg=" + String.join(",", aggList);
-    String dimString = "dim=" + String.join(",", dimList);
-    return String.join("&", metricString, aggString, dimString);
-  }
+  private static class ThreadSafeStreamObserver implements StreamObserver<MetricsResponse> {
+    private final CountDownLatch doneSignal;
+    private final ConcurrentHashMap<String, String> nodeResponses;
+    private final ClusterLevelMetricsReader.NodeDetails node;
 
-  public String collectStats(
-      MetricsDB db,
-      Long dbTimestamp,
-      List<String> metricList,
-      List<String> aggList,
-      List<String> dimList,
-      String nodeParam)
-      throws Exception {
-    String localResponse = "";
-    if (db != null) {
-      Result<Record> metricResult = db.queryMetric(metricList, aggList, dimList);
-      if (metricResult == null) {
-        localResponse = "{}";
-      } else {
-        localResponse = metricResult.formatJSON();
-      }
-    } else {
-      // Empty JSON.
-      localResponse = "{}";
-    }
-    String localResponseWithTimestamp = getQueryJsonWithTimestamp(dbTimestamp, localResponse);
-
-    if (nodeParam == null) {
-      return localResponseWithTimestamp;
+    ThreadSafeStreamObserver(
+        ClusterLevelMetricsReader.NodeDetails node,
+        ConcurrentHashMap<String, String> nodeResponses,
+        CountDownLatch doneSignal) {
+      this.node = node;
+      this.doneSignal = doneSignal;
+      this.nodeResponses = nodeResponses;
     }
 
-    if (nodeParam.equals("all")) {
-      LOG.debug("Collecting metrics from all nodes");
-      HashMap<String, String> nodeResponses = new HashMap<>();
-      String params = getParamString(metricList, aggList, dimList);
-      ClusterLevelMetricsReader.NodeDetails[] nodes = ClusterLevelMetricsReader.getNodes();
-      String localNodeId = "local";
-      if (nodes.length != 0) {
-        localNodeId = nodes[0].getId();
-      }
-      nodeResponses.put(localNodeId, localResponseWithTimestamp);
-      for (int i = 1; i < nodes.length; i++) {
-        ClusterLevelMetricsReader.NodeDetails node = nodes[i];
-        LOG.debug("Collecting remote stats");
-        try {
-          String remoteNodeStats =
-              collectRemoteStats(node.getHostAddress(), Util.QUERY_URL, params);
-          nodeResponses.put(node.getId(), remoteNodeStats);
-        } catch (Exception e) {
-          LOG.error(
-              "Unable to collect stats for node, addr:{}, exception: {} ExceptionCode: {}",
-              node.getHostAddress(),
-              e,
-              StatExceptionCode.REQUEST_REMOTE_ERROR.toString());
-          StatsCollector.instance().logException(StatExceptionCode.REQUEST_REMOTE_ERROR);
-        }
-      }
-      String response = nodeJsonBuilder(nodeResponses);
-      LOG.debug("Returned the final text - \n{}", response);
-      return response;
-    }
-    return localResponseWithTimestamp;
-  }
-
-  public String getQueryJsonWithTimestamp(Long timestamp, String queryResponse) {
-    return String.format("{\"timestamp\": %d, \"data\": %s}", timestamp, queryResponse);
-  }
-
-  public String nodeJsonBuilder(HashMap<String, String> nodeResponses) {
-    StringBuilder outputJson = new StringBuilder();
-    outputJson.append("{");
-    Set<String> nodeSet = nodeResponses.keySet();
-    String[] nodes = nodeSet.toArray(new String[nodeSet.size()]);
-    if (nodes.length > 0) {
-      outputJson.append("\"");
-      outputJson.append(nodes[0]);
-      outputJson.append("\": ");
-      outputJson.append(nodeResponses.get(nodes[0]));
+    public void onNext(MetricsResponse value) {
+      nodeResponses.putIfAbsent(node.getId(), value.getMetricsResult());
     }
 
-    for (int i = 1; i < nodes.length; i++) {
-      outputJson.append(", \"");
-      outputJson.append(nodes[i]);
-      outputJson.append("\" :");
-      outputJson.append(nodeResponses.get(nodes[i]));
+    @Override
+    public void onError(Throwable t) {
+      LOG.info("Metrics : Error occurred while getting Metrics for " + node.getHostAddress());
+      doneSignal.countDown();
     }
 
-    outputJson.append("}");
-    return outputJson.toString();
-  }
-
-  protected String collectRemoteStats(String nodeIP, String uri, String queryString)
-      throws Exception {
-    HttpURLConnection conn = getUrlConnection(nodeIP, uri, queryString);
-
-    conn.setConnectTimeout(HTTP_CLIENT_CONNECTION_TIMEOUT);
-    int responseCode = conn.getResponseCode();
-    if (responseCode != HttpURLConnection.HTTP_OK) {
-      LOG.error(
-          "Did not receive 200 from remote node. NodeIP-{} ExceptionCode: {}",
-          nodeIP,
-          StatExceptionCode.REQUEST_REMOTE_ERROR.toString());
-      StatsCollector.instance().logException(StatExceptionCode.REQUEST_REMOTE_ERROR);
-      throw new Exception("Did not receive a 200 response code from the remote node.");
-    }
-
-    BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-    StringBuilder response = new StringBuilder();
-    String inputLine;
-    try {
-      while ((inputLine = in.readLine()) != null) {
-        response.append(inputLine);
-      }
-    } finally {
-      in.close();
-    }
-
-    return response.toString();
-  }
-
-  private HttpURLConnection getUrlConnection(String nodeIP, String uri, String queryString)
-      throws IOException {
-    boolean httpsEnabled = PluginSettings.instance().getHttpsEnabled();
-    String protocol = "http";
-    if (httpsEnabled) {
-      protocol = "https";
-    }
-    String urlString = String.format("%s://%s:9600%s?%s", protocol, nodeIP, uri, queryString);
-    LOG.debug("Remote URL - {}", urlString);
-    URL url = new URL(urlString);
-
-    if (httpsEnabled) {
-      return (HttpsURLConnection) url.openConnection();
-    } else {
-      return (HttpURLConnection) url.openConnection();
+    @Override
+    public void onCompleted() {
+      doneSignal.countDown();
     }
   }
 }
