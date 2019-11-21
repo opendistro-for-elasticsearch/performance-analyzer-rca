@@ -1,20 +1,21 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators;
 
 public class Sum {
-    double sum;
-    public Sum() {
-        sum = 0;
-    }
+  double sum;
 
-    public void insert(double val) {
-        sum += val;
-    }
+  public Sum() {
+    sum = 0;
+  }
 
-    public double get() {
-        return sum;
-    }
+  public void insert(double val) {
+    sum += val;
+  }
 
-    public void reset() {
-        sum = 0;
-    }
+  public double get() {
+    return sum;
+  }
+
+  public void reset() {
+    sum = 0;
+  }
 }

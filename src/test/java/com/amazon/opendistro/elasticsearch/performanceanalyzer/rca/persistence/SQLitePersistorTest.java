@@ -4,11 +4,9 @@ import org.junit.Test;
 
 public class SQLitePersistorTest {
 
-    @Test
-    public void createTable() {
-    }
+  @Test
+  public void createTable() {}
 
-    @Test
-    public void insertRow() {
-    }
+  @Test
+  public void insertRow() {}
 }

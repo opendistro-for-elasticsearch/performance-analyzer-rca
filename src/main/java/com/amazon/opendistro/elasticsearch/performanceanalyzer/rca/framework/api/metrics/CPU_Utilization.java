@@ -4,9 +4,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class CPU_Utilization extends Metric {
-    public static final String NAME = AllMetrics.OSMetrics.CPU_UTILIZATION.toString();
-    public CPU_Utilization(long evaluationIntervalSeconds) {
-        super(NAME, evaluationIntervalSeconds);
-    }
-}
+  public static final String NAME = AllMetrics.OSMetrics.CPU_UTILIZATION.toString();
 
+  public CPU_Utilization(long evaluationIntervalSeconds) {
+    super(NAME, evaluationIntervalSeconds);
+  }
+}

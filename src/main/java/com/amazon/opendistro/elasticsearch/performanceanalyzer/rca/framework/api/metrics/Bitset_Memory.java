@@ -4,8 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class Bitset_Memory extends Metric {
-    public Bitset_Memory(long evaluationIntervalSeconds) {
-        super(AllMetrics.ShardStatsValue.BITSET_MEMORY.name(), evaluationIntervalSeconds);
-    }
+  public Bitset_Memory(long evaluationIntervalSeconds) {
+    super(AllMetrics.ShardStatsValue.BITSET_MEMORY.name(), evaluationIntervalSeconds);
+  }
 }
-

@@ -4,8 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class Indexing_ThrottleTime extends Metric {
-    public Indexing_ThrottleTime(long evaluationIntervalSeconds) {
-        super(AllMetrics.ShardStatsValue.INDEXING_THROTTLE_TIME.name(), evaluationIntervalSeconds);
-    }
+  public Indexing_ThrottleTime(long evaluationIntervalSeconds) {
+    super(AllMetrics.ShardStatsValue.INDEXING_THROTTLE_TIME.name(), evaluationIntervalSeconds);
+  }
 }
-

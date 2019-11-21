@@ -6,80 +6,79 @@ import java.util.List;
 import java.util.Map;
 
 public class Stats {
-    private long totalNodesCount;
-    private long leafNodesCount;
-    private long leavesAddedToAnalysisFlowField;
-    private Map<Integer, ConnectedComponent> graphs;
-    private static Stats instance = null;
+  private long totalNodesCount;
+  private long leafNodesCount;
+  private long leavesAddedToAnalysisFlowField;
+  private Map<Integer, ConnectedComponent> graphs;
+  private static Stats instance = null;
 
+  public void incrementLeavesAddedToAnalysisFlowField() {
+    ++this.leavesAddedToAnalysisFlowField;
+  }
 
-    public void incrementLeavesAddedToAnalysisFlowField() {
-        ++this.leavesAddedToAnalysisFlowField;
+  private Stats() {
+    this.totalNodesCount = 0;
+    this.leafNodesCount = 0;
+    this.leavesAddedToAnalysisFlowField = 0;
+    this.graphs = new HashMap<>();
+  }
+
+  public static Stats getInstance() {
+    if (instance == null) {
+      instance = new Stats();
     }
+    return instance;
+  }
 
-    private Stats() {
-        this.totalNodesCount = 0;
-        this.leafNodesCount = 0;
-        this.leavesAddedToAnalysisFlowField = 0;
-        this.graphs = new HashMap<>();
-    }
+  public long getTotalNodesCount() {
+    return totalNodesCount;
+  }
 
-    public static Stats getInstance() {
-        if (instance == null) {
-            instance = new Stats();
-        }
-        return instance;
-    }
+  public long getLeafNodesCount() {
+    return leafNodesCount;
+  }
 
-    public long getTotalNodesCount() {
-        return totalNodesCount;
-    }
+  public long getLeavesAddedToAnalysisFlowField() {
+    return leavesAddedToAnalysisFlowField;
+  }
 
-    public long getLeafNodesCount() {
-        return leafNodesCount;
-    }
+  void incrementTotalNodesCount() {
+    ++this.totalNodesCount;
+  }
 
-    public long getLeavesAddedToAnalysisFlowField() {
-        return leavesAddedToAnalysisFlowField;
-    }
+  void incrementLeafNodesCount() {
+    ++this.leafNodesCount;
+    incrementTotalNodesCount();
+  }
 
-    void incrementTotalNodesCount() {
-        ++this.totalNodesCount;
-    }
+  public int getGraphsCount() {
+    return graphs.size();
+  }
 
-    void incrementLeafNodesCount() {
-        ++this.leafNodesCount;
-        incrementTotalNodesCount();
-    }
+  public void addNewGraph(ConnectedComponent connectedComponent) {
+    this.graphs.put(connectedComponent.getGraphId(), connectedComponent);
+  }
 
-    public int getGraphsCount() {
-        return graphs.size();
-    }
+  void removeGraph(int graphId) {
+    this.graphs.remove(graphId);
+  }
 
-    public void addNewGraph(ConnectedComponent connectedComponent) {
-        this.graphs.put(connectedComponent.getGraphId(), connectedComponent);
-    }
+  public ConnectedComponent getGraphById(int graphId) {
+    return this.graphs.get(graphId);
+  }
 
-    void removeGraph(int graphId) {
-        this.graphs.remove(graphId);
-    }
+  public List<ConnectedComponent> getConnectedComponents() {
+    return new ArrayList<>(graphs.values());
+  }
 
-    public ConnectedComponent getGraphById(int graphId) {
-        return this.graphs.get(graphId);
-    }
+  public static void clear() {
+    instance = null;
+  }
 
-    public List<ConnectedComponent> getConnectedComponents() {
-        return new ArrayList<>(graphs.values());
-    }
-
-    public static void clear() {
-        instance = null;
-    }
-
-    public void reset() {
-        totalNodesCount = 0;
-        leafNodesCount = 0;
-        leavesAddedToAnalysisFlowField = 0;
-        graphs = null;
-    }
+  public void reset() {
+    totalNodesCount = 0;
+    leafNodesCount = 0;
+    leavesAddedToAnalysisFlowField = 0;
+    graphs = null;
+  }
 }

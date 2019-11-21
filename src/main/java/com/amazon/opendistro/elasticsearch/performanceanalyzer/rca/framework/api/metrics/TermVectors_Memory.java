@@ -4,8 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class TermVectors_Memory extends Metric {
-    public TermVectors_Memory(long evaluationIntervalSeconds) {
-        super(AllMetrics.ShardStatsValue.TERM_VECTOR_MEMORY.name(), evaluationIntervalSeconds);
-    }
+  public TermVectors_Memory(long evaluationIntervalSeconds) {
+    super(AllMetrics.ShardStatsValue.TERM_VECTOR_MEMORY.name(), evaluationIntervalSeconds);
+  }
 }
-

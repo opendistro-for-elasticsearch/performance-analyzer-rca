@@ -16,34 +16,33 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors;
 
 public enum StatExceptionCode {
-    TOTAL_ERROR("TotalError"),
-    METRICS_WRITE_ERROR("MetricsWriteError"),
-    METRICS_REMOVE_ERROR("MetricsRemoveError"),
-    JVM_ATTACH_ERROR("JvmAttachErrror"),
-    MASTER_METRICS_ERROR("MasterMetricsError"),
-    DISK_METRICS_ERROR("DiskMetricsError"),
-    THREAD_IO_ERROR("ThreadIOError"),
-    SCHEMA_PARSER_ERROR("SchemaParserError"),
-    JSON_PARSER_ERROR("JsonParserError"),
-    NETWORK_COLLECTION_ERROR("NetworkCollectionError"),
-    NODESTATS_COLLECTION_ERROR("NodeStatsCollectionError"),
-    OTHER_COLLECTION_ERROR("OtherCollectionError"),
-    REQUEST_ERROR("RequestError"),
-    REQUEST_REMOTE_ERROR("RequestRemoteError"),
-    READER_PARSER_ERROR("ReaderParserError"),
-    READER_RESTART_PROCESSING("ReaderRestartProcessing"),
-    RCA_SCHEDULER_RESTART_PROCESSING("RCASchedulerRestartProcessing"),
-    OTHER("Other");
+  TOTAL_ERROR("TotalError"),
+  METRICS_WRITE_ERROR("MetricsWriteError"),
+  METRICS_REMOVE_ERROR("MetricsRemoveError"),
+  JVM_ATTACH_ERROR("JvmAttachErrror"),
+  MASTER_METRICS_ERROR("MasterMetricsError"),
+  DISK_METRICS_ERROR("DiskMetricsError"),
+  THREAD_IO_ERROR("ThreadIOError"),
+  SCHEMA_PARSER_ERROR("SchemaParserError"),
+  JSON_PARSER_ERROR("JsonParserError"),
+  NETWORK_COLLECTION_ERROR("NetworkCollectionError"),
+  NODESTATS_COLLECTION_ERROR("NodeStatsCollectionError"),
+  OTHER_COLLECTION_ERROR("OtherCollectionError"),
+  REQUEST_ERROR("RequestError"),
+  REQUEST_REMOTE_ERROR("RequestRemoteError"),
+  READER_PARSER_ERROR("ReaderParserError"),
+  READER_RESTART_PROCESSING("ReaderRestartProcessing"),
+  RCA_SCHEDULER_RESTART_PROCESSING("RCASchedulerRestartProcessing"),
+  OTHER("Other");
 
-    private final String value;
+  private final String value;
 
-    StatExceptionCode(String value) {
-        this.value = value;
-    }
+  StatExceptionCode(String value) {
+    this.value = value;
+  }
 
-    @Override
-    public String toString() {
-        return value;
-    }
+  @Override
+  public String toString() {
+    return value;
+  }
 }
-

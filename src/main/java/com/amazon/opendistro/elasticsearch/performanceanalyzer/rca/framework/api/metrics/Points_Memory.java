@@ -4,8 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class Points_Memory extends Metric {
-    public Points_Memory(long evaluationIntervalSeconds) {
-        super(AllMetrics.ShardStatsValue.POINTS_MEMORY.name(), evaluationIntervalSeconds);
-    }
+  public Points_Memory(long evaluationIntervalSeconds) {
+    super(AllMetrics.ShardStatsValue.POINTS_MEMORY.name(), evaluationIntervalSeconds);
+  }
 }
-

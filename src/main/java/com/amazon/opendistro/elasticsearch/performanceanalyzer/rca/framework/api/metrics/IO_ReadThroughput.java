@@ -4,7 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class IO_ReadThroughput extends Metric {
-    public IO_ReadThroughput(long evaluationIntervalSeconds) {
-        super(AllMetrics.OSMetrics.IO_READ_THROUGHPUT.toString(), evaluationIntervalSeconds);
-    }
+  public IO_ReadThroughput(long evaluationIntervalSeconds) {
+    super(AllMetrics.OSMetrics.IO_READ_THROUGHPUT.toString(), evaluationIntervalSeconds);
+  }
 }
