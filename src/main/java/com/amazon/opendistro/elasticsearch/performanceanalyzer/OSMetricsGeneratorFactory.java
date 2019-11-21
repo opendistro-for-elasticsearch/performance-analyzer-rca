@@ -20,20 +20,21 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator
 
 public class OSMetricsGeneratorFactory {
 
-  private static final String OS_TYPE = System.getProperty("os.name");
+    private static final String OS_TYPE = System.getProperty("os.name");
 
-  public static OSMetricsGenerator getInstance() {
+    public static OSMetricsGenerator getInstance() {
 
-    if (isLinux()) {
-      return LinuxOSMetricsGenerator.getInstance();
-    } else {
-      ConfigStatus.INSTANCE.setConfigurationInvalid();
+        if (isLinux()) {
+            return LinuxOSMetricsGenerator.getInstance();
+        } else {
+            ConfigStatus.INSTANCE.setConfigurationInvalid();
+        }
+
+        return null;
     }
 
-    return null;
-  }
+    private static boolean isLinux() {
+        return OS_TYPE.toLowerCase().contains("linux");
+    }
 
-  private static boolean isLinux() {
-    return OS_TYPE.toLowerCase().contains("linux");
-  }
 }

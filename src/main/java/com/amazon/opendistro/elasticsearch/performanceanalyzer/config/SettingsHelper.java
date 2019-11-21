@@ -13,23 +13,25 @@
  * permissions and limitations under the License.
  */
 
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.config;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
+
+import java.io.InputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Properties;
 
 public class SettingsHelper {
-  public static Properties getSettings(final String fileRelativePath) throws IOException {
-    Properties prop = new Properties();
+    public static Properties getSettings(final String fileRelativePath) throws IOException {
+        Properties prop = new Properties();
 
-    try (InputStream input = new FileInputStream(Util.PLUGIN_LOCATION + fileRelativePath); ) {
-      // load a properties file
-      prop.load(input);
+        try (InputStream input = new FileInputStream(Util.PLUGIN_LOCATION + fileRelativePath); ) {
+            // load a properties file
+            prop.load(input);
+        }
+
+        return prop;
     }
-
-    return prop;
-  }
 }

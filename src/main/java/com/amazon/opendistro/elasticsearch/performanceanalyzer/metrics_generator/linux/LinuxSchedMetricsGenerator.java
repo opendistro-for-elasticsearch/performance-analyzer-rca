@@ -17,50 +17,52 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generato
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.SchedMetricsGenerator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.os.ThreadSched;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public class LinuxSchedMetricsGenerator implements SchedMetricsGenerator {
 
-  private final Map<String, ThreadSched.SchedMetrics> schedMetricsMap;
+    private final Map<String, ThreadSched.SchedMetrics> schedMetricsMap;
 
-  public LinuxSchedMetricsGenerator() {
-    schedMetricsMap = new HashMap<>();
-  }
 
-  @Override
-  public double getAvgRuntime(final String threadId) {
+    public LinuxSchedMetricsGenerator() {
+        schedMetricsMap = new HashMap<>();
+    }
 
-    return schedMetricsMap.get(threadId).avgRuntime;
-  }
+    @Override
+    public double getAvgRuntime(final String threadId) {
 
-  @Override
-  public double getAvgWaittime(final String threadId) {
+        return schedMetricsMap.get(threadId).avgRuntime;
+    }
 
-    return schedMetricsMap.get(threadId).avgWaittime;
-  }
+    @Override
+    public double getAvgWaittime(final String threadId) {
 
-  @Override
-  public double getContextSwitchRate(final String threadId) {
+        return schedMetricsMap.get(threadId).avgWaittime;
+    }
 
-    return schedMetricsMap.get(threadId).contextSwitchRate;
-  }
+    @Override
+    public double getContextSwitchRate(final String threadId) {
 
-  @Override
-  public boolean hasSchedMetrics(final String threadId) {
+        return schedMetricsMap.get(threadId).contextSwitchRate;
+    }
 
-    return schedMetricsMap.containsKey(threadId);
-  }
+    @Override
+    public boolean hasSchedMetrics(final String threadId) {
 
-  @Override
-  public void addSample() {
+        return schedMetricsMap.containsKey(threadId);
+    }
 
-    schedMetricsMap.clear();
-    ThreadSched.INSTANCE.addSample();
-  }
+    @Override
+    public void addSample() {
 
-  public void setSchedMetric(final String threadId, final ThreadSched.SchedMetrics schedMetrics) {
+        schedMetricsMap.clear();
+        ThreadSched.INSTANCE.addSample();
+    }
 
-    schedMetricsMap.put(threadId, schedMetrics);
-  }
+    public void setSchedMetric(final String threadId, final ThreadSched.SchedMetrics schedMetrics) {
+
+        schedMetricsMap.put(threadId, schedMetrics);
+    }
 }

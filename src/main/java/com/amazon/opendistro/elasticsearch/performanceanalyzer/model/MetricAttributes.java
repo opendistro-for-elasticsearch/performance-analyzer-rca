@@ -15,19 +15,23 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.model;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricDimension;
 import java.util.HashSet;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricDimension;
+
+
 public class MetricAttributes {
-  public String unit;
-  public HashSet<String> dimensionNames;
+    public String unit;
+    public HashSet<String> dimensionNames;
 
-  MetricAttributes(String unit, MetricDimension[] dimensions) {
+    MetricAttributes(String unit,
+                     MetricDimension[] dimensions) {
 
-    this.unit = unit;
-    this.dimensionNames = new HashSet<String>();
-    for (MetricDimension dimension : dimensions) {
-      this.dimensionNames.add(dimension.toString());
+        this.unit = unit;
+        this.dimensionNames = new HashSet<String>();
+        for (MetricDimension dimension : dimensions) {
+            this.dimensionNames.add(dimension.toString());
+        }
     }
-  }
+
 }

@@ -18,13 +18,10 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
 import static org.junit.Assert.assertEquals;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterLevelMetricsReader.NodeDetails;
-
 import java.io.File;
 import java.sql.SQLException;
 
+//import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
@@ -33,6 +30,9 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterLevelMetricsReader.NodeDetails;
 
 @PowerMockIgnore({ "org.apache.logging.log4j.*" })
 @RunWith(PowerMockRunner.class)
@@ -71,6 +71,9 @@ public class ClusterLevelMetricsReaderTests extends AbstractReaderTests {
                 createNodeDetailsMetrics(nodeId1, address1),
                 createNodeDetailsMetrics(nodeId2, address2)
                 );
+
+//        setFinalStatic(PerformanceAnalyzerMetrics.class.getDeclaredField("sDevShmLocation"),
+//                rootLocation);
 
         ClusterLevelMetricsReader.collectNodeMetrics(currTimestamp);
 

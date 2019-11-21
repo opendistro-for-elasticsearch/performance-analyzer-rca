@@ -15,6 +15,9 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.DisksCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.HeapMetricsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.MetricsPurgeActivity;
@@ -29,48 +32,46 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.os.OSGlobals;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.os.ThreadCPU;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.os.ThreadDiskIO;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.os.ThreadSched;
-import java.util.HashMap;
-import java.util.Map;
 
 public class MetricsConfiguration {
-  public static final int SAMPLING_INTERVAL = 5000;
-  public static final int ROTATION_INTERVAL = 30000;
-  public static final int STATS_ROTATION_INTERVAL = 60000;
-  public static final int DELETION_INTERVAL =
-      PluginSettings.instance().getMetricsDeletionInterval();
+    public static final int SAMPLING_INTERVAL = 5000;
+    public static final int ROTATION_INTERVAL = 30000;
+    public static final int STATS_ROTATION_INTERVAL = 60000;
+    public static final int DELETION_INTERVAL = PluginSettings.instance().getMetricsDeletionInterval();
 
-  public static class MetricConfig {
-    public int samplingInterval;
-    public int rotationInterval;
-    public int deletionInterval;
+    public static class MetricConfig {
+        public int samplingInterval;
+        public int rotationInterval;
+        public int deletionInterval;
 
-    public MetricConfig(int samplingInterval, int rotationInterval, int deletionInterval) {
-      this.samplingInterval = samplingInterval;
-      this.rotationInterval = rotationInterval;
-      this.deletionInterval = deletionInterval;
+        public MetricConfig(int samplingInterval,
+                     int rotationInterval,
+                     int deletionInterval) {
+            this.samplingInterval = samplingInterval;
+            this.rotationInterval = rotationInterval;
+            this.deletionInterval = deletionInterval;
+        }
     }
-  }
 
-  public static final Map<Class, MetricConfig> CONFIG_MAP = new HashMap<>();
-  public static final MetricConfig cdefault;
+    public static final Map<Class, MetricConfig> CONFIG_MAP = new HashMap<>();
+    public static final MetricConfig cdefault;
+    static {
+        cdefault = new MetricConfig(SAMPLING_INTERVAL, 0, 0);
 
-  static {
-    cdefault = new MetricConfig(SAMPLING_INTERVAL, 0, 0);
-
-    CONFIG_MAP.put(ThreadCPU.class, cdefault);
-    CONFIG_MAP.put(ThreadDiskIO.class, cdefault);
-    CONFIG_MAP.put(ThreadSched.class, cdefault);
-    CONFIG_MAP.put(ThreadList.class, cdefault);
-    CONFIG_MAP.put(GCMetrics.class, cdefault);
-    CONFIG_MAP.put(HeapMetrics.class, cdefault);
-    CONFIG_MAP.put(NetworkE2ECollector.class, cdefault);
-    CONFIG_MAP.put(NetworkInterfaceCollector.class, cdefault);
-    CONFIG_MAP.put(OSGlobals.class, cdefault);
-    CONFIG_MAP.put(PerformanceAnalyzerMetrics.class, new MetricConfig(0, ROTATION_INTERVAL, 0));
-    CONFIG_MAP.put(
-        MetricsPurgeActivity.class, new MetricConfig(ROTATION_INTERVAL, 0, DELETION_INTERVAL));
-    CONFIG_MAP.put(StatsCollector.class, new MetricConfig(STATS_ROTATION_INTERVAL, 0, 0));
-    CONFIG_MAP.put(DisksCollector.class, cdefault);
-    CONFIG_MAP.put(HeapMetricsCollector.class, cdefault);
-  }
+        CONFIG_MAP.put(ThreadCPU.class, cdefault);
+        CONFIG_MAP.put(ThreadDiskIO.class, cdefault);
+        CONFIG_MAP.put(ThreadSched.class, cdefault);
+        CONFIG_MAP.put(ThreadList.class, cdefault);
+        CONFIG_MAP.put(GCMetrics.class, cdefault);
+        CONFIG_MAP.put(HeapMetrics.class, cdefault);
+        CONFIG_MAP.put(NetworkE2ECollector.class, cdefault);
+        CONFIG_MAP.put(NetworkInterfaceCollector.class, cdefault);
+        CONFIG_MAP.put(OSGlobals.class, cdefault);
+        CONFIG_MAP.put(PerformanceAnalyzerMetrics.class, new MetricConfig(0, ROTATION_INTERVAL, 0));
+        CONFIG_MAP.put(MetricsPurgeActivity.class, new MetricConfig(ROTATION_INTERVAL, 0, DELETION_INTERVAL));
+        CONFIG_MAP.put(StatsCollector.class, new MetricConfig(STATS_ROTATION_INTERVAL, 0, 0));
+        CONFIG_MAP.put(DisksCollector.class, cdefault);
+        CONFIG_MAP.put(HeapMetricsCollector.class, cdefault);
+    }
 }
+
