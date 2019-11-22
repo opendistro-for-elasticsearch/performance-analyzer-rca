@@ -20,8 +20,15 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatEx
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.TroubleshootingConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsRestUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.handler.MetricsServerHandler;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetServer;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryMetricsRequestHandler;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsServer;
@@ -31,6 +38,7 @@ import java.security.KeyStore;
 import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManagerFactory;
@@ -52,6 +60,9 @@ public class PerformanceAnalyzerApp {
   private static final Logger LOG = LogManager.getLogger(PerformanceAnalyzerApp.class);
   private static final ScheduledMetricCollectorsExecutor METRIC_COLLECTOR_EXECUTOR =
       new ScheduledMetricCollectorsExecutor(1, false);
+  private static final ScheduledExecutorService netOperationsExecutor =
+      Executors.newScheduledThreadPool(
+          2, new ThreadFactoryBuilder().setNameFormat("network-thread-%d").build());
 
   public static void main(String[] args) throws Exception {
     // Initialize settings before creating threads.
@@ -88,25 +99,44 @@ public class PerformanceAnalyzerApp {
             });
     readerThread.start();
 
-    int readerPort = getPortNumber();
+    //        RcaController rcaController = new RcaController(netOperationsExecutor);
+    //        rcaController.startPollers();
+
+    boolean useHttps = PluginSettings.instance().getHttpsEnabled();
+    GRPCConnectionManager connectionManager = new GRPCConnectionManager(useHttps);
+    NetServer netServer = new NetServer(9600, 1, useHttps);
+    NetClient netClient = new NetClient(connectionManager);
+    MetricsRestUtil metricsRestUtil = new MetricsRestUtil();
+    HttpServer httpServer = createInternalServer(settings, getPortNumber(), netClient, netServer);
+    httpServer.createContext(QUERY_URL, new QueryMetricsRequestHandler(netClient, metricsRestUtil));
+    RcaController rcaController =
+        new RcaController(
+            netOperationsExecutor, connectionManager, netClient, netServer, httpServer);
+    rcaController.startPollers();
+  }
+
+  public static HttpServer createInternalServer(
+      PluginSettings settings, int internalPort, NetClient netClient, NetServer netServer) {
     try {
       Security.addProvider(new BouncyCastleProvider());
-      HttpServer server = null;
+      HttpServer server;
       if (settings.getHttpsEnabled()) {
-        server = createHttpsServer(readerPort);
+        server = createHttpsServer(internalPort);
       } else {
-        server = createHttpServer(readerPort);
+        server = createHttpServer(internalPort);
       }
-      server.createContext(QUERY_URL, new QueryMetricsRequestHandler());
+      netServer.setMetricsHandler(new MetricsServerHandler());
       server.setExecutor(Executors.newCachedThreadPool());
       server.start();
+      return server;
     } catch (java.net.BindException ex) {
-      LOG.error("Port  {} is already in use...exiting", readerPort);
       Runtime.getRuntime().halt(1);
     } catch (Exception ex) {
-      LOG.error("Exception in starting Reader Process: " + ex.toString());
+      ex.printStackTrace();
       Runtime.getRuntime().halt(1);
     }
+
+    return null;
   }
 
   private static HttpServer createHttpsServer(int readerPort) throws Exception {

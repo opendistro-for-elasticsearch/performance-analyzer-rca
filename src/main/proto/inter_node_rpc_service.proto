@@ -1,0 +1,87 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc";
+option java_outer_classname = "PANetworking";
+
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc;
+
+service InterNodeRpcService {
+    // Sends a flowunit to whoever is interested in it.
+    rpc Publish (stream FlowUnitMessage) returns (PublishResponse) {
+    }
+
+    // Sends a subscription request to a node for a particular metric.
+    rpc Subscribe (SubscribeMessage) returns (SubscribeResponse) {
+    }
+
+    // get Metrics for a particular node
+    rpc GetMetrics(MetricsRequest) returns (MetricsResponse) {}
+}
+
+/*
+ Structure that describes the subscription message.
+*/
+message SubscribeMessage {
+    string requester_node = 1;
+    string destination_node = 2;
+    map<string, string> tags = 3;
+}
+
+message SubscribeResponse {
+    enum SubscriptionStatus {
+        SUCCESS = 0;
+        TAG_MISMATCH = 1;
+    }
+    SubscriptionStatus subscription_status = 1;
+}
+
+/*
+ List of Strings.
+*/
+message StringList {
+    repeated string values = 1;
+}
+
+/*
+ A single FlowUnit that will be transferred across the network for RCA computation.
+*/
+message FlowUnitMessage {
+    uint64 timestamp = 1;
+    repeated StringList values = 2;
+    string graphNode = 3;
+    string esNode = 4;
+
+    /*
+     ResourceContext that comes along with ResourceFlowUnit
+    */
+    message ResourceContextMessage {
+        int32 state = 1;
+        int32 resource = 2;
+    }
+    ResourceContextMessage resourceContext = 5;
+}
+
+message PublishResponse {
+    enum PublishResponseStatus {
+        SUCCESS = 0;
+        NODE_SHUTDOWN = 1;
+    }
+    PublishResponseStatus data_status = 1;
+}
+
+/*
+ Request Parameters for GetMetrics API
+*/
+message MetricsRequest {
+    repeated string metric_list = 1;
+    repeated string agg_list = 2;
+    repeated string dim_list = 3;
+}
+
+/*
+ GetMetrics function returns string as a response
+*/
+message MetricsResponse {
+    string metrics_result = 1;
+}
