@@ -16,7 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.config;
 
 class ConfigFatalException extends Exception {
-    ConfigFatalException(String message) {
-        super(message);
-    }
+  ConfigFatalException(String message) {
+    super(message);
+  }
 }

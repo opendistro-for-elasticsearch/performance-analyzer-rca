@@ -13,24 +13,22 @@
  * permissions and limitations under the License.
  */
 
-
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.os;
 
 import org.junit.Test;
 
 public class ThreadCPUTests {
-    public static void main(String[] args) throws Exception {
-        runOnce();
-    }
+  public static void main(String[] args) throws Exception {
+    runOnce();
+  }
 
-    private static void runOnce() {
-        ThreadCPU.INSTANCE.addSample();
-        System.out.println("cpumap and pagemap:" + ThreadCPU.INSTANCE.getCPUPagingActivity().toString());
-    }
+  private static void runOnce() {
+    ThreadCPU.INSTANCE.addSample();
+    System.out.println(
+        "cpumap and pagemap:" + ThreadCPU.INSTANCE.getCPUPagingActivity().toString());
+  }
 
-    //- to enhance
-    @Test
-    public void testMetrics() {
-
-    }
+  // - to enhance
+  @Test
+  public void testMetrics() {}
 }

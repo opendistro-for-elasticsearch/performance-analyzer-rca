@@ -17,17 +17,23 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generato
 
 public interface DiskIOMetricsGenerator {
 
-    // This method will be called before all following get methods
-    // to make sure that all information exists for a thread id
-    boolean hasDiskIOMetrics(String threadId);
+  // This method will be called before all following get methods
+  // to make sure that all information exists for a thread id
+  boolean hasDiskIOMetrics(String threadId);
 
-    // these metrics include page cache activity;
-    // only explicit syscalls: NO mmaps (majflts include mmaps)
-    double getAvgReadThroughputBps(String threadId);
-    double getAvgWriteThroughputBps(String threadId);
-    double getAvgTotalThroughputBps(String threadId);
-    double getAvgReadSyscallRate(String threadId);
-    double getAvgWriteSyscallRate(String threadId);
-    double getAvgTotalSyscallRate(String threadId);
-    void addSample();
+  // these metrics include page cache activity;
+  // only explicit syscalls: NO mmaps (majflts include mmaps)
+  double getAvgReadThroughputBps(String threadId);
+
+  double getAvgWriteThroughputBps(String threadId);
+
+  double getAvgTotalThroughputBps(String threadId);
+
+  double getAvgReadSyscallRate(String threadId);
+
+  double getAvgWriteSyscallRate(String threadId);
+
+  double getAvgTotalSyscallRate(String threadId);
+
+  void addSample();
 }

@@ -13,58 +13,67 @@
  * permissions and limitations under the License.
  */
 
-
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 
 import static org.junit.Assert.assertEquals;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.junit.runner.RunWith;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-@PowerMockIgnore({ "org.apache.logging.log4j.*" })
+@PowerMockIgnore({"org.apache.logging.log4j.*"})
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({ PerformanceAnalyzerMetrics.class, PluginSettings.class })
-@SuppressStaticInitializationFor({ "PluginSettings" })
+@PrepareForTest({PerformanceAnalyzerMetrics.class, PluginSettings.class})
+@SuppressStaticInitializationFor({"PluginSettings"})
 public class PerformanceAnalyzerMetricsTests {
 
-    @Before
-    public void setUp() throws Exception {
-        PluginSettings config = Mockito.mock(PluginSettings.class);
-        Mockito.when(config.getMetricsLocation()).thenReturn("/dev/shm/performanceanalyzer");
-        Mockito.when(config.getWriterQueueSize()).thenReturn(1);
-        PowerMockito.mockStatic(PluginSettings.class);
-        PowerMockito.when(PluginSettings.instance()).thenReturn(config);
-    }
+  @Before
+  public void setUp() throws Exception {
+    PluginSettings config = Mockito.mock(PluginSettings.class);
+    Mockito.when(config.getMetricsLocation()).thenReturn("/dev/shm/performanceanalyzer");
+    Mockito.when(config.getWriterQueueSize()).thenReturn(1);
+    PowerMockito.mockStatic(PluginSettings.class);
+    PowerMockito.when(PluginSettings.instance()).thenReturn(config);
+  }
 
-    //@Test
-    public void testBasicMetric() {
-        System.setProperty("performanceanalyzer.metrics.log.enabled", "False");
-        PerformanceAnalyzerMetrics.emitMetric(System.currentTimeMillis(),
-                PerformanceAnalyzerMetrics.sDevShmLocation + "/dir1/test1",
-                "value1");
-        assertEquals("value1", PerformanceAnalyzerMetrics.getMetric(PerformanceAnalyzerMetrics.sDevShmLocation + "/dir1/test1"));
+  // @Test
+  public void testBasicMetric() {
+    System.setProperty("performanceanalyzer.metrics.log.enabled", "False");
+    PerformanceAnalyzerMetrics.emitMetric(
+        System.currentTimeMillis(),
+        PerformanceAnalyzerMetrics.sDevShmLocation + "/dir1/test1",
+        "value1");
+    assertEquals(
+        "value1",
+        PerformanceAnalyzerMetrics.getMetric(
+            PerformanceAnalyzerMetrics.sDevShmLocation + "/dir1/test1"));
 
-        assertEquals("", PerformanceAnalyzerMetrics.getMetric(PerformanceAnalyzerMetrics.sDevShmLocation + "/dir1/test2"));
+    assertEquals(
+        "",
+        PerformanceAnalyzerMetrics.getMetric(
+            PerformanceAnalyzerMetrics.sDevShmLocation + "/dir1/test2"));
 
-        PerformanceAnalyzerMetrics.removeMetrics(PerformanceAnalyzerMetrics.sDevShmLocation + "/dir1");
-    }
+    PerformanceAnalyzerMetrics.removeMetrics(PerformanceAnalyzerMetrics.sDevShmLocation + "/dir1");
+  }
 
-    // TODO: Turn it on later
-    @Ignore
-    public void testGeneratePath() {
-        long startTimeInMillis = 1553725339;
-        String generatedPath = PerformanceAnalyzerMetrics.generatePath(startTimeInMillis, "dir1", "id", "dir2");
-        String expectedPath = PerformanceAnalyzerMetrics.sDevShmLocation + "/" + 
-                String.valueOf(PerformanceAnalyzerMetrics.getTimeInterval(startTimeInMillis)) + "/dir1/id/dir2";
-        assertEquals(expectedPath, generatedPath);
-    }
+  // TODO: Turn it on later
+  @Ignore
+  public void testGeneratePath() {
+    long startTimeInMillis = 1553725339;
+    String generatedPath =
+        PerformanceAnalyzerMetrics.generatePath(startTimeInMillis, "dir1", "id", "dir2");
+    String expectedPath =
+        PerformanceAnalyzerMetrics.sDevShmLocation
+            + "/"
+            + String.valueOf(PerformanceAnalyzerMetrics.getTimeInterval(startTimeInMillis))
+            + "/dir1/id/dir2";
+    assertEquals(expectedPath, generatedPath);
+  }
 }
