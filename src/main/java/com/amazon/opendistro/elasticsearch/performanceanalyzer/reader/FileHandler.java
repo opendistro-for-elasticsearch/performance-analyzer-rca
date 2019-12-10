@@ -15,7 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
@@ -37,7 +37,7 @@ public abstract class FileHandler {
   public abstract List<Event> getMetricData(Map<String, List<Event>> metricDataMap);
 
   FileHandler() {
-    this.rootLocation = PerformanceAnalyzerMetrics.sDevShmLocation;
+    this.rootLocation = PluginSettings.instance().getMetricsLocation();
   }
 
   public String[] processExtraDimensions(File file) throws IOException {

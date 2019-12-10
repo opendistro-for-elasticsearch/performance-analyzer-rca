@@ -33,7 +33,6 @@ import org.apache.logging.log4j.util.Supplier;
 @SuppressWarnings("checkstyle:constantname")
 public class PerformanceAnalyzerMetrics {
   private static final Logger LOG = LogManager.getLogger(PerformanceAnalyzerMetrics.class);
-  public static final String sDevShmLocation = PluginSettings.instance().getMetricsLocation();
   public static final String sDevShmScratchLocation = "performanceanalyzer_scratch";
   public static final String sIndicesPath = "indices";
   public static final String sThreadPoolPath = "thread_pool";
@@ -84,7 +83,7 @@ public class PerformanceAnalyzerMetrics {
 
   public static String generatePath(long startTime, String... keysPath) {
     Path sDevShmLocationPath =
-        Paths.get(sDevShmLocation)
+        Paths.get(PluginSettings.instance().getMetricsLocation())
             .resolve(
                 Paths.get(
                     String.valueOf(PerformanceAnalyzerMetrics.getTimeInterval(startTime)),
