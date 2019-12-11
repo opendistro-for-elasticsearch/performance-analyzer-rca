@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.net;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpcServiceGrpc;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterLevelMetricsReader;
 import io.grpc.ManagedChannel;
@@ -106,12 +107,12 @@ public class GRPCConnectionManager {
   }
 
   private ManagedChannel buildInsecureChannel(final String remoteHost) {
-    return ManagedChannelBuilder.forAddress(remoteHost, 9600).usePlaintext().build();
+    return ManagedChannelBuilder.forAddress(remoteHost, Util.RPC_PORT).usePlaintext().build();
   }
 
   private ManagedChannel buildSecureChannel(final String remoteHost) {
     try {
-      return NettyChannelBuilder.forAddress(remoteHost, 9600)
+      return NettyChannelBuilder.forAddress(remoteHost, Util.RPC_PORT)
           .sslContext(
               GrpcSslContexts.forClient()
                   .trustManager(InsecureTrustManagerFactory.INSTANCE)

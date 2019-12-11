@@ -27,6 +27,8 @@ public class Util {
   private static final Logger LOG = LogManager.getLogger(Util.class);
   public static final String METRICS_QUERY_URL = "/_opendistro/_performanceanalyzer/metrics";
   public static final String RCA_QUERY_URL = "/_opendistro/_performanceanalyzer/rca";
+  // TODO: Make this configurable.
+  public static final int RPC_PORT = 9650;
   public static final String PLUGIN_LOCATION =
       System.getProperty("es.path.home")
           + File.separator
@@ -37,14 +39,10 @@ public class Util {
   public static final String READER_LOCATION =
       System.getProperty("es.path.home")
           + File.separator
-          + "opendistro_performance_analyzer"
+          + "performance-analyzer-rca-1.3.0-SNAPSHOT"
           + File.separator;
   public static final String DATA_DIR =
       System.getProperty("es.path.home")
-          + File.separator
-          + "var"
-          + File.separator
-          + "es"
           + File.separator
           + "data"
           + File.separator;

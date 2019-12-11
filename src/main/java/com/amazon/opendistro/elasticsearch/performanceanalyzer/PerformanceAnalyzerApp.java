@@ -20,6 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatEx
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.TroubleshootingConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsRestUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.handler.MetricsServerHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
@@ -99,12 +100,9 @@ public class PerformanceAnalyzerApp {
             });
     readerThread.start();
 
-    //        RcaController rcaController = new RcaController(netOperationsExecutor);
-    //        rcaController.startPollers();
-
     boolean useHttps = PluginSettings.instance().getHttpsEnabled();
     GRPCConnectionManager connectionManager = new GRPCConnectionManager(useHttps);
-    NetServer netServer = new NetServer(9600, 1, useHttps);
+    NetServer netServer = new NetServer(Util.RPC_PORT, 1, useHttps);
     NetClient netClient = new NetClient(connectionManager);
     MetricsRestUtil metricsRestUtil = new MetricsRestUtil();
     HttpServer httpServer = createInternalServer(settings, getPortNumber(), netClient, netServer);

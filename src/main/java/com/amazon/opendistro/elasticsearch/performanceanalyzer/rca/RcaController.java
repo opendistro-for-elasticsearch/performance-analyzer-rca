@@ -59,6 +59,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class RcaController {
+
   private static final Logger LOG = LogManager.getLogger(RcaController.class);
   private static final String RCA_ENABLED_CONF_FILE = "rca_enabled.conf";
   public static final String CAT_MASTER_URL = "http://localhost:9200/_cat/master?h=ip";
@@ -81,17 +82,6 @@ public class RcaController {
 
   private SubscriptionManager subscriptionManager;
   private GRPCConnectionManager connectionManager;
-
-  public RcaController(final ScheduledExecutorService netOpsExecutorService) {
-    this.netOpsExecutorService = netOpsExecutorService;
-    this.useHttps = PluginSettings.instance().getHttpsEnabled();
-    netPersistor = new NetPersistor();
-    connectionManager = new GRPCConnectionManager(useHttps);
-    rcaNetClient = new NetClient(connectionManager);
-    subscriptionManager = new SubscriptionManager(connectionManager, rcaNetClient);
-    nodeStateManager = new NodeStateManager();
-    startRpcServer();
-  }
 
   public RcaController(
       final ScheduledExecutorService netOpsExecutorService,
@@ -124,7 +114,9 @@ public class RcaController {
     }
   }
 
-  /** Starts various pollers. */
+  /**
+   * Starts various pollers.
+   */
   public void startPollers() {
     startRcaConfPoller();
     startNodeRolePoller();
@@ -133,7 +125,7 @@ public class RcaController {
 
   private void startRpcServer() {
     if (rcaNetServer == null) {
-      this.rcaNetServer = new NetServer(9600, 1, useHttps);
+      this.rcaNetServer = new NetServer(Util.RPC_PORT, 1, useHttps);
     }
     this.rcaNetServerThread = new Thread(rcaNetServer);
     this.rcaNetServerThread.start();
@@ -188,7 +180,9 @@ public class RcaController {
     }
   }
 
-  /** Reads the enabled/disabled value for RCA from the conf file. */
+  /**
+   * Reads the enabled/disabled value for RCA from the conf file.
+   */
   private void readRcaEnabledFromConf() {
     Path filePath = Paths.get(Util.DATA_DIR, RCA_ENABLED_CONF_FILE);
 

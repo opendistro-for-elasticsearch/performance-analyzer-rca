@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_sh
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.EventDispatcher;
 import java.io.File;
 import java.io.IOException;
@@ -47,6 +48,10 @@ public class EventLogFileHandler {
     this.metricsLocation = metricsLocation;
   }
 
+  public void writeTmpFile(List<Event> dataEntries, long epoch) {
+    Util.invokePrivileged(() -> writeTmpFileWithPrivilege(dataEntries, epoch));
+  }
+
   /**
    * This method writes all the metrics corresponding to an epoch to file.
    *
@@ -67,7 +72,7 @@ public class EventLogFileHandler {
    * @param dataEntries The metrics to be written to file.
    * @param epoch The epoch all the metrics belong to.
    */
-  public void writeTmpFile(List<Event> dataEntries, long epoch) {
+  public void writeTmpFileWithPrivilege(List<Event> dataEntries, long epoch) {
 
     Path path = Paths.get(metricsLocation, String.valueOf(epoch));
     Path tmpPath = Paths.get(path.toString() + TMP_FILE_EXT);
@@ -90,6 +95,10 @@ public class EventLogFileHandler {
   }
 
   public void renameFromTmp(long epoch) {
+    Util.invokePrivileged(() -> renameFromTmpWithPrivilege(epoch));
+  }
+
+  public void renameFromTmpWithPrivilege(long epoch) {
     Path path = Paths.get(metricsLocation, String.valueOf(epoch));
     Path tmpPath = Paths.get(path.toString() + TMP_FILE_EXT);
     // This is done only when no exception is thrown.

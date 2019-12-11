@@ -24,6 +24,19 @@ plugins {
 
 application {
     mainClassName = 'com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp'
+    applicationDefaultJvmArgs = ['-Xms64M',
+                                 '-Xmx64M',
+                                 '-XX:+UseSerialGC',
+                                 '-XX:CICompilerCount=1',
+                                 '-XX:-TieredCompilation',
+                                 '-XX:InitialCodeCacheSize=4096',
+                                 '-XX:InitialBootClassLoaderMetaspaceSize=30720',
+                                 '-XX:MaxRAM=400m']
+}
+
+// Include pa_config folder in the distribution.
+applicationDistribution.from(".") {
+    include 'pa_config/*'
 }
 
 publishing {
@@ -31,14 +44,14 @@ publishing {
         maven(MavenPublication) {
             groupId = 'com.amazon.opendistro.elasticsearch'
             artifactId = 'performanceanalyzer'
-            version = '1.0'
+            version = '1.3'
             from components.java
         }
     }
 }
 
 ext {
-    opendistroVersion = '1.0'
+    opendistroVersion = '1.3'
     isSnapshot = "true" == System.getProperty("build.snapshot", "true")
 }
 
@@ -75,7 +88,7 @@ compileJava {
 }
 
 javadoc {
-     options.addStringOption("-add-exports", "jdk.attach/sun.tools.attach=ALL-UNNAMED")
+    options.addStringOption("-add-exports", "jdk.attach/sun.tools.attach=ALL-UNNAMED")
 }
 
 project.afterEvaluate {

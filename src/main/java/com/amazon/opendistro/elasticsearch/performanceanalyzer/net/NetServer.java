@@ -29,8 +29,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.handler.S
 import io.grpc.Server;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import io.grpc.netty.shaded.io.netty.channel.nio.NioEventLoopGroup;
+import io.grpc.netty.shaded.io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
+import java.util.concurrent.Executors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -87,14 +89,19 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
   private Server buildHttpServer() {
     return NettyServerBuilder.forPort(port)
                              .addService(this)
+                             .bossEventLoopGroup(new NioEventLoopGroup(numServerThreads))
                              .workerEventLoopGroup(new NioEventLoopGroup(numServerThreads))
+                             .channelType(NioServerSocketChannel.class)
+                             .executor(Executors.newSingleThreadExecutor())
                              .build();
   }
 
   private Server buildHttpsServer() {
     return NettyServerBuilder.forPort(port)
                              .addService(this)
+                             .bossEventLoopGroup(new NioEventLoopGroup(numServerThreads))
                              .workerEventLoopGroup(new NioEventLoopGroup(numServerThreads))
+                             .channelType(NioServerSocketChannel.class)
                              .useTransportSecurity(
                                  CertificateUtils.getCertificateFile(),
                                  CertificateUtils.getPrivateKeyFile())
