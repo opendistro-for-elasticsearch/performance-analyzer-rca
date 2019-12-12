@@ -43,7 +43,7 @@ publishing {
     publications {
         maven(MavenPublication) {
             groupId = 'com.amazon.opendistro.elasticsearch'
-            artifactId = 'performanceanalyzer'
+            artifactId = 'performanceanalyzer-rca'
             version = '1.3'
             from components.java
         }
