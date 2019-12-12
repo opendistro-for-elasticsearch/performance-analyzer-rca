@@ -20,6 +20,7 @@ plugins {
     id 'application'
     id 'maven-publish'
     id 'com.google.protobuf' version '0.8.8'
+    id 'jacoco'
 }
 
 application {
@@ -65,6 +66,18 @@ tasks.withType(Checkstyle) {
         xml.enabled false
         html.enabled true
         html.stylesheet resources.text.fromFile('config/xsl/severity-sorted.xsl')
+    }
+}
+
+jacoco {
+    toolVersion = "0.8.5"
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled false
+        csv.enabled false
+        html.destination file("${buildDir}/jacocoHtml")
     }
 }
 
