@@ -164,7 +164,7 @@ public abstract class PersistorBase implements Persistable {
   //
   @Override
   public synchronized void write(Node node, ResourceFlowUnit flowUnit) {
-    // Write only if there is data to be writen.
+    // Write only if there is data to be written.
     if (flowUnit.isEmpty()) {
       LOG.info("RCA: Flow unit isEmpty");
       return;

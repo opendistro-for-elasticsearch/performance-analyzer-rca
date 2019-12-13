@@ -32,7 +32,7 @@ public abstract class AnalysisGraph {
   private static final Logger LOG = LogManager.getLogger(AnalysisGraph.class);
 
   /**
-   * The AnalyssFlowField only contains the attached leaves. The leaves contains their downstream
+   * The AnalysisFlowField only contains the attached leaves. The leaves contains their downstream
    * nodes. This way the entire graph can be rendered from just the leaves. For the Rca Analysis,
    * the metrics form the leaf nodes. They don't depend on anything else.
    */
