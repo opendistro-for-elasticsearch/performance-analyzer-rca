@@ -136,15 +136,6 @@ public class RCAScheduler {
         .start();
   }
 
-  public void simulate(int totalTicks) {
-    RCASchedulerTask task =
-        new RCASchedulerTask(
-            10000, executorPool, connectedComponents, db, persistable, rcaConf, net);
-    for (int i = 0; i < totalTicks; i++) {
-      task.run();
-    }
-  }
-
   /**
    * Signal a shutdown on the scheduled pool first and then to the executor pool. Calling a shutdown
    * on them does not lead to immediate shutdown instead, they stop taking new tasks and wait for
