@@ -21,13 +21,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterLevelMetricsReader;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -75,26 +72,5 @@ public class RcaUtil {
           && Arrays.asList(tag.getValue().split(",")).contains(rcaConfTagvalue);
     }
     return true;
-  }
-
-  public static List<String> fetchCurrentDataNodeIdList() {
-    ClusterLevelMetricsReader.NodeDetails[] allNodes = ClusterLevelMetricsReader.getNodes();
-    if (allNodes.length > 0) {
-      return Arrays.stream(allNodes)
-          .filter(p -> p.getRole().equals(AllMetrics.NodeRole.DATA.toString()))
-          .map(p -> p.getId())
-          .collect(Collectors.toList());
-    } else {
-      return Collections.singletonList("local");
-    }
-  }
-
-  public static String fetchCurrentNodeId() {
-    ClusterLevelMetricsReader.NodeDetails[] allNodes = ClusterLevelMetricsReader.getNodes();
-    if (allNodes.length > 0) {
-      return allNodes[0].getId();
-    } else {
-      return "local";
-    }
   }
 }

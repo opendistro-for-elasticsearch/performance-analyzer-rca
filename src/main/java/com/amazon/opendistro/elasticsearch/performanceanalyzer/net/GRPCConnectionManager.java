@@ -17,7 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.net;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpcServiceGrpc;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterLevelMetricsReader;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.net.ssl.SSLException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -69,22 +70,17 @@ public class GRPCConnectionManager {
   }
 
   public List<String> getAllRemoteHosts() {
-    final ClusterLevelMetricsReader.NodeDetails[] nodes = ClusterLevelMetricsReader.getNodes();
-    final List<String> remoteHosts = new ArrayList<>();
-
-    if (nodes != null && nodes.length > 1) {
-      for (int i = 1; i < nodes.length; ++i) {
-        remoteHosts.add(nodes[i].getHostAddress());
-      }
-    }
-
-    return remoteHosts;
+    return ClusterDetailsEventProcessor.getNodesDetails().stream()
+        .skip(1)
+        .map(node -> node.getHostAddress())
+        .collect(Collectors.toList());
   }
 
   public String getCurrentHostAddress() {
-    final ClusterLevelMetricsReader.NodeDetails[] nodes = ClusterLevelMetricsReader.getNodes();
-    if (nodes.length > 0) {
-      return nodes[0].getHostAddress();
+    final List<ClusterDetailsEventProcessor.NodeDetails> nodes = ClusterDetailsEventProcessor
+        .getNodesDetails();
+    if (nodes.size() > 0) {
+      return nodes.get(0).getHostAddress();
     }
 
     // TODO: Maybe fallback on InetAddress.getCurrentHostAddress() method instead of returning empty
