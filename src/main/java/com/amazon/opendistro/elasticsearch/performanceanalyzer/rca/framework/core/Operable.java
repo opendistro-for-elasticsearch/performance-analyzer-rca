@@ -21,6 +21,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.co
  * dependencies will have multiple samples and there are expected to be multiple dependencies. Hence, the input type
  * is list of lists.
  */
-public interface Operable {
-  <T extends GenericFlowUnit> T operate();
+public interface Operable<T> {
+  T operate();
 }

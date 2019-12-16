@@ -66,6 +66,16 @@ publishing {
     }
 }
 
+distributions {
+    main {
+        contents {
+            eachFile {
+                it.path = it.path.replace("-$version/", '/')
+            }
+        }
+    }
+}
+
 ext {
     opendistroVersion = '1.3'
     isSnapshot = "true" == System.getProperty("build.snapshot", "true")

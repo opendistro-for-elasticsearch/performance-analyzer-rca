@@ -147,7 +147,7 @@ public class RCASchedulerTaskTests {
             earthSymptom.addAllUpstreams(Collections.singletonList(metric));
             moonSymptom.addAllUpstreams(Collections.singletonList(earthSymptom));
             skyLabsSymptom.addAllUpstreams(
-                new ArrayList<Node>() {
+                new ArrayList<Node<?>>() {
                   {
                     add(earthSymptom);
                     add(moonSymptom);

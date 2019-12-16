@@ -64,7 +64,7 @@ public class RcaUtil {
     return Stats.getInstance().getConnectedComponents();
   }
 
-  public static boolean doTagsMatch(Node node, RcaConf conf) {
+  public static boolean doTagsMatch(Node<?> node, RcaConf conf) {
     Map<String, String> rcaTagMap = conf.getTagMap();
     for (Map.Entry<String, String> tag : node.getTags().entrySet()) {
       String rcaConfTagvalue = rcaTagMap.get(tag.getKey());

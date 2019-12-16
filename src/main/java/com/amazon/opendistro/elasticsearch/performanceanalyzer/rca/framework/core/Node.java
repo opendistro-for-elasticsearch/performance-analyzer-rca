@@ -22,14 +22,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public abstract class Node {
-  private List<Node> downStreams;
-  protected List<Node> upStreams;
+public abstract class Node<T extends GenericFlowUnit> {
+  private List<Node<?>> downStreams;
+  protected List<Node<?>> upStreams;
   private int level;
 
   private int graphId;
 
   protected long evaluationIntervalSeconds;
+
+  private List<T> flowUnits;
 
   /**
    * These are matched against the tags in the rca.conf, to determine if a node is to executed at a
@@ -44,7 +46,7 @@ public abstract class Node {
     this.tags = new HashMap<>();
   }
 
-  void addDownstream(Node downStreamNode) {
+  void addDownstream(Node<?> downStreamNode) {
     this.downStreams.add(downStreamNode);
   }
 
@@ -75,14 +77,14 @@ public abstract class Node {
     return upStreams.size();
   }
 
-  List<Node> getDownStreams() {
+  List<Node<?>> getDownStreams() {
     if (downStreams == null) {
       return Collections.emptyList();
     }
     return Collections.unmodifiableList(downStreams);
   }
 
-  public List<Node> getUpstreams() {
+  public List<Node<?>> getUpstreams() {
     if (upStreams == null) {
       return Collections.emptyList();
     }
@@ -105,12 +107,20 @@ public abstract class Node {
 
   public abstract void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args);
 
-  public abstract void setGernericFlowUnitList();
-
-  public abstract List<? extends GenericFlowUnit> fetchFlowUnitList();
+  public void setEmptyFlowUnitList() {
+    flowUnits = Collections.emptyList();
+  }
 
   @Override
   public String toString() {
     return name();
+  }
+
+  public List<T> getFlowUnits() {
+    return flowUnits;
+  }
+
+  public void setFlowUnits(List<T> flowUnits) {
+    this.flowUnits = flowUnits;
   }
 }
