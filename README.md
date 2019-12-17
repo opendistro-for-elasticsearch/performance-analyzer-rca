@@ -123,10 +123,25 @@ then, it sends the evaluated result of that graph node to all its subscribers.
 
 [Link to the blog]
 
+## Building, Deploying, and Running the RCA Framework
+Please refer to the [Install Guide](./INSTALL.md) for detailed information on building, installing
+ and running the RCA framework.
 
-## Building your RCA jar
+## Current Limitations
+* This is alpha code.
+* We will continuously add new unit test cases, but we don't have 100% unit test coverage
+for now. This is a great area for developers from the community to contribute and help improve test coverage.
+* Currently we have validated the artifacts for docker images, we need to validate the artifacts
+ for RPM and Debian releases as well.
 
-`./gradlew build`
+## Code of Conduct
+
+This project has adopted an [Open Source Code of Conduct](https://opendistro.github.io/for-elasticsearch/codeofconduct.html).
+
+
+## Security Issue Notifications
+
+If you discover a potential security issue in this project we ask that you notify AWS/Amazon Security via our [vulnerability reporting page](http://aws.amazon.com/security/vulnerability-reporting/). Please do **not** create a public GitHub issue.
 
 
 ## License

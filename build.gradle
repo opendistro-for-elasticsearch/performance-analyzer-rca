@@ -38,6 +38,21 @@ application {
 // Include pa_config folder in the distribution.
 applicationDistribution.from(".") {
     include 'pa_config/*'
+    include 'pa_bin/*'
+}
+
+distributions {
+    main {
+        contents {
+            eachFile {
+                it.path = it.path.replace("-$version/", '/')
+            }
+        }
+    }
+}
+
+distZip {
+    archiveName 'performance-analyzer-rca.zip'
 }
 
 publishing {
