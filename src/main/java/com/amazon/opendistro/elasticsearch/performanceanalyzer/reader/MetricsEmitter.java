@@ -55,6 +55,12 @@ public class MetricsEmitter {
       Pattern.compile(".*elasticsearch\\[.*\\]\\[\\[(.*)\\]\\[(.*)\\].*Lucene Merge.*");
   private static final Pattern SEARCH_PATTERN = Pattern.compile(".*elasticsearch.*\\[search\\].*");
   private static final Pattern BULK_PATTERN = Pattern.compile(".*elasticsearch.*\\[bulk\\].*");
+  private static final Pattern GENERIC_PATTERN =
+      Pattern.compile(".*elasticsearch.*\\[generic\\].*");
+  private static final Pattern GET_PATTERN = Pattern.compile(".*elasticsearch.*\\[get\\].*");
+  private static final Pattern SNAPSHOT_PATTERN =
+      Pattern.compile(".*elasticsearch.*\\[(snapshot|snapshot_segments)\\].*");
+  private static final Pattern FLUSH_PATTERN = Pattern.compile(".*elasticsearch.*\\[flush\\].*");
   // ES 6.4 onwards uses write threadpool.
   private static final Pattern WRITE_PATTERN = Pattern.compile(".*elasticsearch.*\\[write\\].*");
   // Pattern otherPattern = Pattern.compile(".*(elasticsearch).*");
@@ -455,6 +461,19 @@ public class MetricsEmitter {
     if (TRANS_SERVER_PATTERN.matcher(threadName).matches()) {
       return "transportServer";
     }
+    if (GENERIC_PATTERN.matcher(threadName).matches()) {
+      return "generic";
+    }
+    if (FLUSH_PATTERN.matcher(threadName).matches()) {
+      return "flush";
+    }
+    if (SNAPSHOT_PATTERN.matcher(threadName).matches()) {
+      return "snapshot";
+    }
+    if (GET_PATTERN.matcher(threadName).matches()) {
+      return "get";
+    }
+
     Matcher mergeMatcher = MERGE_PATTERN.matcher(threadName);
     if (mergeMatcher.matches()) {
       dimensions.put(
