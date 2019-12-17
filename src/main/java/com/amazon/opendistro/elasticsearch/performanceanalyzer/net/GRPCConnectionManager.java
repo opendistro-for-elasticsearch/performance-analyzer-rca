@@ -69,6 +69,11 @@ public class GRPCConnectionManager {
     terminateAllConnections();
   }
 
+  /**
+   * Read the NodeDetails of all the remote nodes
+   * skip the first node in the list because it is local node that
+   * this is currently running on.
+   */
   public List<String> getAllRemoteHosts() {
     return ClusterDetailsEventProcessor.getNodesDetails().stream()
         .skip(1)
