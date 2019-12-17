@@ -126,7 +126,13 @@ then, it sends the evaluated result of that graph node to all its subscribers.
 ## Building, Deploying, and Running the RCA Framework
 Please refer to the [Install Guide](./INSTALL.md) for detailed information on building, installing
  and running the RCA framework.
- 
+
+## Current Limitations
+* This is alpha code.
+* We will continuously add new unit test cases, but we don't have 100% unit test coverage
+for now. This is a great area for developers from the community to contribute and help improve test coverage.
+* Currently we have validated the artifacts for docker images, we need to validate the artifacts
+ for RPM and Debian releases as well.
 
 ## Code of Conduct
 

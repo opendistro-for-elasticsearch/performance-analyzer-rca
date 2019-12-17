@@ -5,11 +5,11 @@ This document walks you through the process of building and deploying the RCA fr
   [performance analyzer plugin](https://github.com/opendistro-for-elasticsearch/performance-analyzer) 
   and since this is only an alpha release, the released versions of performance analyzer do not
    support the RCA framework. At this point, there are two options.
-   1. Use the Performance Analyzer plugin artifact available [here](https://github.com/opendistro-for-elasticsearch/performance-analyzer)
+   1. Use the Performance Analyzer plugin artifact - (Link TBD)
    1. Build Performance Analyzer plugin from source - instructions below.
    
    If you chose to use the packaged artifact you can skip the section - "Build Performance
-    Analyzer".
+    Analyzer Plugin".
     
  ## Building
  ### Prerequisites
@@ -37,8 +37,8 @@ This document walks you through the process of building and deploying the RCA fr
    #### Building from command line
    * `./gradlew build` - Builds, runs unit tests and creates a zip distribution for deployment.
    * The zip distribution can be found under `build/distributions/` folder.
-   * Skip this step if you're using the pre-built Performance Analyzer plugin JAR. If not, you will
-    need to publish the RCA artifact to your maven local repository.
+   * Skip this step if you're using the pre-built Performance Analyzer plugin JAR (link - TBD). If
+    not, you will need to publish the RCA artifact to your maven local repository.
     
         `./gradlew publishToMavenLocal`
    #### Building from the IDE
@@ -67,8 +67,8 @@ This document walks you through the process of building and deploying the RCA fr
  Currently, for the alpha release, we support installing and running the RCA framework on
   OpenDistroForElasticsearch docker containers.
   
- You can use the packaged Dockerfile and docker-compose.yml files to spin up a cluster with RCA
-  framework installed.
+ You can use the packaged Dockerfile and docker-compose.yml files [here](./docker) to spin up a cluster
+  with RCA framework installed.
   
  1. `mkdir rca-infra` Create a folder that will hold all the resources that are needed to install
   and run the RCA framework.
@@ -99,4 +99,4 @@ This document walks you through the process of building and deploying the RCA fr
     `curl localhost:9200/_opendistro/_performanceanalyzer/cluster/config -H 'Content-Type: application/json' -d '{"enabled": true}' `
  1. Enable RCA Framework
  
-    `curl localhost:9200/_opendistro/_performanceanalyzer/cluster/config -H 'Content-Type: application/json' -d '{"enabled": true}' `
+    `curl localhost:9200/_opendistro/_performanceanalyzer/rca/cluster/config -H 'Content-Type: application/json' -d '{"enabled": true}' `

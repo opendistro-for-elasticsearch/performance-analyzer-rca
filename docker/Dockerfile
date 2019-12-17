@@ -60,8 +60,7 @@ USER 0
 RUN chown -R elasticsearch:0 . && \
     chmod -R g=u /usr/share/elasticsearch
 
-RUN mv config/performance-analyzer-rca.zip config/opendistro_performance_analyzer.zip
-RUN unzip config/opendistro_performance_analyzer.zip
+RUN unzip config/performance-analyzer-rca.zip
 
 RUN chmod 755 /usr/share/elasticsearch/plugins/opendistro_performance_analyzer/pa_bin/performance-analyzer-agent
 RUN chmod -R 755 /dev/shm
