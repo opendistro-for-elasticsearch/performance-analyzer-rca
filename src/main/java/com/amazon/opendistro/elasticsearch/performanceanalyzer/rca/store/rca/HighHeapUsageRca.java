@@ -25,7 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -152,10 +152,15 @@ public class HighHeapUsageRca extends Rca {
 
     if (counter == RCA_PERIOD) {
       List<List<String>> ret = new ArrayList<>();
-      ret.addAll(
-          Arrays.asList(
-              Collections.singletonList("Node ID"),
-              Collections.singletonList(RcaUtil.fetchCurrentNodeId())));
+      ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor
+          .getCurrentNodeDetails();
+      if (currentNode != null) {
+        ret.addAll(Arrays.asList(Collections.singletonList("Node ID"),
+            Collections.singletonList(currentNode.getId())));
+      } else {
+        ret.addAll(Arrays
+            .asList(Collections.singletonList("Node ID"), Collections.singletonList("unknown")));
+      }
       ResourceContext context = determineHeapUsageState();
       // reset the variables
       counter = 0;

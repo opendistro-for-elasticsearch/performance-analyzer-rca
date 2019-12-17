@@ -18,7 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -73,10 +73,11 @@ public class HighHeapUsageClusterRca extends Rca {
     List<String> unhealthyNodeList = new ArrayList<>();
     ConcurrentMap<String, ImmutableList<ResourceContext.State>> currentMap =
         this.nodeStateCache.asMap();
-    for (String nodeId : RcaUtil.fetchCurrentDataNodeIdList()) {
-      ImmutableList<ResourceContext.State> nodeStateList = currentMap.get(nodeId);
+    for (ClusterDetailsEventProcessor.NodeDetails nodeDetails : ClusterDetailsEventProcessor
+        .getDataNodesDetails()) {
+      ImmutableList<ResourceContext.State> nodeStateList = currentMap.get(nodeDetails.getId());
       if (nodeStateList == null) {
-        unhealthyNodeList.add(nodeId);
+        unhealthyNodeList.add(nodeDetails.getId());
       } else {
         int unhealthyNodeCnt = 0;
         for (ResourceContext.State state : nodeStateList) {
@@ -85,7 +86,7 @@ public class HighHeapUsageClusterRca extends Rca {
           }
         }
         if (unhealthyNodeCnt >= UNHEALTHY_FLOWUNIT_THRESHOLD) {
-          unhealthyNodeList.add(nodeId);
+          unhealthyNodeList.add(nodeDetails.getId());
         }
       }
     }
@@ -131,22 +132,17 @@ public class HighHeapUsageClusterRca extends Rca {
       counter = 0;
       LOG.debug("Unhealthy node id list : {}", unhealthyNodeList);
       if (unhealthyNodeList.size() > 0) {
-        String row = unhealthyNodeList.stream().collect(Collectors.joining(" "));
-        ret.addAll(
-            Arrays.asList(
-                Collections.singletonList("Unhealthy node(s)"), Collections.singletonList(row)));
-        return new ResourceFlowUnit(
-            System.currentTimeMillis(),
-            ret,
+        String row = unhealthyNodeList
+            .stream()
+            .collect(Collectors.joining(" "));
+        ret.addAll(Arrays.asList(Collections.singletonList("Unhealthy node(s)"),
+            Collections.singletonList(row)));
+        return new ResourceFlowUnit(System.currentTimeMillis(), ret,
             new ResourceContext(ResourceContext.Resource.HEAP, ResourceContext.State.UNHEALTHY));
       } else {
-        ret.addAll(
-            Arrays.asList(
-                Collections.singletonList("Unhealthy node(s)"),
-                Collections.singletonList("All nodes are healthy")));
-        return new ResourceFlowUnit(
-            System.currentTimeMillis(),
-            ret,
+        ret.addAll(Arrays.asList(Collections.singletonList("Unhealthy node(s)"),
+            Collections.singletonList("All nodes are healthy")));
+        return new ResourceFlowUnit(System.currentTimeMillis(), ret,
             new ResourceContext(ResourceContext.Resource.HEAP, ResourceContext.State.HEALTHY));
       }
     } else {

@@ -38,8 +38,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.N
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.PersistenceFactory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCAScheduler;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterLevelMetricsReader;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterLevelMetricsReader.NodeDetails;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryRcaRequestHandler;
 import com.sun.net.httpserver.HttpServer;
 import java.io.BufferedReader;
@@ -140,12 +140,12 @@ public class RcaController {
     netOpsExecutorService.scheduleAtFixedRate(
         () -> {
           final String electedMasterAddress = getElectedMasterHostAddress();
-          final NodeDetails[] nodeDetails = ClusterLevelMetricsReader.getNodes();
+          final NodeDetails nodeDetails = ClusterDetailsEventProcessor.getCurrentNodeDetails();
 
-          if (nodeDetails != null && nodeDetails.length > 0) {
+          if (nodeDetails != null) {
             // The first entry in the node details array is the current node.
-            final NodeRole currentNodeRole = NodeRole.valueOf(nodeDetails[0].getRole());
-            handleNodeRoleChange(nodeDetails[0], electedMasterAddress);
+            final NodeRole currentNodeRole = NodeRole.valueOf(nodeDetails.getRole());
+            handleNodeRoleChange(nodeDetails, electedMasterAddress);
           }
         },
         1,

@@ -15,9 +15,11 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterLevelMetricsReader;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterLevelMetricsReader.NodeDetails;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
+
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class NodeStateManager {
@@ -45,11 +47,12 @@ public class NodeStateManager {
   }
 
   public boolean isRemoteHostInCluster(final String remoteHost) {
-    final NodeDetails[] nodes = ClusterLevelMetricsReader.getNodes();
+    final List<NodeDetails> nodes = ClusterDetailsEventProcessor.getNodesDetails();
 
-    if (nodes.length > 0) {
+    if (nodes.size() > 0) {
       for (NodeDetails node : nodes) {
-        if (node.getHostAddress().equals(remoteHost)) {
+        if (node.getHostAddress()
+            .equals(remoteHost)) {
           return true;
         }
       }

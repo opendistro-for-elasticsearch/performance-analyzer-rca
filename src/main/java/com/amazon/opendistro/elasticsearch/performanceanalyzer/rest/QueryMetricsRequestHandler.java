@@ -25,7 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metrics
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.model.MetricAttributes;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.model.MetricsModel;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterLevelMetricsReader;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.JsonConverter;
 import com.sun.net.httpserver.HttpExchange;
@@ -148,20 +148,21 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
         String localResponseWithTimestamp =
             String.format("{\"timestamp\": %d, \"data\": %s}", dbTimestamp, localResponse);
         ConcurrentHashMap<String, String> nodeResponses = new ConcurrentHashMap<>();
-        ClusterLevelMetricsReader.NodeDetails[] allNodes = ClusterLevelMetricsReader.getNodes();
+        final List<ClusterDetailsEventProcessor.NodeDetails> allNodes = ClusterDetailsEventProcessor
+            .getNodesDetails();
         String localNodeId = "local";
-        if (allNodes.length != 0) {
-          localNodeId = allNodes[0].getId();
+        if (allNodes.size() != 0) {
+          localNodeId = allNodes.get(0).getId();
         }
         nodeResponses.put(localNodeId, localResponseWithTimestamp);
         String response = metricsRestUtil.nodeJsonBuilder(nodeResponses);
 
-        if (nodes == null || !nodes.equals("all") || allNodes.length <= 1) {
+        if (nodes == null || !nodes.equals("all") || allNodes.size() <= 1) {
           sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
         } else if (nodes.equals("all")) {
-          CountDownLatch doneSignal = new CountDownLatch(allNodes.length - 1);
-          for (int i = 1; i < allNodes.length; i++) {
-            ClusterLevelMetricsReader.NodeDetails node = allNodes[i];
+          CountDownLatch doneSignal = new CountDownLatch(allNodes.size() - 1);
+          for (int i = 1; i < allNodes.size(); i++) {
+            ClusterDetailsEventProcessor.NodeDetails node = allNodes.get(i);
             LOG.debug("Collecting remote stats");
             try {
               collectRemoteStats(node, metricList, aggList, dimList, nodeResponses, doneSignal);
@@ -215,7 +216,7 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
   }
 
   void collectRemoteStats(
-      ClusterLevelMetricsReader.NodeDetails node,
+      ClusterDetailsEventProcessor.NodeDetails node,
       List<String> metricList,
       List<String> aggList,
       List<String> dimList,
@@ -318,10 +319,10 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
   private static class ThreadSafeStreamObserver implements StreamObserver<MetricsResponse> {
     private final CountDownLatch doneSignal;
     private final ConcurrentHashMap<String, String> nodeResponses;
-    private final ClusterLevelMetricsReader.NodeDetails node;
+    private final ClusterDetailsEventProcessor.NodeDetails node;
 
     ThreadSafeStreamObserver(
-        ClusterLevelMetricsReader.NodeDetails node,
+        ClusterDetailsEventProcessor.NodeDetails node,
         ConcurrentHashMap<String, String> nodeResponses,
         CountDownLatch doneSignal) {
       this.node = node;
