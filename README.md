@@ -32,7 +32,7 @@ the value was above or below the threshold. Ideally the output of a Symptom node
 
 __Metrics__: Metrics are the Performance Analyzer(PA) metrics. But say you want to fit this on top
 of metrics whih you are already collecting and are different from the  PA metrics, you should be
-able to plug them in with no hastle. We will describe
+able to plug them in with no hastle. We will describe --> IS THIS INCOMPLETE?
 
 ### Components
 
@@ -69,7 +69,8 @@ a relation format (rows and columns of strings).
 
 - __MetricFlow__: Used for transportation of the metrics between the `Metric` nodes and the RCA or
 Symptom nodes.
-- __ResourceFLowUnit__: This is an abstraction on the Resource Health that is paased between nodes.
+
+- __ResourceFLowUnit__: This is an abstraction on the Resource Health that is passed between nodes.
 
 __Resources__: As started, the RCA framework gives us the state of each resource. Now this
 definition is incomplete unless we define which resources we account for. The resources are broken
@@ -107,32 +108,31 @@ has advantages:
 
 -  Changing the Class constants will require re-deploying the jar but the threshold file changes can
 be picked up dynamically.
+
 -  The threshold file let's you pick different threasholds based on instance type, disk types or an
 arbitrary tags.
 
-__Tags__: The RCA system does not understand the ElasticSearch concepts such as the data nodes and
-the master nodes. Tags are simple key-value pairs that are specified in the rca.conf. The RCA
+__Tags__: The RCA system does not understand ElasticSearch concepts such as data nodes and
+master nodes. Tags are simple key-value pairs that are specified in the rca.conf. The RCA
 scheduler, when it starts, reads it and assumes those to be its tags. When it evaluates the graph
 nodes, if the tags of the graph node matches its own tags, it evaluates the nodes locally, if not,
 it thinks this graph node is to be executed on some remote machine (remote graph node). If one such
-remote node is upstream, then it send intent to consume its data. If such a node is down stream,
+remote node is upstream, then it send intent to consume its data. If such a node is downstream,
 then, it sends the evaluated result of that graph node to all its subscribers. 
-
 
 ## Walkthrough of an RCA
 
 [Link to the blog]
 
+[Link to the design RFC]
+
 ## Building, Deploying, and Running the RCA Framework
-Please refer to the [Install Guide](./INSTALL.md) for detailed information on building, installing
- and running the RCA framework.
+Please refer to the [Install Guide](./INSTALL.md) for detailed information on building, installing and running the RCA framework.
 
 ## Current Limitations
-* This is alpha code.
-* We will continuously add new unit test cases, but we don't have 100% unit test coverage
-for now. This is a great area for developers from the community to contribute and help improve test coverage.
-* Currently we have validated the artifacts for docker images, we need to validate the artifacts
- for RPM and Debian releases as well.
+* This is alpha code and is in development.
+* We don't have 100% unit test coverage yet and will continue to add new unit tests. We invite developers from the larger Open Distro community to contribute and help improve test coverage and give us feedback on where improvements can be made in design, code and documentation.
+* Currently we have tested and verified RCA artifacts for Docker images. We will be testing and verifying these artifacts for RPM and Debian builds as well.
 
 ## Code of Conduct
 
