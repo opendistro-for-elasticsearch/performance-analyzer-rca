@@ -8,49 +8,33 @@ provisioning of Elasticsearch clusters, and it can enable Elasticsearch client t
 their workloads to reduce errors.
 
 ## RCA Overview
-The RCA framework is a distributed data-flow graph where the data enters from the top, as
-Performance Analyzer metrics referred to as Leaf nodes in the code, the intermediate nodes
-perform calculations and out comes the RCAs. To be clear, there is one graph but it cam have
-multiple connected-components depending on which metric nodes are common between them. So, one
-connected component can emit multiple RCAs. Its **not** one graph per RCA.
-
-The flow of data happens from top to bottom. For a node at level _k_, all nodes that are in levels
-`[0, k-1]` are referred to as upstream nodes and all nodes in levels `[k+1, N-1]` are referred to as
- downstream nodes. _Metric_ nodes are always `level 0` or `leaf` nodes.
+The RCA framework is modeled as a distributed data-flow graph where data flows downstream 
+from the leaf nodes to the root. Leaf nodes of the graph represent `Performance Analyzer metrics`
+on which intermediate computations are performed. The intermediate nodes can be RCAs or other derived 
+symptoms which helps in computation of the final RCA. The framework operates on a single analysis graph
+which is composed of multiple connected-components. Each connected component contains one top-level RCA at its root.
 
 ### Terminologies
 
+__DataStream a.k.a FlowUnit__: A flow-unit is a data object that is exchanged betweeen nodes. Each unit contains a timestamp and the data generated at that timestamp. Data flows downstream from the leaf nodes to the root.
 
-__RCA__: An RCA is a function over zero or more metrics and zero or more upstream symptoms and zero
-or more upstream RCAs. Simple put, an _RCA_ provide the state of a resource - healthy or unhealthy
-or contended or unbalanced.
+__RCA__: An RCA is a function which operates on multiple datastreams. These datastreams can have zero or more metrics, symptoms or other RCAs. 
 
-__Symptom__: A symptom is a mathematical computation over one or many metrics and zero or more
-upstream _Symptoms_. It can calculate things like moving average over k samples and state whether
-the value was above or below the threshold. Ideally the output of a Symptom node will be binary -
-`presence`(true) or `absence`(false).
+__Symptom__: A symptom is an intermediate function operating on metric or symptom datastreams. For example - A high CPU utilization symptom can calculate moving average over k samples and categorize CPU utilization(high/low) 
+based on a threshold. Typically, output of a Symptom node will be binary - `presence`(true) or `absence`(false).
 
-__Metrics__: Metrics are the Performance Analyzer(PA) metrics. But say you want to fit this on top
-of metrics whih you are already collecting and are different from the  PA metrics, you should be
-able to plug them in with no hastle. We will describe --> IS THIS INCOMPLETE?
+
+__Metrics__: Metric nodes query Performance Analyzer(PA) metrics and expose them as a continuous data stream to downstream nodes. They can also be extended to pull custom metrics from other data sources.
+
 
 ### Components
 
-__Framework__: The framework gives you the bells ans whistles to construct the graph. The top level
-class for this is the `AnalysisGraph` class. In order to create the RCA graph, one needs to derive
-from this class and override the `construct` method. The fully qualified path to the class should be
-added as value to the key `analysis-graph-implementor` in `pa_config/rca.conf`. The runtime will
-call the `construct` method of this class to construct the graph before it hands it over to the
-scheduler to execute it. The leaf nodes or metric nodes are added by caling the method `addLeaf`.
-At an arbitrary level, for a given node, all the upstream nodes should be specified at once by
-calling `addAllUpstreams`. Details of how an RCA graph can be found in the walkthrough section.
+__Framework__: The RCA runtime operates on an `AnalysisGraph`. Extend this class and override the `construct` method if you wish to deploy new RCAs. Specify the path to the class in the `analysis-graph-implementor` section of `pa_config/rca.conf`.  The `addLeaf` and `addAllUpstreams` helper methods make it convenient to specify dependencies between nodes of the graph.
 
-__Scheduler__: The scheduler is the orchestrator of RCA. On a cluster, it constructs the graph,
-spins up threads and calls the `operate` method on each graph node. It takes care of executing nodes
-in order so that for a given node all the upstream data is available and also nodes in a given level
-in parallel. The code for them can be found in `RCAScheduler` and `RCASchedulerTask` classes. 
 
-__WireHopper__: This is the networking-orchastrator for the framework. It abstracts out the fact
+__Scheduler__: The scheduler executes the `operate` method on each graph node in topological order as defined in the analysis graph. Nodes with no dependency can be executed in parallel. Use flow units to share data between RCA nodes and avoid shared objects as these can cause data races and performance bottlenecks.
+
+__WireHopper__: This is the networking-orchestrator for the framework. It abstracts out the fact
 that not all graph nodes are executed in the same physical machine. During the bootstrap of the
 scheduler, the wirehopper helps send the intent to the remote nodes that their data will be needed
 by the bootstraping machine. While the RCA is running, for each evaluated node that has remote
@@ -63,16 +47,8 @@ For each node, it waits for all the upstream nodes to complete execution and the
 and if the output is desired by one or many remote machines, it takes the help of wireHopper to send
 them over.
 
-__Flowunits__: A flow-unit is a wrapper around the data that travels between the graph nodes. A flow
-unit contains informations such as the timestamp when the data was generated and the data itself in
-a relation format (rows and columns of strings).
+__Resources__: As stated, the RCA framework gives us the state of each resource. Now this
 
-- __MetricFlow__: Used for transportation of the metrics between the `Metric` nodes and the RCA or
-Symptom nodes.
-
-- __ResourceFLowUnit__: This is an abstraction on the Resource Health that is passed between nodes.
-
-__Resources__: As started, the RCA framework gives us the state of each resource. Now this
 definition is incomplete unless we define which resources we account for. The resources are broken
 into these layers:
 
