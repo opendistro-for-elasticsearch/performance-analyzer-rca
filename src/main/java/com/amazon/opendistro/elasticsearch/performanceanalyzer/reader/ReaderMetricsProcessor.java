@@ -135,8 +135,6 @@ public class ReaderMetricsProcessor implements Runnable {
         }
         conn.setAutoCommit(false);
         startTime = System.currentTimeMillis();
-        ClusterLevelMetricsReader.collectNodeMetrics(
-            startTime - MetricsConfiguration.SAMPLING_INTERVAL);
         processMetrics(rootLocation, startTime);
         trimOldSnapshots();
         conn.commit();

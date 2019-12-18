@@ -15,15 +15,27 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.JsonConverter;
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ClusterDetailsEventProcessor implements EventProcessor {
   private static final Logger LOG = LogManager.getLogger(ClusterDetailsEventProcessor.class);
+  /**
+   * keep a volatile immutable list to make the read/write to this list thread safe.
+   */
+  private static volatile ImmutableList<NodeDetails> nodesDetails = null;
 
   @Override
   public void initializeProcessing(long startTime, long endTime) {}
@@ -49,27 +61,22 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
     //
     // The line 0 is timestamp that can be skipped. So we allocated size of
     // the array is one less than the list.
-
-    ClusterLevelMetricsReader.NodeDetails[] tmpNodesDetails =
-        new ClusterLevelMetricsReader.NodeDetails[lines.length - 1];
-    int tmpNodesDetailsIdx = 0;
+    final List<NodeDetails> tmpNodesDetails = new ArrayList<>();
 
     // Just to keep track of duplicate node ids.
     Set<String> ids = new HashSet<>();
 
     for (int i = 1; i < lines.length; ++i) {
-      ClusterLevelMetricsReader.NodeDetails nodeDetails =
-          new ClusterLevelMetricsReader.NodeDetails(lines[i]);
+      NodeDetails nodeDetails = new NodeDetails(lines[i]);
 
       // Include nodeIds we haven't seen so far.
       if (ids.add(nodeDetails.getId())) {
-        tmpNodesDetails[tmpNodesDetailsIdx] = nodeDetails;
-        tmpNodesDetailsIdx += 1;
+        tmpNodesDetails.add(nodeDetails);
       } else {
         LOG.info("node id {}, logged twice.", nodeDetails.getId());
       }
     }
-    ClusterLevelMetricsReader.setNodesDetails(tmpNodesDetails);
+    setNodesDetails(tmpNodesDetails);
   }
 
   @Override
@@ -78,5 +85,80 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
   }
 
   @Override
-  public void commitBatchIfRequired() {}
+  public void commitBatchIfRequired() {
+
+  }
+
+  static void setNodesDetails(List<NodeDetails> nodesDetails) {
+    ClusterDetailsEventProcessor.nodesDetails = ImmutableList.copyOf(nodesDetails);
+  }
+
+  public static List<NodeDetails> getNodesDetails() {
+    if (nodesDetails != null) {
+      return nodesDetails.asList();
+    } else {
+      return Collections.emptyList();
+    }
+  }
+
+  public static List<NodeDetails> getDataNodesDetails() {
+    List<NodeDetails> allNodes = getNodesDetails();
+    if (allNodes.size() > 0) {
+      return allNodes.stream()
+          .filter(p -> p.getRole().equals(AllMetrics.NodeRole.DATA.toString()))
+          .collect(Collectors.toList());
+    } else {
+      return Collections.emptyList();
+    }
+  }
+
+  public static NodeDetails getCurrentNodeDetails() {
+    List<NodeDetails> allNodes = getNodesDetails();
+    if (allNodes.size() > 0) {
+      return allNodes.get(0);
+    } else {
+      return null;
+    }
+  }
+
+  public static class NodeDetails {
+
+    private String id;
+    private String hostAddress;
+    private String role;
+
+    NodeDetails(String stringifiedMetrics) {
+      Map<String, Object> map = JsonConverter
+          .createMapFrom(stringifiedMetrics);
+      id = (String) map.get(AllMetrics.NodeDetailColumns.ID.toString());
+      hostAddress = (String) map.get(AllMetrics.NodeDetailColumns.HOST_ADDRESS.toString());
+      role = (String) map.get(AllMetrics.NodeDetailColumns.ROLE.toString());
+    }
+
+    @Override
+    public String toString() {
+      StringBuilder stringBuilder = new StringBuilder();
+      stringBuilder.append("{")
+          .append("id:")
+          .append(id)
+          .append(" hostAddress:")
+          .append(hostAddress)
+          .append(" role:")
+          .append(role)
+          .append("}");
+      return stringBuilder.toString();
+    }
+
+    public String getId() {
+      return id;
+    }
+
+    public String getHostAddress() {
+      return hostAddress;
+    }
+
+    public String getRole() {
+      return role;
+    }
+  }
 }

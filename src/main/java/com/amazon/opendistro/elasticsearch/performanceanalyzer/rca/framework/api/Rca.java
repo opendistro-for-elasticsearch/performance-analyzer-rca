@@ -41,6 +41,7 @@ public abstract class Rca extends NonLeafNode {
     this.flowUnitList = Collections.singletonList(ResourceFlowUnit.generic());
   }
 
+  // TODO: change the name as it calls itself generate but secretly persists the flow unit.
   public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
     LOG.debug("rca: Executing fromLocal: {}", this.getClass().getSimpleName());
     this.flowUnitList = Collections.singletonList(this.operate());

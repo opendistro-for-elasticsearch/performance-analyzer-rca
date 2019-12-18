@@ -24,18 +24,12 @@ else
 fi
 
 if ! echo $* | grep -E '(^-d |-d$| -d |--daemonize$|--daemonize )' > /dev/null; then
-    exec $JAVA_HOME/bin/java -Des.path.home=$ES_HOME -Dlog4j.configurationFile=$ES_HOME/opendistro_performance_analyzer/pa_config/log4j2.xml \
-    -DconfigFilePath=$3 \
-    -Xms64M -Xmx64M -XX:+UseSerialGC -XX:CICompilerCount=1 -XX:-TieredCompilation -XX:InitialCodeCacheSize=4096 \
-    -XX:InitialBootClassLoaderMetaspaceSize=30720 -XX:MaxRAM=400m \
-    -cp $ES_HOME/lib/*:$ES_HOME/opendistro_performance_analyzer/* com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp
+    export JAVA_OPTS=-Des.path.home=$ES_HOME\ -Dlog4j.configurationFile=$ES_HOME/performance-analyzer-rca/pa_config/log4j2.xml
+    exec $ES_HOME/performance-analyzer-rca/bin/performance-analyzer-rca
 else
     echo 'Starting deamon'
-    exec $JAVA_HOME/bin/java -Des.path.home=$ES_HOME -Dlog4j.configurationFile=$ES_HOME/opendistro_performance_analyzer/pa_config/log4j2.xml \
-        -DconfigFilePath=$3 \
-        -Xms64M -Xmx64M -XX:+UseSerialGC -XX:CICompilerCount=1 -XX:-TieredCompilation -XX:InitialCodeCacheSize=4096 \
-        -XX:InitialBootClassLoaderMetaspaceSize=30720 -XX:MaxRAM=400m \
-        -cp $ES_HOME/lib/*:$ES_HOME/opendistro_performance_analyzer/* com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp &
+    export JAVA_OPTS=-Des.path.home=$ES_HOME\ -Dlog4j.configurationFile=$ES_HOME/performance-analyzer-rca/pa_config/log4j2.xml
+    exec $ES_HOME/performance-analyzer-rca/bin/performance-analyzer-rca &
 
     pid=$!
     PID_LOC=/tmp/performance-analyzer-agent

@@ -24,8 +24,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.Data
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.FlowUnitWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.NetPersistor;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterLevelMetricsReader;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterLevelMetricsReader.NodeDetails;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
 import io.grpc.stub.StreamObserver;
 import java.util.List;
 import java.util.Map;
@@ -59,20 +59,16 @@ public class WireHopper {
         msg.getRequesterNode(), msg.getDestinationNode(), msg.getRcaConfTags());
   }
 
-  private String getCurrentHost() {
-    // return currentNode.getHostAddress();
-    final NodeDetails[] nodes = ClusterLevelMetricsReader.getNodes();
-    if (nodes != null && nodes.length > 0) {
-      return nodes[0].getHostAddress();
-    }
-
-    LOG.error("Could not get current host address from cluster level metrics reader.");
-    return "";
-  }
-
   public void sendData(DataMsg dataMsg) {
     final String sourceNode = dataMsg.getSourceNode();
-    final String esNode = getCurrentHost();
+    final String esNode;
+    final NodeDetails currentNode = ClusterDetailsEventProcessor.getCurrentNodeDetails();
+    if (currentNode != null) {
+      esNode = currentNode.getHostAddress();
+    } else {
+      LOG.error("Could not get current host address from cluster level metrics reader.");
+      esNode = "";
+    }
     if (subscriptionManager.isNodeSubscribed(sourceNode)) {
       final Set<String> downstreamHostAddresses = subscriptionManager.getSubscribersFor(sourceNode);
       LOG.debug("{} has downstream subscribers: {}", sourceNode, downstreamHostAddresses);

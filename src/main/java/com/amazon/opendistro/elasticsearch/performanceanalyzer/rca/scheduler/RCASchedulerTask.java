@@ -205,13 +205,10 @@ public class RCASchedulerTask implements Runnable {
             }
           }
         } else {
-          // If the node is not executed locally. So now we check the predecessors of this node, to
-          // see if
-          // they are to be evaluated locally. If so, then this node will need that predecessor's
-          // data to
-          // evaluate itself. We want to keep track of this, so that we can send the data through
-          // the
-          // wireHopper to whoever might need it.
+          // If the node is not executed locally, we check the predecessors of this node, to
+          // see if they are to be evaluated locally. If so, then this node will need that
+          // predecessor's data to evaluate itself. We want to keep track of this, so that we can
+          // send the data through the wireHopper to whoever might need it.
           LOG.debug("rca: tag NOT matched for node: {}", node.name());
           for (Node upstreamNode : node.getUpstreams()) {
             if (locallyExecutableSet.contains(upstreamNode)) {

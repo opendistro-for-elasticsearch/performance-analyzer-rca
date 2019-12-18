@@ -39,7 +39,7 @@ public class Util {
   public static final String READER_LOCATION =
       System.getProperty("es.path.home")
           + File.separator
-          + "performance-analyzer-rca-1.3.0-SNAPSHOT"
+          + "performance-analyzer-rca"
           + File.separator;
   public static final String DATA_DIR =
       System.getProperty("es.path.home")
