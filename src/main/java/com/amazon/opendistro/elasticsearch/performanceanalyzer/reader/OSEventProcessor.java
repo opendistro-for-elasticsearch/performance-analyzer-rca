@@ -22,6 +22,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_sha
 import java.io.File;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,7 +103,7 @@ public class OSEventProcessor implements EventProcessor {
     Map<String, String> osMetricsKeyValPairs = new HashMap<>();
     for (String line : lines) {
       String[] pair = line.split(PerformanceAnalyzerMetrics.sKeyValueDelimitor);
-      osMetricsKeyValPairs.put(pair[0], pair[1]);
+      osMetricsKeyValPairs.put(pair[0], String.join(":", Arrays.copyOfRange(pair, 1, pair.length)));
     }
     return osMetricsKeyValPairs;
   }
