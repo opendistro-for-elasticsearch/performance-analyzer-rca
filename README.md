@@ -8,7 +8,7 @@ provisioning of Elasticsearch clusters, and it can enable Elasticsearch client t
 their workloads to reduce errors.
 
 ## RCA Overview
-The RCA framework is modeled as a distributed data-flow graph where data flows downstream 
+The RCA framework is modelled as a distributed data-flow graph where data flows downstream 
 from the leaf nodes to the root. Leaf nodes of the graph represent `Performance Analyzer metrics`
 on which intermediate computations are performed. The intermediate nodes can be RCAs or other derived 
 symptoms which helps in computation of the final RCA. The framework operates on a single analysis graph
@@ -37,7 +37,7 @@ __WireHopper__: Interface between the scheduler and the networking layer to help
 
 __Context__: The context contains a brief summary of the RCA. For example - A High CPU utilization symptom context will contain the average CPU utilization when the symptom was triggered. 
 
-__Thresholds__: Thresholds are static values that must be exceeded to trigger symptoms and RCAs. Thresholds can be dynamically updated and dont require a process restart. Thresholds often depend on hardware configuration and Elasticsearch version. The threshold store supports tags to help define any associated metadata with a threshold.
+__Thresholds__: Thresholds are static values that must be exceeded to trigger symptoms and RCAs. Thresholds can be dynamically updated and dont require a process restart. Thresholds often depend on hardware configuration and Elasticsearch version. The threshold store supports tags to help associate metadata with a threshold.
 
 __Tags__: Tags are key-value pairs that are specified in the configuration file(rca.conf). Tags can be associated with both hosts and RCA nodes.
 * RCA nodes are only executed on hosts with the exact same tags as the RCA node. A common use-case of tags is to restrict certain RCA nodes to only execute on the master node. 
