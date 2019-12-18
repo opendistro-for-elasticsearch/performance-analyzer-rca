@@ -40,7 +40,7 @@ This package uses the [Gradle](https://docs.gradle.org/current/userguide/usergui
    * The zip distribution can be found under `build/distributions/` folder.
  
 ### Build Performance Analyzer Plugin
-1. Clone the Performance Analyzer plugin repository as follows
+1. Clone the Performance Analyzer plugin repository as follows:
  
     `git clone -b master --single-branch https://github.com/opendistro-for-elasticsearch/performance-analyzer.git`
     
@@ -58,7 +58,7 @@ This package uses the [Gradle](https://docs.gradle.org/current/userguide/usergui
  
 ### Prerequisites
 
-1. Docker --> ADD MORE DETAIL HERE.
+1. Docker - Download and install docker desktop from [Docker website](https://docs.docker.com/docker-for-mac/install/) for Mac.
  
 ### Setup
 
@@ -66,7 +66,9 @@ Currently, for the alpha development-only source code release, we support instal
   
 You can use the packaged Dockerfile and docker-compose.yml files [here](./docker) to spin up a cluster with RCA framework installed.
   
-1. `mkdir rca-infra` Create a folder that will hold all the resources that are needed to install and run the RCA framework.
+1. Create a folder that will hold all the resources that are needed to install and run the RCA framework.
+    
+   `mkdir rca-infra`
 
 2. `cd rca-infra`
 
@@ -79,9 +81,11 @@ You can use the packaged Dockerfile and docker-compose.yml files [here](./docker
  
  ### Installation
  
- 1. `cd rca-infra` if you're not already in the `rca-infra` folder.
+ 1. Make sure you're in the `rca-infra` folder.
  
- 2. `docker -t odfe-es/pa-rca:1.0 build` Build and tag the Docker image with our RCA framework.
+ 2. Build and tag the Docker image with our RCA framework.
+    
+    `docker -t odfe-es/pa-rca:1.0 build`
  
  3. Spin up a two node cluster as follows:
  
