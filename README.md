@@ -44,7 +44,7 @@ __Tags__: Tags are key-value pairs that are specified in the configuration file(
 * Tags are also used by hosts to find and subscribe to remote datastreams. For example - A cluster-wide RCA running on the master can subscribe to datastreams from all data hosts in the cluster.
 
 ## Design RFC
-[RFC](./rca-rfc.pdf)
+[RFC](./rfc-rca.pdf)
 
 ## Building, Deploying, and Running the RCA Framework
 Please refer to the [Install Guide](./INSTALL.md) for detailed information on building, installing and running the RCA framework.
@@ -56,7 +56,7 @@ Please refer to the [Install Guide](./INSTALL.md) for detailed information on bu
 
 ## Contribute
 
-We invite developers from the larger Open Distro community to contribute and help improve test coverage and give us feedback on where improvements can be made in design, code and documentation. You can look at [Contribute.md](./Contribute.md) for more information on how to contribute. 
+We invite developers from the larger Open Distro community to contribute and help improve test coverage and give us feedback on where improvements can be made in design, code and documentation. You can look at [Contributing.md](./CONTRIBUTING.md) for more information on how to contribute. 
 
 ## Code of Conduct
 
