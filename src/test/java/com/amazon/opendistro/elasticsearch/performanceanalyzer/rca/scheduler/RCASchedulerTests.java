@@ -44,7 +44,6 @@ import org.junit.experimental.categories.Category;
 
 @Category(GradleTaskForRca.class)
 @SuppressWarnings("serial")
-@Ignore
 public class RCASchedulerTests {
   private static final Logger LOG = LogManager.getLogger(Tasklet.class);
   Queryable queryable;
