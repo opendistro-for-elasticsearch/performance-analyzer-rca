@@ -72,7 +72,9 @@ You can use the packaged Dockerfile and docker-compose.yml files [here](./docker
 
 2. `cd rca-infra`
 
-3. `cp <RCA framework root>/docker/* ./` Copy all the contents of the docker folder in this repo into our `rca-infra` folder.
+3. Copy all the contents of the docker folder in this repo into our `rca-infra` folder.
+    
+   `cp <RCA framework root>/docker/* ./`
 
 4. Copy the RCA framework artifact and the Performance Analyzer plugin JAR into this folder
  
