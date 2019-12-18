@@ -1,12 +1,7 @@
 # Building, Installing, and Running the RCA Framework
 
-This document walks you through the process of building and deploying the RCA framework along with the Performance Analyzer plugin. The RCA framework relies on the metrics provided by the [performance analyzer plugin](https://github.com/opendistro-for-elasticsearch/performance-analyzer). Since this code is still in development and an alpha release, the released versions of performance analyzer do not support the RCA framework yet. 
-   
-At this point, there are two options for ?.
-1. Use the Performance Analyzer plugin artifact - (Link TBD)
-2. Build the Performance Analyzer plugin from source - see instructions below.
-   
-If you chose to use the packaged artifact you can skip the section - "Build Performance Analyzer plugin".
+This document walks you through the process of building and deploying the RCA framework along with the Performance Analyzer plugin. The RCA framework relies on the metrics provided by the [performance analyzer plugin](https://github.com/opendistro-for-elasticsearch/performance-analyzer). Since this code is still in development and an alpha release, the released versions of performance analyzer plugin do not support the RCA framework yet and you will have to build the plugin from source.
+
     
  ## Building the Performance Analyzer plugin
  
@@ -27,6 +22,7 @@ If you chose to use the packaged artifact you can skip the section - "Build Perf
  
  3. (Optional) IntelliJ setup
     a. Launch IntelliJ IDEA
+    
     b. Choose Import Project and select the `build.gradle` file in the root of this package
  
 ### Build RCA framework
@@ -34,8 +30,7 @@ This package uses the [Gradle](https://docs.gradle.org/current/userguide/usergui
 #### Building from command line
    * `./gradlew build` - Builds, runs unit tests and creates a zip distribution for deployment.
    * The zip distribution can be found under `build/distributions/` folder.
-   * Skip this step if you're using the pre-built Performance Analyzer plugin JAR (link - TBD). If
-    not, you will need to publish the RCA artifact to your maven local repository.
+   * You will need to publish the RCA artifact to your maven local repository.
     
     `./gradlew publishToMavenLocal`
         
