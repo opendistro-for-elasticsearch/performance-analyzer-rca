@@ -21,6 +21,7 @@ This document walks you through the process of building and deploying the RCA fr
     `export JAVA_HOME=/path/to/jdk12+`
  
  3. (Optional) IntelliJ setup
+ 
     a. Launch IntelliJ IDEA
     
     b. Choose Import Project and select the `build.gradle` file in the root of this package
