@@ -43,9 +43,8 @@ __Tags__: Tags are key-value pairs that are specified in the configuration file(
 * RCA nodes are only executed on hosts with the exact same tags as the RCA node. A common use-case of tags is to restrict certain RCA nodes to only execute on the master node. 
 * Tags are also used by hosts to find and subscribe to remote datastreams. For example - A cluster-wide RCA running on the master can subscribe to datastreams from all data hosts in the cluster.
 
-## Walkthrough of an RCA
-
-[Link to the blog]
+## Design RFC
+[RFC](./rca-rfc.pdf)
 
 ## Building, Deploying, and Running the RCA Framework
 Please refer to the [Install Guide](./INSTALL.md) for detailed information on building, installing and running the RCA framework.
@@ -54,6 +53,10 @@ Please refer to the [Install Guide](./INSTALL.md) for detailed information on bu
 * This is alpha code and is in development.
 * We don't have 100% unit test coverage yet and will continue to add new unit tests. We invite developers from the larger Open Distro community to contribute and help improve test coverage and give us feedback on where improvements can be made in design, code and documentation.
 * We have tested and verified RCA artifacts only for Docker images. Other distributions are pending and will be done as part of the release.
+
+## Contribute
+
+We invite developers from the larger Open Distro community to contribute and help improve test coverage and give us feedback on where improvements can be made in design, code and documentation. You can look at [Contribute.md](./Contribute.md) for more information on how to contribute. 
 
 ## Code of Conduct
 
