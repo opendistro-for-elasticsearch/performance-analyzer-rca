@@ -1,12 +1,7 @@
 # Building, Installing, and Running the RCA Framework
 
-This document walks you through the process of building and deploying the RCA framework along with the Performance Analyzer plugin. The RCA framework relies on the metrics provided by the [performance analyzer plugin](https://github.com/opendistro-for-elasticsearch/performance-analyzer). Since this code is still in development and an alpha release, the released versions of performance analyzer do not support the RCA framework yet. 
-   
-At this point, there are two options for ?.
-1. Use the Performance Analyzer plugin artifact - (Link TBD)
-2. Build the Performance Analyzer plugin from source - see instructions below.
-   
-If you chose to use the packaged artifact you can skip the section - "Build Performance Analyzer plugin".
+This document walks you through the process of building and deploying the RCA framework along with the Performance Analyzer plugin. The RCA framework relies on the metrics provided by the [performance analyzer plugin](https://github.com/opendistro-for-elasticsearch/performance-analyzer). Since this code is still in development and an alpha release, the released versions of performance analyzer plugin do not support the RCA framework yet and you will have to build the plugin from source.
+
     
  ## Building the Performance Analyzer plugin
  
@@ -26,7 +21,9 @@ If you chose to use the packaged artifact you can skip the section - "Build Perf
     `export JAVA_HOME=/path/to/jdk12+`
  
  3. (Optional) IntelliJ setup
+ 
     a. Launch IntelliJ IDEA
+    
     b. Choose Import Project and select the `build.gradle` file in the root of this package
  
 ### Build RCA framework
@@ -34,8 +31,7 @@ This package uses the [Gradle](https://docs.gradle.org/current/userguide/usergui
 #### Building from command line
    * `./gradlew build` - Builds, runs unit tests and creates a zip distribution for deployment.
    * The zip distribution can be found under `build/distributions/` folder.
-   * Skip this step if you're using the pre-built Performance Analyzer plugin JAR (link - TBD). If
-    not, you will need to publish the RCA artifact to your maven local repository.
+   * You will need to publish the RCA artifact to your maven local repository.
     
     `./gradlew publishToMavenLocal`
         
@@ -44,7 +40,7 @@ This package uses the [Gradle](https://docs.gradle.org/current/userguide/usergui
    * The zip distribution can be found under `build/distributions/` folder.
  
 ### Build Performance Analyzer Plugin
-1. Clone the Performance Analyzer plugin repository as follows
+1. Clone the Performance Analyzer plugin repository as follows:
  
     `git clone -b master --single-branch https://github.com/opendistro-for-elasticsearch/performance-analyzer.git`
     
@@ -62,7 +58,7 @@ This package uses the [Gradle](https://docs.gradle.org/current/userguide/usergui
  
 ### Prerequisites
 
-1. Docker --> ADD MORE DETAIL HERE.
+1. Docker - Download and install docker desktop from [Docker website](https://docs.docker.com/docker-for-mac/install/) for Mac.
  
 ### Setup
 
@@ -70,11 +66,15 @@ Currently, for the alpha development-only source code release, we support instal
   
 You can use the packaged Dockerfile and docker-compose.yml files [here](./docker) to spin up a cluster with RCA framework installed.
   
-1. `mkdir rca-infra` Create a folder that will hold all the resources that are needed to install and run the RCA framework.
+1. Create a folder that will hold all the resources that are needed to install and run the RCA framework.
+    
+   `mkdir rca-infra`
 
 2. `cd rca-infra`
 
-3. `cp <RCA framework root>/docker/* ./` Copy all the contents of the docker folder in this repo into our `rca-infra` folder.
+3. Copy all the contents of the docker folder in this repo into our `rca-infra` folder.
+    
+   `cp <RCA framework root>/docker/* ./`
 
 4. Copy the RCA framework artifact and the Performance Analyzer plugin JAR into this folder
  
@@ -83,9 +83,11 @@ You can use the packaged Dockerfile and docker-compose.yml files [here](./docker
  
  ### Installation
  
- 1. `cd rca-infra` if you're not already in the `rca-infra` folder.
+ 1. Make sure you're in the `rca-infra` folder.
  
- 2. `docker -t odfe-es/pa-rca:1.0 build` Build and tag the Docker image with our RCA framework.
+ 2. Build and tag the Docker image with our RCA framework.
+    
+    `docker -t odfe-es/pa-rca:1.0 build`
  
  3. Spin up a two node cluster as follows:
  
