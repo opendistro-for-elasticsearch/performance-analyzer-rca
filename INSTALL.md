@@ -18,7 +18,7 @@ This document walks you through the process of building and deploying the RCA fr
     
     `cd workspace`
     
- 2. Clone this repository
+ 2. Clone the Performance Analyzer RCA repository as follows:
  
     `git clone https://github.com/opendistro-for-elasticsearch/performance-analyzer-rca.git`
     
@@ -56,15 +56,15 @@ This package uses the [Gradle](https://docs.gradle.org/current/userguide/usergui
    
 3. `cd performance-analyzer`
     
-3. Because we are supplying our own version of the RCA framework, the SHA might have changed. So, delete the old SHA file if it exists. The SHA will get updated during build time.
+4. Because we are supplying our own version of the RCA framework, the SHA might have changed. So, delete the old SHA file if it exists. The SHA will get updated during build time.
  
     `rm -f licenses/performanceanalyzer-1.3.jar.sha1`
 
-4. Trigger a gradle build. This builds the plugin, runs unit tests and creates the plugin jar.
+5. Trigger a gradle build. This builds the plugin, runs unit tests and creates the plugin jar.
  
      `./gradlew build`
     
-5. The plugin JAR can be found under `build/distributions` folder.
+6. The plugin JAR can be found under `build/distributions` folder.
  
 ## Installing the plugin
  
