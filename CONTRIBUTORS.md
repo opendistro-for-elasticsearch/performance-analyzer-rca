@@ -1,4 +1,4 @@
-Contributors in order of last name:
+Contributors (Ordered by last name):
 
 Adithya Chandra
 
