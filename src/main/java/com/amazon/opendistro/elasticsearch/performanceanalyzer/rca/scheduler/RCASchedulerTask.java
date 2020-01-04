@@ -172,10 +172,8 @@ public class RCASchedulerTask implements Runnable {
       Persistable persistable,
       Map<Node, Tasklet> nodeTaskletMap) {
     // This is just used for membership check in the createTaskletAndSendIntent. If a node is
-    // present here, then
-    // the tasklet corresponding to it will be doing local evaluation or else, the tasklet will read
-    // data from
-    // the read API provided by the wirehopper.
+    // present here, then the tasklet corresponding to it will be doing local evaluation or else,
+    // the tasklet will read data from the read API provided by the wirehopper.
     Set<Node> locallyExecutableSet = new HashSet<>();
 
     // The list to be returned.
@@ -189,18 +187,26 @@ public class RCASchedulerTask implements Runnable {
           locallyExecutableSet.add(node);
 
           // Now we gather all the remote dependencies if there are any and request an intent to
-          // consume
-          // their data.
+          // consume their data.
           CreatedTasklets newTasklets =
               createTaskletAndSendIntent(
-                  node, locallyExecutableSet, hopper, conf, db, persistable, nodeTaskletMap);
+                  node, locallyExecutableSet, hopper, db, persistable, nodeTaskletMap);
           nodeTaskletMap.put(node, newTasklets.taskletForCurrentNode);
           locallyExecutableInThisLevel.add(newTasklets.taskletForCurrentNode);
+
+          // If there are remote upstream nodes, then we should add their proxy virtual
+          // tasklets.
           if (!newTasklets.remoteTasklets.isEmpty()) {
             if (dependencyOrderedLocallyExecutable.isEmpty()) {
+              // We are in a situation where although the current node is the first node to be
+              // executed locally, but all the upstream dependencies are remote. So, we want to
+              // add all the remote nodes in a level of their own, in this case level 0.
               dependencyOrderedLocallyExecutable.add(newTasklets.remoteTasklets);
             } else {
               int lastIdx = dependencyOrderedLocallyExecutable.size() - 1;
+
+              // Here, we don't want to add the list of nodes as a whole but each individual node
+              // in the list.
               dependencyOrderedLocallyExecutable.get(lastIdx).addAll(newTasklets.remoteTasklets);
             }
           }
@@ -242,21 +248,23 @@ public class RCASchedulerTask implements Runnable {
    * tasklet representations of the remote nodes. The remote node tasklets, are used to read the
    * data on the wire corresponding to the remote node, when it is available.
    *
-   * @param node The locally running node for which we want to get the data from upstream.
+   * @param graphNode The locally running graph node for which we want to get the data from upstream
+   * @param locallyExecutableNodeSet A set of inspected nodes so far that are to be executed locally
+   * @param hopper The network proxy
+   * @param db This object is used to query the database to get the metrics; for reads.
+   * @param persistable The instance of the database where RCAs are to be persisted; for writes.
+   * @param nodeTaskletMap A table to get the tasklet corresponding to a graph node.
    */
-  private CreatedTasklets createTaskletAndSendIntent(
-      Node node,
+  protected CreatedTasklets createTaskletAndSendIntent(
+      Node graphNode,
       Set<Node> locallyExecutableNodeSet,
       WireHopper hopper,
-      RcaConf conf,
       Queryable db,
       Persistable persistable,
       Map<Node, Tasklet> nodeTaskletMap) {
-    Tasklet tasklet;
-
-    tasklet =
+    Tasklet tasklet =
         new Tasklet(
-            node,
+            graphNode,
             db,
             persistable,
             remotelyDesirableNodeSet,
@@ -264,25 +272,25 @@ public class RCASchedulerTask implements Runnable {
             GraphNodeOperations::readFromLocal);
     CreatedTasklets ret = new CreatedTasklets(tasklet);
 
-    for (Node upstreamNode : node.getUpstreams()) {
+    for (Node upstreamNode : graphNode.getUpstreams()) {
       // A tasklet should exist for each upstream dependency. Based on whether this is
-      // locally available or not a different exec function will be passed in.
+      // locally available or not, a different execution function will be passed in.
       if (locallyExecutableNodeSet.contains(upstreamNode)) {
-        // This upstream node is executed locally and this is upstream. So it should be
-        // in the nodeTaskletMap
+        // This upstream node is executed locally. So it should be in the nodeTaskletMap.
         tasklet.addPredecessor(nodeTaskletMap.get(upstreamNode));
       } else {
-        // If we are here, then it means that there is a upstream node required to evaluate
-        // this node that is not executed locally. Hence, we have to send an intent to get the
+        // If we are here, then it means that the upstream node required to evaluate
+        // this node, is not locally executed. Hence, we have to send an intent to get the
         // node's data from the remote node.
         LOG.debug(
-            "rca: Need to send intent for {} to compute: {}", upstreamNode.name(), node.name());
-        IntentMsg msg = new IntentMsg(node.name(), upstreamNode.name(), upstreamNode.getTags());
+            "rca: Node '{}' sending intent to consume node: '{}'",
+            graphNode.name(), upstreamNode.name());
+        IntentMsg msg =
+            new IntentMsg(graphNode.name(), upstreamNode.name(), upstreamNode.getTags());
         hopper.sendIntent(msg);
 
-        // This node is not locally present. So, locally we will add a virtual Tasklet that reads
-        // the
-        // result where the wirehopper dumps it and constructs the Tasklet for us.
+        // This node is not locally present. So, we will add a virtual Tasklet that reads
+        // the result where the wirehopper dumps it and constructs the Tasklet for us.
         Tasklet remoteTasklet =
             new Tasklet(
                 upstreamNode,
@@ -291,7 +299,7 @@ public class RCASchedulerTask implements Runnable {
                 remotelyDesirableNodeSet,
                 hopper,
                 GraphNodeOperations::readFromWire);
-        LOG.debug("Tasklet created for REMOTE node '{}' with readFromWire", node.name());
+        LOG.debug("Tasklet created for REMOTE node '{}' with readFromWire", graphNode.name());
         tasklet.addPredecessor(remoteTasklet);
         ret.remoteTasklets.add(remoteTasklet);
       }
