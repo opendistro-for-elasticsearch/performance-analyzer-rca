@@ -80,7 +80,7 @@ public abstract class PersistorBase implements Persistable {
 
   // Not required for now.
   @Override
-  public List<ResourceFlowUnit> read(Node node) {
+  public List<ResourceFlowUnit> read(Node<?> node) {
     return null;
   }
 
@@ -163,8 +163,8 @@ public abstract class PersistorBase implements Persistable {
   // TODO: Add the code to rotate the table on exception and periodically
   //
   @Override
-  public synchronized void write(Node node, ResourceFlowUnit flowUnit) {
-    // Write only if there is data to be written.
+  public synchronized <T extends ResourceFlowUnit> void write(Node<?> node, T flowUnit) {
+    // Write only if there is data to be writen.
     if (flowUnit.isEmpty()) {
       LOG.info("RCA: Flow unit isEmpty");
       return;

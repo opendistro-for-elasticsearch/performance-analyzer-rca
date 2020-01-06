@@ -47,7 +47,7 @@ public class HighCpuSymptomTest {
     }
 
     public void setFlowUnitList(List<MetricFlowUnit> flowUnitList) {
-      this.flowUnitList = flowUnitList;
+      setFlowUnits(flowUnitList);
     }
   }
 
@@ -75,7 +75,7 @@ public class HighCpuSymptomTest {
     // tests the system works for arbitrary samples of data.
     @Override
     public SymptomFlowUnit operate() {
-      List<MetricFlowUnit> cpuMetrics = cpu_UtilizationX.fetchFlowUnitList();
+      List<MetricFlowUnit> cpuMetrics = cpu_UtilizationX.getFlowUnits();
       boolean shouldReportOperation = false;
 
       MetricFlowUnit cpuMetric = cpuMetrics.get(0);
@@ -172,8 +172,8 @@ public class HighCpuSymptomTest {
             CPU_Utilization.NAME, Arrays.asList("shard2", "index3", "bulk", "primary"), 5.4);
 
     for (ConnectedComponent component : components) {
-      for (List<Node> nodeList : component.getAllNodesByDependencyOrder()) {
-        for (Node node : nodeList) {
+      for (List<Node<?>> nodeList : component.getAllNodesByDependencyOrder()) {
+        for (Node<?> node : nodeList) {
           if (node instanceof Metric) {
             List<MetricFlowUnit> flowUnits =
                 Collections.singletonList(((Metric) node).gather(queryable));

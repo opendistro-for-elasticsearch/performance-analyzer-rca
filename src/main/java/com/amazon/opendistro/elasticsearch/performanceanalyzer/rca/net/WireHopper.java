@@ -108,7 +108,7 @@ public class WireHopper {
     }
   }
 
-  public List<FlowUnitWrapper> readFromWire(Node node) {
+  public List<FlowUnitWrapper> readFromWire(Node<?> node) {
     final String nodeName = node.name();
     final long intervalInSeconds = node.getEvaluationIntervalSeconds();
     final List<FlowUnitWrapper> remoteFlowUnits = persistor.read(nodeName);

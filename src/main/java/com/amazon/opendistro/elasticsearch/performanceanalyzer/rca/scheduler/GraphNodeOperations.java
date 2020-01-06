@@ -23,6 +23,7 @@ public class GraphNodeOperations {
 
   static void readFromLocal(FlowUnitOperationArgWrapper args) {
     args.getNode().generateFlowUnitListFromLocal(args);
+    args.getNode().persistFlowUnit(args);
   }
 
   // This is the abstraction for when the data arrives on the wire from a remote dependency.

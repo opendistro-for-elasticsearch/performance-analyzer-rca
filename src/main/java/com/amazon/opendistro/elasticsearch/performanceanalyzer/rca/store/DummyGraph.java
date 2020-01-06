@@ -17,12 +17,16 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.GC_Collection_Event;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Used;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.flowunit.HighHeapUsageClusterFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.flowunit.HighHeapUsageFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageRca;
 import java.util.Arrays;
+import java.util.Collections;
 
 public class DummyGraph extends AnalysisGraph {
 
@@ -43,13 +47,13 @@ public class DummyGraph extends AnalysisGraph {
     addLeaf(gcEvent);
     addLeaf(heapMax);
 
-    HighHeapUsageRca highHeapUsageRca = new HighHeapUsageRca(5, heapUsed, gcEvent, heapMax);
-    highHeapUsageRca.addTag(LOCUS, DATA_NODE);
-    highHeapUsageRca.addAllUpstreams(Arrays.asList(heapUsed, gcEvent, heapMax));
+    Rca<HighHeapUsageFlowUnit> highHeapUsageNodeRca = new HighHeapUsageRca(5, heapUsed, gcEvent, heapMax);
+    highHeapUsageNodeRca.addTag(LOCUS, DATA_NODE);
+    highHeapUsageNodeRca.addAllUpstreams(Arrays.asList(heapUsed, gcEvent, heapMax));
 
-    HighHeapUsageClusterRca highHeapUsageClusterRca =
-        new HighHeapUsageClusterRca(5, highHeapUsageRca);
+    Rca<HighHeapUsageClusterFlowUnit> highHeapUsageClusterRca =
+        new HighHeapUsageClusterRca(5, highHeapUsageNodeRca);
     highHeapUsageClusterRca.addTag(LOCUS, MASTER_NODE);
-    highHeapUsageClusterRca.addAllUpstreams(Arrays.asList(highHeapUsageRca));
+    highHeapUsageClusterRca.addAllUpstreams(Collections.singletonList(highHeapUsageNodeRca));
   }
 }

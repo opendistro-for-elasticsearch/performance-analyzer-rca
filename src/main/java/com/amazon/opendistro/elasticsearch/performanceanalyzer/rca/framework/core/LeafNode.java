@@ -15,7 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
-public abstract class LeafNode extends Node implements Gatherable {
+public abstract class LeafNode<T extends GenericFlowUnit> extends Node<T> implements Gatherable<T> {
   private boolean addedToFlowField;
 
   public LeafNode(int level, long evaluationIntervalSeconds) {

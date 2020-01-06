@@ -72,7 +72,7 @@ public class RCASchedulerTask implements Runnable {
    * it is generated, to be delivered to the remote node that needs it. The key is a locally
    * evaluable node, the Value is the list of remote nodes that would like the data.
    */
-  private final Map<Node, List<Node>> remotelyDesirableNodeSet;
+  private final Map<Node<?>, List<Node<?>>> remotelyDesirableNodeSet;
 
   /**
    * A levelled list of tasklets across all connected components. Level 0's results are needs to
@@ -97,7 +97,7 @@ public class RCASchedulerTask implements Runnable {
     this.maxTicks = maxTicks;
     this.executorPool = executorPool;
     this.remotelyDesirableNodeSet = new HashMap<>();
-    Map<Node, Tasklet> nodeTaskletMap = new HashMap<>();
+    Map<Node<?>, Tasklet> nodeTaskletMap = new HashMap<>();
 
     List<List<Tasklet>> dependencyOrderedLocallyExecutables = Collections.emptyList();
     for (ConnectedComponent component : connectedComponents) {
@@ -165,23 +165,23 @@ public class RCASchedulerTask implements Runnable {
    * @return a level ordered list of Tasklets.
    */
   private List<List<Tasklet>> getLocallyExecutableNodes(
-      List<List<Node>> orderedNodes,
+      List<List<Node<?>>> orderedNodes,
       RcaConf conf,
       WireHopper hopper,
       Queryable db,
       Persistable persistable,
-      Map<Node, Tasklet> nodeTaskletMap) {
+      Map<Node<?>, Tasklet> nodeTaskletMap) {
     // This is just used for membership check in the createTaskletAndSendIntent. If a node is
     // present here, then the tasklet corresponding to it will be doing local evaluation or else,
     // the tasklet will read data from the read API provided by the wirehopper.
-    Set<Node> locallyExecutableSet = new HashSet<>();
+    Set<Node<?>> locallyExecutableSet = new HashSet<>();
 
     // The list to be returned.
     List<List<Tasklet>> dependencyOrderedLocallyExecutable = new ArrayList<>();
 
-    for (List<Node> levelNodes : orderedNodes) {
+    for (List<Node<?>> levelNodes : orderedNodes) {
       List<Tasklet> locallyExecutableInThisLevel = new ArrayList<>();
-      for (Node node : levelNodes) {
+      for (Node<?> node : levelNodes) {
         if (RcaUtil.doTagsMatch(node, conf)) {
           // This node will be executed locally, so add it to the set to keep track of this.
           locallyExecutableSet.add(node);
@@ -216,13 +216,13 @@ public class RCASchedulerTask implements Runnable {
           // predecessor's data to evaluate itself. We want to keep track of this, so that we can
           // send the data through the wireHopper to whoever might need it.
           LOG.debug("rca: tag NOT matched for node: {}", node.name());
-          for (Node upstreamNode : node.getUpstreams()) {
+          for (Node<?> upstreamNode : node.getUpstreams()) {
             if (locallyExecutableSet.contains(upstreamNode)) {
               // This node was executed locally.
               if (remotelyDesirableNodeSet.containsKey(upstreamNode)) {
                 remotelyDesirableNodeSet.get(upstreamNode).add(node);
               } else {
-                List<Node> list = new ArrayList<>();
+                List<Node<?>> list = new ArrayList<>();
                 list.add(node);
                 remotelyDesirableNodeSet.put(upstreamNode, list);
               }
@@ -256,13 +256,14 @@ public class RCASchedulerTask implements Runnable {
    * @param nodeTaskletMap A table to get the tasklet corresponding to a graph node.
    */
   protected CreatedTasklets createTaskletAndSendIntent(
-      Node graphNode,
-      Set<Node> locallyExecutableNodeSet,
+      Node<?> graphNode,
+      Set<Node<?>> locallyExecutableNodeSet,
       WireHopper hopper,
       Queryable db,
       Persistable persistable,
-      Map<Node, Tasklet> nodeTaskletMap) {
-    Tasklet tasklet =
+      Map<Node<?>, Tasklet> nodeTaskletMap) {
+    Tasklet tasklet;
+    tasklet =
         new Tasklet(
             graphNode,
             db,
@@ -272,7 +273,7 @@ public class RCASchedulerTask implements Runnable {
             GraphNodeOperations::readFromLocal);
     CreatedTasklets ret = new CreatedTasklets(tasklet);
 
-    for (Node upstreamNode : graphNode.getUpstreams()) {
+    for (Node<?> upstreamNode : graphNode.getUpstreams()) {
       // A tasklet should exist for each upstream dependency. Based on whether this is
       // locally available or not, a different execution function will be passed in.
       if (locallyExecutableNodeSet.contains(upstreamNode)) {
