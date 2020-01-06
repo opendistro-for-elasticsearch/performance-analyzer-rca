@@ -67,12 +67,13 @@ Before submitting the PR, we request that you also run
 ```
 This validates the code coverage.
 
+### Code coverage
 If you want to check the code coverage, you can consider these steps
 1. ./gradlew test
 2. ./gradlew jacocoTestReport
 3. then point your browser to `performance-analyzer-rca/build/reports/jacoco/test/html/index.html`
 
-
+We request that for the new source code that you add, the coverage is at least `80 %`.
 
 ## Code of Conduct
 This project has adopted the [Amazon Open Source Code of Conduct](https://aws.github.io/code-of-conduct).
