@@ -43,6 +43,37 @@ GitHub provides additional document on [forking a repository](https://help.githu
 ## Finding contributions to work on
 Looking at the existing issues is a great way to find something to contribute on. As our projects, by default, use the default GitHub issue labels (enhancement/bug/duplicate/help wanted/invalid/question/wontfix), looking at any ['help wanted'](https://github.com/opendistro-for-elasticsearch/performance-analyzer-rca/labels/help%20wanted) issues is a great place to start.
 
+## Testing your changes
+
+### To run all tests
+```shell script
+./gradlew test
+```
+### To run tests for the rca package only
+```shell script
+ ./gradlew rcaTest
+```
+### To run a specific test
+```
+./gradlew test --tests <class name>.<method name>
+
+e.g.
+./gradlew test --tests RCASchedulerTaskTests.getLocallyExecutableNodes
+```
+
+Before submitting the PR, we request that you also run
+```shell script
+./gradlew build
+```
+This validates the code coverage.
+
+### Code coverage
+If you want to check the code coverage, you can consider these steps
+1. ./gradlew test
+2. ./gradlew jacocoTestReport
+3. then point your browser to `performance-analyzer-rca/build/reports/jacoco/test/html/index.html`
+
+We request that for the new source code that you add, the coverage is at least `80 %`.
 
 ## Code of Conduct
 This project has adopted the [Amazon Open Source Code of Conduct](https://aws.github.io/code-of-conduct).
