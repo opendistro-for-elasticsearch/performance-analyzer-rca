@@ -104,6 +104,20 @@ jacocoTestReport {
     }
 }
 
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.3
+            }
+        }
+    }
+}
+
+// to run coverage verification during the build (and fail when appropriate)
+check.dependsOn jacocoTestCoverageVerification
+
+
 version = "${opendistroVersion}.0"
 if (isSnapshot) {
     version += "-SNAPSHOT"
