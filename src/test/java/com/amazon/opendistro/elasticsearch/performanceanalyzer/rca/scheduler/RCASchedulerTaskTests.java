@@ -400,7 +400,7 @@ public class RCASchedulerTaskTests {
     ret = RCASchedulerTask.mergeLists(l1, Collections.emptyList());
 
     assertEquals(l1.size(), ret.size());
-    for (int i = 0; i <ret.size(); i++) {
+    for (int i = 0; i < ret.size(); i++) {
       AssertHelper.compareLists(l1.get(i), ret.get(i));
     }
   }

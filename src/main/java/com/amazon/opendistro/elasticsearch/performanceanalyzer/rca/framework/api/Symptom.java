@@ -38,4 +38,12 @@ public abstract class Symptom extends NonLeafNode<SymptomFlowUnit> {
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
     // TODO
   }
+
+  /**
+   * Persists a flow unit.
+   * @param args The arg wrapper.
+   */
+  @Override
+  public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
+  }
 }

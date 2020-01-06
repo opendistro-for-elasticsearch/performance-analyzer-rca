@@ -47,13 +47,13 @@ public class DummyGraph extends AnalysisGraph {
     addLeaf(gcEvent);
     addLeaf(heapMax);
 
-    Rca<HighHeapUsageFlowUnit> highHeapUsageRca = new HighHeapUsageRca(5, heapUsed, gcEvent, heapMax);
-    highHeapUsageRca.addTag(LOCUS, DATA_NODE);
-    highHeapUsageRca.addAllUpstreams(Arrays.asList(heapUsed, gcEvent, heapMax));
+    Rca<HighHeapUsageFlowUnit> highHeapUsageNodeRca = new HighHeapUsageRca(5, heapUsed, gcEvent, heapMax);
+    highHeapUsageNodeRca.addTag(LOCUS, DATA_NODE);
+    highHeapUsageNodeRca.addAllUpstreams(Arrays.asList(heapUsed, gcEvent, heapMax));
 
     Rca<HighHeapUsageClusterFlowUnit> highHeapUsageClusterRca =
-        new HighHeapUsageClusterRca(5, highHeapUsageRca);
+        new HighHeapUsageClusterRca(5, highHeapUsageNodeRca);
     highHeapUsageClusterRca.addTag(LOCUS, MASTER_NODE);
-    highHeapUsageClusterRca.addAllUpstreams(Collections.singletonList(highHeapUsageRca));
+    highHeapUsageClusterRca.addAllUpstreams(Collections.singletonList(highHeapUsageNodeRca));
   }
 }

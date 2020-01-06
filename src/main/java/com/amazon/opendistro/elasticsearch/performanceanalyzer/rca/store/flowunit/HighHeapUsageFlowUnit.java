@@ -5,6 +5,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.FlowUnitWrapper;
 import java.util.List;
 
+/**
+ * Class representing the flow unit for the HighHeapUsage RCA node.
+ */
 public class HighHeapUsageFlowUnit extends ResourceFlowUnit {
 
   public HighHeapUsageFlowUnit(long timeStamp) {
@@ -21,6 +24,12 @@ public class HighHeapUsageFlowUnit extends ResourceFlowUnit {
     super(timeStamp, data, context);
   }
 
+  /**
+   * Unwraps the flowunit from the flow unit wrapper.
+   * TODO: This will be removed once we start modeling flow units as protobuf messages.
+   * @param wrapper The flow unit wrapper
+   * @return The unwrapped HighHeapUsageFlowUnit object.
+   */
   public static HighHeapUsageFlowUnit buildFlowUnitFromWrapper(final FlowUnitWrapper wrapper) {
     if (wrapper.hasData()) {
       return new HighHeapUsageFlowUnit(

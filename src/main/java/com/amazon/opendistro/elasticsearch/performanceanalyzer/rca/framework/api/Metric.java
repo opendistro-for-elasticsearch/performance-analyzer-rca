@@ -78,6 +78,14 @@ public abstract class Metric extends LeafNode<MetricFlowUnit> {
     setFlowUnits(Collections.singletonList(gather(args.getQueryable())));
   }
 
+  /**
+   * Persists the given flow unit.
+   * @param args The arg wrapper.
+   */
+  @Override
+  public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
+  }
+
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
     final List<FlowUnitWrapper> flowUnitWrappers =
         args.getWireHopper().readFromWire(args.getNode());

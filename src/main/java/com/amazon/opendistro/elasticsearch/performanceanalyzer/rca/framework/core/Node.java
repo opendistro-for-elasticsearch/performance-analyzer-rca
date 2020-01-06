@@ -23,14 +23,37 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class Node<T extends GenericFlowUnit> {
+  // TODO: Make bounds explicit
+
+  /**
+   * List of downstream nodes for this node.
+   */
   private List<Node<?>> downStreams;
+
+  /**
+   * List of upstream nodes for this node.
+   */
   protected List<Node<?>> upStreams;
+
+  /**
+   * The depth level of the current node in the overall graph
+   */
   private int level;
 
+  /**
+   * The graphId for the node.
+   */
   private int graphId;
 
+  /**
+   * Time in seconds which represents the periodicity with which the scheduler executes this node.
+   */
   protected long evaluationIntervalSeconds;
 
+  /**
+   * List of flow units produced by this node obtained either from evaluating it locally or
+   * obtaining them from other nodes in the cluster.
+   */
   private List<T> flowUnits;
 
   /**
@@ -104,6 +127,8 @@ public abstract class Node<T extends GenericFlowUnit> {
   }
 
   public abstract void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args);
+
+  public abstract void persistFlowUnit(FlowUnitOperationArgWrapper args);
 
   public abstract void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args);
 

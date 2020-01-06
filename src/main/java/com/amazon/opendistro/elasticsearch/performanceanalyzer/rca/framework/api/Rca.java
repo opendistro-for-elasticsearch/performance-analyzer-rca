@@ -29,14 +29,13 @@ public abstract class Rca<T extends ResourceFlowUnit> extends NonLeafNode<T> {
     super(0, evaluationIntervalSeconds);
   }
 
-  public void setEmptyFlowUnitList() {
-    setFlowUnits(Collections.emptyList());
-  }
-
-  // TODO: change the name as it calls itself generate but secretly persists the flow unit.
   public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
     LOG.debug("rca: Executing fromLocal: {}", this.getClass().getSimpleName());
     setFlowUnits(Collections.singletonList(this.operate()));
+  }
+
+  @Override
+  public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
     for (final T flowUnit : getFlowUnits()) {
       if (!flowUnit.isEmpty() && flowUnit.getData() != null && !flowUnit.getData().isEmpty()) {
         args.getPersistable().write(this, flowUnit);
