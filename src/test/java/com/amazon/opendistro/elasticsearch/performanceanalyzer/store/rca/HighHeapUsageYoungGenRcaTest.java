@@ -35,11 +35,11 @@ public class HighHeapUsageYoungGenRcaTest {
     //generate empty flowunit and run operate enough times before evaluating RCA
     heap_Used.setEmptyFlowUnitList();
     gc_Collection_Time.setEmptyFlowUnitList();
-    for (int i = 0; i < RCA_PERIOD-1; i++) {
+    for (int i = 0; i < RCA_PERIOD - 1; i++) {
       youngGenRca.operate();
     }
     //generate flowunit
-    heap_Used.createTestFlowUnits(columnName, Arrays.asList("OldGen", String.valueOf(heapUsageVal*CONVERT_BYTES_TO_MEGABYTES)));
+    heap_Used.createTestFlowUnits(columnName, Arrays.asList("OldGen", String.valueOf(heapUsageVal * CONVERT_BYTES_TO_MEGABYTES)));
     gc_Collection_Time.createTestFlowUnits(columnName, Arrays.asList("totYoungGC", String.valueOf(gcCollectionTimeVal)));
   }
 
