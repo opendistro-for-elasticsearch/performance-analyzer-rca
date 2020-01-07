@@ -103,6 +103,15 @@ public class RcaController {
     startRpcServer();
   }
 
+  /**
+   * Starts various pollers.
+   */
+  public void startPollers() {
+    startRcaConfPoller();
+    startNodeRolePoller();
+    startRcaNanny();
+  }
+
   private void addRcaRequestHandler() {
     httpServer.createContext(Util.RCA_QUERY_URL, queryRcaRequestHandler);
   }
@@ -113,15 +122,6 @@ public class RcaController {
     } catch (IllegalArgumentException e) {
       LOG.debug("Http(s) context for path: {} was not found to remove.", Util.RCA_QUERY_URL);
     }
-  }
-
-  /**
-   * Starts various pollers.
-   */
-  public void startPollers() {
-    startRcaConfPoller();
-    startNodeRolePoller();
-    startRcaNanny();
   }
 
   private void startRpcServer() {

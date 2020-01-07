@@ -105,7 +105,7 @@ public class PerformanceAnalyzerApp {
     NetServer netServer = new NetServer(Util.RPC_PORT, 1, useHttps);
     NetClient netClient = new NetClient(connectionManager);
     MetricsRestUtil metricsRestUtil = new MetricsRestUtil();
-    HttpServer httpServer = createInternalServer(settings, getPortNumber(), netClient, netServer);
+    HttpServer httpServer = createInternalServer(settings, getPortNumber(), netServer);
     httpServer.createContext(QUERY_URL, new QueryMetricsRequestHandler(netClient, metricsRestUtil));
     RcaController rcaController =
         new RcaController(
@@ -114,7 +114,7 @@ public class PerformanceAnalyzerApp {
   }
 
   public static HttpServer createInternalServer(
-      PluginSettings settings, int internalPort, NetClient netClient, NetServer netServer) {
+      PluginSettings settings, int internalPort, NetServer netServer) {
     try {
       Security.addProvider(new BouncyCastleProvider());
       HttpServer server;
