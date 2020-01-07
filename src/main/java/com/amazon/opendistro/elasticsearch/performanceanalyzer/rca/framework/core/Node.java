@@ -54,7 +54,7 @@ public abstract class Node<T extends GenericFlowUnit> {
    * List of flow units produced by this node obtained either from evaluating it locally or
    * obtaining them from other nodes in the cluster.
    */
-  private List<T> flowUnits;
+  protected List<T> flowUnits;
 
   /**
    * These are matched against the tags in the rca.conf, to determine if a node is to executed at a
