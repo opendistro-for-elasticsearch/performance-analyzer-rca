@@ -53,9 +53,9 @@ import org.apache.logging.log4j.Logger;
  * To git rid of false positive from sampling, we keep the sliding window big enough to keep at
  * least a couple of such minimum samples to make the min value more accurate.
  */
-public class HighHeapUsageRca extends Rca<HighHeapUsageFlowUnit> {
+public class HighHeapUsageOldGenRca extends Rca<HighHeapUsageFlowUnit> {
 
-  private static final Logger LOG = LogManager.getLogger(HighHeapUsageRca.class);
+  private static final Logger LOG = LogManager.getLogger(HighHeapUsageOldGenRca.class);
   private static final int RCA_PERIOD = 12;
   private int counter;
   private double maxOldGenHeapSize;
@@ -71,7 +71,7 @@ public class HighHeapUsageRca extends Rca<HighHeapUsageFlowUnit> {
   private static final double OLD_GEN_GC_THRESHOLD = 1;
   private static final double CONVERT_BYTES_TO_MEGABYTES = Math.pow(1024, 3);
 
-  public <M extends Metric> HighHeapUsageRca(
+  public <M extends Metric> HighHeapUsageOldGenRca(
       long evaluationIntervalSeconds, final M heap_Used, final M gc_event, final M heap_Max) {
     super(evaluationIntervalSeconds);
     this.heap_Used = heap_Used;
