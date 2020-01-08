@@ -211,6 +211,9 @@ dependencies {
     testCompile 'junit:junit:4.12'
     testCompile 'org.hamcrest:hamcrest:2.1'
     testCompile 'org.hamcrest:hamcrest-library:2.1'
+    testImplementation 'io.grpc:grpc-netty-shaded:1.25.0'
+    testImplementation 'io.grpc:grpc-protobuf:1.25.0'
+    testImplementation 'io.grpc:grpc-stub:1.25.0'
 }
 
 protobuf {

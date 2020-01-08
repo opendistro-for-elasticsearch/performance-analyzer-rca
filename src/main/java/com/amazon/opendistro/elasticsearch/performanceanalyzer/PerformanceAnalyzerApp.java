@@ -115,7 +115,7 @@ public class PerformanceAnalyzerApp {
    * and a gRPC client.
    * @return gRPC client and the gRPC server and the httpServer wrapped in a class.
    */
-  private static ClientServers startServers() {
+  public static ClientServers startServers() {
     boolean useHttps = PluginSettings.instance().getHttpsEnabled();
 
     GRPCConnectionManager connectionManager = new GRPCConnectionManager(useHttps);
