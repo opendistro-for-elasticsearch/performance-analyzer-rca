@@ -23,20 +23,5 @@ public class RcaControllerTest {
 
   @Test
   public void startPollers() throws IOException, InterruptedException {
-    GRPCConnectionManager connectionManager = new GRPCConnectionManager(true);
-    NetServer netServer = new NetServer(Util.RPC_PORT, 1, true);
-    NetClient netClient = new NetClient(connectionManager);
-    MetricsRestUtil metricsRestUtil = new MetricsRestUtil();
-    HttpServer httpServer =
-        HttpServer.create(new InetSocketAddress(InetAddress.getByName("localhost"), 9200), 0);
-    httpServer.createContext("/", new QueryMetricsRequestHandler(netClient, metricsRestUtil));
-    final ScheduledExecutorService netOperationsExecutor =
-        Executors.newScheduledThreadPool(
-            2, new ThreadFactoryBuilder().setNameFormat("network-thread-%d").build());
-    RcaController rcaController =
-        new RcaController(
-            netOperationsExecutor, connectionManager, netClient, netServer, httpServer);
-    rcaController.startPollers();
-    Thread.sleep(7000);
   }
 }

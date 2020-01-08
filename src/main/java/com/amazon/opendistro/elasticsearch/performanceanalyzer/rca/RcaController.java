@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.handler.MetricsServerHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetServer;
@@ -58,7 +59,12 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-//TODO(Karthik) : Please add a doc comment for this class.
+/**
+ * This is responsible for bootstrapping the RCA. It sets the necessary state, initializes the
+ * pollers to periodically check for the state of the system and react to a change if necessary.
+ * It does all the preparations so that RCA runtime and graph evaluation can be started with a
+ * configuration change but without needing a process restart.
+ */
 public class RcaController {
 
   private static final Logger LOG = LogManager.getLogger(RcaController.class);
@@ -72,7 +78,6 @@ public class RcaController {
   private boolean rcaEnabled = false;
   private NodeRole currentRole = NodeRole.UNKNOWN;
   private RCAScheduler rcaScheduler;
-  private Thread rcaNetServerThread;
 
   private NetPersistor netPersistor;
   private NetClient rcaNetClient;
@@ -82,29 +87,36 @@ public class RcaController {
   private QueryRcaRequestHandler queryRcaRequestHandler;
 
   private SubscriptionManager subscriptionManager;
-  private GRPCConnectionManager connectionManager;
+
+  private final String RCA_ENABLED_CONF_LOCATION;
 
   public RcaController(
       final ScheduledExecutorService netOpsExecutorService,
       final GRPCConnectionManager grpcConnectionManager,
       final NetClient rcaNetClient,
       final NetServer rcaNetServer,
-      final HttpServer httpServer) {
+      final HttpServer httpServer,
+      final String rca_enabled_conf_location) {
     this.netOpsExecutorService = netOpsExecutorService;
-    this.connectionManager = grpcConnectionManager;
     this.rcaNetClient = rcaNetClient;
     this.rcaNetServer = rcaNetServer;
     this.httpServer = httpServer;
+    RCA_ENABLED_CONF_LOCATION = rca_enabled_conf_location;
     netPersistor = new NetPersistor();
     this.useHttps = PluginSettings.instance().getHttpsEnabled();
     subscriptionManager = new SubscriptionManager(grpcConnectionManager, rcaNetClient);
     nodeStateManager = new NodeStateManager();
     queryRcaRequestHandler = new QueryRcaRequestHandler();
-    startRpcServer();
   }
 
   /**
-   * Starts various pollers.
+   * Starts the pollers.
+   * Each poller is a thread that checks for the state of the system that the RCA is concerned with.
+   * - RcaConfPoller: Periodically reads a config file to determine if RCA is supposed to be
+   *                  running or not and accordingly sets a flag.
+   * - NodeRolePoller: This checks for the change of role for an elastic search Master node.
+   * - RcaNanny: RcaConfPoller sets the flag but this thread works to start Rca or shut it down
+   *             based on the flag.
    */
   public void startPollers() {
     startRcaConfPoller();
@@ -122,14 +134,6 @@ public class RcaController {
     } catch (IllegalArgumentException e) {
       LOG.debug("Http(s) context for path: {} was not found to remove.", Util.RCA_QUERY_URL);
     }
-  }
-
-  private void startRpcServer() {
-    if (rcaNetServer == null) {
-      this.rcaNetServer = new NetServer(Util.RPC_PORT, 1, useHttps);
-    }
-    this.rcaNetServerThread = new Thread(rcaNetServer);
-    this.rcaNetServerThread.start();
   }
 
   private void startRcaConfPoller() {
@@ -181,11 +185,9 @@ public class RcaController {
     }
   }
 
-  /**
-   * Reads the enabled/disabled value for RCA from the conf file.
-   */
+  /** Reads the enabled/disabled value for RCA from the conf file. */
   private void readRcaEnabledFromConf() {
-    Path filePath = Paths.get(Util.DATA_DIR, RCA_ENABLED_CONF_FILE);
+    Path filePath = Paths.get(RCA_ENABLED_CONF_LOCATION, RCA_ENABLED_CONF_FILE);
 
     Util.invokePrivileged(
         () -> {
@@ -200,6 +202,13 @@ public class RcaController {
         });
   }
 
+  /**
+   * Starts or stops the RCA runtime.
+   * If the RCA runtime is up but the currently RCA is disabled, then this gracefully shuts down
+   * the RCA runtime. It restarts the RCA runtime if the node role has changed in the meantime
+   * (such as a new elected master). It also starts the RCA runtime if it wasn't already running
+   * but the current state of the flag expects it to.
+   */
   private void startRcaNanny() {
     netOpsExecutorService.scheduleAtFixedRate(
         () -> {
@@ -238,8 +247,11 @@ public class RcaController {
           new WireHopper(netPersistor, nodeStateManager, rcaNetClient, subscriptionManager);
       this.rcaScheduler =
           new RCAScheduler(connectedComponents, db, rcaConf, thresholdMain, persistable, net);
+
+      rcaNetServer.setMetricsHandler(new MetricsServerHandler());
       rcaNetServer.setSendDataHandler(new PublishRequestHandler(netPersistor, nodeStateManager));
       rcaNetServer.setSubscribeHandler(new SubscribeServerHandler(net, subscriptionManager));
+
       rcaScheduler.setRole(currentRole);
       rcaScheduler.start();
     } catch (ClassNotFoundException
@@ -251,7 +263,6 @@ public class RcaController {
         | SQLException e) {
       LOG.error("Couldn't build connected components or persistable.. Ran into {}", e.getMessage());
       e.printStackTrace();
-      return;
     }
   }
 
