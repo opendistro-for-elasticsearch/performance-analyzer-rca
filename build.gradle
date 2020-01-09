@@ -176,7 +176,6 @@ configurations {
 
 tasks.withType(JavaCompile) {
     options.warnings = false
-    // options.compilerArgs << '-Xlint:unchecked'
 }
 
 dependencies {
