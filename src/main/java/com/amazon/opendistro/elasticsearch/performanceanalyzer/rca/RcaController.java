@@ -78,9 +78,11 @@ public class RcaController {
 
   private boolean rcaEnabledDefaultValue = false;
 
-  private boolean rcaEnabled = false;
+  // This needs to be volatile as the RcaConfPoller writes it but the Nanny reads it.
+  private volatile boolean rcaEnabled = false;
 
-  private NodeRole currentRole = NodeRole.UNKNOWN;
+  // This needs to be volatile as the NodeRolePoller writes it but the Nanny reads it.
+  private volatile NodeRole currentRole = NodeRole.UNKNOWN;
 
   private RCAScheduler rcaScheduler;
 
@@ -98,6 +100,9 @@ public class RcaController {
   private final String MASTER_RCA_CONF_PATH;
   private final String RCA_CONF_PATH;
 
+  private long pollerPeriodicity;
+  private TimeUnit timeUnit;
+
   public RcaController(
       final ScheduledExecutorService netOpsExecutorService,
       final GRPCConnectionManager grpcConnectionManager,
@@ -107,7 +112,9 @@ public class RcaController {
       final String rca_enabled_conf_location,
       final String electedMasterRcaConf,
       final String masterRcaConf,
-      final String rcaConf) {
+      final String rcaConf,
+      long pollerPeriodicity,
+      TimeUnit timeUnit) {
     this.netOpsExecutorService = netOpsExecutorService;
     this.rcaNetClient = rcaNetClient;
     this.rcaNetServer = rcaNetServer;
@@ -122,6 +129,8 @@ public class RcaController {
     this.ELECTED_MASTER_RCA_CONF_PATH = electedMasterRcaConf;
     this.MASTER_RCA_CONF_PATH = masterRcaConf;
     this.RCA_CONF_PATH = rcaConf;
+    this.pollerPeriodicity = pollerPeriodicity;
+    this.timeUnit = timeUnit;
   }
 
   /**
@@ -170,7 +179,8 @@ public class RcaController {
   }
 
   private void startRcaConfPoller() {
-    netOpsExecutorService.scheduleAtFixedRate(this::readRcaEnabledFromConf, 0, 5, TimeUnit.SECONDS);
+    netOpsExecutorService.scheduleAtFixedRate(
+        this::readRcaEnabledFromConf, 0, pollerPeriodicity, timeUnit);
   }
 
   private void startNodeRolePoller() {
@@ -183,9 +193,9 @@ public class RcaController {
             handleNodeRoleChange(nodeDetails, electedMasterAddress);
           }
         },
-        1,
-        5,
-        TimeUnit.SECONDS);
+        pollerPeriodicity,
+        pollerPeriodicity,
+        timeUnit);
   }
 
   private String getElectedMasterHostAddress() {
@@ -258,9 +268,9 @@ public class RcaController {
             }
           }
         },
-        2,
-        5,
-        TimeUnit.SECONDS);
+        2 * pollerPeriodicity,
+        pollerPeriodicity,
+        timeUnit);
   }
 
   private void start() {

@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ut
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import java.nio.file.Paths;
+import java.util.concurrent.TimeUnit;
 
 public class RcaConsts {
 
@@ -47,4 +48,7 @@ public class RcaConsts {
   public static final String DATASTORE_TIMESTAMP_COL_NAME = "timestamp";
   public static final String DATASTORE_RESOURCE_COL_NAME = "resource";
   public static final String DATASTORE_STATE_COL_NAME = "state";
+
+  public static final long networkPollerPeriodicity = 5;
+  public static final TimeUnit networkPollerPeriodicityTimeUnit = TimeUnit.SECONDS;
 }

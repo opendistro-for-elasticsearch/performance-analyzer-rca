@@ -159,7 +159,9 @@ public class PerformanceAnalyzerApp {
             Util.DATA_DIR,
             RcaConsts.RCA_CONF_MASTER_PATH,
             RcaConsts.RCA_CONF_IDLE_MASTER_PATH,
-            RcaConsts.RCA_CONF_PATH);
+            RcaConsts.RCA_CONF_PATH,
+            RcaConsts.networkPollerPeriodicity,
+            RcaConsts.networkPollerPeriodicityTimeUnit);
 
     rcaController.startPollers();
   }
