@@ -1,5 +1,5 @@
 /*
- * Copyright <2019> Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -31,8 +31,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.DummyGraph;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageOldGenRca;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -74,6 +75,10 @@ public class RcaSpecTests {
       public ResourceFlowUnit operate() {
         return ResourceFlowUnit.generic();
       }
+
+      @Override
+      public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
+      }
     }
 
     class AnalysisGraphX extends AnalysisGraph {
@@ -84,7 +89,7 @@ public class RcaSpecTests {
 
         SymptomX symptom = new SymptomX(5);
 
-        List<Node> lsym = new ArrayList<>();
+        List<Node<?>> lsym = new ArrayList<>();
         lsym.add(metric1);
         symptom.addAllUpstreams(lsym);
 
@@ -108,8 +113,8 @@ public class RcaSpecTests {
   @Test(expected = RuntimeException.class)
   public void testAddToFlowFieldBeforeAddingAsDependency() {
     Metric heapUsed = new Heap_Used(5);
-    HighHeapUsageRca highHeapUsageRca = new HighHeapUsageRca(1, heapUsed, null, null);
-    highHeapUsageRca.addAllUpstreams(Collections.singletonList(heapUsed));
+    HighHeapUsageOldGenRca highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(1, heapUsed, null, null);
+    highHeapUsageOldGenRca.addAllUpstreams(Collections.singletonList(heapUsed));
   }
 
   @Test
@@ -195,6 +200,10 @@ public class RcaSpecTests {
       public ResourceFlowUnit operate() {
         return null;
       }
+
+      @Override
+      public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
+      }
     }
 
     class TestRCA2 extends Rca {
@@ -207,6 +216,10 @@ public class RcaSpecTests {
       public ResourceFlowUnit operate() {
         return null;
       }
+
+      @Override
+      public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
+      }
     }
 
     class TestRCA3 extends Rca {
@@ -218,6 +231,10 @@ public class RcaSpecTests {
       @Override
       public ResourceFlowUnit operate() {
         return null;
+      }
+
+      @Override
+      public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
       }
     }
 
@@ -303,7 +320,7 @@ public class RcaSpecTests {
         expected = expectedG2;
       }
       int idx2 = 0;
-      for (List<Node> parallelExecutables : g.getAllNodesByDependencyOrder()) {
+      for (List<Node<?>> parallelExecutables : g.getAllNodesByDependencyOrder()) {
         parallelExecutables.sort(
             (o1, o2) -> o1.getClass().getSimpleName().compareTo(o2.getClass().getSimpleName()));
         List<String> actual =

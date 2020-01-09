@@ -1,5 +1,5 @@
 /*
- * Copyright <2019> Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -25,22 +25,22 @@ import java.util.Map;
 import java.util.Set;
 
 public class ConnectedComponent {
-  private List<Node> leafNodes;
+  private List<Node<?>> leafNodes;
 
   /* The elements in the inner list can be executed in parallel. Two inner lists have to be executed in order. */
-  private List<List<Node>> dependencyOrderedNodes;
+  private List<List<Node<?>>> dependencyOrderedNodes;
   private int graphId;
 
-  private Set<Node> getAllNodes() {
-    Set<Node> traversed = new HashSet<>();
-    Deque<Node> inline = new ArrayDeque<>(leafNodes);
+  private Set<Node<?>> getAllNodes() {
+    Set<Node<?>> traversed = new HashSet<>();
+    Deque<Node<?>> inline = new ArrayDeque<>(leafNodes);
     while (!inline.isEmpty()) {
-      Node currNode = inline.poll();
+      Node<?> currNode = inline.poll();
       if (traversed.contains(currNode)) {
         continue;
       }
       traversed.add(currNode);
-      List<Node> currNodesDownstream = currNode.getDownStreams();
+      List<Node<?>> currNodesDownstream = currNode.getDownStreams();
       if (currNodesDownstream.size() > 0) {
         inline.addAll(currNodesDownstream);
       }
@@ -61,11 +61,11 @@ public class ConnectedComponent {
     leafNodes.add(node);
   }
 
-  public List<List<Node>> getAllNodesByDependencyOrder() {
+  public List<List<Node<?>>> getAllNodesByDependencyOrder() {
     if (dependencyOrderedNodes != null) {
       return dependencyOrderedNodes;
     }
-    List<Node> allNodes = new ArrayList<>(getAllNodes());
+    List<Node<?>> allNodes = new ArrayList<>(getAllNodes());
     allNodes.sort(new SortByIngressOrder());
 
     dependencyOrderedNodes = new ArrayList<>(allNodes.size());
@@ -73,17 +73,17 @@ public class ConnectedComponent {
     int[] ingressCountArray = new int[allNodes.size()];
 
     // A list of nodes which have no incoming edges.
-    Deque<Node> zeroIngressNodes = new ArrayDeque<>(allNodes.size() / 2);
+    Deque<Node<?>> zeroIngressNodes = new ArrayDeque<>(allNodes.size() / 2);
 
     // A map to map a node to its position in the ingressCountArray, for fast retrieval.
-    Map<Node, Integer> nodePositionMap = new HashMap<>(allNodes.size());
+    Map<Node<?>, Integer> nodePositionMap = new HashMap<>(allNodes.size());
 
     int index = 0;
 
     // Loop to initiate the ingressCountArray. For each node, as it is positioned in the allNodes
     // list,
     // the value is the number of incoming edges to the node.
-    for (Node node : allNodes) {
+    for (Node<?> node : allNodes) {
       int upStreamNodesCount = node.getUpStreamNodesCount();
       if (upStreamNodesCount == 0) {
         zeroIngressNodes.add(node);
@@ -94,13 +94,13 @@ public class ConnectedComponent {
     }
 
     while (!zeroIngressNodes.isEmpty()) {
-      List<Node> innerList = new ArrayList<>(zeroIngressNodes);
+      List<Node<?>> innerList = new ArrayList<>(zeroIngressNodes);
       dependencyOrderedNodes.add(innerList);
       zeroIngressNodes.clear();
 
-      for (Node node : innerList) {
+      for (Node<?> node : innerList) {
         // For all the nodes downstream of this node, decrement the ingress count.
-        for (Node downstreamNode : node.getDownStreams()) {
+        for (Node<?> downstreamNode : node.getDownStreams()) {
           int pos = nodePositionMap.get(downstreamNode);
           --ingressCountArray[pos];
           if (ingressCountArray[pos] == 0) {

@@ -1,5 +1,5 @@
 /*
- * Copyright <2019> Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
-public abstract class LeafNode extends Node implements Gatherable {
+public abstract class LeafNode<T extends GenericFlowUnit> extends Node<T> implements Gatherable<T> {
   private boolean addedToFlowField;
 
   public LeafNode(int level, long evaluationIntervalSeconds) {

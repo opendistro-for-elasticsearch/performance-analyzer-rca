@@ -1,5 +1,5 @@
 /*
- * Copyright <2019> Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ public class GraphNodeOperations {
 
   static void readFromLocal(FlowUnitOperationArgWrapper args) {
     args.getNode().generateFlowUnitListFromLocal(args);
+    args.getNode().persistFlowUnit(args);
   }
 
   // This is the abstraction for when the data arrives on the wire from a remote dependency.

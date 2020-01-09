@@ -1,5 +1,5 @@
 /*
- * Copyright <2019> Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import java.util.Queue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public abstract class NonLeafNode extends Node implements Operable {
+public abstract class NonLeafNode<T extends GenericFlowUnit> extends Node<T> implements Operable<T> {
   private static final Logger LOG = LogManager.getLogger(NonLeafNode.class);
 
   public NonLeafNode(int level, long evaluationDurationSeconds) {
@@ -38,7 +38,7 @@ public abstract class NonLeafNode extends Node implements Operable {
    *
    * @param upstreams The list of all the upstream nodes.
    */
-  public void addAllUpstreams(List<Node> upstreams) {
+  public void addAllUpstreams(List<Node<?>> upstreams) {
     int minGraphId = validateAndAddDownstream(upstreams);
     setGraphId(updateGraphs(minGraphId, upstreams));
     this.upStreams = upstreams;
@@ -51,16 +51,16 @@ public abstract class NonLeafNode extends Node implements Operable {
    * @param upstreams The upstream vertices to update the graph with.
    * @return The new minimum id of the graph post update.
    */
-  private int updateGraphs(int minId, List<Node> upstreams) {
-    final Queue<Node> bfsQueue = new LinkedList<>(upstreams);
+  private int updateGraphs(int minId, List<Node<?>> upstreams) {
+    final Queue<Node<?>> bfsQueue = new LinkedList<>(upstreams);
     while (!bfsQueue.isEmpty()) {
-      final Node currentNode = bfsQueue.poll();
+      final Node<?> currentNode = bfsQueue.poll();
       int graphId = currentNode.getGraphId();
       if (minId != graphId) {
         currentNode.setGraphId(minId);
         Stats.getInstance().removeGraph(graphId);
       }
-      final List<Node> currentNodeUpstreams = currentNode.getUpstreams();
+      final List<Node<?>> currentNodeUpstreams = currentNode.getUpstreams();
       bfsQueue.addAll(currentNodeUpstreams);
     }
     return minId;
@@ -72,7 +72,7 @@ public abstract class NonLeafNode extends Node implements Operable {
    * than or equal to all the nodes it depends on. 3. The Metrics this node depends on should
    * already be added to the FlowField.
    */
-  private int validateAndAddDownstream(List<Node> upstreams) {
+  private int validateAndAddDownstream(List<Node<?>> upstreams) {
     if (this.upStreams != null) {
       throw new MalformedAnalysisGraph("All upstreams of a node should be added at once.");
     }
@@ -83,7 +83,7 @@ public abstract class NonLeafNode extends Node implements Operable {
     int maxLevel = 0;
     int minId = Integer.MAX_VALUE;
 
-    for (Node node : upstreams) {
+    for (Node<?> node : upstreams) {
       if (node instanceof Metric && !((Metric) node).isAddedToFlowField()) {
         metricNodesNotAdded.append(metricNodeDelimeter).append(node.getClass().getSimpleName());
         metricNodeDelimeter = ", ";

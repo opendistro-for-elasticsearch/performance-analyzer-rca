@@ -1,5 +1,5 @@
 /*
- * Copyright <2019> Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -22,13 +22,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.N
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 
 public class FlowUnitOperationArgWrapper {
-  private final Node node;
+  private final Node<?> node;
   private final Queryable queryable;
   private final Persistable persistable;
   private final WireHopper wireHopper;
   private final NetPersistor netPersistor;
 
-  public Node getNode() {
+  public Node<?> getNode() {
     return node;
   }
 
@@ -45,7 +45,7 @@ public class FlowUnitOperationArgWrapper {
   }
 
   FlowUnitOperationArgWrapper(
-      Node node, Queryable queryable, Persistable persistable, WireHopper wireHopper) {
+      Node<?> node, Queryable queryable, Persistable persistable, WireHopper wireHopper) {
     this.node = node;
     this.queryable = queryable;
     this.persistable = persistable;

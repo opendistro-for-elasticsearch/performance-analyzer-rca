@@ -1,5 +1,5 @@
 /*
- * Copyright <2019> Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -44,7 +44,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 @Category(GradleTaskForRca.class)
-@Ignore
 public class RCASchedulerTaskTests {
 
   /**
@@ -81,11 +80,12 @@ public class RCASchedulerTaskTests {
                          \        |
                            \      |
                              \    |
-                        -------\--|---------
-                        |       \|/       |
-                        |      SkyLabs    |
-                        |                 |
-                        |-----------------|
+                        |------\--|--------|
+                        | cpu   \ |        |
+                        |    \   \|        |
+                        |     \/  \/       |        Skylabs consumes the locally generated metric
+                        |      skylabs     |        CPU and also the metrics from remote nodes moon
+                        |------------------|        and earth.
 
              In this graph:
               IntentFlow:
@@ -131,6 +131,14 @@ public class RCASchedulerTaskTests {
                     return MOON_KEY;
                   }
                 };
+
+            Metric skyLabCpu =
+                new CPU_Utilization(1) {
+                  @Override
+                  public MetricFlowUnit gather(Queryable queryable) {
+                    return MetricFlowUnit.generic();
+                  }
+                };
             Symptom skyLabsSymptom =
                 new Symptom(1) {
                   @Override
@@ -144,19 +152,22 @@ public class RCASchedulerTaskTests {
                 };
 
             addLeaf(metric);
+            addLeaf(skyLabCpu);
             earthSymptom.addAllUpstreams(Collections.singletonList(metric));
             moonSymptom.addAllUpstreams(Collections.singletonList(earthSymptom));
             skyLabsSymptom.addAllUpstreams(
-                new ArrayList<Node>() {
+                new ArrayList<Node<?>>() {
                   {
                     add(earthSymptom);
                     add(moonSymptom);
+                    add(skyLabCpu);
                   }
                 });
 
             metric.addTag(LOCUS_KEY, EARTH_KEY);
             earthSymptom.addTag(LOCUS_KEY, EARTH_KEY);
             moonSymptom.addTag(LOCUS_KEY, MOON_KEY);
+            skyLabCpu.addTag(LOCUS_KEY, SKY_LABS_KEY);
             skyLabsSymptom.addTag(LOCUS_KEY, SKY_LABS_KEY);
           }
         };
@@ -311,6 +322,7 @@ public class RCASchedulerTaskTests {
                     add("c");
                   }
                 });
+
           }
         };
     List<List<String>> l2 =
@@ -332,6 +344,14 @@ public class RCASchedulerTaskTests {
                     add("z");
                   }
                 });
+            add(
+                new ArrayList<String>() {
+                  {
+                    add("xx");
+                    add("yy");
+                    add("zz");
+                  }
+                });
           }
         };
 
@@ -341,23 +361,31 @@ public class RCASchedulerTaskTests {
             add(
                 new ArrayList<String>() {
                   {
-                    add("1");
-                    add("2");
-                    add("3");
                     add("10");
                     add("20");
                     add("30");
+                    add("1");
+                    add("2");
+                    add("3");
                   }
                 });
             add(
                 new ArrayList<String>() {
                   {
-                    add("a");
-                    add("b");
-                    add("c");
                     add("x");
                     add("y");
                     add("z");
+                    add("a");
+                    add("b");
+                    add("c");
+                  }
+                });
+            add(
+                new ArrayList<String>() {
+                  {
+                    add("xx");
+                    add("yy");
+                    add("zz");
                   }
                 });
           }
@@ -370,8 +398,9 @@ public class RCASchedulerTaskTests {
 
     // Test for merging with isEmpty list.
     ret = RCASchedulerTask.mergeLists(l1, Collections.emptyList());
+
     assertEquals(l1.size(), ret.size());
-    for (int i = 0; i < expected.size(); i++) {
+    for (int i = 0; i < ret.size(); i++) {
       AssertHelper.compareLists(l1.get(i), ret.get(i));
     }
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright <2019> Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -23,28 +23,27 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public abstract class Symptom extends NonLeafNode {
+public abstract class Symptom extends NonLeafNode<SymptomFlowUnit> {
   private static final Logger LOG = LogManager.getLogger(Symptom.class);
-  protected List<SymptomFlowUnit> flowUnitList;
 
   public Symptom(long evaluationIntervalSeconds) {
     super(0, evaluationIntervalSeconds);
   }
 
-  public List<SymptomFlowUnit> fetchFlowUnitList() {
-    return this.flowUnitList;
-  }
-
-  public void setGernericFlowUnitList() {
-    this.flowUnitList = Collections.singletonList(SymptomFlowUnit.generic());
-  }
-
   public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
     LOG.debug("rca: Executing handleRca: {}", this.getClass().getSimpleName());
-    this.flowUnitList = Collections.singletonList(this.operate());
+    setFlowUnits(Collections.singletonList(this.operate()));
   }
 
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
     // TODO
+  }
+
+  /**
+   * Persists a flow unit.
+   * @param args The arg wrapper.
+   */
+  @Override
+  public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
   }
 }

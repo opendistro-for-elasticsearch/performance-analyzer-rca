@@ -1,5 +1,5 @@
 /*
- * Copyright <2019> Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ public class RcaUtil {
     return Stats.getInstance().getConnectedComponents();
   }
 
-  public static boolean doTagsMatch(Node node, RcaConf conf) {
+  public static boolean doTagsMatch(Node<?> node, RcaConf conf) {
     Map<String, String> rcaTagMap = conf.getTagMap();
     for (Map.Entry<String, String> tag : node.getTags().entrySet()) {
       String rcaConfTagvalue = rcaTagMap.get(tag.getKey());

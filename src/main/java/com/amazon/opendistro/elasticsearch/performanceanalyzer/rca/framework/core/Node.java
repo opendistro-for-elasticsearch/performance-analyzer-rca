@@ -1,5 +1,5 @@
 /*
- * Copyright <2019> Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -22,14 +22,39 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public abstract class Node {
-  private List<Node> downStreams;
-  protected List<Node> upStreams;
+public abstract class Node<T extends GenericFlowUnit> {
+  // TODO: Make bounds explicit
+
+  /**
+   * List of downstream nodes for this node.
+   */
+  private List<Node<?>> downStreams;
+
+  /**
+   * List of upstream nodes for this node.
+   */
+  protected List<Node<?>> upStreams;
+
+  /**
+   * The depth level of the current node in the overall graph
+   */
   private int level;
 
+  /**
+   * The graphId for the node.
+   */
   private int graphId;
 
+  /**
+   * Time in seconds which represents the periodicity with which the scheduler executes this node.
+   */
   protected long evaluationIntervalSeconds;
+
+  /**
+   * List of flow units produced by this node obtained either from evaluating it locally or
+   * obtaining them from other nodes in the cluster.
+   */
+  protected List<T> flowUnits;
 
   /**
    * These are matched against the tags in the rca.conf, to determine if a node is to executed at a
@@ -44,7 +69,7 @@ public abstract class Node {
     this.tags = new HashMap<>();
   }
 
-  void addDownstream(Node downStreamNode) {
+  void addDownstream(Node<?> downStreamNode) {
     this.downStreams.add(downStreamNode);
   }
 
@@ -75,14 +100,14 @@ public abstract class Node {
     return upStreams.size();
   }
 
-  List<Node> getDownStreams() {
+  List<Node<?>> getDownStreams() {
     if (downStreams == null) {
       return Collections.emptyList();
     }
     return Collections.unmodifiableList(downStreams);
   }
 
-  public List<Node> getUpstreams() {
+  public List<Node<?>> getUpstreams() {
     if (upStreams == null) {
       return Collections.emptyList();
     }
@@ -103,14 +128,24 @@ public abstract class Node {
 
   public abstract void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args);
 
+  public abstract void persistFlowUnit(FlowUnitOperationArgWrapper args);
+
   public abstract void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args);
 
-  public abstract void setGernericFlowUnitList();
-
-  public abstract List<? extends GenericFlowUnit> fetchFlowUnitList();
+  public void setEmptyFlowUnitList() {
+    flowUnits = Collections.emptyList();
+  }
 
   @Override
   public String toString() {
     return name();
+  }
+
+  public List<T> getFlowUnits() {
+    return flowUnits;
+  }
+
+  public void setFlowUnits(List<T> flowUnits) {
+    this.flowUnits = flowUnits;
   }
 }

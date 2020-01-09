@@ -1,5 +1,5 @@
 /*
- * Copyright <2019> Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ public interface Persistable {
    * @param node The data for the node to be read.
    * @return Returns a flow unit type
    */
-  List<ResourceFlowUnit> read(Node node);
+  List<ResourceFlowUnit> read(Node<?> node);
 
   String read();
 
@@ -35,7 +35,7 @@ public interface Persistable {
    * @param node Node whose flow unit is persisted.
    * @param flowUnit The flow unit that is persisted.
    */
-  void write(Node node, ResourceFlowUnit flowUnit);
+  <T extends ResourceFlowUnit> void write(Node<?> node, T flowUnit);
 
   void close() throws SQLException;
 }

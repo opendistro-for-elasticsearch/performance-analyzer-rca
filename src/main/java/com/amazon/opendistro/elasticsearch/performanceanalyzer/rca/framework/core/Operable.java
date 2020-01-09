@@ -1,5 +1,5 @@
 /*
- * Copyright <2019> Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -21,6 +21,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.co
  * dependencies will have multiple samples and there are expected to be multiple dependencies. Hence, the input type
  * is list of lists.
  */
-public interface Operable {
-  <T extends GenericFlowUnit> T operate();
+public interface Operable<T> {
+  T operate();
 }

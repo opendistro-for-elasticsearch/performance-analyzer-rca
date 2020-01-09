@@ -1,5 +1,5 @@
 /*
- * Copyright <2019> Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -40,10 +40,10 @@ public class Tasklet {
 
   protected Map<Tasklet, CompletableFuture<TaskletResult>> predecessorToFutureMap;
   protected List<Tasklet> predecessors;
-  private Node node;
+  private Node<?> node;
   private final Queryable db;
   private final Persistable persistable;
-  private final Map<Node, List<Node>> remotelyDesirableNodeSet;
+  private final Map<Node<?>, List<Node<?>>> remotelyDesirableNodeSet;
   private final WireHopper hopper;
   private final NetPersistor netPersistor;
   private int ticks;
@@ -60,10 +60,10 @@ public class Tasklet {
    * @param hopper The object that is an abstraction for all cross-network activities.
    */
   Tasklet(
-      final Node predecessorNode,
+      final Node<?> predecessorNode,
       final Queryable db,
       final Persistable persistable,
-      final Map<Node, List<Node>> remotelyDesirableNodeSet,
+      final Map<Node<?>, List<Node<?>>> remotelyDesirableNodeSet,
       final WireHopper hopper,
       final Consumer<FlowUnitOperationArgWrapper> exec) {
     this.node = predecessorNode;
@@ -96,7 +96,7 @@ public class Tasklet {
     ticks += 1;
     if (ticks % node.getEvaluationIntervalSeconds() != 0) {
       // If its not time to run this tasklet, return an isEmpty flowUnit.
-      node.setGernericFlowUnitList();
+      node.setEmptyFlowUnitList();
       return CompletableFuture.supplyAsync(() -> new TaskletResult(node.getClass()));
     }
 
@@ -142,7 +142,7 @@ public class Tasklet {
               remotelyDesirableNodeSet.get(node).stream()
                   .map(Node::name)
                   .collect(Collectors.toList()),
-              node.fetchFlowUnitList());
+              node.getFlowUnits());
       hopper.sendData(dataMsg);
     }
   }

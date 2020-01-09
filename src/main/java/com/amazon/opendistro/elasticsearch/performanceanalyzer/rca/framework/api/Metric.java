@@ -1,5 +1,5 @@
 /*
- * Copyright <2019> Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public abstract class Metric extends LeafNode {
+public abstract class Metric extends LeafNode<MetricFlowUnit> {
   static final String[] metricList;
 
   static {
@@ -41,7 +41,6 @@ public abstract class Metric extends LeafNode {
 
   private String name;
   private static final Logger LOG = LogManager.getLogger(Metric.class);
-  protected List<MetricFlowUnit> flowUnitList;
 
   public Metric(String name, long evaluationIntervalSeconds) {
     super(0, evaluationIntervalSeconds);
@@ -75,22 +74,22 @@ public abstract class Metric extends LeafNode {
     // LOG.debug("RCA: Metrics from MetricsDB {}", result);
   }
 
-  public void setGernericFlowUnitList() {
-    this.flowUnitList = Collections.singletonList(MetricFlowUnit.generic());
-  }
-
-  public List<MetricFlowUnit> fetchFlowUnitList() {
-    return this.flowUnitList;
-  }
-
   public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
-    this.flowUnitList = Collections.singletonList(gather(args.getQueryable()));
+    setFlowUnits(Collections.singletonList(gather(args.getQueryable())));
+  }
+
+  /**
+   * Persists the given flow unit.
+   * @param args The arg wrapper.
+   */
+  @Override
+  public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
   }
 
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
     final List<FlowUnitWrapper> flowUnitWrappers =
         args.getWireHopper().readFromWire(args.getNode());
-    flowUnitList = new ArrayList<>();
+    final List<MetricFlowUnit> flowUnitList = new ArrayList<>();
     LOG.debug(
         "rca: Executing fromWire: {}, received : {}",
         this.getClass().getSimpleName(),
@@ -98,5 +97,7 @@ public abstract class Metric extends LeafNode {
     for (FlowUnitWrapper messageWrapper : flowUnitWrappers) {
       flowUnitList.add(MetricFlowUnit.buildFlowUnitFromWrapper(messageWrapper));
     }
+
+    setFlowUnits(flowUnitList);
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright <2019> Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.CPU_Utilization;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
@@ -31,7 +32,7 @@ public class RcaUtilTest {
 
   @Test
   public void doTagsMatch() {
-    Node node = new CPU_Utilization(5);
+    Node<MetricFlowUnit> node = new CPU_Utilization(5);
     node.addTag("locus", "data-node");
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
     assertTrue(RcaUtil.doTagsMatch(node, rcaConf));
@@ -39,7 +40,7 @@ public class RcaUtilTest {
 
   @Test
   public void noMatchWithExtraNodeTags() {
-    Node node = new CPU_Utilization(5);
+    Node<MetricFlowUnit> node = new CPU_Utilization(5);
     node.addTag("locus", "data-node");
     // This is the extra tag.
     node.addTag("name", "sifi");
@@ -49,14 +50,14 @@ public class RcaUtilTest {
 
   @Test
   public void noNodeTagsIsAMatch() {
-    Node node = new CPU_Utilization(5);
+    Node<MetricFlowUnit> node = new CPU_Utilization(5);
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
     assertTrue(RcaUtil.doTagsMatch(node, rcaConf));
   }
 
   @Test
   public void existingTagWithDifferentValueNoMatch() {
-    Node node = new CPU_Utilization(5);
+    Node<MetricFlowUnit> node = new CPU_Utilization(5);
     node.addTag("locus", "master-node");
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
     assertFalse(RcaUtil.doTagsMatch(node, rcaConf));

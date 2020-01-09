@@ -1,5 +1,5 @@
 /*
- * Copyright <2019> Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -18,6 +18,10 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.FlowUnitWrapper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.flowunit.HighHeapUsageClusterFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.flowunit.HighHeapUsageFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -43,30 +47,31 @@ import org.apache.logging.log4j.Logger;
  * consecutive flowunits are unhealthy. And if any node is unthleath, the entire cluster will be
  * considered as unhealthy and send out corresponding flowunits to downstream nodes.
  */
-public class HighHeapUsageClusterRca extends Rca {
-  private static final Logger LOG = LogManager.getLogger(HighHeapUsageRca.class);
+public class HighHeapUsageClusterRca extends Rca<HighHeapUsageClusterFlowUnit> {
+
+  private static final Logger LOG = LogManager.getLogger(HighHeapUsageClusterRca.class);
   private static final int RCA_PERIOD = 12;
   private static final int UNHEALTHY_FLOWUNIT_THRESHOLD = 3;
   private static final int CACHE_EXPIRATION_TIMEOUT = 10;
   protected int counter;
-  private final Rca highHeapUsageRca;
+  private final Rca<HighHeapUsageFlowUnit> highHeapUsageRca;
   private final LoadingCache<String, ImmutableList<ResourceContext.State>> nodeStateCache;
 
-  public <R extends Rca> HighHeapUsageClusterRca(
+  public <R extends Rca<HighHeapUsageFlowUnit>> HighHeapUsageClusterRca(
       long evaluationIntervalSeconds, final R highHeapUsageRca) {
     super(evaluationIntervalSeconds);
     this.highHeapUsageRca = highHeapUsageRca;
     counter = 0;
     nodeStateCache =
         CacheBuilder.newBuilder()
-            .maximumSize(1000)
-            .expireAfterWrite(CACHE_EXPIRATION_TIMEOUT, TimeUnit.MINUTES)
-            .build(
-                new CacheLoader<String, ImmutableList<ResourceContext.State>>() {
-                  public ImmutableList<ResourceContext.State> load(String key) {
-                    return ImmutableList.copyOf(new ArrayList<>());
-                  }
-                });
+                    .maximumSize(1000)
+                    .expireAfterWrite(CACHE_EXPIRATION_TIMEOUT, TimeUnit.MINUTES)
+                    .build(
+                        new CacheLoader<String, ImmutableList<ResourceContext.State>>() {
+                          public ImmutableList<ResourceContext.State> load(String key) {
+                            return ImmutableList.copyOf(new ArrayList<>());
+                          }
+                        });
   }
 
   private List<String> getUnhealthyNodeList() {
@@ -105,8 +110,8 @@ public class HighHeapUsageClusterRca extends Rca {
   }
 
   @Override
-  public ResourceFlowUnit operate() {
-    List<ResourceFlowUnit> highHeapUsageRcaFlowUnits = highHeapUsageRca.fetchFlowUnitList();
+  public HighHeapUsageClusterFlowUnit operate() {
+    List<HighHeapUsageFlowUnit> highHeapUsageRcaFlowUnits = highHeapUsageRca.getFlowUnits();
     counter += 1;
     for (ResourceFlowUnit highHeapUsageRcaFlowUnit : highHeapUsageRcaFlowUnits) {
       // TODO: flowunit.isEmpty() is set only when the flowunit is empty. unknown state should be
@@ -132,24 +137,49 @@ public class HighHeapUsageClusterRca extends Rca {
       counter = 0;
       LOG.debug("Unhealthy node id list : {}", unhealthyNodeList);
       if (unhealthyNodeList.size() > 0) {
-        String row = unhealthyNodeList
-            .stream()
-            .collect(Collectors.joining(" "));
-        ret.addAll(Arrays.asList(Collections.singletonList("Unhealthy node(s)"),
-            Collections.singletonList(row)));
-        return new ResourceFlowUnit(System.currentTimeMillis(), ret,
+        String row = unhealthyNodeList.stream().collect(Collectors.joining(" "));
+        ret.addAll(
+            Arrays.asList(
+                Collections.singletonList("Unhealthy node(s)"), Collections.singletonList(row)));
+        return new HighHeapUsageClusterFlowUnit(
+            System.currentTimeMillis(),
+            ret,
             new ResourceContext(ResourceContext.Resource.HEAP, ResourceContext.State.UNHEALTHY));
       } else {
-        ret.addAll(Arrays.asList(Collections.singletonList("Unhealthy node(s)"),
-            Collections.singletonList("All nodes are healthy")));
-        return new ResourceFlowUnit(System.currentTimeMillis(), ret,
+        ret.addAll(
+            Arrays.asList(
+                Collections.singletonList("Unhealthy node(s)"),
+                Collections.singletonList("All nodes are healthy")));
+        return new HighHeapUsageClusterFlowUnit(
+            System.currentTimeMillis(),
+            ret,
             new ResourceContext(ResourceContext.Resource.HEAP, ResourceContext.State.HEALTHY));
       }
     } else {
       // we return an empty FlowUnit RCA for now. Can change to healthy (or previous known RCA
       // state)
       LOG.debug("Empty FlowUnit returned for {}", this.getClass().getName());
-      return new ResourceFlowUnit(System.currentTimeMillis(), ResourceContext.generic());
+      return new HighHeapUsageClusterFlowUnit(System.currentTimeMillis(),
+          ResourceContext.generic());
     }
+  }
+
+  /**
+   * TODO: Move this method out of the RCA class. The scheduler should set the flow units it drains
+   * from the Rx queue between the scheduler and the networking thread into the node.
+   *
+   * @param args The wrapper around the flow unit operation.
+   */
+  @Override
+  public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
+    final List<FlowUnitWrapper> flowUnitWrappers =
+        args.getWireHopper().readFromWire(args.getNode());
+    List<HighHeapUsageClusterFlowUnit> flowUnitList = new ArrayList<>();
+    LOG.debug("rca: Executing fromWire: {}", this.getClass().getSimpleName());
+    for (FlowUnitWrapper messageWrapper : flowUnitWrappers) {
+      flowUnitList.add(HighHeapUsageClusterFlowUnit.buildFlowUnitFromWrapper(messageWrapper));
+    }
+
+    setFlowUnits(flowUnitList);
   }
 }

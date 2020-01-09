@@ -1,5 +1,5 @@
 /*
- * Copyright <2019> Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -24,7 +24,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.FlowUnitWrapper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.flowunit.HighHeapUsageFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,8 +53,9 @@ import org.apache.logging.log4j.Logger;
  * To git rid of false positive from sampling, we keep the sliding window big enough to keep at
  * least a couple of such minimum samples to make the min value more accurate.
  */
-public class HighHeapUsageRca extends Rca {
-  private static final Logger LOG = LogManager.getLogger(HighHeapUsageRca.class);
+public class HighHeapUsageOldGenRca extends Rca<HighHeapUsageFlowUnit> {
+
+  private static final Logger LOG = LogManager.getLogger(HighHeapUsageOldGenRca.class);
   private static final int RCA_PERIOD = 12;
   private int counter;
   private double maxOldGenHeapSize;
@@ -68,7 +71,7 @@ public class HighHeapUsageRca extends Rca {
   private static final double OLD_GEN_GC_THRESHOLD = 1;
   private static final double CONVERT_BYTES_TO_MEGABYTES = Math.pow(1024, 3);
 
-  public <M extends Metric> HighHeapUsageRca(
+  public <M extends Metric> HighHeapUsageOldGenRca(
       long evaluationIntervalSeconds, final M heap_Used, final M gc_event, final M heap_Max) {
     super(evaluationIntervalSeconds);
     this.heap_Used = heap_Used;
@@ -94,10 +97,10 @@ public class HighHeapUsageRca extends Rca {
   }
 
   @Override
-  public ResourceFlowUnit operate() {
-    List<MetricFlowUnit> heapUsedMetrics = heap_Used.fetchFlowUnitList();
-    List<MetricFlowUnit> gcEventMetrics = gc_event.fetchFlowUnitList();
-    List<MetricFlowUnit> heapMaxMetrics = heap_Max.fetchFlowUnitList();
+  public HighHeapUsageFlowUnit operate() {
+    List<MetricFlowUnit> heapUsedMetrics = heap_Used.getFlowUnits();
+    List<MetricFlowUnit> gcEventMetrics = gc_event.getFlowUnits();
+    List<MetricFlowUnit> heapMaxMetrics = heap_Max.getFlowUnits();
     double oldGenHeapUsed = Double.NaN;
     int oldGenGCEvent = 0;
     counter += 1;
@@ -165,16 +168,17 @@ public class HighHeapUsageRca extends Rca {
       // reset the variables
       counter = 0;
       LOG.info("High Heap Usage RCA Context = " + context.toString());
-      return new ResourceFlowUnit(System.currentTimeMillis(), ret, context);
+      return new HighHeapUsageFlowUnit(System.currentTimeMillis(), ret, context);
     } else {
       // we return an empty FlowUnit RCA for now. Can change to healthy (or previous known RCA
       // state)
       LOG.debug("Empty FlowUnit returned for High Heap Usage RCA");
-      return new ResourceFlowUnit(System.currentTimeMillis(), ResourceContext.generic());
+      return new HighHeapUsageFlowUnit(System.currentTimeMillis(), ResourceContext.generic());
     }
   }
 
   private static class SamplingDataSlidingWindow {
+
     Deque<Pair<Long, Double>> oldGenUsageDeque;
     Deque<Pair<Long, Integer>> oldGGenGCEventDeque;
     private final int SLIDING_WINDOW_SIZE_IN_MINS;
@@ -191,7 +195,7 @@ public class HighHeapUsageRca extends Rca {
       }
       while (!oldGGenGCEventDeque.isEmpty()
           && TimeUnit.MILLISECONDS.toSeconds(timeStamp - oldGGenGCEventDeque.peekLast().getKey())
-              > SLIDING_WINDOW_SIZE_IN_MINS * 60) {
+          > SLIDING_WINDOW_SIZE_IN_MINS * 60) {
         oldGGenGCEventDeque.pollLast();
       }
 
@@ -202,7 +206,7 @@ public class HighHeapUsageRca extends Rca {
       oldGenUsageDeque.addFirst(Pair.of(timeStamp, oldGenUsage));
       while (!oldGenUsageDeque.isEmpty()
           && TimeUnit.MILLISECONDS.toSeconds(timeStamp - oldGenUsageDeque.peekLast().getKey())
-              > SLIDING_WINDOW_SIZE_IN_MINS * 60) {
+          > SLIDING_WINDOW_SIZE_IN_MINS * 60) {
         oldGenUsageDeque.pollLast();
       }
     }
@@ -217,5 +221,23 @@ public class HighHeapUsageRca extends Rca {
       }
       return Double.NaN;
     }
+  }
+
+  /**
+   * TODO: Move this method out of the RCA class. The scheduler should set the flow units it drains
+   * from the Rx queue between the scheduler and the networking thread into the node.
+   *
+   * @param args The wrapper around the flow unit operation.
+   */
+  public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
+    final List<FlowUnitWrapper> flowUnitWrappers =
+        args.getWireHopper().readFromWire(args.getNode());
+    List<HighHeapUsageFlowUnit> flowUnitList = new ArrayList<>();
+    LOG.debug("rca: Executing fromWire: {}", this.getClass().getSimpleName());
+    for (FlowUnitWrapper messageWrapper : flowUnitWrappers) {
+      flowUnitList.add(HighHeapUsageFlowUnit.buildFlowUnitFromWrapper(messageWrapper));
+    }
+
+    setFlowUnits(flowUnitList);
   }
 }

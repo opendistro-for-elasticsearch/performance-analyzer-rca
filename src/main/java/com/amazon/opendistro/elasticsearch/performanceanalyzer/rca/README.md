@@ -1,7 +1,7 @@
 ## Concepts ## 
-This package endeavours to provide Root Cause Analysis(RCA) of the myriad
-problems that might cripple a system. The RCA is done using the metrics that the
-observability piece(in the same package) gathers. The RCA execution and
+This package endeavors to provide Root Cause Analysis(RCA) of the myriad
+problems that may cripple a system. The RCA is done using the metrics that the
+observability code (in the same package) gathers. The RCA execution and
 evaluation is done as a data-flow connectedComponent execution. The data flows
 from the top into the leaf nodes; each node makes sense of the data that it gets
 from the upstream nodes and synthesizes the evaluation in terms of a FlowUnit
@@ -10,23 +10,24 @@ and finally comes out one or more RCAs. So to re-iterate, this system consumes
 metrics and provides RCAs. The output or RCA is essentially a non-empty set
 of resources that are behaving anomalously when the system was noticed to be in
 an unhealthy state. It will be an empty set if nothing is found to be wrong
-and the system is  in perfect health based on the sensors available.
+and the system is in perfect health based on the sensors available.
 All components are Nodes, in this data-flow connectedComponent. Nodes have
 different role based on how they are defined. Before we go into the details of
 the RCA framework and its evaluation, we will go through some concepts that
-will run run through the entirety of this discussion.
+will run through the entirety of this discussion.
 
 ### Metrics ###
-This is the input to the system. These are essentially key/ value pairs. For
+This is the input to the system. These are essentially key-value pairs. For
 details on what metrics are available, please take a look at the  online
  reference [here](https://opendistro.github.io/for-elasticsearch-docs/docs/pa/reference/).
 
 ### Symptoms ###
-Symptom is a boolean question about the state of a resource. When we notice that
+
+A symptom is a boolean question about the state of a resource. When we notice that
 the system is running slow, we might be interested in questions such as "is
  the CPU contended" ? In this question, CPU is the resource and the state we are
 interested here is contended. So, the symptom is a 2-tuple of a resource and the
-state. Similar questions can be if the disk has a low service-rate and so
+state. Similar questions can be whether the disk has a low service-rate and so
 forth. Answer to this question returns a value from the set
 {True, False, InsufficientData}. True and False are self explanatory but in what
 cases can this return InsufficientData ? We might want to know the write
@@ -73,30 +74,29 @@ downstream node depends on one or more upstream nodes. The Metric-nodes being
 the leaf of the inverted connectedComponent, have no dependencies themselves.
 
 ### Node Tagging ###
-If a graph node is executed at a location or not is determined by a
+Whether a graph node is executed at a location or not is determined by a
 combination of two things, what tags the node has and what tag is present in
 the rca.conf. Before execution of a node, all the node tags (keys:values) are
 matched with the tags in the rca.conf. A node will usually have less tags
 than the rca.conf or else it will not execute. The way tag matching works
-is for each key:value pair in the tag lust of the node, the key is looked
+is for each key:value pair in the tag lust of the node, the key is looked up
 for in the rca.conf and the corresponding values are matched. If a match
 happens, then we move on to the next tag of the node and so on. Only if
 all the tags of the node matches (rca.conf can have extra tags and that
-does not affect the tag matching), then the runtime goes on to execute the
-node. If the node has some extra tags that are not present in the rca.conf
-, then it is considered as a no-match. A node that has no tags associated
+does not affect the tag matching), then the run-time goes on to execute the
+node. If the node has some extra tags that are not present in the rca.conf, 
+then it is considered as a no-match. A node that has no tags associated
  with it, will execute in all locations. 
 
 <u>Note</u>: One thing to note is that if a node does not run on any location
-, then none
-of its dependencies can run on that location because the data required will
+, then none of its dependencies can run on that location because the data required will
 not be available. So if a node does not run on a location, the runtime also
 turns off all its dependents in that location. 
 
 Node tagging is also how the runtime decides whether a node's data is
 required by a remote location and how a remote location knows that the data
 it needs to evaluate a local node is supposed to be obtained from a remote
-upstream node. This is a good segway into the  the intent based message passing.
+upstream node. This is a good segue into the  the intent based message passing.
 
 
 
@@ -109,17 +109,17 @@ locations have the entire Analysis graph. So when a runtime present in a
 downstream location figures out that it needs data from an upstream location,
 it initiates an intent to get the data from the upstream node. This intent
 message contains the Graph Node name that is requesting the data, and the tags
-associated with that graph node. This message is passed to the local Network
+associated with that graph node. This message is passed to the local network
 thread. The network thread broadcasts this to all the peers upstream. The
 receivers of this message adds an entry to a table with this information and
 then initiates a long lived connection with the downstream node that expressed
-the intention. When the Runtime at the data generation side, based on tag
+the intention. When the runtime at the data generation side, based on tag
 -matching, figures out that a given node cannot run locally, then it send it the
-way of the Network thread. This message has the data and also the Graph node and
+way of the network thread. This message has the data and also the Graph node and
 the tags of the node that is expected to receive it. Given this information, the
 network thread looks up its local table and see if there is a downstream node
 that has expressed an intension to receive such a message; if so, then the
-Network thread sends the message to the interested parties. If there are no
+network thread sends the message to the interested parties. If there are no
 takers for it then the network thread drops it on the floor.
 On the message receiver side, when the network thread receives such a message,
 it puts it in a location and provides a handle to the Runtime. In the next
@@ -128,7 +128,7 @@ execution of the tasks, the Runtime uses this data for evaluation.
  
 ## Specification ##
 This is the way of specifying the Analysis Flow Field or constructing it by
-creating the Metrics, Symptoms and Rca objects and defining their upstreams
+creating the Metrics, Symptoms and RCA objects and defining their upstreams
 . This is defining what will run to calculate the RCA and this is provided by
 the user of the RCA system. Specifying RCA is a three step process:
  
@@ -179,7 +179,7 @@ the user of the RCA system. Specifying RCA is a three step process:
 
 
 ## Runtime Evaluation of RCAs ##
-The RCAs defined in the Specification are executed by the RCA agent on the nodes
+The RCAs defined in the specification are executed by the RCA agent on the nodes
 of the cluster. This is how the runtime instances the AnalysisFlowField and
  evaluates it:
 
