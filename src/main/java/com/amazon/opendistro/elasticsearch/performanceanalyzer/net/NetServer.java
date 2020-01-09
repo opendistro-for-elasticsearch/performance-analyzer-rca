@@ -33,6 +33,7 @@ import io.grpc.netty.shaded.io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -169,6 +170,12 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
     if (sendDataHandler != null) {
       sendDataHandler.terminateUpstreamConnections();
     }
-    // server.shutdownNow();
+    server.shutdown();
+    try {
+      server.awaitTermination(1, TimeUnit.MINUTES);
+    } catch (InterruptedException e) {
+      LOG.error("Unable to stop the gRPC server..");
+      e.printStackTrace();
+    }
   }
 }

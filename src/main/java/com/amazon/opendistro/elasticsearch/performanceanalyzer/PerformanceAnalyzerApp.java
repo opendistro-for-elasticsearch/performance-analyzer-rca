@@ -26,6 +26,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectio
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetServer;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryMetricsRequestHandler;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -107,12 +109,11 @@ public class PerformanceAnalyzerApp {
   }
 
   /**
-   * Start all the servers and clients for request processing.
-   * We start two servers:
-   * - httpServer: To handle the curl requests sent to the endpoint. This is human readable and
-   *   also used by the perftop.
-   * - gRPC server: This is how metrics, RCAs etc are transported between nodes.
-   * and a gRPC client.
+   * Start all the servers and clients for request processing. We start two servers: - httpServer:
+   * To handle the curl requests sent to the endpoint. This is human readable and also used by the
+   * perftop. - gRPC server: This is how metrics, RCAs etc are transported between nodes. and a gRPC
+   * client.
+   *
    * @return gRPC client and the gRPC server and the httpServer wrapped in a class.
    */
   public static ClientServers startServers() {
@@ -137,10 +138,11 @@ public class PerformanceAnalyzerApp {
   }
 
   /**
-   * This starts the necessary threads to facilitate the running of the RCA framework. This may
-   * or may not cause the RCA to start. RCA is started only if enableRCA flag is set through POST
+   * This starts the necessary threads to facilitate the running of the RCA framework. This may or
+   * may not cause the RCA to start. RCA is started only if enableRCA flag is set through POST
    * request, otherwise, this method just spins up the necessary threads to start RCA on demand
    * without requiring a process restart.
+   *
    * @param clientServers The httpServer, the gRPC server and client wrapper.
    */
   private static void startRcaController(ClientServers clientServers) {
@@ -154,7 +156,10 @@ public class PerformanceAnalyzerApp {
             clientServers.getNetClient(),
             clientServers.getNetServer(),
             clientServers.getHttpServer(),
-            Util.DATA_DIR);
+            Util.DATA_DIR,
+            RcaConsts.RCA_CONF_MASTER_PATH,
+            RcaConsts.RCA_CONF_IDLE_MASTER_PATH,
+            RcaConsts.RCA_CONF_PATH);
 
     rcaController.startPollers();
   }

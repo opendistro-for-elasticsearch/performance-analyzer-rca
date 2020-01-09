@@ -61,22 +61,27 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * This is responsible for bootstrapping the RCA. It sets the necessary state, initializes the
- * pollers to periodically check for the state of the system and react to a change if necessary.
- * It does all the preparations so that RCA runtime and graph evaluation can be started with a
+ * pollers to periodically check for the state of the system and react to a change if necessary. It
+ * does all the preparations so that RCA runtime and graph evaluation can be started with a
  * configuration change but without needing a process restart.
  */
 public class RcaController {
 
   private static final Logger LOG = LogManager.getLogger(RcaController.class);
+
   private static final String RCA_ENABLED_CONF_FILE = "rca_enabled.conf";
+
   public static final String CAT_MASTER_URL = "http://localhost:9200/_cat/master?h=ip";
 
   private final ScheduledExecutorService netOpsExecutorService;
   private final boolean useHttps;
 
   private boolean rcaEnabledDefaultValue = false;
+
   private boolean rcaEnabled = false;
+
   private NodeRole currentRole = NodeRole.UNKNOWN;
+
   private RCAScheduler rcaScheduler;
 
   private NetPersistor netPersistor;
@@ -89,6 +94,9 @@ public class RcaController {
   private SubscriptionManager subscriptionManager;
 
   private final String RCA_ENABLED_CONF_LOCATION;
+  private final String ELECTED_MASTER_RCA_CONF_PATH;
+  private final String MASTER_RCA_CONF_PATH;
+  private final String RCA_CONF_PATH;
 
   public RcaController(
       final ScheduledExecutorService netOpsExecutorService,
@@ -96,7 +104,10 @@ public class RcaController {
       final NetClient rcaNetClient,
       final NetServer rcaNetServer,
       final HttpServer httpServer,
-      final String rca_enabled_conf_location) {
+      final String rca_enabled_conf_location,
+      final String electedMasterRcaConf,
+      final String masterRcaConf,
+      final String rcaConf) {
     this.netOpsExecutorService = netOpsExecutorService;
     this.rcaNetClient = rcaNetClient;
     this.rcaNetServer = rcaNetServer;
@@ -107,21 +118,43 @@ public class RcaController {
     subscriptionManager = new SubscriptionManager(grpcConnectionManager, rcaNetClient);
     nodeStateManager = new NodeStateManager();
     queryRcaRequestHandler = new QueryRcaRequestHandler();
+    this.rcaScheduler = null;
+    this.ELECTED_MASTER_RCA_CONF_PATH = electedMasterRcaConf;
+    this.MASTER_RCA_CONF_PATH = masterRcaConf;
+    this.RCA_CONF_PATH = rcaConf;
   }
 
   /**
-   * Starts the pollers.
-   * Each poller is a thread that checks for the state of the system that the RCA is concerned with.
-   * - RcaConfPoller: Periodically reads a config file to determine if RCA is supposed to be
-   *                  running or not and accordingly sets a flag.
-   * - NodeRolePoller: This checks for the change of role for an elastic search Master node.
-   * - RcaNanny: RcaConfPoller sets the flag but this thread works to start Rca or shut it down
-   *             based on the flag.
+   * Starts the pollers. Each poller is a thread that checks for the state of the system that the
+   * RCA is concerned with. - RcaConfPoller: Periodically reads a config file to determine if RCA is
+   * supposed to be running or not and accordingly sets a flag. - NodeRolePoller: This checks for
+   * the change of role for an elastic search Master node. - RcaNanny: RcaConfPoller sets the flag
+   * but this thread works to start Rca or shut it down based on the flag.
    */
   public void startPollers() {
     startRcaConfPoller();
     startNodeRolePoller();
     startRcaNanny();
+  }
+
+  public static String getCatMasterUrl() {
+    return CAT_MASTER_URL;
+  }
+
+  public static String getRcaEnabledConfFile() {
+    return RCA_ENABLED_CONF_FILE;
+  }
+
+  public boolean isRcaEnabled() {
+    return rcaEnabled;
+  }
+
+  public NodeRole getCurrentRole() {
+    return currentRole;
+  }
+
+  public RCAScheduler getRcaScheduler() {
+    return rcaScheduler;
   }
 
   private void addRcaRequestHandler() {
@@ -147,8 +180,6 @@ public class RcaController {
           final NodeDetails nodeDetails = ClusterDetailsEventProcessor.getCurrentNodeDetails();
 
           if (nodeDetails != null) {
-            // The first entry in the node details array is the current node.
-            final NodeRole currentNodeRole = NodeRole.valueOf(nodeDetails.getRole());
             handleNodeRoleChange(nodeDetails, electedMasterAddress);
           }
         },
@@ -203,11 +234,10 @@ public class RcaController {
   }
 
   /**
-   * Starts or stops the RCA runtime.
-   * If the RCA runtime is up but the currently RCA is disabled, then this gracefully shuts down
-   * the RCA runtime. It restarts the RCA runtime if the node role has changed in the meantime
-   * (such as a new elected master). It also starts the RCA runtime if it wasn't already running
-   * but the current state of the flag expects it to.
+   * Starts or stops the RCA runtime. If the RCA runtime is up but the currently RCA is disabled,
+   * then this gracefully shuts down the RCA runtime. It restarts the RCA runtime if the node role
+   * has changed in the meantime (such as a new elected master). It also starts the RCA runtime if
+   * it wasn't already running but the current state of the flag expects it to.
    */
   private void startRcaNanny() {
     netOpsExecutorService.scheduleAtFixedRate(
@@ -281,20 +311,20 @@ public class RcaController {
   private RcaConf pickRcaConfForRole(final NodeRole nodeRole) {
     if (NodeRole.ELECTED_MASTER == nodeRole) {
       LOG.debug("picking elected master conf");
-      return new RcaConf(RcaConsts.RCA_CONF_MASTER_PATH);
+      return new RcaConf(ELECTED_MASTER_RCA_CONF_PATH);
     }
 
     if (NodeRole.MASTER == nodeRole) {
       LOG.debug("picking idle master conf");
-      return new RcaConf(RcaConsts.RCA_CONF_IDLE_MASTER_PATH);
+      return new RcaConf(MASTER_RCA_CONF_PATH);
     }
 
     if (NodeRole.DATA == nodeRole) {
       LOG.debug("picking data node conf");
-      return new RcaConf(RcaConsts.RCA_CONF_PATH);
+      return new RcaConf(RCA_CONF_PATH);
     }
 
     LOG.debug("picking default conf");
-    return new RcaConf(RcaConsts.RCA_CONF_PATH);
+    return new RcaConf(RCA_CONF_PATH);
   }
 }
