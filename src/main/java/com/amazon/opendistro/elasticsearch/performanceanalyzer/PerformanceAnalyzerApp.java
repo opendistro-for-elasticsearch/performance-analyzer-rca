@@ -22,11 +22,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSett
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.TroubleshootingConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsRestUtil;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.handler.MetricsServerHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetServer;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryMetricsRequestHandler;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -65,6 +66,9 @@ public class PerformanceAnalyzerApp {
       Executors.newScheduledThreadPool(
           2, new ThreadFactoryBuilder().setNameFormat("network-thread-%d").build());
 
+  private static RcaController rcaController = null;
+  private static Thread rcaNetServerThread = null;
+
   public static void main(String[] args) throws Exception {
     // Initialize settings before creating threads.
     PluginSettings settings = PluginSettings.instance();
@@ -100,21 +104,69 @@ public class PerformanceAnalyzerApp {
             });
     readerThread.start();
 
+    ClientServers clientServers = startServers();
+    startRcaController(clientServers);
+  }
+
+  /**
+   * Start all the servers and clients for request processing. We start two servers: - httpServer:
+   * To handle the curl requests sent to the endpoint. This is human readable and also used by the
+   * perftop. - gRPC server: This is how metrics, RCAs etc are transported between nodes. and a gRPC
+   * client.
+   *
+   * @return gRPC client and the gRPC server and the httpServer wrapped in a class.
+   */
+  public static ClientServers startServers() {
     boolean useHttps = PluginSettings.instance().getHttpsEnabled();
+
     GRPCConnectionManager connectionManager = new GRPCConnectionManager(useHttps);
     NetServer netServer = new NetServer(Util.RPC_PORT, 1, useHttps);
     NetClient netClient = new NetClient(connectionManager);
     MetricsRestUtil metricsRestUtil = new MetricsRestUtil();
-    HttpServer httpServer = createInternalServer(settings, getPortNumber(), netClient, netServer);
+
+    startRpcServerThread(netServer);
+    HttpServer httpServer = createInternalServer(PluginSettings.instance(), getPortNumber());
     httpServer.createContext(QUERY_URL, new QueryMetricsRequestHandler(netClient, metricsRestUtil));
-    RcaController rcaController =
+
+    return new ClientServers(httpServer, netServer, netClient);
+  }
+
+  /** This starts the GRPC server in a thread of its own. */
+  private static void startRpcServerThread(NetServer netServer) {
+    rcaNetServerThread = new Thread(netServer);
+    rcaNetServerThread.start();
+  }
+
+  /**
+   * This starts the necessary threads to facilitate the running of the RCA framework. This may or
+   * may not cause the RCA to start. RCA is started only if enableRCA flag is set through POST
+   * request, otherwise, this method just spins up the necessary threads to start RCA on demand
+   * without requiring a process restart.
+   *
+   * @param clientServers The httpServer, the gRPC server and client wrapper.
+   */
+  private static void startRcaController(ClientServers clientServers) {
+    boolean useHttps = PluginSettings.instance().getHttpsEnabled();
+
+    GRPCConnectionManager connectionManager = new GRPCConnectionManager(useHttps);
+    rcaController =
         new RcaController(
-            netOperationsExecutor, connectionManager, netClient, netServer, httpServer);
+            netOperationsExecutor,
+            connectionManager,
+            clientServers.getNetClient(),
+            clientServers.getNetServer(),
+            clientServers.getHttpServer(),
+            Util.DATA_DIR,
+            RcaConsts.RCA_CONF_MASTER_PATH,
+            RcaConsts.RCA_CONF_IDLE_MASTER_PATH,
+            RcaConsts.RCA_CONF_PATH,
+            RcaConsts.networkPollerPeriodicity,
+            RcaConsts.networkPollerPeriodicityTimeUnit);
+
     rcaController.startPollers();
   }
 
-  public static HttpServer createInternalServer(
-      PluginSettings settings, int internalPort, NetClient netClient, NetServer netServer) {
+  public static HttpServer createInternalServer(PluginSettings settings, int internalPort) {
     try {
       Security.addProvider(new BouncyCastleProvider());
       HttpServer server;
@@ -123,7 +175,6 @@ public class PerformanceAnalyzerApp {
       } else {
         server = createHttpServer(internalPort);
       }
-      netServer.setMetricsHandler(new MetricsServerHandler());
       server.setExecutor(Executors.newCachedThreadPool());
       server.start();
       return server;
