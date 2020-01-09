@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PublishResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PublishResponse.PublishResponseStatus;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
@@ -22,7 +23,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.DataMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.FlowUnitWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.NetPersistor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
@@ -108,10 +108,10 @@ public class WireHopper {
     }
   }
 
-  public List<FlowUnitWrapper> readFromWire(Node<?> node) {
+  public List<FlowUnitMessage> readFromWire(Node node) {
     final String nodeName = node.name();
     final long intervalInSeconds = node.getEvaluationIntervalSeconds();
-    final List<FlowUnitWrapper> remoteFlowUnits = persistor.read(nodeName);
+    final List<FlowUnitMessage> remoteFlowUnits = persistor.read(nodeName);
     final Set<String> publisherSet = subscriptionManager.getPublishersForNode(nodeName);
 
     if (remoteFlowUnits.size() < publisherSet.size()) {

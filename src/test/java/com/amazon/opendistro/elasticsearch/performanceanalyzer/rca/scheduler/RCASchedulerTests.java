@@ -32,7 +32,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHoppe
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.PersistenceFactory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.MetricsDBProviderTestHelper;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageOldGenRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageOldGenRca;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import org.apache.logging.log4j.LogManager;

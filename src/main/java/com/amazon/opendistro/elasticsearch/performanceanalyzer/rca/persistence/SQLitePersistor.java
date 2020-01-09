@@ -22,19 +22,26 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jooq.CreateTableConstraintStep;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.jooq.InsertValuesStepN;
 import org.jooq.JSONFormat;
 import org.jooq.Record;
 import org.jooq.Result;
 import org.jooq.SQLDialect;
+import org.jooq.Table;
 import org.jooq.impl.DSL;
 
 class SQLitePersistor extends PersistorBase {
   private static final String DB_URL = "jdbc:sqlite:";
   private DSLContext create;
-  private Map<String, List<Field<String>>> jooqTableColumns;
+  private Map<String, List<Field<?>>> jooqTableColumns;
   private static final Logger LOG = LogManager.getLogger(SQLitePersistor.class);
+  private static final String LAST_INSERT_ROWID = "last_insert_rowid()";
+  private static final String PRIMARY_KEY_AUTOINCREMENT_POSTFIX = " INTEGER PRIMARY KEY AUTOINCREMENT";
+
+  private static int id_test = 1;
 
   SQLitePersistor(String dir, String filename) throws SQLException {
     super(dir, filename, DB_URL);
@@ -51,23 +58,53 @@ class SQLitePersistor extends PersistorBase {
   }
 
   @Override
-  synchronized void createTable(String tableName, List<String> columns) {
-    List<Field<String>> fields =
-        columns.stream()
-            .map(s -> DSL.field(DSL.name(s), String.class))
-            .collect(Collectors.toList());
-    create.createTable(tableName).columns(fields).execute();
-    jooqTableColumns.put(tableName, fields);
+  synchronized void createTable(String tableName, List<Field<?>> columns) {
+    CreateTableConstraintStep constraintStep = create.createTable(tableName)
+        //sqlite does not support identity. use plain sql string instead.
+        .column(DSL.field(getPrimaryKeyColumnName(tableName) + PRIMARY_KEY_AUTOINCREMENT_POSTFIX))
+        .columns(columns);
+
+    LOG.info("ruizhen: table created: {}", constraintStep.toString());
+    constraintStep.execute();
+    jooqTableColumns.put(tableName, columns);
+  }
+
+  /**
+   * create table with foreign key
+   */
+  @Override
+  synchronized void createTable(String tableName, List<Field<?>> columns, String referenceTableName,
+      String referenceTablePrimaryKeyFieldName) {
+    Field foreignKeyField = DSL.field(referenceTablePrimaryKeyFieldName, Integer.class);
+    columns.add(foreignKeyField);
+    Table referenceTable = DSL.table(referenceTableName);
+    CreateTableConstraintStep constraintStep = create.createTable(tableName)
+        .column(DSL.field(getPrimaryKeyColumnName(tableName) + PRIMARY_KEY_AUTOINCREMENT_POSTFIX))
+        .columns(columns)
+        .constraints(DSL.constraint(foreignKeyField.getName() + "_FK").foreignKey(foreignKeyField)
+            .references(referenceTable, DSL.field(referenceTablePrimaryKeyFieldName)));
+
+    LOG.debug("table with fk created: {}", constraintStep.toString());
+    constraintStep.execute();
+    jooqTableColumns.put(tableName, columns);
   }
 
   @Override
-  synchronized void insertRow(String tableName, List<String> row) {
-    LOG.debug("RCA: Table: {}, Row:\n{}", tableName, row);
-    create
-        .insertInto(DSL.table(tableName))
+  synchronized int insertRow(String tableName, List<Object> row) {
+    InsertValuesStepN insertValuesStepN = create.insertInto(DSL.table(tableName))
         .columns(jooqTableColumns.get(tableName))
-        .values(row)
-        .execute();
+        .values(row);
+    LOG.debug("sql insert: {}", insertValuesStepN.toString());
+    insertValuesStepN.execute();
+    int lastPrimaryKey = -1;
+    String sqlQuery = "SELECT " + LAST_INSERT_ROWID;
+    try {
+      lastPrimaryKey = create.fetch(sqlQuery).get(0).get(LAST_INSERT_ROWID, Integer.class);
+    } catch (Exception e) {
+      LOG.error("Failed to query the table {} , query : {}", tableName, sqlQuery);
+    }
+    LOG.debug("most recently inserted primary key = {}", lastPrimaryKey);
+    return lastPrimaryKey;
   }
 
   // This reads all SQLite tables in the latest SQLite file and converts the read data to JSON.
