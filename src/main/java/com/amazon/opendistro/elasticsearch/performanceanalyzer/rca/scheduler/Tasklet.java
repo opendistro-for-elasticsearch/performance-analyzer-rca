@@ -55,8 +55,8 @@ public class Tasklet {
    *
    * @param predecessorNode The node the tasklet wraps.
    * @param persistable An object that implements the persistable interface.
-   * @param remotelyDesirableNodeSet The set of upstream nodes that are needed by remote
-   *                                 downstream nodes.
+   * @param remotelyDesirableNodeSet The set of upstream nodes that are needed by remote downstream
+   *     nodes.
    * @param hopper The object that is an abstraction for all cross-network activities.
    */
   Tasklet(
@@ -117,18 +117,22 @@ public class Tasklet {
     // TODO
     // remove taskletResultsList
     CompletableFuture<TaskletResult> retCompletableFuture =
-        futureTasklets.thenApplyAsync(
-            taskletResultsList -> {
-              LOG.debug("RCA: Executing the function for node {}", node.name());
-              exec.accept(new FlowUnitOperationArgWrapper(node, db, persistable, hopper));
+        futureTasklets
+            .thenApplyAsync(
+                taskletResultsList -> {
+                  LOG.debug("RCA: Executing the function for node {}", node.name());
+                  exec.accept(new FlowUnitOperationArgWrapper(node, db, persistable, hopper));
 
-              sendToRemote();
-              LOG.debug("RCA: ========== END {} ==== Flow unit", node.name());
-
-              LOG.debug("RCA: set Node %s 's Flow unit", node.name());
-              return new TaskletResult(node.getClass());
-            },
-            executorPool);
+                  sendToRemote();
+                  LOG.debug("RCA: set Node %s 's Flow unit", node.name());
+                  return new TaskletResult(node.getClass());
+                },
+                executorPool)
+            .exceptionally(
+                ex -> {
+                  ex.printStackTrace();
+                  return new TaskletResult(null);
+                });
     LOG.debug("RCA: Finished creating executable future for tasklet: {}", node.name());
     return retCompletableFuture;
   }
