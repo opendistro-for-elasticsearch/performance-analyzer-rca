@@ -41,7 +41,7 @@ import org.junit.experimental.categories.Category;
 
 @Category(GradleTaskForRca.class)
 public class HighCpuSymptomTest {
-  static class CPU_UtilizationX extends CPU_Utilization {
+  class CPU_UtilizationX extends CPU_Utilization {
     public CPU_UtilizationX(long evaluationIntervalSeconds) {
       super(evaluationIntervalSeconds);
     }
@@ -51,7 +51,7 @@ public class HighCpuSymptomTest {
     }
   }
 
-  static class ShardCpuHighSymptom extends Symptom {
+  class ShardCpuHighSymptom extends Symptom {
     private final Metric cpu_UtilizationX;
 
     public <M extends Metric> ShardCpuHighSymptom(
@@ -136,20 +136,18 @@ public class HighCpuSymptomTest {
     }
   }
 
+  class AnalysisGraphTest2 extends AnalysisGraph {
+    @Override
+    public void construct() {
+      Metric metric = new CPU_UtilizationX(60);
+      addLeaf(metric);
+      Symptom symptom = new ShardCpuHighSymptom(60, metric);
+      symptom.addAllUpstreams(Collections.singletonList(metric));
+    }
+  }
+
   @Test
   public void testSymptomCreation() throws Exception {
-    AnalysisGraph graph =
-        new AnalysisGraph() {
-          @Override
-          public void construct() {
-            Metric metric = new CPU_UtilizationX(60);
-            addLeaf(metric);
-            Symptom symptom = new ShardCpuHighSymptom(60, metric);
-            symptom.addAllUpstreams(Collections.singletonList(metric));
-          }
-        };
-
-    List<ConnectedComponent> components = RcaUtil.getAnalysisGraphComponents(graph);
     Queryable queryable = new MetricsDBProviderTestHelper(false);
 
     ((MetricsDBProviderTestHelper) queryable)
@@ -171,9 +169,22 @@ public class HighCpuSymptomTest {
         .addNewData(
             CPU_Utilization.NAME, Arrays.asList("shard2", "index3", "bulk", "primary"), 5.4);
 
+    AnalysisGraph graph = new AnalysisGraphTest2();
+    List<ConnectedComponent> components = RcaUtil.getAnalysisGraphComponents(graph);
+
     for (ConnectedComponent component : components) {
       for (List<Node<?>> nodeList : component.getAllNodesByDependencyOrder()) {
         for (Node<?> node : nodeList) {
+          System.out.println(node.name() + " -> " + node.getClass().getName());
+        }
+      }
+    }
+
+    for (ConnectedComponent component : components) {
+      for (List<Node<?>> nodeList : component.getAllNodesByDependencyOrder()) {
+        for (Node<?> node : nodeList) {
+          System.out.println(node.name());
+          System.out.println(node.getClass().getName());
           if (node instanceof Metric) {
             List<MetricFlowUnit> flowUnits =
                 Collections.singletonList(((Metric) node).gather(queryable));

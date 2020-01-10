@@ -43,9 +43,7 @@ public class RcaUtil {
       throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
           InstantiationException, IllegalAccessException {
     AnalysisGraph graph = getAnalysisGraphImplementor(rcaConf);
-    graph.construct();
-    graph.validateAndProcess();
-    return Stats.getInstance().getConnectedComponents();
+    return getAnalysisGraphComponents(graph);
   }
 
   public static List<ConnectedComponent> getAnalysisGraphComponents(String analysisGraphClass)

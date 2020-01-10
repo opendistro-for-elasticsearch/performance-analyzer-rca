@@ -98,6 +98,9 @@ jacocoTestReport {
     afterEvaluate {
         classDirectories.from = files(classDirectories.files.collect {
             fileTree(dir: it,
+                    include: [
+                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/rca/**'
+                    ],
                     exclude: [
                             '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/grpc/**'])
         })

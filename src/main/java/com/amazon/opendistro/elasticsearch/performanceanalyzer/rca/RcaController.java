@@ -52,9 +52,14 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -102,6 +107,7 @@ public class RcaController {
 
   private long pollerPeriodicity;
   private TimeUnit timeUnit;
+  private List<Thread> exceptionHandlerThreads;
 
   public RcaController(
       final ScheduledExecutorService netOpsExecutorService,
@@ -131,6 +137,7 @@ public class RcaController {
     this.RCA_CONF_PATH = rcaConf;
     this.pollerPeriodicity = pollerPeriodicity;
     this.timeUnit = timeUnit;
+    this.exceptionHandlerThreads = new ArrayList<>();
   }
 
   /**
@@ -141,9 +148,11 @@ public class RcaController {
    * but this thread works to start Rca or shut it down based on the flag.
    */
   public void startPollers() {
-    startRcaConfPoller();
-    startNodeRolePoller();
-    startRcaNanny();
+    List<ScheduledFuture<?>> scheduledFutures = new ArrayList<>();
+    scheduledFutures.add(startRcaConfPoller());
+    scheduledFutures.add(startNodeRolePoller());
+    scheduledFutures.add(startRcaNanny());
+    startExceptionHandlers(scheduledFutures);
   }
 
   public static String getCatMasterUrl() {
@@ -166,6 +175,26 @@ public class RcaController {
     return rcaScheduler;
   }
 
+  private void startExceptionHandlers(List<ScheduledFuture<?>> scheduledFutures) {
+    scheduledFutures.forEach(
+        future -> {
+          Thread t =
+              new Thread(
+                  () -> {
+                    while (true) {
+                      try {
+                        future.get();
+                      } catch (Exception ex) {
+                        LOG.error("RCA Exception cause : {}", ex.getCause());
+                        ex.printStackTrace();
+                      }
+                    }
+                  });
+          exceptionHandlerThreads.add(t);
+          t.start();
+        });
+  }
+
   private void addRcaRequestHandler() {
     httpServer.createContext(Util.RCA_QUERY_URL, queryRcaRequestHandler);
   }
@@ -178,13 +207,13 @@ public class RcaController {
     }
   }
 
-  private void startRcaConfPoller() {
-    netOpsExecutorService.scheduleAtFixedRate(
+  private ScheduledFuture<?> startRcaConfPoller() {
+    return netOpsExecutorService.scheduleAtFixedRate(
         this::readRcaEnabledFromConf, 0, pollerPeriodicity, timeUnit);
   }
 
-  private void startNodeRolePoller() {
-    netOpsExecutorService.scheduleAtFixedRate(
+  private ScheduledFuture<?> startNodeRolePoller() {
+    return netOpsExecutorService.scheduleAtFixedRate(
         () -> {
           final String electedMasterAddress = getElectedMasterHostAddress();
           final NodeDetails nodeDetails = ClusterDetailsEventProcessor.getCurrentNodeDetails();
@@ -194,6 +223,36 @@ public class RcaController {
           }
         },
         pollerPeriodicity,
+        pollerPeriodicity,
+        timeUnit);
+  }
+
+  /**
+   * Starts or stops the RCA runtime. If the RCA runtime is up but the currently RCA is disabled,
+   * then this gracefully shuts down the RCA runtime. It restarts the RCA runtime if the node role
+   * has changed in the meantime (such as a new elected master). It also starts the RCA runtime if
+   * it wasn't already running but the current state of the flag expects it to.
+   */
+  private ScheduledFuture<?> startRcaNanny() {
+    return netOpsExecutorService.scheduleAtFixedRate(
+        () -> {
+          if (rcaScheduler != null && rcaScheduler.isRunning()) {
+            if (!rcaEnabled) {
+              // Need to shutdown the rca scheduler
+              stop();
+            } else {
+              subscriptionManager.dumpStats();
+              if (rcaScheduler.getRole() != currentRole) {
+                restart();
+              }
+            }
+          } else {
+            if (rcaEnabled && NodeRole.UNKNOWN != currentRole) {
+              start();
+            }
+          }
+        },
+        2 * pollerPeriodicity,
         pollerPeriodicity,
         timeUnit);
   }
@@ -235,42 +294,12 @@ public class RcaController {
           try (Scanner sc = new Scanner(filePath)) {
             String nextLine = sc.nextLine();
             rcaEnabled = Boolean.parseBoolean(nextLine);
-          } catch (Exception e) {
-            LOG.error("Error reading RCA Enabled from Conf file: {}", e.getMessage());
+          } catch (IOException e) {
+            LOG.error("Error reading file '{}': {}", filePath.toString(), e.getMessage());
             e.printStackTrace();
             rcaEnabled = rcaEnabledDefaultValue;
           }
         });
-  }
-
-  /**
-   * Starts or stops the RCA runtime. If the RCA runtime is up but the currently RCA is disabled,
-   * then this gracefully shuts down the RCA runtime. It restarts the RCA runtime if the node role
-   * has changed in the meantime (such as a new elected master). It also starts the RCA runtime if
-   * it wasn't already running but the current state of the flag expects it to.
-   */
-  private void startRcaNanny() {
-    netOpsExecutorService.scheduleAtFixedRate(
-        () -> {
-          if (rcaScheduler != null && rcaScheduler.isRunning()) {
-            if (!rcaEnabled) {
-              // Need to shutdown the rca scheduler
-              stop();
-            } else {
-              subscriptionManager.dumpStats();
-              if (rcaScheduler.getRole() != currentRole) {
-                restart();
-              }
-            }
-          } else {
-            if (rcaEnabled && NodeRole.UNKNOWN != currentRole) {
-              start();
-            }
-          }
-        },
-        2 * pollerPeriodicity,
-        pollerPeriodicity,
-        timeUnit);
   }
 
   private void start() {

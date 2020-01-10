@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.AbstractTests;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.DiskMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.HeapMetricsCollector.HeapStatus;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.MetricStatus;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MasterPendingValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeDetailColumns;
@@ -131,10 +132,12 @@ public class AbstractReaderTests extends AbstractTests {
   }
 
   protected String createNodeDetailsMetrics(String id, String ipAddress) {
+    return createNodeDetailsMetrics(id, ipAddress, AllMetrics.NodeRole.DATA);
+  }
+
+  protected String createNodeDetailsMetrics(String id, String ipAddress, AllMetrics.NodeRole nodeRole) {
     StringBuffer value = new StringBuffer();
-
-    value.append(new NodeDetailsStatus(id, ipAddress).serialize());
-
+    value.append(new NodeDetailsStatus(id, ipAddress, nodeRole).serialize());
     return value.toString();
   }
 
@@ -161,13 +164,14 @@ public class AbstractReaderTests extends AbstractTests {
 
   public static class NodeDetailsStatus extends MetricStatus {
     private String id;
-
     private String hostAddress;
+    private String nodeRole;
 
-    public NodeDetailsStatus(String id, String hostAddress) {
+    public NodeDetailsStatus(String id, String hostAddress, AllMetrics.NodeRole nodeRole) {
       super();
       this.id = id;
       this.hostAddress = hostAddress;
+      this.nodeRole = nodeRole.role();
     }
 
     @JsonProperty(NodeDetailColumns.Constants.ID_VALUE)
@@ -178,6 +182,11 @@ public class AbstractReaderTests extends AbstractTests {
     @JsonProperty(NodeDetailColumns.Constants.HOST_ADDRESS_VALUE)
     public String getHostAddress() {
       return hostAddress;
+    }
+
+    @JsonProperty(NodeDetailColumns.Constants.ROLE_VALUE)
+    public String getNodeRole() {
+      return nodeRole;
     }
   }
 }
