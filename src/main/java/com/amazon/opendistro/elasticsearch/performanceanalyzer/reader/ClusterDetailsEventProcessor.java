@@ -89,7 +89,7 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
 
   }
 
-  static void setNodesDetails(List<NodeDetails> nodesDetails) {
+  public static void setNodesDetails(List<NodeDetails> nodesDetails) {
     ClusterDetailsEventProcessor.nodesDetails = ImmutableList.copyOf(nodesDetails);
   }
 

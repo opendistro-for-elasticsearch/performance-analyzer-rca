@@ -32,13 +32,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHoppe
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.PersistenceFactory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.MetricsDBProviderTestHelper;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageOldGenRca;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -62,7 +61,7 @@ public class RCASchedulerTests {
             addLeaf(heapUsed);
             addLeaf(gcEvent);
             addLeaf(heapMax);
-            Rca highHeapUsageRca = new HighHeapUsageRca(2L, heapUsed, gcEvent, heapMax);
+            Rca highHeapUsageRca = new HighHeapUsageOldGenRca(2L, heapUsed, gcEvent, heapMax);
             highHeapUsageRca.addAllUpstreams(Arrays.asList(heapMax, heapUsed, gcEvent));
           }
         };

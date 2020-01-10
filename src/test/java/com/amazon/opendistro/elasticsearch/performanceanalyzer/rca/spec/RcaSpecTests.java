@@ -33,7 +33,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.DummyGraph;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageOldGenRca;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -113,8 +113,8 @@ public class RcaSpecTests {
   @Test(expected = RuntimeException.class)
   public void testAddToFlowFieldBeforeAddingAsDependency() {
     Metric heapUsed = new Heap_Used(5);
-    HighHeapUsageRca highHeapUsageRca = new HighHeapUsageRca(1, heapUsed, null, null);
-    highHeapUsageRca.addAllUpstreams(Collections.singletonList(heapUsed));
+    HighHeapUsageOldGenRca highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(1, heapUsed, null, null);
+    highHeapUsageOldGenRca.addAllUpstreams(Collections.singletonList(heapUsed));
   }
 
   @Test
