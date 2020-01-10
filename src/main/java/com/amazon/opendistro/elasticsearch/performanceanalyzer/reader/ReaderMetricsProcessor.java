@@ -348,31 +348,6 @@ public class ReaderMetricsProcessor implements Runnable {
     }
   }
 
-  void parseMasterEventMetrics(
-      String rootLocation, long currWindowStartTime, long currWindowEndTime) {
-
-    long mCurrT = System.currentTimeMillis();
-    if (masterEventMetricsMap.get(currWindowStartTime) == null) {
-      MasterEventMetricsSnapshot masterEventMetricsSnapshot =
-          new MasterEventMetricsSnapshot(conn, currWindowStartTime);
-      Map.Entry<Long, MasterEventMetricsSnapshot> entry = masterEventMetricsMap.lastEntry();
-
-      if (entry != null) {
-        masterEventMetricsSnapshot.rolloverInflightRequests(entry.getValue());
-      }
-
-      metricsParser.parseMasterEventMetrics(
-          rootLocation, currWindowStartTime, currWindowEndTime, masterEventMetricsSnapshot);
-      LOG.debug(() -> masterEventMetricsSnapshot.fetchAll());
-      masterEventMetricsMap.put(currWindowStartTime, masterEventMetricsSnapshot);
-      LOG.info("Adding new Master Event snapshot- currTimestamp {}", currWindowStartTime);
-    }
-
-    long mFinalT = System.currentTimeMillis();
-    LOG.info("Total time taken for parsing Master Event Metrics: {}", mFinalT - mCurrT);
-    TIMING_STATS.put("parseMasterEventMetrics", (double) (mFinalT - mCurrT));
-  }
-
   /**
    * OS, Request, Http and master first aligns the currentTimeStamp with a 5 second interval but
    * while looking for the actual file on the disk, they do a further aligning with the 30 second
