@@ -235,8 +235,8 @@ public class RcaController {
           try (Scanner sc = new Scanner(filePath)) {
             String nextLine = sc.nextLine();
             rcaEnabled = Boolean.parseBoolean(nextLine);
-          } catch (Exception e) {
-            LOG.error("Error reading RCA Enabled from Conf file: {}", e.getMessage());
+          } catch (IOException e) {
+            LOG.error("Error reading file '{}': {}", filePath.toString(), e.getMessage());
             e.printStackTrace();
             rcaEnabled = rcaEnabledDefaultValue;
           }

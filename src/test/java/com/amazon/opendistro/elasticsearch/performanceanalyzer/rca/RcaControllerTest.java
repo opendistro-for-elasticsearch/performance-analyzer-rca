@@ -25,6 +25,7 @@ import org.jooq.tools.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -93,10 +94,21 @@ public class RcaControllerTest {
             TimeUnit.MILLISECONDS);
 
     rcaController.startPollers();
+
+    // We just want to wait enough so that we all the pollers start up.
+    try {
+      Thread.sleep(1000);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
   }
 
   @After
   public void tearDown() throws InterruptedException {
+    RCAScheduler rcaScheduler = rcaController.getRcaScheduler();
+    if (rcaScheduler != null && rcaScheduler.isRunning()) {
+      rcaScheduler.shutdown();
+    }
     netOperationsExecutor.shutdown();
     netOperationsExecutor.awaitTermination(1, TimeUnit.MINUTES);
     clientServers.getHttpServer().stop(0);
@@ -137,7 +149,7 @@ public class RcaControllerTest {
    * stop: - scheduler is running and rcaEnabled is false.
    */
   @Test
-  public void testRcaNanny() throws IOException, InterruptedException {
+  public void testRcaNanny() throws IOException {
     changeRcaRunState(RcaState.RUN);
     AllMetrics.NodeRole nodeRole = AllMetrics.NodeRole.MASTER;
     setMyIp("192.168.0.1", nodeRole);
