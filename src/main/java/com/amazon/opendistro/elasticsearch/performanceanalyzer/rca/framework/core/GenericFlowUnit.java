@@ -16,23 +16,17 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
-import java.util.List;
 
 // TODO: Doc comments and a description of each member.
 public abstract class GenericFlowUnit {
+
   private long timeStamp;
-  private boolean empty = true;
-  private List<List<String>> data = null;
+  protected boolean empty;
 
   // Creates an empty flow unit.
   public GenericFlowUnit(long timeStamp) {
+    this.empty = true;
     this.timeStamp = timeStamp;
-  }
-
-  public GenericFlowUnit(long timeStamp, List<List<String>> data) {
-    this(timeStamp);
-    this.data = data;
-    this.empty = false;
   }
 
   public long getTimeStamp() {
@@ -40,11 +34,7 @@ public abstract class GenericFlowUnit {
   }
 
   public boolean isEmpty() {
-    return empty;
-  }
-
-  public List<List<String>> getData() {
-    return data;
+    return this.empty;
   }
 
   public abstract FlowUnitMessage buildFlowUnitMessage(final String graphNode, final String esNode);

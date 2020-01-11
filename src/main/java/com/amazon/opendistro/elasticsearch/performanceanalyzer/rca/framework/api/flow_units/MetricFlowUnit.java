@@ -16,37 +16,39 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.StringList;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.FlowUnitWrapper;
 import java.util.List;
 
 public class MetricFlowUnit extends GenericFlowUnit {
+
+  private List<List<String>> data = null;
+
   public MetricFlowUnit(long timeStamp) {
     super(timeStamp);
   }
 
   public MetricFlowUnit(long timeStamp, List<List<String>> data) {
-    super(timeStamp, data);
+    super(timeStamp);
+    this.data = data;
+    this.empty = false;
+  }
+
+  //TODO : this method can be removed ?
+  public List<List<String>> getData() {
+    return data;
   }
 
   public static MetricFlowUnit generic() {
     return new MetricFlowUnit(System.currentTimeMillis());
   }
 
+  /**
+   * Metric flowunit is not supposed be serialized and sent over to remote nodes. This function will
+   * never be called. so return null in case we run into it.
+   */
+  @Override
   public FlowUnitMessage buildFlowUnitMessage(final String graphNode, final String esNode) {
-    final FlowUnitMessage.Builder messageBuilder = FlowUnitMessage.newBuilder();
-    messageBuilder.setGraphNode(graphNode);
-    messageBuilder.setEsNode(esNode);
-
-    if (!this.isEmpty()) {
-      for (List<String> value : this.getData()) {
-        messageBuilder.addValues(StringList.newBuilder().addAllValues(value).build());
-      }
-    }
-    messageBuilder.setTimestamp(System.currentTimeMillis());
-
-    return messageBuilder.build();
+    return null;
   }
 
   /*
@@ -93,14 +95,6 @@ public class MetricFlowUnit extends GenericFlowUnit {
       return Double.NaN;
     }
     return Double.parseDouble(this.getData().get(rowIdx).get(colIdx));
-  }
-
-  public static MetricFlowUnit buildFlowUnitFromWrapper(final FlowUnitWrapper value) {
-    if (value.hasData()) {
-      return new MetricFlowUnit(value.getTimeStamp(), value.getData());
-    } else {
-      return new MetricFlowUnit(value.getTimeStamp());
-    }
   }
 
   @Override

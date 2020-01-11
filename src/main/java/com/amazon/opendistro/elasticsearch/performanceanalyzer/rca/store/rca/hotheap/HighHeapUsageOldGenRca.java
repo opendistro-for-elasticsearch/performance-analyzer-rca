@@ -13,24 +13,23 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.OLD_GEN;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_FULL_GC;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.FlowUnitWrapper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.flowunit.HighHeapUsageFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
@@ -53,7 +52,7 @@ import org.apache.logging.log4j.Logger;
  * To git rid of false positive from sampling, we keep the sliding window big enough to keep at
  * least a couple of such minimum samples to make the min value more accurate.
  */
-public class HighHeapUsageOldGenRca extends Rca<HighHeapUsageFlowUnit> {
+public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
 
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageOldGenRca.class);
   private static final int RCA_PERIOD = 12;
@@ -82,22 +81,8 @@ public class HighHeapUsageOldGenRca extends Rca<HighHeapUsageFlowUnit> {
     samplingDataSlidingWindow = new SamplingDataSlidingWindow(SLIDING_WINDOW_SIZE_IN_MINS);
   }
 
-  public ResourceContext determineHeapUsageState() {
-    double currentMinOldGenUsage = samplingDataSlidingWindow.getMinOldGenUsage();
-    if (samplingDataSlidingWindow.getOldGGenGCEvent() >= OLD_GEN_GC_THRESHOLD
-        && !Double.isNaN(currentMinOldGenUsage)
-        && currentMinOldGenUsage / maxOldGenHeapSize > OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE) {
-      LOG.debug(
-          "heapUsage is above threshold. OldGGenGCEvent = {}, oldGenUsage percentage = {}",
-          samplingDataSlidingWindow.getOldGGenGCEvent(),
-          currentMinOldGenUsage / maxOldGenHeapSize);
-      return new ResourceContext(ResourceContext.Resource.HEAP, ResourceContext.State.UNHEALTHY);
-    }
-    return new ResourceContext(ResourceContext.Resource.HEAP, ResourceContext.State.HEALTHY);
-  }
-
   @Override
-  public HighHeapUsageFlowUnit operate() {
+  public ResourceFlowUnit operate() {
     List<MetricFlowUnit> heapUsedMetrics = heap_Used.getFlowUnits();
     List<MetricFlowUnit> gcEventMetrics = gc_event.getFlowUnits();
     List<MetricFlowUnit> heapMaxMetrics = heap_Max.getFlowUnits();
@@ -154,26 +139,36 @@ public class HighHeapUsageOldGenRca extends Rca<HighHeapUsageFlowUnit> {
     }
 
     if (counter == RCA_PERIOD) {
-      List<List<String>> ret = new ArrayList<>();
-      ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor
-          .getCurrentNodeDetails();
-      if (currentNode != null) {
-        ret.addAll(Arrays.asList(Collections.singletonList("Node ID"),
-            Collections.singletonList(currentNode.getId())));
-      } else {
-        ret.addAll(Arrays
-            .asList(Collections.singletonList("Node ID"), Collections.singletonList("unknown")));
-      }
-      ResourceContext context = determineHeapUsageState();
+      ResourceContext context = null;
+      HotResourceSummary summary = null;
       // reset the variables
       counter = 0;
-      LOG.info("High Heap Usage RCA Context = " + context.toString());
-      return new HighHeapUsageFlowUnit(System.currentTimeMillis(), ret, context);
+
+      double currentMinOldGenUsage = samplingDataSlidingWindow.getMinOldGenUsage();
+      if (samplingDataSlidingWindow.getOldGGenGCEvent() >= OLD_GEN_GC_THRESHOLD
+          && !Double.isNaN(currentMinOldGenUsage)
+          && currentMinOldGenUsage / maxOldGenHeapSize > OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE) {
+        LOG.debug("heapUsage is above threshold. OldGGenGCEvent = {}, oldGenUsage percentage = {}",
+            samplingDataSlidingWindow.getOldGGenGCEvent(),
+            currentMinOldGenUsage / maxOldGenHeapSize);
+        context = new ResourceContext(Resources.State.UNHEALTHY);
+        summary = new HotResourceSummary(Resources.JVM.GARBAGE_COLLECTOR.toString(),
+            OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE, currentMinOldGenUsage / maxOldGenHeapSize,
+            "heap usage in percentage", SLIDING_WINDOW_SIZE_IN_MINS * 60);
+      } else {
+        context = new ResourceContext(Resources.State.HEALTHY);
+        //TODO: for testing purpose, we might not want to store summary info for healthy flowunit in production
+        summary = new HotResourceSummary(Resources.JVM.GARBAGE_COLLECTOR.toString(),
+            OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE, currentMinOldGenUsage / maxOldGenHeapSize,
+            "heap usage in percentage", SLIDING_WINDOW_SIZE_IN_MINS * 60);
+      }
+      LOG.debug("High Heap Usage RCA Context = " + context.toString());
+      return new ResourceFlowUnit(System.currentTimeMillis(), context, summary);
     } else {
       // we return an empty FlowUnit RCA for now. Can change to healthy (or previous known RCA
       // state)
       LOG.debug("Empty FlowUnit returned for High Heap Usage RCA");
-      return new HighHeapUsageFlowUnit(System.currentTimeMillis(), ResourceContext.generic());
+      return new ResourceFlowUnit(System.currentTimeMillis());
     }
   }
 
@@ -223,21 +218,15 @@ public class HighHeapUsageOldGenRca extends Rca<HighHeapUsageFlowUnit> {
     }
   }
 
-  /**
-   * TODO: Move this method out of the RCA class. The scheduler should set the flow units it drains
-   * from the Rx queue between the scheduler and the networking thread into the node.
-   *
-   * @param args The wrapper around the flow unit operation.
-   */
+  @Override
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-    final List<FlowUnitWrapper> flowUnitWrappers =
+    final List<FlowUnitMessage> flowUnitMessages =
         args.getWireHopper().readFromWire(args.getNode());
-    List<HighHeapUsageFlowUnit> flowUnitList = new ArrayList<>();
+    List<ResourceFlowUnit> flowUnitList = new ArrayList<>();
     LOG.debug("rca: Executing fromWire: {}", this.getClass().getSimpleName());
-    for (FlowUnitWrapper messageWrapper : flowUnitWrappers) {
-      flowUnitList.add(HighHeapUsageFlowUnit.buildFlowUnitFromWrapper(messageWrapper));
+    for (FlowUnitMessage flowUnitMessage : flowUnitMessages) {
+      flowUnitList.add(ResourceFlowUnit.buildFlowUnitFromWrapper(flowUnitMessage));
     }
-
     setFlowUnits(flowUnitList);
   }
 }

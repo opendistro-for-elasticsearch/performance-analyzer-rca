@@ -20,9 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metrics
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.LeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.FlowUnitWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -87,17 +85,7 @@ public abstract class Metric extends LeafNode<MetricFlowUnit> {
   }
 
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-    final List<FlowUnitWrapper> flowUnitWrappers =
-        args.getWireHopper().readFromWire(args.getNode());
-    final List<MetricFlowUnit> flowUnitList = new ArrayList<>();
-    LOG.debug(
-        "rca: Executing fromWire: {}, received : {}",
-        this.getClass().getSimpleName(),
-        flowUnitWrappers.size());
-    for (FlowUnitWrapper messageWrapper : flowUnitWrappers) {
-      flowUnitList.add(MetricFlowUnit.buildFlowUnitFromWrapper(messageWrapper));
-    }
-
-    setFlowUnits(flowUnitList);
+    LOG.error("we are not supposed to read metric flowunit from wire.");
   }
+
 }

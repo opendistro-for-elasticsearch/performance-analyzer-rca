@@ -128,10 +128,10 @@ public class HighCpuSymptomTest {
 
       if (shouldReportOperation) {
         return new SymptomFlowUnit(
-            System.currentTimeMillis(), ret, new SymptomContext(SymptomContext.State.UNHEALTHY));
+            System.currentTimeMillis(), ret, new SymptomContext(Resources.State.UNHEALTHY));
       } else {
         return new SymptomFlowUnit(
-            System.currentTimeMillis(), new SymptomContext(SymptomContext.State.HEALTHY));
+            System.currentTimeMillis(), new SymptomContext(Resources.State.HEALTHY));
       }
     }
   }
@@ -181,7 +181,7 @@ public class HighCpuSymptomTest {
           } else if (node instanceof Symptom) {
             SymptomFlowUnit flowUnit = ((Symptom) node).operate();
             assertEquals(flowUnit.getData().get(0), Collections.singletonList("shard1"));
-            assertEquals(flowUnit.getContext().getState(), SymptomContext.State.UNHEALTHY);
+            assertEquals(flowUnit.getContext().getState(), Resources.State.UNHEALTHY);
             /*
             AssertHelper.compareMaps(new HashMap<String, String>() {{
                 this.put("threshold", "90.0");

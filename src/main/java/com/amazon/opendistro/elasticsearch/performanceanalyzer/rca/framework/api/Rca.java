@@ -29,6 +29,11 @@ public abstract class Rca<T extends ResourceFlowUnit> extends NonLeafNode<T> {
     super(0, evaluationIntervalSeconds);
   }
 
+  /**
+   * fetch flowunits from local graph node
+   * @param args The wrapper around the flow unit operation.
+   */
+  @Override
   public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
     LOG.debug("rca: Executing fromLocal: {}", this.getClass().getSimpleName());
     setFlowUnits(Collections.singletonList(this.operate()));
@@ -37,9 +42,7 @@ public abstract class Rca<T extends ResourceFlowUnit> extends NonLeafNode<T> {
   @Override
   public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
     for (final T flowUnit : getFlowUnits()) {
-      if (!flowUnit.isEmpty() && flowUnit.getData() != null && !flowUnit.getData().isEmpty()) {
         args.getPersistable().write(this, flowUnit);
-      }
     }
   }
 }
