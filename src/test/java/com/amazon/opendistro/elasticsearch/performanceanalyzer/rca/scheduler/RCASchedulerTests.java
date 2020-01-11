@@ -15,14 +15,15 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.CPU_Utilization;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.GC_Collection_Event;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Used;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_AllocRate;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Paging_MajfltRate;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Sched_Waittime;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ThresholdMain;
@@ -38,35 +39,42 @@ import java.util.Arrays;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 @Category(GradleTaskForRca.class)
 @SuppressWarnings("serial")
 public class RCASchedulerTests {
-  private static final Logger LOG = LogManager.getLogger(Tasklet.class);
   Queryable queryable;
+
+  class AnalysisGraphTest extends AnalysisGraph {
+
+    @Override
+    public void construct() {
+      Metric cpuUtilization = new CPU_Utilization(5);
+      Metric heapUsed = new Sched_Waittime(5);
+      Metric pageMaj = new Paging_MajfltRate(5);
+      Metric heapAlloc = new Heap_AllocRate(5);
+
+      addLeaf(cpuUtilization);
+      addLeaf(heapUsed);
+      addLeaf(pageMaj);
+      addLeaf(heapAlloc);
+      Rca highHeapUsageRca = new HighHeapUsageOldGenRca(2L, heapUsed, pageMaj, heapAlloc);
+      highHeapUsageRca.addAllUpstreams(Arrays.asList(heapAlloc, heapUsed, pageMaj));
+    }
+  }
+
+  @Before
+  public void before() throws Exception {
+    queryable = new MetricsDBProviderTestHelper(false);
+  }
 
   @Test
   public void testScheduler() throws Exception {
     // First test
-    AnalysisGraph graph =
-        new AnalysisGraph() {
-          @Override
-          public void construct() {
-            Metric heapUsed = new Heap_Used(5);
-            Metric gcEvent = new GC_Collection_Event(5);
-            Metric heapMax = new Heap_Max(5);
-
-            addLeaf(heapUsed);
-            addLeaf(gcEvent);
-            addLeaf(heapMax);
-            Rca highHeapUsageRca = new HighHeapUsageOldGenRca(2L, heapUsed, gcEvent, heapMax);
-            highHeapUsageRca.addAllUpstreams(Arrays.asList(heapMax, heapUsed, gcEvent));
-          }
-        };
-
-    queryable = new MetricsDBProviderTestHelper(false);
+    AnalysisGraph graph = new AnalysisGraphTest();
 
     ((MetricsDBProviderTestHelper) queryable)
         .addNewData(
@@ -92,10 +100,9 @@ public class RCASchedulerTests {
                 Paths.get(RcaConsts.TEST_CONFIG_PATH, "thresholds").toString(), rcaConf),
             persistable,
             new WireHopper(null, null, null, null));
+    scheduler.setRole(AllMetrics.NodeRole.DATA);
     scheduler.start();
     Thread.sleep(8000);
-
-    LOG.info("About to send shutdown signal from the test ..");
     scheduler.shutdown();
   }
 

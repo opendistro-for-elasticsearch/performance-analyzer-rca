@@ -76,6 +76,10 @@ public class AllMetrics {
       this.value = value;
     }
 
+    public String role() {
+      return value;
+    }
+
     public static class RoleConstants {
       public static final String MASTER = "MASTER";
       public static final String ELECTED_MASTER = "ELECTED_MASTER";
