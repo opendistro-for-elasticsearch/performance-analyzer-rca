@@ -2,13 +2,10 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.CPU_Utilization;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_AllocRate;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Paging_MajfltRate;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Sched_Waittime;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageOldGenRca;
-import java.util.Arrays;
 
 public class AnalysisGraphTest extends AnalysisGraph {
 
@@ -23,8 +20,6 @@ public class AnalysisGraphTest extends AnalysisGraph {
     addLeaf(heapUsed);
     addLeaf(pageMaj);
     addLeaf(heapAlloc);
-    Rca highHeapUsageRca = new HighHeapUsageOldGenRca(2L, heapUsed, pageMaj, heapAlloc);
-    highHeapUsageRca.addAllUpstreams(Arrays.asList(heapAlloc, heapUsed, pageMaj));
 
     System.out.println(this.getClass().getName() + " graph constructed..");
   }

@@ -108,6 +108,8 @@ public class RcaController {
   private long pollerPeriodicity;
   private TimeUnit timeUnit;
   private List<Thread> exceptionHandlerThreads;
+  private List<ScheduledFuture<?>> pollingExecutors;
+  private boolean shutdownRequested;
 
   public RcaController(
       final ScheduledExecutorService netOpsExecutorService,
@@ -138,6 +140,7 @@ public class RcaController {
     this.pollerPeriodicity = pollerPeriodicity;
     this.timeUnit = timeUnit;
     this.exceptionHandlerThreads = new ArrayList<>();
+    this.pollingExecutors = new ArrayList<>();
   }
 
   /**
@@ -148,11 +151,11 @@ public class RcaController {
    * but this thread works to start Rca or shut it down based on the flag.
    */
   public void startPollers() {
-    List<ScheduledFuture<?>> scheduledFutures = new ArrayList<>();
-    scheduledFutures.add(startRcaConfPoller());
-    scheduledFutures.add(startNodeRolePoller());
-    scheduledFutures.add(startRcaNanny());
-    startExceptionHandlers(scheduledFutures);
+    pollingExecutors = new ArrayList<>();
+    pollingExecutors.add(startRcaConfPoller());
+    pollingExecutors.add(startNodeRolePoller());
+    pollingExecutors.add(startRcaNanny());
+    startExceptionHandlers(pollingExecutors);
   }
 
   public static String getCatMasterUrl() {
@@ -181,13 +184,13 @@ public class RcaController {
           Thread t =
               new Thread(
                   () -> {
-                    while (true) {
-                      try {
-                        future.get();
-                      } catch (Exception ex) {
-                        LOG.error("RCA Exception cause : {}", ex.getCause());
-                        ex.printStackTrace();
-                      }
+                    try {
+                      future.get();
+                    } catch (CancellationException cex) {
+                      LOG.info("Executor cancellation requested.");
+                    } catch (Exception ex) {
+                      LOG.error("RCA Exception cause : {}", ex.getCause());
+                      ex.printStackTrace();
                     }
                   });
           exceptionHandlerThreads.add(t);
