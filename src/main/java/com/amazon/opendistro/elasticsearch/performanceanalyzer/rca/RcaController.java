@@ -218,10 +218,9 @@ public class RcaController {
   private ScheduledFuture<?> startNodeRolePoller() {
     return netOpsExecutorService.scheduleAtFixedRate(() -> {
       if (rcaEnabled) {
-        final String electedMasterAddress = getElectedMasterHostAddress();
         final NodeDetails nodeDetails = ClusterDetailsEventProcessor.getCurrentNodeDetails();
         if (nodeDetails != null) {
-          handleNodeRoleChange(nodeDetails, electedMasterAddress);
+          handleNodeRoleChange(nodeDetails);
         }
       }
     }, 2, 60, TimeUnit.SECONDS);
@@ -277,13 +276,14 @@ public class RcaController {
     return "";
   }
 
-  private void handleNodeRoleChange(
-      final NodeDetails currentNode, final String electedMasterHostAddress) {
+  private void handleNodeRoleChange(final NodeDetails currentNode) {
     final NodeRole currentNodeRole = NodeRole.valueOf(currentNode.getRole());
-    if (currentNode.getHostAddress().equalsIgnoreCase(electedMasterHostAddress)) {
-      currentRole = NodeRole.ELECTED_MASTER;
+    Boolean isMasterNode = currentNode.getIsMasterNode();
+    if (isMasterNode != null) {
+      currentRole = isMasterNode ? NodeRole.ELECTED_MASTER : currentNodeRole;
     } else {
-      currentRole = currentNodeRole;
+      final String electedMasterHostAddress = getElectedMasterHostAddress();
+      currentRole = currentNode.getHostAddress().equalsIgnoreCase(electedMasterHostAddress) ? NodeRole.ELECTED_MASTER : currentNodeRole;
     }
   }
 

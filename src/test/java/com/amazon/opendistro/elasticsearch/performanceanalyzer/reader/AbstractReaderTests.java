@@ -131,13 +131,13 @@ public class AbstractReaderTests extends AbstractTests {
     return new HeapStatus(name.toString(), collectionCount, collectionTime).serialize();
   }
 
-  protected String createNodeDetailsMetrics(String id, String ipAddress) {
-    return createNodeDetailsMetrics(id, ipAddress, AllMetrics.NodeRole.DATA);
+  protected String createNodeDetailsMetrics(String id, String ipAddress, boolean isMasterNode) {
+    return createNodeDetailsMetrics(id, ipAddress, AllMetrics.NodeRole.DATA, isMasterNode);
   }
 
-  protected String createNodeDetailsMetrics(String id, String ipAddress, AllMetrics.NodeRole nodeRole) {
+  protected String createNodeDetailsMetrics(String id, String ipAddress, AllMetrics.NodeRole nodeRole, boolean isMasterNode) {
     StringBuffer value = new StringBuffer();
-    value.append(new NodeDetailsStatus(id, ipAddress, nodeRole).serialize());
+    value.append(new NodeDetailsStatus(id, ipAddress, nodeRole, isMasterNode).serialize());
     return value.toString();
   }
 
@@ -166,12 +166,14 @@ public class AbstractReaderTests extends AbstractTests {
     private String id;
     private String hostAddress;
     private String nodeRole;
+    private boolean isMasterNode;
 
-    public NodeDetailsStatus(String id, String hostAddress, AllMetrics.NodeRole nodeRole) {
+    public NodeDetailsStatus(String id, String hostAddress, AllMetrics.NodeRole nodeRole, boolean isMasterNode) {
       super();
       this.id = id;
       this.hostAddress = hostAddress;
       this.nodeRole = nodeRole.role();
+      this.isMasterNode = isMasterNode;
     }
 
     @JsonProperty(NodeDetailColumns.Constants.ID_VALUE)
@@ -187,6 +189,11 @@ public class AbstractReaderTests extends AbstractTests {
     @JsonProperty(NodeDetailColumns.Constants.ROLE_VALUE)
     public String getNodeRole() {
       return nodeRole;
+    }
+
+    @JsonProperty(NodeDetailColumns.Constants.IS_MASTER_NODE)
+    public boolean getIsMasterNode() {
+      return isMasterNode;
     }
   }
 }
