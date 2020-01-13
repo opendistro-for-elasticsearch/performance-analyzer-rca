@@ -260,6 +260,7 @@ public class RcaController {
 
   private String getElectedMasterHostAddress() {
     try {
+      LOG.info("Making _cat/master call");
       final URL url = new URL(CAT_MASTER_URL);
       HttpURLConnection connection = (HttpURLConnection) url.openConnection();
       connection.setRequestMethod("GET");
