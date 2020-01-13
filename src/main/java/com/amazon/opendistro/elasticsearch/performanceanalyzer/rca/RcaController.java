@@ -153,7 +153,6 @@ public class RcaController {
   public void startPollers() {
     pollingExecutors = new ArrayList<>();
     pollingExecutors.add(startRcaConfPoller());
-    pollingExecutors.add(startNodeRolePoller());
     pollingExecutors.add(startRcaNanny());
     startExceptionHandlers(pollingExecutors);
   }
@@ -215,19 +214,12 @@ public class RcaController {
         this::readRcaEnabledFromConf, 0, pollerPeriodicity, timeUnit);
   }
 
-  private ScheduledFuture<?> startNodeRolePoller() {
-    return netOpsExecutorService.scheduleAtFixedRate(
-        () -> {
-          final String electedMasterAddress = getElectedMasterHostAddress();
-          final NodeDetails nodeDetails = ClusterDetailsEventProcessor.getCurrentNodeDetails();
-
-          if (nodeDetails != null) {
-            handleNodeRoleChange(nodeDetails, electedMasterAddress);
-          }
-        },
-        pollerPeriodicity,
-        pollerPeriodicity,
-        timeUnit);
+  private void nodeRolePoller() {
+    final String electedMasterAddress = getElectedMasterHostAddress();
+    final NodeDetails nodeDetails = ClusterDetailsEventProcessor.getCurrentNodeDetails();
+    if (nodeDetails != null) {
+      handleNodeRoleChange(nodeDetails, electedMasterAddress);
+    }
   }
 
   /**
@@ -239,19 +231,22 @@ public class RcaController {
   private ScheduledFuture<?> startRcaNanny() {
     return netOpsExecutorService.scheduleAtFixedRate(
         () -> {
-          if (rcaScheduler != null && rcaScheduler.isRunning()) {
-            if (!rcaEnabled) {
-              // Need to shutdown the rca scheduler
-              stop();
-            } else {
+          if (rcaEnabled) {
+            netOpsExecutorService.schedule(this::nodeRolePoller, 2, TimeUnit.SECONDS);
+            if (rcaScheduler != null && rcaScheduler.isRunning()) {
               subscriptionManager.dumpStats();
               if (rcaScheduler.getRole() != currentRole) {
                 restart();
               }
+            } else {
+              if (NodeRole.UNKNOWN != currentRole) {
+                start();
+              }
             }
           } else {
-            if (rcaEnabled && NodeRole.UNKNOWN != currentRole) {
-              start();
+            if (rcaScheduler != null && rcaScheduler.isRunning()) {
+              // Need to shutdown the rca scheduler
+              stop();
             }
           }
         },

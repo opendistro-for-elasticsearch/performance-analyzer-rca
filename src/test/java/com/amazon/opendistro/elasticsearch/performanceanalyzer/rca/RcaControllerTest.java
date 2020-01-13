@@ -132,7 +132,7 @@ public class RcaControllerTest {
 
   @Test
   public void nodeRoleChange() throws IOException {
-    changeRcaRunState(RcaState.STOP);
+    changeRcaRunState(RcaState.RUN);
     masterIP = "10.10.192.168";
     setMyIp(masterIP, AllMetrics.NodeRole.ELECTED_MASTER);
     Assert.assertTrue(check(new NodeRoleEval(rcaController), AllMetrics.NodeRole.ELECTED_MASTER));
