@@ -153,8 +153,8 @@ public class RcaController {
   public void startPollers() {
     pollingExecutors = new ArrayList<>();
     pollingExecutors.add(startRcaConfPoller());
-    pollingExecutors.add(startNodeRolePoller());
     pollingExecutors.add(startRcaNanny());
+    pollingExecutors.add(startNodeRolePoller());
     startExceptionHandlers(pollingExecutors);
   }
 
@@ -216,18 +216,14 @@ public class RcaController {
   }
 
   private ScheduledFuture<?> startNodeRolePoller() {
-    return netOpsExecutorService.scheduleAtFixedRate(
-        () -> {
-          final String electedMasterAddress = getElectedMasterHostAddress();
-          final NodeDetails nodeDetails = ClusterDetailsEventProcessor.getCurrentNodeDetails();
-
-          if (nodeDetails != null) {
-            handleNodeRoleChange(nodeDetails, electedMasterAddress);
-          }
-        },
-        pollerPeriodicity,
-        pollerPeriodicity,
-        timeUnit);
+    return netOpsExecutorService.scheduleAtFixedRate(() -> {
+      if (rcaEnabled) {
+        final NodeDetails nodeDetails = ClusterDetailsEventProcessor.getCurrentNodeDetails();
+        if (nodeDetails != null) {
+          handleNodeRoleChange(nodeDetails);
+        }
+      }
+    }, 2, 60, TimeUnit.SECONDS);
   }
 
   /**
@@ -239,19 +235,21 @@ public class RcaController {
   private ScheduledFuture<?> startRcaNanny() {
     return netOpsExecutorService.scheduleAtFixedRate(
         () -> {
-          if (rcaScheduler != null && rcaScheduler.isRunning()) {
-            if (!rcaEnabled) {
-              // Need to shutdown the rca scheduler
-              stop();
-            } else {
+          if (rcaEnabled) {
+            if (rcaScheduler != null && rcaScheduler.isRunning()) {
               subscriptionManager.dumpStats();
               if (rcaScheduler.getRole() != currentRole) {
                 restart();
               }
+            } else {
+              if (NodeRole.UNKNOWN != currentRole) {
+                start();
+              }
             }
           } else {
-            if (rcaEnabled && NodeRole.UNKNOWN != currentRole) {
-              start();
+            if (rcaScheduler != null && rcaScheduler.isRunning()) {
+              // Need to shutdown the rca scheduler
+              stop();
             }
           }
         },
@@ -262,6 +260,7 @@ public class RcaController {
 
   private String getElectedMasterHostAddress() {
     try {
+      LOG.info("Making _cat/master call");
       final URL url = new URL(CAT_MASTER_URL);
       HttpURLConnection connection = (HttpURLConnection) url.openConnection();
       connection.setRequestMethod("GET");
@@ -278,13 +277,14 @@ public class RcaController {
     return "";
   }
 
-  private void handleNodeRoleChange(
-      final NodeDetails currentNode, final String electedMasterHostAddress) {
+  private void handleNodeRoleChange(final NodeDetails currentNode) {
     final NodeRole currentNodeRole = NodeRole.valueOf(currentNode.getRole());
-    if (currentNode.getHostAddress().equalsIgnoreCase(electedMasterHostAddress)) {
-      currentRole = NodeRole.ELECTED_MASTER;
+    Boolean isMasterNode = currentNode.getIsMasterNode();
+    if (isMasterNode != null) {
+      currentRole = isMasterNode ? NodeRole.ELECTED_MASTER : currentNodeRole;
     } else {
-      currentRole = currentNodeRole;
+      final String electedMasterHostAddress = getElectedMasterHostAddress();
+      currentRole = currentNode.getHostAddress().equalsIgnoreCase(electedMasterHostAddress) ? NodeRole.ELECTED_MASTER : currentNodeRole;
     }
   }
 

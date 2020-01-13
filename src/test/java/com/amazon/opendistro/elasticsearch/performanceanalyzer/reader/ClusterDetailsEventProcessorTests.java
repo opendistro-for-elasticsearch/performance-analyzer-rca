@@ -38,16 +38,18 @@ public class ClusterDetailsEventProcessorTests extends AbstractReaderTests {
 
     String nodeId1 = "s7gDCVnCSiuBgHoYLji1gw";
     String address1 = "10.212.49.140";
+    boolean isMasterNode1 = true;
 
     String nodeId2 = "Zn1QcSUGT--DciD1Em5wRg";
     String address2 = "10.212.52.241";
+    boolean isMasterNode2 = false;
 
     StringBuilder stringBuilder = new StringBuilder()
         .append(PerformanceAnalyzerMetrics.getJsonCurrentMilliSeconds())
         .append(System.getProperty("line.separator"))
-        .append(createNodeDetailsMetrics(nodeId1, address1))
+        .append(createNodeDetailsMetrics(nodeId1, address1, isMasterNode1))
         .append(System.getProperty("line.separator"))
-        .append(createNodeDetailsMetrics(nodeId2, address2));
+        .append(createNodeDetailsMetrics(nodeId2, address2, isMasterNode2));
 
     Event testEvent = new Event("", stringBuilder.toString(), 0);
     ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
@@ -57,10 +59,10 @@ public class ClusterDetailsEventProcessorTests extends AbstractReaderTests {
 
     assertEquals(nodeId1, nodes.get(0).getId());
     assertEquals(address1, nodes.get(0).getHostAddress());
+    assertEquals(isMasterNode1, nodes.get(0).getIsMasterNode());
 
     assertEquals(nodeId2, nodes.get(1).getId());
     assertEquals(address2, nodes.get(1).getHostAddress());
+    assertEquals(isMasterNode2, nodes.get(1).getIsMasterNode());
   }
-
-
 }
