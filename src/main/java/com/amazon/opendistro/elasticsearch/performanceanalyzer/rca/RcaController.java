@@ -154,6 +154,7 @@ public class RcaController {
     pollingExecutors = new ArrayList<>();
     pollingExecutors.add(startRcaConfPoller());
     pollingExecutors.add(startRcaNanny());
+    pollingExecutors.add(startNodeRolePoller());
     startExceptionHandlers(pollingExecutors);
   }
 
@@ -214,12 +215,16 @@ public class RcaController {
         this::readRcaEnabledFromConf, 0, pollerPeriodicity, timeUnit);
   }
 
-  private void nodeRolePoller() {
-    final String electedMasterAddress = getElectedMasterHostAddress();
-    final NodeDetails nodeDetails = ClusterDetailsEventProcessor.getCurrentNodeDetails();
-    if (nodeDetails != null) {
-      handleNodeRoleChange(nodeDetails, electedMasterAddress);
-    }
+  private ScheduledFuture<?> startNodeRolePoller() {
+    return netOpsExecutorService.scheduleAtFixedRate(() -> {
+      if (rcaEnabled) {
+        final String electedMasterAddress = getElectedMasterHostAddress();
+        final NodeDetails nodeDetails = ClusterDetailsEventProcessor.getCurrentNodeDetails();
+        if (nodeDetails != null) {
+          handleNodeRoleChange(nodeDetails, electedMasterAddress);
+        }
+      }
+    }, 2, 60, TimeUnit.SECONDS);
   }
 
   /**
@@ -232,7 +237,6 @@ public class RcaController {
     return netOpsExecutorService.scheduleAtFixedRate(
         () -> {
           if (rcaEnabled) {
-            netOpsExecutorService.schedule(this::nodeRolePoller, 2, TimeUnit.SECONDS);
             if (rcaScheduler != null && rcaScheduler.isRunning()) {
               subscriptionManager.dumpStats();
               if (rcaScheduler.getRole() != currentRole) {

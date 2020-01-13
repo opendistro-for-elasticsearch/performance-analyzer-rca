@@ -31,6 +31,10 @@ import org.junit.experimental.categories.Category;
 
 @Category(GradleTaskForRca.class)
 public class RcaControllerTest {
+
+  private static final int IEVAL_ITERATIONS = 20;
+  // NodeRolePoller has an periodicity of 60 seconds, hence we need iterations number greater than that
+  private static final int NODE_ROLE_EVAL_ITERATIONS = 70;
   private ScheduledExecutorService netOperationsExecutor;
   private ClientServers clientServers;
   private GRPCConnectionManager connectionManager;
@@ -122,11 +126,11 @@ public class RcaControllerTest {
   @Test
   public void readRcaEnabledFromConf() throws IOException {
     changeRcaRunState(RcaState.STOP);
-    Assert.assertTrue(check(new RcaEnabledEval(rcaController), false));
+    Assert.assertTrue(check(new RcaEnabledEval(rcaController), false, IEVAL_ITERATIONS));
     Assert.assertFalse(rcaController.isRcaEnabled());
 
     changeRcaRunState(RcaState.RUN);
-    Assert.assertTrue(check(new RcaEnabledEval(rcaController), true));
+    Assert.assertTrue(check(new RcaEnabledEval(rcaController), true, IEVAL_ITERATIONS));
     Assert.assertTrue(rcaController.isRcaEnabled());
   }
 
@@ -135,12 +139,12 @@ public class RcaControllerTest {
     changeRcaRunState(RcaState.RUN);
     masterIP = "10.10.192.168";
     setMyIp(masterIP, AllMetrics.NodeRole.ELECTED_MASTER);
-    Assert.assertTrue(check(new NodeRoleEval(rcaController), AllMetrics.NodeRole.ELECTED_MASTER));
+    Assert.assertTrue(check(new NodeRoleEval(rcaController), AllMetrics.NodeRole.ELECTED_MASTER, NODE_ROLE_EVAL_ITERATIONS));
     Assert.assertEquals(rcaController.getCurrentRole(), AllMetrics.NodeRole.ELECTED_MASTER);
 
     AllMetrics.NodeRole nodeRole = AllMetrics.NodeRole.MASTER;
     setMyIp("10.10.192.200", nodeRole);
-    Assert.assertTrue(check(new NodeRoleEval(rcaController), nodeRole));
+    Assert.assertTrue(check(new NodeRoleEval(rcaController), nodeRole, NODE_ROLE_EVAL_ITERATIONS));
     Assert.assertEquals(rcaController.getCurrentRole(), nodeRole);
   }
 
@@ -154,24 +158,24 @@ public class RcaControllerTest {
     changeRcaRunState(RcaState.RUN);
     AllMetrics.NodeRole nodeRole = AllMetrics.NodeRole.MASTER;
     setMyIp("192.168.0.1", nodeRole);
-    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), true));
-    Assert.assertTrue(check(new RcaSchedulerRoleEval(rcaController), nodeRole));
+    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), true, IEVAL_ITERATIONS));
+    Assert.assertTrue(check(new RcaSchedulerRoleEval(rcaController), nodeRole, NODE_ROLE_EVAL_ITERATIONS));
     Assert.assertTrue(rcaController.getRcaScheduler().isRunning());
 
     nodeRole = AllMetrics.NodeRole.ELECTED_MASTER;
     setMyIp("192.168.0.1", nodeRole);
-    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), true));
-    Assert.assertTrue(check(new RcaSchedulerRoleEval(rcaController), nodeRole));
+    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), true, IEVAL_ITERATIONS));
+    Assert.assertTrue(check(new RcaSchedulerRoleEval(rcaController), nodeRole, NODE_ROLE_EVAL_ITERATIONS));
     Assert.assertEquals(rcaController.getRcaScheduler().getRole(), nodeRole);
 
     nodeRole = AllMetrics.NodeRole.DATA;
     setMyIp("192.168.0.1", nodeRole);
-    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), true));
-    Assert.assertTrue(check(new RcaSchedulerRoleEval(rcaController), nodeRole));
+    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), true, IEVAL_ITERATIONS));
+    Assert.assertTrue(check(new RcaSchedulerRoleEval(rcaController), nodeRole, NODE_ROLE_EVAL_ITERATIONS));
     Assert.assertEquals(rcaController.getRcaScheduler().getRole(), nodeRole);
 
     changeRcaRunState(RcaState.STOP);
-    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), false));
+    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), false, IEVAL_ITERATIONS));
     Assert.assertFalse(rcaController.getRcaScheduler().isRunning());
   }
 
@@ -207,11 +211,10 @@ public class RcaControllerTest {
     Files.write(Paths.get(rcaEnabledFile.toString()), value.getBytes());
   }
 
-  private <T> boolean check(IEval eval, T expected) {
-    final int ITERATIONS = 20;
+  private <T> boolean check(IEval eval, T expected, int iterations) {
     final long SLEEP_TIME_MILLIS = 1000;
 
-    for (int i = 0; i < ITERATIONS; i++) {
+    for (int i = 0; i < iterations; i++) {
       if (eval.evaluateAndCheck(expected)) {
         return true;
       }
