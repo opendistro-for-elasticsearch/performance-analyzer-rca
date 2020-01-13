@@ -93,7 +93,9 @@ public class Resources {
     HEAP(Constants.HEAP_VALUE),
     GARBAGE_COLLECTOR(Constants.GC_VALUE),
     CODE(Constants.CODE_VALUE),
-    JIT(Constants.JIT_VALUE);
+    JIT(Constants.JIT_VALUE),
+    OLD_GEN(Constants.OLD_GEN_VALUE),
+    YOUNG_GEN(Constants.YOUNG_GEN_VALUE);
 
     private final String value;
 
@@ -112,6 +114,8 @@ public class Resources {
       public static final String GC_VALUE = "garbage collector";
       public static final String CODE_VALUE = "code";
       public static final String JIT_VALUE = "JIT";
+      public static final String OLD_GEN_VALUE = "old generation";
+      public static final String YOUNG_GEN_VALUE = "young generation";
     }
   }
 

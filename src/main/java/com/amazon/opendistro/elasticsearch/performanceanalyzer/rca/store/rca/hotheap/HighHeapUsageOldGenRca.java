@@ -24,17 +24,16 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metrics
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindow;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindowData;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.util.ArrayList;
-import java.util.Deque;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -61,8 +60,9 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
   private final Metric heap_Used;
   private final Metric heap_Max;
   private final Metric gc_event;
-  private final SamplingDataSlidingWindow samplingDataSlidingWindow;
-  // Keep the sliding window large enough to avoid false positive
+  private final SlidingWindow<SlidingWindowData> gcEventSlidingWindow;
+  private final MinOldGenSlidingWindow minOldGenSlidingWindow;
+  //Keep the sliding window large enough to avoid false positive
   private static final int SLIDING_WINDOW_SIZE_IN_MINS = 10;
   private static final double OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE = 0.65;
   // FullGC needs to occur at least once during the entire sliding window in order to capture the
@@ -70,15 +70,17 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
   private static final double OLD_GEN_GC_THRESHOLD = 1;
   private static final double CONVERT_BYTES_TO_MEGABYTES = Math.pow(1024, 3);
 
-  public <M extends Metric> HighHeapUsageOldGenRca(
-      long evaluationIntervalSeconds, final M heap_Used, final M gc_event, final M heap_Max) {
-    super(evaluationIntervalSeconds);
+
+  public <M extends Metric> HighHeapUsageOldGenRca(long evaluationIntervalSeconds, final int rcaPeriod,
+      final M heap_Used, final M gc_event, final M heap_Max) {
+    super(evaluationIntervalSeconds, rcaPeriod);
     this.heap_Used = heap_Used;
     this.gc_event = gc_event;
     this.heap_Max = heap_Max;
     maxOldGenHeapSize = Double.MAX_VALUE;
-    counter = 0;
-    samplingDataSlidingWindow = new SamplingDataSlidingWindow(SLIDING_WINDOW_SIZE_IN_MINS);
+    gcEventSlidingWindow = new SlidingWindow<>(SLIDING_WINDOW_SIZE_IN_MINS, TimeUnit.MINUTES);
+    minOldGenSlidingWindow = new MinOldGenSlidingWindow(SLIDING_WINDOW_SIZE_IN_MINS,
+        TimeUnit.MINUTES);
   }
 
   @Override
@@ -135,32 +137,35 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
           oldGenHeapUsed,
           oldGenGCEvent,
           maxOldGenHeapSize);
-      samplingDataSlidingWindow.add(System.currentTimeMillis(), oldGenHeapUsed, oldGenGCEvent);
+      long currTimeStamp = System.currentTimeMillis();
+      gcEventSlidingWindow.next(new SlidingWindowData(currTimeStamp, oldGenGCEvent));
+      minOldGenSlidingWindow.next(new SlidingWindowData(currTimeStamp, oldGenHeapUsed));
     }
 
-    if (counter == RCA_PERIOD) {
+    if (counter == this.rcaPeriod) {
       ResourceContext context = null;
       HotResourceSummary summary = null;
       // reset the variables
       counter = 0;
 
-      double currentMinOldGenUsage = samplingDataSlidingWindow.getMinOldGenUsage();
-      if (samplingDataSlidingWindow.getOldGGenGCEvent() >= OLD_GEN_GC_THRESHOLD
+      double currentMinOldGenUsage = minOldGenSlidingWindow.readMin();
+      if (gcEventSlidingWindow.readSum() >= OLD_GEN_GC_THRESHOLD
           && !Double.isNaN(currentMinOldGenUsage)
           && currentMinOldGenUsage / maxOldGenHeapSize > OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE) {
         LOG.debug("heapUsage is above threshold. OldGGenGCEvent = {}, oldGenUsage percentage = {}",
-            samplingDataSlidingWindow.getOldGGenGCEvent(),
+            gcEventSlidingWindow.readSum(),
             currentMinOldGenUsage / maxOldGenHeapSize);
         context = new ResourceContext(Resources.State.UNHEALTHY);
-        summary = new HotResourceSummary(Resources.JVM.GARBAGE_COLLECTOR.toString(),
+        summary = new HotResourceSummary(Resources.JVM.OLD_GEN,
             OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE, currentMinOldGenUsage / maxOldGenHeapSize,
             "heap usage in percentage", SLIDING_WINDOW_SIZE_IN_MINS * 60);
       } else {
         context = new ResourceContext(Resources.State.HEALTHY);
-        //TODO: for testing purpose, we might not want to store summary info for healthy flowunit in production
-        summary = new HotResourceSummary(Resources.JVM.GARBAGE_COLLECTOR.toString(),
-            OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE, currentMinOldGenUsage / maxOldGenHeapSize,
-            "heap usage in percentage", SLIDING_WINDOW_SIZE_IN_MINS * 60);
+        if (alwaysCreateSummary == true) {
+          summary = new HotResourceSummary(Resources.JVM.OLD_GEN,
+              OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE, currentMinOldGenUsage / maxOldGenHeapSize,
+              "heap usage in percentage", SLIDING_WINDOW_SIZE_IN_MINS * 60);
+        }
       }
       LOG.debug("High Heap Usage RCA Context = " + context.toString());
       return new ResourceFlowUnit(System.currentTimeMillis(), context, summary);
@@ -172,47 +177,33 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
     }
   }
 
-  private static class SamplingDataSlidingWindow {
+  /**
+   * Sliding window to check the minimal olg gen usage within a given time frame
+   */
+  private static class MinOldGenSlidingWindow extends SlidingWindow<SlidingWindowData> {
 
-    Deque<Pair<Long, Double>> oldGenUsageDeque;
-    Deque<Pair<Long, Integer>> oldGGenGCEventDeque;
-    private final int SLIDING_WINDOW_SIZE_IN_MINS;
-
-    SamplingDataSlidingWindow(int SLIDING_WINDOW_SIZE_IN_MINS) {
-      this.SLIDING_WINDOW_SIZE_IN_MINS = SLIDING_WINDOW_SIZE_IN_MINS;
-      this.oldGenUsageDeque = new LinkedList<>();
-      this.oldGGenGCEventDeque = new LinkedList<>();
+    public MinOldGenSlidingWindow(int SLIDING_WINDOW_SIZE_IN_TIMESTAMP, TimeUnit timeUnit) {
+      super(SLIDING_WINDOW_SIZE_IN_TIMESTAMP, timeUnit);
     }
 
-    public void add(long timeStamp, double oldGenUsage, int oldGenGCEvent) {
-      if (oldGenGCEvent > 0) {
-        oldGGenGCEventDeque.addFirst(Pair.of(timeStamp, oldGenGCEvent));
+    @Override
+    public void next(SlidingWindowData e) {
+      while (!windowDeque.isEmpty()
+          && windowDeque.peekFirst().getValue() >= e.getValue()) {
+        windowDeque.pollFirst();
       }
-      while (!oldGGenGCEventDeque.isEmpty()
-          && TimeUnit.MILLISECONDS.toSeconds(timeStamp - oldGGenGCEventDeque.peekLast().getKey())
-          > SLIDING_WINDOW_SIZE_IN_MINS * 60) {
-        oldGGenGCEventDeque.pollLast();
-      }
-
-      while (!oldGenUsageDeque.isEmpty()
-          && oldGenUsageDeque.peekFirst().getValue() >= oldGenUsage) {
-        oldGenUsageDeque.pollFirst();
-      }
-      oldGenUsageDeque.addFirst(Pair.of(timeStamp, oldGenUsage));
-      while (!oldGenUsageDeque.isEmpty()
-          && TimeUnit.MILLISECONDS.toSeconds(timeStamp - oldGenUsageDeque.peekLast().getKey())
-          > SLIDING_WINDOW_SIZE_IN_MINS * 60) {
-        oldGenUsageDeque.pollLast();
+      windowDeque.addFirst(e);
+      while (!windowDeque.isEmpty()
+          &&
+          TimeUnit.MILLISECONDS.toSeconds(e.getTimeStamp() - windowDeque.peekLast().getTimeStamp())
+              > SLIDING_WINDOW_SIZE) {
+        windowDeque.pollLast();
       }
     }
 
-    public int getOldGGenGCEvent() {
-      return oldGGenGCEventDeque.size();
-    }
-
-    public double getMinOldGenUsage() {
-      if (!oldGenUsageDeque.isEmpty()) {
-        return oldGenUsageDeque.peekLast().getValue();
+    public double readMin() {
+      if (!windowDeque.isEmpty()) {
+        return windowDeque.peekLast().getValue();
       }
       return Double.NaN;
     }

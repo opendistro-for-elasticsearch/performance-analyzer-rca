@@ -52,20 +52,20 @@ public class DummyGraph extends AnalysisGraph {
     addLeaf(heapMax);
     addLeaf(gc_Collection_Time);
 
-    Rca<ResourceFlowUnit> highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(5, heapUsed, gcEvent, heapMax);
+    Rca<ResourceFlowUnit> highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(5, 12, heapUsed, gcEvent, heapMax);
     highHeapUsageOldGenRca.addTag(LOCUS, DATA_NODE);
     highHeapUsageOldGenRca.addAllUpstreams(Arrays.asList(heapUsed, gcEvent, heapMax));
 
-    Rca<ResourceFlowUnit> highHeapUsageYoungGenRca = new HighHeapUsageYoungGenRca(5, heapUsed, gc_Collection_Time);
+    Rca<ResourceFlowUnit> highHeapUsageYoungGenRca = new HighHeapUsageYoungGenRca(5, 12, heapUsed, gc_Collection_Time);
     highHeapUsageYoungGenRca.addTag(LOCUS, DATA_NODE);
     highHeapUsageYoungGenRca.addAllUpstreams(Arrays.asList(heapUsed, gc_Collection_Time));
 
-    Rca<ResourceFlowUnit> hotJVMNodeRca = new HotNodeRca(5, highHeapUsageOldGenRca, highHeapUsageYoungGenRca);
+    Rca<ResourceFlowUnit> hotJVMNodeRca = new HotNodeRca(5, 12, highHeapUsageOldGenRca, highHeapUsageYoungGenRca);
     hotJVMNodeRca.addTag(LOCUS, DATA_NODE);
     hotJVMNodeRca.addAllUpstreams(Arrays.asList(highHeapUsageOldGenRca, highHeapUsageYoungGenRca));
 
     Rca<ResourceFlowUnit> highHeapUsageClusterRca =
-        new HighHeapUsageClusterRca(5, hotJVMNodeRca);
+        new HighHeapUsageClusterRca(5, 12, hotJVMNodeRca);
     highHeapUsageClusterRca.addTag(LOCUS, MASTER_NODE);
     highHeapUsageClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
 
