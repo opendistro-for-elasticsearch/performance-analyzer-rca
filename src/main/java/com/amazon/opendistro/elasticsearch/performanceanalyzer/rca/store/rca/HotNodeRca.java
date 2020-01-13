@@ -34,21 +34,21 @@ import org.apache.logging.log4j.Logger;
 public class HotNodeRca extends Rca<ResourceFlowUnit> {
 
   private static final Logger LOG = LogManager.getLogger(HotNodeRca.class);
-  private static final int RCA_PERIOD = 12;
   private Rca[] hotResourceRcas;
-  private int counter;
+  private boolean hasUnhealthyFlowUnit;
 
-  public <R extends Rca> HotNodeRca(final long evaluationIntervalSeconds, R... hotResourceRcas) {
-    super(evaluationIntervalSeconds);
+  public <R extends Rca> HotNodeRca(final long evaluationIntervalSeconds, final int rcaPeriod,
+      R... hotResourceRcas) {
+    super(evaluationIntervalSeconds, rcaPeriod);
     this.hotResourceRcas = hotResourceRcas.clone();
-    counter = 0;
+    hasUnhealthyFlowUnit = false;
   }
 
-  public <R extends Rca> HotNodeRca(final long evaluationIntervalSeconds,
+  public <R extends Rca> HotNodeRca(final long evaluationIntervalSeconds, final int rcaPeriod,
       Collection<R> hotResourceRcas) {
-    super(evaluationIntervalSeconds);
+    super(evaluationIntervalSeconds, rcaPeriod);
     this.hotResourceRcas = hotResourceRcas.toArray(new Rca[hotResourceRcas.size()]);
-    counter = 0;
+    hasUnhealthyFlowUnit = false;
   }
 
   @Override
@@ -62,35 +62,35 @@ public class HotNodeRca extends Rca<ResourceFlowUnit> {
         if (hotResourceFlowUnit.isEmpty()) {
           continue;
         }
+        if (hotResourceFlowUnit.getResourceContext().isUnhealthy()
+            || (hotResourceFlowUnit.hasResourceSummary() && alwaysCreateSummary)) {
+          hotResourceSummaryList.add(hotResourceFlowUnit.getResourceSummary());
+        }
         if (hotResourceFlowUnit.getResourceContext().isUnhealthy()) {
-          hotResourceSummaryList.add(hotResourceFlowUnit.getResourceSummary());
-          shouldReportOperation = true;
+          hasUnhealthyFlowUnit = true;
         }
-        //TODO : testing purpose. remove later
-        /*
-        else {
-          hotResourceSummaryList.add(hotResourceFlowUnit.getResourceSummary());
-          shouldReportOperation = true;
-        }
-        */
       }
     }
 
-    if (counter == RCA_PERIOD) {
-      ResourceContext context = null;
-      HotNodeSummary summary = null;
-      // reset the variables
-      counter = 0;
-      if (shouldReportOperation) {
-        LOG.info("@RCA: [Hot Node] ");
+    if (counter == rcaPeriod) {
+      ResourceContext context;
+      ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor
+          .getCurrentNodeDetails();
+      HotNodeSummary summary = new HotNodeSummary(currentNode.getId(), currentNode.getHostAddress());
+
+      if (!hotResourceSummaryList.isEmpty()) {
+        summary.addNestedSummaryList(hotResourceSummaryList);
+      }
+
+      if (hasUnhealthyFlowUnit) {
         context = new ResourceContext(Resources.State.UNHEALTHY);
-        ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor
-            .getCurrentNodeDetails();
-        summary = new HotNodeSummary(currentNode.getId(), currentNode.getHostAddress());
-        summary.setNestedSummaryList(hotResourceSummaryList);
       } else {
         context = new ResourceContext(Resources.State.HEALTHY);
       }
+
+      // reset the variables
+      counter = 0;
+      hasUnhealthyFlowUnit = false;
       return new ResourceFlowUnit(System.currentTimeMillis(), context, summary);
     } else {
       return new ResourceFlowUnit(System.currentTimeMillis());

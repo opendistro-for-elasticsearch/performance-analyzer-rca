@@ -25,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindow;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindowData;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
@@ -32,6 +33,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,29 +48,25 @@ import org.apache.logging.log4j.Logger;
 public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
 
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageYoungGenRca.class);
-  private static final int RCA_PERIOD = 12;
   private static final int PROMOTION_RATE_SLIDING_WINDOW_IN_MINS = 10;
   //promotion rate threshold is 500 Mb/s
   private static final double PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC = 500;
   //young gc time threshold is 400 ms per second
   private static final double YOUNG_GC_TIME_THRESHOLD_IN_MS_PER_SEC = 400;
   private static final double CONVERT_BYTES_TO_MEGABYTES = Math.pow(1024, 2);
-
-  protected int counter;
   private final Metric heap_Used;
   private final Metric gc_Collection_Time;
-  private final SlidingWindow gcTimeDeque;
-  private final SlidingWindow promotionRateDeque;
+  private final SlidingWindow<SlidingWindowData> gcTimeDeque;
+  private final SlidingWindow<SlidingWindowData> promotionRateDeque;
 
-  public <M extends Metric> HighHeapUsageYoungGenRca(long evaluationIntervalSeconds, final M heap_Used,
-      final M gc_Collection_Time) {
-    super(evaluationIntervalSeconds);
-    counter = 0;
+  public <M extends Metric> HighHeapUsageYoungGenRca(long evaluationIntervalSeconds, final int rcaPeriod,
+      final M heap_Used, final M gc_Collection_Time) {
+    super(evaluationIntervalSeconds, rcaPeriod);
     this.heap_Used = heap_Used;
     this.gc_Collection_Time = gc_Collection_Time;
-    this.gcTimeDeque = new SlidingWindow(PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
+    this.gcTimeDeque = new SlidingWindow<>(PROMOTION_RATE_SLIDING_WINDOW_IN_MINS, TimeUnit.MINUTES);
 
-    this.promotionRateDeque = new SlidingWindow(PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60) {
+    this.promotionRateDeque = new SlidingWindow<SlidingWindowData>(PROMOTION_RATE_SLIDING_WINDOW_IN_MINS, TimeUnit.MINUTES) {
       /**
        * always compare the current old gen usage with the usage from the previous time intervals and the amount of
        * increase is the data that is promoted from young gen.
@@ -82,16 +80,16 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
        * so the promotion rate within this time window is (100 + 100 + 0 + 50 + 50) / time slice
        */
       @Override
-      protected void add(double value) {
-        if (!windowDeque.isEmpty() && value > windowDeque.peekFirst().getValue()) {
-          sum += (value - windowDeque.peekFirst().getValue());
+      protected void add(SlidingWindowData e) {
+        if (!windowDeque.isEmpty() && e.getValue() > windowDeque.peekFirst().getValue()) {
+          sum += (e.getValue() - windowDeque.peekFirst().getValue());
         }
       }
 
       @Override
-      protected void remove(double value) {
-        if (!windowDeque.isEmpty() && value < windowDeque.peekFirst().getValue()) {
-          sum -= (windowDeque.peekFirst().getValue() - value);
+      protected void remove(SlidingWindowData e) {
+        if (!windowDeque.isEmpty() && e.getValue() < windowDeque.peekLast().getValue()) {
+          sum -= (windowDeque.peekLast().getValue() - e.getValue());
         }
       }
     };
@@ -128,20 +126,20 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
     }
 
     if (!Double.isNaN(oldGenHeapUsed)) {
-      promotionRateDeque.next(System.currentTimeMillis(), oldGenHeapUsed);
+      promotionRateDeque.next(new SlidingWindowData(System.currentTimeMillis(), oldGenHeapUsed));
     }
     if (!Double.isNaN(totYoungGCTime)) {
-      gcTimeDeque.next(System.currentTimeMillis(), totYoungGCTime);
+      gcTimeDeque.next(new SlidingWindowData(System.currentTimeMillis(), totYoungGCTime));
     }
 
-    if (counter == RCA_PERIOD) {
+    if (counter == rcaPeriod) {
       ResourceContext context = null;
       HotResourceSummary summary = null;
       // reset the variables
       counter = 0;
 
-      double avgPromotionRate = promotionRateDeque.read();
-      double avgYoungGCTime = gcTimeDeque.read();
+      double avgPromotionRate = promotionRateDeque.readAvg(TimeUnit.SECONDS);
+      double avgYoungGCTime = gcTimeDeque.readAvg(TimeUnit.SECONDS);
 
       if (!Double.isNaN(avgPromotionRate)
           && avgPromotionRate > PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC
@@ -149,15 +147,16 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
           && avgYoungGCTime > YOUNG_GC_TIME_THRESHOLD_IN_MS_PER_SEC) {
         LOG.debug("avgPromotionRate = {} , avgGCTime = {}", avgPromotionRate, avgYoungGCTime);
         context = new ResourceContext(Resources.State.UNHEALTHY);
-        summary = new HotResourceSummary(Resources.JVM.GARBAGE_COLLECTOR.toString(),
+        summary = new HotResourceSummary(Resources.JVM.YOUNG_GEN,
             PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC, avgPromotionRate, "promotion rate in mb/s",
             PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
       } else {
         context = new ResourceContext(Resources.State.HEALTHY);
-        //TODO: for testing purpose, we might not want to store summary info for healthy flowunit in production
-        summary = new HotResourceSummary(Resources.JVM.GARBAGE_COLLECTOR.toString(),
-            PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC, avgPromotionRate, "promotion rate in mb/s",
-            PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
+        if (alwaysCreateSummary == true) {
+          summary = new HotResourceSummary(Resources.JVM.YOUNG_GEN,
+              PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC, avgPromotionRate, "promotion rate in mb/s",
+              PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
+        }
       }
       LOG.debug("@@: Young Gen RCA Context = " + context.toString());
       return new ResourceFlowUnit(System.currentTimeMillis(), context, summary);

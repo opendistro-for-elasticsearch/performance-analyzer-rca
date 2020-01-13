@@ -4,7 +4,7 @@ public class SlidingWindowData {
   protected long timeStamp;
   protected double value;
 
-  SlidingWindowData(long timeStamp, double value) {
+  public SlidingWindowData(long timeStamp, double value) {
     this.timeStamp = timeStamp;
     this.value = value;
   }

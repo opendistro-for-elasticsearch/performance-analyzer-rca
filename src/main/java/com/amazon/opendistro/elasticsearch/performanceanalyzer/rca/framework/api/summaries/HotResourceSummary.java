@@ -17,11 +17,14 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
 
@@ -32,7 +35,8 @@ import org.jooq.impl.DSL;
  */
 public class HotResourceSummary extends GenericSummary {
 
-  private String resourceType;
+  private static final Logger LOG = LogManager.getLogger(HotResourceSummary.class);
+  private final Enum<? extends Resources.ResourceType> resourceType;
   private List<String> consumers;
   private double threshold;
   private double value;
@@ -42,8 +46,8 @@ public class HotResourceSummary extends GenericSummary {
   private double maxValue;
   private int timePeriod;
 
-  public HotResourceSummary(String resourceType, double threshold, double value, String unitType,
-      int timePeriod) {
+  public HotResourceSummary(Enum<? extends Resources.ResourceType> resourceType, double threshold,
+      double value, String unitType, int timePeriod) {
     super();
     this.resourceType = resourceType;
     this.threshold = threshold;
@@ -66,11 +70,28 @@ public class HotResourceSummary extends GenericSummary {
     this.avgValue = avgValue;
   }
 
+  public Enum<? extends Resources.ResourceType> getResourceType() {
+    return this.resourceType;
+  }
+
+  public double getValue() {
+    return this.value;
+  }
+
+  public String getUnitType() {
+    return this.unitType;
+  }
+
+  public int getTimePeriod() {
+    return this.timePeriod;
+  }
+
   @Override
   public HotResourceSummaryMessage buildSummaryMessage() {
     final HotResourceSummaryMessage.Builder summaryMessageBuilder = HotResourceSummaryMessage
         .newBuilder();
-    summaryMessageBuilder.setResourceType(resourceType);
+    summaryMessageBuilder
+        .setResourceType(resourceType.getClass().getName() + "." + resourceType.name());
     summaryMessageBuilder.setThreshold(this.threshold);
     summaryMessageBuilder.setValue(this.value);
     summaryMessageBuilder.setAvgValue(this.avgValue);
@@ -88,8 +109,31 @@ public class HotResourceSummary extends GenericSummary {
 
   public static HotResourceSummary buildHotResourceSummaryFromMessage(
       HotResourceSummaryMessage message) {
-    HotResourceSummary newSummary = new HotResourceSummary(message.getResourceType(),
-        message.getThreshold(), message.getValue(), message.getUnitType(), message.getTimePeriod());
+    String resourceTypeClassName = message.getResourceType();
+    //cast to Enum using reflection. find the last "." and separate the class name into two parts.
+    //e.g. com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources$ResourceType.HEAP
+    //will be split to  "com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources$ResourceType"
+    //and "HEAP"
+    String[] nameSplit = resourceTypeClassName.split("\\.(?=[^\\.]+$)");
+    Enum<? extends Resources.ResourceType> resourcetypeEnum = null;
+    if (nameSplit.length == 2) {
+      String enumClassName = nameSplit[0];
+      String enumName = nameSplit[1];
+      try {
+        @SuppressWarnings("unchecked")
+        Class<Enum> cl = (Class<Enum>) Class.forName(enumClassName);
+        resourcetypeEnum = Enum.valueOf(cl, enumName);
+      } catch (ClassNotFoundException e) {
+        LOG.error("Exception occurs when casting to enum !");
+      }
+    }
+    if (resourcetypeEnum == null) {
+      LOG.error("Fails to cast back to Enum, the Enum class name received is : {}",
+          resourceTypeClassName);
+      return null;
+    }
+    HotResourceSummary newSummary = new HotResourceSummary(resourcetypeEnum, message.getThreshold(),
+        message.getValue(), message.getUnitType(), message.getTimePeriod());
     newSummary
         .setValueDistribution(message.getMinValue(), message.getMaxValue(), message.getAvgValue());
     if (message.hasConsumers() && message.getConsumers().getConsumerCount() > 0) {
@@ -102,8 +146,8 @@ public class HotResourceSummary extends GenericSummary {
 
   @Override
   public String toString() {
-    return this.resourceType + " " + this.consumers + " " + this.threshold + " " + this.value + " "
-        + this.unitType;
+    return this.resourceType.toString() + " " + this.consumers + " " + this.threshold + " "
+        + this.value + " " + this.unitType;
   }
 
   @Override
@@ -123,7 +167,7 @@ public class HotResourceSummary extends GenericSummary {
   @Override
   public List<Object> getSqlValue() {
     List<Object> value = new ArrayList<>();
-    value.add(this.resourceType);
+    value.add(this.resourceType.toString());
     value.add(Double.valueOf(this.threshold));
     value.add(Double.valueOf(this.value));
     value.add(Double.valueOf(this.avgValue));

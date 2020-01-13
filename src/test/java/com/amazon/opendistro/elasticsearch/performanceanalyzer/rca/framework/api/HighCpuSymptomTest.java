@@ -174,9 +174,9 @@ public class HighCpuSymptomTest {
     for (ConnectedComponent component : components) {
       for (List<Node<?>> nodeList : component.getAllNodesByDependencyOrder()) {
         for (Node<?> node : nodeList) {
-          if (node instanceof Metric) {
+          if (node instanceof CPU_UtilizationX) {
             List<MetricFlowUnit> flowUnits =
-                Collections.singletonList(((Metric) node).gather(queryable));
+                Collections.singletonList(((CPU_UtilizationX) node).gather(queryable));
             ((CPU_UtilizationX) node).setFlowUnitList(flowUnits);
           } else if (node instanceof Symptom) {
             SymptomFlowUnit flowUnit = ((Symptom) node).operate();
