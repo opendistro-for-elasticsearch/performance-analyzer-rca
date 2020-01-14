@@ -16,10 +16,10 @@ public class SendTask implements Runnable {
 
   private static final Logger LOG = LogManager.getLogger(SendTask.class);
   private final SubscriptionManager subscriptionManager;
-  private final NetworkQueue<DataMsg> txQ;
+  private final NetworkRequestQueue<DataMsg> txQ;
   private final NetClient netClient;
 
-  public SendTask(final SubscriptionManager subscriptionManager, final NetworkQueue<DataMsg> txQ,
+  public SendTask(final SubscriptionManager subscriptionManager, final NetworkRequestQueue<DataMsg> txQ,
       final NetClient netClient) {
     this.subscriptionManager = subscriptionManager;
     this.txQ = txQ;

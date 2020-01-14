@@ -6,11 +6,11 @@ import java.util.concurrent.TimeUnit;
 
 public class Sender {
 
-  private final NetworkQueue<DataMsg> txQ;
+  private final NetworkRequestQueue<DataMsg> txQ;
   private final SendTask sendTask;
   private final ScheduledExecutorService threadPool;
 
-  public Sender(final NetworkQueue<DataMsg> txQ,
+  public Sender(final NetworkRequestQueue<DataMsg> txQ,
       final SendTask sendTask,
       final ScheduledExecutorService threadPool) {
     this.txQ = txQ;

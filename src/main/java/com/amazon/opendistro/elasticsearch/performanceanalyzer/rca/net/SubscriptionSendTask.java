@@ -17,12 +17,12 @@ public class SubscriptionSendTask implements Runnable {
 
   private static final Logger LOG = LogManager.getLogger(SubscriptionSendTask.class);
   private final SubscriptionManager subscriptionManager;
-  private final NetworkQueue<IntentMsg> txBroadcastQ;
-  private final NetworkQueue<UnicastIntentMsg> txUnicastQ;
+  private final NetworkRequestQueue<IntentMsg> txBroadcastQ;
+  private final NetworkRequestQueue<UnicastIntentMsg> txUnicastQ;
   private final NetClient netClient;
 
   public SubscriptionSendTask(final SubscriptionManager subscriptionManager,
-      final NetworkQueue<IntentMsg> txBroadcastQ, final NetworkQueue<UnicastIntentMsg> txUnicastQ,
+      final NetworkRequestQueue<IntentMsg> txBroadcastQ, final NetworkRequestQueue<UnicastIntentMsg> txUnicastQ,
       final NetClient netClient) {
     this.subscriptionManager = subscriptionManager;
     this.txBroadcastQ = txBroadcastQ;
@@ -35,8 +35,8 @@ public class SubscriptionSendTask implements Runnable {
    * starting the thread causes the object's
    * <code>run</code> method to be called in that separately executing
    * thread.
-   * <p>
-   * The general contract of the method <code>run</code> is that it may take any action whatsoever.
+   *
+   * <p>The general contract of the method <code>run</code> is that it may take any action whatsoever.
    *
    * @see Thread#run()
    */

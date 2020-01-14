@@ -41,9 +41,7 @@ public class SubscribeResponseHandler implements StreamObserver<SubscribeRespons
    */
   @Override
   public void onNext(SubscribeResponse subscribeResponse) {
-    LOG.info("kk: onNext notified");
     if (subscribeResponse.getSubscriptionStatus() == SubscriptionStatus.SUCCESS) {
-      LOG.info("kk: Subscription acknowledged by : {}", remoteHost);
       subscriptionManager.addPublisher(graphNode, remoteHost);
     }
   }

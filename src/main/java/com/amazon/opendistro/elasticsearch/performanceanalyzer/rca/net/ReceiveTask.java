@@ -1,5 +1,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -7,12 +9,12 @@ import org.apache.logging.log4j.Logger;
 public class ReceiveTask implements Runnable {
 
   private static final Logger LOG = LogManager.getLogger(ReceiveTask.class);
-  private final NetworkQueue<FlowUnitMessage> rxQ;
+  private final NetworkRequestQueue<FlowUnitMessage> rxQ;
   private final ReceivedFlowUnitStore receivedFlowUnitStore;
   private final NodeStateManager nodeStateManager;
 
   public ReceiveTask(
-      NetworkQueue<FlowUnitMessage> rxQ,
+      NetworkRequestQueue<FlowUnitMessage> rxQ,
       ReceivedFlowUnitStore receivedFlowUnitStore,
       NodeStateManager nodeStateManager) {
     this.rxQ = rxQ;
@@ -32,13 +34,13 @@ public class ReceiveTask implements Runnable {
   @Override
   public void run() {
     for (final FlowUnitMessage flowUnitMessage : rxQ.drain()) {
-      LOG.info("kk: Draining flow unit RxQ");
       String host = flowUnitMessage.getEsNode();
       String graphNode = flowUnitMessage.getGraphNode();
 
-      nodeStateManager.updateReceiveTime(host, graphNode);
+      nodeStateManager.updateReceiveTime(host, graphNode, System.currentTimeMillis());
       if (!receivedFlowUnitStore.enqueue(graphNode, flowUnitMessage)) {
-        LOG.warn("Dropped a flowunit because buffer was full");
+        LOG.warn("Dropped a flowunit because buffer was full for vertex: {}", graphNode);
+        StatsCollector.instance().logException(StatExceptionCode.RCA_BUFFER_FULL_ERROR);
       }
     }
   }

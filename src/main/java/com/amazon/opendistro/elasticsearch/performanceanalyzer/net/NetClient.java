@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.net;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpcServiceGrpc;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsRequest;
@@ -22,6 +24,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsRespo
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PublishResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
+import io.grpc.StatusException;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,9 +56,15 @@ public class NetClient {
       final SubscribeMessage subscribeMessage,
       StreamObserver<SubscribeResponse> serverResponseStream) {
     LOG.debug("Trying to send intent message to {}", remoteHost);
-    connectionManager
-        .getClientStubForHost(remoteHost)
-        .subscribe(subscribeMessage, serverResponseStream);
+    try {
+      connectionManager
+          .getClientStubForHost(remoteHost)
+          .subscribe(subscribeMessage, serverResponseStream);
+    } catch (StatusRuntimeException sre) {
+      LOG.error("Encountered an error trying to subscribe. Status: {}",
+          sre.getStatus(), sre);
+      StatsCollector.instance().logException(StatExceptionCode.RCA_NETWORK_ERROR);
+    }
   }
 
   public void publish(
@@ -62,9 +72,15 @@ public class NetClient {
       final FlowUnitMessage flowUnitMessage,
       final StreamObserver<PublishResponse> serverResponseStream) {
     LOG.debug("Publishing {} data to {}", flowUnitMessage.getGraphNode(), remoteHost);
-    final StreamObserver<FlowUnitMessage> stream =
-        getDataStreamForHost(remoteHost, serverResponseStream);
-    stream.onNext(flowUnitMessage);
+    try {
+      final StreamObserver<FlowUnitMessage> stream =
+          getDataStreamForHost(remoteHost, serverResponseStream);
+      stream.onNext(flowUnitMessage);
+    } catch (StatusRuntimeException sre) {
+      LOG.error("Encountered an error trying to publish a flow unit. Status: {}",
+          sre.getStatus(), sre);
+      StatsCollector.instance().logException(StatExceptionCode.RCA_NETWORK_ERROR);
+    }
   }
 
   public void getMetrics(

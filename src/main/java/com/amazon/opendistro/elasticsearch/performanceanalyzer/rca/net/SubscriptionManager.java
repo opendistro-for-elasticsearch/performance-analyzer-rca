@@ -15,7 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
@@ -24,8 +23,6 @@ import com.google.common.collect.ImmutableSet;
 import io.grpc.stub.StreamObserver;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -50,33 +47,6 @@ public class SubscriptionManager {
     this.netClient = netClient;
   }
 
-  public void broadcastSubscribeRequest(
-      final String requesterGraphNode,
-      final String destinationGraphNode,
-      final Map<String, String> tags) {
-    final List<String> remoteHosts = connectionManager.getAllRemoteHosts();
-
-    for (final String remoteHost : remoteHosts) {
-      sendSubscribeRequest(remoteHost, requesterGraphNode, destinationGraphNode, tags);
-    }
-  }
-
-  public void sendSubscribeRequest(
-      final String remoteHost,
-      final String requesterGraphNode,
-      final String destinationGraphNode,
-      final Map<String, String> tags) {
-    LOG.debug(
-        "Sending subscribe message to: {}. Need {} to compute {}",
-        remoteHost,
-        destinationGraphNode,
-        requesterGraphNode);
-    netClient.subscribe(
-        remoteHost,
-        buildSubscribeMessage(requesterGraphNode, destinationGraphNode, tags),
-        new SubscriptionResponseHandler2(remoteHost, destinationGraphNode));
-  }
-
   public void unsubscribe(final String graphNode, final String remoteHost) {
     LOG.debug("Unsubscribing {} from {} updates", remoteHost, graphNode);
 
@@ -91,18 +61,6 @@ public class SubscriptionManager {
     }
     connectionManager.terminateConnection(remoteHost);
     netClient.flushStream(remoteHost);
-  }
-
-  private SubscribeMessage buildSubscribeMessage(
-      final String requesterGraphNode,
-      final String destinationGraphNode,
-      final Map<String, String> tags) {
-    return SubscribeMessage.newBuilder()
-                           .setRequesterNode(requesterGraphNode)
-                           .setDestinationNode(destinationGraphNode)
-                           .putTags("locus", tags.get("locus"))
-                           .putTags("requester", connectionManager.getCurrentHostAddress())
-                           .build();
   }
 
   public synchronized SubscriptionStatus addSubscriber(
@@ -155,36 +113,6 @@ public class SubscriptionManager {
   }
 
   public Set<String> getPublishersForNode(String graphNode) {
-    return publisherMap.get(graphNode);
-  }
-
-  private class SubscriptionResponseHandler2 implements StreamObserver<SubscribeResponse> {
-
-    private final String remoteHost;
-    private final String graphNode;
-
-    SubscriptionResponseHandler2(final String remoteHost, final String graphNode) {
-      this.remoteHost = remoteHost;
-      this.graphNode = graphNode;
-    }
-
-    @Override
-    public void onNext(SubscribeResponse subscribeResponse) {
-      if (subscribeResponse.getSubscriptionStatus() == SubscriptionStatus.SUCCESS) {
-        LOG.debug("Publisher ack'd: {}", remoteHost);
-        addPublisher(graphNode, remoteHost);
-      }
-    }
-
-    @Override
-    public void onError(Throwable throwable) {
-      LOG.error("Publisher threw an error: {}", throwable.getMessage());
-      throwable.printStackTrace();
-    }
-
-    @Override
-    public void onCompleted() {
-      LOG.debug("Finished subscription request for {}", remoteHost);
-    }
+    return publisherMap.getOrDefault(graphNode, Collections.emptySet());
   }
 }

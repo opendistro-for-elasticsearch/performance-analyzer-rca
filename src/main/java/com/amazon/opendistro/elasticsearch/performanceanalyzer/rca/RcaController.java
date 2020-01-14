@@ -35,7 +35,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.Data
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.UnicastIntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.CompositeSubscribeRequest;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NetworkQueue;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NetworkRequestQueue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.ReceiveTask;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.ReceivedFlowUnitStore;
@@ -73,12 +73,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -383,7 +381,7 @@ public class RcaController {
 
   private SubscriptionReceiver buildSubscriptionReceiver(
       final ScheduledExecutorService subscriptionReceiverThreadPool) {
-    NetworkQueue<CompositeSubscribeRequest> rxQ = new NetworkQueue<>();
+    NetworkRequestQueue<CompositeSubscribeRequest> rxQ = new NetworkRequestQueue<>();
     SubscriptionReceiverTask subscriptionReceiverTask =
         new SubscriptionReceiverTask(subscriptionManager, rxQ);
     return new SubscriptionReceiver(rxQ, subscriptionReceiverThreadPool, subscriptionReceiverTask);
@@ -391,8 +389,8 @@ public class RcaController {
 
   private SubscriptionSender buildSubscriptionSender(
       final ScheduledExecutorService subscriptionSendThreadPool) {
-    NetworkQueue<IntentMsg> txBroadcastQ = new NetworkQueue<>();
-    NetworkQueue<UnicastIntentMsg> txUnicastQ = new NetworkQueue<>();
+    NetworkRequestQueue<IntentMsg> txBroadcastQ = new NetworkRequestQueue<>();
+    NetworkRequestQueue<UnicastIntentMsg> txUnicastQ = new NetworkRequestQueue<>();
     SubscriptionSendTask subscriptionSendTask = new SubscriptionSendTask(subscriptionManager,
         txBroadcastQ, txUnicastQ, rcaNetClient);
     return new SubscriptionSender(txBroadcastQ, txUnicastQ,
@@ -400,13 +398,13 @@ public class RcaController {
   }
 
   private Sender buildSender(final ScheduledExecutorService sendThreadPool) {
-    NetworkQueue<DataMsg> txQ = new NetworkQueue<>();
+    NetworkRequestQueue<DataMsg> txQ = new NetworkRequestQueue<>();
     SendTask sendTask = new SendTask(subscriptionManager, txQ, rcaNetClient);
     return new Sender(txQ, sendTask, sendThreadPool);
   }
 
   private Receiver buildReceiver(final ScheduledExecutorService recvThreadPool) {
-    NetworkQueue<FlowUnitMessage> rxQ = new NetworkQueue<>();
+    NetworkRequestQueue<FlowUnitMessage> rxQ = new NetworkRequestQueue<>();
     ReceivedFlowUnitStore receivedFlowUnitStore = new ReceivedFlowUnitStore();
     ReceiveTask receiveTask = new ReceiveTask(rxQ, receivedFlowUnitStore, nodeStateManager);
 

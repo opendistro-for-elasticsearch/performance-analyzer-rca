@@ -13,6 +13,12 @@
  * permissions and limitations under the License.
  */
 
+buildscript {
+    dependencies {
+        classpath group: 'com.google.guava', name: 'guava', version: '28.1-jre'
+    }
+}
+
 plugins {
     id 'java'
     id 'checkstyle'
@@ -21,6 +27,7 @@ plugins {
     id 'com.google.protobuf' version '0.8.8'
     id 'jacoco'
     id 'idea'
+    id 'com.github.spotbugs' version '3.0.0'
 }
 
 application {
@@ -82,6 +89,21 @@ tasks.withType(Checkstyle) {
         html.enabled true
         html.stylesheet resources.text.fromFile('config/xsl/severity-sorted.xsl')
     }
+}
+
+spotbugsMain {
+    excludeFilter = file("checkstyle/findbugs-exclude.xml")
+    effort = 'max'
+    ignoreFailures = true
+
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
+}
+
+spotbugsTest {
+    ignoreFailures = true
 }
 
 jacoco {
@@ -199,7 +221,7 @@ dependencies {
     compile 'org.bouncycastle:bcprov-jdk15on:1.60'
     compile 'org.bouncycastle:bcpkix-jdk15on:1.60'
     compile 'org.xerial:sqlite-jdbc:3.8.11.2'
-    compile 'com.google.guava:guava:27.0.1-jre'
+    compile 'com.google.guava:guava:28.1-jre'
     compile 'com.fasterxml.jackson.core:jackson-annotations:2.8.11'
     compile 'com.fasterxml.jackson.core:jackson-databind:2.8.11'
     compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.13.0'

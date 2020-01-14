@@ -12,20 +12,21 @@ public class SubscriptionReceiverTask implements Runnable {
 
   private static final Logger LOG = LogManager.getLogger(SubscriptionReceiverTask.class);
   private final SubscriptionManager subscriptionManager;
-  private final NetworkQueue<CompositeSubscribeRequest> rxQ;
+  private final NetworkRequestQueue<CompositeSubscribeRequest> rxQ;
 
   public SubscriptionReceiverTask(final SubscriptionManager subscriptionManager,
-      final NetworkQueue<CompositeSubscribeRequest> rxQ) {
+      final NetworkRequestQueue<CompositeSubscribeRequest> rxQ) {
     this.subscriptionManager = subscriptionManager;
     this.rxQ = rxQ;
   }
+
   /**
    * When an object implementing interface <code>Runnable</code> is used to create a thread,
    * starting the thread causes the object's
    * <code>run</code> method to be called in that separately executing
    * thread.
-   * <p>
-   * The general contract of the method <code>run</code> is that it may take any action whatsoever.
+   *
+   * <p>The general contract of the method <code>run</code> is that it may take any action whatsoever.
    *
    * @see Thread#run()
    */

@@ -5,18 +5,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Class that represents the queue of messages that need to be sent out.
  */
-public class NetworkQueue<T> {
+public class NetworkRequestQueue<T> {
 
-  private static final Logger LOG = LogManager.getLogger(NetworkQueue.class);
-  private static final int MAX_Q_SIZE = 200;
+  private static final int DEFAULT_MAX_Q_SIZE = 200;
 
-  private BlockingQueue<T> dataMsgBlockingQueue = new ArrayBlockingQueue<>(MAX_Q_SIZE);
+  private final BlockingQueue<T> messageQueue;
+
+  public NetworkRequestQueue() {
+    this(DEFAULT_MAX_Q_SIZE);
+  }
+
+  public NetworkRequestQueue(final int queueSize) {
+    this.messageQueue = new ArrayBlockingQueue<>(queueSize);
+  }
 
   /**
    * Adds a message to the queue if not full.
@@ -24,9 +29,9 @@ public class NetworkQueue<T> {
    * @param message The message that needs to be enqueued..
    * @return true if successfully enqueued, false otherwise.
    */
-  public synchronized boolean offer(final T message) {
+  public boolean offer(final T message) {
     // happens-before (java.util.concurrent collection)
-    return dataMsgBlockingQueue.offer(message);
+    return messageQueue.offer(message);
   }
 
   /**
@@ -36,11 +41,11 @@ public class NetworkQueue<T> {
    * @return Immutable list containing the contents of the queue.
    */
   public ImmutableList<T> drain() {
-    final List<T> dataMsgList = new ArrayList<>();
-    // happens-before (same thread)
-    dataMsgBlockingQueue.drainTo(dataMsgList);
+    final List<T> messageList = new ArrayList<>();
+    // happens-before (same lock)
+    messageQueue.drainTo(messageList);
 
     // happens-before (final-field inside ImmutableList creation)
-    return ImmutableList.copyOf(dataMsgList);
+    return ImmutableList.copyOf(messageList);
   }
 }

@@ -11,14 +11,23 @@ import java.util.concurrent.ConcurrentMap;
 
 public class ReceivedFlowUnitStore {
 
-  private static final int MAX_Q_SIZE = 200;
+  private static final int DEFAULT_PER_NODE_FLOWUNIT_Q_SIZE = 200;
   private ConcurrentMap<String, BlockingQueue<FlowUnitMessage>> flowUnitMap =
       new ConcurrentHashMap<>();
+  private final int perNodeFlowUnitQSize;
+
+  public ReceivedFlowUnitStore() {
+    this(DEFAULT_PER_NODE_FLOWUNIT_Q_SIZE);
+  }
+
+  public ReceivedFlowUnitStore(final int perNodeFlowUnitQSize) {
+    this.perNodeFlowUnitQSize = perNodeFlowUnitQSize;
+  }
 
   public boolean enqueue(final String graphNode, final FlowUnitMessage flowUnitMessage) {
     BlockingQueue<FlowUnitMessage> existingQueue = flowUnitMap.get(graphNode);
     if (existingQueue == null) {
-      existingQueue = new ArrayBlockingQueue<>(MAX_Q_SIZE);
+      existingQueue = new ArrayBlockingQueue<>(perNodeFlowUnitQSize);
     }
 
     boolean retValue = existingQueue.offer(flowUnitMessage);

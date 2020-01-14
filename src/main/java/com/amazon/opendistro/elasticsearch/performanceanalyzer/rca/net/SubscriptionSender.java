@@ -6,14 +6,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class SubscriptionSender {
-  private final NetworkQueue<IntentMsg> txBroadcastQ;
-  private final NetworkQueue<UnicastIntentMsg> txUnicastQ;
+  private final NetworkRequestQueue<IntentMsg> txBroadcastQ;
+  private final NetworkRequestQueue<UnicastIntentMsg> txUnicastQ;
   private final SubscriptionSendTask subscriptionSendTask;
   private final ScheduledExecutorService threadPool;
 
   public SubscriptionSender(
-      NetworkQueue<IntentMsg> txBroadcastQ,
-      NetworkQueue<UnicastIntentMsg> txUnicastQ,
+      NetworkRequestQueue<IntentMsg> txBroadcastQ,
+      NetworkRequestQueue<UnicastIntentMsg> txUnicastQ,
       SubscriptionSendTask subscriptionSendTask,
       ScheduledExecutorService threadPool) {
     this.txBroadcastQ = txBroadcastQ;

@@ -173,6 +173,7 @@ public class RCAScheduler {
   public RcaSchedulerState getState() {
     return this.schedulerState;
   }
+
   private void createExecutorPools() {
     scheduledPool = Executors.newScheduledThreadPool(1, schedThreadFactory);
     rcaSchedulerPeriodicExecutor = Executors.newFixedThreadPool(1, taskThreadFactory);

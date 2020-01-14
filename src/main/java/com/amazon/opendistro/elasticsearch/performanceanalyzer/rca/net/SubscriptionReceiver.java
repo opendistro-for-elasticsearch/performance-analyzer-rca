@@ -8,12 +8,12 @@ import org.apache.logging.log4j.Logger;
 public class SubscriptionReceiver {
 
   private static final Logger LOG = LogManager.getLogger(SubscriptionReceiver.class);
-  private final NetworkQueue<CompositeSubscribeRequest> rxQ;
+  private final NetworkRequestQueue<CompositeSubscribeRequest> rxQ;
   private final ScheduledExecutorService threadPool;
   private final SubscriptionReceiverTask subscriptionReceiverTask;
 
   public SubscriptionReceiver(
-      NetworkQueue<CompositeSubscribeRequest> rxQ,
+      NetworkRequestQueue<CompositeSubscribeRequest> rxQ,
       ScheduledExecutorService threadPool,
       SubscriptionReceiverTask subscriptionReceiverTask) {
     this.rxQ = rxQ;

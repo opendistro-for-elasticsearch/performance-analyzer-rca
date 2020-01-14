@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.annotation.concurrent.ThreadSafe;
 
 public class NodeStateManager {
   private static final long MS_IN_S = 1000;
@@ -32,24 +33,23 @@ public class NodeStateManager {
 
   private ConcurrentMap<String, AtomicLong> lastReceivedTimestampMap = new ConcurrentHashMap<>();
 
-  public void updateReceiveTime(String host, String graphNode) {
-    final long currentTimeStamp = System.currentTimeMillis();
+  public void updateReceiveTime(final String host, final String graphNode, final long timestamp) {
     final String compositeKey = graphNode + SEPARATOR + host;
     AtomicLong existingLong = lastReceivedTimestampMap.get(compositeKey);
     if (existingLong == null) {
       // happens-before: updating a java.util.concurrent collection. Update is made visible to
       // all threads that read this collection.
       AtomicLong prevVal = lastReceivedTimestampMap
-          .putIfAbsent(compositeKey, new AtomicLong(currentTimeStamp));
+          .putIfAbsent(compositeKey, new AtomicLong(timestamp));
       if (prevVal != null) {
         // happens-before: updating AtomicLong. Update is made visible to all threads that
         // read this atomic long.
-        lastReceivedTimestampMap.get(compositeKey).set(currentTimeStamp);
+        lastReceivedTimestampMap.get(compositeKey).set(timestamp);
       }
     } else {
       // happens-before: updating AtomicLong. Update is made visible to all threads that
       // read this atomic long.
-      lastReceivedTimestampMap.get(compositeKey).set(currentTimeStamp);
+      lastReceivedTimestampMap.get(compositeKey).set(timestamp);
     }
   }
 

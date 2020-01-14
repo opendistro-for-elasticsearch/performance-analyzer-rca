@@ -10,13 +10,13 @@ import org.apache.logging.log4j.Logger;
 public class Receiver {
 
   private static final Logger LOG = LogManager.getLogger(Receiver.class);
-  private final NetworkQueue<FlowUnitMessage> rxQ;
+  private final NetworkRequestQueue<FlowUnitMessage> rxQ;
   private final ScheduledExecutorService threadPool;
   private final ReceivedFlowUnitStore receivedFlowUnitStore;
   private final ReceiveTask recvTask;
 
   public Receiver(
-      final NetworkQueue<FlowUnitMessage> rxQ,
+      final NetworkRequestQueue<FlowUnitMessage> rxQ,
       final ScheduledExecutorService threadPool,
       final ReceivedFlowUnitStore receivedFlowUnitStore,
       final ReceiveTask recvTask) {

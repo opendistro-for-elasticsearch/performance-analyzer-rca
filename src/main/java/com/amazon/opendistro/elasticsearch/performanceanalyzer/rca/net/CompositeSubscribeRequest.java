@@ -9,6 +9,7 @@ public class CompositeSubscribeRequest {
   private final SubscribeMessage subscribeMessage;
 
   private final StreamObserver<SubscribeResponse> subscribeResponseStream;
+
   public CompositeSubscribeRequest(
       SubscribeMessage subscribeMessage,
       StreamObserver<SubscribeResponse> subscribeResponseStream) {
