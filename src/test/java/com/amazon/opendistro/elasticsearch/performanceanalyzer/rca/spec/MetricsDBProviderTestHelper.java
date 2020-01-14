@@ -83,13 +83,13 @@ public class MetricsDBProviderTestHelper extends MetricsDBProvider {
 
   private void createAllOsMetricsTables() {
     Arrays.stream(AllMetrics.OSMetrics.values())
-        .forEach((metric) -> OSMetricHelper.create(db, metric.toString()));
+        .forEach((metric) -> OSMetricHelper.create(db, metric.name()));
   }
 
   private void fillWithData() {
     int fakeTimeVal = 0;
     for (AllMetrics.OSMetrics metric : AllMetrics.OSMetrics.values()) {
-      OSMetricHelper.insert(db, metric.toString(), ++fakeTimeVal);
+      OSMetricHelper.insert(db, metric.name(), ++fakeTimeVal);
     }
   }
 

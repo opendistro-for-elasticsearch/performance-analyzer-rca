@@ -323,7 +323,6 @@ public class RCASchedulerTask implements Runnable {
     LOG.debug("RCA: Finished creating tasks ..");
     // Now we will wait for the results to show up.
     taskletFutureMap.values().forEach(CompletableFuture::join);
-    LOG.debug("RCA: All tasklets evaluated.");
 
     // TODO: Do proper exception handling.
     // No one is calling get on the the last set of Tasklets.

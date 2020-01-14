@@ -19,7 +19,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.AbstractTests;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.DiskMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.HeapMetricsCollector.HeapStatus;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.MetricStatus;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MasterPendingValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeDetailColumns;
@@ -131,13 +130,11 @@ public class AbstractReaderTests extends AbstractTests {
     return new HeapStatus(name.toString(), collectionCount, collectionTime).serialize();
   }
 
-  protected String createNodeDetailsMetrics(String id, String ipAddress, boolean isMasterNode) {
-    return createNodeDetailsMetrics(id, ipAddress, AllMetrics.NodeRole.DATA, isMasterNode);
-  }
-
-  protected String createNodeDetailsMetrics(String id, String ipAddress, AllMetrics.NodeRole nodeRole, boolean isMasterNode) {
+  protected String createNodeDetailsMetrics(String id, String ipAddress) {
     StringBuffer value = new StringBuffer();
-    value.append(new NodeDetailsStatus(id, ipAddress, nodeRole, isMasterNode).serialize());
+
+    value.append(new NodeDetailsStatus(id, ipAddress).serialize());
+
     return value.toString();
   }
 
@@ -164,16 +161,13 @@ public class AbstractReaderTests extends AbstractTests {
 
   public static class NodeDetailsStatus extends MetricStatus {
     private String id;
-    private String hostAddress;
-    private String nodeRole;
-    private boolean isMasterNode;
 
-    public NodeDetailsStatus(String id, String hostAddress, AllMetrics.NodeRole nodeRole, boolean isMasterNode) {
+    private String hostAddress;
+
+    public NodeDetailsStatus(String id, String hostAddress) {
       super();
       this.id = id;
       this.hostAddress = hostAddress;
-      this.nodeRole = nodeRole.role();
-      this.isMasterNode = isMasterNode;
     }
 
     @JsonProperty(NodeDetailColumns.Constants.ID_VALUE)
@@ -184,16 +178,6 @@ public class AbstractReaderTests extends AbstractTests {
     @JsonProperty(NodeDetailColumns.Constants.HOST_ADDRESS_VALUE)
     public String getHostAddress() {
       return hostAddress;
-    }
-
-    @JsonProperty(NodeDetailColumns.Constants.ROLE_VALUE)
-    public String getNodeRole() {
-      return nodeRole;
-    }
-
-    @JsonProperty(NodeDetailColumns.Constants.IS_MASTER_NODE)
-    public boolean getIsMasterNode() {
-      return isMasterNode;
     }
   }
 }

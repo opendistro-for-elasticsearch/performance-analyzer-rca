@@ -20,6 +20,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 
 public class Sched_Waittime extends Metric {
   public Sched_Waittime(long evaluationIntervalSeconds) {
-    super(AllMetrics.OSMetrics.SCHED_WAITTIME.toString(), evaluationIntervalSeconds);
+    super(AllMetrics.OSMetrics.SCHED_WAITTIME.name(), evaluationIntervalSeconds);
   }
 }

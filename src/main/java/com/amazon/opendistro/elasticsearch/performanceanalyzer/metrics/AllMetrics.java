@@ -43,9 +43,7 @@ public class AllMetrics {
   public enum NodeDetailColumns {
     ID(Constants.ID_VALUE),
     HOST_ADDRESS(Constants.HOST_ADDRESS_VALUE),
-    ROLE(Constants.ROLE_VALUE),
-    IS_MASTER_NODE(Constants.IS_MASTER_NODE);
-
+    ROLE(Constants.ROLE_VALUE);
 
     private final String value;
 
@@ -62,7 +60,6 @@ public class AllMetrics {
       public static final String ID_VALUE = "ID";
       public static final String HOST_ADDRESS_VALUE = "HOST_ADDRESS";
       public static final String ROLE_VALUE = "ROLE";
-      public static final String IS_MASTER_NODE = "IS_MASTER_NODE";
     }
   }
 
@@ -77,10 +74,6 @@ public class AllMetrics {
 
     NodeRole(final String value) {
       this.value = value;
-    }
-
-    public String role() {
-      return value;
     }
 
     public static class RoleConstants {

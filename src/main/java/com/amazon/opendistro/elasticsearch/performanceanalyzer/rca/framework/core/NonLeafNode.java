@@ -24,6 +24,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public abstract class NonLeafNode<T extends GenericFlowUnit> extends Node<T> implements Operable<T> {
+  private static final Logger LOG = LogManager.getLogger(NonLeafNode.class);
 
   public NonLeafNode(int level, long evaluationDurationSeconds) {
     super(level, evaluationDurationSeconds);

@@ -110,7 +110,7 @@ public class RcaSpecTests {
     field.construct();
   }
 
-  // @Test(expected = RuntimeException.class)
+  @Test(expected = RuntimeException.class)
   public void testAddToFlowFieldBeforeAddingAsDependency() {
     Metric heapUsed = new Heap_Used(5);
     HighHeapUsageOldGenRca highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(1, 1, heapUsed, null, null);
