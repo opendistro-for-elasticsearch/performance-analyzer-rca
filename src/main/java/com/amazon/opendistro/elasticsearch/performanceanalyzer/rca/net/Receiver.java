@@ -1,11 +1,9 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.FlowUnitWrapper;
 import com.google.common.collect.ImmutableList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,11 +34,7 @@ public class Receiver {
     return rxQ.offer(flowUnitMessage);
   }
 
-  public synchronized ImmutableList<FlowUnitWrapper> getFlowUnitsForNode(final String graphNode) {
-    return ImmutableList.copyOf(
-        receivedFlowUnitStore.drainNode(graphNode)
-                             .stream()
-                             .map(FlowUnitWrapper::buildFlowUnitWrapperFromMessage)
-                             .collect(Collectors.toList()));
+  public synchronized ImmutableList<FlowUnitMessage> getFlowUnitsForNode(final String graphNode) {
+    return receivedFlowUnitStore.drainNode(graphNode);
   }
 }

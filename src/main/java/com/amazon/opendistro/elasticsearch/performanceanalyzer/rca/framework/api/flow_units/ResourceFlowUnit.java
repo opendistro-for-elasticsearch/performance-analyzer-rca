@@ -16,67 +16,135 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.StringList;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.FlowUnitWrapper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+
+import java.util.ArrayList;
 import java.util.List;
+import org.jooq.Field;
+import org.jooq.impl.DSL;
 
 public class ResourceFlowUnit extends GenericFlowUnit {
+
   private ResourceContext resourceContext = null;
+  private GenericSummary resourceSummary = null;
+  private boolean persistable = false;
 
   public ResourceFlowUnit(long timeStamp) {
     super(timeStamp);
   }
 
-  public ResourceFlowUnit(long timeStamp, ResourceContext context) {
+  public <S extends GenericSummary> ResourceFlowUnit(long timeStamp, ResourceContext context,
+      S resourceSummary) {
     super(timeStamp);
     this.resourceContext = context;
+    this.resourceSummary = resourceSummary;
+    this.empty = false;
+    this.persistable = true;
   }
 
-  public ResourceFlowUnit(long timeStamp, List<List<String>> data, ResourceContext context) {
-    super(timeStamp, data);
-    this.resourceContext = context;
+  //Call generic() only if you want to generate a empty flowunit
+  public static ResourceFlowUnit generic() {
+    return new ResourceFlowUnit(System.currentTimeMillis());
   }
 
   public ResourceContext getResourceContext() {
     return this.resourceContext;
   }
 
-  // Call generic() only if you want to generate a empty flowunit
-  public static ResourceFlowUnit generic() {
-    return new ResourceFlowUnit(System.currentTimeMillis());
+  public boolean hasResourceSummary() {
+    return this.resourceSummary != null;
   }
 
+  public GenericSummary getResourceSummary() {
+    return this.resourceSummary;
+  }
+
+  public <S extends GenericSummary> void setResourceSummary(S summary) {
+    this.resourceSummary = summary;
+  }
+
+  public void setPersistable(boolean persistable) {
+    this.persistable = persistable;
+  }
+
+  public boolean isPersistable() {
+    return this.persistable;
+  }
+
+  @Override
   public FlowUnitMessage buildFlowUnitMessage(final String graphNode, final String esNode) {
     final FlowUnitMessage.Builder messageBuilder = FlowUnitMessage.newBuilder();
     messageBuilder.setGraphNode(graphNode);
     messageBuilder.setEsNode(esNode);
-
-    if (!this.isEmpty()) {
-      for (List<String> value : this.getData()) {
-        messageBuilder.addValues(StringList.newBuilder().addAllValues(value).build());
+    messageBuilder.setTimeStamp(System.currentTimeMillis());
+      if (resourceContext != null) {
+          messageBuilder.setResourceContext(resourceContext.buildContextMessage());
       }
-    }
 
-    messageBuilder.setTimestamp(System.currentTimeMillis());
-    if (resourceContext != null) {
-      messageBuilder.setResourceContext(resourceContext.buildContextMessage());
+    if (resourceSummary != null) {
+      resourceSummary.buildSummaryMessageAndAddToFlowUnit(messageBuilder);
     }
     return messageBuilder.build();
   }
 
-  public static ResourceFlowUnit buildFlowUnitFromWrapper(final FlowUnitWrapper value) {
-    if (value.hasData()) {
-      return new ResourceFlowUnit(
-          value.getTimeStamp(), value.getData(), value.getResourceContext());
+  /**
+   * parse the "oneof" section in protocol buffer call the corresponding object build function for
+   * each summary type
+   */
+  public static ResourceFlowUnit buildFlowUnitFromWrapper(final FlowUnitMessage message) {
+    //if the flowunit is empty. empty flowunit does not have context
+    if (message.hasResourceContext()) {
+      ResourceContext newContext = ResourceContext
+          .buildResourceContextFromMessage(message.getResourceContext());
+      GenericSummary newSummary = null;
+      if (message.getSummaryOneofCase().getNumber()
+          == FlowUnitMessage.SummaryOneofCase.HOTRESOURCESUMMARY.getNumber()
+          && message.hasHotResourceSummary()) {
+        newSummary = HotResourceSummary
+            .buildHotResourceSummaryFromMessage(message.getHotResourceSummary());
+      } else if (message.getSummaryOneofCase().getNumber()
+          == FlowUnitMessage.SummaryOneofCase.HOTNODESUMMARY.getNumber()
+          && message.hasHotNodeSummary()) {
+        newSummary = HotNodeSummary.buildHotNodeSummaryFromMessage(message.getHotNodeSummary());
+      }
+      return new ResourceFlowUnit(message.getTimeStamp(), newContext, newSummary);
     } else {
-      return new ResourceFlowUnit(value.getTimeStamp(), value.getResourceContext());
+      //empty flowunit;
+      //TODO: we might not want to send empty flowunit across network.
+      return new ResourceFlowUnit(message.getTimeStamp());
     }
+  }
+
+  public List<Field<?>> getSqlSchema() {
+    List<Field<?>> schema = new ArrayList<>();
+    if (!this.isEmpty()) {
+      schema.add(DSL.field(DSL.name(SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME), String.class));
+      schema.addAll(this.getResourceContext().getSqlSchema());
+    }
+    return schema;
+  }
+
+  public List<Object> getSqlValue() {
+    List<Object> value = new ArrayList<>();
+    if (!this.isEmpty()) {
+      value.add(String.valueOf(this.getTimeStamp()));
+      value.addAll(this.getResourceContext().getSqlValue());
+    }
+    return value;
   }
 
   @Override
   public String toString() {
-    return String.format("%d: %s :: %s", this.getTimeStamp(), this.getData(), resourceContext);
+    return this.getTimeStamp() + ": " + resourceContext + " :: " + resourceSummary;
+  }
+
+
+  public static class SQL_SCHEMA_CONSTANTS {
+
+    public static final String TIMESTAMP_COL_NAME = "TimeStamp";
   }
 }

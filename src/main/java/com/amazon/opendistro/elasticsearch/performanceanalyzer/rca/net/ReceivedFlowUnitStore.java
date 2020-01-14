@@ -1,7 +1,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.FlowUnit;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;

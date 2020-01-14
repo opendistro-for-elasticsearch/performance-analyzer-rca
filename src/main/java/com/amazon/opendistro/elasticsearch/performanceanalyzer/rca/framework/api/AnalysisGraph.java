@@ -39,6 +39,7 @@ public abstract class AnalysisGraph {
   private List<Metric> metricList;
 
   public AnalysisGraph() {
+    Stats.clear();
     metricList = new ArrayList<>();
   }
 
@@ -95,6 +96,4 @@ public abstract class AnalysisGraph {
    * NumericAggregator's static helper methods.
    */
   public abstract void construct();
-
-  public void getConnectedComponents() {}
 }

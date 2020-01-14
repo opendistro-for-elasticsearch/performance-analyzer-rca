@@ -16,8 +16,9 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.nio.file.Paths;
@@ -27,13 +28,14 @@ import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jooq.Field;
 
 // TODO: Scheme to rotate the current file and garbage collect older files.
 public abstract class PersistorBase implements Persistable {
@@ -70,9 +72,12 @@ public abstract class PersistorBase implements Persistable {
     }
   }
 
-  abstract void createTable(String tableName, List<String> columns);
+  abstract void createTable(String tableName, List<Field<?>> columns);
 
-  abstract void insertRow(String tableName, List<String> columns);
+  abstract void createTable(String tableName, List<Field<?>> columns, String refTable,
+      String referenceTablePrimaryKeyFieldName);
+
+  abstract int insertRow(String tableName, List<Object> columns);
 
   abstract String readTables();
 
@@ -166,7 +171,7 @@ public abstract class PersistorBase implements Persistable {
   public synchronized <T extends ResourceFlowUnit> void write(Node<?> node, T flowUnit) {
     // Write only if there is data to be writen.
     if (flowUnit.isEmpty()) {
-      LOG.info("RCA: Flow unit isEmpty");
+      LOG.debug("RCA: Flow unit isEmpty");
       return;
     }
     String tableName = node.getClass().getSimpleName();
@@ -182,30 +187,42 @@ public abstract class PersistorBase implements Persistable {
       LOG.error("RCA: Caught SecurityException while trying to delete old DB file. ", e);
     }
 
-    // The first row of the flowUnit is the name of the columns.
     if (!tableNames.contains(tableName)) {
-      List<String> columns = new ArrayList<>();
-      columns.add(RcaConsts.DATASTORE_TIMESTAMP_COL_NAME);
-      columns.add(RcaConsts.DATASTORE_RESOURCE_COL_NAME);
-      columns.add(RcaConsts.DATASTORE_STATE_COL_NAME);
-      columns.addAll(flowUnit.getData().get(0));
-      LOG.info("RCA: Table '{}' does not exist. Creating one with columns: {}", tableName, columns);
-      createTable(tableName, columns);
+      LOG.info("RCA: Table '{}' does not exist. Creating one with columns: {}", tableName,
+          flowUnit.getSqlSchema());
+      createTable(tableName, flowUnit.getSqlSchema());
       tableNames.add(tableName);
     }
+    int lastPrimaryKey = insertRow(tableName, flowUnit.getSqlValue());
 
-    flowUnit.getData().stream()
-        // skip first row as it is supposed to be the column name in sql
-        .skip(1)
-        .forEach(
-            row -> {
-              List<String> data = new ArrayList<>();
-              // Add the context string and the timestamp before inserting the row.
-              data.add(String.valueOf(flowUnit.getTimeStamp()));
-              data.add(flowUnit.getResourceContext().getResource().toString());
-              data.add(flowUnit.getResourceContext().getState().toString());
-              data.addAll(row);
-              insertRow(tableName, data);
-            });
+    if (flowUnit.hasResourceSummary()) {
+      write(flowUnit.getResourceSummary(), tableName, getPrimaryKeyColumnName(tableName),
+          lastPrimaryKey);
+    }
+  }
+
+  /**
+   * recursively insert nested summary to sql tables
+   */
+  private synchronized void write(GenericSummary summary, String referenceTable,
+      String referenceTablePrimaryKeyFieldName, int referenceTablePrimaryKeyFieldValue) {
+    String tableName = summary.getClass().getSimpleName();
+    if (!tableNames.contains(tableName)) {
+      LOG.info("RCA: Table '{}' does not exist. Creating one with columns: {}", tableName,
+          summary.getSqlSchema());
+      createTable(tableName, summary.getSqlSchema(), referenceTable,
+          referenceTablePrimaryKeyFieldName);
+      tableNames.add(tableName);
+    }
+    List<Object> values = summary.getSqlValue();
+    values.add(Integer.valueOf(referenceTablePrimaryKeyFieldValue));
+    int lastPrimaryKey = insertRow(tableName, values);
+    for (GenericSummary nestedSummary : summary.getNestedSummaryList()) {
+      write(nestedSummary, tableName, getPrimaryKeyColumnName(tableName), lastPrimaryKey);
+    }
+  }
+
+  protected String getPrimaryKeyColumnName(String tableName) {
+    return tableName + "_ID";
   }
 }

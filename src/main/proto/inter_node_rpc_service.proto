@@ -37,29 +37,57 @@ message SubscribeResponse {
 }
 
 /*
- List of Strings.
+ ResourceContext that comes along with ResourceFlowUnit
 */
-message StringList {
-    repeated string values = 1;
+message ResourceContextMessage {
+    int32 state = 1;
 }
 
 /*
- A single FlowUnit that will be transferred across the network for RCA computation.
+ message wrappers for different types of RCA summary
+*/
+message ConsumersList {
+    repeated string consumer = 1;
+}
+message HotResourceSummaryList {
+    repeated HotResourceSummaryMessage hotResourceSummary = 1;
+}
+message HotNodeSummaryList {
+    repeated HotNodeSummaryMessage hotNodeSummary = 1;
+}
+message HotResourceSummaryMessage {
+    string resourceType = 1;
+    ConsumersList consumers = 2;
+    double threshold = 3;
+    double value = 4;
+    double avgValue = 5;
+    double minValue = 6;
+    double maxValue = 7;
+    string unitType = 8;
+    int32 timePeriod = 9;
+}
+message HotNodeSummaryMessage {
+    string nodeID = 1;
+    string hostAddress = 2;
+    HotResourceSummaryList hotResourceSummaryList = 3;
+}
+message HotClusterSummaryMessage {
+    int32 nodeCount = 1;
+    HotNodeSummaryList hotNodeSummaryList = 2;
+}
+/*
+ gRPC message wrapper for ResourceFlowUnit
 */
 message FlowUnitMessage {
-    uint64 timestamp = 1;
-    repeated StringList values = 2;
-    string graphNode = 3;
-    string esNode = 4;
-
-    /*
-     ResourceContext that comes along with ResourceFlowUnit
-    */
-    message ResourceContextMessage {
-        int32 state = 1;
-        int32 resource = 2;
+    string graphNode = 1;
+    string esNode = 2;
+    uint64 timeStamp = 3;
+    ResourceContextMessage resourceContext = 4;
+    oneof summary_oneof {
+        HotResourceSummaryMessage hotResourceSummary = 5;
+        HotNodeSummaryMessage hotNodeSummary =6;
+        HotClusterSummaryMessage hotClusterSummary = 7;
     }
-    ResourceContextMessage resourceContext = 5;
 }
 
 message PublishResponse {

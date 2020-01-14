@@ -47,10 +47,10 @@ public class MetricsDBRcaIntegration {
     List<String> row1 =
         new ArrayList<String>() {
           {
-            this.add("CPU_UTILIZATIONShardID");
-            this.add("CPU_UTILIZATIONIndexName");
-            this.add("CPU_UTILIZATIONOperation");
-            this.add("CPU_UTILIZATIONShardRole");
+            this.add("CPU_UtilizationShardID");
+            this.add("CPU_UtilizationIndexName");
+            this.add("CPU_UtilizationOperation");
+            this.add("CPU_UtilizationShardRole");
             this.add("1.0");
             this.add("1.0");
             this.add("1.0");
@@ -64,7 +64,7 @@ public class MetricsDBRcaIntegration {
     int idx = 0;
     MetricsDB db = queryable.getMetricsDB();
     for (List<String> row :
-        queryable.queryMetrics(db, AllMetrics.OSMetrics.CPU_UTILIZATION.name())) {
+        queryable.queryMetrics(db, AllMetrics.OSMetrics.CPU_UTILIZATION.toString())) {
       AssertHelper.compareLists(expectedReturn.get(idx), row);
       ++idx;
     }

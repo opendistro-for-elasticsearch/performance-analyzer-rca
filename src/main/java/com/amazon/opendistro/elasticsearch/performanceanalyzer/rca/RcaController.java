@@ -69,11 +69,16 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -121,6 +126,9 @@ public class RcaController {
 
   private long pollerPeriodicity;
   private TimeUnit timeUnit;
+  private List<Thread> exceptionHandlerThreads;
+  private List<ScheduledFuture<?>> pollingExecutors;
+  private boolean shutdownRequested;
 
   public RcaController(
       final ScheduledExecutorService netOpsExecutorService,
@@ -150,6 +158,8 @@ public class RcaController {
     this.RCA_CONF_PATH = rcaConf;
     this.pollerPeriodicity = pollerPeriodicity;
     this.timeUnit = timeUnit;
+    this.exceptionHandlerThreads = new ArrayList<>();
+    this.pollingExecutors = new ArrayList<>();
   }
 
   /**
@@ -160,9 +170,11 @@ public class RcaController {
    * but this thread works to start Rca or shut it down based on the flag.
    */
   public void startPollers() {
-    startRcaConfPoller();
-    startNodeRolePoller();
-    startRcaNanny();
+    pollingExecutors = new ArrayList<>();
+    pollingExecutors.add(startRcaConfPoller());
+    pollingExecutors.add(startRcaNanny());
+    pollingExecutors.add(startNodeRolePoller());
+    startExceptionHandlers(pollingExecutors);
   }
 
   public static String getCatMasterUrl() {
@@ -185,6 +197,26 @@ public class RcaController {
     return rcaScheduler;
   }
 
+  private void startExceptionHandlers(List<ScheduledFuture<?>> scheduledFutures) {
+    scheduledFutures.forEach(
+        future -> {
+          Thread t =
+              new Thread(
+                  () -> {
+                    try {
+                      future.get();
+                    } catch (CancellationException cex) {
+                      LOG.info("Executor cancellation requested.");
+                    } catch (Exception ex) {
+                      LOG.error("RCA Exception cause : {}", ex.getCause());
+                      ex.printStackTrace();
+                    }
+                  });
+          exceptionHandlerThreads.add(t);
+          t.start();
+        });
+  }
+
   private void addRcaRequestHandler() {
     httpServer.createContext(Util.RCA_QUERY_URL, queryRcaRequestHandler);
   }
@@ -197,71 +229,20 @@ public class RcaController {
     }
   }
 
-  private void startRcaConfPoller() {
-    netOpsExecutorService.scheduleAtFixedRate(
+  private ScheduledFuture<?> startRcaConfPoller() {
+    return netOpsExecutorService.scheduleAtFixedRate(
         this::readRcaEnabledFromConf, 0, pollerPeriodicity, timeUnit);
   }
 
-  private void startNodeRolePoller() {
-    netOpsExecutorService.scheduleAtFixedRate(
-        () -> {
-          final String electedMasterAddress = getElectedMasterHostAddress();
-          final NodeDetails nodeDetails = ClusterDetailsEventProcessor.getCurrentNodeDetails();
-
-          if (nodeDetails != null) {
-            handleNodeRoleChange(nodeDetails, electedMasterAddress);
-          }
-        },
-        pollerPeriodicity,
-        pollerPeriodicity,
-        timeUnit);
-  }
-
-  private String getElectedMasterHostAddress() {
-    try {
-      final URL url = new URL(CAT_MASTER_URL);
-      HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-      connection.setRequestMethod("GET");
-      BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-      String inputLine = in.readLine();
-      in.close();
-
-      return inputLine;
-    } catch (IOException e) {
-      LOG.error("Could not get the elected master node: {}", e.getMessage());
-      e.printStackTrace();
-    }
-
-    return "";
-  }
-
-  private void handleNodeRoleChange(
-      final NodeDetails currentNode, final String electedMasterHostAddress) {
-    final NodeRole currentNodeRole = NodeRole.valueOf(currentNode.getRole());
-    if (currentNode.getHostAddress().equalsIgnoreCase(electedMasterHostAddress)) {
-      currentRole = NodeRole.ELECTED_MASTER;
-    } else {
-      currentRole = currentNodeRole;
-    }
-  }
-
-  /**
-   * Reads the enabled/disabled value for RCA from the conf file.
-   */
-  private void readRcaEnabledFromConf() {
-    Path filePath = Paths.get(RCA_ENABLED_CONF_LOCATION, RCA_ENABLED_CONF_FILE);
-
-    Util.invokePrivileged(
-        () -> {
-          try (Scanner sc = new Scanner(filePath)) {
-            String nextLine = sc.nextLine();
-            rcaEnabled = Boolean.parseBoolean(nextLine);
-          } catch (Exception e) {
-            LOG.error("Error reading RCA Enabled from Conf file: {}", e.getMessage());
-            e.printStackTrace();
-            rcaEnabled = rcaEnabledDefaultValue;
-          }
-        });
+  private ScheduledFuture<?> startNodeRolePoller() {
+    return netOpsExecutorService.scheduleAtFixedRate(() -> {
+      if (rcaEnabled) {
+        final NodeDetails nodeDetails = ClusterDetailsEventProcessor.getCurrentNodeDetails();
+        if (nodeDetails != null) {
+          handleNodeRoleChange(nodeDetails);
+        }
+      }
+    }, 2, 60, TimeUnit.SECONDS);
   }
 
   /**
@@ -270,8 +251,8 @@ public class RcaController {
    * has changed in the meantime (such as a new elected master). It also starts the RCA runtime if
    * it wasn't already running but the current state of the flag expects it to.
    */
-  private void startRcaNanny() {
-    netOpsExecutorService.scheduleAtFixedRate(
+  private ScheduledFuture<?> startRcaNanny() {
+    return netOpsExecutorService.scheduleAtFixedRate(
         () -> {
           if (rcaScheduler != null && rcaScheduler.getState() == RcaSchedulerState.STATE_STARTED) {
             if (!rcaEnabled) {
@@ -297,6 +278,55 @@ public class RcaController {
         2 * pollerPeriodicity,
         pollerPeriodicity,
         timeUnit);
+  }
+
+  private String getElectedMasterHostAddress() {
+    try {
+      LOG.info("Making _cat/master call");
+      final URL url = new URL(CAT_MASTER_URL);
+      HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+      connection.setRequestMethod("GET");
+      BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+      String inputLine = in.readLine();
+      in.close();
+
+      return inputLine;
+    } catch (IOException e) {
+      LOG.error("Could not get the elected master node: {}", e.getMessage());
+      e.printStackTrace();
+    }
+
+    return "";
+  }
+
+  private void handleNodeRoleChange(final NodeDetails currentNode) {
+    final NodeRole currentNodeRole = NodeRole.valueOf(currentNode.getRole());
+    Boolean isMasterNode = currentNode.getIsMasterNode();
+    if (isMasterNode != null) {
+      currentRole = isMasterNode ? NodeRole.ELECTED_MASTER : currentNodeRole;
+    } else {
+      final String electedMasterHostAddress = getElectedMasterHostAddress();
+      currentRole = currentNode.getHostAddress().equalsIgnoreCase(electedMasterHostAddress) ? NodeRole.ELECTED_MASTER : currentNodeRole;
+    }
+  }
+
+  /**
+   * Reads the enabled/disabled value for RCA from the conf file.
+   */
+  private void readRcaEnabledFromConf() {
+    Path filePath = Paths.get(RCA_ENABLED_CONF_LOCATION, RCA_ENABLED_CONF_FILE);
+
+    Util.invokePrivileged(
+        () -> {
+          try (Scanner sc = new Scanner(filePath)) {
+            String nextLine = sc.nextLine();
+            rcaEnabled = Boolean.parseBoolean(nextLine);
+          } catch (IOException e) {
+            LOG.error("Error reading file '{}': {}", filePath.toString(), e.getMessage());
+            e.printStackTrace();
+            rcaEnabled = rcaEnabledDefaultValue;
+          }
+        });
   }
 
   private void start() {

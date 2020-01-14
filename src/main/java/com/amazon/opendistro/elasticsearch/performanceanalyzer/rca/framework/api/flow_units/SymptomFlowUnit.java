@@ -18,10 +18,13 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.SymptomContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericFlowUnit;
+
 import java.util.List;
 
 public class SymptomFlowUnit extends GenericFlowUnit {
+
   private SymptomContext context = null;
+  private List<List<String>> data;
 
   public SymptomFlowUnit(long timeStamp) {
     super(timeStamp);
@@ -33,12 +36,18 @@ public class SymptomFlowUnit extends GenericFlowUnit {
   }
 
   public SymptomFlowUnit(long timeStamp, List<List<String>> data, SymptomContext context) {
-    super(timeStamp, data);
+    super(timeStamp);
     this.context = context;
+    this.data = data;
   }
+
 
   public SymptomContext getContext() {
     return this.context;
+  }
+
+  public List<List<String>> getData() {
+    return this.data;
   }
 
   public static SymptomFlowUnit generic() {
@@ -50,7 +59,7 @@ public class SymptomFlowUnit extends GenericFlowUnit {
     messageBuilder.setGraphNode(graphNode);
     messageBuilder.setEsNode(esNode);
 
-    messageBuilder.setTimestamp(System.currentTimeMillis());
+    messageBuilder.setTimeStamp(System.currentTimeMillis());
 
     return messageBuilder.build();
   }

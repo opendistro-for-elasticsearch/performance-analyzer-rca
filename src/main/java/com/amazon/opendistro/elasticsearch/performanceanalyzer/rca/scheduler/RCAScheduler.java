@@ -59,7 +59,7 @@ public class RCAScheduler {
   final ThreadFactory taskThreadFactory =
       new ThreadFactoryBuilder().setNameFormat("task-%d-").setDaemon(true).build();
 
-  ExecutorService executorPool;
+  ExecutorService rcaSchedulerPeriodicExecutor;
   ScheduledExecutorService scheduledPool;
 
   List<ConnectedComponent> connectedComponents;
@@ -98,7 +98,7 @@ public class RCAScheduler {
       futureHandle =
           scheduledPool.scheduleAtFixedRate(
               new RCASchedulerTask(
-                  10000, executorPool, connectedComponents, db, persistable, rcaConf, net),
+                  10000, rcaSchedulerPeriodicExecutor, connectedComponents, db, persistable, rcaConf, net),
               1,
               PERIODICITY_SECONDS,
               TimeUnit.SECONDS);
@@ -124,12 +124,12 @@ public class RCAScheduler {
                     | ExecutionException
                     | CancellationException ex) {
                   if (!shutdownRequested) {
-                    LOG.error("Exception cause : {}", ex.getCause());
+                    LOG.error("RCA Exception cause : {}", ex.getCause());
                     shutdown();
                     schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
                   }
                 } catch (InterruptedException ix) {
-                  LOG.error("Interrupted exception cause : {}", ix.getCause());
+                  LOG.error("RCA Interrupted exception cause : {}", ix.getCause());
                   shutdown();
                   schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
                 }
@@ -148,8 +148,8 @@ public class RCAScheduler {
     LOG.info("Shutting down the scheduler..");
     shutdownRequested = true;
     scheduledPool.shutdown();
-    executorPool.shutdown();
-    waitForShutdown(executorPool);
+    rcaSchedulerPeriodicExecutor.shutdown();
+    waitForShutdown(rcaSchedulerPeriodicExecutor);
     try {
       persistable.close();
     } catch (SQLException e) {
@@ -175,7 +175,7 @@ public class RCAScheduler {
   }
   private void createExecutorPools() {
     scheduledPool = Executors.newScheduledThreadPool(1, schedThreadFactory);
-    executorPool = Executors.newFixedThreadPool(1, taskThreadFactory);
+    rcaSchedulerPeriodicExecutor = Executors.newFixedThreadPool(1, taskThreadFactory);
   }
 
   public NodeRole getRole() {

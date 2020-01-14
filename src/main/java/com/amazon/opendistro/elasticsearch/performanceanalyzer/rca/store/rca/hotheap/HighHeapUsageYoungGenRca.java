@@ -13,27 +13,24 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.OLD_GEN;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_YOUNG_GC;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindow;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.FlowUnitWrapper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.flowunit.HighHeapUsageFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -100,18 +97,6 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
     };
   }
 
-  private ResourceContext determineHeapUsageState() {
-    double avgPromotionRate = promotionRateDeque.read();
-    double avgYoungGCTime = gcTimeDeque.read();
-    LOG.debug("avgPromotionRate = {} , avgGCTime = {}", avgPromotionRate, avgYoungGCTime);
-    if (!Double.isNaN(avgPromotionRate) && avgPromotionRate > PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC
-        && !Double.isNaN(avgYoungGCTime)
-        && avgYoungGCTime > YOUNG_GC_TIME_THRESHOLD_IN_MS_PER_SEC) {
-      return new ResourceContext(ResourceContext.Resource.HEAP, ResourceContext.State.UNHEALTHY);
-    }
-    return new ResourceContext(ResourceContext.Resource.HEAP, ResourceContext.State.HEALTHY);
-  }
-
   @Override
   public ResourceFlowUnit operate() {
     List<MetricFlowUnit> heapUsedMetrics = heap_Used.getFlowUnits();
@@ -150,25 +135,36 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
     }
 
     if (counter == RCA_PERIOD) {
-      List<List<String>> ret = new ArrayList<>();
-      ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor
-          .getCurrentNodeDetails();
-      if (currentNode != null) {
-        ret.addAll(Arrays.asList(Collections.singletonList("Node ID"),
-            Collections.singletonList(currentNode.getId())));
-      } else {
-        ret.addAll(Arrays
-            .asList(Collections.singletonList("Node ID"), Collections.singletonList("unknown")));
-      }
-      ResourceContext context = determineHeapUsageState();
+      ResourceContext context = null;
+      HotResourceSummary summary = null;
       // reset the variables
       counter = 0;
-      LOG.debug("Young Gen RCA Context = " + context.toString());
-      return new ResourceFlowUnit(System.currentTimeMillis(), ret, context);
+
+      double avgPromotionRate = promotionRateDeque.read();
+      double avgYoungGCTime = gcTimeDeque.read();
+
+      if (!Double.isNaN(avgPromotionRate)
+          && avgPromotionRate > PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC
+          && !Double.isNaN(avgYoungGCTime)
+          && avgYoungGCTime > YOUNG_GC_TIME_THRESHOLD_IN_MS_PER_SEC) {
+        LOG.debug("avgPromotionRate = {} , avgGCTime = {}", avgPromotionRate, avgYoungGCTime);
+        context = new ResourceContext(Resources.State.UNHEALTHY);
+        summary = new HotResourceSummary(Resources.JVM.GARBAGE_COLLECTOR.toString(),
+            PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC, avgPromotionRate, "promotion rate in mb/s",
+            PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
+      } else {
+        context = new ResourceContext(Resources.State.HEALTHY);
+        //TODO: for testing purpose, we might not want to store summary info for healthy flowunit in production
+        summary = new HotResourceSummary(Resources.JVM.GARBAGE_COLLECTOR.toString(),
+            PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC, avgPromotionRate, "promotion rate in mb/s",
+            PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
+      }
+      LOG.debug("@@: Young Gen RCA Context = " + context.toString());
+      return new ResourceFlowUnit(System.currentTimeMillis(), context, summary);
     } else {
       // we return an empty FlowUnit RCA for now. Can change to healthy (or previous known RCA state)
       LOG.debug("RCA: Empty FlowUnit returned for Young Gen RCA");
-      return new ResourceFlowUnit(System.currentTimeMillis(), ResourceContext.generic());
+      return new ResourceFlowUnit(System.currentTimeMillis());
     }
   }
 
@@ -178,15 +174,15 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
    *
    * @param args The wrapper around the flow unit operation.
    */
+  @Override
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-    final List<FlowUnitWrapper> flowUnitWrappers =
+    final List<FlowUnitMessage> flowUnitMessages =
         args.getWireHopper().readFromWire(args.getNode());
     List<ResourceFlowUnit> flowUnitList = new ArrayList<>();
     LOG.debug("rca: Executing fromWire: {}", this.getClass().getSimpleName());
-    for (FlowUnitWrapper messageWrapper : flowUnitWrappers) {
-      flowUnitList.add(ResourceFlowUnit.buildFlowUnitFromWrapper(messageWrapper));
+    for (FlowUnitMessage flowUnitMessage : flowUnitMessages) {
+      flowUnitList.add(ResourceFlowUnit.buildFlowUnitFromWrapper(flowUnitMessage));
     }
-
     setFlowUnits(flowUnitList);
   }
 }

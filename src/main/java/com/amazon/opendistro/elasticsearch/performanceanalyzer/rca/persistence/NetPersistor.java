@@ -29,13 +29,13 @@ import org.apache.logging.log4j.Logger;
 public class NetPersistor {
   private static final Logger LOG = LogManager.getLogger(NetPersistor.class);
   private static final int PER_GRAPH_NODE_FLOW_UNIT_QUEUE_CAPACITY = 200;
-  ConcurrentMap<String, BlockingQueue<FlowUnitWrapper>> graphNodeToFlowUnitMap =
+  ConcurrentMap<String, BlockingQueue<FlowUnitMessage>> graphNodeToFlowUnitMap =
       new ConcurrentHashMap<>();
 
-  public List<FlowUnitWrapper> read(final String graphNode) {
+  public List<FlowUnitMessage> read(final String graphNode) {
     if (graphNodeToFlowUnitMap.containsKey(graphNode)) {
-      final BlockingQueue<FlowUnitWrapper> flowUnitQueue = graphNodeToFlowUnitMap.get(graphNode);
-      final List<FlowUnitWrapper> returnList = new ArrayList<>();
+      final BlockingQueue<FlowUnitMessage> flowUnitQueue = graphNodeToFlowUnitMap.get(graphNode);
+      final List<FlowUnitMessage> returnList = new ArrayList<>();
       flowUnitQueue.drainTo(returnList);
       return returnList;
     }
@@ -44,11 +44,15 @@ public class NetPersistor {
   }
 
   public void write(final String graphNode, final FlowUnitMessage flowUnitMessage) {
+    if (flowUnitMessage == null) {
+      LOG.debug("receive a null flowunit message. Dropping the flow unit.");
+      return;
+    }
     graphNodeToFlowUnitMap.putIfAbsent(
         graphNode, new ArrayBlockingQueue<>(PER_GRAPH_NODE_FLOW_UNIT_QUEUE_CAPACITY));
-    final BlockingQueue<FlowUnitWrapper> flowUnitQueue = graphNodeToFlowUnitMap.get(graphNode);
+    final BlockingQueue<FlowUnitMessage> flowUnitQueue = graphNodeToFlowUnitMap.get(graphNode);
 
-    if (!flowUnitQueue.offer(FlowUnitWrapper.buildFlowUnitWrapperFromMessage(flowUnitMessage))) {
+    if (!flowUnitQueue.offer(flowUnitMessage)) {
       LOG.debug("Failed to add flow unit to the buffer. Dropping the flow unit.");
     }
   }
