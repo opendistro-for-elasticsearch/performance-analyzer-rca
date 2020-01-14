@@ -126,6 +126,7 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
     private String id;
     private String hostAddress;
     private String role;
+    private Boolean isMasterNode;
 
     NodeDetails(String stringifiedMetrics) {
       Map<String, Object> map = JsonConverter
@@ -133,6 +134,8 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
       id = (String) map.get(AllMetrics.NodeDetailColumns.ID.toString());
       hostAddress = (String) map.get(AllMetrics.NodeDetailColumns.HOST_ADDRESS.toString());
       role = (String) map.get(AllMetrics.NodeDetailColumns.ROLE.toString());
+      Object isMasterNodeObject = map.get(AllMetrics.NodeDetailColumns.IS_MASTER_NODE.toString());
+      isMasterNode = isMasterNodeObject != null ? (Boolean) isMasterNodeObject : null;
     }
 
     @Override
@@ -145,6 +148,8 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
           .append(hostAddress)
           .append(" role:")
           .append(role)
+          .append(" isMasterNode:")
+          .append(isMasterNode)
           .append("}");
       return stringBuilder.toString();
     }
@@ -159,6 +164,10 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
 
     public String getRole() {
       return role;
+    }
+
+    public Boolean getIsMasterNode() {
+      return isMasterNode;
     }
   }
 }
