@@ -68,7 +68,7 @@ public class RcaSpecTests {
 
     class RcaX extends Rca {
       RcaX() {
-        super(1);
+        super(5);
       }
 
       @Override
@@ -193,7 +193,7 @@ public class RcaSpecTests {
     class TestRCA1 extends Rca {
 
       TestRCA1() {
-        super(1);
+        super(5);
       }
 
       @Override
@@ -209,7 +209,7 @@ public class RcaSpecTests {
     class TestRCA2 extends Rca {
 
       TestRCA2() {
-        super(1);
+        super(5);
       }
 
       @Override
@@ -225,7 +225,7 @@ public class RcaSpecTests {
     class TestRCA3 extends Rca {
 
       TestRCA3() {
-        super(1);
+        super(2);
       }
 
       @Override

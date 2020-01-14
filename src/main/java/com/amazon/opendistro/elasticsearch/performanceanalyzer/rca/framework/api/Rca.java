@@ -25,11 +25,10 @@ import org.apache.logging.log4j.Logger;
 public abstract class Rca<T extends ResourceFlowUnit> extends NonLeafNode<T> {
   private static final Logger LOG = LogManager.getLogger(Rca.class);
 
-
   public Rca(long evaluationIntervalSeconds) {
     super(0, evaluationIntervalSeconds);
   }
-  
+
   /**
    * fetch flowunits from local graph node
    * @param args The wrapper around the flow unit operation.
