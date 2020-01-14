@@ -67,8 +67,8 @@ public class RcaSpecTests {
     }
 
     class RcaX extends Rca {
-      RcaX(long evaluationIntervalMins) {
-        super(evaluationIntervalMins);
+      RcaX() {
+        super(5);
       }
 
       @Override
@@ -93,7 +93,7 @@ public class RcaSpecTests {
         lsym.add(metric1);
         symptom.addAllUpstreams(lsym);
 
-        RcaX rca = new RcaX(5);
+        RcaX rca = new RcaX();
         lsym = new ArrayList<>();
         lsym.add(symptom);
         rca.addAllUpstreams(lsym);

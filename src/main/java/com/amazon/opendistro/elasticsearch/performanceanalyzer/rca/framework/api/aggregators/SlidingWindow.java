@@ -23,59 +23,74 @@ import java.util.concurrent.TimeUnit;
  * This is a generic sliding window for RCA sampling. The default behavior is to store the
  * {timestap, value} pair and maintain the sum of all data entries within this sliding window.
  */
-public class SlidingWindow {
+public class SlidingWindow<E extends SlidingWindowData> {
 
-  protected final Deque<SlidingWindowData> windowDeque;
-  protected final int SLIDING_WINDOW_SIZE_IN_SECONDS;
+  protected final Deque<E> windowDeque;
+  protected final long SLIDING_WINDOW_SIZE;
   protected double sum;
 
-  public SlidingWindow(int SLIDING_WINDOW_SIZE_IN_SECONDS) {
+  public SlidingWindow(int SLIDING_WINDOW_SIZE_IN_TIMESTAMP, TimeUnit timeUnit) {
     this.windowDeque = new LinkedList<>();
-    this.SLIDING_WINDOW_SIZE_IN_SECONDS = SLIDING_WINDOW_SIZE_IN_SECONDS;
+    this.SLIDING_WINDOW_SIZE = timeUnit.toSeconds(SLIDING_WINDOW_SIZE_IN_TIMESTAMP);
     this.sum = 0.0;
   }
 
   /**
    * callback function when adding a data to the sliding window
    */
-  protected void add(double value) {
-    sum += value;
+  protected void add(E e) {
+    sum += e.getValue();
   }
 
   /**
    * callback function when removing a data from the sliding window
    */
-  protected void remove(double value) {
-    sum -= value;
+  protected void remove(E e) {
+    sum -= e.getValue();
   }
 
   /**
    * insert data into the sliding window
    */
-  public void next(long timeStamp, double value) {
+  public void next(E e) {
     while (!windowDeque.isEmpty()
-        && TimeUnit.MILLISECONDS.toSeconds(timeStamp - windowDeque.peekLast().getTimeStamp())
-        > SLIDING_WINDOW_SIZE_IN_SECONDS) {
-      double lastVal = windowDeque.pollLast().getValue();
-      remove(lastVal);
+        && TimeUnit.MILLISECONDS.toSeconds(e.getTimeStamp() - windowDeque.peekLast().getTimeStamp())
+        > SLIDING_WINDOW_SIZE) {
+      E lastData = windowDeque.pollLast();
+      remove(lastData);
     }
-    add(value);
-    windowDeque.addFirst(new SlidingWindowData(timeStamp, value));
+    add(e);
+    windowDeque.addFirst(e);
   }
 
   /**
-   * read the sliding window average
+   * read the sliding window average based on sliding window size
    */
-  public double read() {
+  public double readAvg() {
     if (!windowDeque.isEmpty()) {
-      long timeStampDiff =
-          windowDeque.peekFirst().getTimeStamp() - windowDeque.peekLast().getTimeStamp();
-      if (timeStampDiff > 0) {
-        return sum / (double) TimeUnit.MILLISECONDS.toSeconds(timeStampDiff);
-      } else {
-        return Double.NaN;
-      }
+      return sum / (double) windowDeque.size();
     }
     return Double.NaN;
+  }
+
+  /**
+   * read the sliding window average based on timestamp
+   */
+  public double readAvg(TimeUnit timeUnit) {
+    if (windowDeque.isEmpty()) {
+      return Double.NaN;
+    }
+    long timeStampDiff = windowDeque.peekFirst().getTimeStamp() - windowDeque.peekLast().getTimeStamp();
+    if (timeStampDiff > 0) {
+      return sum / ((double) timeStampDiff / (double) timeUnit.toMillis(1));
+    }
+    return Double.NaN;
+  }
+
+  /**
+   * read the sliding window sum
+   */
+  public double readSum() {
+    return this.sum;
   }
 }

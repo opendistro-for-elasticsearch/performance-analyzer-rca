@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.co
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.google.protobuf.GeneratedMessageV3;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import org.jooq.Field;
 
@@ -27,14 +28,14 @@ public abstract class GenericSummary {
     nestedSummaryList = new ArrayList<>();
   }
 
-  protected List<GenericSummary> nestedSummaryList;
+  protected final List<GenericSummary> nestedSummaryList;
 
   public List<GenericSummary> getNestedSummaryList() {
     return nestedSummaryList;
   }
 
-  public void setNestedSummaryList(List<GenericSummary> nestedSummaryList) {
-    this.nestedSummaryList = nestedSummaryList;
+  public void addNestedSummaryList(Collection<GenericSummary> nestedSummaryList) {
+    this.nestedSummaryList.addAll(nestedSummaryList);
   }
 
   public void addNestedSummaryList(GenericSummary nestedSummary) {

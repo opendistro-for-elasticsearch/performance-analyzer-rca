@@ -64,7 +64,7 @@ class SQLitePersistor extends PersistorBase {
         .column(DSL.field(getPrimaryKeyColumnName(tableName) + PRIMARY_KEY_AUTOINCREMENT_POSTFIX))
         .columns(columns);
 
-    LOG.info("ruizhen: table created: {}", constraintStep.toString());
+    LOG.debug("table created: {}", constraintStep.toString());
     constraintStep.execute();
     jooqTableColumns.put(tableName, columns);
   }

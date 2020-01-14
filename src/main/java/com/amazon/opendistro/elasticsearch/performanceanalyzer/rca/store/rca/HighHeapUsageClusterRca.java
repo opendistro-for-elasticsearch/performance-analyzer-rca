@@ -49,18 +49,18 @@ import org.apache.logging.log4j.Logger;
 public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
 
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageClusterRca.class);
-  private static final int RCA_PERIOD = 12;
   private static final int UNHEALTHY_FLOWUNIT_THRESHOLD = 3;
   private static final int CACHE_EXPIRATION_TIMEOUT = 10;
-  protected int counter;
   private final Rca<ResourceFlowUnit> hotNodeRca;
   private final LoadingCache<String, ImmutableList<ResourceFlowUnit>> nodeStateCache;
+  private final int rcaPeriod;
+  private int counter;
 
-  public <R extends Rca<ResourceFlowUnit>> HighHeapUsageClusterRca(
-      long evaluationIntervalSeconds, final R hotNodeRca) {
-    super(evaluationIntervalSeconds);
+  public <R extends Rca> HighHeapUsageClusterRca(final int rcaPeriod, final R hotNodeRca) {
+    super(5);
     this.hotNodeRca = hotNodeRca;
-    counter = 0;
+    this.rcaPeriod = rcaPeriod;
+    this.counter = 0;
     nodeStateCache =
         CacheBuilder.newBuilder()
                     .maximumSize(1000)
@@ -115,7 +115,7 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
         continue;
       }
       if (hotNodeRcaFlowUnit.getResourceSummary() instanceof HotNodeSummary) {
-        String nodeId = ((HotNodeSummary) hotNodeRcaFlowUnit.getResourceSummary()).nodeID;
+        String nodeId = ((HotNodeSummary) hotNodeRcaFlowUnit.getResourceSummary()).getNodeID();
         try {
           readComputeWrite(nodeId, hotNodeRcaFlowUnit);
         } catch (ExecutionException e) {
@@ -125,7 +125,7 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
         LOG.error("Receive flowunit from unexpected rca node");
       }
     }
-    if (counter == RCA_PERIOD) {
+    if (counter == rcaPeriod) {
       List<GenericSummary> unhealthyNodeList = getUnhealthyNodeList();
       counter = 0;
       ResourceContext context = null;
@@ -135,7 +135,7 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
         context = new ResourceContext(Resources.State.UNHEALTHY);
         summary = new HotClusterSummary(ClusterDetailsEventProcessor.getNodesDetails().size(),
             unhealthyNodeList.size());
-        summary.setNestedSummaryList(unhealthyNodeList);
+        summary.addNestedSummaryList(unhealthyNodeList);
       } else {
         context = new ResourceContext(Resources.State.HEALTHY);
       }
