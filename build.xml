@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<project name="OpenDistroPerformanceAnalyzerEngine" basedir="." default="release" xmlns:ht="happytrails">
+    <import file="${happytrails.root}/happytrails.xml"/>
+    <ht:import file="copy-with-permissions.xml"/>
+    <property name="sources.dir" location="${basedir}/src/main/java"/>
+    <property name="additional.sources.dir" location="${basedir}/gen/main/java,${basedir}/gen/main/grpc"/>
+    <property name="hasAdditionalSources" value="true"/>
+    <property name="src-generated.dir" location="${basedir}/src-generated"/>
+    <!--property name="sources.javac.extra.args" value="-Xlint"/-->
+    <property name="tests.dir" location="${basedir}/src/test/java"/>
+    <property name="plugin.dir" location="${output.dir}/opendistro_performance_analyzer"/>
+    <property name="plugin_orig.dir" location="${output.dir}/plugins/opendistro_performance_analyzer"/>
+    <property name="external-jars.dir" location="${basedir}/externalJars" />
+    <property name="ant.build.javac.source" value="1.8"/>
+    <property name="ant.build.javac.target" value="1.8"/>
+    <property name="ht.include.cfg" value="true"/>
+    <property name="standard.compile.classpath.suffix"
+              value="${java.home}/../lib/sa-jdi.jar:${java.home}/../lib/tools.jar:${basedir}/lib/opendistro-log4j-api-2.11.1.jar:${basedir}/lib/opendistro-log4j-core-2.11.1.jar:${basedir}/externalJars/grpc-deps.jar"/>
+    <property name="tests.additional.runtime.classpath"
+              value="${basedir}/lib/opendistro-log4j-api-2.11.1.jar:${basedir}/lib/opendistro-log4j-core-2.11.1.jar:${basedir}/externalJars/grpc-deps.jar"/>
+
+    <!-- todo ...need to enable checkstyle -->
+    <property name="findbugs.failOnError" value="true" />
+    <property name="findbugs.exclude.filter" location="${basedir}/checkstyle/findbugs-exclude.xml" />
+    <property name="checkstyle.failOnError" value="false" />
+    <property name="checkstyle.configuration.file" value="${bp:[A9SearchCloudStaticConfig]pkg.src}/checkstyle/checkstyle-rules.xml" />
+    <ht:import file="happier-trails.xml"/>
+
+    <target name="copy-generated-src" extensionOf="ht-pre-build" if="hasAdditionalSources">
+        <mkdir dir="${src-generated.dir}" />
+        <echo message="Copying additional sources to ${sources.dir}"/>
+        <for list="${additional.sources.dir}" param="srcdirval">
+            <sequential>
+                <echo message="Copying sources from @{srcdirval}"/>
+                <copy todir="${src-generated.dir}">
+                    <fileset dir="@{srcdirval}"/>
+                </copy>
+            </sequential>
+        </for>
+    </target>
+
+    <target name="compile-grpc" depends="copy-generated-src" if="hasAdditionalSources">
+        <echo message="Compiling additional sources into ${classes.dir}"/>
+        <mkdir dir="${classes.dir}" />
+        <javac srcdir="${src-generated.dir}" destdir="${classes.dir}" debug="on">
+            <classpath>
+                <path path="${bp:build.classpath}:${standard.compile.classpath.suffix}"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="clean-grpc">
+        <delete dir="${src-generated.dir}" />
+    </target>
+
+    <target name="copy-test-files">
+        <mkdir dir="${basedir}/build/private/test_resources"/>
+        <if>
+            <available file="${basedir}/build/private/test_resources/dev" type="dir"/>
+            <then>
+            </then>
+            <else>
+                <exec executable="tar">
+                    <arg value="-xf"/>
+                    <arg value="${basedir}/test_files/shm.tar.gz"/>
+                    <arg value="-C"/>
+                    <arg value="${basedir}/build/private/test_resources"/>
+                </exec>
+
+            </else>
+        </if>
+    </target>
+
+    <target name="copy-artifacts">
+        <copy todir="${plugin.dir}/pa_config">
+            <fileset dir="${basedir}/pa_config"/>
+        </copy>
+        <copy todir="${plugin_orig.dir}/pa_config">
+            <fileset dir="${basedir}/pa_config"/>
+        </copy>
+        <copy todir="${output.dir}/config">
+            <fileset dir="${basedir}/config"/>
+        </copy>
+        <copy todir="${plugin.dir}/pa_bin">
+            <fileset dir="${basedir}/pa_bin"/>
+        </copy>
+        <copydir src="${basedir}/src/main/resources" dest="${plugin.dir}"/>
+        <copydir src="${lib.dir}" dest="${plugin.dir}"/>
+        <copydir src="${external-jars.dir}" dest="${plugin.dir}" />
+        <copydir src="${lib.dir}" dest="${plugin_orig.dir}"/>
+    </target>
+
+    <target name="clean" depends="clean-grpc" />
+    <target name="build" depends="compile-grpc,standard-build,copy-artifacts,copy-test-files"/>
+    <target name="test" depends="copy-test-files,copy-artifacts,standard-test"/>
+</project>

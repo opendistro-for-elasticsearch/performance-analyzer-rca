@@ -1,0 +1,67 @@
+# -*-perl-*-
+
+package.OpenDistroPerformanceAnalyzerEngine = {
+    # Please read http://tiny/inaap63w/3PMajorVersionScheme before changing the
+    # suggested major version.
+    interfaces = (1.0);
+    scope = third-party;
+
+    third-party-configuration = {
+        # This is important, please do not remove it.
+        thirdPartyName = "opendistro_performance_analyzer_engine";
+        thirdPartyVersion = "1.0";
+        licenseType = "Apache v2.0";
+        licenseFile = "Unknown";
+        repository = "raw";
+    };
+
+    targets = {
+        OpenDistroPerformanceAnalyzerEngine = {
+            type = javalibrary;
+        };
+    };
+
+    dependencies = {
+        1.0 = {
+            SQLiteJDBC-Xerial = 3.13.0_SNAPSHOT;
+            Jooq = 3.10.x;
+            GoogleGuava = 21.x;
+            Lombok = 1.16.x;
+            Jackson-databind = 2.9.x;
+            BouncyCastleCrypto = 1.x;
+            OpenDistroPerfTop = 1.0;
+            ProtocolBuffersJava = 3.5.x;
+        };
+    };
+
+    build-system = happytrails;
+
+    build-environment = {
+        chroot = basic;
+        network-access = blocked;
+    };
+
+    build-tools = {
+        1.0 = {
+            HappierTrails = 3.3;
+            JDK8 = 1.0;
+            A9SearchCloudStaticConfig = 1.0;
+            BrazilPath = 1.1;
+            S3BinarySafeDownloader = 1.0;
+            ProtocolBuffersCpp = 3.x;
+        };
+    };
+
+    test-dependencies = {
+        1.0 = {
+            junit = 4.11;
+            PowerMockMockito = 1.6.x;
+        };
+    };
+
+    resolves-conflict-dependencies = {
+        1.0 = {
+            GoogleGuava = 21.x;
+        };
+    };
+};

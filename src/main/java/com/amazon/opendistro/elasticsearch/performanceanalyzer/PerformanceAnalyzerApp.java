@@ -53,7 +53,7 @@ import org.apache.logging.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class PerformanceAnalyzerApp {
-  private static final int WEBSERVICE_DEFAULT_PORT = 9600;
+  private static final int WEBSERVICE_DEFAULT_PORT = 9650;
   private static final String WEBSERVICE_PORT_CONF_NAME = "webservice-listener-port";
   private static final String WEBSERVICE_BIND_HOST_NAME = "webservice-bind-host";
   // Use system default for max backlog.

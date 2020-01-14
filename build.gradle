@@ -227,8 +227,11 @@ dependencies {
 }
 
 protobuf {
+
+    generatedFilesBaseDir = "$projectDir/gen"
+
     protoc {
-        artifact = "com.google.protobuf:protoc:3.10.0"
+        artifact = "com.google.protobuf:protoc:3.7.1"
     }
 
     plugins {
