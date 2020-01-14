@@ -218,7 +218,7 @@ public class RCASchedulerTaskTests {
       }
 
       private WireHopperDerived(List<IntentMsg> intentMsg, DataMsg dataMsg) {
-        super(null, null, null, null, null, null, null);
+        super(null, null, null, null, null, null);
         this.intentMsgs = intentMsg;
         this.dataMsg = dataMsg;
       }
