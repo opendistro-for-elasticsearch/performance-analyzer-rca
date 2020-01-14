@@ -59,7 +59,7 @@ public class RCASchedulerTests {
       addLeaf(heapUsed);
       addLeaf(pageMaj);
       addLeaf(heapAlloc);
-      Rca highHeapUsageRca = new HighHeapUsageOldGenRca(2L, 1, heapUsed, pageMaj, heapAlloc);
+      Rca highHeapUsageRca = new HighHeapUsageOldGenRca(1, heapUsed, pageMaj, heapAlloc);
       highHeapUsageRca.addAllUpstreams(Arrays.asList(heapAlloc, heapUsed, pageMaj));
     }
   }

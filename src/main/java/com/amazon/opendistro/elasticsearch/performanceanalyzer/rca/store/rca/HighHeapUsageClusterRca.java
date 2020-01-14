@@ -53,11 +53,14 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
   private static final int CACHE_EXPIRATION_TIMEOUT = 10;
   private final Rca<ResourceFlowUnit> hotNodeRca;
   private final LoadingCache<String, ImmutableList<ResourceFlowUnit>> nodeStateCache;
+  private final int rcaPeriod;
+  private int counter;
 
-  public <R extends Rca> HighHeapUsageClusterRca(long evaluationIntervalSeconds,
-      final int rcaPeriod, final R hotNodeRca) {
-    super(evaluationIntervalSeconds, rcaPeriod);
+  public <R extends Rca> HighHeapUsageClusterRca(final int rcaPeriod, final R hotNodeRca) {
+    super(5);
     this.hotNodeRca = hotNodeRca;
+    this.rcaPeriod = rcaPeriod;
+    this.counter = 0;
     nodeStateCache =
         CacheBuilder.newBuilder()
                     .maximumSize(1000)

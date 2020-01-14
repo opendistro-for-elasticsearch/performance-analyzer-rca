@@ -24,26 +24,10 @@ import org.apache.logging.log4j.Logger;
 
 public abstract class Rca<T extends ResourceFlowUnit> extends NonLeafNode<T> {
   private static final Logger LOG = LogManager.getLogger(Rca.class);
-  // the amount of RCA period this RCA needs to run before sending out a flowunit
-  protected final int rcaPeriod;
-  protected boolean alwaysCreateSummary;
-  protected int counter;
 
-  public Rca(long evaluationIntervalSeconds, int rcaPeriod) {
+
+  public Rca(long evaluationIntervalSeconds) {
     super(0, evaluationIntervalSeconds);
-    this.rcaPeriod = rcaPeriod;
-    this.alwaysCreateSummary = false;
-    counter = 0;
-  }
-
-  /**
-   * set the alwaysCreateSummary
-   * @param alwaysCreateSummary if alwaysCreateSummary is true, the RCA will always create a summary
-   *                            for this flowunit regardless of its state(whether healthy or unhealthy)
-   *
-   */
-  public void alwaysCreateSummary(boolean alwaysCreateSummary) {
-    this.alwaysCreateSummary = alwaysCreateSummary;
   }
   
   /**

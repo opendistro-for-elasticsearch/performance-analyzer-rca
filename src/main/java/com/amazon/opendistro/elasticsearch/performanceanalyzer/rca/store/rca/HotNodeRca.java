@@ -36,24 +36,28 @@ public class HotNodeRca extends Rca<ResourceFlowUnit> {
   private static final Logger LOG = LogManager.getLogger(HotNodeRca.class);
   private Rca[] hotResourceRcas;
   private boolean hasUnhealthyFlowUnit;
+  // the amount of RCA period this RCA needs to run before sending out a flowunit
+  private final int rcaPeriod;
+  private int counter;
 
-  public <R extends Rca> HotNodeRca(final long evaluationIntervalSeconds, final int rcaPeriod,
-      R... hotResourceRcas) {
-    super(evaluationIntervalSeconds, rcaPeriod);
+  public <R extends Rca> HotNodeRca(final int rcaPeriod, R... hotResourceRcas) {
+    super(5);
     this.hotResourceRcas = hotResourceRcas.clone();
+    this.rcaPeriod = rcaPeriod;
+    this.counter = 0;
     hasUnhealthyFlowUnit = false;
   }
 
-  public <R extends Rca> HotNodeRca(final long evaluationIntervalSeconds, final int rcaPeriod,
-      Collection<R> hotResourceRcas) {
-    super(evaluationIntervalSeconds, rcaPeriod);
+  public <R extends Rca> HotNodeRca(final int rcaPeriod, Collection<R> hotResourceRcas) {
+    super(5);
     this.hotResourceRcas = hotResourceRcas.toArray(new Rca[hotResourceRcas.size()]);
+    this.rcaPeriod = rcaPeriod;
+    this.counter = 0;
     hasUnhealthyFlowUnit = false;
   }
 
   @Override
   public ResourceFlowUnit operate() {
-    boolean shouldReportOperation = false;
     counter++;
     List<GenericSummary> hotResourceSummaryList = new ArrayList<>();
     for (int i = 0; i < hotResourceRcas.length; i++) {
@@ -62,8 +66,7 @@ public class HotNodeRca extends Rca<ResourceFlowUnit> {
         if (hotResourceFlowUnit.isEmpty()) {
           continue;
         }
-        if (hotResourceFlowUnit.getResourceContext().isUnhealthy()
-            || (hotResourceFlowUnit.hasResourceSummary() && alwaysCreateSummary)) {
+        if (hotResourceFlowUnit.hasResourceSummary()) {
           hotResourceSummaryList.add(hotResourceFlowUnit.getResourceSummary());
         }
         if (hotResourceFlowUnit.getResourceContext().isUnhealthy()) {

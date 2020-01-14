@@ -67,8 +67,8 @@ public class RcaSpecTests {
     }
 
     class RcaX extends Rca {
-      RcaX(long evaluationIntervalMins) {
-        super(evaluationIntervalMins, 1);
+      RcaX() {
+        super(1);
       }
 
       @Override
@@ -93,7 +93,7 @@ public class RcaSpecTests {
         lsym.add(metric1);
         symptom.addAllUpstreams(lsym);
 
-        RcaX rca = new RcaX(5);
+        RcaX rca = new RcaX();
         lsym = new ArrayList<>();
         lsym.add(symptom);
         rca.addAllUpstreams(lsym);
@@ -113,7 +113,7 @@ public class RcaSpecTests {
   // @Test(expected = RuntimeException.class)
   public void testAddToFlowFieldBeforeAddingAsDependency() {
     Metric heapUsed = new Heap_Used(5);
-    HighHeapUsageOldGenRca highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(1, 1, heapUsed, null, null);
+    HighHeapUsageOldGenRca highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(1, heapUsed, null, null);
     highHeapUsageOldGenRca.addAllUpstreams(Collections.singletonList(heapUsed));
   }
 
@@ -193,7 +193,7 @@ public class RcaSpecTests {
     class TestRCA1 extends Rca {
 
       TestRCA1() {
-        super(5, 1);
+        super(1);
       }
 
       @Override
@@ -209,7 +209,7 @@ public class RcaSpecTests {
     class TestRCA2 extends Rca {
 
       TestRCA2() {
-        super(5, 1);
+        super(1);
       }
 
       @Override
@@ -225,7 +225,7 @@ public class RcaSpecTests {
     class TestRCA3 extends Rca {
 
       TestRCA3() {
-        super(2, 1);
+        super(1);
       }
 
       @Override

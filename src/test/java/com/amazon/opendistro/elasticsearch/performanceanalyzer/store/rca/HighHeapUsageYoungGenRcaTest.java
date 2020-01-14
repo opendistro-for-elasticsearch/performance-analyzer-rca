@@ -62,7 +62,7 @@ public class HighHeapUsageYoungGenRcaTest {
   public void initTestHighHeapYoungGenRca() {
     heap_Used = new MetricTestHelper(5);
     gc_Collection_Time = new MetricTestHelper(5);
-    youngGenRca = new HighHeapUsageYoungGenRca(5, 1, heap_Used, gc_Collection_Time);
+    youngGenRca = new HighHeapUsageYoungGenRca(1, heap_Used, gc_Collection_Time);
     columnName = Arrays.asList("MemType", "max");
     PowerMockito.mockStatic(System.class);
   }

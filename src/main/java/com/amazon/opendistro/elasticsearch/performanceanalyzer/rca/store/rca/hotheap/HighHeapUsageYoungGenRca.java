@@ -20,6 +20,8 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.Al
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
@@ -56,14 +58,22 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
   private static final double CONVERT_BYTES_TO_MEGABYTES = Math.pow(1024, 2);
   private final Metric heap_Used;
   private final Metric gc_Collection_Time;
+  private final ResourceType resourceType;
+  // the amount of RCA period this RCA needs to run before sending out a flowunit
+  private final int rcaPeriod;
+  private boolean alwaysCreateSummary;
+  private int counter;
   private final SlidingWindow<SlidingWindowData> gcTimeDeque;
   private final SlidingWindow<SlidingWindowData> promotionRateDeque;
 
-  public <M extends Metric> HighHeapUsageYoungGenRca(long evaluationIntervalSeconds, final int rcaPeriod,
+  public <M extends Metric> HighHeapUsageYoungGenRca(final int rcaPeriod,
       final M heap_Used, final M gc_Collection_Time) {
-    super(evaluationIntervalSeconds, rcaPeriod);
+    super(5);
     this.heap_Used = heap_Used;
     this.gc_Collection_Time = gc_Collection_Time;
+    this.rcaPeriod = rcaPeriod;
+    this.counter = 0;
+    this.resourceType = ResourceType.newBuilder().setJVM(JvmEnum.YOUNG_GEN).build();
     this.gcTimeDeque = new SlidingWindow<>(PROMOTION_RATE_SLIDING_WINDOW_IN_MINS, TimeUnit.MINUTES);
 
     this.promotionRateDeque = new SlidingWindow<SlidingWindowData>(PROMOTION_RATE_SLIDING_WINDOW_IN_MINS, TimeUnit.MINUTES) {
@@ -93,6 +103,16 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
         }
       }
     };
+  }
+
+  /**
+   * set the alwaysCreateSummary
+   * @param alwaysCreateSummary if alwaysCreateSummary is true, the RCA will always create a summary
+   *                            for this flowunit regardless of its state(whether healthy or unhealthy)
+   *
+   */
+  public void alwaysCreateSummary(boolean alwaysCreateSummary) {
+    this.alwaysCreateSummary = alwaysCreateSummary;
   }
 
   @Override
@@ -147,13 +167,13 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
           && avgYoungGCTime > YOUNG_GC_TIME_THRESHOLD_IN_MS_PER_SEC) {
         LOG.debug("avgPromotionRate = {} , avgGCTime = {}", avgPromotionRate, avgYoungGCTime);
         context = new ResourceContext(Resources.State.UNHEALTHY);
-        summary = new HotResourceSummary(Resources.JVM.YOUNG_GEN,
+        summary = new HotResourceSummary(this.resourceType,
             PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC, avgPromotionRate, "promotion rate in mb/s",
             PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
       } else {
         context = new ResourceContext(Resources.State.HEALTHY);
         if (alwaysCreateSummary == true) {
-          summary = new HotResourceSummary(Resources.JVM.YOUNG_GEN,
+          summary = new HotResourceSummary(this.resourceType,
               PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC, avgPromotionRate, "promotion rate in mb/s",
               PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
         }

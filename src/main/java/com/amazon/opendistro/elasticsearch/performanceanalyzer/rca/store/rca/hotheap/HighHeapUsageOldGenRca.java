@@ -20,6 +20,8 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.Al
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
@@ -60,6 +62,10 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
   private final Metric heap_Used;
   private final Metric heap_Max;
   private final Metric gc_event;
+  private final ResourceType resourceType;
+  // the amount of RCA period this RCA needs to run before sending out a flowunit
+  private final int rcaPeriod;
+  private boolean alwaysCreateSummary;
   private final SlidingWindow<SlidingWindowData> gcEventSlidingWindow;
   private final MinOldGenSlidingWindow minOldGenSlidingWindow;
   //Keep the sliding window large enough to avoid false positive
@@ -71,16 +77,29 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
   private static final double CONVERT_BYTES_TO_MEGABYTES = Math.pow(1024, 3);
 
 
-  public <M extends Metric> HighHeapUsageOldGenRca(long evaluationIntervalSeconds, final int rcaPeriod,
+  public <M extends Metric> HighHeapUsageOldGenRca(final int rcaPeriod,
       final M heap_Used, final M gc_event, final M heap_Max) {
-    super(evaluationIntervalSeconds, rcaPeriod);
+    super(5);
     this.heap_Used = heap_Used;
     this.gc_event = gc_event;
     this.heap_Max = heap_Max;
-    maxOldGenHeapSize = Double.MAX_VALUE;
+    this.maxOldGenHeapSize = Double.MAX_VALUE;
+    this.rcaPeriod = rcaPeriod;
+    this.counter = 0;
+    this.resourceType = ResourceType.newBuilder().setJVM(JvmEnum.OLD_GEN).build();
     gcEventSlidingWindow = new SlidingWindow<>(SLIDING_WINDOW_SIZE_IN_MINS, TimeUnit.MINUTES);
     minOldGenSlidingWindow = new MinOldGenSlidingWindow(SLIDING_WINDOW_SIZE_IN_MINS,
         TimeUnit.MINUTES);
+  }
+
+  /**
+   * set the alwaysCreateSummary
+   * @param alwaysCreateSummary if alwaysCreateSummary is true, the RCA will always create a summary
+   *                            for this flowunit regardless of its state(whether healthy or unhealthy)
+   *
+   */
+  public void alwaysCreateSummary(boolean alwaysCreateSummary) {
+    this.alwaysCreateSummary = alwaysCreateSummary;
   }
 
   @Override
@@ -149,6 +168,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
       counter = 0;
 
       double currentMinOldGenUsage = minOldGenSlidingWindow.readMin();
+
       if (gcEventSlidingWindow.readSum() >= OLD_GEN_GC_THRESHOLD
           && !Double.isNaN(currentMinOldGenUsage)
           && currentMinOldGenUsage / maxOldGenHeapSize > OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE) {
@@ -156,13 +176,13 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
             gcEventSlidingWindow.readSum(),
             currentMinOldGenUsage / maxOldGenHeapSize);
         context = new ResourceContext(Resources.State.UNHEALTHY);
-        summary = new HotResourceSummary(Resources.JVM.OLD_GEN,
+        summary = new HotResourceSummary(this.resourceType,
             OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE, currentMinOldGenUsage / maxOldGenHeapSize,
             "heap usage in percentage", SLIDING_WINDOW_SIZE_IN_MINS * 60);
       } else {
         context = new ResourceContext(Resources.State.HEALTHY);
         if (alwaysCreateSummary == true) {
-          summary = new HotResourceSummary(Resources.JVM.OLD_GEN,
+          summary = new HotResourceSummary(this.resourceType,
               OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE, currentMinOldGenUsage / maxOldGenHeapSize,
               "heap usage in percentage", SLIDING_WINDOW_SIZE_IN_MINS * 60);
         }
