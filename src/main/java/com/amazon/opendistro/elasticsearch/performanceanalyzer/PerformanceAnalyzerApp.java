@@ -161,6 +161,7 @@ public class PerformanceAnalyzerApp {
             RcaConsts.RCA_CONF_IDLE_MASTER_PATH,
             RcaConsts.RCA_CONF_PATH,
             RcaConsts.networkPollerPeriodicity,
+            RcaConsts.nodeRolePollerPeriodicity,
             RcaConsts.networkPollerPeriodicityTimeUnit);
 
     rcaController.startPollers();

@@ -50,5 +50,6 @@ public class RcaConsts {
   public static final String DATASTORE_STATE_COL_NAME = "state";
 
   public static final long networkPollerPeriodicity = 5;
+  public static final long nodeRolePollerPeriodicity = 60;
   public static final TimeUnit networkPollerPeriodicityTimeUnit = TimeUnit.SECONDS;
 }

@@ -106,6 +106,7 @@ public class RcaController {
   private final String RCA_CONF_PATH;
 
   private long pollerPeriodicity;
+  private long nodeRolePollerPeriodicty;
   private TimeUnit timeUnit;
   private List<Thread> exceptionHandlerThreads;
   private List<ScheduledFuture<?>> pollingExecutors;
@@ -122,6 +123,7 @@ public class RcaController {
       final String masterRcaConf,
       final String rcaConf,
       long pollerPeriodicity,
+      long nodeRolePollerPeriodicty,
       TimeUnit timeUnit) {
     this.netOpsExecutorService = netOpsExecutorService;
     this.rcaNetClient = rcaNetClient;
@@ -139,6 +141,7 @@ public class RcaController {
     this.RCA_CONF_PATH = rcaConf;
     this.pollerPeriodicity = pollerPeriodicity;
     this.timeUnit = timeUnit;
+    this.nodeRolePollerPeriodicty = nodeRolePollerPeriodicty;
     this.exceptionHandlerThreads = new ArrayList<>();
     this.pollingExecutors = new ArrayList<>();
   }
@@ -223,7 +226,7 @@ public class RcaController {
           handleNodeRoleChange(nodeDetails);
         }
       }
-    }, 2, 60, TimeUnit.SECONDS);
+    }, 2, nodeRolePollerPeriodicty, timeUnit);
   }
 
   /**
