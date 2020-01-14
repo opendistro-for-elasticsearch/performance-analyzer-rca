@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMess
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PublishResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PublishResponse.PublishResponseStatus;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.Receiver;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.NetPersistor;
 import io.grpc.stub.StreamObserver;
 import java.util.ArrayList;
@@ -30,14 +31,14 @@ import org.apache.logging.log4j.Logger;
 /** Service handler for the /sendData RPC. */
 public class PublishRequestHandler {
   private static final Logger LOG = LogManager.getLogger(PublishRequestHandler.class);
-  private final NetPersistor persistor;
+  private final Receiver receiver;
   private final NodeStateManager nodeStateManager;
   private List<StreamObserver<PublishResponse>> upstreamResponseStreamList =
       Collections.synchronizedList(new ArrayList<>());
 
   public PublishRequestHandler(
-      final NetPersistor persistor, final NodeStateManager nodeStateManager) {
-    this.persistor = persistor;
+      final Receiver receiver, final NodeStateManager nodeStateManager) {
+    this.receiver = receiver;
     this.nodeStateManager = nodeStateManager;
   }
 
@@ -69,11 +70,7 @@ public class PublishRequestHandler {
      */
     @Override
     public void onNext(FlowUnitMessage flowUnitMessage) {
-      final String host = flowUnitMessage.getEsNode();
-      final String graphNode = flowUnitMessage.getGraphNode();
-      LOG.debug("Received flow unit from: {} for {}", host, graphNode);
-      persistor.write(graphNode, flowUnitMessage);
-      nodeStateManager.updateReceiveTime(host, graphNode);
+      receiver.enqueue(flowUnitMessage);
     }
 
     /**

@@ -22,6 +22,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.DataMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.UnicastIntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.FlowUnitWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.NetPersistor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
@@ -42,88 +43,53 @@ public class WireHopper {
   private final NetClient netClient;
   private final SubscriptionManager subscriptionManager;
   private final NodeStateManager nodeStateManager;
+  private final Sender sender;
+  private final Receiver receiver;
+  private final SubscriptionSender subscriptionSender;
 
   public WireHopper(
       final NetPersistor persistor,
       final NodeStateManager nodeStateManager,
       final NetClient netClient,
-      final SubscriptionManager subscriptionManager) {
+      final SubscriptionManager subscriptionManager,
+      final Sender sender,
+      final Receiver receiver,
+      final SubscriptionSender subscriptionSender) {
     this.persistor = persistor;
     this.netClient = netClient;
     this.subscriptionManager = subscriptionManager;
     this.nodeStateManager = nodeStateManager;
+    this.sender = sender;
+    this.receiver = receiver;
+    this.subscriptionSender = subscriptionSender;
   }
 
   public void sendIntent(IntentMsg msg) {
-    subscriptionManager.broadcastSubscribeRequest(
-        msg.getRequesterNode(), msg.getDestinationNode(), msg.getRcaConfTags());
+    LOG.info("kk: Q-ing message for broadcast: {}", msg);
+   subscriptionSender.enqueueForBroadcast(msg);
   }
 
   public void sendData(DataMsg dataMsg) {
-    final String sourceNode = dataMsg.getSourceNode();
-    final String esNode;
-    final NodeDetails currentNode = ClusterDetailsEventProcessor.getCurrentNodeDetails();
-    if (currentNode != null) {
-      esNode = currentNode.getHostAddress();
-    } else {
-      LOG.error("Could not get current host address from cluster level metrics reader.");
-      esNode = "";
-    }
-    if (subscriptionManager.isNodeSubscribed(sourceNode)) {
-      final Set<String> downstreamHostAddresses = subscriptionManager.getSubscribersFor(sourceNode);
-      LOG.debug("{} has downstream subscribers: {}", sourceNode, downstreamHostAddresses);
-      for (final String downstreamHostAddress : downstreamHostAddresses) {
-        for (final GenericFlowUnit flowUnit : dataMsg.getFlowUnits()) {
-          netClient.publish(
-              downstreamHostAddress,
-              flowUnit.buildFlowUnitMessage(sourceNode, esNode),
-              new StreamObserver<PublishResponse>() {
-                @Override
-                public void onNext(final PublishResponse value) {
-                  LOG.debug(
-                      "rca: Received acknowledgement from the server. status: {}",
-                      value.getDataStatus());
-                  if (value.getDataStatus() == PublishResponseStatus.NODE_SHUTDOWN) {
-                    subscriptionManager.unsubscribe(sourceNode, downstreamHostAddress);
-                  }
-                }
-
-                @Override
-                public void onError(final Throwable t) {
-                  LOG.error("rca: Encountered an exception at the server: ", t);
-                  subscriptionManager.unsubscribe(sourceNode, downstreamHostAddress);
-                  // TODO: When an error happens, onCompleted is not guaranteed. So, terminate the
-                  // connection.
-                }
-
-                @Override
-                public void onCompleted() {
-                  LOG.debug("rca: Server closed the data channel!");
-                }
-              });
-        }
-      }
-    } else {
-      LOG.debug("No subscribers for {}.", sourceNode);
-    }
+    sender.enqueue(dataMsg);
   }
 
   public List<FlowUnitWrapper> readFromWire(Node<?> node) {
     final String nodeName = node.name();
     final long intervalInSeconds = node.getEvaluationIntervalSeconds();
-    final List<FlowUnitWrapper> remoteFlowUnits = persistor.read(nodeName);
+    final List<FlowUnitWrapper> remoteFlowUnits = receiver.getFlowUnitsForNode(nodeName);
     final Set<String> publisherSet = subscriptionManager.getPublishersForNode(nodeName);
 
     if (remoteFlowUnits.size() < publisherSet.size()) {
       for (final String publisher : publisherSet) {
         long lastRxTimestamp = nodeStateManager.getLastReceivedTimestamp(nodeName, publisher);
         if (System.currentTimeMillis() - lastRxTimestamp > 2 * intervalInSeconds * MS_IN_S) {
-          LOG.debug(
-              "{} hasn't published in a while.. nothing from the last {} intervals",
+          LOG.info(
+              "kk: {} hasn't published in a while.. nothing from the last {} intervals",
               publisher,
               (System.currentTimeMillis() - lastRxTimestamp) / (intervalInSeconds * MS_IN_S));
           if (nodeStateManager.isRemoteHostInCluster(publisher)) {
-            resendIntent(nodeName, publisher, node.getTags());
+            subscriptionSender.enqueueForUnicast(new UnicastIntentMsg("", nodeName, node.getTags(),
+                publisher));
           }
         }
       }
@@ -131,9 +97,4 @@ public class WireHopper {
     return remoteFlowUnits;
   }
 
-  private void resendIntent(
-      final String node, final String remoteHost, final Map<String, String> tags) {
-    LOG.debug("Resending subscription to {} to get {} flow units", remoteHost, node);
-    subscriptionManager.sendSubscribeRequest(remoteHost, "", node, tags);
-  }
 }

@@ -21,24 +21,42 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDet
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class NodeStateManager {
   private static final long MS_IN_S = 1000;
   private static final long MS_IN_FIVE_SECONDS = 5 * MS_IN_S;
   private static final String SEPARATOR = ".";
 
-  private Map<String, Long> lastReceivedTimestampMap = new HashMap<>();
+  private ConcurrentMap<String, AtomicLong> lastReceivedTimestampMap = new ConcurrentHashMap<>();
 
   public void updateReceiveTime(String host, String graphNode) {
     final long currentTimeStamp = System.currentTimeMillis();
     final String compositeKey = graphNode + SEPARATOR + host;
-    lastReceivedTimestampMap.put(compositeKey, currentTimeStamp);
+    AtomicLong existingLong = lastReceivedTimestampMap.get(compositeKey);
+    if (existingLong == null) {
+      // happens-before: updating a java.util.concurrent collection. Update is made visible to
+      // all threads that read this collection.
+      AtomicLong prevVal = lastReceivedTimestampMap
+          .putIfAbsent(compositeKey, new AtomicLong(currentTimeStamp));
+      if (prevVal != null) {
+        // happens-before: updating AtomicLong. Update is made visible to all threads that
+        // read this atomic long.
+        lastReceivedTimestampMap.get(compositeKey).set(currentTimeStamp);
+      }
+    } else {
+      // happens-before: updating AtomicLong. Update is made visible to all threads that
+      // read this atomic long.
+      lastReceivedTimestampMap.get(compositeKey).set(currentTimeStamp);
+    }
   }
 
   public long getLastReceivedTimestamp(String graphNode, String host) {
     final String compositeKey = graphNode + SEPARATOR + host;
     if (lastReceivedTimestampMap.containsKey(compositeKey)) {
-      return lastReceivedTimestampMap.get(compositeKey);
+      return lastReceivedTimestampMap.get(compositeKey).get();
     }
 
     // Return a value that is in the future so that it doesn't cause

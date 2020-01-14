@@ -140,7 +140,7 @@ public class ReaderMetricsProcessor implements Runnable {
         conn.commit();
         conn.setAutoCommit(true);
         long duration = System.currentTimeMillis() - startTime;
-        LOG.info("Total time taken: {}", duration);
+        LOG.debug("Total time taken: {}", duration);
         if (duration < runInterval) {
           Thread.sleep(runInterval - duration);
         }
@@ -255,7 +255,7 @@ public class ReaderMetricsProcessor implements Runnable {
     long prevWindowStartTime = currWindowStartTime - MetricsConfiguration.SAMPLING_INTERVAL;
 
     if (metricsDBMap.get(prevWindowStartTime) != null) {
-      LOG.info("The metrics for this timestamp already exist. Skipping.");
+      LOG.debug("The metrics for this timestamp already exist. Skipping.");
       return;
     }
 
@@ -272,7 +272,7 @@ public class ReaderMetricsProcessor implements Runnable {
             alignedOSSnapHolder);
 
     long mFinalT = System.currentTimeMillis();
-    LOG.info("Total time taken for aligning OS Metrics: {}", mFinalT - mCurrT);
+    LOG.debug("Total time taken for aligning OS Metrics: {}", mFinalT - mCurrT);
 
     mCurrT = System.currentTimeMillis();
     MetricsDB metricsDB = createMetricsDB(prevWindowStartTime);
@@ -285,7 +285,7 @@ public class ReaderMetricsProcessor implements Runnable {
     metricsDB.commit();
     metricsDBMap.put(prevWindowStartTime, metricsDB);
     mFinalT = System.currentTimeMillis();
-    LOG.info("Total time taken for emitting Metrics: {}", mFinalT - mCurrT);
+    LOG.debug("Total time taken for emitting Metrics: {}", mFinalT - mCurrT);
     TIMING_STATS.put("emitMetrics", (double) (mFinalT - mCurrT));
   }
 
@@ -297,7 +297,7 @@ public class ReaderMetricsProcessor implements Runnable {
       HttpRequestMetricsSnapshot prevHttpRqSnap = httpRqMetricsMap.get(prevWindowStartTime);
       MetricsEmitter.emitHttpMetrics(create, metricsDB, prevHttpRqSnap);
     } else {
-      LOG.info(
+      LOG.debug(
           "Http request snapshot for the previous window does not exist. Not emitting metrics.");
     }
   }
@@ -313,7 +313,7 @@ public class ReaderMetricsProcessor implements Runnable {
 
       ShardRequestMetricsSnapshot preShardRequestMetricsSnapshot =
           shardRqMetricsMap.get(prevWindowStartTime);
-      LOG.info(
+      LOG.debug(
           "shard emit time {}, {}",
           prevWindowStartTime,
           preShardRequestMetricsSnapshot.windowStartTime);
@@ -327,11 +327,11 @@ public class ReaderMetricsProcessor implements Runnable {
         MetricsEmitter.emitThreadNameMetrics(
             create, metricsDB, osAlignedSnap); // threads other than bulk and query
       } else {
-        LOG.info("OS METRICS NULL");
+        LOG.debug("OS METRICS NULL");
       }
       alignedOSSnapHolder.remove();
     } else {
-      LOG.info(
+      LOG.debug(
           "Shard request snapshot for the previous window does not exist. Not emitting metrics.");
     }
   }
@@ -344,7 +344,7 @@ public class ReaderMetricsProcessor implements Runnable {
           masterEventMetricsMap.get(prevWindowStartTime);
       MetricsEmitter.emitMasterEventMetrics(metricsDB, preMasterEventSnapshot);
     } else {
-      LOG.info("Master snapshot for the previous window does not exist. Not emitting metrics.");
+      LOG.debug("Master snapshot for the previous window does not exist. Not emitting metrics.");
     }
   }
 
@@ -365,11 +365,11 @@ public class ReaderMetricsProcessor implements Runnable {
           rootLocation, currWindowStartTime, currWindowEndTime, masterEventMetricsSnapshot);
       LOG.debug(() -> masterEventMetricsSnapshot.fetchAll());
       masterEventMetricsMap.put(currWindowStartTime, masterEventMetricsSnapshot);
-      LOG.info("Adding new Master Event snapshot- currTimestamp {}", currWindowStartTime);
+      LOG.debug("Adding new Master Event snapshot- currTimestamp {}", currWindowStartTime);
     }
 
     long mFinalT = System.currentTimeMillis();
-    LOG.info("Total time taken for parsing Master Event Metrics: {}", mFinalT - mCurrT);
+    LOG.debug("Total time taken for parsing Master Event Metrics: {}", mFinalT - mCurrT);
     TIMING_STATS.put("parseMasterEventMetrics", (double) (mFinalT - mCurrT));
   }
 
@@ -501,7 +501,7 @@ public class ReaderMetricsProcessor implements Runnable {
    */
   public OSMetricsSnapshot alignOSMetrics(
       long startTime, long endTime, OSMetricsSnapshot alignedWindow) throws Exception {
-    LOG.info("Aligning metrics for {}, {}", startTime, endTime);
+    LOG.debug("Aligning metrics for {}, {}", startTime, endTime);
     // Find osmetric windows that overlap with the expected window.
     // This is atmost 2 but maybe less than 2. If less than 2, simply return the existing window.
 
@@ -544,7 +544,7 @@ public class ReaderMetricsProcessor implements Runnable {
       return null;
     }
 
-    LOG.info("Adding new scaled OS snapshot- actualTime {}", startTime);
+    LOG.debug("Adding new scaled OS snapshot- actualTime {}", startTime);
     OSMetricsSnapshot leftWindow = osMetricsMap.get(t1);
     OSMetricsSnapshot rightWindow = osMetricsMap.get(t2);
     OSMetricsSnapshot.alignWindow(
@@ -600,7 +600,7 @@ public class ReaderMetricsProcessor implements Runnable {
       MemoryDBSnapshot alignedWindow)
       throws Exception {
 
-    LOG.info(
+    LOG.debug(
         "Aligning node metrics for {}, from {} to {}", metricName, readerStartTime, readerEndTime);
     // Find metric windows that overlap with the expected window.
     // This is at most 2 but maybe less than 2. If less than 2, simply
@@ -640,7 +640,7 @@ public class ReaderMetricsProcessor implements Runnable {
     // t1 and startTime are already aligned. Just return the snapshot
     // between t2 and t1.
     if (t1 == readerStartTime) {
-      LOG.info("Found matching {} snapshot.", metricName);
+      LOG.debug("Found matching {} snapshot.", metricName);
       return metricMap.get(t2);
     }
 
@@ -657,7 +657,7 @@ public class ReaderMetricsProcessor implements Runnable {
       return null;
     }
 
-    LOG.info("Adding new scaled {} snapshot- actualTime {}", metricName, readerStartTime);
+    LOG.debug("Adding new scaled {} snapshot- actualTime {}", metricName, readerStartTime);
     // retrieve left and right window using osMetricsMap, whose key is the
     // largest last modification time.  We use values in the future to
     // represent values in the past.  So if at t1, writer writes values 1,
@@ -734,11 +734,11 @@ public class ReaderMetricsProcessor implements Runnable {
               alignedSnapshotHolder);
 
       long mFinalT = System.currentTimeMillis();
-      LOG.info("Total time taken for aligning {} Metrics: {}", metricName, mFinalT - mCurrT);
+      LOG.debug("Total time taken for aligning {} Metrics: {}", metricName, mFinalT - mCurrT);
 
       if (alignedSnapshot == null) {
         alignedSnapshotHolder.remove();
-        LOG.info(
+        LOG.debug(
             "{} snapshot for the previous window does not exist. Not emitting metrics.",
             metricName);
         continue;
@@ -752,7 +752,7 @@ public class ReaderMetricsProcessor implements Runnable {
       alignedSnapshotHolder.remove();
 
       mFinalT = System.currentTimeMillis();
-      LOG.info("Total time taken for emitting node metrics: {}", mFinalT - mCurrT);
+      LOG.debug("Total time taken for emitting node metrics: {}", mFinalT - mCurrT);
     }
   }
 

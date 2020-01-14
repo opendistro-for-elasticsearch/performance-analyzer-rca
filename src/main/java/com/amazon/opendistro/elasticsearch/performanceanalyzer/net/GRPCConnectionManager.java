@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.net;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpcServiceGrpc;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpcServiceGrpc.InterNodeRpcServiceStub;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -27,6 +28,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.net.ssl.SSLException;
 import org.apache.logging.log4j.LogManager;
@@ -43,9 +47,10 @@ public class GRPCConnectionManager {
   private static final Logger LOG = LogManager.getLogger(GRPCConnectionManager.class);
   private static final String EMPTY_STRING = "";
 
-  private Map<String, ManagedChannel> perHostChannelMap = new HashMap<>();
-  private Map<String, InterNodeRpcServiceGrpc.InterNodeRpcServiceStub> perHostClientStubMap =
-      new HashMap<>();
+  private ConcurrentMap<String, AtomicReference<ManagedChannel>> perHostChannelMap =
+      new ConcurrentHashMap<>();
+  private ConcurrentMap<String, AtomicReference<InterNodeRpcServiceStub>> perHostClientStubMap =
+      new ConcurrentHashMap<>();
 
   private final boolean shouldUseHttps;
 
@@ -53,14 +58,26 @@ public class GRPCConnectionManager {
     this.shouldUseHttps = shouldUseHttps;
   }
 
-  public InterNodeRpcServiceGrpc.InterNodeRpcServiceStub getClientStubForHost(
+  public InterNodeRpcServiceStub getClientStubForHost(
       final String remoteHost) {
     if (perHostClientStubMap.containsKey(remoteHost)) {
-      return perHostClientStubMap.get(remoteHost);
+      return perHostClientStubMap.get(remoteHost).get();
     }
+    return addOrUpdateClientStubForHost(remoteHost);
+  }
 
-    final InterNodeRpcServiceGrpc.InterNodeRpcServiceStub stub = buildStubForHost(remoteHost);
-    perHostClientStubMap.put(remoteHost, stub);
+  private synchronized InterNodeRpcServiceStub addOrUpdateClientStubForHost(final String remoteHost) {
+    final InterNodeRpcServiceStub stub = buildStubForHost(remoteHost);
+    AtomicReference<InterNodeRpcServiceStub> existingStub = perHostClientStubMap.get(remoteHost);
+    if (existingStub == null) {
+      // happens-before: updating java.util.concurrent collection. Update will be made visible to
+      // all threads.
+      perHostClientStubMap.put(remoteHost, new AtomicReference<>(stub));
+    } else {
+      // happens-before: updating AtomicReference. Reads on this AtomicReference will reflect
+      // updated value in all threads.
+      perHostClientStubMap.get(remoteHost).set(stub);
+    }
     return stub;
   }
 
@@ -95,11 +112,25 @@ public class GRPCConnectionManager {
 
   private ManagedChannel getChannelForHost(final String remoteHost) {
     if (perHostChannelMap.containsKey(remoteHost)) {
-      return perHostChannelMap.get(remoteHost);
+      return perHostChannelMap.get(remoteHost).get();
     }
 
+    return addOrUpdateChannelForHost(remoteHost);
+  }
+
+  private synchronized ManagedChannel addOrUpdateChannelForHost(final String remoteHost) {
     final ManagedChannel channel = buildChannelForHost(remoteHost);
-    perHostChannelMap.put(remoteHost, channel);
+    if (perHostChannelMap.get(remoteHost) == null) {
+      final AtomicReference<ManagedChannel> managedChannelAtomicReference = new AtomicReference<>(
+          channel);
+      // happens-before: updating java.util.concurrent collection. Update will be made visible to
+      // all subsequent reads.
+      perHostChannelMap.put(remoteHost, managedChannelAtomicReference);
+    } else {
+      // happens-before: updating the AtomicReference in the map. Update will be visible to all
+      // threads for subsequent gets.
+      perHostChannelMap.get(remoteHost).set(channel);
+    }
     return channel;
   }
 
@@ -128,13 +159,13 @@ public class GRPCConnectionManager {
     }
   }
 
-  private InterNodeRpcServiceGrpc.InterNodeRpcServiceStub buildStubForHost(
+  private InterNodeRpcServiceStub buildStubForHost(
       final String remoteHost) {
     return InterNodeRpcServiceGrpc.newStub(getChannelForHost(remoteHost));
   }
 
   private void removeAllStubs() {
-    for (Map.Entry<String, InterNodeRpcServiceGrpc.InterNodeRpcServiceStub> entry :
+    for (Map.Entry<String, AtomicReference<InterNodeRpcServiceStub>> entry :
         perHostClientStubMap.entrySet()) {
       LOG.debug("Removing client stub for host: {}", entry.getKey());
       perHostClientStubMap.remove(entry.getKey());
@@ -142,9 +173,9 @@ public class GRPCConnectionManager {
   }
 
   private void terminateAllConnections() {
-    for (Map.Entry<String, ManagedChannel> entry : perHostChannelMap.entrySet()) {
+    for (Map.Entry<String, AtomicReference<ManagedChannel>> entry : perHostChannelMap.entrySet()) {
       LOG.debug("shutting down connection to host: {}", entry.getKey());
-      entry.getValue().shutdownNow();
+      entry.getValue().get().shutdownNow();
       perHostChannelMap.remove(entry.getKey());
     }
   }

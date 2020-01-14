@@ -50,7 +50,7 @@ public class RCAScheduler {
 
   private WireHopper net;
   private boolean shutdownRequested;
-  private boolean running = false;
+  private RcaSchedulerState schedulerState = RcaSchedulerState.STATE_NOT_STARTED;
   private NodeRole role = NodeRole.UNKNOWN;
   final ThreadFactory schedThreadFactory =
       new ThreadFactoryBuilder().setNameFormat("sched-%d").setDaemon(true).build();
@@ -103,7 +103,7 @@ public class RCAScheduler {
               PERIODICITY_SECONDS,
               TimeUnit.SECONDS);
       startExceptionHandlerThread();
-      this.running = true;
+      schedulerState = RcaSchedulerState.STATE_STARTED;
     } else {
       LOG.error("Couldn't start RCA scheduler. Executor pool is not set.");
     }
@@ -126,10 +126,12 @@ public class RCAScheduler {
                   if (!shutdownRequested) {
                     LOG.error("Exception cause : {}", ex.getCause());
                     shutdown();
+                    schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
                   }
                 } catch (InterruptedException ix) {
                   LOG.error("Interrupted exception cause : {}", ix.getCause());
                   shutdown();
+                  schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
                 }
               }
             })
@@ -154,7 +156,7 @@ public class RCAScheduler {
       LOG.error(
           "RCA: Error while closing the DB connection: {}::{}", e.getErrorCode(), e.getCause());
     }
-    running = false;
+    schedulerState = RcaSchedulerState.STATE_STOPPED;
   }
 
   private void waitForShutdown(ExecutorService execPool) {
@@ -168,10 +170,9 @@ public class RCAScheduler {
     }
   }
 
-  public boolean isRunning() {
-    return running;
+  public RcaSchedulerState getState() {
+    return this.schedulerState;
   }
-
   private void createExecutorPools() {
     scheduledPool = Executors.newScheduledThreadPool(1, schedThreadFactory);
     executorPool = Executors.newFixedThreadPool(1, taskThreadFactory);

@@ -138,7 +138,7 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
   @Override
   public void subscribe(
       final SubscribeMessage request, final StreamObserver<SubscribeResponse> responseObserver) {
-    LOG.debug("subscribe received");
+    LOG.info("kk: subscribe received");
     if (subscribeHandler != null) {
       subscribeHandler.handleSubscriptionRequest(request, responseObserver);
     }

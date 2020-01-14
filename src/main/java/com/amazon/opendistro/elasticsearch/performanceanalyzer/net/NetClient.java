@@ -25,6 +25,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeRes
 import io.grpc.stub.StreamObserver;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,7 +44,8 @@ public class NetClient {
     this.connectionManager = connectionManager;
   }
 
-  private Map<String, StreamObserver<FlowUnitMessage>> perHostOpenDataStreamMap = new HashMap<>();
+  private ConcurrentMap<String, AtomicReference<StreamObserver<FlowUnitMessage>>> perHostOpenDataStreamMap =
+      new ConcurrentHashMap<>();
 
   public void subscribe(
       final String remoteHost,
@@ -83,12 +87,12 @@ public class NetClient {
   }
 
   private void closeAllDataStreams() {
-    for (Map.Entry<String, StreamObserver<FlowUnitMessage>> entry :
+    for (Map.Entry<String, AtomicReference<StreamObserver<FlowUnitMessage>>> entry :
         perHostOpenDataStreamMap.entrySet()) {
       LOG.debug("Closing stream for host: {}", entry.getKey());
       // Sending an onCompleted should trigger the subscriber's node state manager
       // and cause this host to be put under observation.f
-      entry.getValue().onCompleted();
+      entry.getValue().get().onCompleted();
       perHostOpenDataStreamMap.remove(entry.getKey());
     }
   }
@@ -96,14 +100,23 @@ public class NetClient {
   private StreamObserver<FlowUnitMessage> getDataStreamForHost(
       final String remoteHost, final StreamObserver<PublishResponse> serverResponseStream) {
     if (perHostOpenDataStreamMap.containsKey(remoteHost)) {
-      return perHostOpenDataStreamMap.get(remoteHost);
+      return perHostOpenDataStreamMap.get(remoteHost).get();
     }
+    return addOrUpdateDataStreamForHost(remoteHost, serverResponseStream);
+  }
 
+  private synchronized StreamObserver<FlowUnitMessage> addOrUpdateDataStreamForHost(
+      final String remoteHost, final StreamObserver<PublishResponse> serverResponseStream) {
     InterNodeRpcServiceGrpc.InterNodeRpcServiceStub stub =
         connectionManager.getClientStubForHost(remoteHost);
     final StreamObserver<FlowUnitMessage> dataStream = stub.publish(serverResponseStream);
-
-    perHostOpenDataStreamMap.put(remoteHost, dataStream);
+    if (perHostOpenDataStreamMap.get(remoteHost) == null) {
+      // happens-before: updating AtomicReference.
+      perHostOpenDataStreamMap.put(remoteHost, new AtomicReference<>(dataStream));
+    } else {
+      // happens-before: updating AtomicReference.
+      perHostOpenDataStreamMap.get(remoteHost).set(dataStream);
+    }
     return dataStream;
   }
 

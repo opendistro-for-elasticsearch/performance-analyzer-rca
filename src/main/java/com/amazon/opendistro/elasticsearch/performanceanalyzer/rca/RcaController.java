@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.handler.MetricsServerHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
@@ -30,8 +31,22 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ThresholdMain;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.DataMsg;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.UnicastIntentMsg;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.CompositeSubscribeRequest;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NetworkQueue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.ReceiveTask;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.ReceivedFlowUnitStore;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.Receiver;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SendTask;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.Sender;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionReceiver;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionReceiverTask;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionSendTask;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionSender;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.handler.PublishRequestHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.handler.SubscribeServerHandler;
@@ -39,9 +54,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.N
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.PersistenceFactory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCAScheduler;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RcaSchedulerState;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryRcaRequestHandler;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.sun.net.httpserver.HttpServer;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -55,6 +72,8 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -226,7 +245,9 @@ public class RcaController {
     }
   }
 
-  /** Reads the enabled/disabled value for RCA from the conf file. */
+  /**
+   * Reads the enabled/disabled value for RCA from the conf file.
+   */
   private void readRcaEnabledFromConf() {
     Path filePath = Paths.get(RCA_ENABLED_CONF_LOCATION, RCA_ENABLED_CONF_FILE);
 
@@ -252,7 +273,7 @@ public class RcaController {
   private void startRcaNanny() {
     netOpsExecutorService.scheduleAtFixedRate(
         () -> {
-          if (rcaScheduler != null && rcaScheduler.isRunning()) {
+          if (rcaScheduler != null && rcaScheduler.getState() == RcaSchedulerState.STATE_STARTED) {
             if (!rcaEnabled) {
               // Need to shutdown the rca scheduler
               stop();
@@ -263,7 +284,12 @@ public class RcaController {
               }
             }
           } else {
-            if (rcaEnabled && NodeRole.UNKNOWN != currentRole) {
+            // Start the scheduler if all the following conditions are met:
+            // 1. rca is enabled
+            // 2. we know the role of this es node
+            // 3. scheduler is not stopped due to an exception.
+            if (rcaEnabled && NodeRole.UNKNOWN != currentRole && (rcaScheduler == null
+                || rcaScheduler.getState() != RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION)) {
               start();
             }
           }
@@ -281,16 +307,35 @@ public class RcaController {
       Queryable db = new MetricsDBProvider();
       ThresholdMain thresholdMain = new ThresholdMain(RcaConsts.THRESHOLDS_PATH, rcaConf);
       Persistable persistable = PersistenceFactory.create(rcaConf);
+      ThreadFactory networkThreadFactory =
+          new ThreadFactoryBuilder().setNameFormat("rca-net-%d").setDaemon(true).build();
+      ScheduledExecutorService networkActivitiesThreadPool = new ScheduledThreadPoolExecutor(
+          3, networkThreadFactory);
+      Sender sender = buildSender(networkActivitiesThreadPool);
+      sender.start();
+
+      Receiver receiver = buildReceiver(networkActivitiesThreadPool);
+      receiver.start();
+
+      SubscriptionSender subscriptionSender = buildSubscriptionSender(networkActivitiesThreadPool);
+      subscriptionSender.start();
+
+      SubscriptionReceiver subscriptionReceiver = buildSubscriptionReceiver(
+          networkActivitiesThreadPool);
+      subscriptionReceiver.start();
+
       addRcaRequestHandler();
       queryRcaRequestHandler.setPersistable(persistable);
       WireHopper net =
-          new WireHopper(netPersistor, nodeStateManager, rcaNetClient, subscriptionManager);
+          new WireHopper(netPersistor, nodeStateManager, rcaNetClient, subscriptionManager,
+              sender, receiver, subscriptionSender);
       this.rcaScheduler =
           new RCAScheduler(connectedComponents, db, rcaConf, thresholdMain, persistable, net);
 
       rcaNetServer.setMetricsHandler(new MetricsServerHandler());
-      rcaNetServer.setSendDataHandler(new PublishRequestHandler(netPersistor, nodeStateManager));
-      rcaNetServer.setSubscribeHandler(new SubscribeServerHandler(net, subscriptionManager));
+      rcaNetServer.setSendDataHandler(new PublishRequestHandler(receiver, nodeStateManager));
+      rcaNetServer.setSubscribeHandler(
+          new SubscribeServerHandler(net, subscriptionManager, subscriptionReceiver));
 
       rcaScheduler.setRole(currentRole);
       rcaScheduler.start();
@@ -304,6 +349,38 @@ public class RcaController {
       LOG.error("Couldn't build connected components or persistable.. Ran into {}", e.getMessage());
       e.printStackTrace();
     }
+  }
+
+  private SubscriptionReceiver buildSubscriptionReceiver(
+      final ScheduledExecutorService subscriptionReceiverThreadPool) {
+    NetworkQueue<CompositeSubscribeRequest> rxQ = new NetworkQueue<>();
+    SubscriptionReceiverTask subscriptionReceiverTask =
+        new SubscriptionReceiverTask(subscriptionManager, rxQ);
+    return new SubscriptionReceiver(rxQ, subscriptionReceiverThreadPool, subscriptionReceiverTask);
+  }
+
+  private SubscriptionSender buildSubscriptionSender(
+      final ScheduledExecutorService subscriptionSendThreadPool) {
+    NetworkQueue<IntentMsg> txBroadcastQ = new NetworkQueue<>();
+    NetworkQueue<UnicastIntentMsg> txUnicastQ = new NetworkQueue<>();
+    SubscriptionSendTask subscriptionSendTask = new SubscriptionSendTask(subscriptionManager,
+        txBroadcastQ, txUnicastQ, rcaNetClient);
+    return new SubscriptionSender(txBroadcastQ, txUnicastQ,
+        subscriptionSendTask, subscriptionSendThreadPool);
+  }
+
+  private Sender buildSender(final ScheduledExecutorService sendThreadPool) {
+    NetworkQueue<DataMsg> txQ = new NetworkQueue<>();
+    SendTask sendTask = new SendTask(subscriptionManager, txQ, rcaNetClient);
+    return new Sender(txQ, sendTask, sendThreadPool);
+  }
+
+  private Receiver buildReceiver(final ScheduledExecutorService recvThreadPool) {
+    NetworkQueue<FlowUnitMessage> rxQ = new NetworkQueue<>();
+    ReceivedFlowUnitStore receivedFlowUnitStore = new ReceivedFlowUnitStore();
+    ReceiveTask receiveTask = new ReceiveTask(rxQ, receivedFlowUnitStore, nodeStateManager);
+
+    return new Receiver(rxQ, recvThreadPool, receivedFlowUnitStore, receiveTask);
   }
 
   private void stop() {
