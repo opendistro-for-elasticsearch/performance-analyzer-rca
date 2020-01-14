@@ -4,6 +4,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.Data
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Networking component that handles sending of flow units.
+ */
 public class Sender {
 
   private final NetworkRequestQueue<DataMsg> txQ;
@@ -20,6 +23,11 @@ public class Sender {
 
   public void start() {
     threadPool.scheduleAtFixedRate(sendTask, 0, 250, TimeUnit.MILLISECONDS);
+  }
+
+  public void stop() {
+    // Drain out the messages to stop processing.
+    txQ.drain();
   }
 
   public boolean enqueue(final DataMsg dataMsg) {

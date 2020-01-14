@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
@@ -127,6 +129,11 @@ public class RcaController {
   private List<Thread> exceptionHandlerThreads;
   private List<ScheduledFuture<?>> pollingExecutors;
   private boolean shutdownRequested;
+  private ScheduledExecutorService networkActivitiesThreadPool;
+  private Sender flowUnitSender;
+  private Receiver flowUnitReceiver;
+  private SubscriptionSender subscriptionSender;
+  private SubscriptionReceiver subscriptionReceiver;
 
   public RcaController(
       final ScheduledExecutorService netOpsExecutorService,
@@ -337,31 +344,31 @@ public class RcaController {
       Persistable persistable = PersistenceFactory.create(rcaConf);
       ThreadFactory networkThreadFactory =
           new ThreadFactoryBuilder().setNameFormat("rca-net-%d").setDaemon(true).build();
-      ScheduledExecutorService networkActivitiesThreadPool = new ScheduledThreadPoolExecutor(
+      networkActivitiesThreadPool = new ScheduledThreadPoolExecutor(
           3, networkThreadFactory);
-      Sender sender = buildSender(networkActivitiesThreadPool);
-      sender.start();
+      flowUnitSender = buildSender(networkActivitiesThreadPool);
+      flowUnitSender.start();
 
-      Receiver receiver = buildReceiver(networkActivitiesThreadPool);
-      receiver.start();
+      flowUnitReceiver = buildReceiver(networkActivitiesThreadPool);
+      flowUnitReceiver.start();
 
-      SubscriptionSender subscriptionSender = buildSubscriptionSender(networkActivitiesThreadPool);
+      subscriptionSender = buildSubscriptionSender(networkActivitiesThreadPool);
       subscriptionSender.start();
 
-      SubscriptionReceiver subscriptionReceiver = buildSubscriptionReceiver(
+      subscriptionReceiver = buildSubscriptionReceiver(
           networkActivitiesThreadPool);
       subscriptionReceiver.start();
 
       addRcaRequestHandler();
       queryRcaRequestHandler.setPersistable(persistable);
       WireHopper net =
-          new WireHopper(netPersistor, nodeStateManager, rcaNetClient, subscriptionManager,
-              sender, receiver, subscriptionSender);
+          new WireHopper(nodeStateManager, rcaNetClient, subscriptionManager,
+              flowUnitSender, flowUnitReceiver, subscriptionSender);
       this.rcaScheduler =
           new RCAScheduler(connectedComponents, db, rcaConf, thresholdMain, persistable, net);
 
       rcaNetServer.setMetricsHandler(new MetricsServerHandler());
-      rcaNetServer.setSendDataHandler(new PublishRequestHandler(receiver, nodeStateManager));
+      rcaNetServer.setSendDataHandler(new PublishRequestHandler(flowUnitReceiver, nodeStateManager));
       rcaNetServer.setSubscribeHandler(
           new SubscribeServerHandler(net, subscriptionManager, subscriptionReceiver));
 
@@ -415,12 +422,24 @@ public class RcaController {
     rcaScheduler.shutdown();
     rcaNetClient.shutdown();
     rcaNetServer.shutdown();
+    networkActivitiesThreadPool.shutdown();
+    try {
+      networkActivitiesThreadPool.awaitTermination(1, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      LOG.warn("Awaiting termination interrupted. {}", e.getCause(), e);
+      networkActivitiesThreadPool.shutdownNow();
+    }
+    flowUnitSender.stop();
+    flowUnitReceiver.stop();
+    subscriptionSender.stop();
+    subscriptionReceiver.stop();
     removeRcaRequestHandler();
   }
 
   private void restart() {
     stop();
     start();
+    StatsCollector.instance().logException(StatExceptionCode.RCA_SCHEDULER_RESTART_PROCESSING);
   }
 
   private RcaConf pickRcaConfForRole(final NodeRole nodeRole) {

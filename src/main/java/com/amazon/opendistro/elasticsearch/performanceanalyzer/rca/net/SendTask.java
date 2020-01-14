@@ -12,6 +12,9 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Class that processes flow units that need to be sent from the queue.
+ */
 public class SendTask implements Runnable {
 
   private static final Logger LOG = LogManager.getLogger(SendTask.class);

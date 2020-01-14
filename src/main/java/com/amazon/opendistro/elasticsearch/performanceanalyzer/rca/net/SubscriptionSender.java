@@ -5,6 +5,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.Unic
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Class responsible for enqueueing subscription requests to be sent.
+ */
 public class SubscriptionSender {
   private final NetworkRequestQueue<IntentMsg> txBroadcastQ;
   private final NetworkRequestQueue<UnicastIntentMsg> txUnicastQ;
@@ -31,6 +34,12 @@ public class SubscriptionSender {
   }
 
   public void start() {
-    threadPool.scheduleAtFixedRate(subscriptionSendTask, 0, 250, TimeUnit.MILLISECONDS);
+    threadPool.scheduleAtFixedRate(subscriptionSendTask, 5000, 250, TimeUnit.MILLISECONDS);
+  }
+
+  public void stop() {
+    // drain out the queue to stop processing.
+    txBroadcastQ.drain();
+    txUnicastQ.drain();
   }
 }

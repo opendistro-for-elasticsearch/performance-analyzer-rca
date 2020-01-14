@@ -9,6 +9,9 @@ import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Stream observer class that handles the response to a subscription request.
+ */
 public class SubscribeResponseHandler implements StreamObserver<SubscribeResponse> {
 
   private static final Logger LOG = LogManager.getLogger(SubscribeResponseHandler.class);

@@ -21,7 +21,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.DataMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.UnicastIntentMsg;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.NetPersistor;
 import java.util.List;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -32,7 +31,6 @@ public class WireHopper {
   private static final Logger LOG = LogManager.getLogger(WireHopper.class);
   private static final int MS_IN_S = 1000;
 
-  private final NetPersistor persistor;
   private final NetClient netClient;
   private final SubscriptionManager subscriptionManager;
   private final NodeStateManager nodeStateManager;
@@ -41,14 +39,12 @@ public class WireHopper {
   private final SubscriptionSender subscriptionSender;
 
   public WireHopper(
-      final NetPersistor persistor,
       final NodeStateManager nodeStateManager,
       final NetClient netClient,
       final SubscriptionManager subscriptionManager,
       final Sender sender,
       final Receiver receiver,
       final SubscriptionSender subscriptionSender) {
-    this.persistor = persistor;
     this.netClient = netClient;
     this.subscriptionManager = subscriptionManager;
     this.nodeStateManager = nodeStateManager;
@@ -58,7 +54,6 @@ public class WireHopper {
   }
 
   public void sendIntent(IntentMsg msg) {
-    LOG.info("kk: Q-ing message for broadcast: {}", msg);
    subscriptionSender.enqueueForBroadcast(msg);
   }
 
@@ -76,8 +71,8 @@ public class WireHopper {
       for (final String publisher : publisherSet) {
         long lastRxTimestamp = nodeStateManager.getLastReceivedTimestamp(nodeName, publisher);
         if (System.currentTimeMillis() - lastRxTimestamp > 2 * intervalInSeconds * MS_IN_S) {
-          LOG.info(
-              "kk: {} hasn't published in a while.. nothing from the last {} intervals",
+          LOG.debug(
+              "{} hasn't published in a while.. nothing from the last {} intervals",
               publisher,
               (System.currentTimeMillis() - lastRxTimestamp) / (intervalInSeconds * MS_IN_S));
           if (nodeStateManager.isRemoteHostInCluster(publisher)) {

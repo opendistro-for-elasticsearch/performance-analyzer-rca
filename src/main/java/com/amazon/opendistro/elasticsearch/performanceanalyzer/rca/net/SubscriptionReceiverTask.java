@@ -8,6 +8,9 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Class that processes a received subscription request.
+ */
 public class SubscriptionReceiverTask implements Runnable {
 
   private static final Logger LOG = LogManager.getLogger(SubscriptionReceiverTask.class);

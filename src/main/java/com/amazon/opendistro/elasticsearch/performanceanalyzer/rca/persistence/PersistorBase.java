@@ -40,7 +40,7 @@ import org.jooq.Field;
 // TODO: Scheme to rotate the current file and garbage collect older files.
 public abstract class PersistorBase implements Persistable {
   private static final Logger LOG = LogManager.getLogger(PersistorBase.class);
-  protected final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm");
+  protected final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH");
   protected String dir;
   protected String filename;
   protected Connection conn;

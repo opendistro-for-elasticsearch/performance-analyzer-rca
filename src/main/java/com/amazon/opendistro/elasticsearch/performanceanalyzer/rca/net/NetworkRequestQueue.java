@@ -7,7 +7,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 /**
- * Class that represents the queue of messages that need to be sent out.
+ * Class that represents a custom bounded and concurrent queue.
  */
 public class NetworkRequestQueue<T> {
 

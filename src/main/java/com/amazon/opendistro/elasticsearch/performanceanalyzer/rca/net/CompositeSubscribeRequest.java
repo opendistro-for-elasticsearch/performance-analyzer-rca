@@ -4,6 +4,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMes
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
 import io.grpc.stub.StreamObserver;
 
+/**
+ * Composite object that encapsulates the subscribe request message and the response stream.
+ */
 public class CompositeSubscribeRequest {
 
   private final SubscribeMessage subscribeMessage;

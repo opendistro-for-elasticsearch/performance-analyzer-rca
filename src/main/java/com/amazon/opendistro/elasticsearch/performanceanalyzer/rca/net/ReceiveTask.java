@@ -6,6 +6,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMess
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Class that processes the received flow units from the queue.
+ */
 public class ReceiveTask implements Runnable {
 
   private static final Logger LOG = LogManager.getLogger(ReceiveTask.class);

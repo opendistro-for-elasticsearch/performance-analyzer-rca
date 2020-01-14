@@ -5,6 +5,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Networking component that handles receiving subscriptions.
+ */
 public class SubscriptionReceiver {
 
   private static final Logger LOG = LogManager.getLogger(SubscriptionReceiver.class);
@@ -27,5 +30,10 @@ public class SubscriptionReceiver {
 
   public void start() {
     threadPool.scheduleAtFixedRate(subscriptionReceiverTask, 0, 250, TimeUnit.MILLISECONDS);
+  }
+
+  public void stop() {
+    // drain out the queue to stop processing.
+    rxQ.drain();
   }
 }

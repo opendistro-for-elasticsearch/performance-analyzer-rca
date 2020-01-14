@@ -13,6 +13,9 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Class that handles sending of subscription requests from the queue.
+ */
 public class SubscriptionSendTask implements Runnable {
 
   private static final Logger LOG = LogManager.getLogger(SubscriptionSendTask.class);

@@ -26,6 +26,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.concurrent.ThreadSafe;
 
+/**
+ * Manages the subscription state for the nodes in the graph.
+ */
 public class NodeStateManager {
   private static final long MS_IN_S = 1000;
   private static final long MS_IN_FIVE_SECONDS = 5 * MS_IN_S;

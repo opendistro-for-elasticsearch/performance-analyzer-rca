@@ -7,6 +7,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Networking component that handles receiving of flow units.
+ */
 public class Receiver {
 
   private static final Logger LOG = LogManager.getLogger(Receiver.class);
@@ -28,6 +31,11 @@ public class Receiver {
 
   public void start() {
     threadPool.scheduleAtFixedRate(recvTask, 0, 250, TimeUnit.MILLISECONDS);
+  }
+
+  public void stop() {
+    // drain out the queue to stop processing.
+    rxQ.drain();
   }
 
   public boolean enqueue(final FlowUnitMessage flowUnitMessage) {

@@ -9,6 +9,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+/**
+ * An intermediate buffer that holds flow units received for different vertices from across the
+ * cluster.
+ */
 public class ReceivedFlowUnitStore {
 
   private static final int DEFAULT_PER_NODE_FLOWUNIT_Q_SIZE = 200;
