@@ -36,8 +36,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.MetricsD
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageOldGenRca;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
