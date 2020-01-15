@@ -49,7 +49,8 @@ public class RcaConsts {
   public static final String DATASTORE_RESOURCE_COL_NAME = "resource";
   public static final String DATASTORE_STATE_COL_NAME = "state";
 
-  public static final long networkPollerPeriodicity = 5;
+  public static final long rcaNannyPollerPeriodicity = 5;
+  public static final long rcaConfPollerPeriodicity = 5;
   public static final long nodeRolePollerPeriodicity = 60;
-  public static final TimeUnit networkPollerPeriodicityTimeUnit = TimeUnit.SECONDS;
+  public static final TimeUnit rcaPollerPeriodicityTimeUnit = TimeUnit.SECONDS;
 }

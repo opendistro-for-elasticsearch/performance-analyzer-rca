@@ -93,6 +93,7 @@ public class RcaControllerTest {
             Paths.get(rcaEnabledFileLoc.toString(), "rca.conf").toString(),
             1,
             1,
+            1,
             TimeUnit.MILLISECONDS);
 
     setMyIp(masterIP, AllMetrics.NodeRole.UNKNOWN);
