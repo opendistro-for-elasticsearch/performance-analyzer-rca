@@ -56,8 +56,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -105,11 +103,12 @@ public class RcaController {
   private final String MASTER_RCA_CONF_PATH;
   private final String RCA_CONF_PATH;
 
-  private long pollerPeriodicity;
+  private long rcaConfPollerPeriodicity;
+  private long rcaNannyPollerPeriodicity;
+  private long nodeRolePollerPeriodicty;
   private TimeUnit timeUnit;
   private List<Thread> exceptionHandlerThreads;
   private List<ScheduledFuture<?>> pollingExecutors;
-  private boolean shutdownRequested;
 
   public RcaController(
       final ScheduledExecutorService netOpsExecutorService,
@@ -121,7 +120,9 @@ public class RcaController {
       final String electedMasterRcaConf,
       final String masterRcaConf,
       final String rcaConf,
-      long pollerPeriodicity,
+      long rcaNannyPollerPeriodicity,
+      long rcaConfPollerPeriodicity,
+      long nodeRolePollerPeriodicty,
       TimeUnit timeUnit) {
     this.netOpsExecutorService = netOpsExecutorService;
     this.rcaNetClient = rcaNetClient;
@@ -137,8 +138,10 @@ public class RcaController {
     this.ELECTED_MASTER_RCA_CONF_PATH = electedMasterRcaConf;
     this.MASTER_RCA_CONF_PATH = masterRcaConf;
     this.RCA_CONF_PATH = rcaConf;
-    this.pollerPeriodicity = pollerPeriodicity;
+    this.rcaNannyPollerPeriodicity = rcaNannyPollerPeriodicity;
+    this.rcaConfPollerPeriodicity = rcaConfPollerPeriodicity;
     this.timeUnit = timeUnit;
+    this.nodeRolePollerPeriodicty = nodeRolePollerPeriodicty;
     this.exceptionHandlerThreads = new ArrayList<>();
     this.pollingExecutors = new ArrayList<>();
   }
@@ -212,7 +215,7 @@ public class RcaController {
 
   private ScheduledFuture<?> startRcaConfPoller() {
     return netOpsExecutorService.scheduleAtFixedRate(
-        this::readRcaEnabledFromConf, 0, pollerPeriodicity, timeUnit);
+        this::readRcaEnabledFromConf, 0, rcaConfPollerPeriodicity, timeUnit);
   }
 
   private ScheduledFuture<?> startNodeRolePoller() {
@@ -223,7 +226,7 @@ public class RcaController {
           handleNodeRoleChange(nodeDetails);
         }
       }
-    }, 2, 60, TimeUnit.SECONDS);
+    }, 2, nodeRolePollerPeriodicty, timeUnit);
   }
 
   /**
@@ -253,8 +256,8 @@ public class RcaController {
             }
           }
         },
-        2 * pollerPeriodicity,
-        pollerPeriodicity,
+        2 * rcaConfPollerPeriodicity,
+        rcaNannyPollerPeriodicity,
         timeUnit);
   }
 
