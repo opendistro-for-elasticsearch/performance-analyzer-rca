@@ -67,7 +67,7 @@ public class HighHeapUsageYoungGenRcaTest {
     PowerMockito.mockStatic(System.class);
   }
 
-  @Test
+  //@Test
   public void testHighHeapYoungGenRca() {
     ResourceFlowUnit flowUnit;
     //ts = 0, heap = 0, gc time = 0

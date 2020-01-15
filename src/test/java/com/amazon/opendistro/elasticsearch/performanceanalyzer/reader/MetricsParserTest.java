@@ -25,6 +25,12 @@ import org.junit.Test;
 public class MetricsParserTest {
   private static final String DB_URL = "jdbc:sqlite:";
 
+  //TODO : we might want to completely remoev this unit test as it includes dead code
+  @Test
+  public void dummyTest() {
+
+  }
+
   // @Test
   public void testMetricsParser() throws Exception {
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor("build/private/test_resources/dev/shm");
