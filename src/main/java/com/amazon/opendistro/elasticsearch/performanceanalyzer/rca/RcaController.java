@@ -256,7 +256,7 @@ public class RcaController {
             }
           }
         },
-        2 * rcaNannyPollerPeriodicity,
+        2 * rcaConfPollerPeriodicity,
         rcaNannyPollerPeriodicity,
         timeUnit);
   }
