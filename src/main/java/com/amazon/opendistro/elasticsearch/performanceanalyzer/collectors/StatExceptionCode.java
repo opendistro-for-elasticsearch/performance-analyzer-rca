@@ -34,8 +34,9 @@ public enum StatExceptionCode {
   READER_RESTART_PROCESSING("ReaderRestartProcessing"),
   RCA_SCHEDULER_RESTART_PROCESSING("RCASchedulerRestartProcessing"),
   RCA_NETWORK_ERROR("RcaNetworkError"),
-  RCA_BUFFER_FULL_ERROR("RcaBufferFullError"),
-  OTHER("Other");
+  RCA_VERTEX_RX_BUFFER_FULL_ERROR("RcaVertexRxBufferFullError"),
+  RCA_NETWORK_THREADPOOL_QUEUE_FULL_ERROR("RcaNetworkThreadpoolQueueFullError"),
+  OTHER("Other"), RCA_SCHEDULER_STOPPED_ERROR("RcaSchedulerStoppedError");
 
   private final String value;
 

@@ -18,20 +18,15 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.net;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpcServiceGrpc;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpcServiceGrpc.InterNodeRpcServiceStub;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
 import io.grpc.netty.shaded.io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import javax.net.ssl.SSLException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,8 +39,8 @@ import org.apache.logging.log4j.Logger;
  * hosts.
  */
 public class GRPCConnectionManager {
+
   private static final Logger LOG = LogManager.getLogger(GRPCConnectionManager.class);
-  private static final String EMPTY_STRING = "";
 
   private ConcurrentMap<String, AtomicReference<ManagedChannel>> perHostChannelMap =
       new ConcurrentHashMap<>();
@@ -58,6 +53,12 @@ public class GRPCConnectionManager {
     this.shouldUseHttps = shouldUseHttps;
   }
 
+  /**
+   * Gets the client stub(on which the rpcs can be initiated) for a host.
+   *
+   * @param remoteHost The host to which we want to make an RPC to.
+   * @return The stub object.
+   */
   public InterNodeRpcServiceStub getClientStubForHost(
       final String remoteHost) {
     if (perHostClientStubMap.containsKey(remoteHost)) {
@@ -66,48 +67,24 @@ public class GRPCConnectionManager {
     return addOrUpdateClientStubForHost(remoteHost);
   }
 
-  private synchronized InterNodeRpcServiceStub addOrUpdateClientStubForHost(final String remoteHost) {
+  /**
+   * Builds or updates a stub object for host. Callers: The subscription send thread, the flow unit
+   * send thread.
+   *
+   * @param remoteHost The host to which an RPC needs to be made.
+   * @return The stub object.
+   */
+  private synchronized InterNodeRpcServiceStub addOrUpdateClientStubForHost(
+      final String remoteHost) {
     final InterNodeRpcServiceStub stub = buildStubForHost(remoteHost);
-    AtomicReference<InterNodeRpcServiceStub> existingStub = perHostClientStubMap.get(remoteHost);
-    if (existingStub == null) {
-      // happens-before: updating java.util.concurrent collection. Update will be made visible to
-      // all threads.
-      perHostClientStubMap.put(remoteHost, new AtomicReference<>(stub));
-    } else {
-      // happens-before: updating AtomicReference. Reads on this AtomicReference will reflect
-      // updated value in all threads.
-      perHostClientStubMap.get(remoteHost).set(stub);
-    }
+    perHostClientStubMap.computeIfAbsent(remoteHost, s -> new AtomicReference<>());
+    perHostClientStubMap.get(remoteHost).set(stub);
     return stub;
   }
 
   public void shutdown() {
     removeAllStubs();
     terminateAllConnections();
-  }
-
-  /**
-   * Read the NodeDetails of all the remote nodes
-   * skip the first node in the list because it is local node that
-   * this is currently running on.
-   */
-  public List<String> getAllRemoteHosts() {
-    return ClusterDetailsEventProcessor.getNodesDetails().stream()
-        .skip(1)
-        .map(node -> node.getHostAddress())
-        .collect(Collectors.toList());
-  }
-
-  public String getCurrentHostAddress() {
-    final List<ClusterDetailsEventProcessor.NodeDetails> nodes = ClusterDetailsEventProcessor
-        .getNodesDetails();
-    if (nodes.size() > 0) {
-      return nodes.get(0).getHostAddress();
-    }
-
-    // TODO: Maybe fallback on InetAddress.getCurrentHostAddress() method instead of returning empty
-    // string.
-    return EMPTY_STRING;
   }
 
   private ManagedChannel getChannelForHost(final String remoteHost) {
@@ -118,19 +95,17 @@ public class GRPCConnectionManager {
     return addOrUpdateChannelForHost(remoteHost);
   }
 
+  /**
+   * Builds or updates a channel object to be used by a client stub. Callers: Send flow unit thread,
+   * send subscription thread.
+   *
+   * @param remoteHost The host to which we want to establish a channel to.
+   * @return a Managed channel object.
+   */
   private synchronized ManagedChannel addOrUpdateChannelForHost(final String remoteHost) {
     final ManagedChannel channel = buildChannelForHost(remoteHost);
-    if (perHostChannelMap.get(remoteHost) == null) {
-      final AtomicReference<ManagedChannel> managedChannelAtomicReference = new AtomicReference<>(
-          channel);
-      // happens-before: updating java.util.concurrent collection. Update will be made visible to
-      // all subsequent reads.
-      perHostChannelMap.put(remoteHost, managedChannelAtomicReference);
-    } else {
-      // happens-before: updating the AtomicReference in the map. Update will be visible to all
-      // threads for subsequent gets.
-      perHostChannelMap.get(remoteHost).set(channel);
-    }
+    perHostChannelMap.computeIfAbsent(remoteHost, s -> new AtomicReference<>());
+    perHostChannelMap.get(remoteHost).set(channel);
     return channel;
   }
 
@@ -145,11 +120,12 @@ public class GRPCConnectionManager {
   private ManagedChannel buildSecureChannel(final String remoteHost) {
     try {
       return NettyChannelBuilder.forAddress(remoteHost, Util.RPC_PORT)
-          .sslContext(
-              GrpcSslContexts.forClient()
-                  .trustManager(InsecureTrustManagerFactory.INSTANCE)
-                  .build())
-          .build();
+                                .sslContext(
+                                    GrpcSslContexts.forClient()
+                                                   .trustManager(
+                                                       InsecureTrustManagerFactory.INSTANCE)
+                                                   .build())
+                                .build();
     } catch (SSLException e) {
       LOG.error("@@: Unable to build an SSL gRPC client. Exception: {}", e.getMessage());
       e.printStackTrace();
@@ -180,13 +156,13 @@ public class GRPCConnectionManager {
     }
   }
 
+  /**
+   * Removes the stub and the channel object for the host.
+   *
+   * @param remoteHost the host to which we want to terminate connection from.
+   */
   public void terminateConnection(String remoteHost) {
     perHostClientStubMap.remove(remoteHost);
     perHostChannelMap.remove(remoteHost);
-  }
-
-  public void dumpStats() {
-    LOG.debug("Stubs: {}", perHostClientStubMap);
-    LOG.debug("Channels: {}", perHostChannelMap);
   }
 }

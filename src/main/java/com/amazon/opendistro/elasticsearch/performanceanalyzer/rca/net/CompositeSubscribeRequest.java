@@ -20,10 +20,18 @@ public class CompositeSubscribeRequest {
     this.subscribeResponseStream = subscribeResponseStream;
   }
 
+  /**
+   * Get the subscribe request.
+   * @return The subscribe request protobuf message.
+   */
   public SubscribeMessage getSubscribeMessage() {
     return subscribeMessage;
   }
 
+  /**
+   * Get the response stream for the request returned by getSubscribeMessage().
+   * @return The response stream to write response to for the subscribe request.
+   */
   public StreamObserver<SubscribeResponse> getSubscribeResponseStream() {
     return subscribeResponseStream;
   }

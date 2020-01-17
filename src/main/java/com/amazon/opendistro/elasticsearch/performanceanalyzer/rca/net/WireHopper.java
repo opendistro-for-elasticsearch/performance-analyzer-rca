@@ -15,14 +15,24 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.DataMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.UnicastIntentMsg;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks.BroadcastSubscriptionTxTask;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks.FlowUnitTxTask;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks.UnicastSubscriptionTxTask;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.util.ClusterUtils;
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,50 +44,76 @@ public class WireHopper {
   private final NetClient netClient;
   private final SubscriptionManager subscriptionManager;
   private final NodeStateManager nodeStateManager;
-  private final Sender sender;
-  private final Receiver receiver;
-  private final SubscriptionSender subscriptionSender;
+  private final AtomicReference<ExecutorService> executorReference;
+  private final ReceivedFlowUnitStore receivedFlowUnitStore;
 
   public WireHopper(
       final NodeStateManager nodeStateManager,
       final NetClient netClient,
       final SubscriptionManager subscriptionManager,
-      final Sender sender,
-      final Receiver receiver,
-      final SubscriptionSender subscriptionSender) {
+      final AtomicReference<ExecutorService> executorReference,
+      final ReceivedFlowUnitStore receivedFlowUnitStore) {
     this.netClient = netClient;
     this.subscriptionManager = subscriptionManager;
     this.nodeStateManager = nodeStateManager;
-    this.sender = sender;
-    this.receiver = receiver;
-    this.subscriptionSender = subscriptionSender;
+    this.executorReference = executorReference;
+    this.receivedFlowUnitStore = receivedFlowUnitStore;
   }
 
   public void sendIntent(IntentMsg msg) {
-   subscriptionSender.enqueueForBroadcast(msg);
+    ExecutorService executor = executorReference.get();
+    if (executor != null) {
+      try {
+        executor.execute(new BroadcastSubscriptionTxTask(netClient, msg, subscriptionManager));
+      } catch (final RejectedExecutionException ree) {
+        LOG.warn("Dropped sending subscription because the threadpool queue is full");
+        StatsCollector.instance().logException(StatExceptionCode.RCA_NETWORK_THREADPOOL_QUEUE_FULL_ERROR);
+      }
+    }
   }
 
-  public void sendData(DataMsg dataMsg) {
-    sender.enqueue(dataMsg);
+  public void sendData(DataMsg msg) {
+    ExecutorService executor = executorReference.get();
+    if (executor != null) {
+      try {
+        executor.execute(new FlowUnitTxTask(netClient, subscriptionManager, msg));
+      } catch (final RejectedExecutionException ree) {
+        LOG.warn("Dropped sending flow unit because the threadpool queue is full");
+        StatsCollector.instance().logException(StatExceptionCode.RCA_NETWORK_THREADPOOL_QUEUE_FULL_ERROR);
+      }
+    }
   }
 
   public List<FlowUnitMessage> readFromWire(Node<?> node) {
     final String nodeName = node.name();
     final long intervalInSeconds = node.getEvaluationIntervalSeconds();
-    final List<FlowUnitMessage> remoteFlowUnits = receiver.getFlowUnitsForNode(nodeName);
+    final ImmutableList<FlowUnitMessage> remoteFlowUnits = receivedFlowUnitStore
+        .drainNode(nodeName);
     final Set<String> publisherSet = subscriptionManager.getPublishersForNode(nodeName);
 
     if (remoteFlowUnits.size() < publisherSet.size()) {
       for (final String publisher : publisherSet) {
         long lastRxTimestamp = nodeStateManager.getLastReceivedTimestamp(nodeName, publisher);
-        if (System.currentTimeMillis() - lastRxTimestamp > 2 * intervalInSeconds * MS_IN_S) {
+        if (lastRxTimestamp > 0 && System.currentTimeMillis() - lastRxTimestamp > 2 * intervalInSeconds * MS_IN_S) {
           LOG.debug(
               "{} hasn't published in a while.. nothing from the last {} intervals",
               publisher,
               (System.currentTimeMillis() - lastRxTimestamp) / (intervalInSeconds * MS_IN_S));
-          if (nodeStateManager.isRemoteHostInCluster(publisher)) {
-            subscriptionSender.enqueueForUnicast(new UnicastIntentMsg("", nodeName, node.getTags(),
-                publisher));
+          if (ClusterUtils.isHostAddressInCluster(publisher)) {
+            final ExecutorService executor = executorReference.get();
+            if (executor != null) {
+              try {
+                executor.execute(new UnicastSubscriptionTxTask(netClient, new UnicastIntentMsg("",
+                    nodeName, node.getTags(), publisher),
+                    subscriptionManager));
+              } catch (final RejectedExecutionException ree) {
+                LOG.warn("Dropped sending subscription request because the threadpool queue is "
+                    + "full");
+                StatsCollector.instance().logException(StatExceptionCode.RCA_NETWORK_THREADPOOL_QUEUE_FULL_ERROR);
+              }
+            }
+          } else {
+            subscriptionManager.unsubscribeAndTerminateConnection(nodeName, publisher);
           }
         }
       }

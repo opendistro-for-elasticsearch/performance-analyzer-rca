@@ -138,7 +138,6 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
   @Override
   public void subscribe(
       final SubscribeMessage request, final StreamObserver<SubscribeResponse> responseObserver) {
-    LOG.info("kk: subscribe received");
     if (subscribeHandler != null) {
       subscribeHandler.handleSubscriptionRequest(request, responseObserver);
     } else {
@@ -166,17 +165,10 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
     this.metricsServerHandler = metricsServerHandler;
   }
 
-  public void shutdown() {
+  public void stop() {
     LOG.debug("indicating upstream nodes that current node is going down..");
     if (sendDataHandler != null) {
       sendDataHandler.terminateUpstreamConnections();
-    }
-    server.shutdown();
-    try {
-      server.awaitTermination(1, TimeUnit.MINUTES);
-    } catch (InterruptedException e) {
-      LOG.error("Unable to stop the gRPC server..");
-      e.printStackTrace();
     }
   }
 }

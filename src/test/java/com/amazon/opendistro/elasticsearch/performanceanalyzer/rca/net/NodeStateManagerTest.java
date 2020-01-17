@@ -31,8 +31,7 @@ public class NodeStateManagerTest {
   @Test
   public void getLastReceivedTimestamp() {
     final long currentTime = System.currentTimeMillis();
-    Assert.assertTrue(
-        testNodeStateManager.getLastReceivedTimestamp(TEST_NODE_1, TEST_HOST_2) > currentTime);
+    Assert.assertEquals(0, testNodeStateManager.getLastReceivedTimestamp(TEST_NODE_1, TEST_HOST_2));
 
     testNodeStateManager.updateReceiveTime(TEST_HOST_2, TEST_NODE_1, currentTime);
     Assert.assertEquals(currentTime, testNodeStateManager.getLastReceivedTimestamp(TEST_NODE_1,

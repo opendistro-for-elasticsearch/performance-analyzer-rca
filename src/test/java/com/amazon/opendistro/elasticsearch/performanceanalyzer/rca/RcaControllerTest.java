@@ -26,7 +26,6 @@ import org.jooq.tools.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -118,9 +117,9 @@ public class RcaControllerTest {
     netOperationsExecutor.shutdown();
     netOperationsExecutor.awaitTermination(1, TimeUnit.MINUTES);
     clientServers.getHttpServer().stop(0);
-    clientServers.getNetClient().shutdown();
-    clientServers.getNetServer().shutdown();
-    // connectionManager.shutdown();
+    clientServers.getNetClient().stop();
+    clientServers.getNetServer().stop();
+    // connectionManager.stop();
     dummyEsServer.stop(0);
   }
 

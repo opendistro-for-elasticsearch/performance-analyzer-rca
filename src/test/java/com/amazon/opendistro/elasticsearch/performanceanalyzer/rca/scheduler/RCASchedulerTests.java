@@ -99,7 +99,7 @@ public class RCASchedulerTests {
             new ThresholdMain(
                 Paths.get(RcaConsts.TEST_CONFIG_PATH, "thresholds").toString(), rcaConf),
             persistable,
-            new WireHopper(null, null, null, null, null, null));
+            new WireHopper(null, null, null, null, null));
     scheduler.setRole(AllMetrics.NodeRole.DATA);
     scheduler.start();
     Thread.sleep(8000);

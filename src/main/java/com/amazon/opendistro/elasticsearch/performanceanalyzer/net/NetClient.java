@@ -24,10 +24,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsRespo
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PublishResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
-import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -92,7 +90,7 @@ public class NetClient {
     stub.getMetrics(request, responseObserver);
   }
 
-  public void shutdown() {
+  public void stop() {
     LOG.debug("Shutting down client streaming connections..");
     closeAllDataStreams();
   }
@@ -121,22 +119,20 @@ public class NetClient {
     return addOrUpdateDataStreamForHost(remoteHost, serverResponseStream);
   }
 
+  /**
+   * Builds or updates a flow unit data stream to a host. Callers: Send data thread.
+   *
+   * @param remoteHost           The host to which we want to open a stream to.
+   * @param serverResponseStream The response stream object.
+   * @return A stream to the host.
+   */
   private synchronized StreamObserver<FlowUnitMessage> addOrUpdateDataStreamForHost(
       final String remoteHost, final StreamObserver<PublishResponse> serverResponseStream) {
     InterNodeRpcServiceGrpc.InterNodeRpcServiceStub stub =
         connectionManager.getClientStubForHost(remoteHost);
     final StreamObserver<FlowUnitMessage> dataStream = stub.publish(serverResponseStream);
-    if (perHostOpenDataStreamMap.get(remoteHost) == null) {
-      // happens-before: updating AtomicReference.
-      perHostOpenDataStreamMap.put(remoteHost, new AtomicReference<>(dataStream));
-    } else {
-      // happens-before: updating AtomicReference.
-      perHostOpenDataStreamMap.get(remoteHost).set(dataStream);
-    }
+    perHostOpenDataStreamMap.computeIfAbsent(remoteHost, s -> new AtomicReference<>());
+    perHostOpenDataStreamMap.get(remoteHost).set(dataStream);
     return dataStream;
-  }
-
-  public void dumpStreamStats() {
-    LOG.debug("Active streams: {}", perHostOpenDataStreamMap);
   }
 }

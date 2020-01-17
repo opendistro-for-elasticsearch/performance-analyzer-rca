@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
@@ -127,6 +129,7 @@ public class RCAScheduler {
                     LOG.error("RCA Exception cause : {}", ex.getCause());
                     shutdown();
                     schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
+                    StatsCollector.instance().logException(StatExceptionCode.RCA_SCHEDULER_STOPPED_ERROR);
                   }
                 } catch (InterruptedException ix) {
                   LOG.error("RCA Interrupted exception cause : {}", ix.getCause());
@@ -176,7 +179,7 @@ public class RCAScheduler {
 
   private void createExecutorPools() {
     scheduledPool = Executors.newScheduledThreadPool(1, schedThreadFactory);
-    rcaSchedulerPeriodicExecutor = Executors.newFixedThreadPool(1, taskThreadFactory);
+    rcaSchedulerPeriodicExecutor = Executors.newFixedThreadPool(2, taskThreadFactory);
   }
 
   public NodeRole getRole() {

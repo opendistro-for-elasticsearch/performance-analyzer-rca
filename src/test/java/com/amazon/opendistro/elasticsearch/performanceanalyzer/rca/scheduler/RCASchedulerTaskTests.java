@@ -218,15 +218,15 @@ public class RCASchedulerTaskTests {
       }
 
       private WireHopperDerived(List<IntentMsg> intentMsg, DataMsg dataMsg) {
-        super(null, null, null, null, null, null);
+        super(null, null, null, null, null);
         this.intentMsgs = intentMsg;
         this.dataMsg = dataMsg;
       }
 
       @Override
-      public void sendData(DataMsg dataMsg) {
-        assertEquals(dataMsg.getSourceNode(), this.dataMsg.getSourceNode());
-        AssertHelper.compareLists(dataMsg.getDestinationNode(), this.dataMsg.getDestinationNode());
+      public void sendData(DataMsg msg) {
+        assertEquals(msg.getSourceNode(), this.dataMsg.getSourceNode());
+        AssertHelper.compareLists(msg.getDestinationNode(), this.dataMsg.getDestinationNode());
       }
 
       @Override
