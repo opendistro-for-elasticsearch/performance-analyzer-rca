@@ -29,13 +29,21 @@ import org.jooq.impl.DSL;
  */
 public class HotNodeSummary extends GenericSummary {
 
-  public final String nodeID;
-  public final String hostAddress;
+  private final String nodeID;
+  private final String hostAddress;
 
   public HotNodeSummary(String nodeID, String hostAddress) {
     super();
     this.nodeID = nodeID;
     this.hostAddress = hostAddress;
+  }
+
+  public String getNodeID() {
+    return this.nodeID;
+  }
+
+  public String getHostAddress() {
+    return this.hostAddress;
   }
 
   @Override

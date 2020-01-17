@@ -4,6 +4,8 @@ option java_multiple_files = true;
 option java_package = "com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc";
 option java_outer_classname = "PANetworking";
 
+import "google/protobuf/descriptor.proto";
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc;
 
 service InterNodeRpcService {
@@ -44,6 +46,27 @@ message ResourceContextMessage {
 }
 
 /*
+  Enum for different resource type
+*/
+extend google.protobuf.EnumValueOptions {
+  string resourceTypeName = 50000;
+}
+
+enum JvmEnum {
+  OLD_GEN = 0 [(resourceTypeName) = "old gen"];
+  YOUNG_GEN = 1 [(resourceTypeName) = "young gen"];
+}
+
+/*
+  message for resource type Enum
+*/
+message ResourceType {
+    oneof resource_type_oneof {
+      JvmEnum JVM = 1;
+    }
+}
+
+/*
  message wrappers for different types of RCA summary
 */
 message ConsumersList {
@@ -56,7 +79,7 @@ message HotNodeSummaryList {
     repeated HotNodeSummaryMessage hotNodeSummary = 1;
 }
 message HotResourceSummaryMessage {
-    string resourceType = 1;
+    ResourceType resourceType = 1;
     ConsumersList consumers = 2;
     double threshold = 3;
     double value = 4;

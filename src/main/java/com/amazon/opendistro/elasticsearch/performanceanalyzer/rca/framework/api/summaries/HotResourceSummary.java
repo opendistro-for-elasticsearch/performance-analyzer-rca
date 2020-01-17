@@ -17,6 +17,9 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PANetworking;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType.ResourceTypeOneofCase;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +35,7 @@ import org.jooq.impl.DSL;
  */
 public class HotResourceSummary extends GenericSummary {
 
-  private String resourceType;
+  private final ResourceType resourceType;
   private List<String> consumers;
   private double threshold;
   private double value;
@@ -42,8 +45,8 @@ public class HotResourceSummary extends GenericSummary {
   private double maxValue;
   private int timePeriod;
 
-  public HotResourceSummary(String resourceType, double threshold, double value, String unitType,
-      int timePeriod) {
+  public HotResourceSummary(ResourceType resourceType, double threshold,
+      double value, String unitType, int timePeriod) {
     super();
     this.resourceType = resourceType;
     this.threshold = threshold;
@@ -66,11 +69,38 @@ public class HotResourceSummary extends GenericSummary {
     this.avgValue = avgValue;
   }
 
+  public ResourceType getResourceType() {
+    return this.resourceType;
+  }
+
+  public String getResourceTypeName() {
+    String resourceName = "unknown resource type";
+    if (this.resourceType != null) {
+      if (this.resourceType.getResourceTypeOneofCase() == ResourceTypeOneofCase.JVM) {
+        resourceName = this.resourceType.getJVM().getValueDescriptor()
+            .getOptions().getExtension(PANetworking.resourceTypeName);
+      }
+    }
+    return resourceName;
+  }
+
+  public double getValue() {
+    return this.value;
+  }
+
+  public String getUnitType() {
+    return this.unitType;
+  }
+
+  public int getTimePeriod() {
+    return this.timePeriod;
+  }
+
   @Override
   public HotResourceSummaryMessage buildSummaryMessage() {
     final HotResourceSummaryMessage.Builder summaryMessageBuilder = HotResourceSummaryMessage
         .newBuilder();
-    summaryMessageBuilder.setResourceType(resourceType);
+    summaryMessageBuilder.setResourceType(this.resourceType);
     summaryMessageBuilder.setThreshold(this.threshold);
     summaryMessageBuilder.setValue(this.value);
     summaryMessageBuilder.setAvgValue(this.avgValue);
@@ -88,8 +118,8 @@ public class HotResourceSummary extends GenericSummary {
 
   public static HotResourceSummary buildHotResourceSummaryFromMessage(
       HotResourceSummaryMessage message) {
-    HotResourceSummary newSummary = new HotResourceSummary(message.getResourceType(),
-        message.getThreshold(), message.getValue(), message.getUnitType(), message.getTimePeriod());
+    HotResourceSummary newSummary = new HotResourceSummary(message.getResourceType(), message.getThreshold(),
+        message.getValue(), message.getUnitType(), message.getTimePeriod());
     newSummary
         .setValueDistribution(message.getMinValue(), message.getMaxValue(), message.getAvgValue());
     if (message.hasConsumers() && message.getConsumers().getConsumerCount() > 0) {
@@ -102,8 +132,8 @@ public class HotResourceSummary extends GenericSummary {
 
   @Override
   public String toString() {
-    return this.resourceType + " " + this.consumers + " " + this.threshold + " " + this.value + " "
-        + this.unitType;
+    return this.getResourceTypeName() + " " + this.consumers + " " + this.threshold + " "
+        + this.value + " " + this.unitType;
   }
 
   @Override
@@ -123,7 +153,7 @@ public class HotResourceSummary extends GenericSummary {
   @Override
   public List<Object> getSqlValue() {
     List<Object> value = new ArrayList<>();
-    value.add(this.resourceType);
+    value.add(this.getResourceTypeName());
     value.add(Double.valueOf(this.threshold));
     value.add(Double.valueOf(this.value));
     value.add(Double.valueOf(this.avgValue));

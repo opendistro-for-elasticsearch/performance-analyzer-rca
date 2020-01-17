@@ -53,9 +53,6 @@ public class HighHeapUsageYoungGenRcaTest {
     //generate empty flowunit and run operate enough times before evaluating RCA
     heap_Used.setEmptyFlowUnitList();
     gc_Collection_Time.setEmptyFlowUnitList();
-    for (int i = 0; i < RCA_PERIOD - 1; i++) {
-      youngGenRca.operate();
-    }
     //generate flowunit
     heap_Used.createTestFlowUnits(columnName, Arrays.asList("OldGen", String.valueOf(heapUsageVal * CONVERT_BYTES_TO_MEGABYTES)));
     gc_Collection_Time.createTestFlowUnits(columnName, Arrays.asList("totYoungGC", String.valueOf(gcCollectionTimeVal)));
@@ -65,7 +62,7 @@ public class HighHeapUsageYoungGenRcaTest {
   public void initTestHighHeapYoungGenRca() {
     heap_Used = new MetricTestHelper(5);
     gc_Collection_Time = new MetricTestHelper(5);
-    youngGenRca = new HighHeapUsageYoungGenRca(5, heap_Used, gc_Collection_Time);
+    youngGenRca = new HighHeapUsageYoungGenRca(1, heap_Used, gc_Collection_Time);
     columnName = Arrays.asList("MemType", "max");
     PowerMockito.mockStatic(System.class);
   }
