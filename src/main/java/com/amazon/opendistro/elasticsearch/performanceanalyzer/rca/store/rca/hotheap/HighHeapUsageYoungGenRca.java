@@ -61,17 +61,21 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
   private final ResourceType resourceType;
   // the amount of RCA period this RCA needs to run before sending out a flowunit
   private final int rcaPeriod;
-  private boolean alwaysCreateSummary;
+  // The lower bound threshold in percentage to decide whether to send out summary.
+  // e.g. if lowerBoundThreshold = 0.2, then we only send out summary if value > 0.2*threshold
+  private final double lowerBoundThreshold;
   private int counter;
   private final SlidingWindow<SlidingWindowData> gcTimeDeque;
   private final SlidingWindow<SlidingWindowData> promotionRateDeque;
 
-  public <M extends Metric> HighHeapUsageYoungGenRca(final int rcaPeriod,
+  public <M extends Metric> HighHeapUsageYoungGenRca(final int rcaPeriod, final double lowerBoundThreshold,
       final M heap_Used, final M gc_Collection_Time) {
     super(5);
     this.heap_Used = heap_Used;
     this.gc_Collection_Time = gc_Collection_Time;
     this.rcaPeriod = rcaPeriod;
+    this.lowerBoundThreshold = (lowerBoundThreshold >= 0 && lowerBoundThreshold <= 1.0)
+        ? lowerBoundThreshold : 1.0;
     this.counter = 0;
     this.resourceType = ResourceType.newBuilder().setJVM(JvmEnum.YOUNG_GEN).build();
     this.gcTimeDeque = new SlidingWindow<>(PROMOTION_RATE_SLIDING_WINDOW_IN_MINS, TimeUnit.MINUTES);
@@ -105,14 +109,9 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
     };
   }
 
-  /**
-   * set the alwaysCreateSummary
-   * @param alwaysCreateSummary if alwaysCreateSummary is true, the RCA will always create a summary
-   *                            for this flowunit regardless of its state(whether healthy or unhealthy)
-   *
-   */
-  public void alwaysCreateSummary(boolean alwaysCreateSummary) {
-    this.alwaysCreateSummary = alwaysCreateSummary;
+  public <M extends Metric> HighHeapUsageYoungGenRca(final int rcaPeriod,
+      final M heap_Used, final M gc_Collection_Time) {
+    this(rcaPeriod, 1.0, heap_Used, gc_Collection_Time);
   }
 
   @Override
@@ -167,17 +166,18 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
           && avgYoungGCTime > YOUNG_GC_TIME_THRESHOLD_IN_MS_PER_SEC) {
         LOG.debug("avgPromotionRate = {} , avgGCTime = {}", avgPromotionRate, avgYoungGCTime);
         context = new ResourceContext(Resources.State.UNHEALTHY);
+      } else {
+        context = new ResourceContext(Resources.State.HEALTHY);
+      }
+
+      //check to see if the value is above lower bound thres
+      if (!Double.isNaN(avgPromotionRate)
+          && avgPromotionRate > PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC * this.lowerBoundThreshold) {
         summary = new HotResourceSummary(this.resourceType,
             PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC, avgPromotionRate, "promotion rate in mb/s",
             PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
-      } else {
-        context = new ResourceContext(Resources.State.HEALTHY);
-        if (alwaysCreateSummary == true) {
-          summary = new HotResourceSummary(this.resourceType,
-              PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC, avgPromotionRate, "promotion rate in mb/s",
-              PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
-        }
       }
+
       LOG.debug("@@: Young Gen RCA Context = " + context.toString());
       return new ResourceFlowUnit(System.currentTimeMillis(), context, summary);
     } else {
