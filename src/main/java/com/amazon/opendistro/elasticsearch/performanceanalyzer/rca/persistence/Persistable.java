@@ -29,6 +29,8 @@ public interface Persistable {
 
   String read();
 
+  String readRca(String rca);
+
   /**
    * Write data to the database.
    *

@@ -15,10 +15,18 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.HOT_CLUSTER_SUMMARY_TABLE;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.HOT_NODE_SUMMARY_TABLE;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.HOT_RESOURCE_SUMMARY_TABLE;
+
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.QueryUtils;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaResponseUtil;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -131,5 +139,23 @@ class SQLitePersistor extends PersistorBase {
     jsonResult.append("}");
     LOG.debug("JSON Result - " + jsonResult);
     return jsonResult.toString();
+  }
+
+  @Override
+  synchronized String readRcaTable(String rca) {
+    Set<String> tableNames = super.tableNames;
+    if (!tableNames.contains(rca)) {
+      return "";
+    }
+    List<Record> rcaResponseRecordList = QueryUtils.getRcaRecordList(create, rca, getSummaryTableMap(rca), tableNames);
+    return RcaResponseUtil.convertRcaRecordListIntoJson(rca, rcaResponseRecordList, tableNames);
+  }
+
+  private Map<String,String> getSummaryTableMap(String rca) {
+    Map<String,String> map = new LinkedHashMap<>();
+    map.put(HOT_CLUSTER_SUMMARY_TABLE, getPrimaryKeyColumnName(rca));
+    map.put(HOT_NODE_SUMMARY_TABLE, getPrimaryKeyColumnName(HOT_CLUSTER_SUMMARY_TABLE));
+    map.put(HOT_RESOURCE_SUMMARY_TABLE, getPrimaryKeyColumnName(HOT_NODE_SUMMARY_TABLE));
+    return map;
   }
 }

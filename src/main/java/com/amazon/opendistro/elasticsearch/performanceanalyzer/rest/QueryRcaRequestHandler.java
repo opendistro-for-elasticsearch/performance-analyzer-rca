@@ -15,14 +15,22 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rest;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.HIGH_HEAP_USAGE_CLUSTER_RCA_TABLE;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsRestUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.security.InvalidParameterException;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
@@ -33,8 +41,13 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
   private static final Logger LOG = LogManager.getLogger(QueryRcaRequestHandler.class);
   private static final int HTTP_CLIENT_CONNECTION_TIMEOUT = 200;
   private Persistable persistable;
+  private MetricsRestUtil metricsRestUtil;
+  private Set<String> validRCA;
 
-  public QueryRcaRequestHandler() {}
+  public QueryRcaRequestHandler() {
+    metricsRestUtil = new MetricsRestUtil();
+    validRCA = ImmutableSet.of(HIGH_HEAP_USAGE_CLUSTER_RCA_TABLE);
+  }
 
   @Override
   public void handle(HttpExchange exchange) throws IOException {
@@ -47,30 +60,42 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
 
       try {
         synchronized (this) {
-          String response = getRcaData(persistable);
+          Map<String, String> params = getParamsMap(exchange.getRequestURI().getQuery());
+          List<String> rcaList = metricsRestUtil.parseArrayParam(params, "name", true);
+
+          if (!validParams(rcaList)) {
+            sendResponse(exchange, "{\"error\":\"Invalid RCA.\"}",
+                    HttpURLConnection.HTTP_BAD_REQUEST);
+            return;
+          }
+          if (rcaList.isEmpty()) {
+            rcaList = ImmutableList.copyOf(validRCA);
+          }
+
+          String response = getRcaData(persistable, rcaList);
           sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
         }
 
       } catch (InvalidParameterException e) {
         LOG.error(
-            (Supplier<?>)
-                () ->
-                    new ParameterizedMessage(
-                        "QueryException {} ExceptionCode: {}.",
-                        e.toString(),
-                        StatExceptionCode.REQUEST_ERROR.toString()),
-            e);
+                (Supplier<?>)
+                        () ->
+                                new ParameterizedMessage(
+                                        "QueryException {} ExceptionCode: {}.",
+                                        e.toString(),
+                                        StatExceptionCode.REQUEST_ERROR.toString()),
+                e);
         String response = "{\"error\":\"" + e.getMessage() + "\"}";
         sendResponse(exchange, response, HttpURLConnection.HTTP_BAD_REQUEST);
       } catch (Exception e) {
         LOG.error(
-            (Supplier<?>)
-                () ->
-                    new ParameterizedMessage(
-                        "QueryException {} ExceptionCode: {}.",
-                        e.toString(),
-                        StatExceptionCode.REQUEST_ERROR.toString()),
-            e);
+                (Supplier<?>)
+                        () ->
+                                new ParameterizedMessage(
+                                        "QueryException {} ExceptionCode: {}.",
+                                        e.toString(),
+                                        StatExceptionCode.REQUEST_ERROR.toString()),
+                e);
         String response = "{\"error\":\"" + e.toString() + "\"}";
         sendResponse(exchange, response, HttpURLConnection.HTTP_INTERNAL_ERROR);
       }
@@ -80,13 +105,26 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
     }
   }
 
-  public String getRcaData(Persistable persistable) {
+  private boolean validParams(List<String> rcaList) {
+    return rcaList.stream()
+            .allMatch(e -> validRCA.contains(e));
+  }
+
+  private String getRcaData(Persistable persistable, List<String> rcaList) {
     LOG.debug("RCA: in getRcaData");
-    String jsonResponse = "";
+    StringBuilder jsonResponse = new StringBuilder();
     if (persistable != null) {
-      jsonResponse = persistable.read();
+      jsonResponse.append("[");
+      for (String rca : rcaList) {
+        String rcaResponse = persistable.readRca(rca);
+        if (rcaResponse.length() > 0) {
+          jsonResponse.append(rcaResponse).append(",");
+        }
+      }
+      jsonResponse.deleteCharAt(jsonResponse.length() - 1);
+      jsonResponse.append("]");
     }
-    return jsonResponse;
+    return jsonResponse.toString();
   }
 
   public void sendResponse(HttpExchange exchange, String response, int status) throws IOException {

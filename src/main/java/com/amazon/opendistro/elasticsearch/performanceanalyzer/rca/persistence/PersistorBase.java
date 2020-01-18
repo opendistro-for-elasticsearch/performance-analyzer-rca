@@ -84,6 +84,8 @@ public abstract class PersistorBase implements Persistable {
 
   abstract String readTables();
 
+  abstract String readRcaTable(String rca);
+
   abstract void createNewDSLContext();
 
   // Not required for now.
@@ -97,6 +99,11 @@ public abstract class PersistorBase implements Persistable {
     // multiple sqlite files
     LOG.debug("RCA: in read() in PersistorBase");
     String jsonResponse = readTables();
+    return jsonResponse;
+  }
+
+  public synchronized String readRca(String rca) {
+    String jsonResponse = readRcaTable(rca);
     return jsonResponse;
   }
 
