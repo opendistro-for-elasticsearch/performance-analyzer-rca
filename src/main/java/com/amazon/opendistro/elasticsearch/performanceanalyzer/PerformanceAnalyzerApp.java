@@ -21,12 +21,20 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsC
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.TroubleshootingConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsRestUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetServer;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.MetricsDBProvider;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.RcaStatsReporter;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.collectors.aggregator.SampleAggregator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.emitters.PeriodicSamplers;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.ExceptionsAndErrors;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaFrameworkMeasurements;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaGraphMeasurements;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.sampled.JvmMeasurements;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryMetricsRequestHandler;
@@ -39,8 +47,12 @@ import java.net.InetSocketAddress;
 import java.security.KeyStore;
 import java.security.Security;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManagerFactory;
@@ -66,8 +78,28 @@ public class PerformanceAnalyzerApp {
       Executors.newScheduledThreadPool(
           2, new ThreadFactoryBuilder().setNameFormat("network-thread-%d").build());
 
+  private static final ScheduledExecutorService resourceStateSamplerExecutor =
+      Executors.newScheduledThreadPool(
+          1, new ThreadFactoryBuilder().setNameFormat("resource-sampler-%d").build());
+
   private static RcaController rcaController = null;
   private static Thread rcaNetServerThread = null;
+
+
+  public static final SampleAggregator RCA_GRAPH_SAMPLE_AGGREGATOR =
+          new SampleAggregator(RcaGraphMeasurements.values());
+  public  static final SampleAggregator RCA_FRAMEWORK_SAMPLE_AGGREGATOR =
+          new SampleAggregator(RcaFrameworkMeasurements.values());
+
+  public static final SampleAggregator ERRORS_AND_EXCEPTIONS =
+          new SampleAggregator(ExceptionsAndErrors.values());
+
+  public static final SampleAggregator SYSTEM_RESOURCE_SAMPLER =
+          new SampleAggregator(JvmMeasurements.values());
+
+  public static final RcaStatsReporter RCA_STATS_REPORTER =
+          new RcaStatsReporter(Arrays.asList(RCA_GRAPH_SAMPLE_AGGREGATOR,
+                  RCA_FRAMEWORK_SAMPLE_AGGREGATOR, ERRORS_AND_EXCEPTIONS, SYSTEM_RESOURCE_SAMPLER));
 
   public static void main(String[] args) throws Exception {
     // Initialize settings before creating threads.
@@ -102,8 +134,15 @@ public class PerformanceAnalyzerApp {
             });
     readerThread.start();
 
-    ClientServers clientServers = startServers();
+    ClientServers clientServers = startServers(Util.RPC_PORT, getPortNumber());
     startRcaController(clientServers);
+
+    int frequency =
+        (MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval) / 2;
+    TimeUnit timeUnit = TimeUnit.MILLISECONDS;
+    // This should come after the RcaController as the RcaControllers creates the necessary
+    // collectors to collect samples.
+    startResourceStateSampler(resourceStateSamplerExecutor, frequency, timeUnit);
   }
 
   /**
@@ -114,16 +153,16 @@ public class PerformanceAnalyzerApp {
    *
    * @return gRPC client and the gRPC server and the httpServer wrapped in a class.
    */
-  public static ClientServers startServers() {
+  public static ClientServers startServers(int rpcServerPort, int httpServerPort) {
     boolean useHttps = PluginSettings.instance().getHttpsEnabled();
 
     GRPCConnectionManager connectionManager = new GRPCConnectionManager(useHttps);
-    NetServer netServer = new NetServer(Util.RPC_PORT, 1, useHttps);
+    NetServer netServer = new NetServer(rpcServerPort, 1, useHttps);
     NetClient netClient = new NetClient(connectionManager);
     MetricsRestUtil metricsRestUtil = new MetricsRestUtil();
 
     startRpcServerThread(netServer);
-    HttpServer httpServer = createInternalServer(PluginSettings.instance(), getPortNumber());
+    HttpServer httpServer = createInternalServer(PluginSettings.instance(), httpServerPort);
     httpServer.createContext(QUERY_URL, new QueryMetricsRequestHandler(netClient, metricsRestUtil));
 
     return new ClientServers(httpServer, netServer, netClient);
@@ -161,9 +200,29 @@ public class PerformanceAnalyzerApp {
             RcaConsts.rcaNannyPollerPeriodicity,
             RcaConsts.rcaConfPollerPeriodicity,
             RcaConsts.nodeRolePollerPeriodicity,
-            RcaConsts.rcaPollerPeriodicityTimeUnit);
+            RcaConsts.rcaPollerPeriodicityTimeUnit,
+                new MetricsDBProvider());
 
     rcaController.startPollers();
+  }
+
+  private static void startResourceStateSampler(
+      ScheduledExecutorService executor, long freq, TimeUnit timeUnit) {
+    ScheduledFuture<?> future =
+        executor.scheduleAtFixedRate(
+            new PeriodicSamplers(SYSTEM_RESOURCE_SAMPLER), 0, freq, timeUnit);
+    new Thread(
+            () -> {
+              try {
+                future.get();
+              } catch (CancellationException cex) {
+                LOG.info("Resource State Executor cancellation requested.");
+              } catch (Exception ex) {
+                LOG.error("Resource state poller exception cause : {}", ex.getCause());
+                ex.printStackTrace();
+              }
+            })
+        .start();
   }
 
   public static HttpServer createInternalServer(PluginSettings settings, int internalPort) {
@@ -258,7 +317,7 @@ public class PerformanceAnalyzerApp {
     return server;
   }
 
-  private static int getPortNumber() {
+  public static int getPortNumber() {
     String readerPortValue;
     try {
       readerPortValue = PluginSettings.instance().getSettingValue(WEBSERVICE_PORT_CONF_NAME);

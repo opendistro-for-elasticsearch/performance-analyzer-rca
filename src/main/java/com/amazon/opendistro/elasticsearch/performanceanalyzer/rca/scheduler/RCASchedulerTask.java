@@ -15,10 +15,14 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaFrameworkMeasurements;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaGraphMeasurements;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
@@ -285,7 +289,8 @@ public class RCASchedulerTask implements Runnable {
         // node's data from the remote node.
         LOG.debug(
             "rca: Node '{}' sending intent to consume node: '{}'",
-            graphNode.name(), upstreamNode.name());
+            graphNode.name(),
+            upstreamNode.name());
         IntentMsg msg =
             new IntentMsg(graphNode.name(), upstreamNode.name(), upstreamNode.getTags());
         hopper.sendIntent(msg);
@@ -309,8 +314,12 @@ public class RCASchedulerTask implements Runnable {
   }
 
   public void run() {
-    currTick = currTick + 1;
+    long runStartTime = System.nanoTime();
 
+    PerformanceAnalyzerApp.RCA_GRAPH_SAMPLE_AGGREGATOR.updateStat(
+        RcaGraphMeasurements.NUM_GRAPH_NODES, "", Stats.getInstance().getTotalNodesCount());
+
+    currTick = currTick + 1;
     Map<Tasklet, CompletableFuture<TaskletResult>> taskletFutureMap = new HashMap<>();
     LOG.debug("RCA: ========== STRT Tick {} ====== ", currTick);
     for (List<Tasklet> taskletsAtThisLevel : locallyExecutableTasklets) {
@@ -325,13 +334,16 @@ public class RCASchedulerTask implements Runnable {
     taskletFutureMap.values().forEach(CompletableFuture::join);
     LOG.debug("RCA: All tasklets evaluated.");
 
-    // TODO: Do proper exception handling.
-    // No one is calling get on the the last set of Tasklets.
-
     if (currTick == maxTicks) {
       currTick = 0;
       locallyExecutableTasklets.forEach(l -> l.forEach(Tasklet::resetTicks));
       LOG.debug("Finished ticking.");
     }
+
+    long runEndTime = System.nanoTime();
+    long durationMicros = (runEndTime - runStartTime) / 1000;
+
+    PerformanceAnalyzerApp.RCA_FRAMEWORK_SAMPLE_AGGREGATOR.updateStat(
+        RcaFrameworkMeasurements.GRAPH_EXECUTION_TIME, "", durationMicros);
   }
 }

@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
@@ -22,6 +23,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ThresholdMain;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -61,8 +63,8 @@ public class RCAScheduler {
   final ThreadFactory taskThreadFactory =
       new ThreadFactoryBuilder().setNameFormat("task-%d-").setDaemon(true).build();
 
-  ExecutorService rcaSchedulerPeriodicExecutor;
-  ScheduledExecutorService scheduledPool;
+  ExecutorService rcaGraphRunnerThreadPool;
+  ScheduledExecutorService periodicExecutor;
 
   List<ConnectedComponent> connectedComponents;
   Queryable db;
@@ -96,11 +98,17 @@ public class RCAScheduler {
     LOG.info("RCA: Starting RCA scheduler ...........");
     createExecutorPools();
 
-    if (scheduledPool != null && role != NodeRole.UNKNOWN) {
+    if (periodicExecutor != null && role != NodeRole.UNKNOWN) {
       futureHandle =
-          scheduledPool.scheduleAtFixedRate(
+          periodicExecutor.scheduleAtFixedRate(
               new RCASchedulerTask(
-                  10000, rcaSchedulerPeriodicExecutor, connectedComponents, db, persistable, rcaConf, net),
+                  10000,
+                  rcaGraphRunnerThreadPool,
+                  connectedComponents,
+                  db,
+                  persistable,
+                  rcaConf,
+                  net),
               1,
               PERIODICITY_SECONDS,
               TimeUnit.SECONDS);
@@ -127,6 +135,8 @@ public class RCAScheduler {
                     | CancellationException ex) {
                   if (!shutdownRequested) {
                     LOG.error("RCA Exception cause : {}", ex.getCause());
+                    PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS.updateStat(
+                        ExceptionsAndErrors.RCA_FRAMEWORK_CRASH, ex.getCause().toString(), 1);
                     shutdown();
                     schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
                     StatsCollector.instance().logException(StatExceptionCode.RCA_SCHEDULER_STOPPED_ERROR);
@@ -150,9 +160,9 @@ public class RCAScheduler {
   public void shutdown() {
     LOG.info("Shutting down the scheduler..");
     shutdownRequested = true;
-    scheduledPool.shutdown();
-    rcaSchedulerPeriodicExecutor.shutdown();
-    waitForShutdown(rcaSchedulerPeriodicExecutor);
+    periodicExecutor.shutdown();
+    rcaGraphRunnerThreadPool.shutdown();
+    waitForShutdown(rcaGraphRunnerThreadPool);
     try {
       persistable.close();
     } catch (SQLException e) {
@@ -178,8 +188,8 @@ public class RCAScheduler {
   }
 
   private void createExecutorPools() {
-    scheduledPool = Executors.newScheduledThreadPool(1, schedThreadFactory);
-    rcaSchedulerPeriodicExecutor = Executors.newFixedThreadPool(2, taskThreadFactory);
+    periodicExecutor = Executors.newScheduledThreadPool(1, schedThreadFactory);
+    rcaGraphRunnerThreadPool = Executors.newFixedThreadPool(2, taskThreadFactory);
   }
 
   public NodeRole getRole() {

@@ -15,11 +15,14 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaFrameworkMeasurements;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.DataMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.UnicastIntentMsg;
@@ -79,6 +82,8 @@ public class WireHopper {
     if (executor != null) {
       try {
         executor.execute(new FlowUnitTxTask(netClient, subscriptionManager, msg));
+        PerformanceAnalyzerApp.RCA_FRAMEWORK_SAMPLE_AGGREGATOR.updateStat(
+                RcaFrameworkMeasurements.FLOW_UNITS_SENT_TO_WIRE_HOPPER, "send", 1);
       } catch (final RejectedExecutionException ree) {
         LOG.warn("Dropped sending flow unit because the threadpool queue is full");
         StatsCollector.instance()

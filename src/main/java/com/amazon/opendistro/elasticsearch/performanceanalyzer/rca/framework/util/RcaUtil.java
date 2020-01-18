@@ -15,7 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
@@ -46,20 +45,20 @@ public class RcaUtil {
     return getAnalysisGraphComponents(graph);
   }
 
-  public static List<ConnectedComponent> getAnalysisGraphComponents(String analysisGraphClass)
-      throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
-          InstantiationException, IllegalAccessException {
-    AnalysisGraph graph =
-        (AnalysisGraph) Class.forName(analysisGraphClass).getDeclaredConstructor().newInstance();
+  public static List<ConnectedComponent> getAnalysisGraphComponents(AnalysisGraph graph) {
     graph.construct();
     graph.validateAndProcess();
     return Stats.getInstance().getConnectedComponents();
   }
 
-  public static List<ConnectedComponent> getAnalysisGraphComponents(AnalysisGraph graph) {
+  public static AnalysisGraph getAnalysisGraph(String analysisGraphClass)
+      throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
+          InvocationTargetException, InstantiationException {
+    AnalysisGraph graph =
+        (AnalysisGraph) Class.forName(analysisGraphClass).getDeclaredConstructor().newInstance();
     graph.construct();
     graph.validateAndProcess();
-    return Stats.getInstance().getConnectedComponents();
+    return graph;
   }
 
   public static boolean doTagsMatch(Node<?> node, RcaConf conf) {

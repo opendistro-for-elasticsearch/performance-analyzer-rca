@@ -15,11 +15,13 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.LeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaGraphMeasurements;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.util.Collections;
 import java.util.List;
@@ -73,19 +75,25 @@ public abstract class Metric extends LeafNode<MetricFlowUnit> {
   }
 
   public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
-    setFlowUnits(Collections.singletonList(gather(args.getQueryable())));
+    long startTime = System.nanoTime();
+    MetricFlowUnit mfu = gather(args.getQueryable());
+    long endTime = System.nanoTime();
+    long duration = (endTime - startTime) / 1000;
+
+    PerformanceAnalyzerApp.RCA_GRAPH_SAMPLE_AGGREGATOR.updateStat(
+        RcaGraphMeasurements.METRIC_GATHER_CALL, this.name(), duration);
+    setFlowUnits(Collections.singletonList(mfu));
   }
 
   /**
    * Persists the given flow unit.
+   *
    * @param args The arg wrapper.
    */
   @Override
-  public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
-  }
+  public void persistFlowUnit(FlowUnitOperationArgWrapper args) {}
 
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
     LOG.error("we are not supposed to read metric flowunit from wire.");
   }
-
 }
