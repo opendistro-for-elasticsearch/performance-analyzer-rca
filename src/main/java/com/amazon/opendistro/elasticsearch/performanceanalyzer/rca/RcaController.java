@@ -29,6 +29,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ThresholdMain;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.RcaStatsReporter;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.collectors.aggregator.SampleAggregator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.collectors.samplers.SampleCollector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaFrameworkMeasurements;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaGraphMeasurements;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.sampled.LivenessMeasurements;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
@@ -125,6 +131,15 @@ public class RcaController {
   private AtomicReference<ExecutorService> networkThreadPoolReference = new AtomicReference<>();
   private ReceivedFlowUnitStore receivedFlowUnitStore;
 
+  private static final SampleAggregator RCA_GRAPH_SAMPLE_AGGREGATOR =
+      new SampleAggregator(RcaGraphMeasurements.values());
+  private static final SampleAggregator RCA_FRAMEWORK_SAMPLE_AGGREGATOR =
+      new SampleAggregator(RcaFrameworkMeasurements.values());
+  private static final SampleCollector SYSTEM_RESOURCE_SAMPLER =
+          new SampleCollector(LivenessMeasurements.values());
+
+  private RcaStatsReporter statsReporter;
+
   public RcaController(
       final ScheduledExecutorService netOpsExecutorService,
       final GRPCConnectionManager grpcConnectionManager,
@@ -159,6 +174,16 @@ public class RcaController {
     this.nodeRolePollerPeriodicty = nodeRolePollerPeriodicty;
     this.exceptionHandlerThreads = new ArrayList<>();
     this.pollingExecutors = new ArrayList<>();
+
+    statsReporter = new RcaStatsReporter();
+    initStatsReporter();
+  }
+
+  private void initStatsReporter() {
+    statsReporter.addCollector(RCA_FRAMEWORK_SAMPLE_AGGREGATOR);
+    statsReporter.addCollector(SYSTEM_RESOURCE_SAMPLER);
+
+    statsReporter.setReady();
   }
 
   /**
@@ -194,6 +219,18 @@ public class RcaController {
 
   public RCAScheduler getRcaScheduler() {
     return rcaScheduler;
+  }
+
+  public static SampleAggregator getRcaGraphSampleAggregator() {
+    return RCA_GRAPH_SAMPLE_AGGREGATOR;
+  }
+
+  public static SampleAggregator getRcaFrameworkSampleAggregator() {
+    return RCA_FRAMEWORK_SAMPLE_AGGREGATOR;
+  }
+
+  public static SampleCollector getSystemResourceSampler() {
+    return SYSTEM_RESOURCE_SAMPLER;
   }
 
   private void startExceptionHandlers(List<ScheduledFuture<?>> scheduledFutures) {
@@ -234,14 +271,18 @@ public class RcaController {
   }
 
   private ScheduledFuture<?> startNodeRolePoller() {
-    return netOpsExecutorService.scheduleAtFixedRate(() -> {
-      if (rcaEnabled) {
-        final NodeDetails nodeDetails = ClusterDetailsEventProcessor.getCurrentNodeDetails();
-        if (nodeDetails != null) {
-          handleNodeRoleChange(nodeDetails);
-        }
-      }
-    }, 2, nodeRolePollerPeriodicty, timeUnit);
+    return netOpsExecutorService.scheduleAtFixedRate(
+        () -> {
+          if (rcaEnabled) {
+            final NodeDetails nodeDetails = ClusterDetailsEventProcessor.getCurrentNodeDetails();
+            if (nodeDetails != null) {
+              handleNodeRoleChange(nodeDetails);
+            }
+          }
+        },
+        2,
+        nodeRolePollerPeriodicty,
+        timeUnit);
   }
 
   /**

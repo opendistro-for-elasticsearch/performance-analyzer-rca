@@ -61,8 +61,8 @@ public class RCAScheduler {
   final ThreadFactory taskThreadFactory =
       new ThreadFactoryBuilder().setNameFormat("task-%d-").setDaemon(true).build();
 
-  ExecutorService rcaSchedulerPeriodicExecutor;
-  ScheduledExecutorService scheduledPool;
+  ExecutorService rcaGraphRunnerThreadPool;
+  ScheduledExecutorService periodicExecutor;
 
   List<ConnectedComponent> connectedComponents;
   Queryable db;
@@ -96,11 +96,11 @@ public class RCAScheduler {
     LOG.info("RCA: Starting RCA scheduler ...........");
     createExecutorPools();
 
-    if (scheduledPool != null && role != NodeRole.UNKNOWN) {
+    if (periodicExecutor != null && role != NodeRole.UNKNOWN) {
       futureHandle =
-          scheduledPool.scheduleAtFixedRate(
+          periodicExecutor.scheduleAtFixedRate(
               new RCASchedulerTask(
-                  10000, rcaSchedulerPeriodicExecutor, connectedComponents, db, persistable, rcaConf, net),
+                  10000, rcaGraphRunnerThreadPool, connectedComponents, db, persistable, rcaConf, net),
               1,
               PERIODICITY_SECONDS,
               TimeUnit.SECONDS);
@@ -150,9 +150,9 @@ public class RCAScheduler {
   public void shutdown() {
     LOG.info("Shutting down the scheduler..");
     shutdownRequested = true;
-    scheduledPool.shutdown();
-    rcaSchedulerPeriodicExecutor.shutdown();
-    waitForShutdown(rcaSchedulerPeriodicExecutor);
+    periodicExecutor.shutdown();
+    rcaGraphRunnerThreadPool.shutdown();
+    waitForShutdown(rcaGraphRunnerThreadPool);
     try {
       persistable.close();
     } catch (SQLException e) {
@@ -178,8 +178,8 @@ public class RCAScheduler {
   }
 
   private void createExecutorPools() {
-    scheduledPool = Executors.newScheduledThreadPool(1, schedThreadFactory);
-    rcaSchedulerPeriodicExecutor = Executors.newFixedThreadPool(2, taskThreadFactory);
+    periodicExecutor = Executors.newScheduledThreadPool(1, schedThreadFactory);
+    rcaGraphRunnerThreadPool = Executors.newFixedThreadPool(2, taskThreadFactory);
   }
 
   public NodeRole getRole() {
