@@ -21,8 +21,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.format.StatsCollectorFormatter;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaFrameworkMeasurements;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaGraphMeasurements;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
@@ -318,6 +320,10 @@ public class RCASchedulerTask implements Runnable {
 
   public void run() {
     long runStartTime = System.nanoTime();
+
+    RcaController.getRcaGraphSampleAggregator()
+        .updateStat(RcaGraphMeasurements.NUM_GRAPH_NODES, "",
+                Stats.getInstance().getTotalNodesCount());
 
     currTick = currTick + 1;
     Map<Tasklet, CompletableFuture<TaskletResult>> taskletFutureMap = new HashMap<>();

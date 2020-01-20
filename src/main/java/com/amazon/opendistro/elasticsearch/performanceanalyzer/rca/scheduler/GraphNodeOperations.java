@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaGraphMeasurements;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,6 +25,8 @@ public class GraphNodeOperations {
 
   static void readFromLocal(FlowUnitOperationArgWrapper args) {
     args.getNode().generateFlowUnitListFromLocal(args);
+    RcaController.getRcaGraphSampleAggregator().updateStat(
+            RcaGraphMeasurements.NUM_NODES_EXECUTED_LOCALLY, "", 1);
     args.getNode().persistFlowUnit(args);
   }
 
@@ -30,5 +34,7 @@ public class GraphNodeOperations {
   static void readFromWire(FlowUnitOperationArgWrapper args) {
     // flowUnits.forEach(i -> LOG.info("rca: Read from wire: {}", i));
     args.getNode().generateFlowUnitListFromWire(args);
+    RcaController.getRcaGraphSampleAggregator().updateStat(
+            RcaGraphMeasurements.NUM_NODES_EXECUTED_REMOTELY, "", 1);
   }
 }

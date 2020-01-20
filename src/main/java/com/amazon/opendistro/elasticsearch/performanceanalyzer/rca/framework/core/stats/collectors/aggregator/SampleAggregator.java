@@ -6,6 +6,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl.Max;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl.Mean;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl.Min;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl.NamedCounter;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl.StatisticImpl;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl.Sum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl.vals.Value;
@@ -73,6 +74,9 @@ public class SampleAggregator implements Collector {
             break;
           case MIN:
             impls.add(new Min());
+            break;
+          case NAMED_COUNTERS:
+            impls.add(new NamedCounter());
             break;
           case SUM:
             impls.add(new Sum());

@@ -1,27 +1,17 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.Statistics;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public enum RcaGraphMeasurements implements AggregateMeasurements {
-  /** Measures the time spent in the operate() method of a graph node. */
-  GRAPH_NODE_OPERATE_CALL("OperateCall", "micros", Arrays.asList(Statistics.MAX, Statistics.MEAN)),
+public enum ExceptionsAndErrors implements AggregateMeasurements {
+  RCA_FRAMEWORK_CRASH("RcaFrameworkCrash"),
 
-  /** Measures the time taken to call gather on metrics */
-  METRIC_GATHER_CALL("MetricGatherCall", "micros", Arrays.asList(Statistics.MAX, Statistics.MEAN)),
-
-  /** Measures the time spent in the persistence layer. */
-  RCA_PERSIST_CALL("RcaPersistCall", "micros", Arrays.asList(Statistics.MAX, Statistics.MEAN)),
-
-  NUM_GRAPH_NODES("NumGraphNodes", "count", Collections.singletonList(Statistics.COUNT)),
-
-  NUM_NODES_EXECUTED_LOCALLY(
-      "NodesExecutedLocally", "count", Collections.singletonList(Statistics.COUNT)),
-
-  NUM_NODES_EXECUTED_REMOTELY(
-      "NodesExecutedRemotely", "count", Collections.singletonList(Statistics.COUNT));
+  /**
+   * These are the cases when an exception was throws in the {@code operate()} method, that each RCA
+   * graph node implements.
+   */
+  EXCEPTION_IN_OPERATE("ExceptionInOperate", "namedCount", Statistics.NAMED_COUNTERS);
 
   /** What we want to appear as the metric name. */
   private String name;
@@ -38,10 +28,16 @@ public enum RcaGraphMeasurements implements AggregateMeasurements {
    */
   private List<Statistics> statsList;
 
-  RcaGraphMeasurements(String name, String unit, List<Statistics> statisticList) {
+  ExceptionsAndErrors(String name) {
+    this.name = name;
+    this.unit = "count";
+    this.statsList = Collections.singletonList(Statistics.COUNT);
+  }
+
+  ExceptionsAndErrors(String name, String unit, Statistics stats) {
     this.name = name;
     this.unit = unit;
-    this.statsList = statisticList;
+    this.statsList = Collections.singletonList(stats);
   }
 
   public String toString() {

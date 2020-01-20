@@ -32,6 +32,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.RcaStatsReporter;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.collectors.aggregator.SampleAggregator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.collectors.samplers.SampleCollector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaFrameworkMeasurements;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaGraphMeasurements;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.sampled.LivenessMeasurements;
@@ -135,6 +136,10 @@ public class RcaController {
       new SampleAggregator(RcaGraphMeasurements.values());
   private static final SampleAggregator RCA_FRAMEWORK_SAMPLE_AGGREGATOR =
       new SampleAggregator(RcaFrameworkMeasurements.values());
+
+  private static final SampleAggregator ERRORS_AND_EXCEPTIONS =
+          new SampleAggregator(ExceptionsAndErrors.values());
+
   private static final SampleCollector SYSTEM_RESOURCE_SAMPLER =
           new SampleCollector(LivenessMeasurements.values());
 
@@ -182,6 +187,7 @@ public class RcaController {
   private void initStatsReporter() {
     statsReporter.addCollector(RCA_FRAMEWORK_SAMPLE_AGGREGATOR);
     statsReporter.addCollector(SYSTEM_RESOURCE_SAMPLER);
+    statsReporter.addCollector(ERRORS_AND_EXCEPTIONS);
 
     statsReporter.setReady();
   }
@@ -227,6 +233,10 @@ public class RcaController {
 
   public static SampleAggregator getRcaFrameworkSampleAggregator() {
     return RCA_FRAMEWORK_SAMPLE_AGGREGATOR;
+  }
+
+  public static SampleAggregator getErrorsAndExceptions() {
+    return ERRORS_AND_EXCEPTIONS;
   }
 
   public static SampleCollector getSystemResourceSampler() {
@@ -298,9 +308,13 @@ public class RcaController {
             if (!rcaEnabled) {
               // Need to shutdown the rca scheduler
               stop();
+              RcaController.getRcaFrameworkSampleAggregator().updateStat(
+                      RcaFrameworkMeasurements.RCA_STOPPED_BY_OPERATOR, "", 1);
             } else {
               if (rcaScheduler.getRole() != currentRole) {
                 restart();
+                RcaController.getRcaFrameworkSampleAggregator().updateStat(
+                        RcaFrameworkMeasurements.RCA_RESTARTED_BY_OPERATOR, "", 1);
               }
             }
           } else {
@@ -322,6 +336,9 @@ public class RcaController {
   private String getElectedMasterHostAddress() {
     try {
       LOG.info("Making _cat/master call");
+      RcaController.getRcaFrameworkSampleAggregator().updateStat(
+              RcaFrameworkMeasurements.ES_APIS_CALLED, "catMaster", 1);
+
       final URL url = new URL(CAT_MASTER_URL);
       HttpURLConnection connection = (HttpURLConnection) url.openConnection();
       connection.setRequestMethod("GET");
