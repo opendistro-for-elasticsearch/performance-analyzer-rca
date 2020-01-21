@@ -49,11 +49,16 @@ public class RcaUtil {
   public static List<ConnectedComponent> getAnalysisGraphComponents(String analysisGraphClass)
       throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
           InstantiationException, IllegalAccessException {
+    getAnalysisGraph(analysisGraphClass);
+    return Stats.getInstance().getConnectedComponents();
+  }
+
+  public static AnalysisGraph getAnalysisGraph(String analysisGraphClass) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
     AnalysisGraph graph =
-        (AnalysisGraph) Class.forName(analysisGraphClass).getDeclaredConstructor().newInstance();
+            (AnalysisGraph) Class.forName(analysisGraphClass).getDeclaredConstructor().newInstance();
     graph.construct();
     graph.validateAndProcess();
-    return Stats.getInstance().getConnectedComponents();
+    return graph;
   }
 
   public static List<ConnectedComponent> getAnalysisGraphComponents(AnalysisGraph graph) {

@@ -112,6 +112,7 @@ public class RcaController {
   private NodeStateManager nodeStateManager;
   private HttpServer httpServer;
   private QueryRcaRequestHandler queryRcaRequestHandler;
+  private Queryable metricsDB;
 
   private SubscriptionManager subscriptionManager;
 
@@ -138,10 +139,10 @@ public class RcaController {
       new SampleAggregator(RcaFrameworkMeasurements.values());
 
   private static final SampleAggregator ERRORS_AND_EXCEPTIONS =
-          new SampleAggregator(ExceptionsAndErrors.values());
+      new SampleAggregator(ExceptionsAndErrors.values());
 
   private static final SampleCollector SYSTEM_RESOURCE_SAMPLER =
-          new SampleCollector(LivenessMeasurements.values());
+      new SampleCollector(LivenessMeasurements.values());
 
   private RcaStatsReporter statsReporter;
 
@@ -158,7 +159,8 @@ public class RcaController {
       long rcaNannyPollerPeriodicity,
       long rcaConfPollerPeriodicity,
       long nodeRolePollerPeriodicty,
-      TimeUnit timeUnit) {
+      TimeUnit timeUnit,
+      Queryable metricsDB) {
     this.netOpsExecutorService = netOpsExecutorService;
     this.rcaNetClient = rcaNetClient;
     this.rcaNetServer = rcaNetServer;
@@ -180,6 +182,7 @@ public class RcaController {
     this.exceptionHandlerThreads = new ArrayList<>();
     this.pollingExecutors = new ArrayList<>();
 
+    this.metricsDB = metricsDB;
     statsReporter = new RcaStatsReporter();
     initStatsReporter();
   }
@@ -313,8 +316,8 @@ public class RcaController {
             } else {
               if (rcaScheduler.getRole() != currentRole) {
                 restart();
-                RcaController.getRcaFrameworkSampleAggregator().updateStat(
-                        RcaFrameworkMeasurements.RCA_RESTARTED_BY_OPERATOR, "", 1);
+                RcaController.getRcaFrameworkSampleAggregator()
+                    .updateStat(RcaFrameworkMeasurements.RCA_RESTARTED_BY_OPERATOR, "", 1);
               }
             }
           } else {
@@ -336,8 +339,8 @@ public class RcaController {
   private String getElectedMasterHostAddress() {
     try {
       LOG.info("Making _cat/master call");
-      RcaController.getRcaFrameworkSampleAggregator().updateStat(
-              RcaFrameworkMeasurements.ES_APIS_CALLED, "catMaster", 1);
+      RcaController.getRcaFrameworkSampleAggregator()
+          .updateStat(RcaFrameworkMeasurements.ES_APIS_CALLED, "catMaster", 1);
 
       final URL url = new URL(CAT_MASTER_URL);
       HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -387,11 +390,9 @@ public class RcaController {
   }
 
   private void start() {
-    final RcaConf rcaConf = pickRcaConfForRole(currentRole);
     try {
-      subscriptionManager.setCurrentLocus(rcaConf.getTagMap().get("locus"));
-      List<ConnectedComponent> connectedComponents = RcaUtil.getAnalysisGraphComponents(rcaConf);
-      Queryable db = new MetricsDBProvider();
+      final RcaConf rcaConf = pickRcaConfForRole(currentRole);
+      List<ConnectedComponent> connectedComponents = getRcaGraphConnectedComponents(rcaConf);
       ThresholdMain thresholdMain = new ThresholdMain(RcaConsts.THRESHOLDS_PATH, rcaConf);
       Persistable persistable = PersistenceFactory.create(rcaConf);
       networkThreadPoolReference.set(buildNetworkThreadPool(rcaConf.getNetworkQueueLength()));
@@ -402,7 +403,7 @@ public class RcaController {
           new WireHopper(nodeStateManager, rcaNetClient, subscriptionManager,
               networkThreadPoolReference, receivedFlowUnitStore);
       this.rcaScheduler =
-          new RCAScheduler(connectedComponents, db, rcaConf, thresholdMain, persistable, net);
+          new RCAScheduler(connectedComponents, metricsDB, rcaConf, thresholdMain, persistable, net);
 
       rcaNetServer.setMetricsHandler(new MetricsServerHandler());
       rcaNetServer.setSendDataHandler(new PublishRequestHandler(
@@ -424,6 +425,7 @@ public class RcaController {
     }
   }
 
+<<<<<<< HEAD
   private ExecutorService buildNetworkThreadPool(final int queueLength) {
     final ThreadFactory rcaNetThreadFactory =
         new ThreadFactoryBuilder().setNameFormat(RcaConsts.RCA_NETWORK_THREAD_NAME_FORMAT)
@@ -433,6 +435,13 @@ public class RcaController {
     return new ThreadPoolExecutor(RcaConsts.NETWORK_CORE_THREAD_COUNT,
         RcaConsts.NETWORK_MAX_THREAD_COUNT, 0L, TimeUnit.MILLISECONDS, threadPoolQueue,
         rcaNetThreadFactory);
+=======
+  protected List<ConnectedComponent> getRcaGraphConnectedComponents(RcaConf rcaConf)
+      throws ClassNotFoundException, NoSuchMethodException, InstantiationException,
+          IllegalAccessException, InvocationTargetException {
+    subscriptionManager.setCurrentLocus(rcaConf.getTagMap().get("locus"));
+    return RcaUtil.getAnalysisGraphComponents(rcaConf);
+>>>>>>> Adding a description for the framework
   }
 
   private void stop() {
@@ -456,7 +465,7 @@ public class RcaController {
     StatsCollector.instance().logMetric(RcaConsts.RCA_SCHEDULER_RESTART_METRIC);
   }
 
-  private RcaConf pickRcaConfForRole(final NodeRole nodeRole) {
+  protected RcaConf pickRcaConfForRole(final NodeRole nodeRole) {
     if (NodeRole.ELECTED_MASTER == nodeRole) {
       LOG.debug("picking elected master conf");
       return new RcaConf(ELECTED_MASTER_RCA_CONF_PATH);

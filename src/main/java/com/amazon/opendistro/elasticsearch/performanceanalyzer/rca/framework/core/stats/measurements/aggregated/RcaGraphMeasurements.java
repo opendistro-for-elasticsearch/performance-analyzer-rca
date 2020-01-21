@@ -15,7 +15,7 @@ public enum RcaGraphMeasurements implements AggregateMeasurements {
   /** Measures the time spent in the persistence layer. */
   RCA_PERSIST_CALL("RcaPersistCall", "micros", Arrays.asList(Statistics.MAX, Statistics.MEAN)),
 
-  NUM_GRAPH_NODES("NumGraphNodes", "count", Collections.singletonList(Statistics.COUNT)),
+  NUM_GRAPH_NODES("NumGraphNodes", "count", Collections.singletonList(Statistics.SAMPLE)),
 
   NUM_NODES_EXECUTED_LOCALLY(
       "NodesExecutedLocally", "count", Collections.singletonList(Statistics.COUNT)),

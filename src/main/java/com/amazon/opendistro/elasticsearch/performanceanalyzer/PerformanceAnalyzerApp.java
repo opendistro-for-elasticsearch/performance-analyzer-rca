@@ -27,6 +27,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectio
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetServer;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.MetricsDBProvider;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.emitters.PeriodicSamplers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
@@ -110,7 +112,7 @@ public class PerformanceAnalyzerApp {
             });
     readerThread.start();
 
-    ClientServers clientServers = startServers();
+    ClientServers clientServers = startServers(Util.RPC_PORT, getPortNumber());
     startRcaController(clientServers);
 
     int frequency =
@@ -129,16 +131,16 @@ public class PerformanceAnalyzerApp {
    *
    * @return gRPC client and the gRPC server and the httpServer wrapped in a class.
    */
-  public static ClientServers startServers() {
+  public static ClientServers startServers(int rpcServerPort, int httpServerPort) {
     boolean useHttps = PluginSettings.instance().getHttpsEnabled();
 
     GRPCConnectionManager connectionManager = new GRPCConnectionManager(useHttps);
-    NetServer netServer = new NetServer(Util.RPC_PORT, 1, useHttps);
+    NetServer netServer = new NetServer(rpcServerPort, 1, useHttps);
     NetClient netClient = new NetClient(connectionManager);
     MetricsRestUtil metricsRestUtil = new MetricsRestUtil();
 
     startRpcServerThread(netServer);
-    HttpServer httpServer = createInternalServer(PluginSettings.instance(), getPortNumber());
+    HttpServer httpServer = createInternalServer(PluginSettings.instance(), httpServerPort);
     httpServer.createContext(QUERY_URL, new QueryMetricsRequestHandler(netClient, metricsRestUtil));
 
     return new ClientServers(httpServer, netServer, netClient);
@@ -176,7 +178,8 @@ public class PerformanceAnalyzerApp {
             RcaConsts.rcaNannyPollerPeriodicity,
             RcaConsts.rcaConfPollerPeriodicity,
             RcaConsts.nodeRolePollerPeriodicity,
-            RcaConsts.rcaPollerPeriodicityTimeUnit);
+            RcaConsts.rcaPollerPeriodicityTimeUnit,
+                new MetricsDBProvider());
 
     rcaController.startPollers();
   }
@@ -292,7 +295,7 @@ public class PerformanceAnalyzerApp {
     return server;
   }
 
-  private static int getPortNumber() {
+  public static int getPortNumber() {
     String readerPortValue;
     try {
       readerPortValue = PluginSettings.instance().getSettingValue(WEBSERVICE_PORT_CONF_NAME);

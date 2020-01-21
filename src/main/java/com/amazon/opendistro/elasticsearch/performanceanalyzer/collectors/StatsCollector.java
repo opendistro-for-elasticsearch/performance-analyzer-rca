@@ -138,8 +138,6 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
     Map<String, AtomicInteger> currentCounters = counters;
     counters = new ConcurrentHashMap<>();
 
-    // currentCounters.putIfAbsent(StatExceptionCode.TOTAL_ERROR.toString(), new AtomicInteger(0));
-
     for (StatExceptionCode statExceptionCode : defaultExceptionCodes) {
       currentCounters.putIfAbsent(statExceptionCode.toString(), new AtomicInteger(0));
     }

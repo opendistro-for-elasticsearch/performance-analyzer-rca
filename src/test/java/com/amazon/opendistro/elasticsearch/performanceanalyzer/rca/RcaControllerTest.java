@@ -2,11 +2,15 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.ClientServers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.emitters.PeriodicSamplers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCAScheduler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RcaSchedulerState;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.MetricsDBProviderTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -19,9 +23,12 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jooq.tools.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
@@ -41,16 +48,22 @@ public class RcaControllerTest {
   private HttpServer dummyEsServer;
   private RcaController rcaController;
   private String masterIP;
+  private Path testStatsLogs;
+  private Path testPerformanceAnalyzerLogs;
 
   @Before
-  public void setUp() throws IOException {
+  public void setUp() throws Exception {
+    testPerformanceAnalyzerLogs = Paths.get("/tmp/PerformanceAnalyzer.test.log");
+    testStatsLogs = Paths.get("/tmp/performance_analyzer_agent_stats.test.log");
+
     String cwd = System.getProperty("user.dir");
     rcaEnabledFileLoc = Paths.get(cwd, "src", "test", "resources", "rca");
     rcaEnabledFile = Paths.get(rcaEnabledFileLoc.toString(), RcaController.getRcaEnabledConfFile());
     netOperationsExecutor =
         Executors.newScheduledThreadPool(
             3, new ThreadFactoryBuilder().setNameFormat("test-network-thread-%d").build());
-    clientServers = PerformanceAnalyzerApp.startServers();
+    clientServers = PerformanceAnalyzerApp.startServers(Util.RPC_PORT,
+            PerformanceAnalyzerApp.getPortNumber());
 
     URI uri = URI.create(RcaController.getCatMasterUrl());
     masterIP = "";
@@ -95,7 +108,8 @@ public class RcaControllerTest {
             1,
             1,
             1,
-            TimeUnit.MILLISECONDS);
+            TimeUnit.MILLISECONDS,
+               new MetricsDBProviderTestHelper());
 
     setMyIp(masterIP, AllMetrics.NodeRole.UNKNOWN);
     rcaController.startPollers();
@@ -193,6 +207,36 @@ public class RcaControllerTest {
     eventProcessor.processEvent(
         new Event("", jtime.toString() + System.lineSeparator() + jNode.toString(), 0));
   }
+
+  @Test
+  public void statGeneration() {
+    Logger LOG = LogManager.getLogger(RcaControllerTest.class);
+    LOG.error("hello - test log");
+    StatsCollector statsCollector = new StatsCollector("test-stats", 1000, new HashMap<>());
+    PeriodicSamplers periodicSamplers =
+            new PeriodicSamplers(RcaController.getSystemResourceSampler());
+    periodicSamplers.run();
+
+    // Execute An Rca graph
+    try {
+      Thread.sleep(2000);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+    statsCollector.collectMetrics(0);
+    // cleanUpLogs();
+  }
+
+  private void cleanUpLogs() {
+    try {
+      Files.deleteIfExists(testPerformanceAnalyzerLogs);
+      Files.deleteIfExists(testStatsLogs);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+  }
+
 
   enum RcaState {
     RUN,
