@@ -1,7 +1,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl.vals.NamedAggregateValue;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl.vals.Value;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -51,11 +50,11 @@ public class NamedCounterTest {
       threads[thi] = new Th(arr, i, differentKeys, namedCounter);
     }
 
-    for (int i=0; i<thi; i++) {
+    for (int i = 0; i < thi; i++) {
       threads[i].start();
     }
 
-    for (int i=0; i<thi; i++) {
+    for (int i = 0; i < thi; i++) {
       try {
         threads[i].join();
       } catch (InterruptedException e) {
@@ -63,12 +62,12 @@ public class NamedCounterTest {
       }
     }
 
-    for (NamedAggregateValue value: namedCounter.get()) {
+    for (NamedAggregateValue value : namedCounter.get()) {
       boolean found = false;
       for (int i = 0; i < differentKeys; i++) {
         String name = "x" + i;
         if (name.equals(value.getName())) {
-          Assert.assertEquals((long)countOfEach, value.getValue());
+          Assert.assertEquals((long) countOfEach, value.getValue());
           found = true;
           break;
         }

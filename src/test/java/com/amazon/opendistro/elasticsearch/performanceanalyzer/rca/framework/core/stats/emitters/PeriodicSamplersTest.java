@@ -11,28 +11,29 @@ import org.junit.experimental.categories.Category;
 
 @Category(GradleTaskForRca.class)
 public class PeriodicSamplersTest {
-    class TestStatsCollector extends StatsCollector {
-        TestStatsCollector() {
-            super("stats", 1, new HashMap<>());
-        }
-        public StringBuilder getRcaMetrics() {
-            return collectRcaStats(true);
-        }
-    }
-    @Test
-    public void emitters() {
-        TestStatsCollector tsc = new TestStatsCollector();
-        SampleCollector resourceSampler = new SampleCollector(LivenessMeasurements.values());
-
-        RcaStatsReporter statsReporter = new RcaStatsReporter();
-        statsReporter.addCollector(resourceSampler);
-        statsReporter.setReady();
-
-        PeriodicSamplers periodicSamplers = new PeriodicSamplers(resourceSampler);
-        periodicSamplers.run();
-
-        StringBuilder sb = tsc.getRcaMetrics();
-        System.out.println(sb);
+  class TestStatsCollector extends StatsCollector {
+    TestStatsCollector() {
+      super("stats", 1, new HashMap<>());
     }
 
+    public StringBuilder getRcaMetrics() {
+      return collectRcaStats(true);
+    }
+  }
+
+  @Test
+  public void emitters() {
+    TestStatsCollector tsc = new TestStatsCollector();
+    SampleCollector resourceSampler = new SampleCollector(LivenessMeasurements.values());
+
+    RcaStatsReporter statsReporter = new RcaStatsReporter();
+    statsReporter.addCollector(resourceSampler);
+    statsReporter.setReady();
+
+    PeriodicSamplers periodicSamplers = new PeriodicSamplers(resourceSampler);
+    periodicSamplers.run();
+
+    StringBuilder sb = tsc.getRcaMetrics();
+    System.out.println(sb);
+  }
 }

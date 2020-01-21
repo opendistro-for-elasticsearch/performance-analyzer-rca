@@ -1,5 +1,8 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.DummyGraph.DATA_NODE;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.DummyGraph.LOCUS;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Symptom;
@@ -8,8 +11,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_AllocRate;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Paging_MajfltRate;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Sched_Waittime;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.DummyGraph.DATA_NODE;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.DummyGraph.LOCUS;
 import java.util.Arrays;
 
 public class AnalysisGraphTest extends AnalysisGraph {

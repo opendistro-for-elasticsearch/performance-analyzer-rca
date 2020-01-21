@@ -25,6 +25,7 @@ public interface Formatter {
    * @param name The name of the value.
    * @param value The value of the value.
    */
+
   void formatNamedAggregatedValue(
           MeasurementSet measurementSet, Statistics aggregationType, String name, Number value);
 
@@ -36,6 +37,7 @@ public interface Formatter {
    * @param aggregationType The name of aggregation type - min, max and the like.
    * @param value The value of the measurement, corresponding to the aggregation type.
    */
+
   void formatAggregatedValue(MeasurementSet measurementSet, Statistics aggregationType, Number value);
 
   /**
@@ -54,5 +56,6 @@ public interface Formatter {
    * @param start The time when the first metric came in.
    * @param end The time when the getAndReset was called on the PerRunMetric
    */
+
   void setStartAndEndTime(long start, long end);
 }
