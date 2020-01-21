@@ -15,9 +15,16 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.util.ClusterUtils;
+import com.google.common.collect.ImmutableList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Manages the subscription state for the nodes in the graph.
@@ -27,6 +34,8 @@ public class NodeStateManager {
   private static final String SEPARATOR = ".";
 
   private ConcurrentMap<String, AtomicLong> lastReceivedTimestampMap = new ConcurrentHashMap<>();
+  private ConcurrentMap<String, AtomicReference<SubscriptionStatus>> subscriptionStatusMap =
+      new ConcurrentHashMap<>();
 
   /**
    * Updates the timestamp for the composite key: (host, vertex) marking when the last successful
@@ -73,5 +82,54 @@ public class NodeStateManager {
 
     // Return a value that is in the distant past.
     return 0;
+  }
+
+  /**
+   * Updates the subscription status of a host for a vertex.
+   *
+   * @param graphNode The vertex.
+   * @param host      The host.
+   * @param status    The subscription status.
+   */
+  public synchronized void updateSubscriptionState(final String graphNode, final String host, final
+  SubscriptionStatus status) {
+    final String compositeKey = graphNode + SEPARATOR + host;
+    subscriptionStatusMap.putIfAbsent(compositeKey, new AtomicReference<>());
+    subscriptionStatusMap.get(compositeKey).set(status);
+  }
+
+  /**
+   * Gets a list of hosts that have not recently published flow units for the vertex. It also
+   * includes new nodes that have come up since the last discovery that we have not yet tried
+   * subscribing to.
+   *
+   * @param graphNode       The vertex for which we need flow units from remote nodes.
+   * @param maxIdleDuration the max time delta till which we wait for flow units from a host.
+   * @param publishers      A set of known publishers for the current vertex.
+   * @return a list of hosts that we need to subscribe to.
+   */
+  public ImmutableList<String> getStaleOrNotSubscribedNodes(final String graphNode,
+      final long maxIdleDuration, Set<String> publishers) {
+    final long currentTime = System.currentTimeMillis();
+    final Set<String> hostsToSubscribeTo = new HashSet<>();
+    for (final String publisher : publishers) {
+      long lastRxTimestamp = getLastReceivedTimestamp(graphNode, publisher);
+      if (lastRxTimestamp > 0 && currentTime - lastRxTimestamp > maxIdleDuration && ClusterUtils
+          .isHostAddressInCluster(publisher)) {
+        hostsToSubscribeTo.add(publisher);
+      }
+    }
+
+    final List<String> peers = ClusterUtils.getAllPeerHostAddresses();
+    if (peers != null) {
+      for (final String peerHost : peers) {
+        String compositeKey = graphNode + SEPARATOR + peerHost;
+        if (!subscriptionStatusMap.containsKey(compositeKey)) {
+          hostsToSubscribeTo.add(peerHost);
+        }
+      }
+    }
+
+    return ImmutableList.copyOf(hostsToSubscribeTo);
   }
 }

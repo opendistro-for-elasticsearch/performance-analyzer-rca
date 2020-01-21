@@ -91,4 +91,8 @@ public class RcaConf {
   public int getNetworkQueueLength() {
     return conf.getNetworkQueueLength();
   }
+
+  public int getPerVertexBufferLength() {
+    return conf.getPerVertexBufferLength();
+  }
 }

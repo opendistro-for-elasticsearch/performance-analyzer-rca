@@ -34,6 +34,7 @@ public class FlowUnitRxTask implements Runnable {
     final String vertex = flowUnitMessage.getGraphNode();
 
     nodeStateManager.updateReceiveTime(host, vertex, System.currentTimeMillis());
+    LOG.info("rca: [pub-rx]: {} <- {}", vertex, host);
     if (!receivedFlowUnitStore.enqueue(vertex, flowUnitMessage)) {
       LOG.warn("Dropped a flow unit because the vertex buffer was full for vertex: {}", vertex);
       StatsCollector.instance().logMetric(RcaConsts.VERTEX_BUFFER_FULL_METRIC);

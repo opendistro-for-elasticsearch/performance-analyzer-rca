@@ -1,5 +1,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PublishResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PublishResponse.PublishResponseStatus;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
@@ -30,6 +32,7 @@ public class FlowUnitTxTask implements Runnable {
 
   /**
    * Sends the flow unit across the network.
+   *
    * @see Thread#run()
    */
   @Override
@@ -42,6 +45,7 @@ public class FlowUnitTxTask implements Runnable {
       LOG.debug("{} has downstream subscribers: {}", sourceNode, downstreamHostAddresses);
       for (final String downstreamHostAddress : downstreamHostAddresses) {
         for (final GenericFlowUnit flowUnit : dataMsg.getFlowUnits()) {
+          LOG.info("rca: [pub-tx]: {} -> {}", sourceNode, downstreamHostAddress);
           client.publish(
               downstreamHostAddress,
               flowUnit.buildFlowUnitMessage(sourceNode, esNode),
@@ -61,6 +65,7 @@ public class FlowUnitTxTask implements Runnable {
                 @Override
                 public void onError(final Throwable t) {
                   LOG.error("rca: Encountered an exception at the server: ", t);
+                  StatsCollector.instance().logException(StatExceptionCode.RCA_NETWORK_ERROR);
                   subscriptionManager
                       .unsubscribeAndTerminateConnection(sourceNode, downstreamHostAddress);
                   client.flushStream(downstreamHostAddress);

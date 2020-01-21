@@ -64,10 +64,12 @@ public class WireHopper {
     ExecutorService executor = executorReference.get();
     if (executor != null) {
       try {
-        executor.execute(new BroadcastSubscriptionTxTask(netClient, msg, subscriptionManager));
+        executor.execute(new BroadcastSubscriptionTxTask(netClient, msg, subscriptionManager,
+            nodeStateManager));
       } catch (final RejectedExecutionException ree) {
         LOG.warn("Dropped sending subscription because the threadpool queue is full");
-        StatsCollector.instance().logException(StatExceptionCode.RCA_NETWORK_THREADPOOL_QUEUE_FULL_ERROR);
+        StatsCollector.instance()
+                      .logException(StatExceptionCode.RCA_NETWORK_THREADPOOL_QUEUE_FULL_ERROR);
       }
     }
   }
@@ -79,7 +81,8 @@ public class WireHopper {
         executor.execute(new FlowUnitTxTask(netClient, subscriptionManager, msg));
       } catch (final RejectedExecutionException ree) {
         LOG.warn("Dropped sending flow unit because the threadpool queue is full");
-        StatsCollector.instance().logException(StatExceptionCode.RCA_NETWORK_THREADPOOL_QUEUE_FULL_ERROR);
+        StatsCollector.instance()
+                      .logException(StatExceptionCode.RCA_NETWORK_THREADPOOL_QUEUE_FULL_ERROR);
       }
     }
   }
@@ -91,34 +94,32 @@ public class WireHopper {
         .drainNode(nodeName);
     final Set<String> publisherSet = subscriptionManager.getPublishersForNode(nodeName);
 
-    if (remoteFlowUnits.size() < publisherSet.size()) {
-      for (final String publisher : publisherSet) {
-        long lastRxTimestamp = nodeStateManager.getLastReceivedTimestamp(nodeName, publisher);
-        if (lastRxTimestamp > 0 && System.currentTimeMillis() - lastRxTimestamp > 2 * intervalInSeconds * MS_IN_S) {
-          LOG.debug(
-              "{} hasn't published in a while.. nothing from the last {} intervals",
-              publisher,
-              (System.currentTimeMillis() - lastRxTimestamp) / (intervalInSeconds * MS_IN_S));
-          if (ClusterUtils.isHostAddressInCluster(publisher)) {
-            final ExecutorService executor = executorReference.get();
-            if (executor != null) {
-              try {
-                executor.execute(new UnicastSubscriptionTxTask(netClient, new UnicastIntentMsg("",
-                    nodeName, node.getTags(), publisher),
-                    subscriptionManager));
-              } catch (final RejectedExecutionException ree) {
-                LOG.warn("Dropped sending subscription request because the threadpool queue is "
-                    + "full");
-                StatsCollector.instance().logException(StatExceptionCode.RCA_NETWORK_THREADPOOL_QUEUE_FULL_ERROR);
-              }
-            }
-          } else {
-            subscriptionManager.unsubscribeAndTerminateConnection(nodeName, publisher);
-          }
+    for (final String publisher : publisherSet) {
+      if (!ClusterUtils.isHostAddressInCluster(publisher)) {
+        subscriptionManager.unsubscribeAndTerminateConnection(nodeName, publisher);
+      }
+    }
+
+    final ImmutableList<String> hostsToSubscribeTo =
+        nodeStateManager
+            .getStaleOrNotSubscribedNodes(nodeName, 2 * intervalInSeconds * MS_IN_S, publisherSet);
+
+    for (final String host : hostsToSubscribeTo) {
+      final ExecutorService executor = executorReference.get();
+      if (executor != null) {
+        try {
+          executor.execute(new UnicastSubscriptionTxTask(netClient, new UnicastIntentMsg("",
+              nodeName, node.getTags(), host),
+              subscriptionManager, nodeStateManager));
+        } catch (final RejectedExecutionException ree) {
+          LOG.warn("Dropped sending subscription request because the threadpool queue is "
+              + "full");
+          StatsCollector.instance()
+                        .logException(StatExceptionCode.RCA_NETWORK_THREADPOOL_QUEUE_FULL_ERROR);
         }
       }
+
     }
     return remoteFlowUnits;
   }
-
 }

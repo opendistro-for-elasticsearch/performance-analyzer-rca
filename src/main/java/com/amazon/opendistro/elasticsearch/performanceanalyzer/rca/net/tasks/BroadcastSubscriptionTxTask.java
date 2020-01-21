@@ -2,6 +2,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.util.ClusterUtils;
 import java.util.Map;
@@ -11,8 +12,9 @@ public class BroadcastSubscriptionTxTask extends SubscriptionTxTask {
   public BroadcastSubscriptionTxTask(
       NetClient netClient,
       IntentMsg intentMsg,
-      SubscriptionManager subscriptionManager) {
-    super(netClient, intentMsg, subscriptionManager);
+      SubscriptionManager subscriptionManager,
+      NodeStateManager nodeStateManager) {
+    super(netClient, intentMsg, subscriptionManager, nodeStateManager);
   }
 
   /**

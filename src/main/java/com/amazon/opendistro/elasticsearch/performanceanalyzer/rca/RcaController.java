@@ -337,7 +337,7 @@ public class RcaController {
       networkThreadPoolReference.set(buildNetworkThreadPool(rcaConf.getNetworkQueueLength()));
       addRcaRequestHandler();
       queryRcaRequestHandler.setPersistable(persistable);
-      receivedFlowUnitStore = new ReceivedFlowUnitStore();
+      receivedFlowUnitStore = new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength());
       WireHopper net =
           new WireHopper(nodeStateManager, rcaNetClient, subscriptionManager,
               networkThreadPoolReference, receivedFlowUnitStore);

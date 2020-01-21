@@ -1,8 +1,8 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.UnicastIntentMsg;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
 import java.util.Map;
 
@@ -13,8 +13,9 @@ public class UnicastSubscriptionTxTask extends SubscriptionTxTask {
   public UnicastSubscriptionTxTask(
       NetClient netClient,
       UnicastIntentMsg intentMsg,
-      SubscriptionManager subscriptionManager) {
-    super(netClient, intentMsg, subscriptionManager);
+      SubscriptionManager subscriptionManager,
+      NodeStateManager nodeStateManager) {
+    super(netClient, intentMsg, subscriptionManager, nodeStateManager);
     this.destinationHostAddress = intentMsg.getUnicastDestinationHostAddress();
   }
 

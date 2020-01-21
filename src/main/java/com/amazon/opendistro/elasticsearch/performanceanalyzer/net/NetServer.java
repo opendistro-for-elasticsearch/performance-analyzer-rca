@@ -142,7 +142,8 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
       subscribeHandler.handleSubscriptionRequest(request, responseObserver);
     } else {
       LOG.error("Subscribe request received before handler is set.");
-      throw new UnsupportedOperationException("No rpc handler found for subscribe/");
+      responseObserver.onError(new UnsupportedOperationException("No rpc handler found for "
+        + "subscribe/"));
     }
   }
 

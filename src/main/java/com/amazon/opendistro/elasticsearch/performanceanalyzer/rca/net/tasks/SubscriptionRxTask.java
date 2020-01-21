@@ -4,6 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMes
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.CompositeSubscribeRequest;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
 import io.grpc.stub.StreamObserver;
 import java.util.Map;
@@ -37,8 +38,12 @@ public class SubscriptionRxTask implements Runnable {
         subscriptionManager
             .addSubscriber(request.getDestinationNode(), requesterHostAddress, locus);
 
+    LOG.info("rca: [sub-rx]: {} <- {} from {} Result: {}", request.getDestinationNode(),
+        request.getRequesterNode(), requesterHostAddress, subscriptionStatus);
+
     final StreamObserver<SubscribeResponse> responseStream = compositeSubscribeRequest
         .getSubscribeResponseStream();
+    // TODO: Wrap this in a try-catch
     responseStream.onNext(SubscribeResponse.newBuilder()
                                            .setSubscriptionStatus(subscriptionStatus)
                                            .build());

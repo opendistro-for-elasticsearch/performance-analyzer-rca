@@ -16,12 +16,15 @@ public class SubscribeResponseHandler implements StreamObserver<SubscribeRespons
 
   private static final Logger LOG = LogManager.getLogger(SubscribeResponseHandler.class);
   private final SubscriptionManager subscriptionManager;
+  private final NodeStateManager nodeStateManager;
   private final String remoteHost;
   private final String graphNode;
 
   public SubscribeResponseHandler(final SubscriptionManager subscriptionManager,
+      final NodeStateManager nodeStateManager,
       final String remoteHost, final String graphNode) {
     this.subscriptionManager = subscriptionManager;
+    this.nodeStateManager = nodeStateManager;
     this.graphNode = graphNode;
     this.remoteHost = remoteHost;
   }
@@ -46,6 +49,10 @@ public class SubscribeResponseHandler implements StreamObserver<SubscribeRespons
   public void onNext(SubscribeResponse subscribeResponse) {
     if (subscribeResponse.getSubscriptionStatus() == SubscriptionStatus.SUCCESS) {
       subscriptionManager.addPublisher(graphNode, remoteHost);
+      nodeStateManager.updateSubscriptionState(graphNode, remoteHost, SubscriptionStatus.SUCCESS);
+    } else if (subscribeResponse.getSubscriptionStatus() == SubscriptionStatus.TAG_MISMATCH) {
+      nodeStateManager
+          .updateSubscriptionState(graphNode, remoteHost, SubscriptionStatus.TAG_MISMATCH);
     }
   }
 

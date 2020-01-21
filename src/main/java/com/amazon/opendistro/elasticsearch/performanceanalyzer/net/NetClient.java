@@ -75,7 +75,7 @@ public class NetClient {
           getDataStreamForHost(remoteHost, serverResponseStream);
       stream.onNext(flowUnitMessage);
     } catch (StatusRuntimeException sre) {
-      LOG.error("Encountered an error trying to publish a flow unit. Status: {}",
+      LOG.error("rca: Encountered an error trying to publish a flow unit. Status: {}",
           sre.getStatus(), sre);
       StatsCollector.instance().logException(StatExceptionCode.RCA_NETWORK_ERROR);
     }
