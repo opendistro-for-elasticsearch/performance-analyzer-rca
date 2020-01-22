@@ -33,23 +33,50 @@ import io.grpc.netty.shaded.io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Class that runs the RPC server and implements the RPC methods.
+ */
 public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBase
     implements Runnable {
 
   private static final Logger LOG = LogManager.getLogger(NetServer.class);
 
+  /**
+   * The RPC server port.
+   */
   private final int port;
+
+  /**
+   * Number of threads to be used by the server.
+   */
   private final int numServerThreads;
+
+  /**
+   * Flag indicating if a secure channel is to be used or otherwise.
+   */
   private final boolean useHttps;
 
+  /**
+   * Handler implementing publish RPC.
+   */
   private PublishRequestHandler sendDataHandler;
+
+  /**
+   * Handler implementing the subscribe RPC.
+   */
   private SubscribeServerHandler subscribeHandler;
+
+  /**
+   * Handler implementing the metric RPC for retrieving Performance Analyzer metrics.
+   */
   private MetricsServerHandler metricsServerHandler;
 
+  /**
+   * The server instance.
+   */
   private Server server;
 
   public NetServer(final int port, final int numServerThreads, final boolean useHttps) {
@@ -138,12 +165,13 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
   @Override
   public void subscribe(
       final SubscribeMessage request, final StreamObserver<SubscribeResponse> responseObserver) {
-    LOG.debug("subscribe received");
     if (subscribeHandler != null) {
       subscribeHandler.handleSubscriptionRequest(request, responseObserver);
+    } else {
+      LOG.error("Subscribe request received before handler is set.");
+      responseObserver.onError(new UnsupportedOperationException("No rpc handler found for "
+        + "subscribe/"));
     }
-
-    throw new UnsupportedOperationException("No rpc handler found for subscribe/");
   }
 
   @Override
@@ -165,17 +193,10 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
     this.metricsServerHandler = metricsServerHandler;
   }
 
-  public void shutdown() {
+  public void stop() {
     LOG.debug("indicating upstream nodes that current node is going down..");
     if (sendDataHandler != null) {
       sendDataHandler.terminateUpstreamConnections();
-    }
-    server.shutdown();
-    try {
-      server.awaitTermination(1, TimeUnit.MINUTES);
-    } catch (InterruptedException e) {
-      LOG.error("Unable to stop the gRPC server..");
-      e.printStackTrace();
     }
   }
 }

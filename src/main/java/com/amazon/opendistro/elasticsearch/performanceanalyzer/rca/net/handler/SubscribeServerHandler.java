@@ -15,48 +15,46 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.handler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.CompositeSubscribeRequest;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks.SubscriptionRxTask;
 import io.grpc.stub.StreamObserver;
-import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Service handler for the subscribe RPC
+ */
 public class SubscribeServerHandler {
   private static final Logger LOG = LogManager.getLogger(SubscribeServerHandler.class);
-  private static final String EMPTY_STRING = "";
-  private static final String REQUESTER_KEY = "requester";
-  private static final String LOCUS_KEY = "locus";
-
-  private final WireHopper hopper;
+  private final AtomicReference<ExecutorService> executorServiceAtomicReference;
   private final SubscriptionManager subscriptionManager;
 
-  public SubscribeServerHandler(
-      final WireHopper hopper, final SubscriptionManager subscriptionManager) {
-    this.hopper = hopper;
+  public SubscribeServerHandler(final SubscriptionManager subscriptionManager,
+      final AtomicReference<ExecutorService> executorServiceAtomicReference) {
+    this.executorServiceAtomicReference = executorServiceAtomicReference;
     this.subscriptionManager = subscriptionManager;
   }
 
   public void handleSubscriptionRequest(
       final SubscribeMessage request, final StreamObserver<SubscribeResponse> responseObserver) {
-    LOG.debug(
-        "Received intent from a downstream:{} for {}",
-        request.getDestinationNode(),
-        request.getRequesterNode());
-    final Map<String, String> tags = request.getTagsMap();
-    final String requesterHostAddress = tags.getOrDefault(REQUESTER_KEY, EMPTY_STRING);
-    final String locus = tags.getOrDefault(LOCUS_KEY, EMPTY_STRING);
-    //        final boolean subscriptionStatus =
-    // hopper.addSubscription(request.getDestinationNode(), requesterHostAddress, locus);
-    final SubscriptionStatus subscriptionStatus =
-        subscriptionManager.addSubscriber(
-            request.getDestinationNode(), requesterHostAddress, locus);
-
-    responseObserver.onNext(
-        SubscribeResponse.newBuilder().setSubscriptionStatus(subscriptionStatus).build());
-    responseObserver.onCompleted();
+    final CompositeSubscribeRequest subscribeRequest = new CompositeSubscribeRequest(request,
+        responseObserver);
+    final ExecutorService executorService = executorServiceAtomicReference.get();
+    if (executorService != null) {
+      try {
+        executorService.execute(new SubscriptionRxTask(subscriptionManager, subscribeRequest));
+      } catch (final RejectedExecutionException ree) {
+        LOG.warn("Dropped processing subscription request because the network threadpool is full");
+        StatsCollector.instance().logException(StatExceptionCode.RCA_NETWORK_THREADPOOL_QUEUE_FULL_ERROR);
+      }
+    }
   }
 }

@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
@@ -50,7 +52,7 @@ public class RCAScheduler {
 
   private WireHopper net;
   private boolean shutdownRequested;
-  private boolean running = false;
+  private RcaSchedulerState schedulerState = RcaSchedulerState.STATE_NOT_STARTED;
   private NodeRole role = NodeRole.UNKNOWN;
   final ThreadFactory schedThreadFactory =
       new ThreadFactoryBuilder().setNameFormat("sched-%d").setDaemon(true).build();
@@ -103,7 +105,7 @@ public class RCAScheduler {
               PERIODICITY_SECONDS,
               TimeUnit.SECONDS);
       startExceptionHandlerThread();
-      this.running = true;
+      schedulerState = RcaSchedulerState.STATE_STARTED;
     } else {
       LOG.error("Couldn't start RCA scheduler. Executor pool is not set.");
     }
@@ -126,10 +128,13 @@ public class RCAScheduler {
                   if (!shutdownRequested) {
                     LOG.error("RCA Exception cause : {}", ex.getCause());
                     shutdown();
+                    schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
+                    StatsCollector.instance().logException(StatExceptionCode.RCA_SCHEDULER_STOPPED_ERROR);
                   }
                 } catch (InterruptedException ix) {
                   LOG.error("RCA Interrupted exception cause : {}", ix.getCause());
                   shutdown();
+                  schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
                 }
               }
             })
@@ -154,7 +159,7 @@ public class RCAScheduler {
       LOG.error(
           "RCA: Error while closing the DB connection: {}::{}", e.getErrorCode(), e.getCause());
     }
-    running = false;
+    schedulerState = RcaSchedulerState.STATE_STOPPED;
   }
 
   private void waitForShutdown(ExecutorService execPool) {
@@ -168,13 +173,13 @@ public class RCAScheduler {
     }
   }
 
-  public boolean isRunning() {
-    return running;
+  public RcaSchedulerState getState() {
+    return this.schedulerState;
   }
 
   private void createExecutorPools() {
     scheduledPool = Executors.newScheduledThreadPool(1, schedThreadFactory);
-    rcaSchedulerPeriodicExecutor = Executors.newFixedThreadPool(1, taskThreadFactory);
+    rcaSchedulerPeriodicExecutor = Executors.newFixedThreadPool(2, taskThreadFactory);
   }
 
   public NodeRole getRole() {
