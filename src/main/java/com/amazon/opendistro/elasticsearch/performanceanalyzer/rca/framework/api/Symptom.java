@@ -15,7 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.SymptomFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaGraphMeasurements;
@@ -39,8 +39,8 @@ public abstract class Symptom extends NonLeafNode<SymptomFlowUnit> {
     long endTime = System.nanoTime();
     long durationMicro = (endTime - startTime) / 1000;
 
-    RcaController.getRcaGraphSampleAggregator()
-        .updateStat(RcaGraphMeasurements.GRAPH_NODE_OPERATE_CALL, this.name(), durationMicro);
+    PerformanceAnalyzerApp.RCA_GRAPH_SAMPLE_AGGREGATOR.updateStat(
+        RcaGraphMeasurements.GRAPH_NODE_OPERATE_CALL, this.name(), durationMicro);
 
     setFlowUnits(Collections.singletonList(out));
   }

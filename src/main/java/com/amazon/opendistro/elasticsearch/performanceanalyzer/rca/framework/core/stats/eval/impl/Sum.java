@@ -32,7 +32,7 @@ public class Sum implements StatisticImpl<AggregateValue> {
   }
 
   @Override
-  public boolean empty() {
+  public boolean isEmpty() {
     return empty;
   }
 }

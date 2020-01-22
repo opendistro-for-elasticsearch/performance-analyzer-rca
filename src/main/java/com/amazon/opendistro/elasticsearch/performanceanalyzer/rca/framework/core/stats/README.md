@@ -20,7 +20,7 @@ much effort. Currently supported statistics are:
  1. Sample
  1. Sum
 
-With max and min you can choose to send teh value along with a key and then the statistic reports
+With max and min you can choose to send the value along with a key and then the statistic reports
 the max or the min and also the key associated with it. The way we use it here is with
 calculating the max and min of latencies for calling the operate on the graph nodes. We pass
 the name of the graph as the key to it. Therefore, for each run we get not only the maximum
@@ -58,7 +58,7 @@ where the concept of formatters comes in. Reporting is currently handled by `Sta
 Formatters are classes that implement the `Formatter`  interface. This is the language the
 reporter and aggregators talk in. When the reporter asks for the metrics, it sends across a
 formatter with it. The aggregator uses the formatter to format the measurements. Formatters are
-located in `stat/format`. The formatter that comes with the repo might not suite your needs and
+located in `stat/format`. The formatter that comes with the repo might not suit your needs and
 therefore, you might choose to write another formatter that formats the measurements in
 accordance with your metric backend.
 

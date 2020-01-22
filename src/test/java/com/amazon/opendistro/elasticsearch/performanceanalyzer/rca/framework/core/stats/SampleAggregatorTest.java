@@ -4,6 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsC
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.collectors.aggregator.SampleAggregator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.Statistics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl.vals.NamedAggregateValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl.vals.NamedValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl.vals.Value;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.format.BaseFormatter;
@@ -38,8 +39,8 @@ public class SampleAggregatorTest {
           return false;
         }
         if (matchName) {
-          if (v instanceof NamedValue) {
-            String key = ((NamedValue) v).getName();
+          if (v instanceof NamedAggregateValue) {
+            String key = ((NamedAggregateValue) v).getName();
             if (!key.equals(name)) {
               System.out.println(key + " didn't match " + name);
               return false;
@@ -166,14 +167,12 @@ public class SampleAggregatorTest {
     StatsCollectorFormatter formatter = new StatsCollectorFormatter();
     sampleAggregator.fillValuesAndReset(formatter);
     StatsCollectorFormatter.StatsCollectorReturn statsReturn = formatter.getFormatted();
-    StringBuilder log =
-        statsCollector.logStatsRecord(
+    statsCollector.logStatsRecord(
             statsReturn.getCounters(),
             statsReturn.getStatsdata(),
             statsReturn.getLatencies(),
             statsReturn.getStartTimeMillis(),
             statsReturn.getEndTimeMillis());
-    System.out.println(log.toString());
   }
 
   class TestThread extends Thread {

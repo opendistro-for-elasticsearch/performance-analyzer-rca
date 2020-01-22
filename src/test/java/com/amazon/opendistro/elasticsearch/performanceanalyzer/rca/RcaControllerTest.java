@@ -214,7 +214,7 @@ public class RcaControllerTest {
     LOG.error("hello - test log");
     StatsCollector statsCollector = new StatsCollector("test-stats", 1000, new HashMap<>());
     PeriodicSamplers periodicSamplers =
-            new PeriodicSamplers(RcaController.getSystemResourceSampler());
+            new PeriodicSamplers(PerformanceAnalyzerApp.SYSTEM_RESOURCE_SAMPLER);
     periodicSamplers.run();
 
     // Execute An Rca graph

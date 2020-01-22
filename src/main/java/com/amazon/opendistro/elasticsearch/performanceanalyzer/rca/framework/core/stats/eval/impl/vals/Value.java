@@ -16,6 +16,6 @@ public class Value {
   }
 
   public void format(Formatter formatter, MeasurementSet measurementSet, Statistics stats) {
-    formatter.formatValue(measurementSet, value);
+    formatter.formatAggregatedValue(measurementSet, stats, value);
   }
 }

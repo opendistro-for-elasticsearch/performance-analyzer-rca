@@ -2,7 +2,13 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.co
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.Statistics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.MeasurementSet;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.AggregateMeasurements;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.ExceptionsAndErrors;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaFrameworkMeasurements;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaGraphMeasurements;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -10,45 +16,121 @@ public class StatsCollectorFormatter implements Formatter {
   StatsCollectorReturn formattedValue;
   static final char SEPARATOR = '-';
 
+  static List<AggregateMeasurements> LATENCIES =
+      Arrays.asList(
+              RcaFrameworkMeasurements.GRAPH_EXECUTION_TIME,
+              RcaGraphMeasurements.GRAPH_NODE_OPERATE_CALL,
+              RcaGraphMeasurements.METRIC_GATHER_CALL,
+              RcaGraphMeasurements.RCA_PERSIST_CALL
+              );
+
   public StatsCollectorReturn getFormatted() {
     return formattedValue;
+  }
+
+  private boolean formatException(MeasurementSet measurement, String name, Number counter) {
+    for (MeasurementSet measure : ExceptionsAndErrors.values()) {
+      if (measurement == measure) {
+        if (name.isEmpty()) {
+          formattedValue.putCounter(measurement.getName(), counter.intValue());
+        } else {
+          formattedValue.putCounter(
+              new StringBuilder(measurement.getName())
+                      .append(SEPARATOR)
+                      .append(name.replaceAll(" ", "_")).toString(),
+              counter.intValue());
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private boolean formatSamples(MeasurementSet given, Number values, Statistics aggr) {
+    if (aggr == Statistics.SAMPLE) {
+      formattedValue.putStats(given.getName(), String.valueOf(values));
+      return true;
+    }
+    return false;
+  }
+
+  private boolean formatCounters(MeasurementSet measurementSet, Number values, Statistics aggr,
+                              String name) {
+    boolean found = false;
+    if (aggr == Statistics.COUNT) {
+      formattedValue.putCounter(measurementSet.getName(), values.intValue());
+      found = true;
+    } else if (aggr == Statistics.NAMED_COUNTERS) {
+      formattedValue.putCounter(
+              new StringBuilder(measurementSet.getName())
+                      .append(SEPARATOR)
+                      .append(name.replaceAll(" ", "_")).toString(),
+              values.intValue());
+      found = true;
+    }
+    return found;
+  }
+
+  private boolean formatLatencies(MeasurementSet given, Number value, Statistics aggr,
+                                  String name) {
+    if (aggr == Statistics.NAMED_COUNTERS || aggr == Statistics.NAMED_COUNTERS || aggr == Statistics.SAMPLE) {
+      return false;
+    }
+    for (AggregateMeasurements aggregateMeasurements: LATENCIES) {
+      if (aggregateMeasurements == given) {
+        StringBuilder stringBuilder = new StringBuilder(given.getName());
+        stringBuilder.append(SEPARATOR).append(aggr);
+        stringBuilder.append(SEPARATOR).append(given.getUnit());
+        if (!name.isEmpty()) {
+          stringBuilder.append(SEPARATOR).append(name);
+        }
+        formattedValue.putLatencies(stringBuilder.toString(), value.doubleValue());
+        return true;
+      }
+    }
+    return false;
+  }
+
+
+
+  private void formatStats(MeasurementSet measurement, Number value, Statistics aggr,
+                              String name) {
+    StringBuilder stringBuilder = new StringBuilder(measurement.getName());
+    stringBuilder.append(SEPARATOR).append(aggr);
+    stringBuilder.append(SEPARATOR).append(measurement.getUnit());
+    if (!name.isEmpty()) {
+      stringBuilder.append(SEPARATOR).append(name);
+    }
+    formattedValue.putStats(stringBuilder.toString(), String.valueOf(value));
+  }
+
+  private void formatMeasurementInOrder(MeasurementSet measurementSet, Statistics type,
+                                        String name, Number value) {
+    boolean ret = formatSamples(measurementSet, value, type);
+    if (!ret) {
+      ret = formatException(measurementSet, name, value);
+    }
+    if (!ret) {
+      ret = formatCounters(measurementSet, value, type, name);
+    }
+    if (!ret) {
+      ret = formatLatencies(measurementSet, value, type, name);
+    }
+    if (!ret) {
+      formatStats(measurementSet, value, type, name);
+    }
   }
 
   @Override
   public void formatNamedAggregatedValue(
       MeasurementSet measurementSet, Statistics aggregationType, String name, Number value) {
-    formattedValue.putLatencies(
-        new StringBuilder(measurementSet.getName())
-            .append(SEPARATOR)
-            .append(aggregationType)
-            .append(SEPARATOR)
-            .append(name)
-            .toString(),
-        value.doubleValue());
-    formattedValue.getStatsdata().putIfAbsent(measurementSet.getName(), measurementSet.getUnit());
-  }
-
-  @Override
-  public void formatNamedValue(MeasurementSet measurementSet, String name, Number value) {
-    formattedValue.putCounter(
-        new StringBuilder(measurementSet.getName()).append(SEPARATOR).append(name).toString(),
-        value.intValue());
-    formattedValue.getStatsdata().putIfAbsent(measurementSet.getName(), measurementSet.getUnit());
+      formatMeasurementInOrder(measurementSet, aggregationType, name, value);
   }
 
   @Override
   public void formatAggregatedValue(
       MeasurementSet measurementSet, Statistics aggregationType, Number value) {
-    formattedValue.putLatencies(
-        new StringBuilder(measurementSet.getName()).append(SEPARATOR).append(aggregationType).toString(),
-        value.doubleValue());
-    formattedValue.getStatsdata().putIfAbsent(measurementSet.getName(), measurementSet.getUnit());
-  }
-
-  @Override
-  public void formatValue(MeasurementSet measurementSet, Number value) {
-    formattedValue.putCounter(measurementSet.getName(), value.intValue());
-    formattedValue.getStatsdata().putIfAbsent(measurementSet.getName(), measurementSet.getUnit());
+    formatMeasurementInOrder(measurementSet, aggregationType, "", value);
   }
 
   @Override
@@ -79,6 +161,10 @@ public class StatsCollectorFormatter implements Formatter {
       latencies.put(name, value);
     }
 
+    void putStats(String name, String value) {
+      statsdata.put(name, value);
+    }
+
     public Map<String, AtomicInteger> getCounters() {
       return counters;
     }
@@ -97,6 +183,10 @@ public class StatsCollectorFormatter implements Formatter {
 
     public long getEndTimeMillis() {
       return endTimeMillis;
+    }
+
+    public boolean isEmpty() {
+      return counters.isEmpty() && statsdata.isEmpty() && latencies.isEmpty();
     }
   }
 }

@@ -8,7 +8,7 @@ import java.util.List;
 public enum RcaFrameworkMeasurements implements AggregateMeasurements {
   /** Time taken per run of the RCA graph */
   GRAPH_EXECUTION_TIME(
-      "FullGraphExecutionTime",
+      "RcaGraphExecution",
       "micros",
       Arrays.asList(Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT)),
 

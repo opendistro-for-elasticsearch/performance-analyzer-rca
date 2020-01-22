@@ -15,25 +15,20 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.format.StatsCollectorFormatter;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaFrameworkMeasurements;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaGraphMeasurements;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -321,9 +316,8 @@ public class RCASchedulerTask implements Runnable {
   public void run() {
     long runStartTime = System.nanoTime();
 
-    RcaController.getRcaGraphSampleAggregator()
-        .updateStat(RcaGraphMeasurements.NUM_GRAPH_NODES, "",
-                Stats.getInstance().getTotalNodesCount());
+    PerformanceAnalyzerApp.RCA_GRAPH_SAMPLE_AGGREGATOR.updateStat(
+        RcaGraphMeasurements.NUM_GRAPH_NODES, "", Stats.getInstance().getTotalNodesCount());
 
     currTick = currTick + 1;
     Map<Tasklet, CompletableFuture<TaskletResult>> taskletFutureMap = new HashMap<>();
@@ -339,7 +333,6 @@ public class RCASchedulerTask implements Runnable {
     // Now we will wait for the results to show up.
     taskletFutureMap.values().forEach(CompletableFuture::join);
     LOG.debug("RCA: All tasklets evaluated.");
-    logStatsForThisRun();
 
     if (currTick == maxTicks) {
       currTick = 0;
@@ -350,24 +343,7 @@ public class RCASchedulerTask implements Runnable {
     long runEndTime = System.nanoTime();
     long durationMicros = (runEndTime - runStartTime) / 1000;
 
-    DateFormat dateFormat = new SimpleDateFormat("HH_mm_ss");
-    Date now = new Date();
-
-    RcaController.getRcaFrameworkSampleAggregator()
-        .updateStat(
-            RcaFrameworkMeasurements.GRAPH_EXECUTION_TIME, dateFormat.format(now), durationMicros);
-  }
-
-  private void logStatsForThisRun() {
-    StatsCollectorFormatter formatter = new StatsCollectorFormatter();
-    RcaController.getRcaGraphSampleAggregator().fillValuesAndReset(formatter);
-    StatsCollectorFormatter.StatsCollectorReturn statsReturn = formatter.getFormatted();
-    StatsCollector.instance()
-        .logStatsRecord(
-            statsReturn.getCounters(),
-            statsReturn.getStatsdata(),
-            statsReturn.getLatencies(),
-            statsReturn.getStartTimeMillis(),
-            statsReturn.getEndTimeMillis());
+    PerformanceAnalyzerApp.RCA_FRAMEWORK_SAMPLE_AGGREGATOR.updateStat(
+        RcaFrameworkMeasurements.GRAPH_EXECUTION_TIME, "", durationMicros);
   }
 }

@@ -15,10 +15,11 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.RcaStatsReporter;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.Version;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.format.StatsCollectorFormatter;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.FileInputStream;
@@ -67,10 +68,18 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
     return statsCollector;
   }
 
-  @VisibleForTesting
   public StatsCollector(String name, int samplingIntervalMillis, Map<String, String> metadata) {
     super(samplingIntervalMillis, name);
     this.metadata = metadata;
+    addRcaVersionMetadata(this.metadata);
+    defaultExceptionCodes.add(StatExceptionCode.TOTAL_ERROR);
+  }
+
+  private StatsCollector(Map<String, String> metadata) {
+    this(
+        "StatsCollector",
+        MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval,
+        metadata);
   }
 
   @VisibleForTesting
@@ -91,13 +100,13 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
     incCounter(metricName);
   }
 
-  public StringBuilder logStatsRecord(
+  public void logStatsRecord(
       Map<String, AtomicInteger> counters,
       Map<String, String> statsdata,
       Map<String, Double> latencies,
       long startTimeMillis,
       long endTimeMillis) {
-    return writeStats(metadata, counters, statsdata, latencies, startTimeMillis, endTimeMillis);
+    writeStats(metadata, counters, statsdata, latencies, startTimeMillis, endTimeMillis);
   }
 
   private static Map<String, String> loadMetadata(String fileLocation) {
@@ -121,12 +130,8 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
     return retVal;
   }
 
-  private StatsCollector(Map<String, String> metadata) {
-    super(
-        MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval,
-        "StatsCollector");
-    this.metadata = metadata;
-    defaultExceptionCodes.add(StatExceptionCode.TOTAL_ERROR);
+  private void addRcaVersionMetadata(Map<String, String> metadata) {
+    metadata.put(Version.RCA_VERSION_STR, Version.getRcaVersion());
   }
 
   public void addDefaultExceptionCode(StatExceptionCode statExceptionCode) {
@@ -144,29 +149,26 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
 
     writeStats(
         metadata, currentCounters, null, null, objectCreationTime.getTime(), new Date().getTime());
-    collectRcaStats(false);
+    collectAndWriteRcaStats();
 
     objectCreationTime = new Date();
   }
 
-  protected StringBuilder collectRcaStats(boolean reportBack) {
+  protected void collectAndWriteRcaStats() {
     boolean hasNext;
-    StringBuilder sb = new StringBuilder();
     do {
       StatsCollectorFormatter formatter = new StatsCollectorFormatter();
-      hasNext = RcaStatsReporter.getNextReport(formatter);
+      hasNext = PerformanceAnalyzerApp.RCA_STATS_REPORTER.getNextReport(formatter);
       StatsCollectorFormatter.StatsCollectorReturn statsReturn = formatter.getFormatted();
-      StringBuilder log = logStatsRecord(
-          statsReturn.getCounters(),
-          statsReturn.getStatsdata(),
-          statsReturn.getLatencies(),
-          statsReturn.getStartTimeMillis(),
-          statsReturn.getEndTimeMillis());
-      if (reportBack) {
-        sb.append(log);
+      if (!statsReturn.isEmpty()) {
+        logStatsRecord(
+            statsReturn.getCounters(),
+            statsReturn.getStatsdata(),
+            statsReturn.getLatencies(),
+            statsReturn.getStartTimeMillis(),
+            statsReturn.getEndTimeMillis());
       }
     } while (hasNext);
-    return sb;
   }
 
   private void incCounter(String counterName) {
@@ -184,7 +186,7 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
     }
   }
 
-  private static StringBuilder writeStats(
+  private static void writeStats(
       Map<String, String> metadata,
       Map<String, AtomicInteger> counters,
       Map<String, String> statsdata,
@@ -211,7 +213,6 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
     addEntry("Counters", getCountersString(counters), builder);
     builder.append(LOG_ENTRY_END); // + LOG_LINE_BREAK);
     STATS_LOGGER.info(builder.toString());
-    return builder;
   }
 
   private static String getCountersString(Map<String, AtomicInteger> counters) {

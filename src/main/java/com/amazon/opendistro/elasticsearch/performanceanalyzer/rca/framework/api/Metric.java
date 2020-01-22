@@ -15,9 +15,9 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.LeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
@@ -80,8 +80,8 @@ public abstract class Metric extends LeafNode<MetricFlowUnit> {
     long endTime = System.nanoTime();
     long duration = (endTime - startTime) / 1000;
 
-    RcaController.getRcaGraphSampleAggregator()
-        .updateStat(RcaGraphMeasurements.METRIC_GATHER_CALL, this.name(), duration);
+    PerformanceAnalyzerApp.RCA_GRAPH_SAMPLE_AGGREGATOR.updateStat(
+        RcaGraphMeasurements.METRIC_GATHER_CALL, this.name(), duration);
     setFlowUnits(Collections.singletonList(mfu));
   }
 

@@ -1,6 +1,5 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.collectors.aggregator;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.collectors.Collector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.Statistics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl.Count;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl.Max;
@@ -13,6 +12,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl.vals.Value;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.format.Formatter;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.MeasurementSet;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,7 +31,7 @@ import org.apache.logging.log4j.Logger;
  * RCA graph evaluation. We want to know the long pole in the Graph node execution and how much it
  * deviates from the mean but we also don't want to report the time taken by each graph node.
  */
-public class SampleAggregator implements Collector {
+public class SampleAggregator {
 
   private static final Logger LOG = LogManager.getLogger(SampleAggregator.class);
   /**
@@ -131,7 +131,6 @@ public class SampleAggregator implements Collector {
    *
    * @param formatter An class that knows how to format a map of enum and lists.
    */
-  @Override
   public void fillValuesAndReset(Formatter formatter) {
     synchronized (this) {
       fill(formatter);
@@ -155,7 +154,7 @@ public class SampleAggregator implements Collector {
     for (Map.Entry<MeasurementSet, List<StatisticImpl>> entry : statMap.entrySet()) {
       MeasurementSet measurement = entry.getKey();
       for (StatisticImpl statValues : entry.getValue()) {
-        if (!statValues.empty()) {
+        if (!statValues.isEmpty()) {
           Statistics stat = statValues.type();
           Collection<Value> values = statValues.get();
           for (Value value : values) {
@@ -164,5 +163,19 @@ public class SampleAggregator implements Collector {
         }
       }
     }
+  }
+
+  @VisibleForTesting
+  public boolean isMeasurementObserved(MeasurementSet toFind) {
+    List<StatisticImpl> statistics = statMap.get(toFind);
+    if (statistics == null) {
+      return false;
+    }
+    for (StatisticImpl statistic : statMap.get(toFind)) {
+      if (statistic != null && !statistic.isEmpty()) {
+        return true;
+      }
+    }
+    return false;
   }
 }

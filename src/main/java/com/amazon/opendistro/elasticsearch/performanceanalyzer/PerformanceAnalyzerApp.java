@@ -28,8 +28,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetServer;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.MetricsDBProvider;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.RcaStatsReporter;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.collectors.aggregator.SampleAggregator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.emitters.PeriodicSamplers;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.ExceptionsAndErrors;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaFrameworkMeasurements;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaGraphMeasurements;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.sampled.JvmMeasurements;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryMetricsRequestHandler;
@@ -42,6 +47,7 @@ import java.net.InetSocketAddress;
 import java.security.KeyStore;
 import java.security.Security;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -78,6 +84,22 @@ public class PerformanceAnalyzerApp {
 
   private static RcaController rcaController = null;
   private static Thread rcaNetServerThread = null;
+
+
+  public static final SampleAggregator RCA_GRAPH_SAMPLE_AGGREGATOR =
+          new SampleAggregator(RcaGraphMeasurements.values());
+  public  static final SampleAggregator RCA_FRAMEWORK_SAMPLE_AGGREGATOR =
+          new SampleAggregator(RcaFrameworkMeasurements.values());
+
+  public static final SampleAggregator ERRORS_AND_EXCEPTIONS =
+          new SampleAggregator(ExceptionsAndErrors.values());
+
+  public static final SampleAggregator SYSTEM_RESOURCE_SAMPLER =
+          new SampleAggregator(JvmMeasurements.values());
+
+  public static final RcaStatsReporter RCA_STATS_REPORTER =
+          new RcaStatsReporter(Arrays.asList(RCA_GRAPH_SAMPLE_AGGREGATOR,
+                  RCA_FRAMEWORK_SAMPLE_AGGREGATOR, ERRORS_AND_EXCEPTIONS, SYSTEM_RESOURCE_SAMPLER));
 
   public static void main(String[] args) throws Exception {
     // Initialize settings before creating threads.
@@ -188,7 +210,7 @@ public class PerformanceAnalyzerApp {
       ScheduledExecutorService executor, long freq, TimeUnit timeUnit) {
     ScheduledFuture<?> future =
         executor.scheduleAtFixedRate(
-            new PeriodicSamplers(RcaController.getSystemResourceSampler()), 0, freq, timeUnit);
+            new PeriodicSamplers(SYSTEM_RESOURCE_SAMPLER), 0, freq, timeUnit);
     new Thread(
             () -> {
               try {

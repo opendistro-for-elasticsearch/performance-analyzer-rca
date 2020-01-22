@@ -14,6 +14,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.RcaStatsReporter;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.format.BaseFormatter;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.MeasurementSet;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.MetricsDBProviderTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
@@ -27,6 +30,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -234,10 +238,11 @@ public class RcaTestFrameworkSetup {
     System.out.println("Started dummy endpoint..");
   }
 
-  private String getLogFilePath(String filename)
+  private static String getLogFilePath(String filename)
       throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
+    String cwd = System.getProperty("user.dir");
     String testResourcesPath =
-        Paths.get(this.testResourcesPath.toString(), "log4j2.xml").toString();
+        Paths.get(Paths.get(cwd, "src", "test", "resources").toString(), "log4j2.xml").toString();
 
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
     DocumentBuilder builder = factory.newDocumentBuilder();
@@ -248,14 +253,64 @@ public class RcaTestFrameworkSetup {
         String.format("Configuration/Appenders/File[@name='%s']/@fileName", filename), doc);
   }
 
-  public void cleanUpLogs() {
+  public static void cleanUpLogs() {
+      try {
+        Files.deleteIfExists(Paths.get(getLogFilePath("PerformanceAnalyzerLog")));
+        Files.deleteIfExists(Paths.get(getLogFilePath("StatsLog")));
+      } catch (ParserConfigurationException e) {
+        e.printStackTrace();
+      } catch (SAXException e) {
+        e.printStackTrace();
+      } catch (XPathExpressionException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+  }
+
+  public static List<String> getAllLinesFromStatsLog() {
     try {
-      System.out.println("Deleting file: " + testPerformanceAnalyzerLogs);
-      Files.deleteIfExists(testPerformanceAnalyzerLogs);
-      System.out.println("Deleting file: " + testStatsLogs);
-      Files.deleteIfExists(testStatsLogs);
+      return Files.readAllLines(Paths.get(getLogFilePath("StatsLog")));
+    } catch (IOException e) {
+      e.printStackTrace();
+    } catch (ParserConfigurationException e) {
+      e.printStackTrace();
+    } catch (SAXException e) {
+      e.printStackTrace();
+    } catch (XPathExpressionException e) {
+      e.printStackTrace();
+    }
+    return null;
+  }
+
+  public static void printStatsLogs() {
+    try {
+      for (String line: Files.readAllLines(Paths.get(getLogFilePath("StatsLog")))) {
+        System.out.println(line);
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    } catch (ParserConfigurationException e) {
+      e.printStackTrace();
+    } catch (SAXException e) {
+      e.printStackTrace();
+    } catch (XPathExpressionException e) {
+      e.printStackTrace();
+    }
+
+  }
+
+  public static List<String> stringExistsInFile(Path file, String pattern) {
+    List<String> files = new ArrayList<>();
+    try {
+      for (String line: Files.readAllLines(file)) {
+        if (line.matches(pattern)) {
+          files.add(line);
+        }
+      }
     } catch (IOException e) {
       e.printStackTrace();
     }
+    return files;
   }
 }

@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
@@ -25,17 +26,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetServer;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.exceptions.MalformedConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.MetricsDBProvider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ThresholdMain;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.RcaStatsReporter;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.collectors.aggregator.SampleAggregator;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.collectors.samplers.SampleCollector;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaFrameworkMeasurements;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaGraphMeasurements;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.sampled.LivenessMeasurements;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
@@ -133,19 +127,6 @@ public class RcaController {
   private AtomicReference<ExecutorService> networkThreadPoolReference = new AtomicReference<>();
   private ReceivedFlowUnitStore receivedFlowUnitStore;
 
-  private static final SampleAggregator RCA_GRAPH_SAMPLE_AGGREGATOR =
-      new SampleAggregator(RcaGraphMeasurements.values());
-  private static final SampleAggregator RCA_FRAMEWORK_SAMPLE_AGGREGATOR =
-      new SampleAggregator(RcaFrameworkMeasurements.values());
-
-  private static final SampleAggregator ERRORS_AND_EXCEPTIONS =
-      new SampleAggregator(ExceptionsAndErrors.values());
-
-  private static final SampleCollector SYSTEM_RESOURCE_SAMPLER =
-      new SampleCollector(LivenessMeasurements.values());
-
-  private RcaStatsReporter statsReporter;
-
   public RcaController(
       final ScheduledExecutorService netOpsExecutorService,
       final GRPCConnectionManager grpcConnectionManager,
@@ -183,16 +164,6 @@ public class RcaController {
     this.pollingExecutors = new ArrayList<>();
 
     this.metricsDB = metricsDB;
-    statsReporter = new RcaStatsReporter();
-    initStatsReporter();
-  }
-
-  private void initStatsReporter() {
-    statsReporter.addCollector(RCA_FRAMEWORK_SAMPLE_AGGREGATOR);
-    statsReporter.addCollector(SYSTEM_RESOURCE_SAMPLER);
-    statsReporter.addCollector(ERRORS_AND_EXCEPTIONS);
-
-    statsReporter.setReady();
   }
 
   /**
@@ -228,22 +199,6 @@ public class RcaController {
 
   public RCAScheduler getRcaScheduler() {
     return rcaScheduler;
-  }
-
-  public static SampleAggregator getRcaGraphSampleAggregator() {
-    return RCA_GRAPH_SAMPLE_AGGREGATOR;
-  }
-
-  public static SampleAggregator getRcaFrameworkSampleAggregator() {
-    return RCA_FRAMEWORK_SAMPLE_AGGREGATOR;
-  }
-
-  public static SampleAggregator getErrorsAndExceptions() {
-    return ERRORS_AND_EXCEPTIONS;
-  }
-
-  public static SampleCollector getSystemResourceSampler() {
-    return SYSTEM_RESOURCE_SAMPLER;
   }
 
   private void startExceptionHandlers(List<ScheduledFuture<?>> scheduledFutures) {
@@ -311,13 +266,13 @@ public class RcaController {
             if (!rcaEnabled) {
               // Need to shutdown the rca scheduler
               stop();
-              RcaController.getRcaFrameworkSampleAggregator().updateStat(
-                      RcaFrameworkMeasurements.RCA_STOPPED_BY_OPERATOR, "", 1);
+              PerformanceAnalyzerApp.RCA_FRAMEWORK_SAMPLE_AGGREGATOR.updateStat(
+                  RcaFrameworkMeasurements.RCA_STOPPED_BY_OPERATOR, "", 1);
             } else {
               if (rcaScheduler.getRole() != currentRole) {
                 restart();
-                RcaController.getRcaFrameworkSampleAggregator()
-                    .updateStat(RcaFrameworkMeasurements.RCA_RESTARTED_BY_OPERATOR, "", 1);
+                PerformanceAnalyzerApp.RCA_FRAMEWORK_SAMPLE_AGGREGATOR.updateStat(
+                    RcaFrameworkMeasurements.RCA_RESTARTED_BY_OPERATOR, "", 1);
               }
             }
           } else {
@@ -325,8 +280,11 @@ public class RcaController {
             // 1. rca is enabled
             // 2. we know the role of this es node
             // 3. scheduler is not stopped due to an exception.
-            if (rcaEnabled && NodeRole.UNKNOWN != currentRole && (rcaScheduler == null
-                || rcaScheduler.getState() != RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION)) {
+            if (rcaEnabled
+                && NodeRole.UNKNOWN != currentRole
+                && (rcaScheduler == null
+                    || rcaScheduler.getState()
+                        != RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION)) {
               start();
             }
           }
@@ -339,8 +297,8 @@ public class RcaController {
   private String getElectedMasterHostAddress() {
     try {
       LOG.info("Making _cat/master call");
-      RcaController.getRcaFrameworkSampleAggregator()
-          .updateStat(RcaFrameworkMeasurements.ES_APIS_CALLED, "catMaster", 1);
+      PerformanceAnalyzerApp.RCA_FRAMEWORK_SAMPLE_AGGREGATOR.updateStat(
+          RcaFrameworkMeasurements.ES_APIS_CALLED, "catMaster", 1);
 
       final URL url = new URL(CAT_MASTER_URL);
       HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -365,14 +323,14 @@ public class RcaController {
       currentRole = isMasterNode ? NodeRole.ELECTED_MASTER : currentNodeRole;
     } else {
       final String electedMasterHostAddress = getElectedMasterHostAddress();
-      currentRole = currentNode.getHostAddress().equalsIgnoreCase(electedMasterHostAddress)
-          ? NodeRole.ELECTED_MASTER : currentNodeRole;
+      currentRole =
+          currentNode.getHostAddress().equalsIgnoreCase(electedMasterHostAddress)
+              ? NodeRole.ELECTED_MASTER
+              : currentNodeRole;
     }
   }
 
-  /**
-   * Reads the enabled/disabled value for RCA from the conf file.
-   */
+  /** Reads the enabled/disabled value for RCA from the conf file. */
   private void readRcaEnabledFromConf() {
     Path filePath = Paths.get(RCA_ENABLED_CONF_LOCATION, RCA_ENABLED_CONF_FILE);
 
@@ -400,14 +358,20 @@ public class RcaController {
       queryRcaRequestHandler.setPersistable(persistable);
       receivedFlowUnitStore = new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength());
       WireHopper net =
-          new WireHopper(nodeStateManager, rcaNetClient, subscriptionManager,
-              networkThreadPoolReference, receivedFlowUnitStore);
+          new WireHopper(
+              nodeStateManager,
+              rcaNetClient,
+              subscriptionManager,
+              networkThreadPoolReference,
+              receivedFlowUnitStore);
       this.rcaScheduler =
-          new RCAScheduler(connectedComponents, metricsDB, rcaConf, thresholdMain, persistable, net);
+          new RCAScheduler(
+              connectedComponents, metricsDB, rcaConf, thresholdMain, persistable, net);
 
       rcaNetServer.setMetricsHandler(new MetricsServerHandler());
-      rcaNetServer.setSendDataHandler(new PublishRequestHandler(
-          nodeStateManager, receivedFlowUnitStore, networkThreadPoolReference));
+      rcaNetServer.setSendDataHandler(
+          new PublishRequestHandler(
+              nodeStateManager, receivedFlowUnitStore, networkThreadPoolReference));
       rcaNetServer.setSubscribeHandler(
           new SubscribeServerHandler(subscriptionManager, networkThreadPoolReference));
 
@@ -425,23 +389,27 @@ public class RcaController {
     }
   }
 
-<<<<<<< HEAD
   private ExecutorService buildNetworkThreadPool(final int queueLength) {
     final ThreadFactory rcaNetThreadFactory =
-        new ThreadFactoryBuilder().setNameFormat(RcaConsts.RCA_NETWORK_THREAD_NAME_FORMAT)
-                                  .setDaemon(true)
-                                  .build();
+        new ThreadFactoryBuilder()
+            .setNameFormat(RcaConsts.RCA_NETWORK_THREAD_NAME_FORMAT)
+            .setDaemon(true)
+            .build();
     final BlockingQueue<Runnable> threadPoolQueue = new LinkedBlockingQueue<>(queueLength);
-    return new ThreadPoolExecutor(RcaConsts.NETWORK_CORE_THREAD_COUNT,
-        RcaConsts.NETWORK_MAX_THREAD_COUNT, 0L, TimeUnit.MILLISECONDS, threadPoolQueue,
+    return new ThreadPoolExecutor(
+        RcaConsts.NETWORK_CORE_THREAD_COUNT,
+        RcaConsts.NETWORK_MAX_THREAD_COUNT,
+        0L,
+        TimeUnit.MILLISECONDS,
+        threadPoolQueue,
         rcaNetThreadFactory);
-=======
+  }
+
   protected List<ConnectedComponent> getRcaGraphConnectedComponents(RcaConf rcaConf)
       throws ClassNotFoundException, NoSuchMethodException, InstantiationException,
           IllegalAccessException, InvocationTargetException {
     subscriptionManager.setCurrentLocus(rcaConf.getTagMap().get("locus"));
     return RcaUtil.getAnalysisGraphComponents(rcaConf);
->>>>>>> Adding a description for the framework
   }
 
   private void stop() {

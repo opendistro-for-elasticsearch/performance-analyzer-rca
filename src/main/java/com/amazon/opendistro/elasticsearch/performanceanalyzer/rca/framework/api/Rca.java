@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
@@ -45,8 +46,8 @@ public abstract class Rca<T extends ResourceFlowUnit> extends NonLeafNode<T> {
     long endTime = System.nanoTime();
     long duration = (endTime - startTime) / 1000;
 
-    RcaController.getRcaGraphSampleAggregator()
-        .updateStat(RcaGraphMeasurements.GRAPH_NODE_OPERATE_CALL, this.name(), duration);
+    PerformanceAnalyzerApp.RCA_GRAPH_SAMPLE_AGGREGATOR.updateStat(
+        RcaGraphMeasurements.GRAPH_NODE_OPERATE_CALL, this.name(), duration);
 
     setFlowUnits(Collections.singletonList(out));
   }
@@ -62,7 +63,7 @@ public abstract class Rca<T extends ResourceFlowUnit> extends NonLeafNode<T> {
     long endTime = System.nanoTime();
     long duration = (endTime - startTime) / 1000;
 
-    RcaController.getRcaGraphSampleAggregator()
+    PerformanceAnalyzerApp.RCA_GRAPH_SAMPLE_AGGREGATOR
         .updateStat(RcaGraphMeasurements.RCA_PERSIST_CALL, this.name(), duration);
   }
 }

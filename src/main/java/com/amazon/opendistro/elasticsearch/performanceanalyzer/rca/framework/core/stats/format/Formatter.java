@@ -29,7 +29,6 @@ public interface Formatter {
   void formatNamedAggregatedValue(
           MeasurementSet measurementSet, Statistics aggregationType, String name, Number value);
 
-  void formatNamedValue(MeasurementSet measurementSet, String name, Number value);
   /**
    * This knows how to store the value, when called with one.
    *
@@ -39,16 +38,6 @@ public interface Formatter {
    */
 
   void formatAggregatedValue(MeasurementSet measurementSet, Statistics aggregationType, Number value);
-
-  /**
-   * Samples don't have an aggregation type. They are just numbers associated with the
-   * measurement - like key/value pairs.
-   *
-   * @param measurementSet The measurement this sample corresponds to.
-   * @param value The value corresponding the measurement.
-   */
-
-  void formatValue(MeasurementSet measurementSet, Number value);
 
   /**
    * This method is called by the PerRunStats to set the start and end time of that particular run.

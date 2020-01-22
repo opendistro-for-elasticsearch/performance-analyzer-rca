@@ -26,11 +26,17 @@ public class NamedCounter implements StatisticImpl<NamedAggregateValue> {
     synchronized (this) {
       NamedAggregateValue mapValue =
           counters.getOrDefault(key, new NamedAggregateValue(0L, Statistics.NAMED_COUNTERS, key));
+      try {
+        Number numb = mapValue.getValue();
       long number = mapValue.getValue().longValue();
-      long newNumber = number + 1;
-      mapValue.update(newNumber);
-      counters.put(key, mapValue);
-      empty = false;
+        long newNumber = number + 1;
+        mapValue.update(newNumber);
+        counters.put(key, mapValue);
+        empty = false;
+      } catch (Exception ex) {
+          ex.printStackTrace();
+
+      }
     }
   }
 
@@ -40,7 +46,7 @@ public class NamedCounter implements StatisticImpl<NamedAggregateValue> {
   }
 
   @Override
-  public boolean empty() {
+  public boolean isEmpty() {
     return empty;
   }
 }

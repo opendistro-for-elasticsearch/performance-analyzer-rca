@@ -30,7 +30,7 @@ public class Sample implements StatisticImpl<Value> {
     }
 
     @Override
-    public boolean empty() {
+    public boolean isEmpty() {
         return empty;
     }
 }

@@ -15,8 +15,10 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.DataMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.NetPersistor;
@@ -130,6 +132,8 @@ public class Tasklet {
                 executorPool)
             .exceptionally(
                 ex -> {
+                  PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS.updateStat(
+                      ExceptionsAndErrors.EXCEPTION_IN_OPERATE, node.name(), 1);
                   ex.printStackTrace();
                   return new TaskletResult(null);
                 });

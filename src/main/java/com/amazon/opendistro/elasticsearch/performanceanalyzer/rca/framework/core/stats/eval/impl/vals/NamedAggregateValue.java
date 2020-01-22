@@ -18,7 +18,6 @@ public class NamedAggregateValue extends AggregateValue {
 
     @Override
     public void format(Formatter formatter, MeasurementSet measurementSet, Statistics stats) {
-        super.format(formatter, measurementSet, stats);
         formatter.formatNamedAggregatedValue(measurementSet, getAggregationType(), getName(), getValue());
     }
 
