@@ -119,7 +119,9 @@ public class RcaController {
   private TimeUnit timeUnit;
   private List<Thread> exceptionHandlerThreads;
   private List<ScheduledFuture<?>> pollingExecutors;
-  private boolean shutdownRequested;
+  // Atomic reference to the networking threadpool as it is used by multiple threads. When we
+  // replace the threadpool instance, we want the update to be visible to all others holding a
+  // reference.
   private AtomicReference<ExecutorService> networkThreadPoolReference = new AtomicReference<>();
   private ReceivedFlowUnitStore receivedFlowUnitStore;
 
