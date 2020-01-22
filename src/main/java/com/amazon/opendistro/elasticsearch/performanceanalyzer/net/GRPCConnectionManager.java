@@ -42,8 +42,16 @@ public class GRPCConnectionManager {
 
   private static final Logger LOG = LogManager.getLogger(GRPCConnectionManager.class);
 
+  /**
+   * Map of remote host to a Netty channel to that host.
+   */
   private ConcurrentMap<String, AtomicReference<ManagedChannel>> perHostChannelMap =
       new ConcurrentHashMap<>();
+
+  /**
+   * Map of remote host to a grpc client object to that host. The client objects are created over
+   * the channels for those hosts and are used to call RPC methods on.
+   */
   private ConcurrentMap<String, AtomicReference<InterNodeRpcServiceStub>> perHostClientStubMap =
       new ConcurrentHashMap<>();
 

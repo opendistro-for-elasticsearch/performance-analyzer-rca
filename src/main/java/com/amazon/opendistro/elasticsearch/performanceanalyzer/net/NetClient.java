@@ -38,6 +38,7 @@ import org.apache.logging.log4j.Logger;
  * stuff.
  */
 public class NetClient {
+
   private static final Logger LOG = LogManager.getLogger(NetClient.class);
 
   private final GRPCConnectionManager connectionManager;
@@ -49,6 +50,15 @@ public class NetClient {
   private ConcurrentMap<String, AtomicReference<StreamObserver<FlowUnitMessage>>> perHostOpenDataStreamMap =
       new ConcurrentHashMap<>();
 
+  /**
+   * Sends a subscribe request to a remote host. If the subscribe request fails because the remote
+   * host is not ready/encountered an exception, we still retry subscribing when we try reading from
+   * remote hosts during graph execution.
+   *
+   * @param remoteHost           The host that the subscribe request is for.
+   * @param subscribeMessage     The subscribe protobuf message.
+   * @param serverResponseStream The response stream for the server to communicate back on.
+   */
   public void subscribe(
       final String remoteHost,
       final SubscribeMessage subscribeMessage,
@@ -65,6 +75,15 @@ public class NetClient {
     }
   }
 
+  /**
+   * Gets a stream from the remote host to write flow units to. If there are failures while writing
+   * to the stream, the subscribers will fail and trigger a new subscription which re-establishes
+   * the stream.
+   *
+   * @param remoteHost           The remote host to which we need to send flow units to.
+   * @param flowUnitMessage      The flow unit to send to the remote host.
+   * @param serverResponseStream The stream for the server to communicate back on.
+   */
   public void publish(
       final String remoteHost,
       final FlowUnitMessage flowUnitMessage,
