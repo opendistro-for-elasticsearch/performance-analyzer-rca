@@ -16,46 +16,45 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.Statistics;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl.vals.NamedAggregateValue;
-import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl.vals.AggregateValue;
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
 
-public class NamedCounter implements StatisticImpl<NamedAggregateValue> {
+public class Mean implements StatisticImpl<AggregateValue> {
+  private BigInteger sum;
+  private long count;
+
   private boolean empty;
-  private Map<String, NamedAggregateValue> counters;
 
-  public NamedCounter() {
-    counters = new ConcurrentHashMap<>();
-    empty = true;
+  public Mean() {
+    this.sum = BigInteger.ZERO;
+    this.count = 0;
+    this.empty = true;
   }
 
   @Override
   public Statistics type() {
-    return Statistics.NAMED_COUNTERS;
+    return Statistics.MEAN;
   }
 
   @Override
   public void calculate(String key, Number value) {
     synchronized (this) {
-      NamedAggregateValue mapValue =
-          counters.getOrDefault(key, new NamedAggregateValue(0L, Statistics.NAMED_COUNTERS, key));
-      try {
-        Number numb = mapValue.getValue();
-        long number = mapValue.getValue().longValue();
-        long newNumber = number + 1;
-        mapValue.update(newNumber);
-        counters.put(key, mapValue);
-        empty = false;
-      } catch (Exception ex) {
-        ex.printStackTrace();
-      }
+      BigInteger bdValue = BigInteger.valueOf(value.longValue());
+      sum = sum.add(bdValue);
+      count += 1;
     }
+    empty = false;
   }
 
   @Override
-  public Collection<NamedAggregateValue> get() {
-    return counters.values();
+  public List<AggregateValue> get() {
+    double ret = 0.0;
+    if (count != 0) {
+      ret = sum.doubleValue() / count;
+    }
+    return Collections.singletonList(new AggregateValue(ret, type()));
   }
 
   @Override

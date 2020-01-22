@@ -1,8 +1,22 @@
+/*
+ *  Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License").
+ *  You may not use this file except in compliance with the License.
+ *  A copy of the License is located at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  or in the "license" file accompanying this file. This file is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ *  express or implied. See the License for the specific language governing
+ *  permissions and limitations under the License.
+ */
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.format;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.Statistics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.MeasurementSet;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.AggregateMeasurements;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaFrameworkMeasurements;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated.RcaGraphMeasurements;
@@ -13,16 +27,14 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class StatsCollectorFormatter implements Formatter {
-  StatsCollectorReturn formattedValue;
   static final char SEPARATOR = '-';
-
-  static List<AggregateMeasurements> LATENCIES =
+  static List<MeasurementSet> LATENCIES =
       Arrays.asList(
-              RcaFrameworkMeasurements.GRAPH_EXECUTION_TIME,
-              RcaGraphMeasurements.GRAPH_NODE_OPERATE_CALL,
-              RcaGraphMeasurements.METRIC_GATHER_CALL,
-              RcaGraphMeasurements.RCA_PERSIST_CALL
-              );
+          RcaFrameworkMeasurements.GRAPH_EXECUTION_TIME,
+          RcaGraphMeasurements.GRAPH_NODE_OPERATE_CALL,
+          RcaGraphMeasurements.METRIC_GATHER_CALL,
+          RcaGraphMeasurements.RCA_PERSIST_CALL);
+  StatsCollectorReturn formattedValue;
 
   public StatsCollectorReturn getFormatted() {
     return formattedValue;
@@ -36,8 +48,9 @@ public class StatsCollectorFormatter implements Formatter {
         } else {
           formattedValue.putCounter(
               new StringBuilder(measurement.getName())
-                      .append(SEPARATOR)
-                      .append(name.replaceAll(" ", "_")).toString(),
+                  .append(SEPARATOR)
+                  .append(name.replaceAll(" ", "_"))
+                  .toString(),
               counter.intValue());
         }
         return true;
@@ -54,29 +67,32 @@ public class StatsCollectorFormatter implements Formatter {
     return false;
   }
 
-  private boolean formatCounters(MeasurementSet measurementSet, Number values, Statistics aggr,
-                              String name) {
+  private boolean formatCounters(
+      MeasurementSet measurementSet, Number values, Statistics aggr, String name) {
     boolean found = false;
     if (aggr == Statistics.COUNT) {
       formattedValue.putCounter(measurementSet.getName(), values.intValue());
       found = true;
     } else if (aggr == Statistics.NAMED_COUNTERS) {
       formattedValue.putCounter(
-              new StringBuilder(measurementSet.getName())
-                      .append(SEPARATOR)
-                      .append(name.replaceAll(" ", "_")).toString(),
-              values.intValue());
+          new StringBuilder(measurementSet.getName())
+              .append(SEPARATOR)
+              .append(name.replaceAll(" ", "_"))
+              .toString(),
+          values.intValue());
       found = true;
     }
     return found;
   }
 
-  private boolean formatLatencies(MeasurementSet given, Number value, Statistics aggr,
-                                  String name) {
-    if (aggr == Statistics.NAMED_COUNTERS || aggr == Statistics.NAMED_COUNTERS || aggr == Statistics.SAMPLE) {
+  private boolean formatLatencies(
+      MeasurementSet given, Number value, Statistics aggr, String name) {
+    if (aggr == Statistics.NAMED_COUNTERS
+        || aggr == Statistics.NAMED_COUNTERS
+        || aggr == Statistics.SAMPLE) {
       return false;
     }
-    for (AggregateMeasurements aggregateMeasurements: LATENCIES) {
+    for (MeasurementSet aggregateMeasurements : LATENCIES) {
       if (aggregateMeasurements == given) {
         StringBuilder stringBuilder = new StringBuilder(given.getName());
         stringBuilder.append(SEPARATOR).append(aggr);
@@ -91,10 +107,7 @@ public class StatsCollectorFormatter implements Formatter {
     return false;
   }
 
-
-
-  private void formatStats(MeasurementSet measurement, Number value, Statistics aggr,
-                              String name) {
+  private void formatStats(MeasurementSet measurement, Number value, Statistics aggr, String name) {
     StringBuilder stringBuilder = new StringBuilder(measurement.getName());
     stringBuilder.append(SEPARATOR).append(aggr);
     stringBuilder.append(SEPARATOR).append(measurement.getUnit());
@@ -104,8 +117,8 @@ public class StatsCollectorFormatter implements Formatter {
     formattedValue.putStats(stringBuilder.toString(), String.valueOf(value));
   }
 
-  private void formatMeasurementInOrder(MeasurementSet measurementSet, Statistics type,
-                                        String name, Number value) {
+  private void formatMeasurementInOrder(
+      MeasurementSet measurementSet, Statistics type, String name, Number value) {
     boolean ret = formatSamples(measurementSet, value, type);
     if (!ret) {
       ret = formatException(measurementSet, name, value);
@@ -124,7 +137,7 @@ public class StatsCollectorFormatter implements Formatter {
   @Override
   public void formatNamedAggregatedValue(
       MeasurementSet measurementSet, Statistics aggregationType, String name, Number value) {
-      formatMeasurementInOrder(measurementSet, aggregationType, name, value);
+    formatMeasurementInOrder(measurementSet, aggregationType, name, value);
   }
 
   @Override

@@ -15,22 +15,19 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl.vals;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.Statistics;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.format.Formatter;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.MeasurementSet;
+/**
+ * This encapsulates the key and the value. An example will be the name of the RCA node that took
+ * the longest and the how long it took.
+ */
+public abstract class NamedValue extends Value {
+  private String name;
 
-public class Value {
-  protected Number value;
-
-  public Value(Number value) {
-    this.value = value;
+  public NamedValue(String key, Number value) {
+    super(value);
+    this.name = key;
   }
 
-  public Number getValue() {
-    return value;
-  }
-
-  public void format(Formatter formatter, MeasurementSet measurementSet, Statistics stats) {
-    formatter.formatAggregatedValue(measurementSet, stats, value);
+  public String getName() {
+    return name;
   }
 }

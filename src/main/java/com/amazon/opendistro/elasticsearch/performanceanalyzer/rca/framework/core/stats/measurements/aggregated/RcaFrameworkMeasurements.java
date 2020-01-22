@@ -1,11 +1,27 @@
+/*
+ *  Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License").
+ *  You may not use this file except in compliance with the License.
+ *  A copy of the License is located at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  or in the "license" file accompanying this file. This file is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ *  express or implied. See the License for the specific language governing
+ *  permissions and limitations under the License.
+ */
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.aggregated;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.Statistics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.measurements.MeasurementSet;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public enum RcaFrameworkMeasurements implements AggregateMeasurements {
+public enum RcaFrameworkMeasurements implements MeasurementSet {
   /** Time taken per run of the RCA graph */
   GRAPH_EXECUTION_TIME(
       "RcaGraphExecution",
@@ -29,15 +45,11 @@ public enum RcaFrameworkMeasurements implements AggregateMeasurements {
   FLOW_UNITS_SENT_OVER_NETWORK(
       "FlowUnitsSentOverNetwork", "count", Collections.singletonList(Statistics.COUNT)),
 
-  /**
-   * The number of times the framework was stopped by the operator.
-   */
+  /** The number of times the framework was stopped by the operator. */
   RCA_STOPPED_BY_OPERATOR(
       "RcaStoppedByOperator", "count", Collections.singletonList(Statistics.COUNT)),
 
-  /**
-   * The number of times the framework was restarted by the operator.
-   */
+  /** The number of times the framework was restarted by the operator. */
   RCA_RESTARTED_BY_OPERATOR(
       "RcaRestartedByOperator", "count", Collections.singletonList(Statistics.COUNT)),
 

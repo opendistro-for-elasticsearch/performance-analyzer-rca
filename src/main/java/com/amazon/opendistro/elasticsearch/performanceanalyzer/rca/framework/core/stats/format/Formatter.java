@@ -1,3 +1,18 @@
+/*
+ *  Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License").
+ *  You may not use this file except in compliance with the License.
+ *  A copy of the License is located at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  or in the "license" file accompanying this file. This file is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ *  express or implied. See the License for the specific language governing
+ *  permissions and limitations under the License.
+ */
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.format;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.Statistics;
@@ -25,9 +40,8 @@ public interface Formatter {
    * @param name The name of the value.
    * @param value The value of the value.
    */
-
   void formatNamedAggregatedValue(
-          MeasurementSet measurementSet, Statistics aggregationType, String name, Number value);
+      MeasurementSet measurementSet, Statistics aggregationType, String name, Number value);
 
   /**
    * This knows how to store the value, when called with one.
@@ -36,8 +50,8 @@ public interface Formatter {
    * @param aggregationType The name of aggregation type - min, max and the like.
    * @param value The value of the measurement, corresponding to the aggregation type.
    */
-
-  void formatAggregatedValue(MeasurementSet measurementSet, Statistics aggregationType, Number value);
+  void formatAggregatedValue(
+      MeasurementSet measurementSet, Statistics aggregationType, Number value);
 
   /**
    * This method is called by the PerRunStats to set the start and end time of that particular run.
@@ -45,6 +59,5 @@ public interface Formatter {
    * @param start The time when the first metric came in.
    * @param end The time when the getAndReset was called on the PerRunMetric
    */
-
   void setStartAndEndTime(long start, long end);
 }
