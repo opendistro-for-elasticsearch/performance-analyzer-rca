@@ -33,23 +33,50 @@ import io.grpc.netty.shaded.io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Class that runs the RPC server and implements the RPC methods.
+ */
 public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBase
     implements Runnable {
 
   private static final Logger LOG = LogManager.getLogger(NetServer.class);
 
+  /**
+   * The RPC server port.
+   */
   private final int port;
+
+  /**
+   * Number of threads to be used by the server.
+   */
   private final int numServerThreads;
+
+  /**
+   * Flag indicating if a secure channel is to be used or otherwise.
+   */
   private final boolean useHttps;
 
+  /**
+   * Handler implementing publish RPC.
+   */
   private PublishRequestHandler sendDataHandler;
+
+  /**
+   * Handler implementing the subscribe RPC.
+   */
   private SubscribeServerHandler subscribeHandler;
+
+  /**
+   * Handler implementing the metric RPC for retrieving Performance Analyzer metrics.
+   */
   private MetricsServerHandler metricsServerHandler;
 
+  /**
+   * The server instance.
+   */
   private Server server;
 
   public NetServer(final int port, final int numServerThreads, final boolean useHttps) {

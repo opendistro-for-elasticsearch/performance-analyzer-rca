@@ -55,6 +55,9 @@ public class GRPCConnectionManager {
   private ConcurrentMap<String, AtomicReference<InterNodeRpcServiceStub>> perHostClientStubMap =
       new ConcurrentHashMap<>();
 
+  /**
+   * Flag that controls if we need to use a secure or an insecure channel.
+   */
   private final boolean shouldUseHttps;
 
   public GRPCConnectionManager(final boolean shouldUseHttps) {
@@ -135,7 +138,7 @@ public class GRPCConnectionManager {
                                                    .build())
                                 .build();
     } catch (SSLException e) {
-      LOG.error("@@: Unable to build an SSL gRPC client. Exception: {}", e.getMessage());
+      LOG.error("Unable to build an SSL gRPC client. Exception: {}", e.getMessage());
       e.printStackTrace();
 
       // Wrap the SSL Exception in a generic RTE and re-throw.

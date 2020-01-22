@@ -29,6 +29,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Service handler for the subscribe RPC
+ */
 public class SubscribeServerHandler {
   private static final Logger LOG = LogManager.getLogger(SubscribeServerHandler.class);
   private final AtomicReference<ExecutorService> executorServiceAtomicReference;

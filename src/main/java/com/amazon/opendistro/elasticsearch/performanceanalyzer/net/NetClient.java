@@ -41,6 +41,9 @@ public class NetClient {
 
   private static final Logger LOG = LogManager.getLogger(NetClient.class);
 
+  /**
+   * The connection manager instance that holds objects needed to make RPCs.
+   */
   private final GRPCConnectionManager connectionManager;
 
   public NetClient(final GRPCConnectionManager connectionManager) {

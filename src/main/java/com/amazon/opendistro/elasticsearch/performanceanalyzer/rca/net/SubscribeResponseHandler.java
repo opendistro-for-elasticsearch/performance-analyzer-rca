@@ -1,3 +1,18 @@
+/*
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ *  permissions and limitations under the License.
+ */
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
@@ -15,9 +30,25 @@ import org.apache.logging.log4j.Logger;
 public class SubscribeResponseHandler implements StreamObserver<SubscribeResponse> {
 
   private static final Logger LOG = LogManager.getLogger(SubscribeResponseHandler.class);
+
+  /**
+   * The subscription manager instance to update subscription metadata.
+   */
   private final SubscriptionManager subscriptionManager;
+
+  /**
+   * The node state manager instance to update tracking staleness.
+   */
   private final NodeStateManager nodeStateManager;
+
+  /**
+   * The host address of the remote host.
+   */
   private final String remoteHost;
+
+  /**
+   * The vertex that we want to subscribe to.
+   */
   private final String graphNode;
 
   public SubscribeResponseHandler(final SubscriptionManager subscriptionManager,

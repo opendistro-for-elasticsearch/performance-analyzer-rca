@@ -26,15 +26,32 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Handles adding and removing of subscriptions for the vertices in the analysis graph.
+ */
 public class SubscriptionManager {
 
   private static final Logger LOG = LogManager.getLogger(SubscriptionManager.class);
 
+  /**
+   * The connection manager instance.
+   */
   private final GRPCConnectionManager connectionManager;
 
+  /**
+   * Map of vertex to a set of hosts that are publishing flow units for that vertex.
+   */
   private ConcurrentMap<String, Set<String>> publisherMap = new ConcurrentHashMap<>();
+
+  /**
+   * Map of vertex to a set of hosts that are interested in consuming the flow units for that
+   * vertex.
+   */
   private ConcurrentMap<String, Set<String>> subscriberMap = new ConcurrentHashMap<>();
 
+  /**
+   * The current locus of the node.
+   */
   private volatile String currentLocus;
 
   public SubscriptionManager(

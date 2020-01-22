@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -33,7 +32,14 @@ public class NodeStateManager {
 
   private static final String SEPARATOR = ".";
 
-  private ConcurrentMap<String, AtomicLong> lastReceivedTimestampMap = new ConcurrentHashMap<>();
+  /**
+   * Map of host address of a remote node to the last time we received a flow unit from that node.
+   */
+  private ConcurrentMap<String, Long> lastReceivedTimestampMap = new ConcurrentHashMap<>();
+
+  /**
+   * Map of host address to the current subscription status of that host.
+   */
   private ConcurrentMap<String, AtomicReference<SubscriptionStatus>> subscriptionStatusMap =
       new ConcurrentHashMap<>();
 
@@ -47,22 +53,7 @@ public class NodeStateManager {
    */
   public void updateReceiveTime(final String host, final String graphNode, final long timestamp) {
     final String compositeKey = graphNode + SEPARATOR + host;
-    AtomicLong existingLong = lastReceivedTimestampMap.get(compositeKey);
-    if (existingLong == null) {
-      // happens-before: updating a java.util.concurrent collection. Update is made visible to
-      // all threads that read this collection.
-      AtomicLong prevVal = lastReceivedTimestampMap
-          .putIfAbsent(compositeKey, new AtomicLong(timestamp));
-      if (prevVal != null) {
-        // happens-before: updating AtomicLong. Update is made visible to all threads that
-        // read this atomic long.
-        lastReceivedTimestampMap.get(compositeKey).set(timestamp);
-      }
-    } else {
-      // happens-before: updating AtomicLong. Update is made visible to all threads that
-      // read this atomic long.
-      lastReceivedTimestampMap.get(compositeKey).set(timestamp);
-    }
+    lastReceivedTimestampMap.put(compositeKey, timestamp);
   }
 
   /**
@@ -77,7 +68,7 @@ public class NodeStateManager {
   public long getLastReceivedTimestamp(String graphNode, String host) {
     final String compositeKey = graphNode + SEPARATOR + host;
     if (lastReceivedTimestampMap.containsKey(compositeKey)) {
-      return lastReceivedTimestampMap.get(compositeKey).get();
+      return lastReceivedTimestampMap.get(compositeKey);
     }
 
     // Return a value that is in the distant past.
