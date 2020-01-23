@@ -33,6 +33,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -56,7 +57,6 @@ import org.apache.logging.log4j.Logger;
 public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
 
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageOldGenRca.class);
-  private static final int RCA_PERIOD = 12;
   private int counter;
   private double maxOldGenHeapSize;
   private final Metric heap_Used;
@@ -77,11 +77,13 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
   // minimum
   private static final double OLD_GEN_GC_THRESHOLD = 1;
   private static final double CONVERT_BYTES_TO_MEGABYTES = Math.pow(1024, 3);
+  protected Clock clock;
 
 
   public <M extends Metric> HighHeapUsageOldGenRca(final int rcaPeriod, final double lowerBoundThreshold,
       final M heap_Used, final M gc_event, final M heap_Max) {
     super(5);
+    this.clock = Clock.systemUTC();
     this.heap_Used = heap_Used;
     this.gc_event = gc_event;
     this.heap_Max = heap_Max;
@@ -155,7 +157,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
           oldGenHeapUsed,
           oldGenGCEvent,
           maxOldGenHeapSize);
-      long currTimeStamp = System.currentTimeMillis();
+      long currTimeStamp = this.clock.millis();
       gcEventSlidingWindow.next(new SlidingWindowData(currTimeStamp, oldGenGCEvent));
       minOldGenSlidingWindow.next(new SlidingWindowData(currTimeStamp, oldGenHeapUsed));
     }
@@ -189,12 +191,12 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
       }
 
       LOG.debug("High Heap Usage RCA Context = " + context.toString());
-      return new ResourceFlowUnit(System.currentTimeMillis(), context, summary);
+      return new ResourceFlowUnit(this.clock.millis(), context, summary);
     } else {
       // we return an empty FlowUnit RCA for now. Can change to healthy (or previous known RCA
       // state)
       LOG.debug("Empty FlowUnit returned for High Heap Usage RCA");
-      return new ResourceFlowUnit(System.currentTimeMillis());
+      return new ResourceFlowUnit(this.clock.millis());
     }
   }
 

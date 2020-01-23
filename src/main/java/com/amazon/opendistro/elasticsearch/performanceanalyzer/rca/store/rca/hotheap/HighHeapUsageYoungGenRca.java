@@ -33,6 +33,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -67,10 +68,12 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
   private int counter;
   private final SlidingWindow<SlidingWindowData> gcTimeDeque;
   private final SlidingWindow<SlidingWindowData> promotionRateDeque;
+  protected Clock clock;
 
   public <M extends Metric> HighHeapUsageYoungGenRca(final int rcaPeriod, final double lowerBoundThreshold,
       final M heap_Used, final M gc_Collection_Time) {
     super(5);
+    this.clock = Clock.systemUTC();
     this.heap_Used = heap_Used;
     this.gc_Collection_Time = gc_Collection_Time;
     this.rcaPeriod = rcaPeriod;
@@ -144,11 +147,12 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
       }
     }
 
+    long currTimeStamp = this.clock.millis();
     if (!Double.isNaN(oldGenHeapUsed)) {
-      promotionRateDeque.next(new SlidingWindowData(System.currentTimeMillis(), oldGenHeapUsed));
+      promotionRateDeque.next(new SlidingWindowData(currTimeStamp, oldGenHeapUsed));
     }
     if (!Double.isNaN(totYoungGCTime)) {
-      gcTimeDeque.next(new SlidingWindowData(System.currentTimeMillis(), totYoungGCTime));
+      gcTimeDeque.next(new SlidingWindowData(currTimeStamp, totYoungGCTime));
     }
 
     if (counter == rcaPeriod) {
@@ -179,11 +183,11 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
       }
 
       LOG.debug("@@: Young Gen RCA Context = " + context.toString());
-      return new ResourceFlowUnit(System.currentTimeMillis(), context, summary);
+      return new ResourceFlowUnit(this.clock.millis(), context, summary);
     } else {
       // we return an empty FlowUnit RCA for now. Can change to healthy (or previous known RCA state)
       LOG.debug("RCA: Empty FlowUnit returned for Young Gen RCA");
-      return new ResourceFlowUnit(System.currentTimeMillis());
+      return new ResourceFlowUnit(this.clock.millis());
     }
   }
 
