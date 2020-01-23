@@ -15,9 +15,9 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
@@ -139,7 +139,8 @@ public class RCAScheduler {
                         ExceptionsAndErrors.RCA_FRAMEWORK_CRASH, ex.getCause().toString(), 1);
                     shutdown();
                     schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
-                    StatsCollector.instance().logException(StatExceptionCode.RCA_SCHEDULER_STOPPED_ERROR);
+                    StatsCollector.instance()
+                        .logException(StatExceptionCode.RCA_SCHEDULER_STOPPED_ERROR);
                   }
                 } catch (InterruptedException ix) {
                   LOG.error("RCA Interrupted exception cause : {}", ix.getCause());

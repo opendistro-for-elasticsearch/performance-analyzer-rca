@@ -91,7 +91,7 @@ public class SampleAggregatorTest {
   @Test
   public void updateStatsConcurrent() {
 
-    int N = 100000;
+    int N = 10000;
     int T = 1000;
 
     long[] vals = new long[N];

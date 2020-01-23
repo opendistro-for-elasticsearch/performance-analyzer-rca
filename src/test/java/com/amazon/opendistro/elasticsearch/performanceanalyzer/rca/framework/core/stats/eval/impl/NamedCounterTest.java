@@ -29,7 +29,7 @@ public class NamedCounterTest {
 
   @Test
   public void concurrentCalculate() {
-    int N = 2000000;
+    int N = 20000;
     int countOfEach = 5000;
 
     int differentKeys = N / countOfEach;
