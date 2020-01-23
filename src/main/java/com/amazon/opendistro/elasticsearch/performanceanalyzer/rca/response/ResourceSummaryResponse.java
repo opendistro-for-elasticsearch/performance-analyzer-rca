@@ -24,27 +24,27 @@ import java.util.Objects;
 public class ResourceSummaryResponse {
   private String resourceName;
   private String unitType;
-  private Double thresholdValue;
-  private Double actualValue;
-  private Double averageValue;
-  private Double minimumValue;
-  private Double maximumValue;
+  private Double threshold;
+  private Double actual;
+  private Double average;
+  private Double minimum;
+  private Double maximum;
 
 
   public ResourceSummaryResponse(String resourceName,
                                  String unitType,
-                                 Double thresholdValue,
-                                 Double actualValue,
-                                 Double averageValue,
-                                 Double minimumValue,
-                                 Double maximumValue) {
+                                 Double threshold,
+                                 Double actual,
+                                 Double average,
+                                 Double minimum,
+                                 Double maximum) {
     this.resourceName = resourceName;
     this.unitType = unitType;
-    this.thresholdValue = thresholdValue;
-    this.actualValue = actualValue;
-    this.averageValue = averageValue;
-    this.minimumValue = minimumValue;
-    this.maximumValue = maximumValue;
+    this.threshold = threshold;
+    this.actual = actual;
+    this.average = average;
+    this.minimum = minimum;
+    this.maximum = maximum;
   }
 
   public String getResourceName() {
@@ -56,23 +56,23 @@ public class ResourceSummaryResponse {
   }
 
   public Double getThresholdValue() {
-    return thresholdValue;
+    return threshold;
   }
 
   public Double getActualValue() {
-    return actualValue;
+    return actual;
   }
 
   public Double getAverageValue() {
-    return averageValue;
+    return average;
   }
 
   public Double getMinimumValue() {
-    return minimumValue;
+    return minimum;
   }
 
   public Double getMaximumValue() {
-    return maximumValue;
+    return maximum;
   }
 
   @Override
@@ -86,10 +86,10 @@ public class ResourceSummaryResponse {
     ResourceSummaryResponse that = (ResourceSummaryResponse) o;
     return Objects.equals(resourceName, that.resourceName)
             && Objects.equals(unitType, that.unitType)
-            && Objects.equals(thresholdValue, that.thresholdValue)
-            && Objects.equals(actualValue, that.actualValue)
-            && Objects.equals(averageValue, that.averageValue)
-            && Objects.equals(minimumValue, that.minimumValue)
-            && Objects.equals(maximumValue, that.maximumValue);
+            && Objects.equals(threshold, that.threshold)
+            && Objects.equals(actual, that.actual)
+            && Objects.equals(average, that.average)
+            && Objects.equals(minimum, that.minimum)
+            && Objects.equals(maximum, that.maximum);
   }
 }

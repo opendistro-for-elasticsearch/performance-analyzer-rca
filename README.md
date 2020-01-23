@@ -74,8 +74,8 @@ The sample RCA response from above api
           {
             "ResourceName": "garbage collector",
             "UnitType": "heap usage in percentage",
-            "ThresholdValue": 0.65,
-            "ActualValue": 0.0710642990279853
+            "Threshold": 0.65,
+            "Actual": 0.0710642990279853
           }
         ]
       }
