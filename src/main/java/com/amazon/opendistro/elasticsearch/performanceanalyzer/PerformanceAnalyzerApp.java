@@ -142,7 +142,7 @@ public class PerformanceAnalyzerApp {
     TimeUnit timeUnit = TimeUnit.MILLISECONDS;
     // This should come after the RcaController as the RcaControllers creates the necessary
     // collectors to collect samples.
-    // startResourceStateSampler(resourceStateSamplerExecutor, frequency, timeUnit);
+    startResourceStateSampler(resourceStateSamplerExecutor, frequency, timeUnit);
   }
 
   /**

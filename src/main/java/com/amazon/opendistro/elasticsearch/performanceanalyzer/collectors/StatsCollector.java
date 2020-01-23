@@ -149,7 +149,7 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
 
     writeStats(
         metadata, currentCounters, null, null, objectCreationTime.getTime(), new Date().getTime());
-    collectAndWriteRcaStats();
+    // collectAndWriteRcaStats();
 
     objectCreationTime = new Date();
   }
