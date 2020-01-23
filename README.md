@@ -48,6 +48,12 @@ __Tags__: Tags are key-value pairs that are specified in the configuration file(
 ## Design RFC
 [RFC](./rfc-rca.pdf)
 
+## Rest API to get the RCAs
+* To get response for all the available RCA, use following command:
+curl --url "localhost:9650/_opendistro/_performanceanalyzer/rca" -XGET
+* To get response for a specific RCA , use following command:
+curl --url "localhost:9650/_opendistro/_performanceanalyzer/rca?name=HighHeapUsageClusterRca" -XGET
+
 ## Building, Deploying, and Running the RCA Framework
 Please refer to the [Install Guide](./INSTALL.md) for detailed information on building, installing and running the RCA framework.
 

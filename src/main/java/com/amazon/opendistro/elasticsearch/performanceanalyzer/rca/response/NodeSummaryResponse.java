@@ -17,16 +17,21 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
+/**
+ * NodeSummaryResponse contains summary of different resources of data nodes and also contains info like  NodeId
+ * and ip address of node.
+ */
 public class NodeSummaryResponse {
   private String nodeId;
   private String ipAddress;
-  private List<ResourceSummaryResponse> resourceList;
+  private List<ResourceSummaryResponse> resourceContext;
 
   public NodeSummaryResponse(String nodeId, String ipAddress) {
     this.nodeId = nodeId;
     this.ipAddress = ipAddress;
-    this.resourceList = new ArrayList<>();
+    this.resourceContext = new ArrayList<>();
   }
 
   public String getNodeId() {
@@ -38,32 +43,24 @@ public class NodeSummaryResponse {
   }
 
   public List<ResourceSummaryResponse> getResourceList() {
-    return resourceList;
+    return resourceContext;
   }
 
   public void addResource(ResourceSummaryResponse resource) {
-    this.resourceList.add(resource);
+    this.resourceContext.add(resource);
   }
 
   @Override
-  public String toString() {
-    return "{"
-            + "\"NodeId\" : \"" + nodeId + "\","
-            + "\"IpAddress\" : \"" + ipAddress + "\","
-            + "\"ResourceContext\" : " + getResourceSummary()
-            + '}';
-  }
-
-  private String getResourceSummary() {
-    StringBuilder builder = new StringBuilder();
-    builder.append("[");
-    if (resourceList != null && !resourceList.isEmpty()) {
-      for (ResourceSummaryResponse resourceSummaryResponse : resourceList) {
-        builder.append(resourceSummaryResponse.toString()).append(",");
-      }
-      builder.deleteCharAt(builder.length() - 1);
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
     }
-    builder.append("]");
-    return builder.toString();
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    NodeSummaryResponse that = (NodeSummaryResponse) o;
+    return Objects.equals(nodeId, that.nodeId)
+            && Objects.equals(ipAddress, that.ipAddress)
+            && Objects.equals(resourceContext, that.resourceContext);
   }
 }

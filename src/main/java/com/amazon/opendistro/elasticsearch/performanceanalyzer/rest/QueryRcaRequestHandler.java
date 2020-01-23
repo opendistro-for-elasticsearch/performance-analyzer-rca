@@ -20,8 +20,11 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsRestUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.GsonBuilder;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import java.io.IOException;
@@ -31,6 +34,7 @@ import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
@@ -112,19 +116,16 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
 
   private String getRcaData(Persistable persistable, List<String> rcaList) {
     LOG.debug("RCA: in getRcaData");
-    StringBuilder jsonResponse = new StringBuilder();
+    List<RcaResponse> rcaResponseList = null;
     if (persistable != null) {
-      jsonResponse.append("[");
-      for (String rca : rcaList) {
-        String rcaResponse = persistable.readRca(rca);
-        if (rcaResponse.length() > 0) {
-          jsonResponse.append(rcaResponse).append(",");
-        }
-      }
-      jsonResponse.deleteCharAt(jsonResponse.length() - 1);
-      jsonResponse.append("]");
+      rcaResponseList =  rcaList.stream().map(rca -> persistable.readRca(rca))
+              .filter(r -> r != null)
+              .collect(Collectors.toList());
     }
-    return jsonResponse.toString();
+    return new GsonBuilder()
+            .setFieldNamingStrategy(FieldNamingPolicy.UPPER_CAMEL_CASE)
+            .create()
+            .toJson(rcaResponseList);
   }
 
   public void sendResponse(HttpExchange exchange, String response, int status) throws IOException {

@@ -21,6 +21,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.QueryUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaResponseUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -142,13 +143,13 @@ class SQLitePersistor extends PersistorBase {
   }
 
   @Override
-  synchronized String readRcaTable(String rca) {
+  synchronized RcaResponse readRcaTable(String rca) {
     Set<String> tableNames = super.tableNames;
     if (!tableNames.contains(rca)) {
-      return "";
+      return null;
     }
     List<Record> rcaResponseRecordList = QueryUtils.getRcaRecordList(create, rca, getSummaryTableMap(rca), tableNames);
-    return RcaResponseUtil.convertRcaRecordListIntoJson(rca, rcaResponseRecordList, tableNames);
+    return RcaResponseUtil.getRcaResponse(rca, rcaResponseRecordList, tableNames);
   }
 
   private Map<String,String> getSummaryTableMap(String rca) {

@@ -15,6 +15,12 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response;
 
+import java.util.Objects;
+
+/**
+ * ResourceSummaryResponse contains information such as the name of the hot resource, the current value
+ * threshold, maximum etc.
+ */
 public class ResourceSummaryResponse {
   private String resourceName;
   private String unitType;
@@ -70,15 +76,20 @@ public class ResourceSummaryResponse {
   }
 
   @Override
-  public String toString() {
-    return "{"
-            + "\"ResourceType\" : \"" + resourceName + "\","
-            + "\"UnitType\" : \"" + unitType + "\","
-            + "\"Threshold\" : " + thresholdValue + ","
-            + "\"Actual\" : " + actualValue + ","
-            + "\"Average\" : " + averageValue + ","
-            + "\"Minimum\" : " + minimumValue + ","
-            + "\"Maximum\" : " + maximumValue
-            + '}';
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    ResourceSummaryResponse that = (ResourceSummaryResponse) o;
+    return Objects.equals(resourceName, that.resourceName)
+            && Objects.equals(unitType, that.unitType)
+            && Objects.equals(thresholdValue, that.thresholdValue)
+            && Objects.equals(actualValue, that.actualValue)
+            && Objects.equals(averageValue, that.averageValue)
+            && Objects.equals(minimumValue, that.minimumValue)
+            && Objects.equals(maximumValue, that.maximumValue);
   }
 }

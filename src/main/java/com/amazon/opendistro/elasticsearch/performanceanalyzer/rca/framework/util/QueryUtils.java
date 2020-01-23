@@ -24,15 +24,26 @@ import org.jooq.Record;
 import org.jooq.SelectJoinStep;
 import org.jooq.impl.DSL;
 
-
+/**
+ * A utility class to query cluster, node and resource level summary for a rca
+ */
 public class QueryUtils {
 
+  /**
+   * This function fetches cluster, node and resource summary records for a rca
+   *
+   * @param ctx DSLContext
+   * @param rca The rca that will be queried
+   * @param summaryTableToForeignKeyMap Map of summaryTables which will be queried to get rca's summary
+   * @param validTables The tables currently present in database
+   * @return list of rca records representing node and resource level information for input rca
+   */
   public static List<Record> getRcaRecordList(DSLContext ctx,
                                               String rca,
                                               Map<String, String> summaryTableToForeignKeyMap,
                                               Set<String> validTables) {
     SelectJoinStep<Record> rcaQuery = ctx.select().from(rca);
-    long timestamp = QueryUtils.getMaxTimestampLessThanOrEqualTo(ctx, rca, System.currentTimeMillis());
+    long timestamp = getMaxTimestampLessThanOrEqualTo(ctx, rca, System.currentTimeMillis());
     return performSummaryJoin(rcaQuery, validTables, summaryTableToForeignKeyMap)
             .where(DSL.field(ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME).equal(timestamp))
             .fetch();
@@ -43,7 +54,7 @@ public class QueryUtils {
                                                            Map<String, String> summaryTableToForeignKeyMap) {
     for (Map.Entry<String, String> entry : summaryTableToForeignKeyMap.entrySet()) {
       if (validTables.contains(entry.getKey())) {
-        joinStep = QueryUtils.doJoin(joinStep, entry.getKey(), entry.getValue());
+        joinStep = doJoin(joinStep, entry.getKey(), entry.getValue());
       } else {
         return joinStep;
       }

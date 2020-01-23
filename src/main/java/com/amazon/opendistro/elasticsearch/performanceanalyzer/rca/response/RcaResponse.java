@@ -17,36 +17,41 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
+/**
+ * RcaResponse contains cluster level info such as cluster state, number of healthy and unhealthy nodes
+ * for a particular rca.
+ */
 public class RcaResponse {
-  private String rcaName;
+  private String name;
   private String state;
   private Integer numOfNodes;
   private Integer numOfUnhealthyNodes;
   private String timeStamp;
-  private List<NodeSummaryResponse> nodeSummaryResponseList;
+  private List<NodeSummaryResponse> summary;
 
-  public RcaResponse(String rcaName, String state, String timeStamp) {
-    this.rcaName = rcaName;
+  public RcaResponse(String name, String state, String timeStamp) {
+    this.name = name;
     this.state = state;
     this.timeStamp = timeStamp;
   }
 
-  public RcaResponse(String rcaName,
+  public RcaResponse(String name,
                      String state,
                      int numOfNodes,
                      int numOfUnhealthyNodes,
                      String timeStamp) {
-    this.rcaName = rcaName;
+    this.name = name;
     this.state = state;
     this.numOfNodes = numOfNodes;
     this.numOfUnhealthyNodes = numOfUnhealthyNodes;
     this.timeStamp = timeStamp;
-    this.nodeSummaryResponseList = new ArrayList<>();
+    this.summary = new ArrayList<>();
   }
 
-  public String getRcaName() {
-    return rcaName;
+  public String getName() {
+    return name;
   }
 
   public String getState() {
@@ -65,32 +70,24 @@ public class RcaResponse {
     return timeStamp;
   }
 
-  public void addNodeSummaryResponse(NodeSummaryResponse nodeSummaryResponse) {
-    this.nodeSummaryResponseList.add(nodeSummaryResponse);
+  public void addSummary(NodeSummaryResponse nodeSummaryResponse) {
+    this.summary.add(nodeSummaryResponse);
   }
 
   @Override
-  public String toString() {
-    return "{"
-            + "\"RcaName\" : \"" + rcaName + "\","
-            + "\"State\" : \"" + state + "\","
-            + "\"NumOfNodes\" : " + numOfNodes + ","
-            + "\"NumOfUnhealthyNodes\" : " + numOfUnhealthyNodes + ","
-            + "\"TimeStamp\" : \"" + timeStamp + "\","
-            + "\"Data\" : " + getSummaryResponseString()
-            + '}';
-  }
-
-  private String getSummaryResponseString() {
-    StringBuilder builder = new StringBuilder();
-    builder.append('[');
-    if (nodeSummaryResponseList != null && !nodeSummaryResponseList.isEmpty()) {
-      for (NodeSummaryResponse nodeSummaryResponse : nodeSummaryResponseList) {
-        builder.append(nodeSummaryResponse.toString()).append(",");
-      }
-      builder.deleteCharAt(builder.length() - 1);
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
     }
-    builder.append("]");
-    return builder.toString();
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    RcaResponse that = (RcaResponse) o;
+    return Objects.equals(name, that.name)
+            && Objects.equals(state, that.state)
+            && Objects.equals(numOfNodes, that.numOfNodes)
+            && Objects.equals(numOfUnhealthyNodes, that.numOfUnhealthyNodes)
+            && Objects.equals(timeStamp, that.timeStamp)
+            && Objects.equals(summary, that.summary);
   }
 }
