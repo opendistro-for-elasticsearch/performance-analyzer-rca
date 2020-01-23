@@ -16,88 +16,97 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.OLD_GEN;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_YOUNG_GC;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_FULL_GC;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
 import static java.time.Instant.ofEpochMilli;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.MetricTestHelper;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageYoungGenRca;
-
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageOldGenRca;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.junit.experimental.categories.Category;
-
-
-@Category(GradleTaskForRca.class)
-public class HighHeapUsageYoungGenRcaTest {
+public class HighHeapUsageOldGenRcaTest {
   private static final double CONVERT_MEGABYTES_TO_BYTES = Math.pow(1024, 2);
   private MetricTestHelper heap_Used;
-  private MetricTestHelper gc_Collection_Time;
-  private HighHeapUsageYoungGenRcaX youngGenRcaX;
+  private MetricTestHelper gc_event;
+  private MetricTestHelper heap_Max;
+  private HighHeapUsageOldGenRcaX oldGenRcaX;
   private List<String> columnName;
 
   /**
    * generate flowunit and bind the flowunits it generate to metrics
    */
-  private void mockFlowUnits(double heapUsageVal, double gcCollectionTimeVal) {
+  private void mockFlowUnits(double heapUsageVal, int gcEventVal) {
     heap_Used.createTestFlowUnits(columnName, Arrays.asList(OLD_GEN.toString(), String.valueOf(heapUsageVal * CONVERT_MEGABYTES_TO_BYTES)));
-    gc_Collection_Time.createTestFlowUnits(columnName, Arrays.asList(TOT_YOUNG_GC.toString(), String.valueOf(gcCollectionTimeVal)));
+    gc_event.createTestFlowUnits(columnName, Arrays.asList(TOT_FULL_GC.toString(), String.valueOf(gcEventVal)));
   }
 
   @Before
-  public void initTestHighHeapYoungGenRca() {
+  public void initTestHighHeapOldGenRca() {
     heap_Used = new MetricTestHelper(5);
-    gc_Collection_Time = new MetricTestHelper(5);
-    youngGenRcaX = new HighHeapUsageYoungGenRcaX(1, heap_Used, gc_Collection_Time);
+    gc_event = new MetricTestHelper(5);
+    heap_Max = new MetricTestHelper(5);
+    oldGenRcaX = new HighHeapUsageOldGenRcaX(1, heap_Used, gc_event, heap_Max);
     columnName = Arrays.asList(MEM_TYPE.toString(), MetricsDB.MAX);
+    // set max heap size to 100MB
+    heap_Max.createTestFlowUnits(columnName, Arrays.asList(OLD_GEN.toString(), String.valueOf(100 * CONVERT_MEGABYTES_TO_BYTES)));
   }
 
   @Test
-  public void testHighHeapYoungGenRca() {
+  public void testHighHeapOldGenRca() {
     ResourceFlowUnit flowUnit;
     Clock constantClock = Clock.fixed(ofEpochMilli(0), ZoneId.systemDefault());
 
-    //ts = 0, heap = 0, gc time = 0
-    mockFlowUnits(0, 0);
-    youngGenRcaX.setClock(constantClock);
-    flowUnit = youngGenRcaX.operate();
+    //ts = 0, heap = 50Mb, full gc = 0
+    mockFlowUnits(50, 0);
+    oldGenRcaX.setClock(constantClock);
+    flowUnit = oldGenRcaX.operate();
     Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
-    //ts = 1, heap = 450MB, gc time = 200ms
-    mockFlowUnits(450, 200);
-    youngGenRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(1)));
-    flowUnit = youngGenRcaX.operate();
+    //ts = 3m, heap = 95MB, full gc = 0
+    mockFlowUnits(95, 0);
+    oldGenRcaX.setClock(Clock.offset(constantClock, Duration.ofMinutes(3)));
+    flowUnit = oldGenRcaX.operate();
     Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
-    //ts = 2, heap = 1050MB, gc time = 400ms
-    mockFlowUnits(1050, 400);
-    youngGenRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(2)));
-    flowUnit = youngGenRcaX.operate();
+    //ts = 7m, heap = 35MB, full gc = 1
+    mockFlowUnits(35, 1);
+    oldGenRcaX.setClock(Clock.offset(constantClock, Duration.ofMinutes(7)));
+    flowUnit = oldGenRcaX.operate();
     Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
-    //ts = 3, heap = 1550MB, gc time = 650ms
-    mockFlowUnits(1550, 650);
-    youngGenRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(3)));
-    flowUnit = youngGenRcaX.operate();
+    //ts = 12m, heap = 85MB, full gc = 0
+    mockFlowUnits(85, 0);
+    oldGenRcaX.setClock(Clock.offset(constantClock, Duration.ofMinutes(12)));
+    flowUnit = oldGenRcaX.operate();
+    Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
+
+    //ts = 15m, heap = 75MB, full gc = 1
+    mockFlowUnits(75, 1);
+    oldGenRcaX.setClock(Clock.offset(constantClock, Duration.ofMinutes(15)));
+    flowUnit = oldGenRcaX.operate();
+    Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
+
+    //ts = 20m, heap = 80MB, full gc = 0
+    mockFlowUnits(80, 0);
+    oldGenRcaX.setClock(Clock.offset(constantClock, Duration.ofMinutes(20)));
+    flowUnit = oldGenRcaX.operate();
     Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
   }
 
-  private static class HighHeapUsageYoungGenRcaX extends HighHeapUsageYoungGenRca {
-    public <M extends Metric> HighHeapUsageYoungGenRcaX(final int rcaPeriod,
-        final M heap_Used, final M gc_Collection_Time) {
-      super(rcaPeriod, heap_Used, gc_Collection_Time);
+  private static class HighHeapUsageOldGenRcaX extends HighHeapUsageOldGenRca {
+    public <M extends Metric> HighHeapUsageOldGenRcaX(final int rcaPeriod,
+        final M heap_Used, final M gc_event, final M heap_Max) {
+      super(rcaPeriod, heap_Used, gc_event, heap_Max);
     }
 
     public void setClock(Clock testClock) {
