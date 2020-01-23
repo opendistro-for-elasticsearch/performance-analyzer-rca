@@ -18,9 +18,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+@Ignore
 @Category(GradleTaskForRca.class)
 public class SampleAggregatorTest {
 

@@ -2,8 +2,10 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.co
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.stats.eval.impl.vals.NamedAggregateValue;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class NamedCounterTest {
 
   @Test

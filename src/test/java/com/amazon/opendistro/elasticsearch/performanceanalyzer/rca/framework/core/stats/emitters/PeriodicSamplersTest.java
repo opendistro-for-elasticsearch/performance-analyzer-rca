@@ -9,9 +9,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import java.util.HashMap;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+@Ignore
 @Category(GradleTaskForRca.class)
 public class PeriodicSamplersTest {
   @Before
