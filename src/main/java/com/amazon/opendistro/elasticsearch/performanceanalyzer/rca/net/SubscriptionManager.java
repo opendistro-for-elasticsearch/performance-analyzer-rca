@@ -91,7 +91,7 @@ public class SubscriptionManager {
    * @param subscriberHostAddress The host that wants to subscribe.
    * @param loci                  The locus which the subscribing host is interested in.
    * @return A SubscriptionStatus protobuf message that contains the status for the subscription
-   * request.
+   *         request.
    */
   public synchronized SubscriptionStatus addSubscriber(
       final String graphNode, final String subscriberHostAddress, final String loci) {

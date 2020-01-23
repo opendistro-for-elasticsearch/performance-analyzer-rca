@@ -78,10 +78,10 @@ public class RcaUtil {
 
     if (confTagMap != null && nodeTagMap != null) {
       final String hostLocus = confTagMap.get(RcaTagConstants.TAG_LOCUS);
-
-      return Arrays.asList(nodeTagMap.get(RcaTagConstants.TAG_LOCUS)
-                                     .split(RcaTagConstants.SEPARATOR))
-                   .contains(hostLocus);
+      final String nodeLoci = nodeTagMap.get(RcaTagConstants.TAG_LOCUS);
+      if (nodeLoci != null && !nodeLoci.isEmpty()) {
+        return Arrays.asList(nodeLoci.split(RcaTagConstants.SEPARATOR)).contains(hostLocus);
+      }
     }
 
     // By default, if no tags are specified, execute the nodes locally.
