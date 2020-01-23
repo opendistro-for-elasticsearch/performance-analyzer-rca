@@ -18,9 +18,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+@Ignore
 @Category(GradleTaskForRca.class)
 public class SampleAggregatorTest {
 
@@ -61,7 +63,7 @@ public class SampleAggregatorTest {
     return true;
   }
 
-  @Test
+  //@Test
   public void updateStat() {
     SampleAggregator sampleAggregator = new SampleAggregator(RcaGraphMeasurements.values());
     sampleAggregator.updateStat(RcaGraphMeasurements.GRAPH_NODE_OPERATE_CALL, "rca1", 200L);
@@ -88,7 +90,7 @@ public class SampleAggregatorTest {
     Assert.assertEquals(0, map.size());
   }
 
-  @Test
+  //@Test
   public void updateStatsConcurrent() {
 
     int N = 100000;
@@ -148,7 +150,7 @@ public class SampleAggregatorTest {
     Assert.assertTrue(match(map, max, "", mean, false));
   }
 
-  @Test
+  //@Test
   public void dumpStats() {
     Map<String, String> map = new HashMap<>();
     map.put("m1", "v1");
