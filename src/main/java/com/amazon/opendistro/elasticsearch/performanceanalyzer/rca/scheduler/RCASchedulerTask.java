@@ -19,11 +19,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,7 +38,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class RCASchedulerTask implements Runnable {
+
   private static final Logger LOG = LogManager.getLogger(RCASchedulerTask.class);
+  private static final String EMPTY_STRING = "";
 
   /**
    * This is a wrapper class for return type of createTaskletAndSendIntent method. This is required
@@ -45,10 +49,15 @@ public class RCASchedulerTask implements Runnable {
    * needs data from a remote node.
    */
   private static class CreatedTasklets {
-    /** Tasklet for the locally executable node. */
+
+    /**
+     * Tasklet for the locally executable node.
+     */
     Tasklet taskletForCurrentNode;
 
-    /** List of tasklets corresponding to one or many remote nodes. */
+    /**
+     * List of tasklets corresponding to one or many remote nodes.
+     */
     List<Tasklet> remoteTasklets;
 
     CreatedTasklets(Tasklet taskletForCurrentNode) {
@@ -57,13 +66,19 @@ public class RCASchedulerTask implements Runnable {
     }
   }
 
-  /** Maximum ticks after which the counter will be reset. */
+  /**
+   * Maximum ticks after which the counter will be reset.
+   */
   private int maxTicks;
 
-  /** To keep track of the number of executions of the thread. */
+  /**
+   * To keep track of the number of executions of the thread.
+   */
   private int currTick;
 
-  /** The thread pool to execute the tasklets. */
+  /**
+   * The thread pool to execute the tasklets.
+   */
   private final ExecutorService executorPool;
 
   /**
@@ -152,16 +167,18 @@ public class RCASchedulerTask implements Runnable {
    * node. So, keep track of it, so that the scheduler remembers to send it every time new data is
    * generated for the upstream node.
    *
-   * @param orderedNodes list of list of nodes in a connected component
-   * @param conf The rcaConf object, used for tag matching to determine if a node will be executed
-   *     locally.
-   * @param hopper The network listener object, used to send intent to receive remotely generated
-   *     data and to send data to remote nodes which needs data generated on this node.
-   * @param db A abstraction which is used by the metric nodes to get data from PA reader.
-   * @param persistable This object is used to write the results of the RCA evaluation to a
-   *     persistent store.
+   * @param orderedNodes   list of list of nodes in a connected component
+   * @param conf           The rcaConf object, used for tag matching to determine if a node will be
+   *                       executed locally.
+   * @param hopper         The network listener object, used to send intent to receive remotely
+   *                       generated data and to send data to remote nodes which needs data
+   *                       generated on this node.
+   * @param db             A abstraction which is used by the metric nodes to get data from PA
+   *                       reader.
+   * @param persistable    This object is used to write the results of the RCA evaluation to a
+   *                       persistent store.
    * @param nodeTaskletMap This is a helper structure, to retrieve the Tasklet corresponding to a
-   *     graph node.
+   *                       graph node.
    * @return a level ordered list of Tasklets.
    */
   private List<List<Tasklet>> getLocallyExecutableNodes(
@@ -182,7 +199,7 @@ public class RCASchedulerTask implements Runnable {
     for (List<Node<?>> levelNodes : orderedNodes) {
       List<Tasklet> locallyExecutableInThisLevel = new ArrayList<>();
       for (Node<?> node : levelNodes) {
-        if (RcaUtil.doTagsMatch(node, conf)) {
+        if (RcaUtil.shouldExecuteLocally(node, conf)) {
           // This node will be executed locally, so add it to the set to keep track of this.
           locallyExecutableSet.add(node);
 
@@ -248,12 +265,16 @@ public class RCASchedulerTask implements Runnable {
    * tasklet representations of the remote nodes. The remote node tasklets, are used to read the
    * data on the wire corresponding to the remote node, when it is available.
    *
-   * @param graphNode The locally running graph node for which we want to get the data from upstream
-   * @param locallyExecutableNodeSet A set of inspected nodes so far that are to be executed locally
-   * @param hopper The network proxy
-   * @param db This object is used to query the database to get the metrics; for reads.
-   * @param persistable The instance of the database where RCAs are to be persisted; for writes.
-   * @param nodeTaskletMap A table to get the tasklet corresponding to a graph node.
+   * @param graphNode                The locally running graph node for which we want to get the
+   *                                 data from upstream
+   * @param locallyExecutableNodeSet A set of inspected nodes so far that are to be executed
+   *                                 locally
+   * @param hopper                   The network proxy
+   * @param db                       This object is used to query the database to get the metrics;
+   *                                 for reads.
+   * @param persistable              The instance of the database where RCAs are to be persisted;
+   *                                 for writes.
+   * @param nodeTaskletMap           A table to get the tasklet corresponding to a graph node.
    */
   protected CreatedTasklets createTaskletAndSendIntent(
       Node<?> graphNode,
@@ -273,39 +294,58 @@ public class RCASchedulerTask implements Runnable {
             GraphNodeOperations::readFromLocal);
     CreatedTasklets ret = new CreatedTasklets(tasklet);
 
+    final String aggregationLocus = graphNode.getTags().get(RcaTagConstants.TAG_AGGREGATE_UPSTREAM);
+
     for (Node<?> upstreamNode : graphNode.getUpstreams()) {
       // A tasklet should exist for each upstream dependency. Based on whether this is
       // locally available or not, a different execution function will be passed in.
       if (locallyExecutableNodeSet.contains(upstreamNode)) {
         // This upstream node is executed locally. So it should be in the nodeTaskletMap.
         tasklet.addPredecessor(nodeTaskletMap.get(upstreamNode));
+
+        final Map<String, String> upstreamNodeTags = upstreamNode.getTags();
+        List<String> upstreamNodeLoci =
+            Arrays.asList(upstreamNodeTags.getOrDefault(RcaTagConstants.TAG_LOCUS,
+                EMPTY_STRING).split(RcaTagConstants.SEPARATOR));
+        if (aggregationLocus != null && upstreamNodeLoci.contains(aggregationLocus)) {
+          // This upstream vertex is also executed remotely and the current vertex's aggregation
+          // locus includes one of the loci for the upstream vertex, so we need to add a task to
+          // fetch that vertex's data from other nodes that match that locus as well.
+          addReadFromRemoteTasklet(graphNode, upstreamNode, hopper, db, persistable, tasklet, ret);
+        }
       } else {
         // If we are here, then it means that the upstream node required to evaluate
         // this node, is not locally executed. Hence, we have to send an intent to get the
         // node's data from the remote node.
-        LOG.debug(
-            "rca: Node '{}' sending intent to consume node: '{}'",
-            graphNode.name(), upstreamNode.name());
-        IntentMsg msg =
-            new IntentMsg(graphNode.name(), upstreamNode.name(), upstreamNode.getTags());
-        hopper.sendIntent(msg);
-
-        // This node is not locally present. So, we will add a virtual Tasklet that reads
-        // the result where the wirehopper dumps it and constructs the Tasklet for us.
-        Tasklet remoteTasklet =
-            new Tasklet(
-                upstreamNode,
-                db,
-                persistable,
-                remotelyDesirableNodeSet,
-                hopper,
-                GraphNodeOperations::readFromWire);
-        LOG.debug("Tasklet created for REMOTE node '{}' with readFromWire", graphNode.name());
-        tasklet.addPredecessor(remoteTasklet);
-        ret.remoteTasklets.add(remoteTasklet);
+        addReadFromRemoteTasklet(graphNode, upstreamNode, hopper, db, persistable, tasklet, ret);
       }
     }
     return ret;
+  }
+
+  private void addReadFromRemoteTasklet(final Node<?> graphNode, final Node<?> upstreamNode,
+      final WireHopper hopper, final Queryable db, final Persistable persistable,
+      final Tasklet tasklet, CreatedTasklets ret) {
+    LOG.debug(
+        "rca: Node '{}' sending intent to consume node: '{}'",
+        graphNode.name(), upstreamNode.name());
+    IntentMsg msg =
+        new IntentMsg(graphNode.name(), upstreamNode.name(), upstreamNode.getTags());
+    hopper.sendIntent(msg);
+
+    // This node is not locally present. So, we will add a virtual Tasklet that reads
+    // the result where the wirehopper dumps it and constructs the Tasklet for us.
+    Tasklet remoteTasklet =
+        new Tasklet(
+            upstreamNode,
+            db,
+            persistable,
+            remotelyDesirableNodeSet,
+            hopper,
+            GraphNodeOperations::readFromWire);
+    LOG.debug("Tasklet created for REMOTE node '{}' with readFromWire", graphNode.name());
+    tasklet.addPredecessor(remoteTasklet);
+    ret.remoteTasklets.add(remoteTasklet);
   }
 
   public void run() {

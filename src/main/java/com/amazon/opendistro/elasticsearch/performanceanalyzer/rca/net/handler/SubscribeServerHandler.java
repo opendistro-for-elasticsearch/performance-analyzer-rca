@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.handler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
 import io.grpc.stub.StreamObserver;
@@ -29,7 +30,6 @@ public class SubscribeServerHandler {
   private static final Logger LOG = LogManager.getLogger(SubscribeServerHandler.class);
   private static final String EMPTY_STRING = "";
   private static final String REQUESTER_KEY = "requester";
-  private static final String LOCUS_KEY = "locus";
 
   private final WireHopper hopper;
   private final SubscriptionManager subscriptionManager;
@@ -48,7 +48,7 @@ public class SubscribeServerHandler {
         request.getRequesterNode());
     final Map<String, String> tags = request.getTagsMap();
     final String requesterHostAddress = tags.getOrDefault(REQUESTER_KEY, EMPTY_STRING);
-    final String locus = tags.getOrDefault(LOCUS_KEY, EMPTY_STRING);
+    final String locus = tags.getOrDefault(RcaTagConstants.TAG_LOCUS, EMPTY_STRING);
     //        final boolean subscriptionStatus =
     // hopper.addSubscription(request.getDestinationNode(), requesterHostAddress, locus);
     final SubscriptionStatus subscriptionStatus =

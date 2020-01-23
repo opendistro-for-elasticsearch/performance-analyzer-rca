@@ -97,6 +97,7 @@ public class Tasklet {
     if (ticks % node.getEvaluationIntervalSeconds() != 0) {
       // If its not time to run this tasklet, return an isEmpty flowUnit.
       node.setEmptyFlowUnitList();
+      node.setEmptyLocalFlowUnit();
       return CompletableFuture.supplyAsync(() -> new TaskletResult(node.getClass()));
     }
 
@@ -124,7 +125,7 @@ public class Tasklet {
                   exec.accept(new FlowUnitOperationArgWrapper(node, db, persistable, hopper));
 
                   sendToRemote();
-                  LOG.debug("RCA: set Node %s 's Flow unit", node.name());
+                  LOG.debug("RCA: set Node {}'s Flow unit", node.name());
                   return new TaskletResult(node.getClass());
                 },
                 executorPool)

@@ -20,7 +20,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeRes
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants;
 import io.grpc.stub.StreamObserver;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -102,9 +104,10 @@ public class SubscriptionManager {
   }
 
   public SubscriptionStatus addSubscriber(
-      final String graphNode, final String subscriberHostAddress, final String locus) {
-    if (!currentLocus.equals(locus)) {
-      LOG.debug("locus mismatch. Rejecting subscription. Req: {}, Curr: {}", locus, currentLocus);
+      final String graphNode, final String subscriberHostAddress, final String loci) {
+    final List<String> vertexLoci = Arrays.asList(loci.split(RcaTagConstants.SEPARATOR));
+    if (!vertexLoci.contains(currentLocus)) {
+      LOG.debug("locus mismatch. Rejecting subscription. Req: {}, Curr: {}", loci, currentLocus);
       return SubscriptionStatus.TAG_MISMATCH;
     }
 

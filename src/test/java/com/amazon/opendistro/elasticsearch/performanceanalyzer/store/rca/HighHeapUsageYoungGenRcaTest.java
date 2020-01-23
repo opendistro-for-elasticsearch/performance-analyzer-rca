@@ -52,7 +52,9 @@ public class HighHeapUsageYoungGenRcaTest {
     Mockito.when(System.currentTimeMillis()).thenReturn(TimeUnit.SECONDS.toMillis(timeStampInSecond));
     //generate empty flowunit and run operate enough times before evaluating RCA
     heap_Used.setEmptyFlowUnitList();
+    heap_Used.setEmptyLocalFlowUnit();
     gc_Collection_Time.setEmptyFlowUnitList();
+    gc_Collection_Time.setEmptyLocalFlowUnit();
     //generate flowunit
     heap_Used.createTestFlowUnits(columnName, Arrays.asList("OldGen", String.valueOf(heapUsageVal * CONVERT_BYTES_TO_MEGABYTES)));
     gc_Collection_Time.createTestFlowUnits(columnName, Arrays.asList("totYoungGC", String.valueOf(gcCollectionTimeVal)));

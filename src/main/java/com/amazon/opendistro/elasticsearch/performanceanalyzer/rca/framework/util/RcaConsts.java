@@ -53,4 +53,18 @@ public class RcaConsts {
   public static final long rcaConfPollerPeriodicity = 5;
   public static final long nodeRolePollerPeriodicity = 60;
   public static final TimeUnit rcaPollerPeriodicityTimeUnit = TimeUnit.SECONDS;
+
+  /**
+   * Class defining constants that are mostly used in tag assignment and comparison context.
+   */
+  public static class RcaTagConstants {
+
+    public static final String SEPARATOR = ",";
+
+    public static final String TAG_LOCUS = "locus";
+    public static final String TAG_AGGREGATE_UPSTREAM = "aggregate-upstream";
+
+    public static final String LOCUS_DATA_NODE = "data-node";
+    public static final String LOCUS_MASTER_NODE = "master-node";
+  }
 }
