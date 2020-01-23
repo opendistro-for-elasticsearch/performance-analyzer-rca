@@ -81,24 +81,22 @@ public class PerformanceAnalyzerApp {
 
     Thread readerThread =
         new Thread(
-            new Runnable() {
-              public void run() {
-                while (true) {
-                  try {
-                    ReaderMetricsProcessor mp =
-                        new ReaderMetricsProcessor(settings.getMetricsLocation(), true);
-                    ReaderMetricsProcessor.setCurrentInstance(mp);
-                    mp.run();
-                  } catch (Throwable e) {
-                    if (TroubleshootingConfig.getEnableDevAssert()) {
-                      break;
-                    }
-                    LOG.error(
-                        "Error in ReaderMetricsProcessor...restarting, ExceptionCode: {}",
-                        StatExceptionCode.READER_RESTART_PROCESSING.toString());
-                    StatsCollector.instance()
-                        .logException(StatExceptionCode.READER_RESTART_PROCESSING);
+            () -> {
+              while (true) {
+                try {
+                  ReaderMetricsProcessor mp =
+                      new ReaderMetricsProcessor(settings.getMetricsLocation(), true);
+                  ReaderMetricsProcessor.setCurrentInstance(mp);
+                  mp.run();
+                } catch (Throwable e) {
+                  if (TroubleshootingConfig.getEnableDevAssert()) {
+                    break;
                   }
+                  LOG.error(
+                      "Error in ReaderMetricsProcessor...restarting, ExceptionCode: {}",
+                      StatExceptionCode.READER_RESTART_PROCESSING.toString());
+                  StatsCollector.instance()
+                      .logException(StatExceptionCode.READER_RESTART_PROCESSING);
                 }
               }
             });

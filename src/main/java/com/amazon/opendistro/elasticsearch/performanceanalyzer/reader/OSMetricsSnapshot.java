@@ -172,7 +172,7 @@ public class OSMetricsSnapshot implements Removable {
 
   @Override
   public void remove() {
-    LOG.info("Dropping {}", this.tableName);
+    LOG.debug("Dropping {}", this.tableName);
     create.dropTable(DSL.table(this.tableName)).execute();
   }
 

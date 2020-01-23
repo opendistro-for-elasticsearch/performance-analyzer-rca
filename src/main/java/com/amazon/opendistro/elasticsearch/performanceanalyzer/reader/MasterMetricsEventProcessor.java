@@ -65,7 +65,7 @@ public class MasterMetricsEventProcessor implements EventProcessor {
     if (handle.size() > 0) {
       handle.execute();
     }
-    LOG.info("Final masterEvents request metrics {}", masterSnap.fetchAll());
+    LOG.debug("Final masterEvents request metrics {}", masterSnap.fetchAll());
   }
 
   @Override

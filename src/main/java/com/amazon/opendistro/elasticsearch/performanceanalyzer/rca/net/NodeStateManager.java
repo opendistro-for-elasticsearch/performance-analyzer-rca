@@ -15,49 +15,112 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
-
-import java.util.HashMap;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.util.ClusterUtils;
+import com.google.common.collect.ImmutableList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Manages the subscription state for the nodes in the graph.
+ */
 public class NodeStateManager {
-  private static final long MS_IN_S = 1000;
-  private static final long MS_IN_FIVE_SECONDS = 5 * MS_IN_S;
+
   private static final String SEPARATOR = ".";
 
-  private Map<String, Long> lastReceivedTimestampMap = new HashMap<>();
+  /**
+   * Map of host address of a remote node to the last time we received a flow unit from that node.
+   */
+  private ConcurrentMap<String, Long> lastReceivedTimestampMap = new ConcurrentHashMap<>();
 
-  public void updateReceiveTime(String host, String graphNode) {
-    final long currentTimeStamp = System.currentTimeMillis();
+  /**
+   * Map of host address to the current subscription status of that host.
+   */
+  private ConcurrentMap<String, AtomicReference<SubscriptionStatus>> subscriptionStatusMap =
+      new ConcurrentHashMap<>();
+
+  /**
+   * Updates the timestamp for the composite key: (host, vertex) marking when the last successful
+   * flow unit reception happened.
+   *
+   * @param host      The host that sent the flow unit.
+   * @param graphNode The vertex for which the flow unit was sent for.
+   * @param timestamp The timestamp at which we received.
+   */
+  public void updateReceiveTime(final String host, final String graphNode, final long timestamp) {
     final String compositeKey = graphNode + SEPARATOR + host;
-    lastReceivedTimestampMap.put(compositeKey, currentTimeStamp);
+    lastReceivedTimestampMap.put(compositeKey, timestamp);
   }
 
+  /**
+   * Retrieves the latest timestamp at which we received a flow unit from this host for this
+   * vertex.
+   *
+   * @param graphNode The vertex for which we need the last received time stamp for.
+   * @param host      The host for which we need the last received timestamp for, for the vertex.
+   * @return The timestamp at which we received a flow unit from the host for the vertex if present,
+   *         a timestamp in the distant past(0) otherwise.
+   */
   public long getLastReceivedTimestamp(String graphNode, String host) {
     final String compositeKey = graphNode + SEPARATOR + host;
     if (lastReceivedTimestampMap.containsKey(compositeKey)) {
       return lastReceivedTimestampMap.get(compositeKey);
     }
 
-    // Return a value that is in the future so that it doesn't cause
-    // side effects.
-    return System.currentTimeMillis() + MS_IN_FIVE_SECONDS;
+    // Return a value that is in the distant past.
+    return 0;
   }
 
-  public boolean isRemoteHostInCluster(final String remoteHost) {
-    final List<NodeDetails> nodes = ClusterDetailsEventProcessor.getNodesDetails();
+  /**
+   * Updates the subscription status of a host for a vertex.
+   *
+   * @param graphNode The vertex.
+   * @param host      The host.
+   * @param status    The subscription status.
+   */
+  public synchronized void updateSubscriptionState(final String graphNode, final String host, final
+  SubscriptionStatus status) {
+    final String compositeKey = graphNode + SEPARATOR + host;
+    subscriptionStatusMap.putIfAbsent(compositeKey, new AtomicReference<>());
+    subscriptionStatusMap.get(compositeKey).set(status);
+  }
 
-    if (nodes.size() > 0) {
-      for (NodeDetails node : nodes) {
-        if (node.getHostAddress()
-            .equals(remoteHost)) {
-          return true;
+  /**
+   * Gets a list of hosts that have not recently published flow units for the vertex. It also
+   * includes new nodes that have come up since the last discovery that we have not yet tried
+   * subscribing to.
+   *
+   * @param graphNode       The vertex for which we need flow units from remote nodes.
+   * @param maxIdleDuration the max time delta till which we wait for flow units from a host.
+   * @param publishers      A set of known publishers for the current vertex.
+   * @return a list of hosts that we need to subscribe to.
+   */
+  public ImmutableList<String> getStaleOrNotSubscribedNodes(final String graphNode,
+      final long maxIdleDuration, Set<String> publishers) {
+    final long currentTime = System.currentTimeMillis();
+    final Set<String> hostsToSubscribeTo = new HashSet<>();
+    for (final String publisher : publishers) {
+      long lastRxTimestamp = getLastReceivedTimestamp(graphNode, publisher);
+      if (lastRxTimestamp > 0 && currentTime - lastRxTimestamp > maxIdleDuration && ClusterUtils
+          .isHostAddressInCluster(publisher)) {
+        hostsToSubscribeTo.add(publisher);
+      }
+    }
+
+    final List<String> peers = ClusterUtils.getAllPeerHostAddresses();
+    if (peers != null) {
+      for (final String peerHost : peers) {
+        String compositeKey = graphNode + SEPARATOR + peerHost;
+        if (!subscriptionStatusMap.containsKey(compositeKey)) {
+          hostsToSubscribeTo.add(peerHost);
         }
       }
     }
 
-    return false;
+    return ImmutableList.copyOf(hostsToSubscribeTo);
   }
 }

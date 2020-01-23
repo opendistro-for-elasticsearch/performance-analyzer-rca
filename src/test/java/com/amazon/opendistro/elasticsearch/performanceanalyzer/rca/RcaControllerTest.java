@@ -6,6 +6,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSett
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCAScheduler;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RcaSchedulerState;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -110,15 +111,15 @@ public class RcaControllerTest {
   @After
   public void tearDown() throws InterruptedException {
     RCAScheduler rcaScheduler = rcaController.getRcaScheduler();
-    if (rcaScheduler != null && rcaScheduler.isRunning()) {
+    if (rcaScheduler != null && rcaScheduler.getState() == RcaSchedulerState.STATE_STARTED) {
       rcaScheduler.shutdown();
     }
     netOperationsExecutor.shutdown();
     netOperationsExecutor.awaitTermination(1, TimeUnit.MINUTES);
     clientServers.getHttpServer().stop(0);
-    clientServers.getNetClient().shutdown();
-    clientServers.getNetServer().shutdown();
-    // connectionManager.shutdown();
+    clientServers.getNetClient().stop();
+    clientServers.getNetServer().stop();
+    // connectionManager.stop();
     dummyEsServer.stop(0);
   }
 
@@ -157,25 +158,26 @@ public class RcaControllerTest {
     changeRcaRunState(RcaState.RUN);
     AllMetrics.NodeRole nodeRole = AllMetrics.NodeRole.MASTER;
     setMyIp("192.168.0.1", nodeRole);
-    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), true));
+    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), RcaSchedulerState.STATE_STARTED));
     Assert.assertTrue(check(new RcaSchedulerRoleEval(rcaController), nodeRole));
-    Assert.assertTrue(rcaController.getRcaScheduler().isRunning());
+    Assert.assertEquals(RcaSchedulerState.STATE_STARTED, rcaController.getRcaScheduler().getState());
 
     nodeRole = AllMetrics.NodeRole.ELECTED_MASTER;
     setMyIp("192.168.0.1", nodeRole);
-    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), true));
+    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController),
+        RcaSchedulerState.STATE_STARTED));
     Assert.assertTrue(check(new RcaSchedulerRoleEval(rcaController), nodeRole));
     Assert.assertEquals(rcaController.getRcaScheduler().getRole(), nodeRole);
 
     nodeRole = AllMetrics.NodeRole.DATA;
     setMyIp("192.168.0.1", nodeRole);
-    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), true));
+    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), RcaSchedulerState.STATE_STARTED));
     Assert.assertTrue(check(new RcaSchedulerRoleEval(rcaController), nodeRole));
     Assert.assertEquals(rcaController.getRcaScheduler().getRole(), nodeRole);
 
     changeRcaRunState(RcaState.STOP);
-    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), false));
-    Assert.assertFalse(rcaController.getRcaScheduler().isRunning());
+    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), RcaSchedulerState.STATE_STOPPED));
+    Assert.assertEquals(RcaSchedulerState.STATE_STOPPED, rcaController.getRcaScheduler().getState());
   }
 
   private void setMyIp(String ip, AllMetrics.NodeRole nodeRole) {
@@ -270,7 +272,7 @@ public class RcaControllerTest {
     }
   }
 
-  class RcaSchedulerRunningEval implements IEval<Boolean> {
+  class RcaSchedulerRunningEval implements IEval<RcaSchedulerState> {
     private final RcaController rcaController;
 
     RcaSchedulerRunningEval(RcaController rcaController) {
@@ -278,9 +280,9 @@ public class RcaControllerTest {
     }
 
     @Override
-    public boolean evaluateAndCheck(Boolean expected) {
+    public boolean evaluateAndCheck(RcaSchedulerState expected) {
       RCAScheduler rcaScheduler = rcaController.getRcaScheduler();
-      return rcaScheduler != null && rcaScheduler.isRunning() == expected;
+      return rcaScheduler != null && rcaScheduler.getState() == expected;
     }
   }
 }
