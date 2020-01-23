@@ -57,6 +57,32 @@ curl --url "localhost:9650/_opendistro/_performanceanalyzer/rca" -XGET
 ```
 curl --url "localhost:9650/_opendistro/_performanceanalyzer/rca?name=HighHeapUsageClusterRca" -XGET
 ```
+The sample RCA response from above api
+```
+[
+  {
+    "Name": "HighHeapUsageClusterRca",
+    "State": "unhealthy",
+    "NumOfNodes": 6,
+    "NumOfUnhealthyNodes": 1,
+    "TimeStamp": "1579809393944",
+    "Summary": [
+      {
+        "NodeId": "lpgNv3VlSQGfuqMz8CmzUg",
+        "IpAddress": "10.212.48.118",
+        "ResourceContext": [
+          {
+            "ResourceName": "garbage collector",
+            "UnitType": "heap usage in percentage",
+            "ThresholdValue": 0.65,
+            "ActualValue": 0.0710642990279853
+          }
+        ]
+      }
+    ]
+  }
+]
+```
 
 ## Building, Deploying, and Running the RCA Framework
 Please refer to the [Install Guide](./INSTALL.md) for detailed information on building, installing and running the RCA framework.
