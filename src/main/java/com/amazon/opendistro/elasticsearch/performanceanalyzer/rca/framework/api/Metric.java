@@ -21,7 +21,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.LeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
-import java.util.Collections;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -73,7 +72,7 @@ public abstract class Metric extends LeafNode<MetricFlowUnit> {
   }
 
   public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
-    setFlowUnits(Collections.singletonList(gather(args.getQueryable())));
+    setLocalFlowUnit(gather(args.getQueryable()));
   }
 
   /**

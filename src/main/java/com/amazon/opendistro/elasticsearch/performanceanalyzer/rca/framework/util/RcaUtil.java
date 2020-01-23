@@ -15,12 +15,12 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
@@ -34,21 +34,21 @@ public class RcaUtil {
 
   private static AnalysisGraph getAnalysisGraphImplementor(RcaConf rcaConf)
       throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException,
-          InvocationTargetException, InstantiationException {
+      InvocationTargetException, InstantiationException {
     return (AnalysisGraph)
         Class.forName(rcaConf.getAnalysisGraphEntryPoint()).getDeclaredConstructor().newInstance();
   }
 
   public static List<ConnectedComponent> getAnalysisGraphComponents(RcaConf rcaConf)
       throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
-          InstantiationException, IllegalAccessException {
+      InstantiationException, IllegalAccessException {
     AnalysisGraph graph = getAnalysisGraphImplementor(rcaConf);
     return getAnalysisGraphComponents(graph);
   }
 
   public static List<ConnectedComponent> getAnalysisGraphComponents(String analysisGraphClass)
       throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
-          InstantiationException, IllegalAccessException {
+      InstantiationException, IllegalAccessException {
     AnalysisGraph graph =
         (AnalysisGraph) Class.forName(analysisGraphClass).getDeclaredConstructor().newInstance();
     graph.construct();
@@ -69,6 +69,22 @@ public class RcaUtil {
       return tag.getValue() != null
           && Arrays.asList(tag.getValue().split(",")).contains(rcaConfTagvalue);
     }
+    return true;
+  }
+
+  public static boolean shouldExecuteLocally(Node<?> node, RcaConf conf) {
+    final Map<String, String> confTagMap = conf.getTagMap();
+    final Map<String, String> nodeTagMap = node.getTags();
+
+    if (confTagMap != null && nodeTagMap != null) {
+      final String hostLocus = confTagMap.get(RcaTagConstants.TAG_LOCUS);
+      final String nodeLoci = nodeTagMap.get(RcaTagConstants.TAG_LOCUS);
+      if (nodeLoci != null && !nodeLoci.isEmpty()) {
+        return Arrays.asList(nodeLoci.split(RcaTagConstants.SEPARATOR)).contains(hostLocus);
+      }
+    }
+
+    // By default, if no tags are specified, execute the nodes locally.
     return true;
   }
 }
