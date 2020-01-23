@@ -1,3 +1,5 @@
+![](https://github.com/opendistro-for-elasticsearch/performance-analyzer-rca/workflows/Java%20CI/badge.svg)
+
 ## Performance Analyzer RCA
 
 The Performance Analyzer RCA is a framework that builds on the Performance Analyzer engine to
