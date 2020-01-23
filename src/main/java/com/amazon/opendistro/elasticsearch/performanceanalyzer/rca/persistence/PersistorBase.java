@@ -20,7 +20,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -33,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.Field;
@@ -50,6 +50,8 @@ public abstract class PersistorBase implements Persistable {
   protected String dbProtocol;
   private static final int FILE_ROTATION_PERIOD_SECS = 3600;
   private static final int SQLITE_FILES_TO_KEEP = 5;
+  private final File dirDB;
+  private static final String WILDCARD_CHARACTER = "*";
 
   PersistorBase(String dir, String filename, String dbProtocolString) throws SQLException {
     this.dir = dir;
@@ -62,6 +64,7 @@ public abstract class PersistorBase implements Persistable {
     this.tableNames = new HashSet<>();
     String url = String.format("%s%s", dbProtocolString, this.filename);
     conn = DriverManager.getConnection(url);
+    this.dirDB = new File(this.dir);
   }
 
   @Override
@@ -120,19 +123,8 @@ public abstract class PersistorBase implements Persistable {
   }
 
   public synchronized String getFilesInDirDB(String datePrefix) {
-    File dirDB = new File(this.dir);
-    File[] files =
-        dirDB.listFiles(
-            new FilenameFilter() {
-              @Override
-              public boolean accept(File dir, String name) {
-                return name.startsWith(String.format("%s.%s", filenameParam, datePrefix));
-              }
-            });
-    if (files.length == 0) {
-      return "";
-    }
-    return files[0].toString();
+    String [] files = this.dirDB.list(new WildcardFileFilter(String.format("%s.%s%s", filenameParam, datePrefix, WILDCARD_CHARACTER)));
+    return files.length == 0 ? "" : Paths.get(this.dir, files[0]).toString();
   }
 
   public synchronized String getDBFilePath(int hours) throws ParseException {
