@@ -33,6 +33,7 @@ import org.apache.logging.log4j.Logger;
  * Service handler for the subscribe RPC
  */
 public class SubscribeServerHandler {
+
   private static final Logger LOG = LogManager.getLogger(SubscribeServerHandler.class);
   private final AtomicReference<ExecutorService> executorServiceAtomicReference;
   private final SubscriptionManager subscriptionManager;
@@ -53,7 +54,8 @@ public class SubscribeServerHandler {
         executorService.execute(new SubscriptionRxTask(subscriptionManager, subscribeRequest));
       } catch (final RejectedExecutionException ree) {
         LOG.warn("Dropped processing subscription request because the network threadpool is full");
-        StatsCollector.instance().logException(StatExceptionCode.RCA_NETWORK_THREADPOOL_QUEUE_FULL_ERROR);
+        StatsCollector.instance()
+                      .logException(StatExceptionCode.RCA_NETWORK_THREADPOOL_QUEUE_FULL_ERROR);
       }
     }
   }

@@ -17,9 +17,12 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants;
 import com.google.common.collect.ImmutableSet;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -86,14 +89,15 @@ public class SubscriptionManager {
    *
    * @param graphNode             The vertex to which the host wants to subscribe to.
    * @param subscriberHostAddress The host that wants to subscribe.
-   * @param locus                 The locus which the subscribing host is interested in.
+   * @param loci                  The locus which the subscribing host is interested in.
    * @return A SubscriptionStatus protobuf message that contains the status for the subscription
    *         request.
    */
   public synchronized SubscriptionStatus addSubscriber(
-      final String graphNode, final String subscriberHostAddress, final String locus) {
-    if (!currentLocus.equals(locus)) {
-      LOG.debug("locus mismatch. Rejecting subscription. Req: {}, Curr: {}", locus, currentLocus);
+      final String graphNode, final String subscriberHostAddress, final String loci) {
+    final List<String> vertexLoci = Arrays.asList(loci.split(RcaTagConstants.SEPARATOR));
+    if (!vertexLoci.contains(currentLocus)) {
+      LOG.debug("locus mismatch. Rejecting subscription. Req: {}, Curr: {}", loci, currentLocus);
       return SubscriptionStatus.TAG_MISMATCH;
     }
 
