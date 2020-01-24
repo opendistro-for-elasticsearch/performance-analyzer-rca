@@ -15,9 +15,12 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.Version;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.formatter.StatsCollectorFormatter;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -92,6 +95,10 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
     writeStats(metadata, counters, statsdata, latencies, startTimeMillis, endTimeMillis);
   }
 
+  private void addRcaVersionMetadata(Map<String, String> metadata) {
+    metadata.put(Version.RCA_VERSION_STR, Version.getRcaVersion());
+  }
+
   private static Map<String, String> loadMetadata(String fileLocation) {
     Map<String, String> retVal = new ConcurrentHashMap<>();
 
@@ -118,6 +125,7 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
         MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval,
         "StatsCollector");
     this.metadata = metadata;
+    addRcaVersionMetadata(this.metadata);
     defaultExceptionCodes.add(StatExceptionCode.TOTAL_ERROR);
   }
 
@@ -138,6 +146,7 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
 
     writeStats(
         metadata, currentCounters, null, null, objectCreationTime.getTime(), new Date().getTime());
+    collectAndWriteRcaStats();
     objectCreationTime = new Date();
   }
 
@@ -242,4 +251,22 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
       String timerName, double latency, StringBuilder builder, int attempts) {
     builder.append(timerName).append(":").append(latency).append("/").append(attempts).append(",");
   }
+
+  private void collectAndWriteRcaStats() {
+    boolean hasNext;
+    do {
+      StatsCollectorFormatter formatter = new StatsCollectorFormatter();
+      hasNext = PerformanceAnalyzerApp.RCA_STATS_REPORTER.getNextReport(formatter);
+      StatsCollectorFormatter.StatsCollectorReturn statsReturn = formatter.getFormatted();
+      if (!statsReturn.isEmpty()) {
+        logStatsRecord(
+                statsReturn.getCounters(),
+                statsReturn.getStatsdata(),
+                statsReturn.getLatencies(),
+                statsReturn.getStartTimeMillis(),
+                statsReturn.getEndTimeMillis());
+      }
+    } while (hasNext);
+  }
+
 }
