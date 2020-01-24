@@ -42,7 +42,9 @@ public final class Version {
     static final String RCA_MINOR_VERSION = ".0.1";
   }
 
-  /** @return The version string. */
+  /**
+   * @return The version string.
+   */
   public static String getRcaVersion() {
     return Major.RCA_MAJ_VERSION + Minor.RCA_MINOR_VERSION;
   }
