@@ -37,8 +37,12 @@ public class Value {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
     Value value1 = (Value) o;
     return Objects.equals(value.longValue(), value1.getValue().longValue());
   }
@@ -50,8 +54,6 @@ public class Value {
 
   @Override
   public String toString() {
-    return "Value{" +
-            "value=" + value +
-            '}';
+    return "Value{" + "value=" + value + '}';
   }
 }

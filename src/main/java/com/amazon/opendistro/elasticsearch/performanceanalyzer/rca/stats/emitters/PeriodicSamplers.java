@@ -35,14 +35,12 @@ public class PeriodicSamplers implements Runnable {
   ScheduledFuture<?> future;
 
   public PeriodicSamplers(
-      SampleAggregator aggregator,
-      List<ISampler> samplers,
-      long freq,
-      TimeUnit timeUnit) {
+      SampleAggregator aggregator, List<ISampler> samplers, long freq, TimeUnit timeUnit) {
     this.aggregator = aggregator;
     this.allSamplers = samplers;
 
-    this.executor = Executors.newScheduledThreadPool(
+    this.executor =
+        Executors.newScheduledThreadPool(
             1, new ThreadFactoryBuilder().setNameFormat("resource-sampler-%d").build());
     this.future = this.executor.scheduleAtFixedRate(this, 0, freq, timeUnit);
     startExceptionHandlingThread();

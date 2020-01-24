@@ -18,5 +18,5 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.emitte
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.collectors.SampleAggregator;
 
 public interface ISampler {
-    void sample(SampleAggregator sampleCollector);
+  void sample(SampleAggregator sampleCollector);
 }

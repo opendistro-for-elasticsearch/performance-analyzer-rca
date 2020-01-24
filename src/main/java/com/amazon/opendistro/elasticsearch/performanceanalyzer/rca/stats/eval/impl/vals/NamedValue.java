@@ -35,9 +35,15 @@ public abstract class NamedValue extends Value {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
     NamedValue that = (NamedValue) o;
     return Objects.equals(name, that.name);
   }
@@ -49,9 +55,6 @@ public abstract class NamedValue extends Value {
 
   @Override
   public String toString() {
-    return "NamedValue{" +
-            "name='" + name + '\'' +
-            ", value=" + value +
-            '}';
+    return "NamedValue{" + "name='" + name + '\'' + ", value=" + value + '}';
   }
 }

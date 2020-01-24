@@ -38,9 +38,15 @@ public class AggregateValue extends Value {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
     AggregateValue that = (AggregateValue) o;
     return aggregationType == that.aggregationType;
   }
@@ -52,9 +58,6 @@ public class AggregateValue extends Value {
 
   @Override
   public String toString() {
-    return "AggregateValue{" +
-            "aggregationType=" + aggregationType +
-            ", value=" + value +
-            '}';
+    return "AggregateValue{" + "aggregationType=" + aggregationType + ", value=" + value + '}';
   }
 }
