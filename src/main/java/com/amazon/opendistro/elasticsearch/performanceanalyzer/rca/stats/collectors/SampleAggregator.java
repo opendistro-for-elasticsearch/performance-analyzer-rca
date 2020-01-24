@@ -29,11 +29,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.format.
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.measurements.MeasurementSet;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
@@ -61,7 +62,7 @@ public class SampleAggregator {
    *       mean and another one implementing Max.
    * </ul>
    */
-  private ImmutableMap<MeasurementSet, List<IStatistic>> statMap;
+  private ImmutableMap<MeasurementSet, Set<IStatistic>> statMap;
   /** When was the first updateStat was called since the last reset. */
   private AtomicLong startTimeMillis;
 
@@ -72,10 +73,10 @@ public class SampleAggregator {
 
   private void init() {
     startTimeMillis = new AtomicLong(0L);
-    Map<MeasurementSet, List<IStatistic>> initializer = new ConcurrentHashMap<>();
+    Map<MeasurementSet, Set<IStatistic>> initializer = new ConcurrentHashMap<>();
 
     for (MeasurementSet elem : recognizedSet) {
-      List<IStatistic> impls = new ArrayList<>();
+      Set<IStatistic> impls = new HashSet<>();
       for (Statistics stats : elem.getStatsList()) {
         switch (stats) {
           case COUNT:
@@ -119,7 +120,7 @@ public class SampleAggregator {
    * @param <V> The Type of value
    */
   public <V extends Number> void updateStat(MeasurementSet metric, String key, V value) {
-    List<IStatistic> statistics = statMap.get(metric);
+    Set<IStatistic> statistics = statMap.get(metric);
     if (statistics == null) {
       LOG.error(
           "'{}' asked to be aggregated, when known types are only: {}", metric, recognizedSet);
@@ -165,7 +166,7 @@ public class SampleAggregator {
     long endTime = System.currentTimeMillis();
     formatter.setStartAndEndTime(startTimeMillis.get(), endTime);
 
-    for (Map.Entry<MeasurementSet, List<IStatistic>> entry : statMap.entrySet()) {
+    for (Map.Entry<MeasurementSet, Set<IStatistic>> entry : statMap.entrySet()) {
       MeasurementSet measurement = entry.getKey();
       for (IStatistic statValues : entry.getValue()) {
         if (!statValues.isEmpty()) {
@@ -181,7 +182,7 @@ public class SampleAggregator {
 
   @VisibleForTesting
   public boolean isMeasurementObserved(MeasurementSet toFind) {
-    List<IStatistic> statistics = statMap.get(toFind);
+    Set<IStatistic> statistics = statMap.get(toFind);
     if (statistics == null) {
       return false;
     }
@@ -195,7 +196,7 @@ public class SampleAggregator {
 
   @VisibleForTesting
   public Collection<IStatistic> getValues(MeasurementSet toFind) {
-    List<IStatistic> statistics = statMap.get(toFind);
+    Set<IStatistic> statistics = statMap.get(toFind);
     if (statistics == null) {
       return Collections.EMPTY_LIST;
     }

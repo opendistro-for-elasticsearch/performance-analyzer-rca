@@ -16,18 +16,22 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.format;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.Statistics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.impl.vals.AggregateValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.impl.vals.NamedAggregateValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.impl.vals.Value;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.measurements.MeasurementSet;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-public class BaseFormatter implements Formatter {
-  private Map<MeasurementSet, Map<Statistics, Value>> map;
+public class DefaultFormatter implements Formatter {
+  private Map<MeasurementSet, Map<Statistics, List<Value>>> map;
   private long start;
   private long end;
 
-  public BaseFormatter() {
+  public DefaultFormatter() {
     this.map = new HashMap<>();
     this.start = 0;
     this.end = 0;
@@ -37,15 +41,25 @@ public class BaseFormatter implements Formatter {
   public void formatNamedAggregatedValue(
       MeasurementSet measurementSet, Statistics aggregationType, String name, Number value) {
     map.putIfAbsent(measurementSet, new HashMap<>());
+    map.get(measurementSet).putIfAbsent(aggregationType, new ArrayList<>());
     map.get(measurementSet)
-        .put(aggregationType, new NamedAggregateValue(value, aggregationType, name));
+        .get(aggregationType)
+        .add(new NamedAggregateValue(value, aggregationType, name));
   }
 
   @Override
   public void formatAggregatedValue(
       MeasurementSet measurementSet, Statistics aggregationType, Number value) {
     map.putIfAbsent(measurementSet, new HashMap<>());
-    map.get(measurementSet).put(aggregationType, new Value(value));
+    Value value1;
+    if (aggregationType == Statistics.SAMPLE) {
+      value1 = new Value(value);
+    } else {
+      value1 = new AggregateValue(value, aggregationType);
+    }
+
+    map.get(measurementSet).put(aggregationType,
+            Collections.singletonList(value1));
   }
 
   @Override
@@ -54,7 +68,7 @@ public class BaseFormatter implements Formatter {
     this.end = end;
   }
 
-  public Map<MeasurementSet, Map<Statistics, Value>> getFormatted() {
+  public Map<MeasurementSet, Map<Statistics, List<Value>>> getFormatted() {
     return map;
   }
 }

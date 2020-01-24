@@ -23,14 +23,17 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.im
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.impl.vals.AggregateValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.impl.vals.NamedAggregateValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.impl.vals.Value;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.format.DefaultFormatter;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.measurements.MeasurementSet;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.measurements.MeasurementSetTest;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Test;
@@ -47,6 +50,7 @@ public class SampleAggregatorTest {
         }
       }
       if (!matched) {
+        System.out.println(l1 + "\n" + l2);
         return false;
       }
     }
@@ -61,6 +65,25 @@ public class SampleAggregatorTest {
       List<Value> expectedValue = expected.get(measurementSet).get(value.type());
       if (!matchList(value.get(), expectedValue)) {
         System.out.println(value.get() + " does not match \n" + expectedValue);
+        Assert.fail();
+      }
+    }
+    return true;
+  }
+
+  private boolean match(
+          Map<MeasurementSet, Map<Statistics, List<Value>>> m1,
+          Map<MeasurementSet, Map<Statistics, List<Value>>> m2,
+          Set<MeasurementSet> skipMeasures) {
+    for (Map.Entry<MeasurementSet, Map<Statistics, List<Value>>> entry : m1.entrySet()) {
+      Map<Statistics, List<Value>> statisticsListMap = entry.getValue();
+      for (Map.Entry<Statistics, List<Value>> entry1 : statisticsListMap.entrySet()) {
+        if (skipMeasures.contains(entry.getKey())) {
+          continue;
+        }
+        if (!matchList(entry1.getValue(), m2.get(entry.getKey()).get(entry1.getKey()))) {
+          return false;
+        }
       }
     }
     return true;
@@ -162,14 +185,22 @@ public class SampleAggregatorTest {
                 new NamedAggregateValue(1, Statistics.NAMED_COUNTERS, "key4")));
     Assert.assertTrue(match(MeasurementSetTest.TEST_MEASUREMENT6, expected, sampleAggregator));
 
-    sampleAggregator.updateStat(MeasurementSetTest.JVM_FREE_MEM_SAMPLER, "key1", 200L);
-    sampleAggregator.updateStat(MeasurementSetTest.JVM_FREE_MEM_SAMPLER, "key2", 500L);
+    reporter.isMeasurementCollected(MeasurementSetTest.JVM_FREE_MEM_SAMPLER);
 
-    expected.put(MeasurementSetTest.JVM_FREE_MEM_SAMPLER, new HashMap<>());
-    expected
-        .get(MeasurementSetTest.JVM_FREE_MEM_SAMPLER)
-        .put(Statistics.SAMPLE, Collections.singletonList(new Value(500)));
+    DefaultFormatter defaultFormatter = new DefaultFormatter();
+    sampleAggregator.fill(defaultFormatter);
 
-    Assert.assertTrue(match(MeasurementSetTest.JVM_FREE_MEM_SAMPLER, expected, sampleAggregator));
+    Set<MeasurementSet> skipList = new HashSet<>();
+    skipList.add(MeasurementSetTest.JVM_FREE_MEM_SAMPLER);
+    Assert.assertTrue(match(defaultFormatter.getFormatted(), expected, skipList));
+
+    DefaultFormatter defaultFormatter1 = new DefaultFormatter();
+    reporter.getNextReport(defaultFormatter1);
+    if (!match(
+        defaultFormatter.getFormatted(), defaultFormatter1.getFormatted(), new HashSet<>())) {
+      System.out.println(defaultFormatter.getFormatted() + "\n" + defaultFormatter1.getFormatted());
+      Assert.fail();
+    }
   }
+
 }
