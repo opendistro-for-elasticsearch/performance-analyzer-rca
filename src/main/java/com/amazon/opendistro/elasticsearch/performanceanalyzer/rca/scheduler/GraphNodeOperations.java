@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -24,11 +26,15 @@ public class GraphNodeOperations {
   static void readFromLocal(FlowUnitOperationArgWrapper args) {
     args.getNode().generateFlowUnitListFromLocal(args);
     args.getNode().persistFlowUnit(args);
+    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
+            RcaGraphMetrics.NUM_NODES_EXECUTED_LOCALLY, "", 1);
   }
 
   // This is the abstraction for when the data arrives on the wire from a remote dependency.
   static void readFromWire(FlowUnitOperationArgWrapper args) {
     // flowUnits.forEach(i -> LOG.info("rca: Read from wire: {}", i));
     args.getNode().generateFlowUnitListFromWire(args);
+    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
+            RcaGraphMetrics.NUM_NODES_EXECUTED_REMOTELY, "", 1);
   }
 }

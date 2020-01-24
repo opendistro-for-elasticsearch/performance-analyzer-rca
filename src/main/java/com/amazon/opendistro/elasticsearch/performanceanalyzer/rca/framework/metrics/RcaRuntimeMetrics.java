@@ -26,24 +26,8 @@ public enum RcaRuntimeMetrics implements MeasurementSet {
   GRAPH_EXECUTION_TIME(
       "RcaGraphExecution",
       "micros",
-      Arrays.asList(Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT)),
-
-  /**
-   * These are the flow units that are sent by the RCA framework for the remote nodes. Not all of
-   * them may or may not make it over the wire.
-   */
-  FLOW_UNITS_SENT_TO_WIRE_HOPPER(
-      "FlowUnitsToWireHopper", "count", Collections.singletonList(Statistics.COUNT)),
-
-  /**
-   * This measures how many flow units are sent over the wire. If there are multiple subscribers,
-   * then the flow unit will be copied to each one of them. Each of the copies will be accounted for
-   * in the count.
-   */
-  // TODO(yojs): waiting on
-  // https://github.com/opendistro-for-elasticsearch/performance-analyzer-rca/pull/59
-  FLOW_UNITS_SENT_OVER_NETWORK(
-      "FlowUnitsSentOverNetwork", "count", Collections.singletonList(Statistics.COUNT)),
+      Arrays.asList(
+          Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
 
   /** The number of times the framework was stopped by the operator. */
   RCA_STOPPED_BY_OPERATOR(

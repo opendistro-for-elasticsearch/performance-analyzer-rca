@@ -15,8 +15,10 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.util.Collections;
 import org.apache.logging.log4j.LogManager;
@@ -36,13 +38,28 @@ public abstract class Rca<T extends ResourceFlowUnit> extends NonLeafNode<T> {
   @Override
   public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
     LOG.debug("rca: Executing fromLocal: {}", this.getClass().getSimpleName());
-    setFlowUnits(Collections.singletonList(this.operate()));
+
+    long startTime = System.nanoTime();
+    T out = this.operate();
+    long endTime = System.nanoTime();
+    long duration = (endTime - startTime) / 1000;
+
+    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
+            RcaGraphMetrics.GRAPH_NODE_OPERATE_CALL, this.name(), duration);
+
+    setFlowUnits(Collections.singletonList(out));
   }
 
   @Override
   public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
+    long startTime = System.nanoTime();
     for (final T flowUnit : getFlowUnits()) {
         args.getPersistable().write(this, flowUnit);
     }
+
+    long endTime = System.nanoTime();
+    long duration = (endTime - startTime) / 1000;
+    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR
+            .updateStat(RcaGraphMetrics.RCA_PERSIST_CALL, this.name(), duration);
   }
 }

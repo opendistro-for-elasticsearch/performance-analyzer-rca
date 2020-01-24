@@ -15,12 +15,15 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.LeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import java.util.Collections;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -72,7 +75,14 @@ public abstract class Metric extends LeafNode<MetricFlowUnit> {
   }
 
   public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
-    setLocalFlowUnit(gather(args.getQueryable()));
+    long startTime = System.nanoTime();
+    MetricFlowUnit mfu = gather(args.getQueryable());
+    long endTime = System.nanoTime();
+    long duration = (endTime - startTime) / 1000;
+
+    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
+            RcaGraphMetrics.METRIC_GATHER_CALL, this.name(), duration);
+    setFlowUnits(Collections.singletonList(mfu));
   }
 
   /**

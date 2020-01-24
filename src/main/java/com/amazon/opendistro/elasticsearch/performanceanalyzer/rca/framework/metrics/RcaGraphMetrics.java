@@ -23,13 +23,16 @@ import java.util.List;
 
 public enum RcaGraphMetrics implements MeasurementSet {
   /** Measures the time spent in the operate() method of a graph node. */
-  GRAPH_NODE_OPERATE_CALL("OperateCall", "micros", Arrays.asList(Statistics.MAX, Statistics.MEAN)),
+  GRAPH_NODE_OPERATE_CALL(
+      "OperateCall", "micros", Arrays.asList(Statistics.MAX, Statistics.MEAN, Statistics.SUM)),
 
   /** Measures the time taken to call gather on metrics */
-  METRIC_GATHER_CALL("MetricGatherCall", "micros", Arrays.asList(Statistics.MAX, Statistics.MEAN)),
+  METRIC_GATHER_CALL(
+      "MetricGatherCall", "micros", Arrays.asList(Statistics.MAX, Statistics.MEAN, Statistics.SUM)),
 
   /** Measures the time spent in the persistence layer. */
-  RCA_PERSIST_CALL("RcaPersistCall", "micros", Arrays.asList(Statistics.MAX, Statistics.MEAN)),
+  RCA_PERSIST_CALL(
+      "RcaPersistCall", "micros", Arrays.asList(Statistics.MAX, Statistics.MEAN, Statistics.SUM)),
 
   NUM_GRAPH_NODES("NumGraphNodes", "count", Collections.singletonList(Statistics.SAMPLE)),
 

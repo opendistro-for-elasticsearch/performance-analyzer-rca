@@ -15,10 +15,14 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaRuntimeMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
@@ -351,6 +355,10 @@ public class RCASchedulerTask implements Runnable {
   public void run() {
     currTick = currTick + 1;
 
+    long runStartTime = System.nanoTime();
+    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
+            RcaGraphMetrics.NUM_GRAPH_NODES, "", Stats.getInstance().getTotalNodesCount());
+
     Map<Tasklet, CompletableFuture<TaskletResult>> taskletFutureMap = new HashMap<>();
     LOG.debug("RCA: ========== STRT Tick {} ====== ", currTick);
     for (List<Tasklet> taskletsAtThisLevel : locallyExecutableTasklets) {
@@ -373,5 +381,10 @@ public class RCASchedulerTask implements Runnable {
       locallyExecutableTasklets.forEach(l -> l.forEach(Tasklet::resetTicks));
       LOG.debug("Finished ticking.");
     }
+
+    long runEndTime = System.nanoTime();
+    long durationMicros = (runEndTime - runStartTime) / 1000;
+    PerformanceAnalyzerApp.RCA_RUNTIME_METRICS_AGGREGATOR.updateStat(
+            RcaRuntimeMetrics.GRAPH_EXECUTION_TIME, "", durationMicros);
   }
 }

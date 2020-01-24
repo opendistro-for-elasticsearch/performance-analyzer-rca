@@ -15,8 +15,10 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.SymptomFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.util.Collections;
 import java.util.List;
@@ -32,7 +34,16 @@ public abstract class Symptom extends NonLeafNode<SymptomFlowUnit> {
 
   public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
     LOG.debug("rca: Executing handleRca: {}", this.getClass().getSimpleName());
-    setFlowUnits(Collections.singletonList(this.operate()));
+
+    long startTime = System.nanoTime();
+    SymptomFlowUnit out = this.operate();
+    long endTime = System.nanoTime();
+    long durationMicro = (endTime - startTime) / 1000;
+
+    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
+            RcaGraphMetrics.GRAPH_NODE_OPERATE_CALL, this.name(), durationMicro);
+
+    setFlowUnits(Collections.singletonList(out));
   }
 
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
