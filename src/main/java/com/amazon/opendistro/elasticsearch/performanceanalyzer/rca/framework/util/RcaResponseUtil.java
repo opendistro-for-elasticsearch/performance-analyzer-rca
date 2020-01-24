@@ -53,14 +53,16 @@ public class RcaResponseUtil {
       }
       if (tableNames.contains(HOT_NODE_SUMMARY_TABLE)) {
         String nodeId = record.get(HotNodeSummary.SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME, String.class);
-        NodeSummaryResponse nodeSummaryResponse = nodeSummaryResponseMap.getOrDefault(nodeId,
-                getNodeSummary(nodeId, record));
-        if (!nodeSummaryResponseMap.containsKey(nodeId)) {
-          nodeSummaryResponseMap.put(nodeId, nodeSummaryResponse);
-          rcaResponse.addSummary(nodeSummaryResponse);
-        }
-        if (tableNames.contains(HOT_RESOURCE_SUMMARY_TABLE)) {
-          nodeSummaryResponse.addResource(getResourceSummaryResponse(record));
+        if (nodeId != null) {
+          NodeSummaryResponse nodeSummaryResponse = nodeSummaryResponseMap.getOrDefault(nodeId,
+                  getNodeSummary(nodeId, record));
+          if (!nodeSummaryResponseMap.containsKey(nodeId)) {
+            nodeSummaryResponseMap.put(nodeId, nodeSummaryResponse);
+            rcaResponse.addSummary(nodeSummaryResponse);
+          }
+          if (tableNames.contains(HOT_RESOURCE_SUMMARY_TABLE)) {
+            nodeSummaryResponse.addResource(getResourceSummaryResponse(record));
+          }
         }
       }
     }

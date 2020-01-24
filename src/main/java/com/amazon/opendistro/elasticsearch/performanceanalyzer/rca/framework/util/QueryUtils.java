@@ -54,7 +54,7 @@ public class QueryUtils {
                                                            Map<String, String> summaryTableToForeignKeyMap) {
     for (Map.Entry<String, String> entry : summaryTableToForeignKeyMap.entrySet()) {
       if (validTables.contains(entry.getKey())) {
-        joinStep = doJoin(joinStep, entry.getKey(), entry.getValue());
+        joinStep = doLeftJoin(joinStep, entry.getKey(), entry.getValue());
       } else {
         return joinStep;
       }
@@ -62,10 +62,10 @@ public class QueryUtils {
     return joinStep;
   }
 
-  private static SelectJoinStep<Record> doJoin(SelectJoinStep<Record> joinStep,
+  private static SelectJoinStep<Record> doLeftJoin(SelectJoinStep<Record> joinStep,
                                                String tableName,
                                                String fieldName) {
-    return joinStep.innerJoin(tableName)
+    return joinStep.leftJoin(tableName)
             .using(DSL.field(fieldName));
   }
 

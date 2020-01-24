@@ -35,12 +35,13 @@ public class RcaResponse {
     this.name = name;
     this.state = state;
     this.timeStamp = timeStamp;
+    this.summary = new ArrayList<>();
   }
 
   public RcaResponse(String name,
                      String state,
-                     int numOfNodes,
-                     int numOfUnhealthyNodes,
+                     Integer numOfNodes,
+                     Integer numOfUnhealthyNodes,
                      String timeStamp) {
     this.name = name;
     this.state = state;
