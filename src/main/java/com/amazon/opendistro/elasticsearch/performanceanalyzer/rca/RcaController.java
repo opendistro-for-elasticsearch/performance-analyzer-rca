@@ -389,6 +389,9 @@ public class RcaController {
     } catch (InterruptedException e) {
       LOG.warn("Awaiting termination interrupted. {}", e.getCause(), e);
       networkThreadPoolReference.get().shutdownNow();
+      // Set the thread's interrupt interrupt flag so that higher level interrupt handlers can
+      // take appropriate actions.
+      Thread.currentThread().interrupt();
     }
     removeRcaRequestHandler();
     Stats.getInstance().reset();

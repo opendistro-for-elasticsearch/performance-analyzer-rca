@@ -72,8 +72,10 @@ public class GRPCConnectionManager {
    */
   public InterNodeRpcServiceStub getClientStubForHost(
       final String remoteHost) {
-    if (perHostClientStubMap.containsKey(remoteHost)) {
-      return perHostClientStubMap.get(remoteHost).get();
+    final AtomicReference<InterNodeRpcServiceStub> stubAtomicReference =
+        perHostClientStubMap.get(remoteHost);
+    if (stubAtomicReference != null) {
+      return stubAtomicReference.get();
     }
     return addOrUpdateClientStubForHost(remoteHost);
   }
@@ -99,8 +101,10 @@ public class GRPCConnectionManager {
   }
 
   private ManagedChannel getChannelForHost(final String remoteHost) {
-    if (perHostChannelMap.containsKey(remoteHost)) {
-      return perHostChannelMap.get(remoteHost).get();
+    final AtomicReference<ManagedChannel> managedChannelAtomicReference = perHostChannelMap
+        .get(remoteHost);
+    if (managedChannelAtomicReference != null) {
+      return managedChannelAtomicReference.get();
     }
 
     return addOrUpdateChannelForHost(remoteHost);
