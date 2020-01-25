@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
@@ -22,6 +23,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ThresholdMain;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -127,6 +129,8 @@ public class RCAScheduler {
                     | CancellationException ex) {
                   if (!shutdownRequested) {
                     LOG.error("RCA Exception cause : {}", ex.getCause());
+                    PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
+                            ExceptionsAndErrors.RCA_FRAMEWORK_CRASH, ex.getCause().toString(), 1);
                     shutdown();
                     schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
                     StatsCollector.instance().logException(StatExceptionCode.RCA_SCHEDULER_STOPPED_ERROR);

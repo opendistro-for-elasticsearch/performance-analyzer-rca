@@ -40,6 +40,7 @@ public class Tasklet {
 
   protected Map<Tasklet, CompletableFuture<TaskletResult>> predecessorToFutureMap;
   protected List<Tasklet> predecessors;
+
   private Node<?> node;
   private final Queryable db;
   private final Persistable persistable;
@@ -131,7 +132,9 @@ public class Tasklet {
                 executorPool)
             .exceptionally(
                 ex -> {
-                  ex.printStackTrace();
+                  // PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
+                  //      ExceptionsAndErrors.EXCEPTION_IN_OPERATE, node.name(), 1);
+                  // ex.printStackTrace();
                   return new TaskletResult(null);
                 });
     LOG.debug("RCA: Finished creating executable future for tasklet: {}", node.name());
@@ -155,5 +158,9 @@ public class Tasklet {
   @Override
   public String toString() {
     return "Tasklet for node: " + node.name() + ", with executable Func: " + exec;
+  }
+
+  public Node<?> getNode() {
+    return node;
   }
 }

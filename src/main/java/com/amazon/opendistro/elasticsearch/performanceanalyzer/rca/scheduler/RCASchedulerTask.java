@@ -15,10 +15,15 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaRuntimeMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
@@ -101,7 +106,7 @@ public class RCASchedulerTask implements Runnable {
   // guess, who
   //  should provide the max ticks - the framework or the Runtime ? Maybe an agreement between the
   // two is better.
-  RCASchedulerTask(
+  public RCASchedulerTask(
       int maxTicks,
       final ExecutorService executorPool,
       final List<ConnectedComponent> connectedComponents,
@@ -351,6 +356,10 @@ public class RCASchedulerTask implements Runnable {
   public void run() {
     currTick = currTick + 1;
 
+    long runStartTime = System.currentTimeMillis();
+    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
+            RcaGraphMetrics.NUM_GRAPH_NODES, "", Stats.getInstance().getTotalNodesCount());
+
     Map<Tasklet, CompletableFuture<TaskletResult>> taskletFutureMap = new HashMap<>();
     LOG.debug("RCA: ========== STRT Tick {} ====== ", currTick);
     for (List<Tasklet> taskletsAtThisLevel : locallyExecutableTasklets) {
@@ -373,5 +382,10 @@ public class RCASchedulerTask implements Runnable {
       locallyExecutableTasklets.forEach(l -> l.forEach(Tasklet::resetTicks));
       LOG.debug("Finished ticking.");
     }
+
+    long runEndTime = System.currentTimeMillis();
+    long durationMillis = runEndTime - runStartTime;
+    PerformanceAnalyzerApp.RCA_RUNTIME_METRICS_AGGREGATOR.updateStat(
+            RcaGraphMetrics.GRAPH_EXECUTION_TIME, "", durationMillis);
   }
 }

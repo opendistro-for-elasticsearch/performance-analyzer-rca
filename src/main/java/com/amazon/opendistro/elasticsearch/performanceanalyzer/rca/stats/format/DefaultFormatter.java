@@ -71,4 +71,12 @@ public class DefaultFormatter implements Formatter {
   public Map<MeasurementSet, Map<Statistics, List<Value>>> getFormatted() {
     return map;
   }
+
+  public long getStart() {
+    return start;
+  }
+
+  public long getEnd() {
+    return end;
+  }
 }
