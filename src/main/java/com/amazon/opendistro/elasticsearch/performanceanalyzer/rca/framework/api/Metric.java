@@ -82,10 +82,10 @@ public abstract class Metric extends LeafNode<MetricFlowUnit> {
   }
 
   public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
-    long startTime = System.nanoTime();
+    long startTime = System.currentTimeMillis();
     MetricFlowUnit mfu = gather(args.getQueryable());
-    long endTime = System.nanoTime();
-    long duration = (endTime - startTime) / 1000;
+    long endTime = System.currentTimeMillis();
+    long duration = endTime - startTime;
 
     PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
         RcaGraphMetrics.METRIC_GATHER_CALL, this.name(), duration);

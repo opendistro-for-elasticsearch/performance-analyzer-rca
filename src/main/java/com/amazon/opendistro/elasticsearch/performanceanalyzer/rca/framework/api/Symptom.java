@@ -35,7 +35,7 @@ public abstract class Symptom extends NonLeafNode<SymptomFlowUnit> {
   public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
     LOG.debug("rca: Executing handleRca: {}", this.getClass().getSimpleName());
 
-    long startTime = System.nanoTime();
+    long startTime = System.currentTimeMillis();
     SymptomFlowUnit result;
     try {
       result = this.operate();
@@ -44,11 +44,11 @@ public abstract class Symptom extends NonLeafNode<SymptomFlowUnit> {
           ExceptionsAndErrors.EXCEPTION_IN_OPERATE, name(), 1);
       result = SymptomFlowUnit.generic();
     }
-    long endTime = System.nanoTime();
-    long durationMicro = (endTime - startTime) / 1000;
+    long endTime = System.currentTimeMillis();
+    long durationMillis = endTime - startTime;
 
     PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
-        RcaGraphMetrics.GRAPH_NODE_OPERATE_CALL, this.name(), durationMicro);
+        RcaGraphMetrics.GRAPH_NODE_OPERATE_CALL, this.name(), durationMillis);
 
     setFlowUnits(Collections.singletonList(result));
   }

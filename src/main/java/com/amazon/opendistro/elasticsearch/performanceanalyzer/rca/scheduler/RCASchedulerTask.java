@@ -356,7 +356,7 @@ public class RCASchedulerTask implements Runnable {
   public void run() {
     currTick = currTick + 1;
 
-    long runStartTime = System.nanoTime();
+    long runStartTime = System.currentTimeMillis();
     PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
             RcaGraphMetrics.NUM_GRAPH_NODES, "", Stats.getInstance().getTotalNodesCount());
 
@@ -383,9 +383,9 @@ public class RCASchedulerTask implements Runnable {
       LOG.debug("Finished ticking.");
     }
 
-    long runEndTime = System.nanoTime();
-    long durationMicros = (runEndTime - runStartTime) / 1000;
+    long runEndTime = System.currentTimeMillis();
+    long durationMillis = runEndTime - runStartTime;
     PerformanceAnalyzerApp.RCA_RUNTIME_METRICS_AGGREGATOR.updateStat(
-            RcaRuntimeMetrics.GRAPH_EXECUTION_TIME, "", durationMicros);
+            RcaGraphMetrics.GRAPH_EXECUTION_TIME, "", durationMillis);
   }
 }

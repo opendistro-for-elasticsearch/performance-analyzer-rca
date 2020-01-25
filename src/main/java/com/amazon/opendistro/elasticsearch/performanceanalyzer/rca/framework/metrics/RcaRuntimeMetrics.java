@@ -22,13 +22,6 @@ import java.util.Collections;
 import java.util.List;
 
 public enum RcaRuntimeMetrics implements MeasurementSet {
-  /** Time taken per run of the RCA graph */
-  GRAPH_EXECUTION_TIME(
-      "RcaGraphExecution",
-      "micros",
-      Arrays.asList(
-          Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
-
   /** The number of times the framework was stopped by the operator. */
   RCA_STOPPED_BY_OPERATOR(
       "RcaStoppedByOperator", "count", Collections.singletonList(Statistics.COUNT)),

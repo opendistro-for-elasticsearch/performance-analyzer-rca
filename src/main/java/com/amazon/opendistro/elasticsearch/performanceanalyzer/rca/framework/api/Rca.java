@@ -41,7 +41,7 @@ public abstract class Rca<T extends ResourceFlowUnit> extends NonLeafNode<T> {
   public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
     LOG.debug("rca: Executing fromLocal: {}", this.getClass().getSimpleName());
 
-    long startTime = System.nanoTime();
+    long startTime = System.currentTimeMillis();
 
     T result;
     try {
@@ -52,8 +52,8 @@ public abstract class Rca<T extends ResourceFlowUnit> extends NonLeafNode<T> {
           ExceptionsAndErrors.EXCEPTION_IN_OPERATE, name(), 1);
       result = (T) T.generic();
     }
-    long endTime = System.nanoTime();
-    long duration = (endTime - startTime) / 1000;
+    long endTime = System.currentTimeMillis();
+    long duration = endTime - startTime;
 
     PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
         RcaGraphMetrics.GRAPH_NODE_OPERATE_CALL, this.name(), duration);
@@ -63,7 +63,7 @@ public abstract class Rca<T extends ResourceFlowUnit> extends NonLeafNode<T> {
 
   @Override
   public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
-    long startTime = System.nanoTime();
+    long startTime = System.currentTimeMillis();
     for (final T flowUnit : getFlowUnits()) {
       try {
         args.getPersistable().write(this, flowUnit);
@@ -74,8 +74,8 @@ public abstract class Rca<T extends ResourceFlowUnit> extends NonLeafNode<T> {
       }
     }
 
-    long endTime = System.nanoTime();
-    long duration = (endTime - startTime) / 1000;
+    long endTime = System.currentTimeMillis();
+    long duration = endTime - startTime;
     PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
         RcaGraphMetrics.RCA_PERSIST_CALL, this.name(), duration);
   }
