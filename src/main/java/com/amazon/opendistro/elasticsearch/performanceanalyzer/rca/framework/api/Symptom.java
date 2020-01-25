@@ -18,10 +18,10 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.SymptomFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.util.Collections;
-import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,14 +36,21 @@ public abstract class Symptom extends NonLeafNode<SymptomFlowUnit> {
     LOG.debug("rca: Executing handleRca: {}", this.getClass().getSimpleName());
 
     long startTime = System.nanoTime();
-    SymptomFlowUnit out = this.operate();
+    SymptomFlowUnit result;
+    try {
+      result = this.operate();
+    } catch (Exception ex) {
+      PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
+          ExceptionsAndErrors.EXCEPTION_IN_OPERATE, name(), 1);
+      result = SymptomFlowUnit.generic();
+    }
     long endTime = System.nanoTime();
     long durationMicro = (endTime - startTime) / 1000;
 
     PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
-            RcaGraphMetrics.GRAPH_NODE_OPERATE_CALL, this.name(), durationMicro);
+        RcaGraphMetrics.GRAPH_NODE_OPERATE_CALL, this.name(), durationMicro);
 
-    setFlowUnits(Collections.singletonList(out));
+    setFlowUnits(Collections.singletonList(result));
   }
 
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
@@ -52,9 +59,9 @@ public abstract class Symptom extends NonLeafNode<SymptomFlowUnit> {
 
   /**
    * Persists a flow unit.
+   *
    * @param args The arg wrapper.
    */
   @Override
-  public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
-  }
+  public void persistFlowUnit(FlowUnitOperationArgWrapper args) {}
 }

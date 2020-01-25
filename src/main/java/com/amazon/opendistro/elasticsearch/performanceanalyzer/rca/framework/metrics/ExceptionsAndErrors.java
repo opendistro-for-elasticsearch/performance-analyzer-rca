@@ -27,7 +27,17 @@ public enum ExceptionsAndErrors implements MeasurementSet {
    * These are the cases when an exception was throws in the {@code operate()} method, that each RCA
    * graph node implements.
    */
-  EXCEPTION_IN_OPERATE("ExceptionInOperate", "namedCount", Statistics.NAMED_COUNTERS);
+  EXCEPTION_IN_OPERATE("ExceptionInOperate", "namedCount", Statistics.NAMED_COUNTERS),
+
+  /**
+   * When calling the MetricsDB API throws an exception.
+   */
+  EXCEPTION_IN_GATHER("ExceptionInGather", "namedCount", Statistics.NAMED_COUNTERS),
+
+  /**
+   * When persisting an RCA throws an exception.
+   */
+  EXCEPTION_IN_PERSIST("ExceptionInPersist", "namedCount", Statistics.NAMED_COUNTERS);
 
   /** What we want to appear as the metric name. */
   private String name;

@@ -120,13 +120,18 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
     return retVal;
   }
 
-  private StatsCollector(Map<String, String> metadata) {
-    super(
-        MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval,
-        "StatsCollector");
+  public StatsCollector(String name, int samplingIntervalMillis, Map<String, String> metadata) {
+    super(samplingIntervalMillis, name);
     this.metadata = metadata;
     addRcaVersionMetadata(this.metadata);
     defaultExceptionCodes.add(StatExceptionCode.TOTAL_ERROR);
+  }
+
+  private StatsCollector(Map<String, String> metadata) {
+    this(
+        "StatsCollector",
+        MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval,
+        metadata);
   }
 
   public void addDefaultExceptionCode(StatExceptionCode statExceptionCode) {
@@ -257,16 +262,16 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
     do {
       StatsCollectorFormatter formatter = new StatsCollectorFormatter();
       hasNext = PerformanceAnalyzerApp.RCA_STATS_REPORTER.getNextReport(formatter);
-      StatsCollectorFormatter.StatsCollectorReturn statsReturn = formatter.getFormatted();
-      if (!statsReturn.isEmpty()) {
-        logStatsRecord(
-                statsReturn.getCounters(),
-                statsReturn.getStatsdata(),
-                statsReturn.getLatencies(),
-                statsReturn.getStartTimeMillis(),
-                statsReturn.getEndTimeMillis());
+      for (StatsCollectorFormatter.StatsCollectorReturn statsReturn : formatter.getAllMetrics()) {
+        if (!statsReturn.isEmpty()) {
+          logStatsRecord(
+              statsReturn.getCounters(),
+              statsReturn.getStatsdata(),
+              statsReturn.getLatencies(),
+              statsReturn.getStartTimeMillis(),
+              statsReturn.getEndTimeMillis());
+        }
       }
     } while (hasNext);
   }
-
 }

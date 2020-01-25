@@ -21,6 +21,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaRuntimeMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants;
@@ -105,7 +106,7 @@ public class RCASchedulerTask implements Runnable {
   // guess, who
   //  should provide the max ticks - the framework or the Runtime ? Maybe an agreement between the
   // two is better.
-  RCASchedulerTask(
+  public RCASchedulerTask(
       int maxTicks,
       final ExecutorService executorPool,
       final List<ConnectedComponent> connectedComponents,

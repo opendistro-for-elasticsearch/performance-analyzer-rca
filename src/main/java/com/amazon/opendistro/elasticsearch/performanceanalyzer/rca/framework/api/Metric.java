@@ -21,6 +21,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metrics
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.LeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.util.Collections;
@@ -58,8 +59,11 @@ public abstract class Metric extends LeafNode<MetricFlowUnit> {
     try {
       db = queryable.getMetricsDB();
     } catch (Exception e) {
+      PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
+          ExceptionsAndErrors.EXCEPTION_IN_GATHER, name(), 1);
       // TODO: Emit log/stats that gathering failed.
       LOG.error("RCA: Caught an exception while getting the DB {}", e.getMessage());
+      e.printStackTrace();
       return MetricFlowUnit.generic();
     }
     // LOG.debug("RCA: Metrics from MetricsDB {}", result);
@@ -68,6 +72,9 @@ public abstract class Metric extends LeafNode<MetricFlowUnit> {
       // return new FlowUnit(queryable.getDBTimestamp(db), result, Collections.emptyMap());
       return new MetricFlowUnit(queryable.getDBTimestamp(db), result);
     } catch (Exception e) {
+      PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
+          ExceptionsAndErrors.EXCEPTION_IN_GATHER, name(), 1);
+      e.printStackTrace();
       LOG.error("Metric exception: {}", e.getMessage());
       return MetricFlowUnit.generic();
     }
@@ -81,20 +88,19 @@ public abstract class Metric extends LeafNode<MetricFlowUnit> {
     long duration = (endTime - startTime) / 1000;
 
     PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
-            RcaGraphMetrics.METRIC_GATHER_CALL, this.name(), duration);
+        RcaGraphMetrics.METRIC_GATHER_CALL, this.name(), duration);
     setFlowUnits(Collections.singletonList(mfu));
   }
 
   /**
    * Persists the given flow unit.
+   *
    * @param args The arg wrapper.
    */
   @Override
-  public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
-  }
+  public void persistFlowUnit(FlowUnitOperationArgWrapper args) {}
 
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
     LOG.error("we are not supposed to read metric flowunit from wire.");
   }
-
 }
