@@ -29,46 +29,48 @@ import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
 public class RcaTestHelper {
-    public static List<String> getAllLinesFromStatsLog() {
-        try {
-            return Files.readAllLines(Paths.get(getLogFilePath("StatsLog")));
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ParserConfigurationException e) {
-            e.printStackTrace();
-        } catch (SAXException e) {
-            e.printStackTrace();
-        } catch (XPathExpressionException e) {
-            e.printStackTrace();
-        }
-        return null;
+  public static List<String> getAllLinesFromStatsLog() {
+    try {
+      return Files.readAllLines(Paths.get(getLogFilePath("StatsLog")));
+    } catch (IOException e) {
+      e.printStackTrace();
+    } catch (ParserConfigurationException e) {
+      e.printStackTrace();
+    } catch (SAXException e) {
+      e.printStackTrace();
+    } catch (XPathExpressionException e) {
+      e.printStackTrace();
     }
-    public static String getLogFilePath(String filename)
-            throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
-        String cwd = System.getProperty("user.dir");
-        String testResourcesPath =
-                Paths.get(Paths.get(cwd, "src", "test", "resources").toString(), "log4j2.xml").toString();
+    return null;
+  }
 
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(testResourcesPath);
-        XPathFactory xPathfactory = XPathFactory.newInstance();
-        XPath xpath = xPathfactory.newXPath();
-        return xpath.evaluate(
-                String.format("Configuration/Appenders/File[@name='%s']/@fileName", filename), doc);
+  public static String getLogFilePath(String filename)
+      throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
+    String cwd = System.getProperty("user.dir");
+    String testResourcesPath =
+        Paths.get(Paths.get(cwd, "src", "test", "resources").toString(), "log4j2.xml").toString();
+
+    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+    DocumentBuilder builder = factory.newDocumentBuilder();
+    Document doc = builder.parse(testResourcesPath);
+    XPathFactory xPathfactory = XPathFactory.newInstance();
+    XPath xpath = xPathfactory.newXPath();
+    return xpath.evaluate(
+        String.format("Configuration/Appenders/File[@name='%s']/@fileName", filename), doc);
+  }
+
+  public static void cleanUpLogs() {
+    try {
+      Files.deleteIfExists(Paths.get(getLogFilePath("PerformanceAnalyzerLog")));
+      Files.deleteIfExists(Paths.get(getLogFilePath("StatsLog")));
+    } catch (ParserConfigurationException e) {
+      e.printStackTrace();
+    } catch (SAXException e) {
+      e.printStackTrace();
+    } catch (XPathExpressionException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
     }
-    public static void cleanUpLogs() {
-        try {
-            Files.deleteIfExists(Paths.get(getLogFilePath("PerformanceAnalyzerLog")));
-            Files.deleteIfExists(Paths.get(getLogFilePath("StatsLog")));
-        } catch (ParserConfigurationException e) {
-            e.printStackTrace();
-        } catch (SAXException e) {
-            e.printStackTrace();
-        } catch (XPathExpressionException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+  }
 }
