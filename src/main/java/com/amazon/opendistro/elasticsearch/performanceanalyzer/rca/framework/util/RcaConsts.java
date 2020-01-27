@@ -77,6 +77,7 @@ public class RcaConsts {
     public static final String LOCUS_DATA_NODE = "data-node";
     public static final String LOCUS_MASTER_NODE = "master-node";
   }
+  
   public static final String HOT_NODE_SUMMARY_TABLE = HotNodeSummary.class.getSimpleName();
   public static final String HOT_CLUSTER_SUMMARY_TABLE = HotClusterSummary.class.getSimpleName();
   public static final String HOT_RESOURCE_SUMMARY_TABLE = HotResourceSummary.class.getSimpleName();
