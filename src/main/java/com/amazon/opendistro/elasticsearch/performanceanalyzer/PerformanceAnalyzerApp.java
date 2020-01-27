@@ -34,9 +34,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.met
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaRuntimeMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.sys.AllJvmSamplers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.listener.MisbehavingGraphOperateMethodListener;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.RcaStatsReporter;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.collectors.SampleAggregator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.emitters.PeriodicSamplers;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.listeners.IListener;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryMetricsRequestHandler;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -85,8 +87,12 @@ public class PerformanceAnalyzerApp {
   public  static final SampleAggregator RCA_RUNTIME_METRICS_AGGREGATOR =
           new SampleAggregator(RcaRuntimeMetrics.values());
 
+  private static final IListener MISBEHAVING_NODES_LISTENER =
+          new MisbehavingGraphOperateMethodListener();
   public static final SampleAggregator ERRORS_AND_EXCEPTIONS_AGGREGATOR =
-          new SampleAggregator(ExceptionsAndErrors.values());
+          new SampleAggregator(MISBEHAVING_NODES_LISTENER.getMeasurementsListenedTo(),
+                  MISBEHAVING_NODES_LISTENER,
+                  ExceptionsAndErrors.values());
 
   public static final SampleAggregator JVM_METRICS_AGGREGATOR =
           new SampleAggregator(JvmMetrics.values());
@@ -95,7 +101,7 @@ public class PerformanceAnalyzerApp {
           new RcaStatsReporter(Arrays.asList(RCA_GRAPH_METRICS_AGGREGATOR,
                   RCA_RUNTIME_METRICS_AGGREGATOR, ERRORS_AND_EXCEPTIONS_AGGREGATOR,
                   JVM_METRICS_AGGREGATOR));
-  private static final PeriodicSamplers PERIODIC_SAMPLERS =
+  public static final PeriodicSamplers PERIODIC_SAMPLERS =
           new PeriodicSamplers(JVM_METRICS_AGGREGATOR, AllJvmSamplers.getJvmSamplers(),
                   (MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval) / 2,
                   TimeUnit.MILLISECONDS);
