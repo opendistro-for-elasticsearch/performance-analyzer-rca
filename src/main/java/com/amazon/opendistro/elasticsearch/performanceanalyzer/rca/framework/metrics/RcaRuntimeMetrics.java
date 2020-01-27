@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.me
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.Statistics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.measurements.MeasurementSet;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 

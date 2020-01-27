@@ -26,18 +26,16 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.im
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.impl.Sum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.impl.vals.Value;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.format.Formatter;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.listeners.IListener;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.measurements.MeasurementSet;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -68,23 +66,7 @@ public class SampleAggregator {
   /** When was the first updateStat was called since the last reset. */
   private AtomicLong startTimeMillis;
 
-  /** Listeners for the occurrence of a metric being emitted. */
-  private final IListener listener;
-
-  /** List of measurements being listened to. */
-  private final Set<MeasurementSet> listenedMeasurements;
-
   public SampleAggregator(MeasurementSet[] measurementSet) {
-    this(Collections.EMPTY_SET, null, measurementSet);
-  }
-
-  public SampleAggregator(
-      Set<MeasurementSet> listenedMeasurements,
-      IListener listener,
-      MeasurementSet[] measurementSet) {
-    Objects.requireNonNull(listenedMeasurements);
-    this.listenedMeasurements = listenedMeasurements;
-    this.listener = listener;
     this.recognizedSet = measurementSet;
     init();
   }
@@ -155,10 +137,6 @@ public class SampleAggregator {
 
     for (IStatistic s : statistics) {
       s.calculate(key, value);
-    }
-
-    if (listenedMeasurements.contains(metric)) {
-      listener.onOccurrence(metric, value, key);
     }
   }
 

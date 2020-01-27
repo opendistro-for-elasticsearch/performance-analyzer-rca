@@ -19,17 +19,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class Stats {
   private long totalNodesCount;
   private long leafNodesCount;
   private long leavesAddedToAnalysisFlowField;
   private Map<Integer, ConnectedComponent> graphs;
-
-  private Set<String> mutedGraphNodes;
-
   private static Stats instance = null;
 
   public void incrementLeavesAddedToAnalysisFlowField() {
@@ -88,21 +83,7 @@ public class Stats {
   }
 
   public List<ConnectedComponent> getConnectedComponents() {
-    mutedGraphNodes =
-            ConcurrentHashMap.newKeySet((int)getTotalNodesCount());
     return new ArrayList<>(graphs.values());
-  }
-
-  public boolean addToMutedGraphNodes(String nodeName) {
-    return mutedGraphNodes.add(nodeName);
-  }
-
-  public boolean isNodeMuted(String nodeName) {
-    return mutedGraphNodes.contains(nodeName);
-  }
-
-  public int getMutedGraphNodesCount() {
-    return mutedGraphNodes.size();
   }
 
   public static void clear() {

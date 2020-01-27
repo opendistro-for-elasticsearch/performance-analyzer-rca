@@ -21,7 +21,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaRuntimeMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
@@ -53,10 +55,14 @@ public class RCASchedulerTask implements Runnable {
    */
   private static class CreatedTasklets {
 
-    /** Tasklet for the locally executable node. */
+    /**
+     * Tasklet for the locally executable node.
+     */
     Tasklet taskletForCurrentNode;
 
-    /** List of tasklets corresponding to one or many remote nodes. */
+    /**
+     * List of tasklets corresponding to one or many remote nodes.
+     */
     List<Tasklet> remoteTasklets;
 
     CreatedTasklets(Tasklet taskletForCurrentNode) {
@@ -65,13 +71,19 @@ public class RCASchedulerTask implements Runnable {
     }
   }
 
-  /** Maximum ticks after which the counter will be reset. */
+  /**
+   * Maximum ticks after which the counter will be reset.
+   */
   private int maxTicks;
 
-  /** To keep track of the number of executions of the thread. */
+  /**
+   * To keep track of the number of executions of the thread.
+   */
   private int currTick;
 
-  /** The thread pool to execute the tasklets. */
+  /**
+   * The thread pool to execute the tasklets.
+   */
   private final ExecutorService executorPool;
 
   /**
@@ -160,16 +172,18 @@ public class RCASchedulerTask implements Runnable {
    * node. So, keep track of it, so that the scheduler remembers to send it every time new data is
    * generated for the upstream node.
    *
-   * @param orderedNodes list of list of nodes in a connected component
-   * @param conf The rcaConf object, used for tag matching to determine if a node will be executed
-   *     locally.
-   * @param hopper The network listener object, used to send intent to receive remotely generated
-   *     data and to send data to remote nodes which needs data generated on this node.
-   * @param db A abstraction which is used by the metric nodes to get data from PA reader.
-   * @param persistable This object is used to write the results of the RCA evaluation to a
-   *     persistent store.
+   * @param orderedNodes   list of list of nodes in a connected component
+   * @param conf           The rcaConf object, used for tag matching to determine if a node will be
+   *                       executed locally.
+   * @param hopper         The network listener object, used to send intent to receive remotely
+   *                       generated data and to send data to remote nodes which needs data
+   *                       generated on this node.
+   * @param db             A abstraction which is used by the metric nodes to get data from PA
+   *                       reader.
+   * @param persistable    This object is used to write the results of the RCA evaluation to a
+   *                       persistent store.
    * @param nodeTaskletMap This is a helper structure, to retrieve the Tasklet corresponding to a
-   *     graph node.
+   *                       graph node.
    * @return a level ordered list of Tasklets.
    */
   private List<List<Tasklet>> getLocallyExecutableNodes(
@@ -256,12 +270,16 @@ public class RCASchedulerTask implements Runnable {
    * tasklet representations of the remote nodes. The remote node tasklets, are used to read the
    * data on the wire corresponding to the remote node, when it is available.
    *
-   * @param graphNode The locally running graph node for which we want to get the data from upstream
-   * @param locallyExecutableNodeSet A set of inspected nodes so far that are to be executed locally
-   * @param hopper The network proxy
-   * @param db This object is used to query the database to get the metrics; for reads.
-   * @param persistable The instance of the database where RCAs are to be persisted; for writes.
-   * @param nodeTaskletMap A table to get the tasklet corresponding to a graph node.
+   * @param graphNode                The locally running graph node for which we want to get the
+   *                                 data from upstream
+   * @param locallyExecutableNodeSet A set of inspected nodes so far that are to be executed
+   *                                 locally
+   * @param hopper                   The network proxy
+   * @param db                       This object is used to query the database to get the metrics;
+   *                                 for reads.
+   * @param persistable              The instance of the database where RCAs are to be persisted;
+   *                                 for writes.
+   * @param nodeTaskletMap           A table to get the tasklet corresponding to a graph node.
    */
   protected CreatedTasklets createTaskletAndSendIntent(
       Node<?> graphNode,
@@ -292,10 +310,8 @@ public class RCASchedulerTask implements Runnable {
 
         final Map<String, String> upstreamNodeTags = upstreamNode.getTags();
         List<String> upstreamNodeLoci =
-            Arrays.asList(
-                upstreamNodeTags
-                    .getOrDefault(RcaTagConstants.TAG_LOCUS, EMPTY_STRING)
-                    .split(RcaTagConstants.SEPARATOR));
+            Arrays.asList(upstreamNodeTags.getOrDefault(RcaTagConstants.TAG_LOCUS,
+                EMPTY_STRING).split(RcaTagConstants.SEPARATOR));
         if (aggregationLocus != null && upstreamNodeLoci.contains(aggregationLocus)) {
           // This upstream vertex is also executed remotely and the current vertex's aggregation
           // locus includes one of the loci for the upstream vertex, so we need to add a task to
@@ -312,19 +328,14 @@ public class RCASchedulerTask implements Runnable {
     return ret;
   }
 
-  private void addReadFromRemoteTasklet(
-      final Node<?> graphNode,
-      final Node<?> upstreamNode,
-      final WireHopper hopper,
-      final Queryable db,
-      final Persistable persistable,
-      final Tasklet tasklet,
-      CreatedTasklets ret) {
+  private void addReadFromRemoteTasklet(final Node<?> graphNode, final Node<?> upstreamNode,
+      final WireHopper hopper, final Queryable db, final Persistable persistable,
+      final Tasklet tasklet, CreatedTasklets ret) {
     LOG.debug(
         "rca: Node '{}' sending intent to consume node: '{}'",
-        graphNode.name(),
-        upstreamNode.name());
-    IntentMsg msg = new IntentMsg(graphNode.name(), upstreamNode.name(), upstreamNode.getTags());
+        graphNode.name(), upstreamNode.name());
+    IntentMsg msg =
+        new IntentMsg(graphNode.name(), upstreamNode.name(), upstreamNode.getTags());
     hopper.sendIntent(msg);
 
     // This node is not locally present. So, we will add a virtual Tasklet that reads
@@ -347,7 +358,7 @@ public class RCASchedulerTask implements Runnable {
 
     long runStartTime = System.currentTimeMillis();
     PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
-        RcaGraphMetrics.NUM_GRAPH_NODES, "", Stats.getInstance().getTotalNodesCount());
+            RcaGraphMetrics.NUM_GRAPH_NODES, "", Stats.getInstance().getTotalNodesCount());
 
     Map<Tasklet, CompletableFuture<TaskletResult>> taskletFutureMap = new HashMap<>();
     LOG.debug("RCA: ========== STRT Tick {} ====== ", currTick);
@@ -374,9 +385,7 @@ public class RCASchedulerTask implements Runnable {
 
     long runEndTime = System.currentTimeMillis();
     long durationMillis = runEndTime - runStartTime;
-    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
-        RcaGraphMetrics.GRAPH_EXECUTION_TIME, "", durationMillis);
-    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
-        RcaGraphMetrics.NUM_GRAPH_NODES_MUTED, "", Stats.getInstance().getMutedGraphNodesCount());
+    PerformanceAnalyzerApp.RCA_RUNTIME_METRICS_AGGREGATOR.updateStat(
+            RcaGraphMetrics.GRAPH_EXECUTION_TIME, "", durationMillis);
   }
 }

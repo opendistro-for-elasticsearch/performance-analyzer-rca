@@ -18,8 +18,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -43,17 +41,7 @@ public class RcaTestHelper {
     } catch (XPathExpressionException e) {
       e.printStackTrace();
     }
-    return Collections.EMPTY_LIST;
-  }
-
-  public static List<String> getAllLinesWithMatchingString(String pattern) {
-    List<String> matches = new ArrayList<>();
-    for (String line: getAllLinesFromStatsLog()) {
-      if (line.contains(pattern)) {
-        matches.add(line);
-      }
-    }
-    return matches;
+    return null;
   }
 
   public static String getLogFilePath(String filename)
