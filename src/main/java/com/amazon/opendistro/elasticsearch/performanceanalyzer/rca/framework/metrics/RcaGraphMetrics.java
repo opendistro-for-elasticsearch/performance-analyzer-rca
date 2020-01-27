@@ -24,10 +24,10 @@ import java.util.List;
 public enum RcaGraphMetrics implements MeasurementSet {
   /** Time taken per run of the RCA graph */
   GRAPH_EXECUTION_TIME(
-          "RcaGraphExecution",
-          "millis",
-          Arrays.asList(
-                  Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
+      "RcaGraphExecution",
+      "millis",
+      Arrays.asList(
+          Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
 
   /** Measures the time spent in the operate() method of a graph node. */
   GRAPH_NODE_OPERATE_CALL(
@@ -42,6 +42,9 @@ public enum RcaGraphMetrics implements MeasurementSet {
       "RcaPersistCall", "micros", Arrays.asList(Statistics.MAX, Statistics.MEAN, Statistics.SUM)),
 
   NUM_GRAPH_NODES("NumGraphNodes", "count", Collections.singletonList(Statistics.SAMPLE)),
+
+  NUM_GRAPH_NODES_MUTED(
+      "NUMOfMutedGraphNodes", "count", Collections.singletonList(Statistics.SAMPLE)),
 
   NUM_NODES_EXECUTED_LOCALLY(
       "NodesExecutedLocally", "count", Collections.singletonList(Statistics.COUNT)),

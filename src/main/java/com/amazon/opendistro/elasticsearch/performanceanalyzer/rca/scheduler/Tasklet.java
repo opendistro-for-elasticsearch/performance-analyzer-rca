@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.DataMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.NetPersistor;

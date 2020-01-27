@@ -13,9 +13,10 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.listener;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
@@ -27,8 +28,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Sched_Waittime;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.JvmMetrics;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCASchedulerTask;
@@ -43,7 +44,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class RcaStatsCollectorTest {
+public class MisbehavingGraphOperateMethodListenerTest {
   class FaultyAnalysisGraph extends AnalysisGraph {
     @Override
     public void construct() {
@@ -57,7 +58,9 @@ public class RcaStatsCollectorTest {
       addLeaf(pageMaj);
       addLeaf(heapAlloc);
 
-      Symptom s1 = new HighCpuSymptom(1, cpuUtilization, heapUsed);
+      Symptom s1 =
+          new MisbehavingGraphOperateMethodListenerTest.FaultyAnalysisGraph.HighCpuSymptom(
+              1, cpuUtilization, heapUsed);
       s1.addAllUpstreams(Arrays.asList(cpuUtilization, heapUsed));
 
       System.out.println(this.getClass().getName() + " graph constructed..");
@@ -82,20 +85,14 @@ public class RcaStatsCollectorTest {
   }
 
   @Test
-  public void rcaGraphMetrics() throws Exception {
+  public void rcaMutedForThrowingExceptions() throws Exception {
+    StatsCollector statsCollector = new StatsCollector("test-stats", 0, new HashMap<>());
+    statsCollector.collectMetrics(0);
     RcaTestHelper.cleanUpLogs();
 
-    RcaGraphMetrics graphMetrics[] = {
-      RcaGraphMetrics.GRAPH_NODE_OPERATE_CALL,
-      RcaGraphMetrics.METRIC_GATHER_CALL,
-      RcaGraphMetrics.NUM_GRAPH_NODES,
-      RcaGraphMetrics.NUM_NODES_EXECUTED_LOCALLY,
-    };
-
-    JvmMetrics jvmMetrics[] = {JvmMetrics.JVM_FREE_MEM_SAMPLER, JvmMetrics.JVM_TOTAL_MEM_SAMPLER};
-
     List<ConnectedComponent> connectedComponents =
-        RcaUtil.getAnalysisGraphComponents(new FaultyAnalysisGraph());
+        RcaUtil.getAnalysisGraphComponents(
+            new MisbehavingGraphOperateMethodListenerTest.FaultyAnalysisGraph());
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
 
     RCASchedulerTask rcaSchedulerTask =
@@ -107,19 +104,15 @@ public class RcaStatsCollectorTest {
             null,
             rcaConf,
             null);
-    rcaSchedulerTask.run();
-    StatsCollector statsCollector = new StatsCollector("test-stats", 0, new HashMap<>());
 
-    for (RcaGraphMetrics metricToCheck : graphMetrics) {
-      Assert.assertTrue(verify(metricToCheck));
+    for (int i = 0; i <= MisbehavingGraphOperateMethodListener.TOLERANCE_LIMIT; i++) {
+      rcaSchedulerTask.run();
+      Assert.assertTrue(verify(ExceptionsAndErrors.EXCEPTION_IN_OPERATE));
     }
-    for (JvmMetrics jvmMetrics1: jvmMetrics) {
-      if (!verify(jvmMetrics1)) {
-        PerformanceAnalyzerApp.PERIODIC_SAMPLERS.run();
-      }
-      Assert.assertTrue(verify(jvmMetrics1));
-    }
-    statsCollector.collectMetrics(0);
+
+    Assert.assertEquals(1, Stats.getInstance().getMutedGraphNodesCount());
+    Assert.assertTrue(
+        Stats.getInstance().isNodeMuted(FaultyAnalysisGraph.HighCpuSymptom.class.getSimpleName()));
   }
 
   private boolean verify(MeasurementSet measurementSet) throws InterruptedException {
@@ -131,12 +124,11 @@ public class RcaStatsCollectorTest {
       }
       Thread.sleep(1);
     }
-    System.out.println("Could not find measurement " + measurementSet);
     return false;
   }
 
   @After
   public void cleanup() {
-    RcaTestHelper.cleanUpLogs();
+    // RcaTestHelper.cleanUpLogs();
   }
 }
