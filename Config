@@ -31,7 +31,9 @@ package.OpenDistroPerformanceAnalyzerEngine = {
             BouncyCastleCrypto = 1.x;
             OpenDistroPerfTop = 1.0;
             ProtocolBuffersJava = 3.5.x;
-        };
+	    JakartaCommons-IO = 2.4;
+	    JakartaCommons-lang3 = 3.0;
+	};
     };
 
     build-system = happytrails;
@@ -55,7 +57,7 @@ package.OpenDistroPerformanceAnalyzerEngine = {
     test-dependencies = {
         1.0 = {
             junit = 4.11;
-            PowerMockMockito = 1.6.x;
+            PowerMockMockito = 2.x;
         };
     };
 

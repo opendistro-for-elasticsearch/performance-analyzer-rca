@@ -64,7 +64,7 @@ public class HighHeapUsageYoungGenRcaTest {
     columnName = Arrays.asList(MEM_TYPE.toString(), MetricsDB.MAX);
   }
 
-  //@Test
+  @Test
   public void testHighHeapYoungGenRca() {
     ResourceFlowUnit flowUnit;
     Clock constantClock = Clock.fixed(ofEpochMilli(0), ZoneId.systemDefault());
