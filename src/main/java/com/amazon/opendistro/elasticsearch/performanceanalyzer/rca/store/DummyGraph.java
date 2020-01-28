@@ -82,6 +82,6 @@ public class DummyGraph extends AnalysisGraph {
         new HighHeapUsageClusterRca(12, hotJVMNodeRca);
     highHeapUsageClusterRca.addTag(LOCUS, MASTER_NODE);
     highHeapUsageClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
-
+    highHeapUsageClusterRca.addTag(RcaTagConstants.TAG_AGGREGATE_UPSTREAM, DATA_NODE);
   }
 }
