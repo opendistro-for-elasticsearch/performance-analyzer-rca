@@ -30,6 +30,7 @@ import org.jooq.impl.DSL;
  */
 public class HotClusterSummary extends GenericSummary {
 
+  public static final String HOT_CLUSTER_SUMMARY_TABLE = HotClusterSummary.class.getSimpleName();
   private int numOfNodes;
   private int numOfUnhealthyNodes;
 

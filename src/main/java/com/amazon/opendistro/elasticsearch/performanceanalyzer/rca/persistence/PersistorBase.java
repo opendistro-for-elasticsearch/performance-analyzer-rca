@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
 import java.io.File;
 import java.nio.file.Paths;
 import java.sql.Connection;
@@ -84,6 +85,8 @@ public abstract class PersistorBase implements Persistable {
 
   abstract String readTables();
 
+  abstract RcaResponse readRcaTable(String rca);
+
   abstract void createNewDSLContext();
 
   // Not required for now.
@@ -98,6 +101,10 @@ public abstract class PersistorBase implements Persistable {
     LOG.debug("RCA: in read() in PersistorBase");
     String jsonResponse = readTables();
     return jsonResponse;
+  }
+
+  public synchronized RcaResponse readRca(String rca) {
+    return readRcaTable(rca);
   }
 
   public synchronized void openNewDBFile() throws SQLException {

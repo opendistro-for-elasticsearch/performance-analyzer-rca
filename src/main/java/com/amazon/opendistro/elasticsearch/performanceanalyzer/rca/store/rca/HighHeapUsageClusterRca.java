@@ -48,6 +48,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
 
+  public static final String HIGH_HEAP_USAGE_CLUSTER_RCA_TABLE = HighHeapUsageClusterRca.class.getSimpleName();
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageClusterRca.class);
   private static final int UNHEALTHY_FLOWUNIT_THRESHOLD = 3;
   private static final int CACHE_EXPIRATION_TIMEOUT = 10;
