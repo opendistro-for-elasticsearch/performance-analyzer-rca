@@ -15,9 +15,9 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.HOT_CLUSTER_SUMMARY_TABLE;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.HOT_NODE_SUMMARY_TABLE;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.HOT_RESOURCE_SUMMARY_TABLE;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary.HOT_NODE_SUMMARY_TABLE;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary.HOT_RESOURCE_SUMMARY_TABLE;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;

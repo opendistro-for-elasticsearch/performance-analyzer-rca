@@ -29,6 +29,7 @@ import org.jooq.impl.DSL;
  */
 public class HotNodeSummary extends GenericSummary {
 
+  public static final String HOT_NODE_SUMMARY_TABLE = HotNodeSummary.class.getSimpleName();
   private final String nodeID;
   private final String hostAddress;
 
