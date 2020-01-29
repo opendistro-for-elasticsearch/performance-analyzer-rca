@@ -84,9 +84,12 @@ public class Disks {
   private static void listDisks() {
     try {
       File file = new File("/sys/block");
-      for (File dfile : file.listFiles()) {
-        if (!dfile.getCanonicalPath().contains("/virtual/")) {
-          diskList.add(dfile.getName());
+      File[] files = file.listFiles();
+      if (files != null) {
+        for (File dfile : files) {
+          if (dfile != null && !dfile.getCanonicalPath().contains("/virtual/")) {
+            diskList.add(dfile.getName());
+          }
         }
       }
     } catch (Exception e) {
@@ -127,8 +130,9 @@ public class Disks {
   public static Map<String, DiskMetrics> getMetricsMap() {
     Map<String, DiskMetrics> map = new HashMap<>();
     if (kvTimestamp > oldkvTimestamp) {
-      for (String disk : diskKVMap.keySet()) {
-        Map<String, Object> m = diskKVMap.get(disk);
+      for (Map.Entry<String, Map<String, Object>> entry: diskKVMap.entrySet()) {
+        String disk = entry.getKey();
+        Map<String, Object> m = entry.getValue();
         Map<String, Object> mold = olddiskKVMap.get(disk);
         if (mold != null) {
           DiskMetrics dm = new DiskMetrics();

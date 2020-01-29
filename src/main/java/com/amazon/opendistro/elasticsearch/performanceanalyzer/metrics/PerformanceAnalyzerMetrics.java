@@ -161,8 +161,10 @@ public class PerformanceAnalyzerMetrics {
   public static void removeMetrics(File keyPathFile) {
     if (keyPathFile.isDirectory()) {
       String[] children = keyPathFile.list();
-      for (String child : children) {
-        removeMetrics(new File(keyPathFile, child));
+      if (children != null) {
+        for (String child : children) {
+          removeMetrics(new File(keyPathFile, child));
+        }
       }
     }
     try {

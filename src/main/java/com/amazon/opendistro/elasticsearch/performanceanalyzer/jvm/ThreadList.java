@@ -150,7 +150,7 @@ public class ThreadList {
       return;
     }
 
-    try (InputStream in = ((HotSpotVirtualMachine) vm).remoteDataDump((Object[]) args); ) {
+    try (InputStream in = ((HotSpotVirtualMachine) vm).remoteDataDump(args); ) {
       createMap(in);
     } catch (Exception ex) {
       LOGGER.debug(

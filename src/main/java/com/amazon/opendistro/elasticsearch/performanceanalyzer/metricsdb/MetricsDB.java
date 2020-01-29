@@ -25,8 +25,10 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.BatchBindStep;
@@ -63,7 +65,9 @@ public class MetricsDB implements Removable {
   public static final String AVG = "avg";
   public static final String MIN = "min";
   public static final String MAX = "max";
-  public static final HashSet<String> AGG_VALUES = new HashSet<>(Arrays.asList(SUM, AVG, MIN, MAX));
+  public static final Set<String> AGG_VALUES =
+      Collections.unmodifiableSet(new HashSet<>(Arrays.asList(SUM, AVG, MIN, MAX)));
+
   private long windowStartTime;
 
   public String getDBFilePath() {
