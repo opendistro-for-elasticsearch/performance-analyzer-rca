@@ -19,7 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.St
 import java.util.Arrays;
 import java.util.List;
 
-public enum MeasurementSetTest implements MeasurementSet {
+public enum MeasurementSetTestHelper implements MeasurementSet {
   TEST_MEASUREMENT1(
       "TestMeasurement1", "micros", Arrays.asList(Statistics.MAX, Statistics.MEAN, Statistics.MIN)),
   TEST_MEASUREMENT2("TestMeasurement2", "micros", Arrays.asList(Statistics.COUNT)),
@@ -33,7 +33,7 @@ public enum MeasurementSetTest implements MeasurementSet {
   private String unit;
   private List<Statistics> statsList;
 
-  MeasurementSetTest(String name, String unit, List<Statistics> statisticList) {
+  MeasurementSetTestHelper(String name, String unit, List<Statistics> statisticList) {
     this.name = name;
     this.unit = unit;
     this.statsList = statisticList;
