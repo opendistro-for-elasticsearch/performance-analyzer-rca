@@ -17,7 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.listen
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.collectors.SampleAggregator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.measurements.MeasurementSet;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.measurements.MeasurementSetTest;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.measurements.MeasurementSetTestHelper;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,8 +37,8 @@ public class IListenerTest {
       Set<MeasurementSet> set =
           new HashSet() {
             {
-              this.add(MeasurementSetTest.TEST_MEASUREMENT1);
-              this.add(MeasurementSetTest.TEST_MEASUREMENT2);
+              this.add(MeasurementSetTestHelper.TEST_MEASUREMENT1);
+              this.add(MeasurementSetTestHelper.TEST_MEASUREMENT2);
             }
           };
       return set;
@@ -55,11 +55,11 @@ public class IListenerTest {
     Listener listener = new Listener();
     SampleAggregator sampleAggregator =
         new SampleAggregator(
-            listener.getMeasurementsListenedTo(), listener, MeasurementSetTest.values());
+            listener.getMeasurementsListenedTo(), listener, MeasurementSetTestHelper.values());
 
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT4, "", 1);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT1, "", 1);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT2, "", 1);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT4, "", 1);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT1, "", 1);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT2, "", 1);
 
     Assert.assertEquals(2, listener.count.get());
   }

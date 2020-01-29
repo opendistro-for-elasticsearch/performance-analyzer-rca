@@ -25,7 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.im
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.impl.vals.Value;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.format.DefaultFormatter;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.measurements.MeasurementSet;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.measurements.MeasurementSetTest;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.measurements.MeasurementSetTestHelper;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -91,12 +91,12 @@ public class SampleAggregatorTest {
 
   @Test
   public void updateStat() {
-    SampleAggregator sampleAggregator = new SampleAggregator(MeasurementSetTest.values());
+    SampleAggregator sampleAggregator = new SampleAggregator(MeasurementSetTestHelper.values());
 
     ISampler sampler =
         sampleCollector ->
             sampleCollector.updateStat(
-                MeasurementSetTest.JVM_FREE_MEM_SAMPLER, "", Runtime.getRuntime().freeMemory());
+                MeasurementSetTestHelper.JVM_FREE_MEM_SAMPLER, "", Runtime.getRuntime().freeMemory());
 
     PeriodicSamplers periodicSamplers =
         new PeriodicSamplers(
@@ -106,76 +106,76 @@ public class SampleAggregatorTest {
 
     Map<MeasurementSet, Map<Statistics, List<Value>>> expected = new HashMap<>();
 
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT1, "key1", 50L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT1, "key1", 200L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT1, "key1", 200L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT1, "key2", 200L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT1, "key3", 500L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT1, "key1", 200L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT1, "key1", 200L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT1, "key1", 200L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT1, "key1", 50L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT1, "key1", 200L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT1, "key1", 200L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT1, "key2", 200L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT1, "key3", 500L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT1, "key1", 200L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT1, "key1", 200L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT1, "key1", 200L);
 
-    expected.put(MeasurementSetTest.TEST_MEASUREMENT1, new HashMap<>());
+    expected.put(MeasurementSetTestHelper.TEST_MEASUREMENT1, new HashMap<>());
     expected
-        .get(MeasurementSetTest.TEST_MEASUREMENT1)
+        .get(MeasurementSetTestHelper.TEST_MEASUREMENT1)
         .put(
             Statistics.MAX,
             Collections.singletonList(new NamedAggregateValue(500L, Statistics.MAX, "key3")));
     expected
-        .get(MeasurementSetTest.TEST_MEASUREMENT1)
+        .get(MeasurementSetTestHelper.TEST_MEASUREMENT1)
         .put(
             Statistics.MIN,
             Collections.singletonList(new NamedAggregateValue(50L, Statistics.MIN, "key1")));
     expected
-        .get(MeasurementSetTest.TEST_MEASUREMENT1)
+        .get(MeasurementSetTestHelper.TEST_MEASUREMENT1)
         .put(
             Statistics.MEAN,
             Collections.singletonList(new AggregateValue(1750.0 / 8, Statistics.MEAN)));
-    Assert.assertTrue(match(MeasurementSetTest.TEST_MEASUREMENT1, expected, sampleAggregator));
+    Assert.assertTrue(match(MeasurementSetTestHelper.TEST_MEASUREMENT1, expected, sampleAggregator));
 
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT2, "key1", 200L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT2, "key1", 200L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT2, "key1", 200L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT2, "key1", 200L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT2, "key1", 200L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT2, "key1", 200L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT2, "key1", 200L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT2, "key1", 200L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT2, "key1", 200L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT2, "key1", 200L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT2, "key1", 200L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT2, "key1", 200L);
 
-    expected.put(MeasurementSetTest.TEST_MEASUREMENT2, new HashMap<>());
+    expected.put(MeasurementSetTestHelper.TEST_MEASUREMENT2, new HashMap<>());
     expected
-        .get(MeasurementSetTest.TEST_MEASUREMENT2)
+        .get(MeasurementSetTestHelper.TEST_MEASUREMENT2)
         .put(Statistics.COUNT, Collections.singletonList(new AggregateValue(6, Statistics.COUNT)));
-    Assert.assertTrue(match(MeasurementSetTest.TEST_MEASUREMENT2, expected, sampleAggregator));
+    Assert.assertTrue(match(MeasurementSetTestHelper.TEST_MEASUREMENT2, expected, sampleAggregator));
 
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT4, "key1", 200L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT4, "key1", 300L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT4, "key1", 100L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT4, "key1", 200L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT4, "key1", 300L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT4, "key1", 100L);
 
-    expected.put(MeasurementSetTest.TEST_MEASUREMENT4, new HashMap<>());
+    expected.put(MeasurementSetTestHelper.TEST_MEASUREMENT4, new HashMap<>());
     expected
-        .get(MeasurementSetTest.TEST_MEASUREMENT4)
+        .get(MeasurementSetTestHelper.TEST_MEASUREMENT4)
         .put(Statistics.SAMPLE, Collections.singletonList(new Value(100)));
-    Assert.assertTrue(match(MeasurementSetTest.TEST_MEASUREMENT4, expected, sampleAggregator));
+    Assert.assertTrue(match(MeasurementSetTestHelper.TEST_MEASUREMENT4, expected, sampleAggregator));
 
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT5, "key1", 200L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT5, "key1", 300L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT5, "key1", 100L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT5, "key1", 200L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT5, "key1", 300L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT5, "key1", 100L);
 
-    expected.put(MeasurementSetTest.TEST_MEASUREMENT5, new HashMap<>());
+    expected.put(MeasurementSetTestHelper.TEST_MEASUREMENT5, new HashMap<>());
     expected
-        .get(MeasurementSetTest.TEST_MEASUREMENT5)
+        .get(MeasurementSetTestHelper.TEST_MEASUREMENT5)
         .put(Statistics.SUM, Collections.singletonList(new AggregateValue(600, Statistics.SUM)));
-    Assert.assertTrue(match(MeasurementSetTest.TEST_MEASUREMENT5, expected, sampleAggregator));
+    Assert.assertTrue(match(MeasurementSetTestHelper.TEST_MEASUREMENT5, expected, sampleAggregator));
 
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT6, "key1", 200L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT6, "key2", 300L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT6, "key4", 100L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT6, "key1", 200L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT6, "key2", 300L);
-    sampleAggregator.updateStat(MeasurementSetTest.TEST_MEASUREMENT6, "key3", 100L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT6, "key1", 200L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT6, "key2", 300L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT6, "key4", 100L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT6, "key1", 200L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT6, "key2", 300L);
+    sampleAggregator.updateStat(MeasurementSetTestHelper.TEST_MEASUREMENT6, "key3", 100L);
 
-    expected.put(MeasurementSetTest.TEST_MEASUREMENT6, new HashMap<>());
+    expected.put(MeasurementSetTestHelper.TEST_MEASUREMENT6, new HashMap<>());
     expected
-        .get(MeasurementSetTest.TEST_MEASUREMENT6)
+        .get(MeasurementSetTestHelper.TEST_MEASUREMENT6)
         .put(
             Statistics.NAMED_COUNTERS,
             Arrays.asList(
@@ -183,15 +183,15 @@ public class SampleAggregatorTest {
                 new NamedAggregateValue(2, Statistics.NAMED_COUNTERS, "key2"),
                 new NamedAggregateValue(1, Statistics.NAMED_COUNTERS, "key3"),
                 new NamedAggregateValue(1, Statistics.NAMED_COUNTERS, "key4")));
-    Assert.assertTrue(match(MeasurementSetTest.TEST_MEASUREMENT6, expected, sampleAggregator));
+    Assert.assertTrue(match(MeasurementSetTestHelper.TEST_MEASUREMENT6, expected, sampleAggregator));
 
-    reporter.isMeasurementCollected(MeasurementSetTest.JVM_FREE_MEM_SAMPLER);
+    reporter.isMeasurementCollected(MeasurementSetTestHelper.JVM_FREE_MEM_SAMPLER);
 
     DefaultFormatter defaultFormatter = new DefaultFormatter();
     sampleAggregator.fill(defaultFormatter);
 
     Set<MeasurementSet> skipList = new HashSet<>();
-    skipList.add(MeasurementSetTest.JVM_FREE_MEM_SAMPLER);
+    skipList.add(MeasurementSetTestHelper.JVM_FREE_MEM_SAMPLER);
     Assert.assertTrue(match(defaultFormatter.getFormatted(), expected, skipList));
 
     DefaultFormatter defaultFormatter1 = new DefaultFormatter();
