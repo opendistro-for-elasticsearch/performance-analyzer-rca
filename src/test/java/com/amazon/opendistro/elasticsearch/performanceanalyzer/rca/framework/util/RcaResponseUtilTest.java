@@ -74,8 +74,9 @@ public class RcaResponseUtilTest {
     NodeSummaryResponse nodeSummaryResponse = new NodeSummaryResponse(NODE_ID, IP_ADDRESS);
     RcaResponse expected = new RcaResponse(RCA, STATE, NUM_OF_NODES, NUM_OF_UNHEALTHY_NODES, TIMESTAMP);
     expected.addSummary(nodeSummaryResponse);
-    Assert.assertEquals(expected, RcaResponseUtil.getRcaResponse(RCA, ImmutableList.of(record),
-            ImmutableSet.of(RCA, HOT_CLUSTER_SUMMARY_TABLE, HOT_NODE_SUMMARY_TABLE)));
+    RcaResponse actual = RcaResponseUtil.getRcaResponse(RCA, ImmutableList.of(record),
+            ImmutableSet.of(RCA, HOT_CLUSTER_SUMMARY_TABLE, HOT_NODE_SUMMARY_TABLE));
+    Assert.assertEquals(expected, actual);
   }
 
   @Test

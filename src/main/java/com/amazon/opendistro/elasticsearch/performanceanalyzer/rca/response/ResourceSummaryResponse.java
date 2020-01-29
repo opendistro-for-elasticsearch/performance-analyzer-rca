@@ -16,10 +16,11 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response;
 
 import java.util.Objects;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
- * ResourceSummaryResponse contains information such as the name of the hot resource, the current value
- * threshold, maximum etc.
+ * ResourceSummaryResponse contains information such as the name of the hot resource, the current
+ * value threshold, maximum etc.
  */
 public class ResourceSummaryResponse {
   private String resourceName;
@@ -30,14 +31,14 @@ public class ResourceSummaryResponse {
   private Double minimum;
   private Double maximum;
 
-
-  public ResourceSummaryResponse(String resourceName,
-                                 String unitType,
-                                 Double threshold,
-                                 Double actual,
-                                 Double average,
-                                 Double minimum,
-                                 Double maximum) {
+  public ResourceSummaryResponse(
+      String resourceName,
+      String unitType,
+      Double threshold,
+      Double actual,
+      Double average,
+      Double minimum,
+      Double maximum) {
     this.resourceName = resourceName;
     this.unitType = unitType;
     this.threshold = threshold;
@@ -85,11 +86,24 @@ public class ResourceSummaryResponse {
     }
     ResourceSummaryResponse that = (ResourceSummaryResponse) o;
     return Objects.equals(resourceName, that.resourceName)
-            && Objects.equals(unitType, that.unitType)
-            && Objects.equals(threshold, that.threshold)
-            && Objects.equals(actual, that.actual)
-            && Objects.equals(average, that.average)
-            && Objects.equals(minimum, that.minimum)
-            && Objects.equals(maximum, that.maximum);
+        && Objects.equals(unitType, that.unitType)
+        && Objects.equals(threshold, that.threshold)
+        && Objects.equals(actual, that.actual)
+        && Objects.equals(average, that.average)
+        && Objects.equals(minimum, that.minimum)
+        && Objects.equals(maximum, that.maximum);
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder(17, 37)
+        .append(resourceName)
+        .append(unitType)
+        .append(threshold)
+        .append(actual)
+        .append(average)
+        .append(minimum)
+        .append(maximum)
+        .toHashCode();
   }
 }
