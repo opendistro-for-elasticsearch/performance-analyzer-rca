@@ -16,12 +16,14 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
- * NodeSummaryResponse contains summary of different resources of data nodes and also contains info like  NodeId
- * and ip address of node.
+ * NodeSummaryResponse contains summary of different resources of data nodes and also contains info
+ * like NodeId and ip address of node.
  */
 public class NodeSummaryResponse {
   private String nodeId;
@@ -60,7 +62,16 @@ public class NodeSummaryResponse {
     }
     NodeSummaryResponse that = (NodeSummaryResponse) o;
     return Objects.equals(nodeId, that.nodeId)
-            && Objects.equals(ipAddress, that.ipAddress)
-            && Objects.equals(resourceContext, that.resourceContext);
+        && Objects.equals(ipAddress, that.ipAddress)
+        && Objects.equals(new HashSet<>(resourceContext), new HashSet<>(that.resourceContext));
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder(17, 37)
+        .append(nodeId)
+        .append(ipAddress)
+        .append(resourceContext)
+        .toHashCode();
   }
 }

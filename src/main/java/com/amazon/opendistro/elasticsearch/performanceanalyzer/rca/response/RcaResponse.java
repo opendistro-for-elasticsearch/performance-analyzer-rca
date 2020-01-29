@@ -16,12 +16,14 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
- * RcaResponse contains cluster level info such as cluster state, number of healthy and unhealthy nodes
- * for a particular rca.
+ * RcaResponse contains cluster level info such as cluster state, number of healthy and unhealthy
+ * nodes for a particular rca.
  */
 public class RcaResponse {
   private String name;
@@ -38,11 +40,12 @@ public class RcaResponse {
     this.summary = new ArrayList<>();
   }
 
-  public RcaResponse(String name,
-                     String state,
-                     Integer numOfNodes,
-                     Integer numOfUnhealthyNodes,
-                     String timeStamp) {
+  public RcaResponse(
+      String name,
+      String state,
+      Integer numOfNodes,
+      Integer numOfUnhealthyNodes,
+      String timeStamp) {
     this.name = name;
     this.state = state;
     this.numOfNodes = numOfNodes;
@@ -85,10 +88,22 @@ public class RcaResponse {
     }
     RcaResponse that = (RcaResponse) o;
     return Objects.equals(name, that.name)
-            && Objects.equals(state, that.state)
-            && Objects.equals(numOfNodes, that.numOfNodes)
-            && Objects.equals(numOfUnhealthyNodes, that.numOfUnhealthyNodes)
-            && Objects.equals(timeStamp, that.timeStamp)
-            && Objects.equals(summary, that.summary);
+        && Objects.equals(state, that.state)
+        && Objects.equals(numOfNodes, that.numOfNodes)
+        && Objects.equals(numOfUnhealthyNodes, that.numOfUnhealthyNodes)
+        && Objects.equals(timeStamp, that.timeStamp)
+        && Objects.equals(new HashSet<>(summary), new HashSet<>(that.summary));
+  }
+
+  @Override
+  public int hashCode() {
+    return new HashCodeBuilder(17, 37)
+        .append(name)
+        .append(state)
+        .append(numOfNodes)
+        .append(numOfUnhealthyNodes)
+        .append(timeStamp)
+        .append(summary)
+        .toHashCode();
   }
 }
