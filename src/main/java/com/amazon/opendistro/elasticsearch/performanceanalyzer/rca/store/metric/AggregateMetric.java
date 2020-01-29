@@ -34,9 +34,9 @@ import org.jooq.impl.DSL;
 
 
 /**
- * AggregateMetric can be used to group the sqlite from from write to one or more columns
+ * AggregateMetric can be used to group the sqlite to one or more columns
  * and perform sum aggregation and sorting function on the result
- * For example, we can use this metric to collect the operations for cpu usage in descending
+ * For example, we can get the sum of cpu usage for each operation and sort them in descending
  * order by constructing this Metric as follows:
  * <p>
  * new AggregateMetric(5, CPU_Utilization.NAME, CommonDimension.OPERATION.toString());
