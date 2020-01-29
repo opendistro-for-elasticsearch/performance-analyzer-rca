@@ -51,8 +51,10 @@ public class Mean implements IStatistic<AggregateValue> {
   @Override
   public List<AggregateValue> get() {
     double ret = 0.0;
-    if (count != 0) {
-      ret = sum.doubleValue() / count;
+    synchronized (this) {
+      if (count != 0) {
+        ret = sum.doubleValue() / count;
+      }
     }
     return Collections.singletonList(new AggregateValue(ret, type()));
   }

@@ -96,9 +96,17 @@ public final class MetricPropertiesConfig {
 
       List<File> metricFiles = new ArrayList<>();
 
-      for (File indexFolder : indicesFolder.listFiles()) {
-        for (File shardIdFile : indexFolder.listFiles()) {
-          metricFiles.add(shardIdFile);
+      File[] files = indicesFolder.listFiles();
+      if (files != null) {
+        for (File indexFolder : files) {
+          if (indexFolder != null) {
+            File[] shardIdFiles = indexFolder.listFiles();
+            if (shardIdFiles != null) {
+              for (File shardIdFile : shardIdFiles) {
+                metricFiles.add(shardIdFile);
+              }
+            }
+          }
         }
       }
       return metricFiles;

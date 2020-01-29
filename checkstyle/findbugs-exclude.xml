@@ -38,6 +38,30 @@
 	<Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector"/>
         <Bug pattern="DC_DOUBLECHECK"/>
     </Match>
+    <Match>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.collectors.SampleAggregator" />
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.jvm.ThreadList"/>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
+    </Match>
+    <Match>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryRcaRequestHandler"/>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
+    </Match>
+    <Match>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryMetricsRequestHandler"/>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
+    </Match>
+    <Match>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.EventLogFileHandler"/>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
+    </Match>
+    <Match>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.MetricsParser"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+    </Match>
   <!--Exclude gRPC generated classes-->
   <Match>
     <Package name="com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc"/>

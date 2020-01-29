@@ -141,9 +141,9 @@ public class ThreadDiskIO {
       return linuxDiskIOMetricsHandler;
     }
 
-    for (String tid : tidKVMap.keySet()) {
-      Map<String, Long> v = tidKVMap.get(tid);
-      Map<String, Long> oldv = oldtidKVMap.get(tid);
+    for (Map.Entry<String, Map<String, Long>> entry : tidKVMap.entrySet()) {
+      Map<String, Long> v = entry.getValue();
+      Map<String, Long> oldv = oldtidKVMap.get(entry.getKey());
       if (v != null && oldv != null) {
         double duration = 1.0e-3 * (kvTimestamp - oldkvTimestamp);
         double readBytes = v.get("read_bytes") - oldv.get("read_bytes");
@@ -160,7 +160,7 @@ public class ThreadDiskIO {
         writePcBytes /= duration;
 
         linuxDiskIOMetricsHandler.setDiskIOMetrics(
-            tid,
+            entry.getKey(),
             new IOMetrics(
                 readBytes,
                 readSyscalls,

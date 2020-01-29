@@ -18,7 +18,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
-
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
 import java.io.File;
 import java.nio.file.Paths;
@@ -32,7 +31,6 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -78,7 +76,10 @@ public abstract class PersistorBase implements Persistable {
 
   abstract void createTable(String tableName, List<Field<?>> columns);
 
-  abstract void createTable(String tableName, List<Field<?>> columns, String refTable,
+  abstract void createTable(
+      String tableName,
+      List<Field<?>> columns,
+      String refTable,
       String referenceTablePrimaryKeyFieldName);
 
   abstract int insertRow(String tableName, List<Object> columns);
@@ -130,8 +131,12 @@ public abstract class PersistorBase implements Persistable {
   }
 
   public synchronized String getFilesInDirDB(String datePrefix) {
-    String [] files = this.dirDB.list(new WildcardFileFilter(String.format("%s.%s%s", filenameParam, datePrefix, WILDCARD_CHARACTER)));
-    return files.length == 0 ? "" : Paths.get(this.dir, files[0]).toString();
+    String[] files =
+        this.dirDB.list(
+            new WildcardFileFilter(
+                String.format("%s.%s%s", filenameParam, datePrefix, WILDCARD_CHARACTER)));
+
+    return (files == null || files.length == 0) ? "" : Paths.get(this.dir, files[0]).toString();
   }
 
   public synchronized String getDBFilePath(int hours) throws ParseException {
@@ -187,7 +192,9 @@ public abstract class PersistorBase implements Persistable {
     }
 
     if (!tableNames.contains(tableName)) {
-      LOG.info("RCA: Table '{}' does not exist. Creating one with columns: {}", tableName,
+      LOG.info(
+          "RCA: Table '{}' does not exist. Creating one with columns: {}",
+          tableName,
           flowUnit.getSqlSchema());
       createTable(tableName, flowUnit.getSqlSchema());
       tableNames.add(tableName);
@@ -195,22 +202,28 @@ public abstract class PersistorBase implements Persistable {
     int lastPrimaryKey = insertRow(tableName, flowUnit.getSqlValue());
 
     if (flowUnit.hasResourceSummary()) {
-      write(flowUnit.getResourceSummary(), tableName, getPrimaryKeyColumnName(tableName),
+      write(
+          flowUnit.getResourceSummary(),
+          tableName,
+          getPrimaryKeyColumnName(tableName),
           lastPrimaryKey);
     }
   }
 
-  /**
-   * recursively insert nested summary to sql tables
-   */
-  private synchronized void write(GenericSummary summary, String referenceTable,
-      String referenceTablePrimaryKeyFieldName, int referenceTablePrimaryKeyFieldValue) {
+  /** recursively insert nested summary to sql tables */
+  private synchronized void write(
+      GenericSummary summary,
+      String referenceTable,
+      String referenceTablePrimaryKeyFieldName,
+      int referenceTablePrimaryKeyFieldValue) {
     String tableName = summary.getClass().getSimpleName();
     if (!tableNames.contains(tableName)) {
-      LOG.info("RCA: Table '{}' does not exist. Creating one with columns: {}", tableName,
+      LOG.info(
+          "RCA: Table '{}' does not exist. Creating one with columns: {}",
+          tableName,
           summary.getSqlSchema());
-      createTable(tableName, summary.getSqlSchema(), referenceTable,
-          referenceTablePrimaryKeyFieldName);
+      createTable(
+          tableName, summary.getSqlSchema(), referenceTable, referenceTablePrimaryKeyFieldName);
       tableNames.add(tableName);
     }
     List<Object> values = summary.getSqlValue();

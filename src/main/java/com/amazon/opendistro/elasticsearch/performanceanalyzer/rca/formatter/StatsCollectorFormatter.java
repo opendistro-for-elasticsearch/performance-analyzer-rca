@@ -16,7 +16,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.formatter;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.Statistics;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.impl.vals.Value;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.format.Formatter;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.measurements.MeasurementSet;
 import java.util.ArrayList;
@@ -76,7 +75,7 @@ public class StatsCollectorFormatter implements Formatter {
     return list;
   }
 
-  public class StatsCollectorReturn {
+  public static class StatsCollectorReturn {
     private Map<String, AtomicInteger> counters;
     private Map<String, String> statsdata;
     private Map<String, Double> latencies;

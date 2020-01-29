@@ -83,6 +83,9 @@ public class NetworkE2E {
   static void listSockets() {
     File self = new File("/proc/" + pid + "/fd");
     File[] filesList = self.listFiles();
+    if (filesList ==  null) {
+      return;
+    }
     for (File f : filesList) {
       // no check for file, as this dir is all files/symlinks
       String target = null;
@@ -152,8 +155,8 @@ public class NetworkE2E {
   }
 
   private static void computeSummary() {
-    for (String inode : inodeFlowMetricsMap.keySet()) {
-      TCPFlowMetrics m = inodeFlowMetricsMap.get(inode);
+    for (Map.Entry<String, TCPFlowMetrics> entry : inodeFlowMetricsMap.entrySet()) {
+      TCPFlowMetrics m = entry.getValue();
       destTCPFlowMetrics exist = destnodeFlowMetricsMap.get(m.destIP);
       if (exist == null) {
         destnodeFlowMetricsMap.put(m.destIP, new destTCPFlowMetrics(m));
@@ -174,8 +177,9 @@ public class NetworkE2E {
   protected static void calculateTCPMetrics() {
 
     Map<String, double[]> localMap = new HashMap<>();
-    for (String dest : destnodeFlowMetricsMap.keySet()) {
-      destTCPFlowMetrics m = destnodeFlowMetricsMap.get(dest);
+    for (Map.Entry<String, NetworkE2E.destTCPFlowMetrics> entry :
+            destnodeFlowMetricsMap.entrySet()) {
+      destTCPFlowMetrics m = entry.getValue();
 
       double[] metrics = new double[6];
       metrics[0] = m.numFlows;
@@ -185,7 +189,7 @@ public class NetworkE2E {
       metrics[4] = m.sendCWNDTot * 1.0 / m.numFlows;
       metrics[5] = m.SSThreshTot * 1.0 / m.numFlows;
 
-      localMap.put(dest, metrics);
+      localMap.put(entry.getKey(), metrics);
     }
 
     linuxTCPMetricsHandler.setTCPMetrics(localMap);

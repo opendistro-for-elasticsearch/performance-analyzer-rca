@@ -81,10 +81,12 @@ public class OSGlobals {
 
     File self = new File("/proc/self/task");
     File[] filesList = self.listFiles();
-    for (File f : filesList) {
-      if (f.isDirectory()) {
-        String tid = f.getName();
-        tids.add(tid);
+    if (filesList != null) {
+      for (File f : filesList) {
+        if (f.isDirectory()) {
+          String tid = f.getName();
+          tids.add(tid);
+        }
       }
     }
   }

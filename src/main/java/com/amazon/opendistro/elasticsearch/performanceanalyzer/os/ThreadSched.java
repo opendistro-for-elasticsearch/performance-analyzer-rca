@@ -106,9 +106,9 @@ public final class ThreadSched {
       return;
     }
 
-    for (String tid : tidKVMap.keySet()) {
-      Map<String, Object> v = tidKVMap.get(tid);
-      Map<String, Object> oldv = oldtidKVMap.get(tid);
+    for (Map.Entry<String, Map<String,Object>> entry : tidKVMap.entrySet()) {
+      Map<String, Object> v = entry.getValue();
+      Map<String, Object> oldv = oldtidKVMap.get(entry.getKey());
       if (v != null && oldv != null) {
         if (!v.containsKey("totctxsws") || !oldv.containsKey("totctxsws")) {
           continue;
@@ -134,7 +134,7 @@ public final class ThreadSched {
         contextSwitchRate /= 1.0e-3 * (kvTimestamp - oldkvTimestamp);
 
         schedLatencyMap.setSchedMetric(
-            tid, new SchedMetrics(avgRuntime, avgWaittime, contextSwitchRate));
+            entry.getKey(), new SchedMetrics(avgRuntime, avgWaittime, contextSwitchRate));
       }
     }
   }
