@@ -57,20 +57,25 @@ enum JvmEnum {
   YOUNG_GEN = 1 [(resourceTypeName) = "young gen"];
 }
 
+enum HardwareEnum {
+  CPU = 0 [(resourceTypeName) = "cpu usage"];
+}
+
 /*
   message for resource type Enum
 */
 message ResourceType {
     oneof resource_type_oneof {
       JvmEnum JVM = 1;
+      HardwareEnum hardwareResourceType = 2;
     }
 }
 
 /*
  message wrappers for different types of RCA summary
 */
-message ConsumersList {
-    repeated string consumer = 1;
+message TopConsumerSummaryList {
+    repeated TopConsumerSummaryMessage consumer = 1;
 }
 message HotResourceSummaryList {
     repeated HotResourceSummaryMessage hotResourceSummary = 1;
@@ -78,9 +83,13 @@ message HotResourceSummaryList {
 message HotNodeSummaryList {
     repeated HotNodeSummaryMessage hotNodeSummary = 1;
 }
+message TopConsumerSummaryMessage {
+    string name = 1;
+    double value = 2;
+}
 message HotResourceSummaryMessage {
     ResourceType resourceType = 1;
-    ConsumersList consumers = 2;
+    TopConsumerSummaryList consumers = 2;
     double threshold = 3;
     double value = 4;
     double avgValue = 5;

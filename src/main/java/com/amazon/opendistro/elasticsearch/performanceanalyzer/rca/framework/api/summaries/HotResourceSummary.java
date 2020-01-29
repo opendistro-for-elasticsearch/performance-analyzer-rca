@@ -23,8 +23,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
 
@@ -37,7 +35,6 @@ public class HotResourceSummary extends GenericSummary {
 
   public static final String HOT_RESOURCE_SUMMARY_TABLE = HotResourceSummary.class.getSimpleName();
   private final ResourceType resourceType;
-  private List<String> consumers;
   private double threshold;
   private double value;
   private String unitType;
@@ -60,10 +57,6 @@ public class HotResourceSummary extends GenericSummary {
     this.timePeriod = timePeriod;
   }
 
-  public void addConsumers(List<String> consumers) {
-    this.consumers = consumers;
-  }
-
   public void setValueDistribution(double minValue, double maxValue, double avgValue) {
     this.minValue = minValue;
     this.maxValue = maxValue;
@@ -79,6 +72,10 @@ public class HotResourceSummary extends GenericSummary {
     if (this.resourceType != null) {
       if (this.resourceType.getResourceTypeOneofCase() == ResourceTypeOneofCase.JVM) {
         resourceName = this.resourceType.getJVM().getValueDescriptor()
+            .getOptions().getExtension(PANetworking.resourceTypeName);
+      }
+      else if (this.resourceType.getResourceTypeOneofCase() == ResourceTypeOneofCase.HARDWARERESOURCETYPE) {
+        resourceName = this.resourceType.getHardwareResourceType().getValueDescriptor()
             .getOptions().getExtension(PANetworking.resourceTypeName);
       }
     }
@@ -109,6 +106,10 @@ public class HotResourceSummary extends GenericSummary {
     summaryMessageBuilder.setMaxValue(this.maxValue);
     summaryMessageBuilder.setUnitType(this.unitType);
     summaryMessageBuilder.setTimePeriod(this.timePeriod);
+    for (GenericSummary nestedSummary : this.nestedSummaryList) {
+      summaryMessageBuilder.getConsumersBuilder()
+          .addConsumer(nestedSummary.buildSummaryMessage());
+    }
     return summaryMessageBuilder.build();
   }
 
@@ -124,17 +125,18 @@ public class HotResourceSummary extends GenericSummary {
     newSummary
         .setValueDistribution(message.getMinValue(), message.getMaxValue(), message.getAvgValue());
     if (message.hasConsumers() && message.getConsumers().getConsumerCount() > 0) {
-      newSummary.addConsumers(IntStream.range(0, message.getConsumers().getConsumerCount())
-          .mapToObj(i -> message.getConsumers().getConsumer(i))
-          .collect(Collectors.toList()));
+      for (int i = 0; i < message.getConsumers().getConsumerCount(); i++) {
+        newSummary.addNestedSummaryList(TopConsumerSummary.buildTopConsumerSummaryFromMessage(
+            message.getConsumers().getConsumer(i)));
+      }
     }
     return newSummary;
   }
 
   @Override
   public String toString() {
-    return this.getResourceTypeName() + " " + this.consumers + " " + this.threshold + " "
-        + this.value + " " + this.unitType;
+    return this.getResourceTypeName() + " "  + this.threshold + " "
+        + this.value + " " + this.unitType + this.nestedSummaryList;
   }
 
   @Override
