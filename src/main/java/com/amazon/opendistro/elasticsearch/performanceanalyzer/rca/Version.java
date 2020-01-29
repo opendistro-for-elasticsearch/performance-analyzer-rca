@@ -28,7 +28,7 @@ public final class Version {
    * instances(physical nodes) are running different versions of the framework, then the transferred
    * packets should be dropped. Every increment here should be accompanied with a line of note.
    */
-  final class Major {
+  static final class Major {
     static final int RCA_MAJ_VERSION = 0;
   }
 
@@ -38,7 +38,7 @@ public final class Version {
    * version to change for every single release and each increment should have a line stating what
    * changed.
    */
-  final class Minor {
+  static final class Minor {
     static final String RCA_MINOR_VERSION = ".0.1";
   }
 

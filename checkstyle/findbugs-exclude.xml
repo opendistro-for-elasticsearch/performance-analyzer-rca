@@ -38,6 +38,10 @@
 	<Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector"/>
         <Bug pattern="DC_DOUBLECHECK"/>
     </Match>
+    <Match>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.collectors.SampleAggregator" />
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
   <!--Exclude gRPC generated classes-->
   <Match>
     <Package name="com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc"/>

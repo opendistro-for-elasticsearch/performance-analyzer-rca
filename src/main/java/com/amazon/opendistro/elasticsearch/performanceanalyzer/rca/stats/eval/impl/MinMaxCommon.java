@@ -67,7 +67,7 @@ abstract class MinMaxCommon implements IStatistic<NamedAggregateValue> {
   }
 
   @Override
-  public List<NamedAggregateValue> get() {
+  public synchronized List<NamedAggregateValue> get() {
     return Collections.singletonList(new NamedAggregateValue(oldVal, type(), oldKey));
   }
 

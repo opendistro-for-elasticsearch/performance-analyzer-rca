@@ -30,7 +30,7 @@ public class Stats {
 
   private Set<String> mutedGraphNodes;
 
-  private static Stats instance = null;
+  private static volatile Stats instance = null;
 
   public void incrementLeavesAddedToAnalysisFlowField() {
     ++this.leavesAddedToAnalysisFlowField;

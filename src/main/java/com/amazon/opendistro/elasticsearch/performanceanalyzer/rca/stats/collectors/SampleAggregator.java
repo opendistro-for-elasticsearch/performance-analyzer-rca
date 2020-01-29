@@ -79,9 +79,9 @@ public class SampleAggregator {
   }
 
   public SampleAggregator(
-      Set<MeasurementSet> listenedMeasurements,
-      IListener listener,
-      MeasurementSet[] measurementSet) {
+      final Set<MeasurementSet> listenedMeasurements,
+      final IListener listener,
+      final MeasurementSet[] measurementSet) {
     Objects.requireNonNull(listenedMeasurements);
     this.listenedMeasurements = listenedMeasurements;
     this.listener = listener;
