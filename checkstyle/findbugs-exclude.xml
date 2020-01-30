@@ -1,6 +1,6 @@
 <FindBugsFilter>
     <Match>
-        <Bug pattern="DM_DEFAULT_ENCODING" />
+        <Bug pattern="DM_DEFAULT_ENCODING"/>
     </Match>
     <Match>
         <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.hwnet.Disks"/>
@@ -19,27 +19,27 @@
         <Bug pattern="REC_CATCH_EXCEPTION"/>
     </Match>
     <Match>
-	<Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector"/>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector"/>
         <Bug pattern="LI_LAZY_INIT_STATIC"/>
     </Match>
     <Match>
-	<Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector"/>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector"/>
         <Bug pattern="MS_CANNOT_BE_FINAL"/>
     </Match>
     <Match>
-	<Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector"/>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector"/>
         <Bug pattern="MS_SHOULD_BE_FINAL"/>
     </Match>
     <Match>
-	<Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector"/>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector"/>
         <Bug pattern="REC_CATCH_EXCEPTION"/>
     </Match>
     <Match>
-	<Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector"/>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector"/>
         <Bug pattern="DC_DOUBLECHECK"/>
     </Match>
     <Match>
-        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.collectors.SampleAggregator" />
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.collectors.SampleAggregator"/>
         <Bug pattern="EI_EXPOSE_REP2"/>
     </Match>
     <Match>
@@ -62,12 +62,16 @@
         <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.MetricsParser"/>
         <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
     </Match>
-  <!--Exclude gRPC generated classes-->
-  <Match>
-    <Package name="com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc"/>
-    <Or>
-      <Bug pattern="SE_BAD_FIELD"/>
-      <Bug pattern="UCF_USELESS_CONTROL_FLOW"/>
-    </Or>
-  </Match>
+    <Match>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration"/>
+        <Bug pattern="MS_MUTABLE_COLLECTION"/>
+    </Match>
+    <!--Exclude gRPC generated classes-->
+    <Match>
+        <Package name="com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc"/>
+        <Or>
+            <Bug pattern="SE_BAD_FIELD"/>
+            <Bug pattern="UCF_USELESS_CONTROL_FLOW"/>
+        </Or>
+    </Match>
 </FindBugsFilter>
