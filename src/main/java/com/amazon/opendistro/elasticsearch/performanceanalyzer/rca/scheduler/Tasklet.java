@@ -17,7 +17,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.DataMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.NetPersistor;
@@ -39,7 +38,6 @@ import org.apache.logging.log4j.Logger;
 public class Tasklet {
   private static final Logger LOG = LogManager.getLogger(Tasklet.class);
 
-  protected Map<Tasklet, CompletableFuture<TaskletResult>> predecessorToFutureMap;
   protected List<Tasklet> predecessors;
 
   private Node<?> node;
@@ -89,55 +87,32 @@ public class Tasklet {
     return this;
   }
 
-  void setPredecessorToFutureMap(
-      final Map<Tasklet, CompletableFuture<TaskletResult>> predecessorToFutureMap) {
-    this.predecessorToFutureMap = predecessorToFutureMap;
-  }
-
-  public CompletableFuture<TaskletResult> execute(ExecutorService executorPool) {
+  public CompletableFuture<Void> execute(
+      ExecutorService executorPool, Map<Tasklet, CompletableFuture<Void>> taskletToFutureMap) {
     ticks += 1;
     if (ticks % node.getEvaluationIntervalSeconds() != 0) {
       // If its not time to run this tasklet, return an isEmpty flowUnit.
       node.setEmptyFlowUnitList();
       node.setEmptyLocalFlowUnit();
-      return CompletableFuture.supplyAsync(() -> new TaskletResult(node.getClass()));
+      return CompletableFuture.supplyAsync(() -> null);
     }
 
-    List<CompletableFuture<TaskletResult>> predecessorResultFutures =
-        predecessors.stream().map(p -> predecessorToFutureMap.get(p)).collect(Collectors.toList());
+    // Create a list of the Futures that corresponds to my predecessor nodes.
+    List<CompletableFuture<Void>> predecessorResultFutures =
+        predecessors.stream().map(p -> taskletToFutureMap.get(p)).collect(Collectors.toList());
 
+    // Create a future that will wait for all the predecessors to complete.
     CompletableFuture<Void> completedPredecessorTasks =
         CompletableFuture.allOf(predecessorResultFutures.toArray(new CompletableFuture[0]));
 
-    CompletableFuture<List<TaskletResult>> futureTasklets =
-        completedPredecessorTasks.thenApplyAsync(
-            f ->
-                predecessorResultFutures.stream()
-                    .map(CompletableFuture::join)
-                    .collect(Collectors.toList()),
+    // Now execute me and send the response to remote if there are subscribers.
+    CompletableFuture<Void> retCompletableFuture =
+        completedPredecessorTasks.thenAcceptAsync(
+            a -> {
+              exec.accept(new FlowUnitOperationArgWrapper(node, db, persistable, hopper));
+              sendToRemote();
+            },
             executorPool);
-
-    // TODO
-    // remove taskletResultsList
-    CompletableFuture<TaskletResult> retCompletableFuture =
-        futureTasklets
-            .thenApplyAsync(
-                taskletResultsList -> {
-                  LOG.debug("RCA: Executing the function for node {}", node.name());
-                  exec.accept(new FlowUnitOperationArgWrapper(node, db, persistable, hopper));
-
-                  sendToRemote();
-                  LOG.debug("RCA: set Node {}'s Flow unit", node.name());
-                  return new TaskletResult(node.getClass());
-                },
-                executorPool)
-            .exceptionally(
-                ex -> {
-                  // PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
-                  //      ExceptionsAndErrors.EXCEPTION_IN_OPERATE, node.name(), 1);
-                  // ex.printStackTrace();
-                  return new TaskletResult(null);
-                });
     LOG.debug("RCA: Finished creating executable future for tasklet: {}", node.name());
     return retCompletableFuture;
   }
