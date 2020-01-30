@@ -52,30 +52,26 @@ public class MetricsConfiguration {
     }
   }
 
-  public static final Map<Class, MetricConfig> CONFIG_MAP;
+  public static final Map<Class, MetricConfig> CONFIG_MAP = new HashMap<>();
   public static final MetricConfig cdefault;
 
   static {
     cdefault = new MetricConfig(SAMPLING_INTERVAL, 0, 0);
 
-    Map<Class, MetricConfig> configMapInitializer = new HashMap<>();
-
-    configMapInitializer.put(ThreadCPU.class, cdefault);
-    configMapInitializer.put(ThreadDiskIO.class, cdefault);
-    configMapInitializer.put(ThreadSched.class, cdefault);
-    configMapInitializer.put(ThreadList.class, cdefault);
-    configMapInitializer.put(GCMetrics.class, cdefault);
-    configMapInitializer.put(HeapMetrics.class, cdefault);
-    configMapInitializer.put(NetworkE2ECollector.class, cdefault);
-    configMapInitializer.put(NetworkInterfaceCollector.class, cdefault);
-    configMapInitializer.put(OSGlobals.class, cdefault);
-    configMapInitializer.put(PerformanceAnalyzerMetrics.class, new MetricConfig(0, ROTATION_INTERVAL, 0));
-    configMapInitializer.put(
+    CONFIG_MAP.put(ThreadCPU.class, cdefault);
+    CONFIG_MAP.put(ThreadDiskIO.class, cdefault);
+    CONFIG_MAP.put(ThreadSched.class, cdefault);
+    CONFIG_MAP.put(ThreadList.class, cdefault);
+    CONFIG_MAP.put(GCMetrics.class, cdefault);
+    CONFIG_MAP.put(HeapMetrics.class, cdefault);
+    CONFIG_MAP.put(NetworkE2ECollector.class, cdefault);
+    CONFIG_MAP.put(NetworkInterfaceCollector.class, cdefault);
+    CONFIG_MAP.put(OSGlobals.class, cdefault);
+    CONFIG_MAP.put(PerformanceAnalyzerMetrics.class, new MetricConfig(0, ROTATION_INTERVAL, 0));
+    CONFIG_MAP.put(
         MetricsPurgeActivity.class, new MetricConfig(ROTATION_INTERVAL, 0, DELETION_INTERVAL));
-    configMapInitializer.put(StatsCollector.class, new MetricConfig(STATS_ROTATION_INTERVAL, 0, 0));
-    configMapInitializer.put(DisksCollector.class, cdefault);
-    configMapInitializer.put(HeapMetricsCollector.class, cdefault);
-
-    CONFIG_MAP = Collections.unmodifiableMap(configMapInitializer);
+    CONFIG_MAP.put(StatsCollector.class, new MetricConfig(STATS_ROTATION_INTERVAL, 0, 0));
+    CONFIG_MAP.put(DisksCollector.class, cdefault);
+    CONFIG_MAP.put(HeapMetricsCollector.class, cdefault);
   }
 }
