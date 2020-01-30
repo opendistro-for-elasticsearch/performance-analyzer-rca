@@ -344,28 +344,34 @@ public class RCASchedulerTask implements Runnable {
 
   public void run() {
     currTick = currTick + 1;
-
     long runStartTime = System.currentTimeMillis();
+
     PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
         RcaGraphMetrics.NUM_GRAPH_NODES, "", Stats.getInstance().getTotalNodesCount());
 
-    Map<Tasklet, CompletableFuture<TaskletResult>> taskletFutureMap = new HashMap<>();
-    LOG.debug("RCA: ========== STRT Tick {} ====== ", currTick);
+    List<CompletableFuture<Void>> lastLevelTasks = createAsyncTasks();
+    preWait();
+    lastLevelTasks.forEach(CompletableFuture::join);
+    postCompletion(runStartTime);
+  }
+
+  protected List<CompletableFuture<Void>> createAsyncTasks() {
+    Map<Tasklet, CompletableFuture<Void>> taskletFutureMap = new HashMap<>();
+    List<CompletableFuture<Void>> lastLevel = new ArrayList<>();
     for (List<Tasklet> taskletsAtThisLevel : locallyExecutableTasklets) {
+      lastLevel.clear();
       for (Tasklet tasklet : taskletsAtThisLevel) {
-        tasklet.setPredecessorToFutureMap(taskletFutureMap);
-        CompletableFuture<TaskletResult> taskletFuture = tasklet.execute(executorPool);
+        CompletableFuture<Void> taskletFuture = tasklet.execute(executorPool, taskletFutureMap);
+        lastLevel.add(taskletFuture);
         taskletFutureMap.put(tasklet, taskletFuture);
       }
     }
-    LOG.debug("RCA: Finished creating tasks ..");
-    // Now we will wait for the results to show up.
-    taskletFutureMap.values().forEach(CompletableFuture::join);
-    LOG.debug("RCA: All tasklets evaluated.");
+    return lastLevel;
+  }
 
-    // TODO: Do proper exception handling.
-    // No one is calling get on the the last set of Tasklets.
+  protected void preWait() {}
 
+  protected void postCompletion(long runStartTime) {
     if (currTick == maxTicks) {
       currTick = 0;
       locallyExecutableTasklets.forEach(l -> l.forEach(Tasklet::resetTicks));
