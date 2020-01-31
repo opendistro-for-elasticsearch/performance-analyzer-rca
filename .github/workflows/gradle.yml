@@ -29,5 +29,8 @@ jobs:
       uses: actions/checkout@v1
       with: 
         name: opendistro-for-elasticsearch/performance-analyzer
+        ref: refs/for/master
+    - name: Build PerformanceAnalyzer
+      run: ls
         
       
