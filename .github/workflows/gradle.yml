@@ -30,7 +30,8 @@ jobs:
         repository: opendistro-for-elasticsearch/performance-analyzer
         path: tmp
     - name: Change dir to pa
-      run: cd performance-analyzer && pwd && ls
+      working-directory: ./tmp/performance-analyzer
+      run: pwd && ls
       
       
         
