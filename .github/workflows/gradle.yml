@@ -30,7 +30,7 @@ jobs:
         repository: opendistro-for-elasticsearch/performance-analyzer
         path: tmp
     - name: Inside pa
-      run: pwd && ls && cd ./tmp/ && pwd && ls
+      run: pwd && cd ./tmp/ && pwd && ls && ./gradlew build
       
       
         
