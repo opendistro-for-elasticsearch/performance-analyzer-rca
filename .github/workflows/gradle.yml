@@ -25,12 +25,7 @@ jobs:
     - name: Publish to maven local
       run: ./gradlew publishToMavenLocal
     - name: Get out of the directory to start the build for PA next
-      env:
-        working-directory: /home/runner/work/performance-analyzer/
-      uses: actions/checkout@v2
-      with: 
-        repository: opendistro-for-elasticsearch/performance-analyzer
-        ref: refs/for/master
+      run: cd .. && pwd
     - name: Build PerformanceAnalyzer
       run: ls
         
