@@ -21,12 +21,12 @@ jobs:
       with:
         java-version: 1.8
     - name: Build with Gradle
-      run: ./gradlew build
+      # run: ./gradlew build
     - name: Publish to maven local
       run: ./gradlew publishToMavenLocal
     - name: Get out of the directory to start the build for PA next
       working-directory: ./tmp
-      run: rm -rf * && mkdir pa && cd pa
+      run: git clone git@github.com:opendistro-for-elasticsearch/performance-analyzer.git && cd performance-analyzer && pwd
       
         
       
