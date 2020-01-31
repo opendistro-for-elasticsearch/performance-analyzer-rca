@@ -25,8 +25,13 @@ jobs:
     - name: Publish to maven local
       run: ./gradlew publishToMavenLocal
     - name: Get out of the directory to start the build for PA next
-      working-directory: ./tmp
-      run: git clone git@github.com:opendistro-for-elasticsearch/performance-analyzer.git && cd performance-analyzer && pwd
+      uses: actions/checkout@v2
+      with:
+        repository: opendistro-for-elasticsearch/performance-analyzer
+        path: tmp
+    - name: Change dir to pa
+      run: cd performance-analyzer && pwd && ls
+      
       
         
       
