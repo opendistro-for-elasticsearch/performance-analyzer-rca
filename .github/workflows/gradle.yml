@@ -29,7 +29,8 @@ jobs:
       with:
         repository: opendistro-for-elasticsearch/performance-analyzer
         path: tmp 
-        run: pwd && ls
+        run: | 
+            pwd && ls
       
       
         
