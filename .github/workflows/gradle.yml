@@ -22,15 +22,15 @@ jobs:
         java-version: 1.8
     #- name: Build with Gradle
       # run: ./gradlew build
-    - name: Publish to maven local
-      run: ./gradlew publishToMavenLocal
+    #- name: Publish to maven local
+     # run: ./gradlew publishToMavenLocal
     - name: Checkout the PA repo into tmp
       uses: actions/checkout@v2
       with:
         repository: opendistro-for-elasticsearch/performance-analyzer
         path: tmp
     - name: Change dir to pa
-      working-directory: ./tmp
+      working-directory: ./tmp/performance-analyzer
       run: pwd && ls
       
       
