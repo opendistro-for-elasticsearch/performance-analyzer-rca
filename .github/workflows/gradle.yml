@@ -28,9 +28,9 @@ jobs:
     - name: Get out of the directory to start the build for PA next
       run: cd ..
     - name: Build PerformanceAnalyzer package with this build of rca
-      uses: actions/checkout@v1
+      uses: actions/checkout@v2
       with: 
-        name: opendistro-for-elasticsearch/performance-analyzer
+        repository: opendistro-for-elasticsearch/performance-analyzer
         ref: refs/for/master
     - name: Build PerformanceAnalyzer
       run: ls
