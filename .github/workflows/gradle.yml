@@ -24,13 +24,13 @@ jobs:
       # run: ./gradlew build
     - name: Publish to maven local
       run: ./gradlew publishToMavenLocal
-    - name: Get out of the directory to start the build for PA next
+    - name: Checkout the PA repo into tmp
       uses: actions/checkout@v2
       with:
         repository: opendistro-for-elasticsearch/performance-analyzer
         path: tmp
     - name: Change dir to pa
-      working-directory: ./tmp/performance-analyzer
+      working-directory: ./tmp
       run: pwd && ls
       
       
