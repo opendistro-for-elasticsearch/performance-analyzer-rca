@@ -22,5 +22,12 @@ jobs:
       with:
         java-version: 1.8
     - name: Build with Gradle
-      run: ./gradlew build && ./gradlew test
+      run: ./gradlew build -i
+    - name: Publish to maven local
+      run: ./gradlew publishToMavenLocal
+    - name: Build PerformanceAnalyzer package with this build of rca
+      uses: actions/checkout@v1
+      with: 
+        name: opendistro-for-elasticsearch/performance-analyzer
+        
       
