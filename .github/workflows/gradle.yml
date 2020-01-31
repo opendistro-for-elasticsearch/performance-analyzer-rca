@@ -28,9 +28,9 @@ jobs:
       uses: actions/checkout@v2
       with:
         repository: opendistro-for-elasticsearch/performance-analyzer
-        path: tmp 
-        run: | 
-            pwd && ls
+        path: tmp
+    - name: Inside pa
+      run: cd ./tmp/performance-analyzer && ls
       
       
         
