@@ -11,10 +11,9 @@ on:
   
 
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
-
+  build_rca_pkg:
+    runs-on: [ubuntu-latest]
+    name: Building RCA package
     steps:
     - uses: actions/checkout@v1
     - name: Set up JDK 1.8
@@ -22,12 +21,12 @@ jobs:
       with:
         java-version: 1.8
     - name: Build with Gradle
-      run: ./gradlew build -i
+      run: ./gradlew build
     - name: Publish to maven local
       run: ./gradlew publishToMavenLocal
     - name: Get out of the directory to start the build for PA next
-      run: cd ..
-    - name: Build PerformanceAnalyzer package with this build of rca
+      env:
+        working-directory: /home/runner/work/performance-analyzer/
       uses: actions/checkout@v2
       with: 
         repository: opendistro-for-elasticsearch/performance-analyzer
