@@ -30,7 +30,7 @@ jobs:
         repository: opendistro-for-elasticsearch/performance-analyzer
         path: tmp
     - name: Inside pa
-      run: cd ./tmp/performance-analyzer && ls
+      run: pwd && ls && cd ./tmp/ && ls
       
       
         
