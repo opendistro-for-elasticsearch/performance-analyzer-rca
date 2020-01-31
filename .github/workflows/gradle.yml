@@ -25,6 +25,8 @@ jobs:
       run: ./gradlew build -i
     - name: Publish to maven local
       run: ./gradlew publishToMavenLocal
+    - name: Get out of the directory to start the build for PA next
+      run: cd ..
     - name: Build PerformanceAnalyzer package with this build of rca
       uses: actions/checkout@v1
       with: 
