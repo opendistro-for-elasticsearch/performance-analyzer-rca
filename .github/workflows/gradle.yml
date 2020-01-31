@@ -25,8 +25,7 @@ jobs:
     - name: Publish to maven local
       run: ./gradlew publishToMavenLocal
     - name: Get out of the directory to start the build for PA next
-      run: cd .. && mkdir pa && cd pa && pwd
-    - name: Build PerformanceAnalyzer
-      run: ls
+      working-directory: /home/runner/work/pa
+      run: pwd && ls
         
       
