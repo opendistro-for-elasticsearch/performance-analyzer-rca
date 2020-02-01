@@ -30,7 +30,7 @@ jobs:
         java-version: 1.12
     - name: Build RCA with Gradle
       working-directory:  ./tmp/rca
-      run: ./gradlew build
+      run: ./gradlew build -i
     - name: Publish RCA jar to maven local
       working-directory: ./tmp/rca
       run: ./gradlew publishToMavenLocal
@@ -42,7 +42,7 @@ jobs:
       run: ./gradlew updateShas
     - name: Start Build
       working-directory: ./tmp/pa
-      run: ./gradlew build
+      run: ./gradlew build -i
       
       
         
