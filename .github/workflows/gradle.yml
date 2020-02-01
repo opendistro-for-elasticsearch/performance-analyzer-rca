@@ -15,10 +15,12 @@ jobs:
     runs-on: [ubuntu-latest]
     name: Building RCA package
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout RCA package
+      uses: actions/checkout@v2
       with:
         path: ./tmp/rca
-    - uses: actions/checkout@v2
+    - name: Checkout Performance Analyzer package
+      uses: actions/checkout@v2
       with:
         repository: opendistro-for-elasticsearch/performance-analyzer
         path: ./tmp/pa
@@ -26,15 +28,15 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.12
-    - name: Build with Gradle
+    - name: Build RCA with Gradle
       working-directory:  ./tmp/rca
-      run: ./gradlew build
-    - name: Publish to maven local
+      run: ./gradlew build -i
+    - name: Publish RCA jar to maven local
       working-directory: ./tmp/rca
       run: ./gradlew publishToMavenLocal
-    - name: Build PA
+    - name: Build PA gradle using the new RCA jar
       working-directory: ./tmp/pa
-      run: pwd && rm -f licenses/performanceanalyzer-rca-*.jar && ./gradlew build
+      run: pwd && rm -f ./licenses/performanceanalyzer-rca-*.jar && ./gradlew build -i
       
       
         
