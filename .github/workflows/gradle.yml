@@ -34,7 +34,7 @@ jobs:
       run: ./gradlew publishToMavenLocal
     - name: Build PA
       working-directory: ./tmp/pa
-      run: pwd && ./gradlew build
+      run: pwd && rm -f licenses/performanceanalyzer-rca-*.jar && ./gradlew build
       
       
         
