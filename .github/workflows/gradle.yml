@@ -36,7 +36,13 @@ jobs:
       run: ./gradlew publishToMavenLocal
     - name: Build PA gradle using the new RCA jar
       working-directory: ./tmp/pa
-      run: pwd && rm -f ./licenses/performanceanalyzer-rca-*.jar && ./gradlew build -i
+      run: rm -f ./tmp/pa/licenses/performanceanalyzer-rca-*.jar.sha1
+    - name: Update SHA
+      working-directory: ./tmp/pa
+      run: ./gradlew updateShas
+    - name: Start Build
+      working-directory: ./tmp/pa
+      run: ./gradlew build -i
       
       
         
