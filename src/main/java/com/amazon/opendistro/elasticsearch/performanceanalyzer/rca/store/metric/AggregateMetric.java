@@ -48,12 +48,14 @@ public class AggregateMetric extends Metric {
   public static final String NAME = AggregateMetric.class.getSimpleName();
   private final String tableName;
   private final List<String> groupByFieldsName;
+  private final AggregateFunction aggregateFunction;
 
   public AggregateMetric(final long evaluationIntervalSeconds, final String tableName,
-      final String... groupByFieldsName) {
+      final AggregateFunction aggregateFunction, final String... groupByFieldsName) {
     super(AggregateMetric.NAME, evaluationIntervalSeconds);
     this.tableName = tableName;
     this.groupByFieldsName = new ArrayList<>(Arrays.asList(groupByFieldsName));
+    this.aggregateFunction = aggregateFunction;
   }
 
   @Override
@@ -67,7 +69,7 @@ public class AggregateMetric extends Metric {
       final DSLContext context = db.getDSLContext();
       groupByFieldsName.forEach(f -> groupByFieldsList.add(DSL.field(DSL.name(f))));
       final Field<Double> numDimension = DSL.field(DSL.name(MetricsDB.AVG), Double.class);
-      final Field<BigDecimal> aggDimension = DSL.sum(numDimension);
+      final Field<?> aggDimension = getAggDimension(numDimension);
       fieldsList = new ArrayList<>(groupByFieldsList);
       fieldsList.add(aggDimension);
       result = context
@@ -92,5 +94,27 @@ public class AggregateMetric extends Metric {
           .collect(Collectors.toList()));
     }
     return new MetricFlowUnit(0, flowUnitData);
+  }
+
+  private Field<?> getAggDimension(final Field<Double> numDimension) {
+    if (this.aggregateFunction == AggregateFunction.MAX) {
+      return DSL.max(numDimension);
+    }
+    else if (this.aggregateFunction == AggregateFunction.MIN) {
+      return DSL.min(numDimension);
+    }
+    else if (this.aggregateFunction == AggregateFunction.AVG) {
+      return DSL.avg(numDimension);
+    }
+    else {
+      return DSL.sum(numDimension);
+    }
+  }
+
+  public enum AggregateFunction {
+    SUM,
+    MAX,
+    MIN,
+    AVG
   }
 }

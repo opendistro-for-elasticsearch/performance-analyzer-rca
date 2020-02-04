@@ -74,7 +74,7 @@ public class HotResourceSummary extends GenericSummary {
         resourceName = this.resourceType.getJVM().getValueDescriptor()
             .getOptions().getExtension(PANetworking.resourceTypeName);
       }
-      else if (this.resourceType.getResourceTypeOneofCase() == ResourceTypeOneofCase.HARDWARERESOURCETYPE) {
+      else if (this.resourceType.getResourceTypeOneofCase() == ResourceTypeOneofCase.HARDWARE_RESOURCE_TYPE) {
         resourceName = this.resourceType.getHardwareResourceType().getValueDescriptor()
             .getOptions().getExtension(PANetworking.resourceTypeName);
       }
@@ -124,7 +124,7 @@ public class HotResourceSummary extends GenericSummary {
         message.getValue(), message.getUnitType(), message.getTimePeriod());
     newSummary
         .setValueDistribution(message.getMinValue(), message.getMaxValue(), message.getAvgValue());
-    if (message.hasConsumers() && message.getConsumers().getConsumerCount() > 0) {
+    if (message.hasConsumers()) {
       for (int i = 0; i < message.getConsumers().getConsumerCount(); i++) {
         newSummary.addNestedSummaryList(TopConsumerSummary.buildTopConsumerSummaryFromMessage(
             message.getConsumers().getConsumer(i)));
@@ -135,8 +135,17 @@ public class HotResourceSummary extends GenericSummary {
 
   @Override
   public String toString() {
-    return this.getResourceTypeName() + " "  + this.threshold + " "
-        + this.value + " " + this.unitType + this.nestedSummaryList;
+    return new StringBuilder()
+        .append(this.getResourceTypeName())
+        .append(" ")
+        .append(this.threshold)
+        .append(" ")
+        .append(this.value)
+        .append(" ")
+        .append(this.unitType)
+        .append(" ")
+        .append(this.nestedSummaryList)
+        .toString();
   }
 
   @Override

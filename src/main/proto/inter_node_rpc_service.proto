@@ -67,7 +67,7 @@ enum HardwareEnum {
 message ResourceType {
     oneof resource_type_oneof {
       JvmEnum JVM = 1;
-      HardwareEnum hardwareResourceType = 2;
+      HardwareEnum hardware_resource_type = 2;
     }
 }
 
