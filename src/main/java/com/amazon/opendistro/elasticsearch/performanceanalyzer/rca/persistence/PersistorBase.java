@@ -80,9 +80,9 @@ public abstract class PersistorBase implements Persistable {
       String tableName,
       List<Field<?>> columns,
       String refTable,
-      String referenceTablePrimaryKeyFieldName);
+      String referenceTablePrimaryKeyFieldName) throws SQLException;
 
-  abstract int insertRow(String tableName, List<Object> columns);
+  abstract int insertRow(String tableName, List<Object> columns) throws SQLException;
 
   abstract String readTables();
 
@@ -191,31 +191,48 @@ public abstract class PersistorBase implements Persistable {
       LOG.error("RCA: Caught SecurityException while trying to delete old DB file. ", e);
     }
 
-    if (!tableNames.contains(tableName)) {
-      LOG.info(
-          "RCA: Table '{}' does not exist. Creating one with columns: {}",
-          tableName,
-          flowUnit.getSqlSchema());
-      createTable(tableName, flowUnit.getSqlSchema());
-      tableNames.add(tableName);
-    }
-    int lastPrimaryKey = insertRow(tableName, flowUnit.getSqlValue());
-
-    if (flowUnit.hasResourceSummary()) {
-      write(
-          flowUnit.getResourceSummary(),
-          tableName,
-          getPrimaryKeyColumnName(tableName),
-          lastPrimaryKey);
+    try {
+      writeFlowUnit(flowUnit, tableName);
+    } catch (SQLException e) {
+      LOG.error(
+          "RCA: Caught SQLException while writing flowuni.", e);
     }
   }
 
+  private synchronized <T extends ResourceFlowUnit> void writeFlowUnit(
+      T flowUnit, String tableName) throws SQLException {
+    try {
+      if (!tableNames.contains(tableName)) {
+        LOG.info(
+            "RCA: Table '{}' does not exist. Creating one with columns: {}",
+            tableName,
+            flowUnit.getSqlSchema());
+        createTable(tableName, flowUnit.getSqlSchema());
+        tableNames.add(tableName);
+      }
+      int lastPrimaryKey = insertRow(tableName, flowUnit.getSqlValue());
+
+      if (flowUnit.hasResourceSummary()) {
+        writeSummary(
+            flowUnit.getResourceSummary(),
+            tableName,
+            getPrimaryKeyColumnName(tableName),
+            lastPrimaryKey);
+      }
+    } catch (SQLException e) {
+      LOG.info(
+          "RCA: Fail to write into table '{}', try recreating the DB", tableName);
+      openNewDBFile();
+    }
+  }
+
+
   /** recursively insert nested summary to sql tables */
-  private synchronized void write(
+  private synchronized void writeSummary(
       GenericSummary summary,
       String referenceTable,
       String referenceTablePrimaryKeyFieldName,
-      int referenceTablePrimaryKeyFieldValue) {
+      int referenceTablePrimaryKeyFieldValue) throws SQLException {
     String tableName = summary.getClass().getSimpleName();
     if (!tableNames.contains(tableName)) {
       LOG.info(
@@ -230,7 +247,7 @@ public abstract class PersistorBase implements Persistable {
     values.add(Integer.valueOf(referenceTablePrimaryKeyFieldValue));
     int lastPrimaryKey = insertRow(tableName, values);
     for (GenericSummary nestedSummary : summary.getNestedSummaryList()) {
-      write(nestedSummary, tableName, getPrimaryKeyColumnName(tableName), lastPrimaryKey);
+      writeSummary(nestedSummary, tableName, getPrimaryKeyColumnName(tableName), lastPrimaryKey);
     }
   }
 
