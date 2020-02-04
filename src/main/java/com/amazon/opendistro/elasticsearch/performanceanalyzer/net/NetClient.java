@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.net;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpcServiceGrpc;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsRequest;
@@ -22,9 +24,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsRespo
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PublishResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -33,34 +38,69 @@ import org.apache.logging.log4j.Logger;
  * stuff.
  */
 public class NetClient {
+
   private static final Logger LOG = LogManager.getLogger(NetClient.class);
 
+  /**
+   * The connection manager instance that holds objects needed to make RPCs.
+   */
   private final GRPCConnectionManager connectionManager;
 
   public NetClient(final GRPCConnectionManager connectionManager) {
     this.connectionManager = connectionManager;
   }
 
-  private Map<String, StreamObserver<FlowUnitMessage>> perHostOpenDataStreamMap = new HashMap<>();
+  private ConcurrentMap<String, AtomicReference<StreamObserver<FlowUnitMessage>>> perHostOpenDataStreamMap =
+      new ConcurrentHashMap<>();
 
+  /**
+   * Sends a subscribe request to a remote host. If the subscribe request fails because the remote
+   * host is not ready/encountered an exception, we still retry subscribing when we try reading from
+   * remote hosts during graph execution.
+   *
+   * @param remoteHost           The host that the subscribe request is for.
+   * @param subscribeMessage     The subscribe protobuf message.
+   * @param serverResponseStream The response stream for the server to communicate back on.
+   */
   public void subscribe(
       final String remoteHost,
       final SubscribeMessage subscribeMessage,
       StreamObserver<SubscribeResponse> serverResponseStream) {
     LOG.debug("Trying to send intent message to {}", remoteHost);
-    connectionManager
-        .getClientStubForHost(remoteHost)
-        .subscribe(subscribeMessage, serverResponseStream);
+    try {
+      connectionManager
+          .getClientStubForHost(remoteHost)
+          .subscribe(subscribeMessage, serverResponseStream);
+    } catch (StatusRuntimeException sre) {
+      LOG.error("Encountered an error trying to subscribe. Status: {}",
+          sre.getStatus(), sre);
+      StatsCollector.instance().logException(StatExceptionCode.RCA_NETWORK_ERROR);
+    }
   }
 
+  /**
+   * Gets a stream from the remote host to write flow units to. If there are failures while writing
+   * to the stream, the subscribers will fail and trigger a new subscription which re-establishes
+   * the stream.
+   *
+   * @param remoteHost           The remote host to which we need to send flow units to.
+   * @param flowUnitMessage      The flow unit to send to the remote host.
+   * @param serverResponseStream The stream for the server to communicate back on.
+   */
   public void publish(
       final String remoteHost,
       final FlowUnitMessage flowUnitMessage,
       final StreamObserver<PublishResponse> serverResponseStream) {
     LOG.debug("Publishing {} data to {}", flowUnitMessage.getGraphNode(), remoteHost);
-    final StreamObserver<FlowUnitMessage> stream =
-        getDataStreamForHost(remoteHost, serverResponseStream);
-    stream.onNext(flowUnitMessage);
+    try {
+      final StreamObserver<FlowUnitMessage> stream =
+          getDataStreamForHost(remoteHost, serverResponseStream);
+      stream.onNext(flowUnitMessage);
+    } catch (StatusRuntimeException sre) {
+      LOG.error("rca: Encountered an error trying to publish a flow unit. Status: {}",
+          sre.getStatus(), sre);
+      StatsCollector.instance().logException(StatExceptionCode.RCA_NETWORK_ERROR);
+    }
   }
 
   public void getMetrics(
@@ -72,7 +112,7 @@ public class NetClient {
     stub.getMetrics(request, responseObserver);
   }
 
-  public void shutdown() {
+  public void stop() {
     LOG.debug("Shutting down client streaming connections..");
     closeAllDataStreams();
   }
@@ -83,31 +123,40 @@ public class NetClient {
   }
 
   private void closeAllDataStreams() {
-    for (Map.Entry<String, StreamObserver<FlowUnitMessage>> entry :
+    for (Map.Entry<String, AtomicReference<StreamObserver<FlowUnitMessage>>> entry :
         perHostOpenDataStreamMap.entrySet()) {
       LOG.debug("Closing stream for host: {}", entry.getKey());
       // Sending an onCompleted should trigger the subscriber's node state manager
       // and cause this host to be put under observation.f
-      entry.getValue().onCompleted();
+      entry.getValue().get().onCompleted();
       perHostOpenDataStreamMap.remove(entry.getKey());
     }
   }
 
   private StreamObserver<FlowUnitMessage> getDataStreamForHost(
       final String remoteHost, final StreamObserver<PublishResponse> serverResponseStream) {
-    if (perHostOpenDataStreamMap.containsKey(remoteHost)) {
-      return perHostOpenDataStreamMap.get(remoteHost);
+    final AtomicReference<StreamObserver<FlowUnitMessage>> streamObserverAtomicReference =
+        perHostOpenDataStreamMap.get(remoteHost);
+    if (streamObserverAtomicReference != null) {
+      return streamObserverAtomicReference.get();
     }
+    return addOrUpdateDataStreamForHost(remoteHost, serverResponseStream);
+  }
 
+  /**
+   * Builds or updates a flow unit data stream to a host. Callers: Send data thread.
+   *
+   * @param remoteHost           The host to which we want to open a stream to.
+   * @param serverResponseStream The response stream object.
+   * @return A stream to the host.
+   */
+  private synchronized StreamObserver<FlowUnitMessage> addOrUpdateDataStreamForHost(
+      final String remoteHost, final StreamObserver<PublishResponse> serverResponseStream) {
     InterNodeRpcServiceGrpc.InterNodeRpcServiceStub stub =
         connectionManager.getClientStubForHost(remoteHost);
     final StreamObserver<FlowUnitMessage> dataStream = stub.publish(serverResponseStream);
-
-    perHostOpenDataStreamMap.put(remoteHost, dataStream);
+    perHostOpenDataStreamMap.computeIfAbsent(remoteHost, s -> new AtomicReference<>());
+    perHostOpenDataStreamMap.get(remoteHost).set(dataStream);
     return dataStream;
-  }
-
-  public void dumpStreamStats() {
-    LOG.debug("Active streams: {}", perHostOpenDataStreamMap);
   }
 }

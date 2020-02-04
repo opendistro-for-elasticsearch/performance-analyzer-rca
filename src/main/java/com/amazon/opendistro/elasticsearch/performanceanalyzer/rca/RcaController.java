@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
@@ -27,10 +29,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.MetricsDBProvider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ThresholdMain;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaRuntimeMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.ReceivedFlowUnitStore;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.handler.PublishRequestHandler;
@@ -39,9 +44,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.N
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.PersistenceFactory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCAScheduler;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RcaSchedulerState;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryRcaRequestHandler;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.sun.net.httpserver.HttpServer;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -55,12 +62,16 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -105,11 +116,17 @@ public class RcaController {
   private final String MASTER_RCA_CONF_PATH;
   private final String RCA_CONF_PATH;
 
-  private long pollerPeriodicity;
+  private long rcaConfPollerPeriodicity;
+  private long rcaNannyPollerPeriodicity;
+  private long nodeRolePollerPeriodicty;
   private TimeUnit timeUnit;
   private List<Thread> exceptionHandlerThreads;
   private List<ScheduledFuture<?>> pollingExecutors;
-  private boolean shutdownRequested;
+  // Atomic reference to the networking threadpool as it is used by multiple threads. When we
+  // replace the threadpool instance, we want the update to be visible to all others holding a
+  // reference.
+  private AtomicReference<ExecutorService> networkThreadPoolReference = new AtomicReference<>();
+  private ReceivedFlowUnitStore receivedFlowUnitStore;
 
   public RcaController(
       final ScheduledExecutorService netOpsExecutorService,
@@ -121,7 +138,9 @@ public class RcaController {
       final String electedMasterRcaConf,
       final String masterRcaConf,
       final String rcaConf,
-      long pollerPeriodicity,
+      long rcaNannyPollerPeriodicity,
+      long rcaConfPollerPeriodicity,
+      long nodeRolePollerPeriodicty,
       TimeUnit timeUnit) {
     this.netOpsExecutorService = netOpsExecutorService;
     this.rcaNetClient = rcaNetClient;
@@ -130,15 +149,17 @@ public class RcaController {
     RCA_ENABLED_CONF_LOCATION = rca_enabled_conf_location;
     netPersistor = new NetPersistor();
     this.useHttps = PluginSettings.instance().getHttpsEnabled();
-    subscriptionManager = new SubscriptionManager(grpcConnectionManager, rcaNetClient);
+    subscriptionManager = new SubscriptionManager(grpcConnectionManager);
     nodeStateManager = new NodeStateManager();
     queryRcaRequestHandler = new QueryRcaRequestHandler();
     this.rcaScheduler = null;
     this.ELECTED_MASTER_RCA_CONF_PATH = electedMasterRcaConf;
     this.MASTER_RCA_CONF_PATH = masterRcaConf;
     this.RCA_CONF_PATH = rcaConf;
-    this.pollerPeriodicity = pollerPeriodicity;
+    this.rcaNannyPollerPeriodicity = rcaNannyPollerPeriodicity;
+    this.rcaConfPollerPeriodicity = rcaConfPollerPeriodicity;
     this.timeUnit = timeUnit;
+    this.nodeRolePollerPeriodicty = nodeRolePollerPeriodicty;
     this.exceptionHandlerThreads = new ArrayList<>();
     this.pollingExecutors = new ArrayList<>();
   }
@@ -212,7 +233,7 @@ public class RcaController {
 
   private ScheduledFuture<?> startRcaConfPoller() {
     return netOpsExecutorService.scheduleAtFixedRate(
-        this::readRcaEnabledFromConf, 0, pollerPeriodicity, timeUnit);
+        this::readRcaEnabledFromConf, 0, rcaConfPollerPeriodicity, timeUnit);
   }
 
   private ScheduledFuture<?> startNodeRolePoller() {
@@ -223,7 +244,7 @@ public class RcaController {
           handleNodeRoleChange(nodeDetails);
         }
       }
-    }, 2, 60, TimeUnit.SECONDS);
+    }, 2, nodeRolePollerPeriodicty, timeUnit);
   }
 
   /**
@@ -235,32 +256,41 @@ public class RcaController {
   private ScheduledFuture<?> startRcaNanny() {
     return netOpsExecutorService.scheduleAtFixedRate(
         () -> {
-          if (rcaEnabled) {
-            if (rcaScheduler != null && rcaScheduler.isRunning()) {
-              subscriptionManager.dumpStats();
+          if (rcaScheduler != null && rcaScheduler.getState() == RcaSchedulerState.STATE_STARTED) {
+            if (!rcaEnabled) {
+              // Need to shutdown the rca scheduler
+              stop();
+              PerformanceAnalyzerApp.RCA_RUNTIME_METRICS_AGGREGATOR.updateStat(
+                      RcaRuntimeMetrics.RCA_STOPPED_BY_OPERATOR, "", 1);
+            } else {
               if (rcaScheduler.getRole() != currentRole) {
                 restart();
-              }
-            } else {
-              if (NodeRole.UNKNOWN != currentRole) {
-                start();
+                PerformanceAnalyzerApp.RCA_RUNTIME_METRICS_AGGREGATOR.updateStat(
+                        RcaRuntimeMetrics.RCA_RESTARTED_BY_OPERATOR, "", 1);
               }
             }
           } else {
-            if (rcaScheduler != null && rcaScheduler.isRunning()) {
-              // Need to shutdown the rca scheduler
-              stop();
+            // Start the scheduler if all the following conditions are met:
+            // 1. rca is enabled
+            // 2. we know the role of this es node
+            // 3. scheduler is not stopped due to an exception.
+            if (rcaEnabled && NodeRole.UNKNOWN != currentRole && (rcaScheduler == null
+                || rcaScheduler.getState() != RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION)) {
+              start();
             }
           }
         },
-        2 * pollerPeriodicity,
-        pollerPeriodicity,
+        2 * rcaConfPollerPeriodicity,
+        rcaNannyPollerPeriodicity,
         timeUnit);
   }
 
   private String getElectedMasterHostAddress() {
     try {
       LOG.info("Making _cat/master call");
+      PerformanceAnalyzerApp.RCA_RUNTIME_METRICS_AGGREGATOR.updateStat(
+              RcaRuntimeMetrics.ES_APIS_CALLED, "catMaster", 1);
+
       final URL url = new URL(CAT_MASTER_URL);
       HttpURLConnection connection = (HttpURLConnection) url.openConnection();
       connection.setRequestMethod("GET");
@@ -284,11 +314,14 @@ public class RcaController {
       currentRole = isMasterNode ? NodeRole.ELECTED_MASTER : currentNodeRole;
     } else {
       final String electedMasterHostAddress = getElectedMasterHostAddress();
-      currentRole = currentNode.getHostAddress().equalsIgnoreCase(electedMasterHostAddress) ? NodeRole.ELECTED_MASTER : currentNodeRole;
+      currentRole = currentNode.getHostAddress().equalsIgnoreCase(electedMasterHostAddress)
+          ? NodeRole.ELECTED_MASTER : currentNodeRole;
     }
   }
 
-  /** Reads the enabled/disabled value for RCA from the conf file. */
+  /**
+   * Reads the enabled/disabled value for RCA from the conf file.
+   */
   private void readRcaEnabledFromConf() {
     Path filePath = Paths.get(RCA_ENABLED_CONF_LOCATION, RCA_ENABLED_CONF_FILE);
 
@@ -313,16 +346,21 @@ public class RcaController {
       Queryable db = new MetricsDBProvider();
       ThresholdMain thresholdMain = new ThresholdMain(RcaConsts.THRESHOLDS_PATH, rcaConf);
       Persistable persistable = PersistenceFactory.create(rcaConf);
+      networkThreadPoolReference.set(buildNetworkThreadPool(rcaConf.getNetworkQueueLength()));
       addRcaRequestHandler();
       queryRcaRequestHandler.setPersistable(persistable);
+      receivedFlowUnitStore = new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength());
       WireHopper net =
-          new WireHopper(netPersistor, nodeStateManager, rcaNetClient, subscriptionManager);
+          new WireHopper(nodeStateManager, rcaNetClient, subscriptionManager,
+              networkThreadPoolReference, receivedFlowUnitStore);
       this.rcaScheduler =
           new RCAScheduler(connectedComponents, db, rcaConf, thresholdMain, persistable, net);
 
       rcaNetServer.setMetricsHandler(new MetricsServerHandler());
-      rcaNetServer.setSendDataHandler(new PublishRequestHandler(netPersistor, nodeStateManager));
-      rcaNetServer.setSubscribeHandler(new SubscribeServerHandler(net, subscriptionManager));
+      rcaNetServer.setSendDataHandler(new PublishRequestHandler(
+          nodeStateManager, receivedFlowUnitStore, networkThreadPoolReference));
+      rcaNetServer.setSubscribeHandler(
+          new SubscribeServerHandler(subscriptionManager, networkThreadPoolReference));
 
       rcaScheduler.setRole(currentRole);
       rcaScheduler.start();
@@ -338,16 +376,40 @@ public class RcaController {
     }
   }
 
+  private ExecutorService buildNetworkThreadPool(final int queueLength) {
+    final ThreadFactory rcaNetThreadFactory =
+        new ThreadFactoryBuilder().setNameFormat(RcaConsts.RCA_NETWORK_THREAD_NAME_FORMAT)
+                                  .setDaemon(true)
+                                  .build();
+    final BlockingQueue<Runnable> threadPoolQueue = new LinkedBlockingQueue<>(queueLength);
+    return new ThreadPoolExecutor(RcaConsts.NETWORK_CORE_THREAD_COUNT,
+        RcaConsts.NETWORK_MAX_THREAD_COUNT, 0L, TimeUnit.MILLISECONDS, threadPoolQueue,
+        rcaNetThreadFactory);
+  }
+
   private void stop() {
     rcaScheduler.shutdown();
-    rcaNetClient.shutdown();
-    rcaNetServer.shutdown();
+    rcaNetClient.stop();
+    rcaNetServer.stop();
+    receivedFlowUnitStore.drainAll();
+    networkThreadPoolReference.get().shutdown();
+    try {
+      networkThreadPoolReference.get().awaitTermination(1, TimeUnit.MINUTES);
+    } catch (InterruptedException e) {
+      LOG.warn("Awaiting termination interrupted. {}", e.getCause(), e);
+      networkThreadPoolReference.get().shutdownNow();
+      // Set the thread's interrupt interrupt flag so that higher level interrupt handlers can
+      // take appropriate actions.
+      Thread.currentThread().interrupt();
+    }
     removeRcaRequestHandler();
+    Stats.getInstance().reset();
   }
 
   private void restart() {
     stop();
     start();
+    StatsCollector.instance().logMetric(RcaConsts.RCA_SCHEDULER_RESTART_METRIC);
   }
 
   private RcaConf pickRcaConfForRole(final NodeRole nodeRole) {

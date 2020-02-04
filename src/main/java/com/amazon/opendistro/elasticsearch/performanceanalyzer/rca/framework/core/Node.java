@@ -51,11 +51,14 @@ public abstract class Node<T extends GenericFlowUnit> {
   protected long evaluationIntervalSeconds;
 
   /**
-   * List of flow units produced by this node obtained either from evaluating it locally or
-   * obtaining them from other nodes in the cluster.
+   * List of flow units produced by this node obtained from evaluating other nodes in the cluster.
    */
   protected List<T> flowUnits;
 
+  /**
+   * Flow unit produced by this vertex obtained from evaluating it locally.
+   */
+  protected T localFlowUnit;
   /**
    * These are matched against the tags in the rca.conf, to determine if a node is to executed at a
    * location.
@@ -136,16 +139,30 @@ public abstract class Node<T extends GenericFlowUnit> {
     flowUnits = Collections.emptyList();
   }
 
+  public void setEmptyLocalFlowUnit() {
+    this.localFlowUnit = null;
+  }
+
   @Override
   public String toString() {
     return name();
   }
 
   public List<T> getFlowUnits() {
-    return flowUnits;
+    List<T> allFlowUnits = flowUnits == null ? new ArrayList<>() : new ArrayList<>(flowUnits);
+
+    if (localFlowUnit != null) {
+      allFlowUnits.add(localFlowUnit);
+    }
+
+    return allFlowUnits;
   }
 
   public void setFlowUnits(List<T> flowUnits) {
     this.flowUnits = flowUnits;
+  }
+
+  public void setLocalFlowUnit(T localFlowUnit) {
+    this.localFlowUnit = localFlowUnit;
   }
 }

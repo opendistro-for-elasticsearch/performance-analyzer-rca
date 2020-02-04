@@ -357,7 +357,7 @@ public class HttpRequestMetricsSnapshot implements Removable {
 
   @Override
   public void remove() {
-    LOG.info("Dropping table - {}", this.tableName);
+    LOG.debug("Dropping table - {}", this.tableName);
     create.dropTable(DSL.table(this.tableName)).execute();
   }
 

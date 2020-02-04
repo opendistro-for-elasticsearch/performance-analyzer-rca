@@ -21,13 +21,24 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsC
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.TroubleshootingConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsRestUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetServer;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.JvmMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaRuntimeMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.sys.AllJvmSamplers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.listener.MisbehavingGraphOperateMethodListener;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.RcaStatsReporter;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.collectors.SampleAggregator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.emitters.PeriodicSamplers;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.listeners.IListener;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryMetricsRequestHandler;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -39,8 +50,10 @@ import java.net.InetSocketAddress;
 import java.security.KeyStore;
 import java.security.Security;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManagerFactory;
@@ -69,6 +82,30 @@ public class PerformanceAnalyzerApp {
   private static RcaController rcaController = null;
   private static Thread rcaNetServerThread = null;
 
+  public static final SampleAggregator RCA_GRAPH_METRICS_AGGREGATOR =
+          new SampleAggregator(RcaGraphMetrics.values());
+  public  static final SampleAggregator RCA_RUNTIME_METRICS_AGGREGATOR =
+          new SampleAggregator(RcaRuntimeMetrics.values());
+
+  private static final IListener MISBEHAVING_NODES_LISTENER =
+          new MisbehavingGraphOperateMethodListener();
+  public static final SampleAggregator ERRORS_AND_EXCEPTIONS_AGGREGATOR =
+          new SampleAggregator(MISBEHAVING_NODES_LISTENER.getMeasurementsListenedTo(),
+                  MISBEHAVING_NODES_LISTENER,
+                  ExceptionsAndErrors.values());
+
+  public static final SampleAggregator JVM_METRICS_AGGREGATOR =
+          new SampleAggregator(JvmMetrics.values());
+
+  public static final RcaStatsReporter RCA_STATS_REPORTER =
+          new RcaStatsReporter(Arrays.asList(RCA_GRAPH_METRICS_AGGREGATOR,
+                  RCA_RUNTIME_METRICS_AGGREGATOR, ERRORS_AND_EXCEPTIONS_AGGREGATOR,
+                  JVM_METRICS_AGGREGATOR));
+  public static final PeriodicSamplers PERIODIC_SAMPLERS =
+          new PeriodicSamplers(JVM_METRICS_AGGREGATOR, AllJvmSamplers.getJvmSamplers(),
+                  (MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval) / 2,
+                  TimeUnit.MILLISECONDS);
+
   public static void main(String[] args) throws Exception {
     // Initialize settings before creating threads.
     PluginSettings settings = PluginSettings.instance();
@@ -81,24 +118,22 @@ public class PerformanceAnalyzerApp {
 
     Thread readerThread =
         new Thread(
-            new Runnable() {
-              public void run() {
-                while (true) {
-                  try {
-                    ReaderMetricsProcessor mp =
-                        new ReaderMetricsProcessor(settings.getMetricsLocation(), true);
-                    ReaderMetricsProcessor.setCurrentInstance(mp);
-                    mp.run();
-                  } catch (Throwable e) {
-                    if (TroubleshootingConfig.getEnableDevAssert()) {
-                      break;
-                    }
-                    LOG.error(
-                        "Error in ReaderMetricsProcessor...restarting, ExceptionCode: {}",
-                        StatExceptionCode.READER_RESTART_PROCESSING.toString());
-                    StatsCollector.instance()
-                        .logException(StatExceptionCode.READER_RESTART_PROCESSING);
+            () -> {
+              while (true) {
+                try {
+                  ReaderMetricsProcessor mp =
+                      new ReaderMetricsProcessor(settings.getMetricsLocation(), true);
+                  ReaderMetricsProcessor.setCurrentInstance(mp);
+                  mp.run();
+                } catch (Throwable e) {
+                  if (TroubleshootingConfig.getEnableDevAssert()) {
+                    break;
                   }
+                  LOG.error(
+                      "Error in ReaderMetricsProcessor...restarting, ExceptionCode: {}",
+                      StatExceptionCode.READER_RESTART_PROCESSING.toString());
+                  StatsCollector.instance()
+                      .logException(StatExceptionCode.READER_RESTART_PROCESSING);
                 }
               }
             });
@@ -160,8 +195,10 @@ public class PerformanceAnalyzerApp {
             RcaConsts.RCA_CONF_MASTER_PATH,
             RcaConsts.RCA_CONF_IDLE_MASTER_PATH,
             RcaConsts.RCA_CONF_PATH,
-            RcaConsts.networkPollerPeriodicity,
-            RcaConsts.networkPollerPeriodicityTimeUnit);
+            RcaConsts.rcaNannyPollerPeriodicity,
+            RcaConsts.rcaConfPollerPeriodicity,
+            RcaConsts.nodeRolePollerPeriodicity,
+            RcaConsts.rcaPollerPeriodicityTimeUnit);
 
     rcaController.startPollers();
   }

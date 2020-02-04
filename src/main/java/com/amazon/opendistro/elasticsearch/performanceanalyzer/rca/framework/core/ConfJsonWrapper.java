@@ -33,6 +33,8 @@ class ConfJsonWrapper {
   private final long creationTime;
   private final Map<String, String> datastore;
   private final String analysisGraphEntryPoint;
+  private final int networkQueueLength;
+  private final int perVertexBufferLength;
 
   String getRcaStoreLoc() {
     return rcaStoreLoc;
@@ -66,6 +68,14 @@ class ConfJsonWrapper {
     return analysisGraphEntryPoint;
   }
 
+  int getNetworkQueueLength() {
+    return networkQueueLength;
+  }
+
+  int getPerVertexBufferLength() {
+    return perVertexBufferLength;
+  }
+
   ConfJsonWrapper(
       @JsonProperty("rca-store-location") String rcaStoreLoc,
       @JsonProperty("threshold-store-location") String thresholdStoreLoc,
@@ -74,7 +84,9 @@ class ConfJsonWrapper {
       @JsonProperty("tags") Map<String, String> tags,
       @JsonProperty("remote-peers") List<String> peers,
       @JsonProperty("datastore") Map<String, String> datastore,
-      @JsonProperty("analysis-graph-implementor") String analysisGraphEntryPoint) {
+      @JsonProperty("analysis-graph-implementor") String analysisGraphEntryPoint,
+      @JsonProperty("network-queue-length") int networkQueueLength,
+      @JsonProperty("max-flow-units-per-vertex-buffer") int perVertexBufferLength) {
     this.creationTime = System.currentTimeMillis();
     this.rcaStoreLoc = rcaStoreLoc;
     this.thresholdStoreLoc = thresholdStoreLoc;
@@ -84,5 +96,7 @@ class ConfJsonWrapper {
     this.tagMap = tags;
     this.datastore = datastore;
     this.analysisGraphEntryPoint = analysisGraphEntryPoint;
+    this.networkQueueLength = networkQueueLength;
+    this.perVertexBufferLength = perVertexBufferLength;
   }
 }

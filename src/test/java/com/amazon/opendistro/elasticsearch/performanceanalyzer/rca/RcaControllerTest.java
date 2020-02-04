@@ -6,6 +6,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSett
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCAScheduler;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RcaSchedulerState;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -32,9 +33,6 @@ import org.junit.experimental.categories.Category;
 @Category(GradleTaskForRca.class)
 public class RcaControllerTest {
 
-  private static final int IEVAL_ITERATIONS = 20;
-  // NodeRolePoller has an periodicity of 60 seconds, hence we need iterations number greater than that
-  private static final int NODE_ROLE_EVAL_ITERATIONS = 70;
   private ScheduledExecutorService netOperationsExecutor;
   private ClientServers clientServers;
   private GRPCConnectionManager connectionManager;
@@ -94,7 +92,9 @@ public class RcaControllerTest {
             Paths.get(rcaEnabledFileLoc.toString(), "rca_elected_master.conf").toString(),
             Paths.get(rcaEnabledFileLoc.toString(), "rca_master.conf").toString(),
             Paths.get(rcaEnabledFileLoc.toString(), "rca.conf").toString(),
-            10,
+            1,
+            1,
+            1,
             TimeUnit.MILLISECONDS);
 
     setMyIp(masterIP, AllMetrics.NodeRole.UNKNOWN);
@@ -111,26 +111,26 @@ public class RcaControllerTest {
   @After
   public void tearDown() throws InterruptedException {
     RCAScheduler rcaScheduler = rcaController.getRcaScheduler();
-    if (rcaScheduler != null && rcaScheduler.isRunning()) {
+    if (rcaScheduler != null && rcaScheduler.getState() == RcaSchedulerState.STATE_STARTED) {
       rcaScheduler.shutdown();
     }
     netOperationsExecutor.shutdown();
     netOperationsExecutor.awaitTermination(1, TimeUnit.MINUTES);
     clientServers.getHttpServer().stop(0);
-    clientServers.getNetClient().shutdown();
-    clientServers.getNetServer().shutdown();
-    // connectionManager.shutdown();
+    clientServers.getNetClient().stop();
+    clientServers.getNetServer().stop();
+    // connectionManager.stop();
     dummyEsServer.stop(0);
   }
 
   @Test
   public void readRcaEnabledFromConf() throws IOException {
     changeRcaRunState(RcaState.STOP);
-    Assert.assertTrue(check(new RcaEnabledEval(rcaController), false, IEVAL_ITERATIONS));
+    Assert.assertTrue(check(new RcaEnabledEval(rcaController), false));
     Assert.assertFalse(rcaController.isRcaEnabled());
 
     changeRcaRunState(RcaState.RUN);
-    Assert.assertTrue(check(new RcaEnabledEval(rcaController), true, IEVAL_ITERATIONS));
+    Assert.assertTrue(check(new RcaEnabledEval(rcaController), true));
     Assert.assertTrue(rcaController.isRcaEnabled());
   }
 
@@ -140,12 +140,12 @@ public class RcaControllerTest {
     changeRcaRunState(RcaState.RUN);
     masterIP = "10.10.192.168";
     setMyIp(masterIP, AllMetrics.NodeRole.ELECTED_MASTER);
-    Assert.assertTrue(check(new NodeRoleEval(rcaController), AllMetrics.NodeRole.ELECTED_MASTER, NODE_ROLE_EVAL_ITERATIONS));
+    Assert.assertTrue(check(new NodeRoleEval(rcaController), AllMetrics.NodeRole.ELECTED_MASTER));
     Assert.assertEquals(rcaController.getCurrentRole(), AllMetrics.NodeRole.ELECTED_MASTER);
 
     AllMetrics.NodeRole nodeRole = AllMetrics.NodeRole.MASTER;
     setMyIp("10.10.192.200", nodeRole);
-    Assert.assertTrue(check(new NodeRoleEval(rcaController), nodeRole, NODE_ROLE_EVAL_ITERATIONS));
+    Assert.assertTrue(check(new NodeRoleEval(rcaController), nodeRole));
     Assert.assertEquals(rcaController.getCurrentRole(), nodeRole);
   }
 
@@ -159,25 +159,26 @@ public class RcaControllerTest {
     changeRcaRunState(RcaState.RUN);
     AllMetrics.NodeRole nodeRole = AllMetrics.NodeRole.MASTER;
     setMyIp("192.168.0.1", nodeRole);
-    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), true, IEVAL_ITERATIONS));
-    Assert.assertTrue(check(new RcaSchedulerRoleEval(rcaController), nodeRole, NODE_ROLE_EVAL_ITERATIONS));
-    Assert.assertTrue(rcaController.getRcaScheduler().isRunning());
+    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), RcaSchedulerState.STATE_STARTED));
+    Assert.assertTrue(check(new RcaSchedulerRoleEval(rcaController), nodeRole));
+    Assert.assertEquals(RcaSchedulerState.STATE_STARTED, rcaController.getRcaScheduler().getState());
 
     nodeRole = AllMetrics.NodeRole.ELECTED_MASTER;
     setMyIp("192.168.0.1", nodeRole);
-    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), true, IEVAL_ITERATIONS));
-    Assert.assertTrue(check(new RcaSchedulerRoleEval(rcaController), nodeRole, NODE_ROLE_EVAL_ITERATIONS));
+    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController),
+        RcaSchedulerState.STATE_STARTED));
+    Assert.assertTrue(check(new RcaSchedulerRoleEval(rcaController), nodeRole));
     Assert.assertEquals(rcaController.getRcaScheduler().getRole(), nodeRole);
 
     nodeRole = AllMetrics.NodeRole.DATA;
     setMyIp("192.168.0.1", nodeRole);
-    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), true, IEVAL_ITERATIONS));
-    Assert.assertTrue(check(new RcaSchedulerRoleEval(rcaController), nodeRole, NODE_ROLE_EVAL_ITERATIONS));
+    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), RcaSchedulerState.STATE_STARTED));
+    Assert.assertTrue(check(new RcaSchedulerRoleEval(rcaController), nodeRole));
     Assert.assertEquals(rcaController.getRcaScheduler().getRole(), nodeRole);
 
     changeRcaRunState(RcaState.STOP);
-    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), false, IEVAL_ITERATIONS));
-    Assert.assertFalse(rcaController.getRcaScheduler().isRunning());
+    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), RcaSchedulerState.STATE_STOPPED));
+    Assert.assertEquals(RcaSchedulerState.STATE_STOPPED, rcaController.getRcaScheduler().getState());
   }
 
   private void setMyIp(String ip, AllMetrics.NodeRole nodeRole) {
@@ -212,10 +213,10 @@ public class RcaControllerTest {
     Files.write(Paths.get(rcaEnabledFile.toString()), value.getBytes());
   }
 
-  private <T> boolean check(IEval eval, T expected, int iterations) {
+  private <T> boolean check(IEval eval, T expected) {
     final long SLEEP_TIME_MILLIS = 1000;
 
-    for (int i = 0; i < iterations; i++) {
+    for (int i = 0; i < 2; i++) {
       if (eval.evaluateAndCheck(expected)) {
         return true;
       }
@@ -272,7 +273,7 @@ public class RcaControllerTest {
     }
   }
 
-  class RcaSchedulerRunningEval implements IEval<Boolean> {
+  class RcaSchedulerRunningEval implements IEval<RcaSchedulerState> {
     private final RcaController rcaController;
 
     RcaSchedulerRunningEval(RcaController rcaController) {
@@ -280,9 +281,9 @@ public class RcaControllerTest {
     }
 
     @Override
-    public boolean evaluateAndCheck(Boolean expected) {
+    public boolean evaluateAndCheck(RcaSchedulerState expected) {
       RCAScheduler rcaScheduler = rcaController.getRcaScheduler();
-      return rcaScheduler != null && rcaScheduler.isRunning() == expected;
+      return rcaScheduler != null && rcaScheduler.getState() == expected;
     }
   }
 }

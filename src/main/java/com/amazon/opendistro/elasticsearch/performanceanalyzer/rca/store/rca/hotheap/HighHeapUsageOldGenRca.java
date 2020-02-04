@@ -33,6 +33,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -56,7 +57,6 @@ import org.apache.logging.log4j.Logger;
 public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
 
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageOldGenRca.class);
-  private static final int RCA_PERIOD = 12;
   private int counter;
   private double maxOldGenHeapSize;
   private final Metric heap_Used;
@@ -65,7 +65,9 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
   private final ResourceType resourceType;
   // the amount of RCA period this RCA needs to run before sending out a flowunit
   private final int rcaPeriod;
-  private boolean alwaysCreateSummary;
+  // The lower bound threshold in percentage to decide whether to send out summary.
+  // e.g. if lowerBoundThreshold = 0.2, then we only send out summary if value > 0.2*threshold
+  private final double lowerBoundThreshold;
   private final SlidingWindow<SlidingWindowData> gcEventSlidingWindow;
   private final MinOldGenSlidingWindow minOldGenSlidingWindow;
   //Keep the sliding window large enough to avoid false positive
@@ -75,16 +77,20 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
   // minimum
   private static final double OLD_GEN_GC_THRESHOLD = 1;
   private static final double CONVERT_BYTES_TO_MEGABYTES = Math.pow(1024, 3);
+  protected Clock clock;
 
 
-  public <M extends Metric> HighHeapUsageOldGenRca(final int rcaPeriod,
+  public <M extends Metric> HighHeapUsageOldGenRca(final int rcaPeriod, final double lowerBoundThreshold,
       final M heap_Used, final M gc_event, final M heap_Max) {
     super(5);
+    this.clock = Clock.systemUTC();
     this.heap_Used = heap_Used;
     this.gc_event = gc_event;
     this.heap_Max = heap_Max;
     this.maxOldGenHeapSize = Double.MAX_VALUE;
     this.rcaPeriod = rcaPeriod;
+    this.lowerBoundThreshold = (lowerBoundThreshold >= 0 && lowerBoundThreshold <= 1.0)
+        ? lowerBoundThreshold : 1.0;
     this.counter = 0;
     this.resourceType = ResourceType.newBuilder().setJVM(JvmEnum.OLD_GEN).build();
     gcEventSlidingWindow = new SlidingWindow<>(SLIDING_WINDOW_SIZE_IN_MINS, TimeUnit.MINUTES);
@@ -92,14 +98,9 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
         TimeUnit.MINUTES);
   }
 
-  /**
-   * set the alwaysCreateSummary
-   * @param alwaysCreateSummary if alwaysCreateSummary is true, the RCA will always create a summary
-   *                            for this flowunit regardless of its state(whether healthy or unhealthy)
-   *
-   */
-  public void alwaysCreateSummary(boolean alwaysCreateSummary) {
-    this.alwaysCreateSummary = alwaysCreateSummary;
+  public <M extends Metric> HighHeapUsageOldGenRca(final int rcaPeriod,
+      final M heap_Used, final M gc_event, final M heap_Max) {
+    this(rcaPeriod, 1.0, heap_Used, gc_event, heap_Max);
   }
 
   @Override
@@ -156,7 +157,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
           oldGenHeapUsed,
           oldGenGCEvent,
           maxOldGenHeapSize);
-      long currTimeStamp = System.currentTimeMillis();
+      long currTimeStamp = this.clock.millis();
       gcEventSlidingWindow.next(new SlidingWindowData(currTimeStamp, oldGenGCEvent));
       minOldGenSlidingWindow.next(new SlidingWindowData(currTimeStamp, oldGenHeapUsed));
     }
@@ -176,24 +177,26 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
             gcEventSlidingWindow.readSum(),
             currentMinOldGenUsage / maxOldGenHeapSize);
         context = new ResourceContext(Resources.State.UNHEALTHY);
+      } else {
+        context = new ResourceContext(Resources.State.HEALTHY);
+      }
+
+      //check to see if the value is above lower bound thres
+      if (gcEventSlidingWindow.readSum() >= OLD_GEN_GC_THRESHOLD
+          && !Double.isNaN(currentMinOldGenUsage)
+          && currentMinOldGenUsage / maxOldGenHeapSize > OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE * this.lowerBoundThreshold) {
         summary = new HotResourceSummary(this.resourceType,
             OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE, currentMinOldGenUsage / maxOldGenHeapSize,
             "heap usage in percentage", SLIDING_WINDOW_SIZE_IN_MINS * 60);
-      } else {
-        context = new ResourceContext(Resources.State.HEALTHY);
-        if (alwaysCreateSummary == true) {
-          summary = new HotResourceSummary(this.resourceType,
-              OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE, currentMinOldGenUsage / maxOldGenHeapSize,
-              "heap usage in percentage", SLIDING_WINDOW_SIZE_IN_MINS * 60);
-        }
       }
+
       LOG.debug("High Heap Usage RCA Context = " + context.toString());
-      return new ResourceFlowUnit(System.currentTimeMillis(), context, summary);
+      return new ResourceFlowUnit(this.clock.millis(), context, summary);
     } else {
       // we return an empty FlowUnit RCA for now. Can change to healthy (or previous known RCA
       // state)
       LOG.debug("Empty FlowUnit returned for High Heap Usage RCA");
-      return new ResourceFlowUnit(System.currentTimeMillis());
+      return new ResourceFlowUnit(this.clock.millis());
     }
   }
 

@@ -173,9 +173,9 @@ public final class ThreadCPU {
       return;
     }
 
-    for (String tid : tidKVMap.keySet()) {
-      Map<String, Object> v = tidKVMap.get(tid);
-      Map<String, Object> oldv = oldtidKVMap.get(tid);
+    for (Map.Entry<String, Map<String, Object>> entry : tidKVMap.entrySet()) {
+      Map<String, Object> v = entry.getValue();
+      Map<String, Object> oldv = oldtidKVMap.get(entry.getKey());
       if (v != null && oldv != null) {
         if (!v.containsKey("utime") || !oldv.containsKey("utime")) {
           continue;
@@ -184,7 +184,7 @@ public final class ThreadCPU {
             ((long) (v.getOrDefault("utime", 0L)) - (long) (oldv.getOrDefault("utime", 0L)))
                 + ((long) (v.getOrDefault("stime", 0L)) - (long) (oldv.getOrDefault("stime", 0L)));
         double util = (1.0e3 * diff / scClkTck) / (kvTimestamp - oldkvTimestamp);
-        cpuPagingActivityMap.setCPUUtilization(tid, util);
+        cpuPagingActivityMap.setCPUUtilization(entry.getKey(), util);
       }
     }
   }
@@ -195,9 +195,9 @@ public final class ThreadCPU {
       return;
     }
 
-    for (String tid : tidKVMap.keySet()) {
-      Map<String, Object> v = tidKVMap.get(tid);
-      Map<String, Object> oldv = oldtidKVMap.get(tid);
+    for (Map.Entry<String, Map<String, Object>> entry : tidKVMap.entrySet()) {
+      Map<String, Object> v = entry.getValue();
+      Map<String, Object> oldv = oldtidKVMap.get(entry.getKey());
       if (v != null && oldv != null) {
         if (!v.containsKey("majflt") || !oldv.containsKey("majflt")) {
           continue;
@@ -210,7 +210,7 @@ public final class ThreadCPU {
         mindiff /= 1.0e-3 * (kvTimestamp - oldkvTimestamp);
 
         Double[] fltarr = {majdiff, mindiff, (double) ((long) v.getOrDefault("rss", 0L))};
-        cpuPagingActivityMap.setPagingActivities(tid, fltarr);
+        cpuPagingActivityMap.setPagingActivities(entry.getKey(), fltarr);
       }
     }
   }

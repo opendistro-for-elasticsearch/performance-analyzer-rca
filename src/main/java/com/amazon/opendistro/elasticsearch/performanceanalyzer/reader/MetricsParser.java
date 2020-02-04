@@ -108,22 +108,28 @@ public class MetricsParser {
 
     boolean retVal = false;
     if (threadsFile.exists()) {
-      for (File threadIDFile : threadsFile.listFiles()) {
-        if (!threadIDFile.getName().equals(PerformanceAnalyzerMetrics.sHttpPath)) {
-          String threadID = threadIDFile.getName();
+      File[] threadIdFiles = threadsFile.listFiles();
+      if (threadIdFiles != null) {
+        for (File threadIDFile : threadIdFiles) {
+          if (!threadIDFile.getName().equals(PerformanceAnalyzerMetrics.sHttpPath)) {
+            String threadID = threadIDFile.getName();
 
-          for (File opFile : threadIDFile.listFiles()) {
-            if (opFile.getName().equals(PerformanceAnalyzerMetrics.sOSPath)) {
-              retVal =
-                  processOSMetrics(
-                          opFile,
-                          threadID,
-                          lastUpdateTimePerTid,
-                          startTime,
-                          endTime,
-                          batchHandle,
-                          tidToDelete)
-                      || retVal;
+            if (threadIDFile.listFiles() == null) {
+              continue;
+            }
+            for (File opFile : threadIDFile.listFiles()) {
+              if (opFile.getName().equals(PerformanceAnalyzerMetrics.sOSPath)) {
+                retVal =
+                    processOSMetrics(
+                            opFile,
+                            threadID,
+                            lastUpdateTimePerTid,
+                            startTime,
+                            endTime,
+                            batchHandle,
+                            tidToDelete)
+                        || retVal;
+              }
             }
           }
         }
@@ -185,15 +191,21 @@ public class MetricsParser {
 
     BatchBindStep handle = rqMetricsSnap.startBatchPut();
     if (threadsFile.exists()) {
-      for (File threadIDFile : threadsFile.listFiles()) {
-        if (!threadIDFile.getName().equals(PerformanceAnalyzerMetrics.sHttpPath)) {
-          String threadID = threadIDFile.getName();
+      File[] threadFiles = threadsFile.listFiles();
+      if (threadFiles != null) {
+        for (File threadIDFile : threadFiles) {
+          if (!threadIDFile.getName().equals(PerformanceAnalyzerMetrics.sHttpPath)) {
+            String threadID = threadIDFile.getName();
 
-          for (File opFile : threadIDFile.listFiles()) {
-            if (opFile.getName().equals(PerformanceAnalyzerMetrics.sShardBulkPath)
-                || opFile.getName().equals(PerformanceAnalyzerMetrics.sShardFetchPath)
-                || opFile.getName().equals(PerformanceAnalyzerMetrics.sShardQueryPath)) {
-              handleESMetrics(opFile, threadID, startTime, endTime, handle);
+            if (threadIDFile.listFiles() == null) {
+              continue;
+            }
+            for (File opFile : threadIDFile.listFiles()) {
+              if (opFile.getName().equals(PerformanceAnalyzerMetrics.sShardBulkPath)
+                  || opFile.getName().equals(PerformanceAnalyzerMetrics.sShardFetchPath)
+                  || opFile.getName().equals(PerformanceAnalyzerMetrics.sShardQueryPath)) {
+                handleESMetrics(opFile, threadID, startTime, endTime, handle);
+              }
             }
           }
         }
@@ -223,31 +235,34 @@ public class MetricsParser {
     BatchBindStep handle = rqMetricsSnap.startBatchPut();
 
     if (httpFile.exists()) {
-      for (File opFile : httpFile.listFiles()) {
-        String operation = opFile.getName();
-        for (File rFile : opFile.listFiles()) {
-          String requestId = rFile.getName();
-          for (File metricsFile : rFile.listFiles()) {
-            long lastModified = FileHelper.getLastModified(metricsFile, startTime, endTime);
-            if (lastModified < startTime || lastModified >= endTime) {
-              continue;
-            }
-            try {
-              if (metricsFile.getName().equals(PerformanceAnalyzerMetrics.START_FILE_NAME)) {
-                emitStartHttpMetric(metricsFile, requestId, operation, handle);
-              } else if (metricsFile
-                  .getName()
-                  .equals(PerformanceAnalyzerMetrics.FINISH_FILE_NAME)) {
-                emitFinishHttpMetric(metricsFile, requestId, operation, handle);
+      File[] opfiles = httpFile.listFiles();
+      if (opfiles != null) {
+        for (File opFile : opfiles) {
+          String operation = opFile.getName();
+          for (File rFile : opFile.listFiles()) {
+            String requestId = rFile.getName();
+            for (File metricsFile : rFile.listFiles()) {
+              long lastModified = FileHelper.getLastModified(metricsFile, startTime, endTime);
+              if (lastModified < startTime || lastModified >= endTime) {
+                continue;
               }
-            } catch (Exception e) {
-              LOG.error(e, e);
-              LOG.error(
-                  "Error parsing file - {} ExcepionCode: {}\n",
-                  metricsFile.getAbsolutePath(),
-                  StatExceptionCode.READER_PARSER_ERROR.toString());
-              StatsCollector.instance().logException(StatExceptionCode.READER_PARSER_ERROR);
-              throw e;
+              try {
+                if (metricsFile.getName().equals(PerformanceAnalyzerMetrics.START_FILE_NAME)) {
+                  emitStartHttpMetric(metricsFile, requestId, operation, handle);
+                } else if (metricsFile
+                    .getName()
+                    .equals(PerformanceAnalyzerMetrics.FINISH_FILE_NAME)) {
+                  emitFinishHttpMetric(metricsFile, requestId, operation, handle);
+                }
+              } catch (Exception e) {
+                LOG.error(e, e);
+                LOG.error(
+                    "Error parsing file - {} ExcepionCode: {}\n",
+                    metricsFile.getAbsolutePath(),
+                    StatExceptionCode.READER_PARSER_ERROR.toString());
+                StatsCollector.instance().logException(StatExceptionCode.READER_PARSER_ERROR);
+                throw e;
+              }
             }
           }
         }
@@ -387,9 +402,12 @@ public class MetricsParser {
 
   private void expandThreadDirectory(File threadsFile, Queue<File> queue) {
 
-    for (File threadIDFile : threadsFile.listFiles()) {
-      if (!threadIDFile.getName().equals(PerformanceAnalyzerMetrics.sHttpPath)) {
-        queue.add(threadIDFile);
+    File[] threadIdFiles = threadsFile.listFiles();
+    if (threadIdFiles != null) {
+      for (File threadIDFile : threadIdFiles) {
+        if (!threadIDFile.getName().equals(PerformanceAnalyzerMetrics.sHttpPath)) {
+          queue.add(threadIDFile);
+        }
       }
     }
   }
@@ -642,15 +660,18 @@ public class MetricsParser {
   private void handleESMetrics(
       File esMetrics, String threadID, long startTime, long endTime, BatchBindStep handle) {
     String operation = esMetrics.getName(); // - shardBulk, shardSearch etc..
-    for (File idFile : esMetrics.listFiles()) {
-      try {
-        handleidFile(idFile, threadID, startTime, endTime, operation, handle);
-      } catch (Exception e) {
-        LOG.error(
-            "Failed to parse ES Metrics with ExcepionCode: "
-                + StatExceptionCode.READER_PARSER_ERROR.toString(),
-            e);
-        StatsCollector.instance().logException(StatExceptionCode.READER_PARSER_ERROR);
+    File[] idFiles = esMetrics.listFiles();
+    if (idFiles != null) {
+      for (File idFile : esMetrics.listFiles()) {
+        try {
+          handleidFile(idFile, threadID, startTime, endTime, operation, handle);
+        } catch (Exception e) {
+          LOG.error(
+              "Failed to parse ES Metrics with ExcepionCode: "
+                  + StatExceptionCode.READER_PARSER_ERROR.toString(),
+              e);
+          StatsCollector.instance().logException(StatExceptionCode.READER_PARSER_ERROR);
+        }
       }
     }
   }
@@ -716,23 +737,26 @@ public class MetricsParser {
     if (lastModified < startTime || lastModified >= endTime) {
       return;
     }
-    for (File metricsFile : idFile.listFiles()) {
-      String metrics = PerformanceAnalyzerMetrics.getMetric(metricsFile.getAbsolutePath());
-      try {
-        if (metricsFile.getName().equals(PerformanceAnalyzerMetrics.START_FILE_NAME)) {
-          emitStartMetric(metrics, rid, threadID, operation, handle);
-        } else if (metricsFile.getName().equals(PerformanceAnalyzerMetrics.FINISH_FILE_NAME)) {
-          emitFinishMetric(metrics, rid, threadID, operation, handle);
+    File[] idFiles = idFile.listFiles();
+    if (idFiles != null) {
+      for (File metricsFile : idFiles) {
+        String metrics = PerformanceAnalyzerMetrics.getMetric(metricsFile.getAbsolutePath());
+        try {
+          if (metricsFile.getName().equals(PerformanceAnalyzerMetrics.START_FILE_NAME)) {
+            emitStartMetric(metrics, rid, threadID, operation, handle);
+          } else if (metricsFile.getName().equals(PerformanceAnalyzerMetrics.FINISH_FILE_NAME)) {
+            emitFinishMetric(metrics, rid, threadID, operation, handle);
+          }
+        } catch (Exception e) {
+          LOG.error(e, e);
+          LOG.error("Error parsing file - {},\n {}", metricsFile.getAbsolutePath(), metrics);
+          LOG.error(
+              "Error parsing file - {} ExcepionCode: {},\n {}",
+              metricsFile.getAbsolutePath(),
+              StatExceptionCode.READER_PARSER_ERROR.toString(),
+              metrics);
+          StatsCollector.instance().logException(StatExceptionCode.READER_PARSER_ERROR);
         }
-      } catch (Exception e) {
-        LOG.error(e, e);
-        LOG.error("Error parsing file - {},\n {}", metricsFile.getAbsolutePath(), metrics);
-        LOG.error(
-            "Error parsing file - {} ExcepionCode: {},\n {}",
-            metricsFile.getAbsolutePath(),
-            StatExceptionCode.READER_PARSER_ERROR.toString(),
-            metrics);
-        StatsCollector.instance().logException(StatExceptionCode.READER_PARSER_ERROR);
       }
     }
   }

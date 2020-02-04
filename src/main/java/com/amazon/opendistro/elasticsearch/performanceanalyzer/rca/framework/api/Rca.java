@@ -15,8 +15,11 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.util.Collections;
 import org.apache.logging.log4j.LogManager;
@@ -31,18 +34,49 @@ public abstract class Rca<T extends ResourceFlowUnit> extends NonLeafNode<T> {
 
   /**
    * fetch flowunits from local graph node
+   *
    * @param args The wrapper around the flow unit operation.
    */
   @Override
   public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
     LOG.debug("rca: Executing fromLocal: {}", this.getClass().getSimpleName());
-    setFlowUnits(Collections.singletonList(this.operate()));
+
+    long startTime = System.currentTimeMillis();
+
+    T result;
+    try {
+      result = this.operate();
+    } catch (Exception ex) {
+      ex.printStackTrace();
+      PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
+          ExceptionsAndErrors.EXCEPTION_IN_OPERATE, name(), 1);
+      result = (T) T.generic();
+    }
+    long endTime = System.currentTimeMillis();
+    long duration = endTime - startTime;
+
+    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
+        RcaGraphMetrics.GRAPH_NODE_OPERATE_CALL, this.name(), duration);
+
+    setFlowUnits(Collections.singletonList(result));
   }
 
   @Override
   public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
+    long startTime = System.currentTimeMillis();
     for (final T flowUnit : getFlowUnits()) {
+      try {
         args.getPersistable().write(this, flowUnit);
+      } catch (Exception ex) {
+        ex.printStackTrace();
+        PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
+            ExceptionsAndErrors.EXCEPTION_IN_PERSIST, name(), 1);
+      }
     }
+
+    long endTime = System.currentTimeMillis();
+    long duration = endTime - startTime;
+    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
+        RcaGraphMetrics.RCA_PERSIST_CALL, this.name(), duration);
   }
 }

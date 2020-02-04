@@ -35,6 +35,7 @@ import org.jooq.impl.DSL;
  */
 public class HotResourceSummary extends GenericSummary {
 
+  public static final String HOT_RESOURCE_SUMMARY_TABLE = HotResourceSummary.class.getSimpleName();
   private final ResourceType resourceType;
   private List<String> consumers;
   private double threshold;

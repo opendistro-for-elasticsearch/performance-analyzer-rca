@@ -13,6 +13,12 @@
  * permissions and limitations under the License.
  */
 
+buildscript {
+    dependencies {
+        classpath group: 'com.google.guava', name: 'guava', version: '28.1-jre'
+    }
+}
+
 plugins {
     id 'java'
     id 'checkstyle'
@@ -21,6 +27,7 @@ plugins {
     id 'com.google.protobuf' version '0.8.8'
     id 'jacoco'
     id 'idea'
+    id 'com.github.spotbugs' version '3.0.0'
 }
 
 application {
@@ -84,6 +91,21 @@ tasks.withType(Checkstyle) {
     }
 }
 
+spotbugsMain {
+    excludeFilter = file("checkstyle/findbugs-exclude.xml")
+    effort = 'max'
+    ignoreFailures = false
+
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
+}
+
+spotbugsTest {
+    ignoreFailures = true
+}
+
 jacoco {
     toolVersion = "0.8.5"
 }
@@ -121,7 +143,7 @@ jacocoTestCoverageVerification {
     violationRules {
         rule {
             limit {
-                minimum = 0.5
+                minimum = 0.6
             }
         }
     }
@@ -199,12 +221,13 @@ dependencies {
     compile 'org.bouncycastle:bcprov-jdk15on:1.60'
     compile 'org.bouncycastle:bcpkix-jdk15on:1.60'
     compile 'org.xerial:sqlite-jdbc:3.8.11.2'
-    compile 'com.google.guava:guava:27.0.1-jre'
+    compile 'com.google.guava:guava:28.1-jre'
     compile 'com.fasterxml.jackson.core:jackson-annotations:2.8.11'
     compile 'com.fasterxml.jackson.core:jackson-databind:2.8.11'
     compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.13.0'
     compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.13.0'
     compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.9'
+    compile group: 'commons-io', name: 'commons-io', version: '2.3'
     implementation 'io.grpc:grpc-netty-shaded:1.25.0'
     implementation 'io.grpc:grpc-protobuf:1.25.0'
     implementation 'io.grpc:grpc-stub:1.25.0'

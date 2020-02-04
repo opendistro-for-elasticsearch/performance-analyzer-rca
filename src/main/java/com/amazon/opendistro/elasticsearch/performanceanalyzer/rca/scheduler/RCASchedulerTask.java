@@ -15,15 +15,20 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,7 +41,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class RCASchedulerTask implements Runnable {
+
   private static final Logger LOG = LogManager.getLogger(RCASchedulerTask.class);
+  private static final String EMPTY_STRING = "";
 
   /**
    * This is a wrapper class for return type of createTaskletAndSendIntent method. This is required
@@ -45,6 +52,7 @@ public class RCASchedulerTask implements Runnable {
    * needs data from a remote node.
    */
   private static class CreatedTasklets {
+
     /** Tasklet for the locally executable node. */
     Tasklet taskletForCurrentNode;
 
@@ -86,7 +94,7 @@ public class RCASchedulerTask implements Runnable {
   // guess, who
   //  should provide the max ticks - the framework or the Runtime ? Maybe an agreement between the
   // two is better.
-  RCASchedulerTask(
+  public RCASchedulerTask(
       int maxTicks,
       final ExecutorService executorPool,
       final List<ConnectedComponent> connectedComponents,
@@ -182,7 +190,7 @@ public class RCASchedulerTask implements Runnable {
     for (List<Node<?>> levelNodes : orderedNodes) {
       List<Tasklet> locallyExecutableInThisLevel = new ArrayList<>();
       for (Node<?> node : levelNodes) {
-        if (RcaUtil.doTagsMatch(node, conf)) {
+        if (RcaUtil.shouldExecuteLocally(node, conf)) {
           // This node will be executed locally, so add it to the set to keep track of this.
           locallyExecutableSet.add(node);
 
@@ -273,65 +281,108 @@ public class RCASchedulerTask implements Runnable {
             GraphNodeOperations::readFromLocal);
     CreatedTasklets ret = new CreatedTasklets(tasklet);
 
+    final String aggregationLocus = graphNode.getTags().get(RcaTagConstants.TAG_AGGREGATE_UPSTREAM);
+
     for (Node<?> upstreamNode : graphNode.getUpstreams()) {
       // A tasklet should exist for each upstream dependency. Based on whether this is
       // locally available or not, a different execution function will be passed in.
       if (locallyExecutableNodeSet.contains(upstreamNode)) {
         // This upstream node is executed locally. So it should be in the nodeTaskletMap.
         tasklet.addPredecessor(nodeTaskletMap.get(upstreamNode));
+
+        final Map<String, String> upstreamNodeTags = upstreamNode.getTags();
+        List<String> upstreamNodeLoci =
+            Arrays.asList(
+                upstreamNodeTags
+                    .getOrDefault(RcaTagConstants.TAG_LOCUS, EMPTY_STRING)
+                    .split(RcaTagConstants.SEPARATOR));
+        if (aggregationLocus != null && upstreamNodeLoci.contains(aggregationLocus)) {
+          // This upstream vertex is also executed remotely and the current vertex's aggregation
+          // locus includes one of the loci for the upstream vertex, so we need to add a task to
+          // fetch that vertex's data from other nodes that match that locus as well.
+          addReadFromRemoteTasklet(graphNode, upstreamNode, hopper, db, persistable, tasklet, ret);
+        }
       } else {
         // If we are here, then it means that the upstream node required to evaluate
         // this node, is not locally executed. Hence, we have to send an intent to get the
         // node's data from the remote node.
-        LOG.debug(
-            "rca: Node '{}' sending intent to consume node: '{}'",
-            graphNode.name(), upstreamNode.name());
-        IntentMsg msg =
-            new IntentMsg(graphNode.name(), upstreamNode.name(), upstreamNode.getTags());
-        hopper.sendIntent(msg);
-
-        // This node is not locally present. So, we will add a virtual Tasklet that reads
-        // the result where the wirehopper dumps it and constructs the Tasklet for us.
-        Tasklet remoteTasklet =
-            new Tasklet(
-                upstreamNode,
-                db,
-                persistable,
-                remotelyDesirableNodeSet,
-                hopper,
-                GraphNodeOperations::readFromWire);
-        LOG.debug("Tasklet created for REMOTE node '{}' with readFromWire", graphNode.name());
-        tasklet.addPredecessor(remoteTasklet);
-        ret.remoteTasklets.add(remoteTasklet);
+        addReadFromRemoteTasklet(graphNode, upstreamNode, hopper, db, persistable, tasklet, ret);
       }
     }
     return ret;
   }
 
+  private void addReadFromRemoteTasklet(
+      final Node<?> graphNode,
+      final Node<?> upstreamNode,
+      final WireHopper hopper,
+      final Queryable db,
+      final Persistable persistable,
+      final Tasklet tasklet,
+      CreatedTasklets ret) {
+    LOG.debug(
+        "rca: Node '{}' sending intent to consume node: '{}'",
+        graphNode.name(),
+        upstreamNode.name());
+    IntentMsg msg = new IntentMsg(graphNode.name(), upstreamNode.name(), upstreamNode.getTags());
+    hopper.sendIntent(msg);
+
+    // This node is not locally present. So, we will add a virtual Tasklet that reads
+    // the result where the wirehopper dumps it and constructs the Tasklet for us.
+    Tasklet remoteTasklet =
+        new Tasklet(
+            upstreamNode,
+            db,
+            persistable,
+            remotelyDesirableNodeSet,
+            hopper,
+            GraphNodeOperations::readFromWire);
+    LOG.debug("Tasklet created for REMOTE node '{}' with readFromWire", graphNode.name());
+    tasklet.addPredecessor(remoteTasklet);
+    ret.remoteTasklets.add(remoteTasklet);
+  }
+
   public void run() {
     currTick = currTick + 1;
+    long runStartTime = System.currentTimeMillis();
 
-    Map<Tasklet, CompletableFuture<TaskletResult>> taskletFutureMap = new HashMap<>();
-    LOG.debug("RCA: ========== STRT Tick {} ====== ", currTick);
+    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
+        RcaGraphMetrics.NUM_GRAPH_NODES, "", Stats.getInstance().getTotalNodesCount());
+
+    List<CompletableFuture<Void>> lastLevelTasks = createAsyncTasks();
+    preWait();
+    lastLevelTasks.forEach(CompletableFuture::join);
+    postCompletion(runStartTime);
+  }
+
+  protected List<CompletableFuture<Void>> createAsyncTasks() {
+    Map<Tasklet, CompletableFuture<Void>> taskletFutureMap = new HashMap<>();
+    List<CompletableFuture<Void>> lastLevel = new ArrayList<>();
     for (List<Tasklet> taskletsAtThisLevel : locallyExecutableTasklets) {
+      lastLevel.clear();
       for (Tasklet tasklet : taskletsAtThisLevel) {
-        tasklet.setPredecessorToFutureMap(taskletFutureMap);
-        CompletableFuture<TaskletResult> taskletFuture = tasklet.execute(executorPool);
+        CompletableFuture<Void> taskletFuture = tasklet.execute(executorPool, taskletFutureMap);
+        lastLevel.add(taskletFuture);
         taskletFutureMap.put(tasklet, taskletFuture);
       }
     }
-    LOG.debug("RCA: Finished creating tasks ..");
-    // Now we will wait for the results to show up.
-    taskletFutureMap.values().forEach(CompletableFuture::join);
-    LOG.debug("RCA: All tasklets evaluated.");
+    return lastLevel;
+  }
 
-    // TODO: Do proper exception handling.
-    // No one is calling get on the the last set of Tasklets.
+  protected void preWait() {}
 
+  protected void postCompletion(long runStartTime) {
     if (currTick == maxTicks) {
       currTick = 0;
       locallyExecutableTasklets.forEach(l -> l.forEach(Tasklet::resetTicks));
       LOG.debug("Finished ticking.");
     }
+
+    long runEndTime = System.currentTimeMillis();
+    long durationMillis = runEndTime - runStartTime;
+    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
+        RcaGraphMetrics.GRAPH_EXECUTION_TIME, "", durationMillis);
+    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
+        RcaGraphMetrics.NUM_GRAPH_NODES_MUTED, "", Stats.getInstance().getMutedGraphNodesCount());
   }
 }

@@ -200,7 +200,7 @@ public class MetricsEmitter {
             .groupBy(groupByFields)
             .fetch();
     long mFinalT = System.currentTimeMillis();
-    LOG.info("Total time taken for tid corelation: {}", mFinalT - mCurrT);
+    LOG.debug("Total time taken for tid corelation: {}", mFinalT - mCurrT);
     checkInvalidData(rqTable, osTable, create);
 
     Set<String> metricColumns = osMetricsSnap.getMetricColumns();
@@ -243,7 +243,7 @@ public class MetricsEmitter {
       }
     }
     mFinalT = System.currentTimeMillis();
-    LOG.info("Total time taken for writing resource metrics metricsdb: {}", mFinalT - mCurrT);
+    LOG.debug("Total time taken for writing resource metrics metricsdb: {}", mFinalT - mCurrT);
   }
 
   /**
@@ -393,7 +393,7 @@ public class MetricsEmitter {
       bulkDocHandle.execute();
     }
     long mFinalT = System.currentTimeMillis();
-    LOG.info("Total time taken for writing workload metrics metricsdb: {}", mFinalT - mCurrT);
+    LOG.debug("Total time taken for writing workload metrics metricsdb: {}", mFinalT - mCurrT);
   }
 
   public static void emitThreadNameMetrics(
@@ -429,7 +429,7 @@ public class MetricsEmitter {
       }
     }
     long mFinalT = System.currentTimeMillis();
-    LOG.info("Total time taken for writing threadName metrics metricsdb: {}", mFinalT - mCurrT);
+    LOG.debug("Total time taken for writing threadName metrics metricsdb: {}", mFinalT - mCurrT);
   }
 
   public static String categorizeThreadName(String threadName, Dimensions dimensions) {
@@ -606,7 +606,7 @@ public class MetricsEmitter {
     }
 
     long mFinalT = System.currentTimeMillis();
-    LOG.info("Total time taken for writing http metrics metricsdb: {}", mFinalT - mCurrT);
+    LOG.debug("Total time taken for writing http metrics metricsdb: {}", mFinalT - mCurrT);
   }
 
   public static void emitMasterEventMetrics(

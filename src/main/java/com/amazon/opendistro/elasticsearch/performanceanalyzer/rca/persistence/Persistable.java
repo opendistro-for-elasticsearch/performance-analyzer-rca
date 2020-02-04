@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -28,6 +29,8 @@ public interface Persistable {
   List<ResourceFlowUnit> read(Node<?> node);
 
   String read();
+
+  RcaResponse readRca(String rca);
 
   /**
    * Write data to the database.

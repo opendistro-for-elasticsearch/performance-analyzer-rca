@@ -18,9 +18,8 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
-
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
 import java.io.File;
-import java.io.FilenameFilter;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -32,7 +31,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.Field;
@@ -50,6 +49,8 @@ public abstract class PersistorBase implements Persistable {
   protected String dbProtocol;
   private static final int FILE_ROTATION_PERIOD_SECS = 3600;
   private static final int SQLITE_FILES_TO_KEEP = 5;
+  private final File dirDB;
+  private static final String WILDCARD_CHARACTER = "*";
 
   PersistorBase(String dir, String filename, String dbProtocolString) throws SQLException {
     this.dir = dir;
@@ -62,6 +63,7 @@ public abstract class PersistorBase implements Persistable {
     this.tableNames = new HashSet<>();
     String url = String.format("%s%s", dbProtocolString, this.filename);
     conn = DriverManager.getConnection(url);
+    this.dirDB = new File(this.dir);
   }
 
   @Override
@@ -74,12 +76,17 @@ public abstract class PersistorBase implements Persistable {
 
   abstract void createTable(String tableName, List<Field<?>> columns);
 
-  abstract void createTable(String tableName, List<Field<?>> columns, String refTable,
+  abstract void createTable(
+      String tableName,
+      List<Field<?>> columns,
+      String refTable,
       String referenceTablePrimaryKeyFieldName);
 
   abstract int insertRow(String tableName, List<Object> columns);
 
   abstract String readTables();
+
+  abstract RcaResponse readRcaTable(String rca);
 
   abstract void createNewDSLContext();
 
@@ -95,6 +102,10 @@ public abstract class PersistorBase implements Persistable {
     LOG.debug("RCA: in read() in PersistorBase");
     String jsonResponse = readTables();
     return jsonResponse;
+  }
+
+  public synchronized RcaResponse readRca(String rca) {
+    return readRcaTable(rca);
   }
 
   public synchronized void openNewDBFile() throws SQLException {
@@ -120,19 +131,12 @@ public abstract class PersistorBase implements Persistable {
   }
 
   public synchronized String getFilesInDirDB(String datePrefix) {
-    File dirDB = new File(this.dir);
-    File[] files =
-        dirDB.listFiles(
-            new FilenameFilter() {
-              @Override
-              public boolean accept(File dir, String name) {
-                return name.startsWith(String.format("%s.%s", filenameParam, datePrefix));
-              }
-            });
-    if (files.length == 0) {
-      return "";
-    }
-    return files[0].toString();
+    String[] files =
+        this.dirDB.list(
+            new WildcardFileFilter(
+                String.format("%s.%s%s", filenameParam, datePrefix, WILDCARD_CHARACTER)));
+
+    return (files == null || files.length == 0) ? "" : Paths.get(this.dir, files[0]).toString();
   }
 
   public synchronized String getDBFilePath(int hours) throws ParseException {
@@ -188,7 +192,9 @@ public abstract class PersistorBase implements Persistable {
     }
 
     if (!tableNames.contains(tableName)) {
-      LOG.info("RCA: Table '{}' does not exist. Creating one with columns: {}", tableName,
+      LOG.info(
+          "RCA: Table '{}' does not exist. Creating one with columns: {}",
+          tableName,
           flowUnit.getSqlSchema());
       createTable(tableName, flowUnit.getSqlSchema());
       tableNames.add(tableName);
@@ -196,22 +202,28 @@ public abstract class PersistorBase implements Persistable {
     int lastPrimaryKey = insertRow(tableName, flowUnit.getSqlValue());
 
     if (flowUnit.hasResourceSummary()) {
-      write(flowUnit.getResourceSummary(), tableName, getPrimaryKeyColumnName(tableName),
+      write(
+          flowUnit.getResourceSummary(),
+          tableName,
+          getPrimaryKeyColumnName(tableName),
           lastPrimaryKey);
     }
   }
 
-  /**
-   * recursively insert nested summary to sql tables
-   */
-  private synchronized void write(GenericSummary summary, String referenceTable,
-      String referenceTablePrimaryKeyFieldName, int referenceTablePrimaryKeyFieldValue) {
+  /** recursively insert nested summary to sql tables */
+  private synchronized void write(
+      GenericSummary summary,
+      String referenceTable,
+      String referenceTablePrimaryKeyFieldName,
+      int referenceTablePrimaryKeyFieldValue) {
     String tableName = summary.getClass().getSimpleName();
     if (!tableNames.contains(tableName)) {
-      LOG.info("RCA: Table '{}' does not exist. Creating one with columns: {}", tableName,
+      LOG.info(
+          "RCA: Table '{}' does not exist. Creating one with columns: {}",
+          tableName,
           summary.getSqlSchema());
-      createTable(tableName, summary.getSqlSchema(), referenceTable,
-          referenceTablePrimaryKeyFieldName);
+      createTable(
+          tableName, summary.getSqlSchema(), referenceTable, referenceTablePrimaryKeyFieldName);
       tableNames.add(tableName);
     }
     List<Object> values = summary.getSqlValue();

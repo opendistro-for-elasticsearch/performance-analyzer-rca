@@ -87,4 +87,12 @@ public class RcaConf {
   public String getAnalysisGraphEntryPoint() {
     return conf.getAnalysisGraphEntryPoint();
   }
+
+  public int getNetworkQueueLength() {
+    return conf.getNetworkQueueLength();
+  }
+
+  public int getPerVertexBufferLength() {
+    return conf.getPerVertexBufferLength();
+  }
 }

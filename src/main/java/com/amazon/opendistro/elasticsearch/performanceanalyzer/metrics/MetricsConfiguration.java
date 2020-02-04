@@ -29,6 +29,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.os.OSGlobals;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.os.ThreadCPU;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.os.ThreadDiskIO;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.os.ThreadSched;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 

@@ -15,65 +15,61 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
-import io.grpc.stub.StreamObserver;
-import java.util.HashMap;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants;
+import com.google.common.collect.ImmutableSet;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Handles adding and removing of subscriptions for the vertices in the analysis graph.
+ */
 public class SubscriptionManager {
+
   private static final Logger LOG = LogManager.getLogger(SubscriptionManager.class);
 
+  /**
+   * The connection manager instance.
+   */
   private final GRPCConnectionManager connectionManager;
-  private final NetClient netClient;
 
-  private Map<String, Set<String>> publisherMap = new HashMap<>();
-  private Map<String, Set<String>> subscriberMap = new HashMap<>();
+  /**
+   * Map of vertex to a set of hosts that are publishing flow units for that vertex.
+   */
+  private ConcurrentMap<String, Set<String>> publisherMap = new ConcurrentHashMap<>();
 
-  private String currentLocus;
+  /**
+   * Map of vertex to a set of hosts that are interested in consuming the flow units for that
+   * vertex.
+   */
+  private ConcurrentMap<String, Set<String>> subscriberMap = new ConcurrentHashMap<>();
+
+  /**
+   * The current locus of the node.
+   */
+  private volatile String currentLocus;
 
   public SubscriptionManager(
-      final GRPCConnectionManager connectionManager, final NetClient netClient) {
+      final GRPCConnectionManager connectionManager) {
     this.connectionManager = connectionManager;
-    this.netClient = netClient;
   }
 
-  public void broadcastSubscribeRequest(
-      final String requesterGraphNode,
-      final String destinationGraphNode,
-      final Map<String, String> tags) {
-    final List<String> remoteHosts = connectionManager.getAllRemoteHosts();
-
-    for (final String remoteHost : remoteHosts) {
-      sendSubscribeRequest(remoteHost, requesterGraphNode, destinationGraphNode, tags);
-    }
-  }
-
-  public void sendSubscribeRequest(
-      final String remoteHost,
-      final String requesterGraphNode,
-      final String destinationGraphNode,
-      final Map<String, String> tags) {
-    LOG.debug(
-        "Sending subscribe message to: {}. Need {} to compute {}",
-        remoteHost,
-        destinationGraphNode,
-        requesterGraphNode);
-    netClient.subscribe(
-        remoteHost,
-        buildSubscribeMessage(requesterGraphNode, destinationGraphNode, tags),
-        new SubscriptionResponseHandler(remoteHost, destinationGraphNode));
-  }
-
-  public void unsubscribe(final String graphNode, final String remoteHost) {
+  /**
+   * Unsubscribe from the flow units for upstream vertex from the host. Callers: Flow unit sender
+   * thread.
+   *
+   * @param graphNode  The vertex whose flow units we are not interested in.
+   * @param remoteHost The host from which we don't want the flow units for vertex.
+   */
+  public void unsubscribeAndTerminateConnection(final String graphNode, final String remoteHost) {
     LOG.debug("Unsubscribing {} from {} updates", remoteHost, graphNode);
 
     if (subscriberMap.containsKey(graphNode)) {
@@ -86,58 +82,71 @@ public class SubscriptionManager {
       }
     }
     connectionManager.terminateConnection(remoteHost);
-    netClient.flushStream(remoteHost);
   }
 
-  private SubscribeMessage buildSubscribeMessage(
-      final String requesterGraphNode,
-      final String destinationGraphNode,
-      final Map<String, String> tags) {
-    return SubscribeMessage.newBuilder()
-        .setRequesterNode(requesterGraphNode)
-        .setDestinationNode(destinationGraphNode)
-        .putTags("locus", tags.get("locus"))
-        .putTags("requester", connectionManager.getCurrentHostAddress())
-        .build();
-  }
-
-  public SubscriptionStatus addSubscriber(
-      final String graphNode, final String subscriberHostAddress, final String locus) {
-    if (!currentLocus.equals(locus)) {
-      LOG.debug("locus mismatch. Rejecting subscription. Req: {}, Curr: {}", locus, currentLocus);
+  /**
+   * Adds a new host as a subscriber to a vertex. Caller: subscription receiver thread.
+   *
+   * @param graphNode             The vertex to which the host wants to subscribe to.
+   * @param subscriberHostAddress The host that wants to subscribe.
+   * @param loci                  The locus which the subscribing host is interested in.
+   * @return A SubscriptionStatus protobuf message that contains the status for the subscription
+   *         request.
+   */
+  public synchronized SubscriptionStatus addSubscriber(
+      final String graphNode, final String subscriberHostAddress, final String loci) {
+    final List<String> vertexLoci = Arrays.asList(loci.split(RcaTagConstants.SEPARATOR));
+    if (!vertexLoci.contains(currentLocus)) {
+      LOG.debug("locus mismatch. Rejecting subscription. Req: {}, Curr: {}", loci, currentLocus);
       return SubscriptionStatus.TAG_MISMATCH;
     }
 
     Set<String> currentSubscribers = subscriberMap.getOrDefault(graphNode, new HashSet<>());
     currentSubscribers.add(subscriberHostAddress);
+    // happens-before: update to a java.util.concurrent collection. Updated value will be visible
+    // to subsequent reads.
     subscriberMap.put(graphNode, currentSubscribers);
 
     LOG.debug("locus matched. Added subscriber {} for {}", subscriberHostAddress, graphNode);
     return SubscriptionStatus.SUCCESS;
   }
 
+  /**
+   * Check if a vertex has downstream subscribers. Callers: flow unit send thread.
+   *
+   * @param graphNode The vertex that needs to check if it has downstream subscribers.
+   * @return true if it has, false otherwise.
+   */
   public boolean isNodeSubscribed(final String graphNode) {
+    // happens-before: reading from a java.util.concurrent collection which guarantees read
+    // reflects most recent completed update.
     return subscriberMap.containsKey(graphNode);
   }
 
-  public Set<String> getSubscribersFor(final String graphNode) {
-    return subscriberMap.getOrDefault(graphNode, new HashSet<>());
+  /**
+   * Get subscribers for a vertex. Callers: flow unit send thread.
+   *
+   * @param graphNode The vertex whose subscribers need to be returned.
+   * @return The set of host addresses that are the downstream subscribers.
+   */
+  public ImmutableSet<String> getSubscribersFor(final String graphNode) {
+    // happens-before: ImmutableSet - final field semantics. Reading from java.util.concurrent
+    // collection.
+    return ImmutableSet.copyOf(subscriberMap.getOrDefault(graphNode, new HashSet<>()));
   }
 
-  private void addPublisher(final String graphNode, final String publisherHostAddress) {
-    LOG.debug("Added publisher: {} for graphNode: {}", publisherHostAddress, graphNode);
+  /**
+   * Adds a host address as a publisher for a vertex. Callers: subscription handler thread.
+   *
+   * @param graphNode            The vertex for which a publisher is being added.
+   * @param publisherHostAddress The host address of the publisher node.
+   */
+  public synchronized void addPublisher(final String graphNode, final String publisherHostAddress) {
+    LOG.info("Added publisher: {} for graphNode: {}", publisherHostAddress, graphNode);
 
     final Set<String> currentPublishers = publisherMap.getOrDefault(graphNode, new HashSet<>());
     currentPublishers.add(publisherHostAddress);
     publisherMap.put(graphNode, currentPublishers);
-  }
-
-  public void dumpStats() {
-    LOG.debug("Subbscribers: {}", subscriberMap);
-    LOG.debug("Publishers: {}", publisherMap);
-
-    connectionManager.dumpStats();
-    netClient.dumpStreamStats();
   }
 
   public void setCurrentLocus(String currentLocus) {
@@ -145,35 +154,6 @@ public class SubscriptionManager {
   }
 
   public Set<String> getPublishersForNode(String graphNode) {
-    return publisherMap.get(graphNode);
-  }
-
-  private class SubscriptionResponseHandler implements StreamObserver<SubscribeResponse> {
-    private final String remoteHost;
-    private final String graphNode;
-
-    SubscriptionResponseHandler(final String remoteHost, final String graphNode) {
-      this.remoteHost = remoteHost;
-      this.graphNode = graphNode;
-    }
-
-    @Override
-    public void onNext(SubscribeResponse subscribeResponse) {
-      if (subscribeResponse.getSubscriptionStatus() == SubscriptionStatus.SUCCESS) {
-        LOG.debug("Publisher ack'd: {}", remoteHost);
-        addPublisher(graphNode, remoteHost);
-      }
-    }
-
-    @Override
-    public void onError(Throwable throwable) {
-      LOG.error("Publisher threw an error: {}", throwable.getMessage());
-      throwable.printStackTrace();
-    }
-
-    @Override
-    public void onCompleted() {
-      LOG.debug("Finished subscription request for {}", remoteHost);
-    }
+    return publisherMap.getOrDefault(graphNode, Collections.emptySet());
   }
 }

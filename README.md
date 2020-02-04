@@ -1,3 +1,5 @@
+![](https://github.com/opendistro-for-elasticsearch/performance-analyzer-rca/workflows/Java%20CI/badge.svg)
+
 ## Performance Analyzer RCA
 
 The Performance Analyzer RCA is a framework that builds on the Performance Analyzer engine to
@@ -45,6 +47,42 @@ __Tags__: Tags are key-value pairs that are specified in the configuration file(
 
 ## Design RFC
 [RFC](./rfc-rca.pdf)
+
+## Rest API to get the RCAs
+* To get response for all the available RCA, use:
+```
+curl --url "localhost:9650/_opendistro/_performanceanalyzer/rca" -XGET
+```
+* To get response for a specific RCA, use:
+```
+curl --url "localhost:9650/_opendistro/_performanceanalyzer/rca?name=HighHeapUsageClusterRca" -XGET
+```
+The sample RCA response from above api
+```
+[
+  {
+    "Name": "HighHeapUsageClusterRca",
+    "State": "unhealthy",
+    "NumOfNodes": 6,
+    "NumOfUnhealthyNodes": 1,
+    "TimeStamp": "1579809393944",
+    "Summary": [
+      {
+        "NodeId": "lpgNv3VlSQGfuqMz8CmzUg",
+        "IpAddress": "10.212.48.118",
+        "ResourceContext": [
+          {
+            "ResourceName": "garbage collector",
+            "UnitType": "heap usage in percentage",
+            "Threshold": 0.65,
+            "Actual": 0.0710642990279853
+          }
+        ]
+      }
+    ]
+  }
+]
+```
 
 ## Building, Deploying, and Running the RCA Framework
 Please refer to the [Install Guide](./INSTALL.md) for detailed information on building, installing and running the RCA framework.

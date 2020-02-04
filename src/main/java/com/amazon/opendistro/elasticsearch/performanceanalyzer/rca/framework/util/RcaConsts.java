@@ -16,12 +16,22 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
 public class RcaConsts {
 
   public static final String RCA_CONF_MASTER_FILENAME = "rca_master.conf";
+  public static final String VERTEX_BUFFER_FULL_METRIC = "RcaVertexBufferFull";
+  public static final String RCA_NETWORK_THREAD_NAME_FORMAT = "rca-net-%d";
+  public static final int NETWORK_CORE_THREAD_COUNT = 1;
+  public static final int NETWORK_MAX_THREAD_COUNT = 1;
+  public static final String RCA_SCHEDULER_RESTART_METRIC = "RcaSchedulerRestart";
+  public static final int DEFAULT_PER_NODE_FLOWUNIT_Q_SIZE = 200;
   private static final String RCA_CONF_FILENAME = "rca.conf";
   private static final String RCA_CONF_IDLE_MASTER_FILENAME = "rca_idle_master.conf";
   private static final String THRESHOLDS_DIR_NAME = "thresholds";
@@ -49,6 +59,22 @@ public class RcaConsts {
   public static final String DATASTORE_RESOURCE_COL_NAME = "resource";
   public static final String DATASTORE_STATE_COL_NAME = "state";
 
-  public static final long networkPollerPeriodicity = 5;
-  public static final TimeUnit networkPollerPeriodicityTimeUnit = TimeUnit.SECONDS;
+  public static final long rcaNannyPollerPeriodicity = 5;
+  public static final long rcaConfPollerPeriodicity = 5;
+  public static final long nodeRolePollerPeriodicity = 60;
+  public static final TimeUnit rcaPollerPeriodicityTimeUnit = TimeUnit.SECONDS;
+
+  /**
+   * Class defining constants that are mostly used in tag assignment and comparison context.
+   */
+  public static class RcaTagConstants {
+
+    public static final String SEPARATOR = ",";
+
+    public static final String TAG_LOCUS = "locus";
+    public static final String TAG_AGGREGATE_UPSTREAM = "aggregate-upstream";
+
+    public static final String LOCUS_DATA_NODE = "data-node";
+    public static final String LOCUS_MASTER_NODE = "master-node";
+  }
 }
