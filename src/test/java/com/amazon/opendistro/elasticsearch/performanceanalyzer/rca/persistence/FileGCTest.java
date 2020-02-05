@@ -22,12 +22,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -83,18 +85,32 @@ public class FileGCTest {
   }
 
   @Test
-  public void testFileCleanup() throws IOException {
+  public void testTimeBasedFileCleanup() throws IOException {
     long currentTime = System.currentTimeMillis();
     // create files with modified time past the limit.
     long limit = currentTime - 10 * 3;
 
+    // For these set of files, we are trying to set the file modification time to be before the
+    // limit so that they will be deleted by the time based cleaner.
     for (int i = 0; i < 5; i++) {
       String name = baseFilename + "." + i;
       Path filePath = Paths.get(testLocation.toString(), name);
       Files.createFile(filePath);
       Assert.assertTrue(filePath.toFile().setLastModified(limit - (i + 1) * 10));
     }
+    FileGCTestHelper fileGc = new FileGCTestHelper();
+    String[] files = fileGc.getDbFiles();
+    List<File> afterTimeBasedCleanup = fileGc.timeBasedCleanup(files, System.currentTimeMillis());
 
+    files = fileGc.getDbFiles();
+    Assert.assertEquals("Remaining files: " + files, 0, files.length);
+
+    // we expect all files to be cleaned up.
+    Assert.assertEquals(0, afterTimeBasedCleanup.size());
+  }
+
+  @Test
+  public void testCountBasedCleanup() throws IOException {
     long currtTime = System.currentTimeMillis();
     Set<String> set = new HashSet<>();
     List<String> listByRecency = new ArrayList<>();
@@ -111,16 +127,12 @@ public class FileGCTest {
     }
 
     FileGCTestHelper fileGc = new FileGCTestHelper();
-
     String[] files = fileGc.getDbFiles();
-    List<File> afterTimeBasedCleanup = fileGc.timeBasedCleanup(files, currtTime);
-    Assert.assertEquals(set.size(), afterTimeBasedCleanup.size());
 
-    for (int i = 0; i < afterTimeBasedCleanup.size(); i++) {
-      Assert.assertTrue(set.contains(afterTimeBasedCleanup.get(i).getName()));
-    }
+    List<File> filesList =
+            Arrays.stream(files).map(f-> Paths.get(testLocation.toString(), f).toFile()).collect(Collectors.toList());
+    List<File> afterCountBasedCleanup = fileGc.countBasedCleanup(filesList);
 
-    List<File> afterCountBasedCleanup = fileGc.countBasedCleanup(afterTimeBasedCleanup);
     Assert.assertEquals(3, afterCountBasedCleanup.size());
 
     List<String> expectedFiles = listByRecency.subList(0, 3);
