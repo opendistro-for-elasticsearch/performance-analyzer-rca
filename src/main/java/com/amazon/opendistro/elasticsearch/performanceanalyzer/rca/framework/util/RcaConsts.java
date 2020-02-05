@@ -58,6 +58,7 @@ public class RcaConsts {
   public static final String DATASTORE_TIMESTAMP_COL_NAME = "timestamp";
   public static final String DATASTORE_RESOURCE_COL_NAME = "resource";
   public static final String DATASTORE_STATE_COL_NAME = "state";
+  public static final String DATASTORE_STORAGE_FILE_RETENTION_COUNT = "storage-file-retention-count";
 
   public static final long rcaNannyPollerPeriodicity = 5;
   public static final long rcaConfPollerPeriodicity = 5;

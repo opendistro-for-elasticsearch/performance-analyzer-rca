@@ -27,6 +27,9 @@ import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -48,11 +51,12 @@ public abstract class PersistorBase implements Persistable {
   protected String filenameParam;
   protected String dbProtocol;
   private static final int FILE_ROTATION_PERIOD_SECS = 3600;
-  private static final int SQLITE_FILES_TO_KEEP = 5;
+  private final int storageFileRetentionCount;
+  private static final int STORAGE_FILE_RETENTION_COUNT_DEFAULT_VALUE = 5;
   private final File dirDB;
   private static final String WILDCARD_CHARACTER = "*";
 
-  PersistorBase(String dir, String filename, String dbProtocolString) throws SQLException {
+  PersistorBase(String dir, String filename, String dbProtocolString, String storageFileRetentionCount) throws SQLException {
     this.dir = dir;
     this.filenameParam = filename;
     this.dbProtocol = dbProtocolString;
@@ -64,6 +68,14 @@ public abstract class PersistorBase implements Persistable {
     String url = String.format("%s%s", dbProtocolString, this.filename);
     conn = DriverManager.getConnection(url);
     this.dirDB = new File(this.dir);
+    int parsedStorageFileRetentionCount;
+    try {
+      parsedStorageFileRetentionCount = Integer.parseInt(storageFileRetentionCount);
+    } catch (NumberFormatException exp) {
+      parsedStorageFileRetentionCount = STORAGE_FILE_RETENTION_COUNT_DEFAULT_VALUE;
+      LOG.error(String.format("Unable to parse '%s' as integer", storageFileRetentionCount));
+    }
+    this.storageFileRetentionCount = parsedStorageFileRetentionCount;
   }
 
   @Override
@@ -122,12 +134,27 @@ public abstract class PersistorBase implements Persistable {
     createNewDSLContext();
   }
 
+  /**
+   * This method check if there is a need to delete old sqlite files and create a new one.
+   * Ideally we will be using new sqlite files at the start of every hour, ideally the whenever the
+   * function write is called for the first time in that very hour
+   *
+   * @throws ParseException
+   * @throws SQLException
+   */
   public synchronized void rotateDBIfRequired() throws ParseException, SQLException {
-    Date currTimeMs = new Date(System.currentTimeMillis());
-    if ((currTimeMs.getTime() - this.fileCreateTime.getTime()) / 1000 > FILE_ROTATION_PERIOD_SECS) {
+    LocalDateTime currentLocalDateTime = getLocalDateTimeFromDateObj(new Date(System.currentTimeMillis()));
+    LocalDateTime currentFileLocalDateTime = getLocalDateTimeFromDateObj(this.fileCreateTime);
+    // this means file creation date and hour is less than current hour, hence we will rotate the file
+    if (currentFileLocalDateTime.isBefore(currentLocalDateTime)) {
       openNewDBFile();
       deleteOldDBFile();
     }
+  }
+
+  public LocalDateTime getLocalDateTimeFromDateObj(Date dateToConvert){
+    return dateToConvert.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().truncatedTo(
+        ChronoUnit.HOURS);
   }
 
   public synchronized String getFilesInDirDB(String datePrefix) {
@@ -150,14 +177,14 @@ public abstract class PersistorBase implements Persistable {
 
   public synchronized void deleteOldDBFile()
       throws SQLException, SecurityException, ParseException {
-    String oldDBFilePath = getDBFilePath(SQLITE_FILES_TO_KEEP);
+    String oldDBFilePath = getDBFilePath(this.storageFileRetentionCount);
     File dbFile = new File(oldDBFilePath);
     if (dbFile.exists()) {
       if (!dbFile.delete()) {
         LOG.error("Failed to delete File - " + oldDBFilePath);
       }
     }
-    oldDBFilePath = getDBFilePath(SQLITE_FILES_TO_KEEP + 1);
+    oldDBFilePath = getDBFilePath(this.storageFileRetentionCount + 1);
     dbFile = new File(oldDBFilePath);
     if (dbFile.exists()) {
       if (!dbFile.delete()) {
