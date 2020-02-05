@@ -77,8 +77,8 @@ class ConfJsonWrapper {
     return perVertexBufferLength;
   }
 
-  public void setDatastoreRcaLogDirectory(String aesRcaLogLocation) {
-    this.datastore.put(RcaConsts.DATASTORE_LOC_KEY, aesRcaLogLocation);
+  public void setDatastoreRcaLogDirectory(String rcaLogLocation) {
+    this.datastore.put(RcaConsts.DATASTORE_LOC_KEY, rcaLogLocation);
   }
 
   ConfJsonWrapper(

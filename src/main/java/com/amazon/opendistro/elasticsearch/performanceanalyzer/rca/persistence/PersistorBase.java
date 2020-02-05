@@ -51,7 +51,7 @@ public abstract class PersistorBase implements Persistable {
   protected String filenameParam;
   protected String dbProtocol;
   private static final int FILE_ROTATION_PERIOD_SECS = 3600;
-  private final int storageFileRetentionCount;
+  private final int STORAGE_FILE_RETENTION_COUNT;
   private static final int STORAGE_FILE_RETENTION_COUNT_DEFAULT_VALUE = 5;
   private final File dirDB;
   private static final String WILDCARD_CHARACTER = "*";
@@ -75,7 +75,7 @@ public abstract class PersistorBase implements Persistable {
       parsedStorageFileRetentionCount = STORAGE_FILE_RETENTION_COUNT_DEFAULT_VALUE;
       LOG.error(String.format("Unable to parse '%s' as integer", storageFileRetentionCount));
     }
-    this.storageFileRetentionCount = parsedStorageFileRetentionCount;
+    this.STORAGE_FILE_RETENTION_COUNT = parsedStorageFileRetentionCount;
   }
 
   @Override
@@ -138,12 +138,9 @@ public abstract class PersistorBase implements Persistable {
    * This method check if there is a need to delete old sqlite files and create a new one.
    * Ideally we will be using new sqlite files at the start of every hour, ideally the whenever the
    * function write is called for the first time in that very hour
-   *
-   * @throws ParseException
-   * @throws SQLException
    */
   public synchronized void rotateDBIfRequired() throws ParseException, SQLException {
-    LocalDateTime currentLocalDateTime = getLocalDateTimeFromDateObj(new Date(System.currentTimeMillis()));
+    LocalDateTime currentLocalDateTime = getLocalDateTimeFromDateObj(new Date());
     LocalDateTime currentFileLocalDateTime = getLocalDateTimeFromDateObj(this.fileCreateTime);
     // this means file creation date and hour is less than current hour, hence we will rotate the file
     if (currentFileLocalDateTime.isBefore(currentLocalDateTime)) {
@@ -152,7 +149,7 @@ public abstract class PersistorBase implements Persistable {
     }
   }
 
-  public LocalDateTime getLocalDateTimeFromDateObj(Date dateToConvert){
+  public LocalDateTime getLocalDateTimeFromDateObj(Date dateToConvert) {
     return dateToConvert.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().truncatedTo(
         ChronoUnit.HOURS);
   }
@@ -177,14 +174,14 @@ public abstract class PersistorBase implements Persistable {
 
   public synchronized void deleteOldDBFile()
       throws SQLException, SecurityException, ParseException {
-    String oldDBFilePath = getDBFilePath(this.storageFileRetentionCount);
+    String oldDBFilePath = getDBFilePath(this.STORAGE_FILE_RETENTION_COUNT);
     File dbFile = new File(oldDBFilePath);
     if (dbFile.exists()) {
       if (!dbFile.delete()) {
         LOG.error("Failed to delete File - " + oldDBFilePath);
       }
     }
-    oldDBFilePath = getDBFilePath(this.storageFileRetentionCount + 1);
+    oldDBFilePath = getDBFilePath(this.STORAGE_FILE_RETENTION_COUNT + 1);
     dbFile = new File(oldDBFilePath);
     if (dbFile.exists()) {
       if (!dbFile.delete()) {
