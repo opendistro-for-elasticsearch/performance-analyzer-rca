@@ -193,10 +193,38 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
     this.metricsServerHandler = metricsServerHandler;
   }
 
+  /**
+   * Unit test usage only.
+   * @return Current handler for /metrics rpc.
+   */
+  public MetricsServerHandler getMetricsServerHandler() {
+    return metricsServerHandler;
+  }
+
+  /**
+   * Unit test usage only.
+   * @return Current handler for /publish rpc.
+   */
+  public PublishRequestHandler getSendDataHandler() {
+    return sendDataHandler;
+  }
+
+  /**
+   * Unit test usage only.
+   * @return Current handler for /subscribe rpc.
+   */
+  public SubscribeServerHandler getSubscribeHandler() {
+    return subscribeHandler;
+  }
+
   public void stop() {
     LOG.debug("indicating upstream nodes that current node is going down..");
     if (sendDataHandler != null) {
       sendDataHandler.terminateUpstreamConnections();
     }
+
+    // Remove handlers.
+    sendDataHandler = null;
+    subscribeHandler = null;
   }
 }
