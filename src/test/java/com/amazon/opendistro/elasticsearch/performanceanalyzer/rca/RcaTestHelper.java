@@ -56,6 +56,31 @@ public class RcaTestHelper {
     return matches;
   }
 
+  public static List<String> getAllLinesFromLog(String logName) {
+    try {
+      return Files.readAllLines(Paths.get(getLogFilePath(logName)));
+    } catch (IOException e) {
+      e.printStackTrace();
+    } catch (ParserConfigurationException e) {
+      e.printStackTrace();
+    } catch (SAXException e) {
+      e.printStackTrace();
+    } catch (XPathExpressionException e) {
+      e.printStackTrace();
+    }
+    return Collections.EMPTY_LIST;
+  }
+
+  public static List<String> getAllLogLinesWithMatchingString(String logName, String pattern) {
+    List<String> matches = new ArrayList<>();
+    for (String line: getAllLinesFromLog(logName)) {
+      if (line.contains(pattern)) {
+        matches.add(line);
+      }
+    }
+    return matches;
+  }
+
   public static String getLogFilePath(String filename)
       throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
     String cwd = System.getProperty("user.dir");
