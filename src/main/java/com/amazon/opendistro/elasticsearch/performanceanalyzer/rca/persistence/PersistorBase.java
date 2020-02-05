@@ -52,6 +52,9 @@ public abstract class PersistorBase implements Persistable {
   private static final int STORAGE_FILE_RETENTION_COUNT_DEFAULT_VALUE = 5;
   private final File dirDB;
 
+  private static final TimeUnit FILE_ROTATION_TIME_UNIT = TimeUnit.HOURS;
+  private static final int ROTATION_PERIOD = 1;
+
   private final FileRotate fileRotate;
   private final FileGC fileGC;
 
@@ -165,6 +168,7 @@ public abstract class PersistorBase implements Persistable {
 
     rotateAddToGarbageAndCreateNewDBFile(RotationType.TRY_ROTATE);
 
+    String tableName = node.getClass().getSimpleName();
     try {
       writeFlowUnit(flowUnit, node.name());
     } catch (SQLException e) {
