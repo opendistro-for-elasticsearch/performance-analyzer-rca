@@ -52,8 +52,8 @@ class SQLitePersistor extends PersistorBase {
 
   private static int id_test = 1;
 
-  SQLitePersistor(String dir, String filename) throws SQLException {
-    super(dir, filename, DB_URL);
+  SQLitePersistor(String dir, String filename, String storageFileRetentionCount) throws SQLException {
+    super(dir, filename, DB_URL, storageFileRetentionCount);
     create = DSL.using(conn, SQLDialect.SQLITE);
     jooqTableColumns = new HashMap<>();
   }

@@ -33,17 +33,14 @@ import java.util.Map;
 public class PersistenceFactory {
   public static Persistable create(RcaConf rcaConf) throws MalformedConfig, SQLException {
     Map<String, String> datastore = rcaConf.getDatastore();
-    switch (datastore.get(RcaConsts.DATASTORE_TYPE_KEY)) {
+    switch (datastore.get(RcaConsts.DATASTORE_TYPE_KEY).toLowerCase()) {
       case "sqlite":
-      case "SQLite":
-      case "SQLITE":
         return new SQLitePersistor(
             datastore.get(RcaConsts.DATASTORE_LOC_KEY),
-            datastore.get(RcaConsts.DATASTORE_FILENAME));
+            datastore.get(RcaConsts.DATASTORE_FILENAME),
+            datastore.get(RcaConsts.DATASTORE_STORAGE_FILE_RETENTION_COUNT));
       default:
-        String err =
-            String.format(
-                "The datastore value can only be %s, %s or %s", "sqlite", "SQLite", "SQLITE");
+        String err = "The datastore value can only be sqlite in any case format";
         throw new MalformedConfig(rcaConf.getConfigFileLoc(), err);
     }
   }

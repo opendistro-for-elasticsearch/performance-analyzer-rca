@@ -27,10 +27,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class RcaConf {
-  private String configFileLoc;
+  protected String configFileLoc;
   protected ConfJsonWrapper conf;
 
-  private static RcaConf instance;
+  protected static RcaConf instance;
   private static final Logger LOG = LogManager.getLogger(PerformanceAnalyzerApp.class);
 
   public RcaConf(String configPath) {
