@@ -60,14 +60,10 @@ public abstract class PersistorBase implements Persistable {
     this.dir = dir;
     this.filenameParam = filename;
     this.dbProtocol = dbProtocolString;
-    this.fileCreateTime = new Date(System.currentTimeMillis());
-    this.filename =
-        String.format(
-            "%s.%s", Paths.get(dir, filename).toString(), dateFormat.format(this.fileCreateTime));
-    this.tableNames = new HashSet<>();
-    String url = String.format("%s%s", dbProtocolString, this.filename);
-    conn = DriverManager.getConnection(url);
+
     this.dirDB = new File(this.dir);
+    openNewDBFile();
+
     int parsedStorageFileRetentionCount;
     try {
       parsedStorageFileRetentionCount = Integer.parseInt(storageFileRetentionCount);
