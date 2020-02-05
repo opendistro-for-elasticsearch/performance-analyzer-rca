@@ -130,7 +130,9 @@ public class FileGCTest {
     String[] files = fileGc.getDbFiles();
 
     List<File> filesList =
-            Arrays.stream(files).map(f-> Paths.get(testLocation.toString(), f).toFile()).collect(Collectors.toList());
+        Arrays.stream(files)
+            .map(f -> Paths.get(testLocation.toString(), f).toFile())
+            .collect(Collectors.toList());
     List<File> afterCountBasedCleanup = fileGc.countBasedCleanup(filesList);
 
     Assert.assertEquals(3, afterCountBasedCleanup.size());
