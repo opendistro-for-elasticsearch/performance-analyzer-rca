@@ -20,21 +20,19 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.commons.io.filefilter.WildcardFileFilter;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.Field;
@@ -50,19 +48,22 @@ public abstract class PersistorBase implements Persistable {
   protected Date fileCreateTime;
   protected String filenameParam;
   protected String dbProtocol;
-  private static final int FILE_ROTATION_PERIOD_SECS = 3600;
   private final int STORAGE_FILE_RETENTION_COUNT;
   private static final int STORAGE_FILE_RETENTION_COUNT_DEFAULT_VALUE = 5;
   private final File dirDB;
-  private static final String WILDCARD_CHARACTER = "*";
 
-  PersistorBase(String dir, String filename, String dbProtocolString, String storageFileRetentionCount) throws SQLException {
+  private static final TimeUnit FILE_ROTATION_TIME_UNIT = TimeUnit.HOURS;
+  private static final int ROTATION_PERIOD = 1;
+
+  private final FileRotate fileRotate;
+  private final FileGC fileGC;
+
+  PersistorBase(String dir, String filename, String dbProtocolString, String storageFileRetentionCount) throws SQLException, IOException {
     this.dir = dir;
     this.filenameParam = filename;
     this.dbProtocol = dbProtocolString;
 
     this.dirDB = new File(this.dir);
-    openNewDBFile();
 
     int parsedStorageFileRetentionCount;
     try {
@@ -72,6 +73,14 @@ public abstract class PersistorBase implements Persistable {
       LOG.error(String.format("Unable to parse '%s' as integer", storageFileRetentionCount));
     }
     this.STORAGE_FILE_RETENTION_COUNT = parsedStorageFileRetentionCount;
+
+    Path path = Paths.get(this.dirDB.getName(), filenameParam);
+    fileRotate = new FileRotate(path, FILE_ROTATION_TIME_UNIT, ROTATION_PERIOD, dateFormat);
+    fileRotate.forceRotate(System.currentTimeMillis());
+
+    fileGC =  new FileGC(Paths.get(dir), filenameParam, FILE_ROTATION_TIME_UNIT, ROTATION_PERIOD,
+            STORAGE_FILE_RETENTION_COUNT);
+    openNewDBFile();
   }
 
   @Override
@@ -131,86 +140,32 @@ public abstract class PersistorBase implements Persistable {
   }
 
   /**
-   * This method check if there is a need to delete old sqlite files and create a new one.
-   * Ideally we will be using new sqlite files at the start of every hour, ideally the whenever the
-   * function write is called for the first time in that very hour
+   * This is used to persist a FlowUnit in the database.
+   *
+   * Before, we write anything the flowUnit is not empty and if we are past the rotation period,
+   * then we rotate the database file and create a new one.
+   * @param node Node whose flow unit is persisted. The graph node whose data is being written
+   * @param flowUnit The flow unit that is persisted. The data taht will be persisted.
+   * @param <T> The FlowUnit type
+   * @throws SQLException A SQLException is thrown if we are unable to create a new connection
+   * after the file rotation or while writing to the data base.
+   * @throws IOException This is thrown if we are unable to delete the old database files.
    */
-  public synchronized void rotateDBIfRequired() throws ParseException, SQLException {
-    LocalDateTime currentLocalDateTime = getLocalDateTimeFromDateObj(new Date());
-    LocalDateTime currentFileLocalDateTime = getLocalDateTimeFromDateObj(this.fileCreateTime);
-    // this means file creation date and hour is less than current hour, hence we will rotate the file
-    if (currentFileLocalDateTime.isBefore(currentLocalDateTime)) {
-      openNewDBFile();
-      deleteOldDBFile();
-    }
-  }
-
-  public LocalDateTime getLocalDateTimeFromDateObj(Date dateToConvert) {
-    return dateToConvert.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().truncatedTo(
-        ChronoUnit.HOURS);
-  }
-
-  public synchronized String getFilesInDirDB(String datePrefix) {
-    String[] files =
-        this.dirDB.list(
-            new WildcardFileFilter(
-                String.format("%s.%s%s", filenameParam, datePrefix, WILDCARD_CHARACTER)));
-
-    return (files == null || files.length == 0) ? "" : Paths.get(this.dir, files[0]).toString();
-  }
-
-  public synchronized String getDBFilePath(int hours) throws ParseException {
-    Date hoursBeforeFileCreateMs =
-        new Date(this.fileCreateTime.getTime() - ((long) hours * 60 * 60 * 1000));
-    DateFormat df = new SimpleDateFormat("yyyy-MM-dd-HH");
-    String oldDBFilePath = getFilesInDirDB(df.format(hoursBeforeFileCreateMs));
-    LOG.info("RCA: About to delete SQLite file - " + oldDBFilePath);
-    return oldDBFilePath;
-  }
-
-  public synchronized void deleteOldDBFile()
-      throws SQLException, SecurityException, ParseException {
-    String oldDBFilePath = getDBFilePath(this.STORAGE_FILE_RETENTION_COUNT);
-    File dbFile = new File(oldDBFilePath);
-    if (dbFile.exists()) {
-      if (!dbFile.delete()) {
-        LOG.error("Failed to delete File - " + oldDBFilePath);
-      }
-    }
-    oldDBFilePath = getDBFilePath(this.STORAGE_FILE_RETENTION_COUNT + 1);
-    dbFile = new File(oldDBFilePath);
-    if (dbFile.exists()) {
-      if (!dbFile.delete()) {
-        LOG.error("Failed to delete File - " + oldDBFilePath);
-      }
-    }
-  }
-
-  // The database is always rotated when the thread dies. So the tablenames in the tableNames Set is
-  // the
-  // authoritative set for the current set of tables.
-  // TODO: Add the code to rotate the table on exception and periodically
-  //
   @Override
-  public synchronized <T extends ResourceFlowUnit> void write(Node<?> node, T flowUnit) {
+  public synchronized <T extends ResourceFlowUnit> void write(Node<?> node, T flowUnit) throws SQLException, IOException {
     // Write only if there is data to be writen.
     if (flowUnit.isEmpty()) {
       LOG.debug("RCA: Flow unit isEmpty");
       return;
     }
-    String tableName = node.getClass().getSimpleName();
 
-    try {
-      rotateDBIfRequired();
-    } catch (SQLException e) {
-      LOG.error(
-          "RCA: Caught SQLException while creating a new DB connection for file rotation.", e);
-    } catch (ParseException e) {
-      LOG.error("RCA: Caught ParseException while checking for file rotation.", e);
-    } catch (SecurityException e) {
-      LOG.error("RCA: Caught SecurityException while trying to delete old DB file. ", e);
+    Path rotatedFile = fileRotate.tryRotate(System.currentTimeMillis());
+    if (rotatedFile != null) {
+      fileGC.eligibleForGc(rotatedFile.toFile().getName());
+      openNewDBFile();
     }
 
+    String tableName = node.getClass().getSimpleName();
     if (!tableNames.contains(tableName)) {
       LOG.info(
           "RCA: Table '{}' does not exist. Creating one with columns: {}",

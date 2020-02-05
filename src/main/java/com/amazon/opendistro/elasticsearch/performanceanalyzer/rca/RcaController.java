@@ -369,7 +369,8 @@ public class RcaController {
         | InstantiationException
         | IllegalAccessException
         | MalformedConfig
-        | SQLException e) {
+        | SQLException
+            | IOException e) {
       LOG.error("Couldn't build connected components or persistable.. Ran into {}", e.getMessage());
       e.printStackTrace();
     }

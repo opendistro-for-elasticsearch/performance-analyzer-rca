@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.exceptions.MalformedConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Map;
 
@@ -31,7 +32,7 @@ import java.util.Map;
  * OSS can write an adaptor to their favorite data store.
  */
 public class PersistenceFactory {
-  public static Persistable create(RcaConf rcaConf) throws MalformedConfig, SQLException {
+  public static Persistable create(RcaConf rcaConf) throws MalformedConfig, SQLException, IOException {
     Map<String, String> datastore = rcaConf.getDatastore();
     switch (datastore.get(RcaConsts.DATASTORE_TYPE_KEY).toLowerCase()) {
       case "sqlite":

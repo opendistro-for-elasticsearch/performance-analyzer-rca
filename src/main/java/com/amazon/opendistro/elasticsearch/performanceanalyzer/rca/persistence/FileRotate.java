@@ -18,7 +18,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;

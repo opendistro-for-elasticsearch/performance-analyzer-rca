@@ -22,6 +22,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.QueryUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaResponseUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -52,7 +53,7 @@ class SQLitePersistor extends PersistorBase {
 
   private static int id_test = 1;
 
-  SQLitePersistor(String dir, String filename, String storageFileRetentionCount) throws SQLException {
+  SQLitePersistor(String dir, String filename, String storageFileRetentionCount) throws SQLException, IOException {
     super(dir, filename, DB_URL, storageFileRetentionCount);
     create = DSL.using(conn, SQLDialect.SQLITE);
     jooqTableColumns = new HashMap<>();
