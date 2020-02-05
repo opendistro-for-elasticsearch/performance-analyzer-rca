@@ -15,7 +15,11 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -98,14 +102,24 @@ public class RcaTestHelper {
 
   public static void cleanUpLogs() {
     try {
-      Files.deleteIfExists(Paths.get(getLogFilePath("PerformanceAnalyzerLog")));
-      Files.deleteIfExists(Paths.get(getLogFilePath("StatsLog")));
+      truncate(Paths.get(getLogFilePath("PerformanceAnalyzerLog")).toFile());
+      truncate(Paths.get(getLogFilePath("StatsLog")).toFile());
     } catch (ParserConfigurationException e) {
       e.printStackTrace();
     } catch (SAXException e) {
       e.printStackTrace();
     } catch (XPathExpressionException e) {
       e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  public static void truncate(File file) {
+    try (FileChannel outChan = new FileOutputStream(file, false).getChannel()) {
+      outChan.truncate(0);
+    } catch (FileNotFoundException e) {
+      System.out.println(file.getName() + " does not exist.");
     } catch (IOException e) {
       e.printStackTrace();
     }

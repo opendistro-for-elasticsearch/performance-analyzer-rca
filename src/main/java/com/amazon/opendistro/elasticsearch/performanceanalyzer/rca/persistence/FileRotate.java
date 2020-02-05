@@ -43,7 +43,7 @@ public class FileRotate {
       long rotation_period,
       DateFormat rotated_file_format) {
     FILE_TO_ROTATE = file_to_rotate;
-    FILENAME = file_to_rotate.getFileName().toString();
+    FILENAME = file_to_rotate.toFile().getName();
     ROTATION_TIME_UNIT = rotation_time_unit;
     ROTATION_PERIOD = rotation_period;
     ROTATED_FILE_FORMAT = rotated_file_format;
@@ -93,13 +93,17 @@ public class FileRotate {
   /**
    * Rotate the file.
    *
-   * <p>Rotating a file renames it to filename.<current time in the date format specified>. For
+   * <p>Rotating a file renames it to filename.#current time in the date format specified#. For
    * cases the file could not be renamed, we attempt to delete the file. If the file could not be
    * deleted either, we throw an IOException for the caller to handle or take the necessary action.
    *
    * @return Returns the path to the file after it was rotated.
    */
   protected Path rotate(long currentMillis) throws IOException {
+    if (!FILE_TO_ROTATE.toFile().exists() || FILE_TO_ROTATE.getParent() == null) {
+      return null;
+    }
+
     String dir = FILE_TO_ROTATE.getParent().toString();
     StringBuilder targetFileName = new StringBuilder(FILENAME);
     targetFileName.append(FILE_PART_SEPARATOR).append(ROTATED_FILE_FORMAT.format(currentMillis));
@@ -108,8 +112,6 @@ public class FileRotate {
     try {
       lastRotatedMillis = System.currentTimeMillis();
       Files.move(FILE_TO_ROTATE, targetFilePath);
-    } catch (NoSuchFileException noFileEx) {
-      LOG.error("Error moving file '{}'. Msg: '{}'. No action will be taken.", FILENAME, noFileEx);
     } catch (FileAlreadyExistsException fae) {
       LOG.error(fae);
     } catch (IOException e) {

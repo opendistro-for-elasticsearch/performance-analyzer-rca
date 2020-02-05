@@ -92,11 +92,7 @@ public class FileRotateTest {
   public void rotate() throws IOException {
     TestFileRotate fileRotate = new TestFileRotate(TimeUnit.MILLISECONDS, 100);
     Assert.assertFalse(fileToRotate.toFile().exists());
-    fileRotate.rotate(System.currentTimeMillis());
-    List<String> lines =
-        RcaTestHelper.getAllLogLinesWithMatchingString(
-            "PerformanceAnalyzerLog", "NoSuchFileException");
-    Assert.assertEquals(1, lines.size());
+    Assert.assertNull(fileRotate.rotate(System.currentTimeMillis()));
 
     // Let's create a file and try rotating it.
     long currentMillis = System.currentTimeMillis();
@@ -116,7 +112,7 @@ public class FileRotateTest {
     Files.createFile(fileToRotate);
     Assert.assertTrue(fileToRotate.toFile().exists());
     fileRotate.rotate(currentMillis);
-    lines =
+    List<String> lines =
         RcaTestHelper.getAllLogLinesWithMatchingString(
             "PerformanceAnalyzerLog", "FileAlreadyExistsException");
     Assert.assertEquals(1, lines.size());
