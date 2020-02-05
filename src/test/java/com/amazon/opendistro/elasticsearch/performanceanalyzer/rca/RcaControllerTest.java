@@ -26,7 +26,6 @@ import org.jooq.tools.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -158,9 +157,11 @@ public class RcaControllerTest {
     changeRcaRunState(RcaState.RUN);
     AllMetrics.NodeRole nodeRole = AllMetrics.NodeRole.MASTER;
     setMyIp("192.168.0.1", nodeRole);
-    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), RcaSchedulerState.STATE_STARTED));
+    Assert.assertTrue(
+        check(new RcaSchedulerRunningEval(rcaController), RcaSchedulerState.STATE_STARTED));
     Assert.assertTrue(check(new RcaSchedulerRoleEval(rcaController), nodeRole));
-    Assert.assertEquals(RcaSchedulerState.STATE_STARTED, rcaController.getRcaScheduler().getState());
+    Assert
+        .assertEquals(RcaSchedulerState.STATE_STARTED, rcaController.getRcaScheduler().getState());
 
     nodeRole = AllMetrics.NodeRole.ELECTED_MASTER;
     setMyIp("192.168.0.1", nodeRole);
@@ -171,13 +172,45 @@ public class RcaControllerTest {
 
     nodeRole = AllMetrics.NodeRole.DATA;
     setMyIp("192.168.0.1", nodeRole);
-    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), RcaSchedulerState.STATE_STARTED));
+    Assert.assertTrue(
+        check(new RcaSchedulerRunningEval(rcaController), RcaSchedulerState.STATE_STARTED));
     Assert.assertTrue(check(new RcaSchedulerRoleEval(rcaController), nodeRole));
     Assert.assertEquals(rcaController.getRcaScheduler().getRole(), nodeRole);
 
     changeRcaRunState(RcaState.STOP);
-    Assert.assertTrue(check(new RcaSchedulerRunningEval(rcaController), RcaSchedulerState.STATE_STOPPED));
-    Assert.assertEquals(RcaSchedulerState.STATE_STOPPED, rcaController.getRcaScheduler().getState());
+    Assert.assertTrue(
+        check(new RcaSchedulerRunningEval(rcaController), RcaSchedulerState.STATE_STOPPED));
+    Assert
+        .assertEquals(RcaSchedulerState.STATE_STOPPED, rcaController.getRcaScheduler().getState());
+  }
+
+  @Test
+  public void testHandlers() throws IOException {
+    // Only the metrics rpc handler should be set.
+    Assert.assertNotNull(clientServers.getNetServer().getMetricsServerHandler());
+    Assert.assertNull(clientServers.getNetServer().getSubscribeHandler());
+    Assert.assertNull(clientServers.getNetServer().getSendDataHandler());
+
+    changeRcaRunState(RcaState.RUN);
+    AllMetrics.NodeRole nodeRole = AllMetrics.NodeRole.MASTER;
+    setMyIp("192.168.0.1", nodeRole);
+    Assert.assertTrue(
+        check(new RcaSchedulerRunningEval(rcaController), RcaSchedulerState.STATE_STARTED));
+    Assert.assertTrue(check(new RcaSchedulerRoleEval(rcaController), nodeRole));
+
+    // Both RCA and metrics handlers should be set.
+    Assert.assertNotNull(clientServers.getNetServer().getMetricsServerHandler());
+    Assert.assertNotNull(clientServers.getNetServer().getSubscribeHandler());
+    Assert.assertNotNull(clientServers.getNetServer().getSendDataHandler());
+
+    // Metrics handler should still be set.
+    changeRcaRunState(RcaState.STOP);
+    Assert.assertTrue(
+        check(new RcaSchedulerRunningEval(rcaController), RcaSchedulerState.STATE_STOPPED));
+
+    Assert.assertNotNull(clientServers.getNetServer().getMetricsServerHandler());
+    Assert.assertNull(clientServers.getNetServer().getSubscribeHandler());
+    Assert.assertNull(clientServers.getNetServer().getSendDataHandler());
   }
 
   private void setMyIp(String ip, AllMetrics.NodeRole nodeRole) {
@@ -229,10 +262,12 @@ public class RcaControllerTest {
   }
 
   interface IEval<T> {
+
     boolean evaluateAndCheck(T t);
   }
 
   class RcaEnabledEval implements IEval<Boolean> {
+
     private final RcaController rcaController;
 
     RcaEnabledEval(RcaController rcaController) {
@@ -246,6 +281,7 @@ public class RcaControllerTest {
   }
 
   class NodeRoleEval implements IEval<AllMetrics.NodeRole> {
+
     private final RcaController rcaController;
 
     NodeRoleEval(RcaController rcaController) {
@@ -259,6 +295,7 @@ public class RcaControllerTest {
   }
 
   class RcaSchedulerRoleEval implements IEval<AllMetrics.NodeRole> {
+
     private final RcaController rcaController;
 
     RcaSchedulerRoleEval(RcaController rcaController) {
@@ -273,6 +310,7 @@ public class RcaControllerTest {
   }
 
   class RcaSchedulerRunningEval implements IEval<RcaSchedulerState> {
+
     private final RcaController rcaController;
 
     RcaSchedulerRunningEval(RcaController rcaController) {
