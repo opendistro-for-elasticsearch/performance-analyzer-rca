@@ -138,9 +138,6 @@ public abstract class PersistorBase implements Persistable {
    * This method check if there is a need to delete old sqlite files and create a new one.
    * Ideally we will be using new sqlite files at the start of every hour, ideally the whenever the
    * function write is called for the first time in that very hour
-   *
-   * @throws ParseException
-   * @throws SQLException
    */
   public synchronized void rotateDBIfRequired() throws ParseException, SQLException {
     LocalDateTime currentLocalDateTime = getLocalDateTimeFromDateObj(new Date(System.currentTimeMillis()));
@@ -152,7 +149,7 @@ public abstract class PersistorBase implements Persistable {
     }
   }
 
-  public LocalDateTime getLocalDateTimeFromDateObj(Date dateToConvert){
+  public LocalDateTime getLocalDateTimeFromDateObj(Date dateToConvert) {
     return dateToConvert.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().truncatedTo(
         ChronoUnit.HOURS);
   }
