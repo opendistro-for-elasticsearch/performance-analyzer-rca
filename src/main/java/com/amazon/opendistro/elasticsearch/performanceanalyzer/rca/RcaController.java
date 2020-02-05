@@ -356,7 +356,6 @@ public class RcaController {
       this.rcaScheduler =
           new RCAScheduler(connectedComponents, db, rcaConf, thresholdMain, persistable, net);
 
-      rcaNetServer.setMetricsHandler(new MetricsServerHandler());
       rcaNetServer.setSendDataHandler(new PublishRequestHandler(
           nodeStateManager, receivedFlowUnitStore, networkThreadPoolReference));
       rcaNetServer.setSubscribeHandler(
