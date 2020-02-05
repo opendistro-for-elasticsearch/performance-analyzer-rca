@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Collections;
@@ -74,6 +75,10 @@ class ConfJsonWrapper {
 
   int getPerVertexBufferLength() {
     return perVertexBufferLength;
+  }
+
+  public void setDatastoreRcaLogDirectory(String rcaLogLocation) {
+    this.datastore.put(RcaConsts.DATASTORE_LOC_KEY, rcaLogLocation);
   }
 
   ConfJsonWrapper(
