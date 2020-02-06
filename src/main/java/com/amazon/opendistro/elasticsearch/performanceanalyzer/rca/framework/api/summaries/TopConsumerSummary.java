@@ -53,6 +53,11 @@ public class TopConsumerSummary extends GenericSummary {
     return summaryMessageBuilder.build();
   }
 
+  /**
+   * TopConsumerSummary is the lowest level summary in the nest sunmmary hierarchy.
+   * So it doesn't carry any nested summary list and thus we override this with a empty method here.
+   * @param messageBuilder
+   */
   @Override
   public void buildSummaryMessageAndAddToFlowUnit(FlowUnitMessage.Builder messageBuilder) {
   }
