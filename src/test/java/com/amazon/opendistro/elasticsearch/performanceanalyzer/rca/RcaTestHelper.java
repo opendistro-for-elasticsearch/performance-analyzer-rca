@@ -38,13 +38,7 @@ public class RcaTestHelper {
   public static List<String> getAllLinesFromStatsLog() {
     try {
       return Files.readAllLines(Paths.get(getLogFilePath("StatsLog")));
-    } catch (IOException e) {
-      e.printStackTrace();
-    } catch (ParserConfigurationException e) {
-      e.printStackTrace();
-    } catch (SAXException e) {
-      e.printStackTrace();
-    } catch (XPathExpressionException e) {
+    } catch (IOException | ParserConfigurationException | SAXException | XPathExpressionException e) {
       e.printStackTrace();
     }
     return Collections.EMPTY_LIST;
@@ -63,13 +57,7 @@ public class RcaTestHelper {
   public static List<String> getAllLinesFromLog(String logName) {
     try {
       return Files.readAllLines(Paths.get(getLogFilePath(logName)));
-    } catch (IOException e) {
-      e.printStackTrace();
-    } catch (ParserConfigurationException e) {
-      e.printStackTrace();
-    } catch (SAXException e) {
-      e.printStackTrace();
-    } catch (XPathExpressionException e) {
+    } catch (IOException | ParserConfigurationException | SAXException | XPathExpressionException e) {
       e.printStackTrace();
     }
     return Collections.EMPTY_LIST;
@@ -104,13 +92,7 @@ public class RcaTestHelper {
     try {
       truncate(Paths.get(getLogFilePath("PerformanceAnalyzerLog")).toFile());
       truncate(Paths.get(getLogFilePath("StatsLog")).toFile());
-    } catch (ParserConfigurationException e) {
-      e.printStackTrace();
-    } catch (SAXException e) {
-      e.printStackTrace();
-    } catch (XPathExpressionException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
+    } catch (ParserConfigurationException | SAXException | XPathExpressionException | IOException e) {
       e.printStackTrace();
     }
   }
