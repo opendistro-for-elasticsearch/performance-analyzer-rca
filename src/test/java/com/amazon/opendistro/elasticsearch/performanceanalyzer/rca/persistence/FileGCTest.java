@@ -69,7 +69,7 @@ public class FileGCTest {
   }
 
   class FileGCTestHelper extends FileGC {
-    FileGCTestHelper() {
+    FileGCTestHelper() throws IOException {
       // Based on these numbers the limit for the time based cleanup is [now - (10 * 3)].
       super(testLocation, baseFilename, TimeUnit.MILLISECONDS, 10, 3);
     }

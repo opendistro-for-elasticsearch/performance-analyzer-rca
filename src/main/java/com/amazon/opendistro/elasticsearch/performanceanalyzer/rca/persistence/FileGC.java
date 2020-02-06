@@ -16,6 +16,8 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -48,7 +50,7 @@ public class FileGC {
       String base_db_filename,
       TimeUnit time_unit,
       long periodicity1,
-      int files_count) {
+      int files_count) throws IOException {
     this(
         db_dir, base_db_filename, time_unit, periodicity1, files_count, System.currentTimeMillis());
   }
@@ -59,7 +61,7 @@ public class FileGC {
       TimeUnit time_unit,
       long periodicity1,
       int files_count,
-      long currentMillis) {
+      long currentMillis) throws IOException {
     DB_DIR = db_dir;
     BASE_DB_FILENAME = base_db_filename;
 
@@ -78,7 +80,7 @@ public class FileGC {
    *
    * @param filename The name of the new file to be added.
    */
-  void eligibleForGc(String filename) {
+  void eligibleForGc(String filename) throws IOException {
     File file = Paths.get(DB_DIR.toString(), filename).toFile();
     if (file.exists()) {
       eligibleForGc.addLast(file);
@@ -90,7 +92,7 @@ public class FileGC {
     }
   }
 
-  protected List<File> cleanupAndGetRemaining(long currentMillis) {
+  protected List<File> cleanupAndGetRemaining(long currentMillis) throws IOException {
     String[] files = getDbFiles();
     List<File> afterCleaningOldFiles = timeBasedCleanup(files, currentMillis);
     return countBasedCleanup(afterCleaningOldFiles);
@@ -102,7 +104,7 @@ public class FileGC {
         .list(new WildcardFileFilter(BASE_DB_FILENAME + "." + WILDCARD_CHARACTER));
   }
 
-  protected List<File> timeBasedCleanup(String[] files, final long currentMillis) {
+  protected List<File> timeBasedCleanup(String[] files, final long currentMillis) throws IOException {
     long timeDelta = TimeUnit.MILLISECONDS.convert(PERIODICITY, TIME_UNIT) * (FILES_COUNT + 1);
     long timeLimit = currentMillis - timeDelta;
 
@@ -121,7 +123,7 @@ public class FileGC {
     return remainingFiles;
   }
 
-  protected List<File> countBasedCleanup(List<File> files) {
+  protected List<File> countBasedCleanup(List<File> files) throws IOException {
     int numToDelete = files.size() - FILES_COUNT;
     Collections.sort(files, LastModifiedFileComparator.LASTMODIFIED_COMPARATOR);
 
@@ -139,9 +141,13 @@ public class FileGC {
     return remainingFiles;
   }
 
-  private void delete(File file) {
-    if (!file.delete()) {
-      LOG.error("Could not delete file: '{}'", file.getName());
+  private void delete(File file) throws IOException {
+    Path path = Paths.get(file.toURI());
+    try {
+      Files.delete(path);
+    } catch (IOException e) {
+      LOG.error("Could not delete file: {}. Error: {}", file, e);
+      throw e;
     }
   }
 }
