@@ -55,6 +55,15 @@ public abstract class PersistorBase implements Persistable {
   private final FileRotate fileRotate;
   private final FileGC fileGC;
 
+  enum RotationType {
+    // Attempt to rotate. This may not go through if the file is not old enough.
+    TRY_ROTATE,
+
+    // This is the heavier axe. We want to rotate no matter what. Usually to be used
+    // when we have hit a SQLite exception.
+    FORCE_ROTATE
+  }
+
   PersistorBase(String dir, String filename, String dbProtocolString,
                 String storageFileRetentionCount, TimeUnit fileRotationTimeUnit,
                 long fileRotationPeriod) throws SQLException, IOException {
@@ -154,48 +163,66 @@ public abstract class PersistorBase implements Persistable {
       return;
     }
 
-    Path rotatedFile = fileRotate.tryRotate(System.currentTimeMillis());
-    if (rotatedFile != null) {
-      fileGC.eligibleForGc(rotatedFile.toFile().getName());
-      openNewDBFile();
-    }
+    rotateAddToGarbageAndCreateNewDBFile(RotationType.TRY_ROTATE);
 
-    String tableName = node.name();
     try {
-      writeFlowUnit(flowUnit, tableName);
+      writeFlowUnit(flowUnit, node.name());
     } catch (SQLException e) {
       LOG.error(
-          "RCA: Caught SQLException while writing flowuni.", e);
+          "RCA: Caught SQLException. An attempt to write to a new DB file also failed.", e);
+      throw e;
     }
   }
 
   private synchronized <T extends ResourceFlowUnit> void writeFlowUnit(
-      T flowUnit, String tableName) throws SQLException {
+      T flowUnit, String tableName) throws SQLException, IOException {
     try {
-      if (!tableNames.contains(tableName)) {
-        LOG.info(
-            "RCA: Table '{}' does not exist. Creating one with columns: {}",
-            tableName,
-            flowUnit.getSqlSchema());
-        createTable(tableName, flowUnit.getSqlSchema());
-        tableNames.add(tableName);
-      }
-      int lastPrimaryKey = insertRow(tableName, flowUnit.getSqlValue());
-
-      if (flowUnit.hasResourceSummary()) {
-        writeSummary(
-            flowUnit.getResourceSummary(),
-            tableName,
-            getPrimaryKeyColumnName(tableName),
-            lastPrimaryKey);
-      }
+        tryWriteFlowUnit(flowUnit, tableName);
     } catch (SQLException e) {
       LOG.info(
-          "RCA: Fail to write into table '{}', try recreating the DB", tableName);
-      openNewDBFile();
+          "RCA: Fail to write into table '{}', attempting to recreate the DB", tableName);
+      rotateAddToGarbageAndCreateNewDBFile(RotationType.FORCE_ROTATE);
+      tryWriteFlowUnit(flowUnit, tableName);
     }
   }
 
+  private <T extends ResourceFlowUnit> void tryWriteFlowUnit(T flowUnit, String tableName) throws SQLException {
+    if (!tableNames.contains(tableName)) {
+      LOG.info(
+              "RCA: Table '{}' does not exist. Creating one with columns: {}",
+              tableName,
+              flowUnit.getSqlSchema());
+      createTable(tableName, flowUnit.getSqlSchema());
+      tableNames.add(tableName);
+    }
+    int lastPrimaryKey = insertRow(tableName, flowUnit.getSqlValue());
+
+    if (flowUnit.hasResourceSummary()) {
+      writeSummary(
+              flowUnit.getResourceSummary(),
+              tableName,
+              getPrimaryKeyColumnName(tableName),
+              lastPrimaryKey);
+    }
+
+  }
+
+  private void rotateAddToGarbageAndCreateNewDBFile(RotationType type) throws IOException, SQLException {
+    Path rotatedFile = null;
+    switch (type) {
+      case TRY_ROTATE:
+        rotatedFile = fileRotate.tryRotate(System.currentTimeMillis());
+        break;
+      case FORCE_ROTATE:
+        rotatedFile = fileRotate.forceRotate(System.currentTimeMillis());
+        break;
+    }
+    
+    if (rotatedFile != null) {
+      fileGC.eligibleForGc(rotatedFile.toFile().getName());
+      openNewDBFile();
+    }
+  }
 
   /** recursively insert nested summary to sql tables */
   private synchronized void writeSummary(
