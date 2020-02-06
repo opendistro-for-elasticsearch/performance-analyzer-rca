@@ -28,6 +28,9 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -63,7 +66,6 @@ public abstract class PersistorBase implements Persistable {
     this.dbProtocol = dbProtocolString;
 
     this.dirDB = new File(this.dir);
-
     int parsedStorageFileRetentionCount;
     try {
       parsedStorageFileRetentionCount = Integer.parseInt(storageFileRetentionCount);
@@ -135,18 +137,6 @@ public abstract class PersistorBase implements Persistable {
     createNewDSLContext();
   }
 
-  /**
-   * This is used to persist a FlowUnit in the database.
-   *
-   * <p>Before, we write anything the flowUnit is not empty and if we are past the rotation period,
-   * then we rotate the database file and create a new one.
-   * @param node Node whose flow unit is persisted. The graph node whose data is being written
-   * @param flowUnit The flow unit that is persisted. The data taht will be persisted.
-   * @param <T> The FlowUnit type
-   * @throws SQLException A SQLException is thrown if we are unable to create a new connection
-   *     after the file rotation or while writing to the data base.
-   * @throws IOException This is thrown if we are unable to delete the old database files.
-   */
   @Override
   public synchronized <T extends ResourceFlowUnit> void write(Node<?> node, T flowUnit) throws SQLException, IOException {
     // Write only if there is data to be writen.
