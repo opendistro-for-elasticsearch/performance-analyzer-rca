@@ -40,7 +40,7 @@ import org.jooq.Field;
 // TODO: Scheme to rotate the current file and garbage collect older files.
 public abstract class PersistorBase implements Persistable {
   private static final Logger LOG = LogManager.getLogger(PersistorBase.class);
-  protected final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm");
+  protected final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
   protected String dir;
   protected String filename;
   protected Connection conn;
@@ -52,13 +52,12 @@ public abstract class PersistorBase implements Persistable {
   private static final int STORAGE_FILE_RETENTION_COUNT_DEFAULT_VALUE = 5;
   private final File dirDB;
 
-  private static final TimeUnit FILE_ROTATION_TIME_UNIT = TimeUnit.HOURS;
-  private static final int ROTATION_PERIOD = 1;
-
   private final FileRotate fileRotate;
   private final FileGC fileGC;
 
-  PersistorBase(String dir, String filename, String dbProtocolString, String storageFileRetentionCount) throws SQLException, IOException {
+  PersistorBase(String dir, String filename, String dbProtocolString,
+                String storageFileRetentionCount, TimeUnit fileRotationTimeUnit,
+                long fileRotationPeriod) throws SQLException, IOException {
     this.dir = dir;
     this.filenameParam = filename;
     this.dbProtocol = dbProtocolString;
@@ -74,11 +73,11 @@ public abstract class PersistorBase implements Persistable {
     }
     this.STORAGE_FILE_RETENTION_COUNT = parsedStorageFileRetentionCount;
 
-    Path path = Paths.get(this.dirDB.getName(), filenameParam);
-    fileRotate = new FileRotate(path, FILE_ROTATION_TIME_UNIT, ROTATION_PERIOD, dateFormat);
+    Path path = Paths.get(dir, filenameParam);
+    fileRotate = new FileRotate(path, fileRotationTimeUnit, fileRotationPeriod, dateFormat);
     fileRotate.forceRotate(System.currentTimeMillis());
 
-    fileGC =  new FileGC(Paths.get(dir), filenameParam, FILE_ROTATION_TIME_UNIT, ROTATION_PERIOD,
+    fileGC =  new FileGC(Paths.get(dir), filenameParam, fileRotationTimeUnit, fileRotationPeriod,
             STORAGE_FILE_RETENTION_COUNT);
     openNewDBFile();
   }
@@ -127,10 +126,7 @@ public abstract class PersistorBase implements Persistable {
 
   public synchronized void openNewDBFile() throws SQLException {
     this.fileCreateTime = new Date(System.currentTimeMillis());
-    this.filename =
-        String.format(
-            "%s.%s",
-            Paths.get(dir, filenameParam).toString(), dateFormat.format(this.fileCreateTime));
+    this.filename = Paths.get(dir, filenameParam).toString();
     this.tableNames = new HashSet<>();
     String url = String.format("%s%s", this.dbProtocol, this.filename);
     close();
@@ -142,13 +138,13 @@ public abstract class PersistorBase implements Persistable {
   /**
    * This is used to persist a FlowUnit in the database.
    *
-   * Before, we write anything the flowUnit is not empty and if we are past the rotation period,
+   * <p>Before, we write anything the flowUnit is not empty and if we are past the rotation period,
    * then we rotate the database file and create a new one.
    * @param node Node whose flow unit is persisted. The graph node whose data is being written
    * @param flowUnit The flow unit that is persisted. The data taht will be persisted.
    * @param <T> The FlowUnit type
    * @throws SQLException A SQLException is thrown if we are unable to create a new connection
-   * after the file rotation or while writing to the data base.
+   *     after the file rotation or while writing to the data base.
    * @throws IOException This is thrown if we are unable to delete the old database files.
    */
   @Override
@@ -165,7 +161,7 @@ public abstract class PersistorBase implements Persistable {
       openNewDBFile();
     }
 
-    String tableName = node.getClass().getSimpleName();
+    String tableName = node.name();
     if (!tableNames.contains(tableName)) {
       LOG.info(
           "RCA: Table '{}' does not exist. Creating one with columns: {}",

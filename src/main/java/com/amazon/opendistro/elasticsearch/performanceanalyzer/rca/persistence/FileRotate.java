@@ -99,7 +99,10 @@ public class FileRotate {
    * @return Returns the path to the file after it was rotated.
    */
   protected Path rotate(long currentMillis) throws IOException {
-    if (!FILE_TO_ROTATE.toFile().exists() || FILE_TO_ROTATE.getParent() == null) {
+    if (!FILE_TO_ROTATE.toFile().exists()) {
+      return null;
+    }
+    if (FILE_TO_ROTATE.getParent() == null) {
       return null;
     }
 

@@ -39,7 +39,8 @@ public class PersistenceFactory {
         return new SQLitePersistor(
             datastore.get(RcaConsts.DATASTORE_LOC_KEY),
             datastore.get(RcaConsts.DATASTORE_FILENAME),
-            datastore.get(RcaConsts.DATASTORE_STORAGE_FILE_RETENTION_COUNT));
+            datastore.get(RcaConsts.DATASTORE_STORAGE_FILE_RETENTION_COUNT),
+                RcaConsts.DB_FILE_ROTATION_TIME_UNIT, RcaConsts.ROTATION_PERIOD);
       default:
         String err = "The datastore value can only be sqlite in any case format";
         throw new MalformedConfig(rcaConf.getConfigFileLoc(), err);
