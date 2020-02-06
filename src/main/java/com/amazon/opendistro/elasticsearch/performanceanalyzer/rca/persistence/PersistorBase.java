@@ -195,8 +195,8 @@ public abstract class PersistorBase implements Persistable {
       createTable(tableName, flowUnit.getSqlSchema());
       tableNames.add(tableName);
     }
-    int lastPrimaryKey = insertRow(tableName, flowUnit.getSqlValue());
 
+  int lastPrimaryKey = insertRow(tableName, flowUnit.getSqlValue());
     if (flowUnit.hasResourceSummary()) {
       writeSummary(
               flowUnit.getResourceSummary(),
@@ -223,6 +223,7 @@ public abstract class PersistorBase implements Persistable {
       openNewDBFile();
     }
   }
+
 
   /** recursively insert nested summary to sql tables */
   private synchronized void writeSummary(
