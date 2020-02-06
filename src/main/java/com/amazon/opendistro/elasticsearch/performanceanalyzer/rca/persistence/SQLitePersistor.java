@@ -86,7 +86,7 @@ class SQLitePersistor extends PersistorBase {
    */
   @Override
   synchronized void createTable(String tableName, List<Field<?>> columns, String referenceTableName,
-      String referenceTablePrimaryKeyFieldName) {
+      String referenceTablePrimaryKeyFieldName) throws SQLException {
     Field foreignKeyField = DSL.field(referenceTablePrimaryKeyFieldName, Integer.class);
     columns.add(foreignKeyField);
     Table referenceTable = DSL.table(referenceTableName);
@@ -97,23 +97,29 @@ class SQLitePersistor extends PersistorBase {
             .references(referenceTable, DSL.field(referenceTablePrimaryKeyFieldName)));
 
     LOG.debug("table with fk created: {}", constraintStep.toString());
-    constraintStep.execute();
-    jooqTableColumns.put(tableName, columns);
+    try {
+      constraintStep.execute();
+      jooqTableColumns.put(tableName, columns);
+    } catch (Exception e) {
+      LOG.error("Failed to create table {}", tableName);
+      throw new SQLException();
+    }
   }
 
   @Override
-  synchronized int insertRow(String tableName, List<Object> row) {
+  synchronized int insertRow(String tableName, List<Object> row) throws SQLException {
+    int lastPrimaryKey = -1;
+    String sqlQuery = "SELECT " + LAST_INSERT_ROWID;
     InsertValuesStepN insertValuesStepN = create.insertInto(DSL.table(tableName))
         .columns(jooqTableColumns.get(tableName))
         .values(row);
     LOG.debug("sql insert: {}", insertValuesStepN.toString());
-    insertValuesStepN.execute();
-    int lastPrimaryKey = -1;
-    String sqlQuery = "SELECT " + LAST_INSERT_ROWID;
     try {
+      insertValuesStepN.execute();
       lastPrimaryKey = create.fetch(sqlQuery).get(0).get(LAST_INSERT_ROWID, Integer.class);
     } catch (Exception e) {
-      LOG.error("Failed to query the table {} , query : {}", tableName, sqlQuery);
+      LOG.error("Failed to insert into the table {}", tableName);
+      throw new SQLException();
     }
     LOG.debug("most recently inserted primary key = {}", lastPrimaryKey);
     return lastPrimaryKey;
