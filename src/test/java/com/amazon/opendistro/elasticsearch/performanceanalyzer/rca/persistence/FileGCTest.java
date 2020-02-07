@@ -184,7 +184,6 @@ public class FileGCTest {
     }
     Collections.reverse(modifiedTimeBased);
 
-    System.out.println(System.currentTimeMillis());
     FileGC fileGC = new FileGC(testLocation, baseFilename, TimeUnit.MILLISECONDS, 10, 3, currtTime);
 
     int i = 0;
