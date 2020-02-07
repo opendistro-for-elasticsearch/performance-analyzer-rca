@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -38,7 +39,7 @@ public interface Persistable {
    * @param node Node whose flow unit is persisted.
    * @param flowUnit The flow unit that is persisted.
    */
-  <T extends ResourceFlowUnit> void write(Node<?> node, T flowUnit);
+  <T extends ResourceFlowUnit> void write(Node<?> node, T flowUnit) throws SQLException, IOException;
 
   void close() throws SQLException;
 }

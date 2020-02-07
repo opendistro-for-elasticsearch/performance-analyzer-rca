@@ -60,6 +60,10 @@ public class RcaConsts {
   public static final String DATASTORE_STATE_COL_NAME = "state";
   public static final String DATASTORE_STORAGE_FILE_RETENTION_COUNT = "storage-file-retention-count";
 
+  // The next two lines says that the RCA sqlite files needs to be rotated every hour
+  public static final TimeUnit DB_FILE_ROTATION_TIME_UNIT = TimeUnit.HOURS;
+  public static final long ROTATION_PERIOD = 1;
+
   public static final long rcaNannyPollerPeriodicity = 5;
   public static final long rcaConfPollerPeriodicity = 5;
   public static final long nodeRolePollerPeriodicity = 60;
