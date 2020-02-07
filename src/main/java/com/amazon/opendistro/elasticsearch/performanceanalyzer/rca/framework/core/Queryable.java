@@ -25,7 +25,7 @@ public interface Queryable {
   List<List<String>> queryMetrics(MetricsDB db, String metricName);
 
   List<List<String>> queryMetrics(
-      MetricsDB db, String metricName, String dimension, String aggregation);
+      MetricsDB db, String metricName, String dimension, String aggregation) throws Exception;
 
   long getDBTimestamp(MetricsDB db);
 }
