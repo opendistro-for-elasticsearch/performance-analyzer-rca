@@ -28,6 +28,7 @@ public class Util {
   public static final String METRICS_QUERY_URL = "/_opendistro/_performanceanalyzer/metrics";
   public static final String RCA_QUERY_URL = "/_opendistro/_performanceanalyzer/rca";
   public static final String ES_HOME = System.getProperty("es.path.home");
+  public static final boolean IS_AES = ES_HOME != null && !ES_HOME.isEmpty();
   // TODO: Make this configurable.
   public static final int RPC_PORT = 9600;
   public static final String PLUGIN_LOCATION =

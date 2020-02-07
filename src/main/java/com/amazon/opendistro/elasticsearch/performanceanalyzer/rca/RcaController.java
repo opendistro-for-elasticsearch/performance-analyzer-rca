@@ -25,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectio
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetServer;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.exceptions.MalformedConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.AESRcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.MetricsDBProvider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
@@ -415,20 +416,20 @@ public class RcaController {
   private RcaConf pickRcaConfForRole(final NodeRole nodeRole) {
     if (NodeRole.ELECTED_MASTER == nodeRole) {
       LOG.debug("picking elected master conf");
-      return new RcaConf(ELECTED_MASTER_RCA_CONF_PATH);
+      return Util.IS_AES ? new AESRcaConf(ELECTED_MASTER_RCA_CONF_PATH) : new RcaConf(ELECTED_MASTER_RCA_CONF_PATH);
     }
 
     if (NodeRole.MASTER == nodeRole) {
       LOG.debug("picking idle master conf");
-      return new RcaConf(MASTER_RCA_CONF_PATH);
+      return Util.IS_AES ? new AESRcaConf(MASTER_RCA_CONF_PATH) : new RcaConf(MASTER_RCA_CONF_PATH);
     }
 
     if (NodeRole.DATA == nodeRole) {
       LOG.debug("picking data node conf");
-      return new RcaConf(RCA_CONF_PATH);
+      return Util.IS_AES ? new AESRcaConf(RCA_CONF_PATH) : new RcaConf(RCA_CONF_PATH);
     }
 
     LOG.debug("picking default conf");
-    return new RcaConf(RCA_CONF_PATH);
+    return Util.IS_AES ? new AESRcaConf(RCA_CONF_PATH) : new RcaConf(RCA_CONF_PATH);
   }
 }
