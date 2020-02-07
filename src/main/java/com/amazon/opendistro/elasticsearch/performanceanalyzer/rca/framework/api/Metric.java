@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jooq.exception.DataAccessException;
 
 public abstract class Metric extends LeafNode<MetricFlowUnit> {
   static final String[] metricList;
@@ -66,19 +67,20 @@ public abstract class Metric extends LeafNode<MetricFlowUnit> {
       e.printStackTrace();
       return MetricFlowUnit.generic();
     }
-    // LOG.debug("RCA: Metrics from MetricsDB {}", result);
     try {
       List<List<String>> result = queryable.queryMetrics(db, name);
-      // return new FlowUnit(queryable.getDBTimestamp(db), result, Collections.emptyMap());
       return new MetricFlowUnit(queryable.getDBTimestamp(db), result);
+    } catch (DataAccessException dex) {
+      // This can happen if the RCA started querying for metrics before the Reader obtained them.
+      // This is not an error.
+      LOG.info("Looking for metric {}, when it does not exist.", name);
     } catch (Exception e) {
       PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
           ExceptionsAndErrors.EXCEPTION_IN_GATHER, name(), 1);
       e.printStackTrace();
       LOG.error("Metric exception: {}", e.getMessage());
-      return MetricFlowUnit.generic();
     }
-    // LOG.debug("RCA: Metrics from MetricsDB {}", result);
+    return MetricFlowUnit.generic();
   }
 
   public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {

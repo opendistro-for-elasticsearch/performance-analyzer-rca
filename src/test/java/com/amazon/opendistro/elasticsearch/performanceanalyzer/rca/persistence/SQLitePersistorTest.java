@@ -15,13 +15,117 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaTestHelper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.SQLException;
+import java.util.concurrent.TimeUnit;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class SQLitePersistorTest {
+  private Path testLocation = null;
+  private final String baseFilename = "rca.test.file";
+
+  @BeforeClass
+  public static void cleanupLogs() {
+    RcaTestHelper.cleanUpLogs();
+  }
+
+  @AfterClass
+  public static void cleanup() throws IOException {
+    cleanupLogs();
+    String cwd = System.getProperty("user.dir");
+    Path tmpPath = Paths.get(cwd, "src", "test", "resources", "tmp");
+    // FileUtils.cleanDirectory(tmpPath.toFile());
+  }
+
+  @Before
+  public void init() throws IOException {
+    String cwd = System.getProperty("user.dir");
+    testLocation = Paths.get(cwd, "src", "test", "resources", "tmp", "file_rotate");
+    Files.createDirectories(testLocation);
+    FileUtils.cleanDirectory(testLocation.toFile());
+  }
+
+  @After
+  public void after() throws IOException {
+    // FileUtils.cleanDirectory(testLocation.toFile());
+  }
+
+  class TestRca extends Rca<ResourceFlowUnit> {
+    public TestRca() {
+      super(5);
+    }
+
+    @Override
+    public ResourceFlowUnit operate() {
+      return null;
+    }
+
+    @Override
+    public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {}
+  }
 
   @Test
-  public void createTable() {}
+  public void write() throws IOException, SQLException, InterruptedException {
+    ResourceContext context = new ResourceContext(Resources.State.UNHEALTHY);
+    HotResourceSummary summary =
+        new HotResourceSummary(
+            ResourceType.newBuilder().setJVM(JvmEnum.OLD_GEN).build(),
+            70,
+            71,
+            "heap usage in percentage",
+            60);
+    ResourceFlowUnit rfu = new ResourceFlowUnit(System.currentTimeMillis(), context, summary);
 
-  @Test
-  public void insertRow() {}
+    Node rca = new TestRca();
+
+    SQLitePersistor sqlite =
+        new SQLitePersistor(
+            testLocation.toString(), baseFilename, String.valueOf(1), TimeUnit.SECONDS, 1);
+
+
+    // The first write, this should create only one file as there is nothing to rotate.
+    sqlite.write(rca, rfu);
+    Assert.assertEquals(1,
+            testLocation.toFile().list(new WildcardFileFilter(baseFilename + "*")).length);
+    Assert.assertTrue(Paths.get(testLocation.toString(), baseFilename).toFile().exists());
+    Thread.sleep(1000);
+
+    // This should rotate the last file written and create a new one for this write.
+    sqlite.write(rca, rfu);
+    Assert.assertTrue(Paths.get(testLocation.toString(), baseFilename).toFile().exists());
+    Assert.assertEquals(2, testLocation.toFile().list(new WildcardFileFilter(baseFilename + "*")).length);
+
+    // This should delete the last rotated one, rotate the current sqlite and then write the data
+    // in a new file. So the residual count on the directory should still be 2.
+    Thread.sleep(1000);
+    sqlite.write(rca, rfu);
+    Assert.assertTrue(Paths.get(testLocation.toString(), baseFilename).toFile().exists());
+    Assert.assertEquals(2, testLocation.toFile().list(new WildcardFileFilter(baseFilename + "*")).length);
+
+    // A test to see that the string read from the database has the Rca name and the summary name
+    // we expect.
+    String readTableStr = sqlite.readTables();
+    Assert.assertTrue(readTableStr.contains("TestRca"));
+    Assert.assertTrue(readTableStr.contains("HotResourceSummary"));
+  }
 }

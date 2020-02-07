@@ -22,12 +22,14 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.QueryUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaResponseUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,8 +54,9 @@ class SQLitePersistor extends PersistorBase {
 
   private static int id_test = 1;
 
-  SQLitePersistor(String dir, String filename, String storageFileRetentionCount) throws SQLException {
-    super(dir, filename, DB_URL, storageFileRetentionCount);
+  SQLitePersistor(String dir, String filename, String storageFileRetentionCount,
+                  TimeUnit rotationTime, long rotationPeriod) throws SQLException, IOException {
+    super(dir, filename, DB_URL, storageFileRetentionCount, rotationTime, rotationPeriod);
     create = DSL.using(conn, SQLDialect.SQLITE);
     jooqTableColumns = new HashMap<>();
   }
@@ -83,7 +86,7 @@ class SQLitePersistor extends PersistorBase {
    */
   @Override
   synchronized void createTable(String tableName, List<Field<?>> columns, String referenceTableName,
-      String referenceTablePrimaryKeyFieldName) {
+      String referenceTablePrimaryKeyFieldName) throws SQLException {
     Field foreignKeyField = DSL.field(referenceTablePrimaryKeyFieldName, Integer.class);
     columns.add(foreignKeyField);
     Table referenceTable = DSL.table(referenceTableName);
@@ -94,23 +97,29 @@ class SQLitePersistor extends PersistorBase {
             .references(referenceTable, DSL.field(referenceTablePrimaryKeyFieldName)));
 
     LOG.debug("table with fk created: {}", constraintStep.toString());
-    constraintStep.execute();
-    jooqTableColumns.put(tableName, columns);
+    try {
+      constraintStep.execute();
+      jooqTableColumns.put(tableName, columns);
+    } catch (Exception e) {
+      LOG.error("Failed to create table {}", tableName);
+      throw new SQLException();
+    }
   }
 
   @Override
-  synchronized int insertRow(String tableName, List<Object> row) {
+  synchronized int insertRow(String tableName, List<Object> row) throws SQLException {
+    int lastPrimaryKey = -1;
+    String sqlQuery = "SELECT " + LAST_INSERT_ROWID;
     InsertValuesStepN insertValuesStepN = create.insertInto(DSL.table(tableName))
         .columns(jooqTableColumns.get(tableName))
         .values(row);
     LOG.debug("sql insert: {}", insertValuesStepN.toString());
-    insertValuesStepN.execute();
-    int lastPrimaryKey = -1;
-    String sqlQuery = "SELECT " + LAST_INSERT_ROWID;
     try {
+      insertValuesStepN.execute();
       lastPrimaryKey = create.fetch(sqlQuery).get(0).get(LAST_INSERT_ROWID, Integer.class);
     } catch (Exception e) {
-      LOG.error("Failed to query the table {} , query : {}", tableName, sqlQuery);
+      LOG.error("Failed to insert into the table {}", tableName);
+      throw new SQLException();
     }
     LOG.debug("most recently inserted primary key = {}", lastPrimaryKey);
     return lastPrimaryKey;

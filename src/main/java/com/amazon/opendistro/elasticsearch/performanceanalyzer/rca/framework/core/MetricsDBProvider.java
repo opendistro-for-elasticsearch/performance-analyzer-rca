@@ -58,25 +58,24 @@ public class MetricsDBProvider implements Queryable {
       for (String col : columnNames) {
         row.add(String.valueOf(r.getValue(col)));
       }
-      // LOG.info("RCA: row: \n{}", r);
       retResults.add(row);
     }
     return retResults;
   }
 
+  /**
+   * This queries the MetricsDB to get all the data for the given metric.
+   *
+   * <p>If we query for a metric that does not exist then {@code queryMetrics()} with throw
+   * {@code exception}, which is not handled here. The caller might handle if it wants to.
+   * @param db The MetricsDB file to query
+   * @param metricName The table for the metric that will be queried.
+   * @return Returns the metrics data in a tabular form.
+   */
   @Override
   public List<List<String>> queryMetrics(MetricsDB db, String metricName) {
-    // LOG.info("RCA: About to get the query metric: {}", metricName);
-    try {
-      Result<Record> queryResult = db.queryMetric(metricName);
-      return parseResult(queryResult);
-    } catch (Exception e) {
-      LOG.error("kak: Having issues with the DB man! {}", e.getMessage());
-      e.printStackTrace();
-      return Collections.emptyList();
-    }
-    // LOG.info("RCA: result {}", queryResult);
-
+    Result<Record> queryResult = db.queryMetric(metricName);
+    return parseResult(queryResult);
   }
 
   @Override
@@ -84,19 +83,13 @@ public class MetricsDBProvider implements Queryable {
       final MetricsDB db,
       final String metricName,
       final String dimension,
-      final String aggregation) {
-    try {
-      return parseResult(
+      final String aggregation) throws Exception {
+      Result<Record> queryResult =
           db.queryMetric(
               Collections.singletonList(metricName),
               Collections.singletonList(aggregation),
-              Collections.singletonList(dimension)));
-    } catch (Exception e) {
-      LOG.error("Couldn't query the metrics correctly. {}", e.getMessage());
-      LOG.error("Exception: ", e);
-    }
-
-    return Collections.emptyList();
+              Collections.singletonList(dimension));
+      return parseResult(queryResult);
   }
 
   @Override

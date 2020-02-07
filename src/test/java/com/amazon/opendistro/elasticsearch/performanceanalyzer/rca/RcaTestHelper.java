@@ -15,7 +15,11 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -34,13 +38,7 @@ public class RcaTestHelper {
   public static List<String> getAllLinesFromStatsLog() {
     try {
       return Files.readAllLines(Paths.get(getLogFilePath("StatsLog")));
-    } catch (IOException e) {
-      e.printStackTrace();
-    } catch (ParserConfigurationException e) {
-      e.printStackTrace();
-    } catch (SAXException e) {
-      e.printStackTrace();
-    } catch (XPathExpressionException e) {
+    } catch (IOException | ParserConfigurationException | SAXException | XPathExpressionException e) {
       e.printStackTrace();
     }
     return Collections.EMPTY_LIST;
@@ -49,6 +47,25 @@ public class RcaTestHelper {
   public static List<String> getAllLinesWithMatchingString(String pattern) {
     List<String> matches = new ArrayList<>();
     for (String line: getAllLinesFromStatsLog()) {
+      if (line.contains(pattern)) {
+        matches.add(line);
+      }
+    }
+    return matches;
+  }
+
+  public static List<String> getAllLinesFromLog(String logName) {
+    try {
+      return Files.readAllLines(Paths.get(getLogFilePath(logName)));
+    } catch (IOException | ParserConfigurationException | SAXException | XPathExpressionException e) {
+      e.printStackTrace();
+    }
+    return Collections.EMPTY_LIST;
+  }
+
+  public static List<String> getAllLogLinesWithMatchingString(String logName, String pattern) {
+    List<String> matches = new ArrayList<>();
+    for (String line: getAllLinesFromLog(logName)) {
       if (line.contains(pattern)) {
         matches.add(line);
       }
@@ -73,14 +90,18 @@ public class RcaTestHelper {
 
   public static void cleanUpLogs() {
     try {
-      Files.deleteIfExists(Paths.get(getLogFilePath("PerformanceAnalyzerLog")));
-      Files.deleteIfExists(Paths.get(getLogFilePath("StatsLog")));
-    } catch (ParserConfigurationException e) {
+      truncate(Paths.get(getLogFilePath("PerformanceAnalyzerLog")).toFile());
+      truncate(Paths.get(getLogFilePath("StatsLog")).toFile());
+    } catch (ParserConfigurationException | SAXException | XPathExpressionException | IOException e) {
       e.printStackTrace();
-    } catch (SAXException e) {
-      e.printStackTrace();
-    } catch (XPathExpressionException e) {
-      e.printStackTrace();
+    }
+  }
+
+  public static void truncate(File file) {
+    try (FileChannel outChan = new FileOutputStream(file, false).getChannel()) {
+      outChan.truncate(0);
+    } catch (FileNotFoundException e) {
+      System.out.println(file.getName() + " does not exist.");
     } catch (IOException e) {
       e.printStackTrace();
     }
