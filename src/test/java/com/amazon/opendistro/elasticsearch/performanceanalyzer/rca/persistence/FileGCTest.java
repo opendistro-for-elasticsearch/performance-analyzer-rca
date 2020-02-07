@@ -113,13 +113,11 @@ public class FileGCTest {
   public void testCountBasedCleanup() throws IOException {
     long currtTime = System.currentTimeMillis();
     Set<String> set = new HashSet<>();
-    List<String> listByRecency = new ArrayList<>();
 
     // files that are recent enough that they won't be affected by the time based filter.
     for (int j = 0; j < 10; j++) {
       String name = baseFilename + "." + j + j;
       set.add(name);
-      listByRecency.add(name);
       Path filePath = Paths.get(testLocation.toString(), name);
       Files.createFile(filePath);
       long lastMod = currtTime - j;
@@ -137,13 +135,12 @@ public class FileGCTest {
 
     Assert.assertEquals(3, afterCountBasedCleanup.size());
 
-    List<String> expectedFiles = listByRecency.subList(0, 3);
-    Collections.reverse(expectedFiles);
+    List<File> expectedFiles = filesList.subList(filesList.size() - 3, filesList.size());
     Assert.assertEquals(expectedFiles.size(), afterCountBasedCleanup.size());
 
     int i = 0;
     for (File file : afterCountBasedCleanup) {
-      Assert.assertEquals(expectedFiles.get(i), file.getName());
+      Assert.assertEquals(expectedFiles.get(i).getName(), file.getName());
       i += 1;
     }
   }
@@ -151,14 +148,14 @@ public class FileGCTest {
   @Test
   public void eligibleForGc() throws IOException {
     long currentTime = System.currentTimeMillis();
-    long limit = currentTime - 10 * 3;
+    long limit = currentTime - 10 * 1000;
 
     // ALl of these will be deleted because of time based cleanup.
     for (int i = 0; i < 3; i++) {
       String name = baseFilename + "." + i;
       Path filePath = Paths.get(testLocation.toString(), name);
       Files.createFile(filePath);
-      Assert.assertTrue(filePath.toFile().setLastModified(limit - (i + 1) * 10));
+      Assert.assertTrue(filePath.toFile().setLastModified(limit - (i + 1) * 1000));
     }
 
     long currtTime = System.currentTimeMillis();
@@ -167,7 +164,7 @@ public class FileGCTest {
     String name = baseFilename + "." + 222;
     Path filePath = Paths.get(testLocation.toString(), name);
     Files.createFile(filePath);
-    Assert.assertTrue(filePath.toFile().setLastModified(currtTime - 5));
+    Assert.assertTrue(filePath.toFile().setLastModified(currtTime - 5000));
 
     // These files will stay on.
     // <basename>.00 -> most recent file
@@ -179,12 +176,12 @@ public class FileGCTest {
       modifiedTimeBased.add(name);
       filePath = Paths.get(testLocation.toString(), name);
       Files.createFile(filePath);
-      long lastMod = currtTime - j;
+      long lastMod = currtTime - j * 1000;
       Assert.assertTrue(filePath.toFile().setLastModified(lastMod));
     }
     Collections.reverse(modifiedTimeBased);
 
-    FileGC fileGC = new FileGC(testLocation, baseFilename, TimeUnit.MILLISECONDS, 10, 3, currtTime);
+    FileGC fileGC = new FileGC(testLocation, baseFilename, TimeUnit.SECONDS, 10, 3, currtTime);
 
     int i = 0;
     for (File file : fileGC.eligibleForGc) {
