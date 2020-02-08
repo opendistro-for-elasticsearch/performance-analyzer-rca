@@ -379,7 +379,7 @@ public class ReaderMetricsProcessor implements Runnable {
      1. Get the current system timestamp.
      2. Round it to the SAMPLING_TIME bucket. So, for a bucket width of
         5, a timestamp of 17 is dropped into the bucket numbered 15.
-     3. Go, two windows back from the value you get in step 2. But you
+     3. Go, three windows back from the value you get in step 2. But you
         ask why ?
         The reason is the purger thread on the writer runs a sampling
         window behind the current timestamp. So for a current wall-clock
@@ -397,6 +397,14 @@ public class ReaderMetricsProcessor implements Runnable {
         window 5 because that is guaranteed to be be written by the
         purger at the moment, unless it has crashed and missed writing
         the file.
+        However, there is a race condition here if let's say the writer is
+        writing data at time 19.99 seconds. This write still falls into the
+        bucket (10-15). At 20.01 the reader assumes that the bucket (10-15)
+        is ready so it starts to read that file (go back two windows and
+        fetch the file 10) But since writer just finished writing to
+        the 10.tmp, it might not get enough to rotate that file before
+        20.01. So race condition occurs. We have to add one additional window
+        on reader to avoid this.
     */
 
     // Step 1 from above.
@@ -408,7 +416,7 @@ public class ReaderMetricsProcessor implements Runnable {
             currTimestamp, MetricsConfiguration.SAMPLING_INTERVAL);
 
     // Step 3 from above.
-    currWindowStartTime = currWindowStartTime - (2 * MetricsConfiguration.SAMPLING_INTERVAL);
+    currWindowStartTime = currWindowStartTime - (3 * MetricsConfiguration.SAMPLING_INTERVAL);
     long currWindowEndTime = currWindowStartTime + MetricsConfiguration.SAMPLING_INTERVAL;
 
     EventProcessor osProcessor =
