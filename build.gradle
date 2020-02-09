@@ -16,6 +16,7 @@
 buildscript {
     dependencies {
         classpath group: 'com.google.guava', name: 'guava', version: '28.1-jre'
+        classpath 'org.ajoberstar:gradle-git:0.2.3'
     }
 }
 
@@ -28,6 +29,7 @@ plugins {
     id 'jacoco'
     id 'idea'
     id 'com.github.spotbugs' version '3.0.0'
+    id "de.undercouch.download" version "4.0.4"
 }
 
 application {
@@ -273,4 +275,254 @@ idea {
         sourceDirs += file("${projectDir}/build/generated/source/proto/main/grpc");
     }
 }
+
+
+import org.ajoberstar.gradle.git.tasks.GitClone
+
+import java.nio.file.Paths
+
+String paDir
+String dockerBuildDir
+String dockerArtifactsDir
+
+task cloneGitRepo(type: GitClone) {
+    dockerBuildDir = Paths.get(getProject().getBuildDir().toString(), "docker-build").toString()
+    mkdir dockerBuildDir
+    paDir = Paths.get(dockerBuildDir, "pa").toString()
+
+    def destination = file(paDir)
+    uri = "https://github.com/opendistro-for-elasticsearch/performance-analyzer.git"
+    destinationPath = destination
+    bare = false
+    enabled = !destination.exists() //to clone only once
+}
+
+task removeLicenses(type: Delete) {
+    dependsOn(cloneGitRepo)
+    def toDelete = Paths.get(paDir, 'licenses', 'performanceanalyzer-rca-1.3.jar.sha1')
+    delete(toDelete)
+}
+
+task regenerateLicenses(type: Exec) {
+    dependsOn(removeLicenses)
+    workingDir(paDir)
+    commandLine './gradlew', 'updateShas'
+}
+
+task buildPa(type: Exec) {
+    dependsOn(assemble, publishToMavenLocal, regenerateLicenses)
+    workingDir paDir
+    commandLine './gradlew', 'assemble'
+}
+
+task copyAllArtifacts(type: Copy) {
+    dependsOn(buildPa)
+    def projectPathStr = getProjectDir().toPath().toString()
+    def dockerArtifacts = Paths.get(projectPathStr, 'docker').toString()
+    def rcaArtifacts = Paths.get(projectPathStr, 'build', 'distributions', 'performance-analyzer-rca.zip')
+    def paArtifacts = Paths.get(paDir, 'build', 'distributions', 'opendistro_performance_analyzer-1.3.0.0-SNAPSHOT.zip')
+
+    dockerArtifactsDir = Paths.get(dockerBuildDir, 'rca-docker')
+    from(dockerArtifacts)
+    from(rcaArtifacts)
+    from(paArtifacts)
+    into(dockerArtifactsDir)
+}
+
+task buildDocker(type: Exec) {
+    dependsOn(copyAllArtifacts)
+
+    workingDir(dockerArtifactsDir)
+    commandLine 'docker', 'build', '-t', 'odfe-es/pa-rca:1.0', '.'
+}
+
+task runDocker(type: Exec) {
+    dependsOn(buildDocker)
+
+    workingDir(dockerArtifactsDir)
+
+    environment 'DATA_VOLUME1', 'esdata1'
+    environment 'DATA_VOLUME2', 'esdata2'
+
+    commandLine('docker-compose',
+            '-f', 'docker-compose.yml',
+            '-f', 'docker-compose.hostports.yml',
+            '-f', 'docker-compose.cluster.yml',
+            'up', 'elasticsearch1', 'elasticsearch2')
+
+}
+
+def printCommandOutput(proc) {
+    Thread.start {
+        BufferedReader stdInput = new BufferedReader(new
+                InputStreamReader(proc.getInputStream()));
+
+        BufferedReader stdError = new BufferedReader(new
+                InputStreamReader(proc.getErrorStream()));
+
+        System.out.println("Here is the standard output of the command:\n");
+        String s = null;
+        while ((s = stdInput.readLine()) != null) {
+            System.out.println(s);
+        }
+
+        System.out.println("Here is the standard error of the command (if any):\n");
+        while ((s = stdError.readLine()) != null) {
+            System.out.println(s);
+        }
+    }
+    int exitVal = proc.waitFor()
+    System.out.println("Process exitValue: " + exitVal);
+}
+
+def runCommand(commandArr, envArr, workingDir) {
+    try {
+        Process proc = Runtime.getRuntime().exec(commandArr, envArr, file(workingDir))
+        printCommandOutput(proc)
+    } catch (Throwable th) {
+        th.printStackTrace()
+    }
+}
+
+def runInProcess(commandArr) {
+    Process proc = new ProcessBuilder(commandArr).start();
+    printCommandOutput(proc)
+}
+
+def runDockerCompose = { executionPath ->
+    String[] commandArray = ['docker-compose',
+                             '-f', 'docker-compose.yml',
+                             '-f', 'docker-compose.hostports.yml',
+                             '-f', 'docker-compose.cluster.yml',
+                             'up', 'elasticsearch1', 'elasticsearch2']
+    String[] env = ['DATA_VOLUME1=esdata1',
+                    'DATA_VOLUME2=esdata2']
+    runCommand(commandArray, env, file(executionPath))
+}
+
+def getHttpResponse(server, timeoutSeconds) {
+    URL url = new URL(server)
+    long timeout = timeoutSeconds * 1000
+    long increments = 1000
+    long passed = 0
+    println 'waiting for ' + server
+    while (passed < timeout) {
+        try {
+            HttpURLConnection con = (HttpURLConnection) url.openConnection()
+            con.setRequestMethod("GET")
+            InputStreamReader isr = new InputStreamReader(con.getInputStream())
+            BufferedReader bufR = new BufferedReader(isr)
+            String inputLine;
+            StringBuffer content = new StringBuffer()
+            while ((inputLine = bufR.readLine()) != null) {
+                content.append(inputLine);
+            }
+            println(content.toString())
+            bufR.close()
+            break
+        } catch (IOException) {
+            Thread.sleep(increments);
+            passed += increments
+        }
+    }
+    if (passed == timeout) {
+        throw new GradleException(String.format("%s not ready.", server));
+    }
+}
+
+Boolean esIsUp
+Boolean rcaIsUp
+
+def esUpChecker = {
+    String server = "http://localhost:9200"
+    int timeoutSeconds = 60
+    getHttpResponse(server, timeoutSeconds)
+    esIsUp = true
+}
+
+
+Thread esRunnerThread
+
+def runInThread(cl, input) {
+    return Thread.start {
+        cl(input)
+    }
+}
+
+task waitForES {
+    dependsOn(buildDocker)
+    esRunnerThread = runInThread(runDockerCompose, dockerArtifactsDir)
+    esUpChecker()
+}
+
+String perfTopDir
+String perfTopZip
+String perfTopBin
+
+task downloadPerfTop(type: Download) {
+    String zip = 'perf-top-1.3.0.0-MACOS.zip'
+    perfTopDir = Paths.get(dockerBuildDir, 'perftop').toString()
+    mkdir perfTopDir
+
+    src 'https://d3g5vo6xdbdb9a.cloudfront.net/downloads/perftop/' + zip
+    dest perfTopDir
+    overwrite false
+
+    perfTopZip = Paths.get(perfTopDir, zip).toString()
+    File f = file(perfTopZip)
+    enabled = !f.exists() //to clone only once
+}
+
+task unzipPerfTop(type: Copy) {
+    dependsOn(downloadPerfTop)
+
+    perfTopBin = Paths.get(perfTopDir, 'perf-top-macos').toString()
+
+    def zipFile = file(perfTopZip)
+    def outputDir = file(perfTopDir)
+
+    from zipTree(zipFile)
+    into outputDir
+
+    enabled = !file(perfTopBin).exists()
+}
+
+task enablePaAndRca(type: Exec) {
+    commandLine('curl', 'localhost:9200/_opendistro/_performanceanalyzer/cluster/config', '-H',
+            'Content-Type: application/json', '-d', '{"enabled": true}')
+    // commandLine('curl', 'localhost:9200/_opendistro/_performanceanalyzer/rca/cluster/config',
+    //        '-H', 'Content-Type: application/json', '-d', '{"enabled": true}')
+}
+
+task runPerftop {
+    dependsOn(enablePaAndRca, unzipPerfTop)
+    println 'invoke perftop as: '
+    println String.format("%s --dashboard %s", Paths.get(perfTopBin).toString(), 'ClusterOverview')
+}
+
+task generateLoad(type: Exec) {
+    dependsOn(enablePaAndRca, runPerftop)
+
+    workingDir(Paths.get(getProjectDir().getAbsolutePath(), 'src', 'test', 'resources').toString())
+
+    while (true) {
+        commandLine('curl', '-X', 'DELETE', 'localhost:9200/accounts?pretty')
+        //println ("starting indexing: " + System.currentTimeMillis())
+        commandLine('curl', '-s', '-H',
+                "Content-Type: application/x-ndjson",
+                '-XPOST',
+                'localhost:9200/_bulk',
+                '--data-binary',
+                '@accounts.json')
+        //println ("completed indexing: " + System.currentTimeMillis())
+        Thread.sleep(1000)
+        //println("starting search" + System.currentTimeMillis())
+        commandLine('curl', '-X', 'GET', 'localhost:9200/_search?pretty', '-H',
+                'Content-Type:application/json', '-d',
+                '{"query": {"range": {"balance": {"gte": 100, "lte": 100000}}}}')
+        //println("completed search" + System.currentTimeMillis())
+        commandLine('curl', '-X', 'DELETE', 'localhost:9200/accounts?pretty')
+    }
+}
+
 
