@@ -40,10 +40,23 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
 import org.apache.logging.log4j.util.Supplier;
 
+/**
+ *  Request handler that supports querying RCAs
+ *
+ *  <p>To dump all RCA related tables from SQL :
+ *  curl --url "localhost:9650/_opendistro/_performanceanalyzer/rca?all" -XGET
+ *
+ *  <p>To get response for all the available RCA, use:
+ *  curl --url "localhost:9650/_opendistro/_performanceanalyzer/rca" -XGET
+ *
+ *  <p>To get response for a specific RCA, use:
+ *  curl --url "localhost:9650/_opendistro/_performanceanalyzer/rca?name=HighHeapUsageClusterRca" -XGET
+ */
 public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandler {
 
   private static final Logger LOG = LogManager.getLogger(QueryRcaRequestHandler.class);
   private static final int HTTP_CLIENT_CONNECTION_TIMEOUT = 200;
+  private static final String DUMP_ALL = "all";
   private Persistable persistable;
   private MetricsRestUtil metricsRestUtil;
   private Set<String> validRCA;
@@ -59,27 +72,32 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
 
     if (requestMethod.equalsIgnoreCase("GET")) {
       LOG.debug("RCA Query handler called.");
-      // Map<String, String> params = getParamsMap(exchange.getRequestURI().getQuery());
       exchange.getResponseHeaders().set("Content-Type", "application/json");
 
       try {
         synchronized (this) {
-          Map<String, String> params = getParamsMap(exchange.getRequestURI().getQuery());
-          List<String> rcaList = metricsRestUtil.parseArrayParam(params, "name", true);
-
-          if (!validParams(rcaList)) {
-            sendResponse(exchange, "{\"error\":\"Invalid RCA.\"}",
-                    HttpURLConnection.HTTP_BAD_REQUEST);
-            return;
+          String query = exchange.getRequestURI().getQuery();
+          //first check if we want to dump all SQL tables for debugging purpose
+          if (query.equals(DUMP_ALL)) {
+            sendResponse(exchange, dumpAllRcaTables(), HttpURLConnection.HTTP_OK);
           }
-          if (rcaList.isEmpty()) {
-            rcaList = ImmutableList.copyOf(validRCA);
-          }
+          else {
+            Map<String, String> params = getParamsMap(query);
+            List<String> rcaList = metricsRestUtil.parseArrayParam(params, "name", true);
 
-          String response = getRcaData(persistable, rcaList);
-          sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
+            if (!validParams(rcaList)) {
+              sendResponse(exchange, "{\"error\":\"Invalid RCA.\"}",
+                  HttpURLConnection.HTTP_BAD_REQUEST);
+              return;
+            }
+            if (rcaList.isEmpty()) {
+              rcaList = ImmutableList.copyOf(validRCA);
+            }
+
+            String response = getRcaData(persistable, rcaList);
+            sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
+          }
         }
-
       } catch (InvalidParameterException e) {
         LOG.error(
                 (Supplier<?>)
@@ -126,6 +144,14 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
             .setFieldNamingStrategy(FieldNamingPolicy.UPPER_CAMEL_CASE)
             .create()
             .toJson(rcaResponseList);
+  }
+
+  private String dumpAllRcaTables() {
+    String jsonResponse = "";
+    if (persistable != null) {
+      jsonResponse = persistable.read();
+    }
+    return jsonResponse;
   }
 
   public void sendResponse(HttpExchange exchange, String response, int status) throws IOException {
