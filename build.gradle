@@ -426,16 +426,15 @@ def getHttpResponse(server, timeoutSeconds) {
         }
     }
     if (passed == timeout) {
-        throw new GradleException(String.format("%s not ready.", server));
+        throw new GradleException(String.format("ERROR:  %s not ready.", server));
     }
 }
 
 Boolean esIsUp
-Boolean rcaIsUp
 
 def esUpChecker = {
     String server = "http://localhost:9200"
-    int timeoutSeconds = 60
+    int timeoutSeconds = 5 * 60
     getHttpResponse(server, timeoutSeconds)
     esIsUp = true
 }
@@ -451,8 +450,10 @@ def runInThread(cl, input) {
 
 task waitForES {
     dependsOn(buildDocker)
-    esRunnerThread = runInThread(runDockerCompose, dockerArtifactsDir)
-    esUpChecker()
+    doLast {
+        esRunnerThread = runInThread(runDockerCompose, dockerArtifactsDir)
+        esUpChecker()
+    }
 }
 
 String perfTopDir
@@ -488,40 +489,47 @@ task unzipPerfTop(type: Copy) {
 }
 
 task enablePaAndRca(type: Exec) {
+    dependsOn(waitForES)
     commandLine('curl', 'localhost:9200/_opendistro/_performanceanalyzer/cluster/config', '-H',
             'Content-Type: application/json', '-d', '{"enabled": true}')
-    // commandLine('curl', 'localhost:9200/_opendistro/_performanceanalyzer/rca/cluster/config',
-    //        '-H', 'Content-Type: application/json', '-d', '{"enabled": true}')
+    commandLine('curl', 'localhost:9200/_opendistro/_performanceanalyzer/rca/cluster/config',
+            '-H', 'Content-Type: application/json', '-d', '{"enabled": true}')
 }
 
 task runPerftop {
     dependsOn(enablePaAndRca, unzipPerfTop)
-    println 'invoke perftop as: '
-    println String.format("%s --dashboard %s", Paths.get(perfTopBin).toString(), 'ClusterOverview')
+    doLast {
+        println '========================================================='
+        println 'invoke perftop as: '
+        println String.format("%s --dashboard %s", Paths.get(perfTopBin).toString(), 'ClusterOverview')
+        println '========================================================='
+    }
 }
 
 task generateLoad(type: Exec) {
     dependsOn(enablePaAndRca, runPerftop)
 
-    workingDir(Paths.get(getProjectDir().getAbsolutePath(), 'src', 'test', 'resources').toString())
+    doLast {
+        workingDir(Paths.get(getProjectDir().getAbsolutePath(), 'src', 'test', 'resources').toString())
 
-    while (true) {
-        commandLine('curl', '-X', 'DELETE', 'localhost:9200/accounts?pretty')
-        //println ("starting indexing: " + System.currentTimeMillis())
-        commandLine('curl', '-s', '-H',
-                "Content-Type: application/x-ndjson",
-                '-XPOST',
-                'localhost:9200/_bulk',
-                '--data-binary',
-                '@accounts.json')
-        //println ("completed indexing: " + System.currentTimeMillis())
-        Thread.sleep(1000)
-        //println("starting search" + System.currentTimeMillis())
-        commandLine('curl', '-X', 'GET', 'localhost:9200/_search?pretty', '-H',
-                'Content-Type:application/json', '-d',
-                '{"query": {"range": {"balance": {"gte": 100, "lte": 100000}}}}')
-        //println("completed search" + System.currentTimeMillis())
-        commandLine('curl', '-X', 'DELETE', 'localhost:9200/accounts?pretty')
+        while (true) {
+            commandLine('curl', '-X', 'DELETE', 'localhost:9200/accounts?pretty')
+            //println ("starting indexing: " + System.currentTimeMillis())
+            commandLine('curl', '-s', '-H',
+                    "Content-Type: application/x-ndjson",
+                    '-XPOST',
+                    'localhost:9200/_bulk',
+                    '--data-binary',
+                    '@accounts.json')
+            //println ("completed indexing: " + System.currentTimeMillis())
+            Thread.sleep(1000)
+            //println("starting search" + System.currentTimeMillis())
+            commandLine('curl', '-X', 'GET', 'localhost:9200/_search?pretty', '-H',
+                    'Content-Type:application/json', '-d',
+                    '{"query": {"range": {"balance": {"gte": 100, "lte": 100000}}}}')
+            //println("completed search" + System.currentTimeMillis())
+            commandLine('curl', '-X', 'DELETE', 'localhost:9200/accounts?pretty')
+        }
     }
 }
 
