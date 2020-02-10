@@ -55,7 +55,7 @@ public class MetricsRestUtil {
     return outputJson.toString();
   }
 
-  public List<String> parseArrayParam(Map<String, String> params, String name, boolean optional) {
+  public List<String> parseArrayParam(Map<String, String> params, String name, boolean optional) throws InvalidParameterException {
     if (!optional) {
       if (!params.containsKey(name) || params.get(name).isEmpty()) {
         throw new InvalidParameterException(String.format("%s parameter needs to be set", name));

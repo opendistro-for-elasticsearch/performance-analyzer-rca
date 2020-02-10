@@ -42,6 +42,7 @@ public abstract class Symptom extends NonLeafNode<SymptomFlowUnit> {
     } catch (Exception ex) {
       PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
           ExceptionsAndErrors.EXCEPTION_IN_OPERATE, name(), 1);
+      ex.printStackTrace();
       result = SymptomFlowUnit.generic();
     }
     long endTime = System.currentTimeMillis();
