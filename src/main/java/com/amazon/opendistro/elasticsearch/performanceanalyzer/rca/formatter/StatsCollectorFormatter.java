@@ -39,7 +39,7 @@ public class StatsCollectorFormatter implements Formatter {
     formatted.append(sep);
     formatted.append(measurementSet.getName()).append("=").append(value);
     if (!measurementSet.getUnit().isEmpty()) {
-      formatted.append(" ").append("unit|").append(measurementSet.getUnit());
+      formatted.append(" ").append(measurementSet.getUnit());
     }
     formatted.append(" ").append("aggr|").append(aggregationType);
     if (!name.isEmpty()) {
