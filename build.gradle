@@ -288,7 +288,11 @@ String dockerArtifactsDir
 task cloneGitRepo(type: GitClone) {
     dockerBuildDir = Paths.get(getProject().getBuildDir().toString(), "docker-build").toString()
     mkdir dockerBuildDir
-    paDir = Paths.get(dockerBuildDir, "pa").toString()
+    if (localPaDir != null && !localPaDir.empty) {
+        paDir = localPaDir
+    } else {
+        paDir = Paths.get(dockerBuildDir, "pa").toString()
+    }
 
     def destination = file(paDir)
     uri = "https://github.com/opendistro-for-elasticsearch/performance-analyzer.git"
@@ -312,7 +316,9 @@ task regenerateLicenses(type: Exec) {
 task buildPa(type: Exec) {
     dependsOn(assemble, publishToMavenLocal, regenerateLicenses)
     workingDir paDir
+    println String.format('pa in dir: (%s) will be built.', paDir)
     commandLine './gradlew', 'assemble'
+    println "PA repo located at '" + paDir + "' will be used."
 }
 
 task copyAllArtifacts(type: Copy) {
@@ -375,10 +381,12 @@ def printCommandOutput(proc) {
     System.out.println("Process exitValue: " + exitVal);
 }
 
-def runCommand(commandArr, envArr, workingDir) {
+def runCommand(commandArr, envArr, workingDir, printOutput) {
     try {
         Process proc = Runtime.getRuntime().exec(commandArr, envArr, file(workingDir))
-        printCommandOutput(proc)
+        if (printOutput) {
+            printCommandOutput(proc)
+        }
     } catch (Throwable th) {
         th.printStackTrace()
     }
@@ -397,7 +405,7 @@ def runDockerCompose = { executionPath ->
                              'up', 'elasticsearch1', 'elasticsearch2']
     String[] env = ['DATA_VOLUME1=esdata1',
                     'DATA_VOLUME2=esdata2']
-    runCommand(commandArray, env, file(executionPath))
+    runCommand(commandArray, env, file(executionPath), true)
 }
 
 def getHttpResponse(server, timeoutSeconds) {
@@ -438,7 +446,6 @@ def esUpChecker = {
     getHttpResponse(server, timeoutSeconds)
     esIsUp = true
 }
-
 
 Thread esRunnerThread
 
@@ -499,36 +506,38 @@ task enablePaAndRca(type: Exec) {
 task runPerftop {
     dependsOn(enablePaAndRca, unzipPerfTop)
     doLast {
-        println '========================================================='
+        println '============================================================================'
         println 'invoke perftop as: '
         println String.format("%s --dashboard %s", Paths.get(perfTopBin).toString(), 'ClusterOverview')
-        println '========================================================='
+        println '============================================================================'
     }
 }
 
-task generateLoad(type: Exec) {
+task generateLoad {
     dependsOn(enablePaAndRca, runPerftop)
 
     doLast {
-        workingDir(Paths.get(getProjectDir().getAbsolutePath(), 'src', 'test', 'resources').toString())
+        String[] deleteIndex = ['curl', '-X', 'DELETE', 'localhost:9200/accounts?pretty']
+        String[] bulk = ['curl', '-s', '-H', "Content-Type: application/x-ndjson",
+                         '-XPOST', 'localhost:9200/_bulk', '--data-binary', '@accounts.json']
+        String[] search = ['curl', '-X', 'GET', 'localhost:9200/_search?pretty', '-H',
+                           'Content-Type:application/json', '-d',
+                           '{"query": {"range": {"balance": {"gte": 100, "lte": 100000}}}}']
 
+        String wdir = Paths.get(getProjectDir().getAbsolutePath(), 'src', 'test', 'resources')
+                .toString()
         while (true) {
-            commandLine('curl', '-X', 'DELETE', 'localhost:9200/accounts?pretty')
-            //println ("starting indexing: " + System.currentTimeMillis())
-            commandLine('curl', '-s', '-H',
-                    "Content-Type: application/x-ndjson",
-                    '-XPOST',
-                    'localhost:9200/_bulk',
-                    '--data-binary',
-                    '@accounts.json')
-            //println ("completed indexing: " + System.currentTimeMillis())
-            Thread.sleep(1000)
+            // runCommand(deleteIndex, null, wdir, false)
+            //println("starting indexing: " + System.currentTimeMillis())
+            runCommand(bulk, null, wdir, false)
+            //println("completed indexing: " + System.currentTimeMillis())
+            Thread.sleep(5000)
             //println("starting search" + System.currentTimeMillis())
-            commandLine('curl', '-X', 'GET', 'localhost:9200/_search?pretty', '-H',
-                    'Content-Type:application/json', '-d',
-                    '{"query": {"range": {"balance": {"gte": 100, "lte": 100000}}}}')
+            runCommand(search, null, wdir, false)
+            Thread.sleep(5000)
             //println("completed search" + System.currentTimeMillis())
-            commandLine('curl', '-X', 'DELETE', 'localhost:9200/accounts?pretty')
+            runCommand(deleteIndex, null, wdir, false)
+            Thread.sleep(5000)
         }
     }
 }
