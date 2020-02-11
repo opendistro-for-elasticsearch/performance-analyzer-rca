@@ -50,7 +50,29 @@ public enum RcaGraphMetrics implements MeasurementSet {
       "NodesExecutedLocally", "count", Collections.singletonList(Statistics.COUNT)),
 
   NUM_NODES_EXECUTED_REMOTELY(
-      "NodesExecutedRemotely", "count", Collections.singletonList(Statistics.COUNT));
+      "NodesExecutedRemotely", "count", Collections.singletonList(Statistics.COUNT)),
+
+  /** Measures number of bytes that was sent out as part of a protobuf message. */
+  NET_BYTES_OUT("TotalRcaBytesOutSerialized", "bytes", Collections.singletonList(Statistics.SUM)),
+
+  /** Measures number of bytes that was received as part of a protobuf message. */
+  NET_BYTES_IN("TotalRcaBytesInSerialized", "bytes", Collections.singletonList(Statistics.SUM)),
+
+  /** Number of nodes that are currently publishing flow units to downstream nodes. */
+  RCA_NODES_FU_PUBLISH_COUNT("RcaFlowUnitPublishCount", "namedCount",
+      Collections.singletonList(Statistics.NAMED_COUNTERS)),
+
+  /** Number of nodes that are currently receiving flow units from upstream nodes. */
+  RCA_NODES_FU_CONSUME_COUNT("RcaFlowUnitConsumeCount", "namedCount",
+      Collections.singletonList(Statistics.NAMED_COUNTERS)),
+
+  /** Number of subscription requests sent per node. */
+  RCA_NODES_SUB_REQ_COUNT("RcaSubscriptionRequestCount", "namedCount",
+      Collections.singletonList(Statistics.NAMED_COUNTERS)),
+
+  /** Number of subscriptions acknowledged per node. */
+  RCA_NODES_SUB_ACK_COUNT("RcaSubscriptionAckCount", "namedCount",
+      Collections.singletonList(Statistics.NAMED_COUNTERS));
 
   /** What we want to appear as the metric name. */
   private String name;

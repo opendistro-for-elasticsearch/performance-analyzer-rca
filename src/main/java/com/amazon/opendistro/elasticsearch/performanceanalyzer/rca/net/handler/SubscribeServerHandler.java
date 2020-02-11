@@ -15,10 +15,12 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.handler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.CompositeSubscribeRequest;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks.SubscriptionRxTask;
@@ -52,6 +54,9 @@ public class SubscribeServerHandler {
     if (executorService != null) {
       try {
         executorService.execute(new SubscriptionRxTask(subscriptionManager, subscribeRequest));
+        PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(RcaGraphMetrics.NET_BYTES_IN,
+            subscribeRequest.getSubscribeMessage().getRequesterNode(),
+            subscribeRequest.getSubscribeMessage().getSerializedSize());
       } catch (final RejectedExecutionException ree) {
         LOG.warn("Dropped processing subscription request because the network threadpool is full");
         StatsCollector.instance()
