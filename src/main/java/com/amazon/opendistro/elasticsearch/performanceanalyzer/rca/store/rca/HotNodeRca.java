@@ -94,7 +94,7 @@ public class HotNodeRca extends Rca<ResourceFlowUnit> {
       // reset the variables
       counter = 0;
       hasUnhealthyFlowUnit = false;
-      return new ResourceFlowUnit(System.currentTimeMillis(), context, summary);
+      return new ResourceFlowUnit(System.currentTimeMillis(), context, summary, !currentNode.getIsMasterNode());
     } else {
       return new ResourceFlowUnit(System.currentTimeMillis());
     }

@@ -223,7 +223,7 @@ public abstract class PersistorBase implements Persistable {
       }
       int lastPrimaryKey = insertRow(tableName, flowUnit.getSqlValue());
 
-      if (flowUnit.hasResourceSummary()) {
+      if (flowUnit.hasResourceSummary() && flowUnit.isSummaryPersistable()) {
         writeSummary(
                 flowUnit.getResourceSummary(),
                 tableName,
