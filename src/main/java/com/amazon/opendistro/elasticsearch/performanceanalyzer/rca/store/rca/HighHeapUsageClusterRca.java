@@ -158,7 +158,7 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
       } else {
         context = new ResourceContext(Resources.State.HEALTHY);
       }
-      return new ResourceFlowUnit(System.currentTimeMillis(), context, summary);
+      return new ResourceFlowUnit(System.currentTimeMillis(), context, summary, true);
     } else {
       // we return an empty FlowUnit RCA for now. Can change to healthy (or previous known RCA state)
       LOG.debug("Empty FlowUnit returned for {}", this.getClass().getName());
