@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.net;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
@@ -24,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsRespo
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PublishResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import java.util.Map;
@@ -71,6 +73,9 @@ public class NetClient {
       connectionManager
           .getClientStubForHost(remoteHost)
           .subscribe(subscribeMessage, serverResponseStream);
+      PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR
+          .updateStat(RcaGraphMetrics.NET_BYTES_OUT, subscribeMessage.getRequesterNode(),
+              subscribeMessage.getSerializedSize());
     } catch (StatusRuntimeException sre) {
       LOG.error("Encountered an error trying to subscribe. Status: {}",
           sre.getStatus(), sre);
@@ -96,6 +101,9 @@ public class NetClient {
       final StreamObserver<FlowUnitMessage> stream =
           getDataStreamForHost(remoteHost, serverResponseStream);
       stream.onNext(flowUnitMessage);
+      PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR
+          .updateStat(RcaGraphMetrics.NET_BYTES_OUT, flowUnitMessage.getGraphNode(),
+              flowUnitMessage.getSerializedSize());
     } catch (StatusRuntimeException sre) {
       LOG.error("rca: Encountered an error trying to publish a flow unit. Status: {}",
           sre.getStatus(), sre);

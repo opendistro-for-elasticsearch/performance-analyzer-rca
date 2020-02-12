@@ -15,8 +15,10 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscribeResponseHandler;
@@ -78,5 +80,8 @@ public abstract class SubscriptionTxTask implements Runnable {
     netClient.subscribe(remoteHost, subscribeMessage,
         new SubscribeResponseHandler(subscriptionManager, nodeStateManager, remoteHost,
             destinationVertex));
+    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR
+        .updateStat(RcaGraphMetrics.RCA_NODES_SUB_REQ_COUNT,
+            requesterVertex + ":" + destinationVertex, 1);
   }
 }

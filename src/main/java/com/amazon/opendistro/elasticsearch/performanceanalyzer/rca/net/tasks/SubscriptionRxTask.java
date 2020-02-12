@@ -15,9 +15,11 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.CompositeSubscribeRequest;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
 import io.grpc.stub.StreamObserver;
@@ -74,5 +76,8 @@ public class SubscriptionRxTask implements Runnable {
                                            .setSubscriptionStatus(subscriptionStatus)
                                            .build());
     responseStream.onCompleted();
+    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR
+        .updateStat(RcaGraphMetrics.RCA_NODES_SUB_ACK_COUNT,
+            request.getRequesterNode() + ":" + request.getDestinationNode(), 1);
   }
 }
