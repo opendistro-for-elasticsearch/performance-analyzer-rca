@@ -61,7 +61,6 @@ public class PersistFlowUnitAndSummaryTest {
 
     @Override
     public ResourceFlowUnit operate() {
-      System.out.println("!!!!! ruizhen : scheduled \n");
       ResourceContext context = new ResourceContext(Resources.State.UNHEALTHY);
       HotResourceSummary summary = new HotResourceSummary(
           ResourceType.newBuilder().setJVM(JvmEnum.YOUNG_GEN).build(),
