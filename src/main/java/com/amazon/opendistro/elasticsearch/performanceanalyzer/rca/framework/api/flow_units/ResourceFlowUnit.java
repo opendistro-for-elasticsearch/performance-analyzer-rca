@@ -31,19 +31,25 @@ public class ResourceFlowUnit extends GenericFlowUnit {
 
   private ResourceContext resourceContext = null;
   private GenericSummary resourceSummary = null;
-  private boolean persistable = false;
+  // whether summary needs to be persisted as well when persisting this flowunit
+  private boolean persistSummary = false;
 
   public ResourceFlowUnit(long timeStamp) {
     super(timeStamp);
   }
 
   public <S extends GenericSummary> ResourceFlowUnit(long timeStamp, ResourceContext context,
-      S resourceSummary) {
+      S resourceSummary, boolean persistSummary) {
     super(timeStamp);
     this.resourceContext = context;
     this.resourceSummary = resourceSummary;
     this.empty = false;
-    this.persistable = true;
+    this.persistSummary = persistSummary;
+  }
+
+  public <S extends GenericSummary> ResourceFlowUnit(long timeStamp, ResourceContext context,
+      S resourceSummary) {
+    this(timeStamp, context, resourceSummary, false);
   }
 
   //Call generic() only if you want to generate a empty flowunit
@@ -67,12 +73,12 @@ public class ResourceFlowUnit extends GenericFlowUnit {
     this.resourceSummary = summary;
   }
 
-  public void setPersistable(boolean persistable) {
-    this.persistable = persistable;
+  public void setPersistSummary(boolean persistSummary) {
+    this.persistSummary = persistSummary;
   }
 
-  public boolean isPersistable() {
-    return this.persistable;
+  public boolean isSummaryPersistable() {
+    return this.persistSummary;
   }
 
   @Override
