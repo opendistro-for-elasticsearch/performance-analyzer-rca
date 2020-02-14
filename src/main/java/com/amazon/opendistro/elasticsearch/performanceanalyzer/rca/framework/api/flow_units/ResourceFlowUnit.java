@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.JooqFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericFlowUnit;
@@ -29,6 +30,7 @@ import org.jooq.impl.DSL;
 
 public class ResourceFlowUnit extends GenericFlowUnit {
 
+  public static final String FLOWUNIT_TABLE_NAME = "FlowUnit";
   private ResourceContext resourceContext = null;
   private GenericSummary resourceSummary = null;
   // whether summary needs to be persisted as well when persisting this flowunit
@@ -128,16 +130,18 @@ public class ResourceFlowUnit extends GenericFlowUnit {
   public List<Field<?>> getSqlSchema() {
     List<Field<?>> schema = new ArrayList<>();
     if (!this.isEmpty()) {
-      schema.add(DSL.field(DSL.name(SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME), String.class));
+      schema.add(ResourceFlowUnitFieldValue.TIMESTAMP_FIELD.getField());
+      schema.add(ResourceFlowUnitFieldValue.RCA_NAME_FILELD.getField());
       schema.addAll(this.getResourceContext().getSqlSchema());
     }
     return schema;
   }
 
-  public List<Object> getSqlValue() {
+  public List<Object> getSqlValue(String rcaName) {
     List<Object> value = new ArrayList<>();
     if (!this.isEmpty()) {
       value.add(String.valueOf(this.getTimeStamp()));
+      value.add(rcaName);
       value.addAll(this.getResourceContext().getSqlValue());
     }
     return value;
@@ -148,9 +152,31 @@ public class ResourceFlowUnit extends GenericFlowUnit {
     return this.getTimeStamp() + ": " + resourceContext + " :: " + resourceSummary;
   }
 
+  public enum ResourceFlowUnitFieldValue implements JooqFieldValue {
+    TIMESTAMP_FIELD(SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, String.class),
+    RCA_NAME_FILELD(SQL_SCHEMA_CONSTANTS.RCA_COL_NAME, String.class);
+
+    private String name;
+    private Class<?> clazz;
+    ResourceFlowUnitFieldValue(final String name, Class<?> clazz) {
+      this.name = name;
+      this.clazz = clazz;
+    }
+
+    @Override
+    public Field<?> getField() {
+      return DSL.field(DSL.name(this.name), this.clazz);
+    }
+
+    @Override
+    public String toString() {
+      return this.name;
+    }
+  }
 
   public static class SQL_SCHEMA_CONSTANTS {
 
     public static final String TIMESTAMP_COL_NAME = "TimeStamp";
+    public static final String RCA_COL_NAME = "RCA Name";
   }
 }

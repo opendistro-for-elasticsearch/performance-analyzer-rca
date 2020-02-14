@@ -120,9 +120,7 @@ public abstract class PersistorBase implements Persistable {
   public synchronized String read() {
     // Currently this method only contains a call to readTables() - later could add the part to read
     // multiple sqlite files
-    LOG.debug("RCA: in read() in PersistorBase");
-    String jsonResponse = readTables();
-    return jsonResponse;
+    return readTables();
   }
 
   public synchronized RcaResponse readRca(String rca) {
@@ -212,24 +210,25 @@ public abstract class PersistorBase implements Persistable {
   }
 
   private <T extends ResourceFlowUnit> void tryWriteFlowUnit(
-          T flowUnit, String tableName) throws SQLException {
-      if (!tableNames.contains(tableName)) {
-        LOG.info(
-                "RCA: Table '{}' does not exist. Creating one with columns: {}",
-                tableName,
-                flowUnit.getSqlSchema());
-        createTable(tableName, flowUnit.getSqlSchema());
-        tableNames.add(tableName);
-      }
-      int lastPrimaryKey = insertRow(tableName, flowUnit.getSqlValue());
+          T flowUnit, String nodeName) throws SQLException {
+    String tableName = ResourceFlowUnit.FLOWUNIT_TABLE_NAME;
+    if (!tableNames.contains(tableName)) {
+      LOG.info(
+              "RCA: Table '{}' does not exist. Creating one with columns: {}",
+              tableName,
+              flowUnit.getSqlSchema());
+      createTable(tableName, flowUnit.getSqlSchema());
+      tableNames.add(tableName);
+    }
+    int lastPrimaryKey = insertRow(tableName, flowUnit.getSqlValue(nodeName));
 
-      if (flowUnit.hasResourceSummary() && flowUnit.isSummaryPersistable()) {
-        writeSummary(
-                flowUnit.getResourceSummary(),
-                tableName,
-                getPrimaryKeyColumnName(tableName),
-                lastPrimaryKey);
-      }
+    if (flowUnit.hasResourceSummary() && flowUnit.isSummaryPersistable()) {
+      writeSummary(
+              flowUnit.getResourceSummary(),
+              tableName,
+              getPrimaryKeyColumnName(tableName),
+              lastPrimaryKey);
+    }
   }
 
   /** recursively insert nested summary to sql tables */
