@@ -56,15 +56,12 @@ public class RCAScheduler {
   private boolean shutdownRequested;
   private RcaSchedulerState schedulerState = RcaSchedulerState.STATE_NOT_STARTED;
   private NodeRole role = NodeRole.UNKNOWN;
-  final ThreadFactory schedThreadFactory =
-      new ThreadFactoryBuilder().setNameFormat("sched-%d").setDaemon(true).build();
 
   // TODO: Fix number of threads based on config.
   final ThreadFactory taskThreadFactory =
       new ThreadFactoryBuilder().setNameFormat("task-%d-").setDaemon(true).build();
 
   ExecutorService rcaSchedulerPeriodicExecutor;
-  ScheduledExecutorService scheduledPool;
 
   List<ConnectedComponent> connectedComponents;
   Queryable db;
@@ -72,7 +69,7 @@ public class RCAScheduler {
   ThresholdMain thresholdMain;
   Persistable persistable;
   static final int PERIODICITY_SECONDS = 1;
-  ScheduledFuture<?> futureHandle;
+  static final int INTERVAL_IN_MS = PERIODICITY_SECONDS * 1000;
 
   private static final Logger LOG = LogManager.getLogger(RCAScheduler.class);
 
@@ -97,52 +94,34 @@ public class RCAScheduler {
     // Simulation service
     LOG.info("RCA: Starting RCA scheduler ...........");
     createExecutorPools();
+    final RCASchedulerTask schedulerTask = new RCASchedulerTask(10000,
+        rcaSchedulerPeriodicExecutor, connectedComponents, db, persistable, rcaConf, net);
+    schedulerState = RcaSchedulerState.STATE_STARTED;
+    Thread t = new Thread(() -> {
+      while (schedulerState == RcaSchedulerState.STATE_STARTED) {
+        try {
+          long startTime = System.currentTimeMillis();
+          schedulerTask.run();
+          long duration = System.currentTimeMillis() - startTime;
 
-    if (scheduledPool != null && role != NodeRole.UNKNOWN) {
-      futureHandle =
-          scheduledPool.scheduleAtFixedRate(
-              new RCASchedulerTask(
-                  10000, rcaSchedulerPeriodicExecutor, connectedComponents, db, persistable, rcaConf, net),
-              1,
-              PERIODICITY_SECONDS,
-              TimeUnit.SECONDS);
-      startExceptionHandlerThread();
-      schedulerState = RcaSchedulerState.STATE_STARTED;
-    } else {
-      LOG.error("Couldn't start RCA scheduler. Executor pool is not set.");
-    }
-  }
+          if (duration < INTERVAL_IN_MS) {
+            Thread.sleep(INTERVAL_IN_MS - duration);
+          }
+        } catch (Throwable ex) {
+          LOG.error("RCA Exception cause : {}", ex.getCause());
+          PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
+              ExceptionsAndErrors.RCA_FRAMEWORK_CRASH, ex.getCause().toString(), 1);
+          shutdown();
+          schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
+          StatsCollector.instance().logException(StatExceptionCode.RCA_SCHEDULER_STOPPED_ERROR);
+        }
+      }
 
-  // This thread exists for exception handling and error recovery and safe shutdown. This is called
-  // from within
-  // the start method. This creates a new thread and waits on the future to complete. If it catches
-  // an exception,
-  // then it does a clean shutdown nd logs the shutdown event.
-  private void startExceptionHandlerThread() {
-    new Thread(
-            () -> {
-              while (true) {
-                try {
-                  futureHandle.get();
-                } catch (RejectedExecutionException
-                    | ExecutionException
-                    | CancellationException ex) {
-                  if (!shutdownRequested) {
-                    LOG.error("RCA Exception cause : {}", ex.getCause());
-                    PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
-                            ExceptionsAndErrors.RCA_FRAMEWORK_CRASH, ex.getCause().toString(), 1);
-                    shutdown();
-                    schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
-                    StatsCollector.instance().logException(StatExceptionCode.RCA_SCHEDULER_STOPPED_ERROR);
-                  }
-                } catch (InterruptedException ix) {
-                  LOG.error("RCA Interrupted exception cause : {}", ix.getCause());
-                  shutdown();
-                  schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
-                }
-              }
-            })
-        .start();
+      LOG.info("Rca scheduler stopped.");
+    });
+
+    t.setName("rca-sched");
+    t.start();
   }
 
   /**
@@ -154,7 +133,6 @@ public class RCAScheduler {
   public void shutdown() {
     LOG.info("Shutting down the scheduler..");
     shutdownRequested = true;
-    scheduledPool.shutdown();
     rcaSchedulerPeriodicExecutor.shutdown();
     waitForShutdown(rcaSchedulerPeriodicExecutor);
     try {
@@ -182,7 +160,6 @@ public class RCAScheduler {
   }
 
   private void createExecutorPools() {
-    scheduledPool = Executors.newScheduledThreadPool(1, schedThreadFactory);
     rcaSchedulerPeriodicExecutor = Executors.newFixedThreadPool(2, taskThreadFactory);
   }
 

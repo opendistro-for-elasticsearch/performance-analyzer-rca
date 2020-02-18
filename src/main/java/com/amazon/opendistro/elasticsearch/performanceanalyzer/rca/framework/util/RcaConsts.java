@@ -32,6 +32,7 @@ public class RcaConsts {
   public static final int NETWORK_MAX_THREAD_COUNT = 1;
   public static final String RCA_SCHEDULER_RESTART_METRIC = "RcaSchedulerRestart";
   public static final int DEFAULT_PER_NODE_FLOWUNIT_Q_SIZE = 200;
+  public static final int RCA_STATE_CHECK_INTERVAL_IN_MS = 5000;
   private static final String RCA_CONF_FILENAME = "rca.conf";
   private static final String RCA_CONF_IDLE_MASTER_FILENAME = "rca_idle_master.conf";
   private static final String THRESHOLDS_DIR_NAME = "thresholds";

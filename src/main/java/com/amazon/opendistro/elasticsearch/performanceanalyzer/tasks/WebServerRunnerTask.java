@@ -1,10 +1,12 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerTaskException;
 import com.sun.net.httpserver.HttpServer;
+import java.util.concurrent.BlockingQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class WebServerRunnerTask implements ControllableTask {
+public class WebServerRunnerTask extends BaseThreadTask {
 
   private static final Logger LOG = LogManager.getLogger(WebServerRunnerTask.class);
   private static final String TASK_NAME = "web-server";
@@ -12,7 +14,9 @@ public class WebServerRunnerTask implements ControllableTask {
   private boolean shouldRun = false;
   private final HttpServer server;
 
-  public WebServerRunnerTask(final HttpServer server) {
+  public WebServerRunnerTask(final HttpServer server,
+      final BlockingQueue<PerformanceAnalyzerTaskException> exceptionQueue) {
+    super(exceptionQueue);
     this.server = server;
   }
 
@@ -48,15 +52,16 @@ public class WebServerRunnerTask implements ControllableTask {
     return this.shouldRun;
   }
 
-  /**
-   * Unlike the {@link Runnable#run()} method, this method will allow for throwing exceptions.
-   * Exceptions thrown from here are caught by the runner's run method and signalled to the top
-   * level thread.
-   *
-   * @throws Throwable the exception encountered while executing the task.
-   */
   @Override
-  public void run() throws Throwable {
-    server.start();
+  public void run() {
+    try {
+      server.start();
+    } catch (Throwable throwable) {
+      LOG.error("{} encountered an exception: {}", TASK_NAME, throwable.getCause());
+      if (!this.exceptionQueue.offer(new PerformanceAnalyzerTaskException(throwable, TASK_NAME))) {
+        LOG.error("Couldn't update the queue with the exception. Task: {} will now fail.",
+            TASK_NAME);
+      }
+    }
   }
 }

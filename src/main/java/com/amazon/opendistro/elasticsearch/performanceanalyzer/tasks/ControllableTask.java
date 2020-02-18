@@ -1,6 +1,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks;
 
-public interface ControllableTask {
+public interface ControllableTask extends Runnable {
 
   /**
    * Gets the name of this task
@@ -21,13 +21,4 @@ public interface ControllableTask {
    * @return The current run state of the task.
    */
   boolean getRunState();
-
-  /**
-   * Unlike the {@link Runnable#run()} method, this method will allow for throwing exceptions.
-   * Exceptions thrown from here are caught by the runner's run method and signalled to the top
-   * level thread.
-   *
-   * @throws Throwable the exception encountered while executing the task.
-   */
-  void run() throws Throwable;
 }

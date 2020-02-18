@@ -1,44 +1,42 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks.ControllableTask;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class TaskManager {
 
   private static final Logger LOG = LogManager.getLogger(TaskManager.class);
-  private final BlockingQueue<PerformanceAnalyzerThreadException> concurrentExceptionQueue;
+  private final BlockingQueue<PerformanceAnalyzerTaskException> concurrentExceptionQueue;
+  private final int EXCEPTION_POLL_INTERVAL_IN_MS = 5000;
 
   private Map<String, ControllableTask> nameToTaskLookup = new HashMap<>();
   private Map<String, Thread> nameToThreadLookup = new HashMap<>();
   private int nThreads = 0;
 
-  public TaskManager(final BlockingQueue<PerformanceAnalyzerThreadException> concurrentExceptionQueue) {
+  public TaskManager(
+      final BlockingQueue<PerformanceAnalyzerTaskException> concurrentExceptionQueue) {
     this.concurrentExceptionQueue = concurrentExceptionQueue;
   }
 
+  /**
+   * Runs the task in a new thread. The thread that it runs in is a single-use thread in the sense
+   * that if the task threw an exception that it doesn't itself handle, then the exception is
+   * propagated to the top level thread. The top level thread can then decide how it wants to handle
+   * that exception for the thread it spawned.
+   *
+   * @param task The task to be executed in a new thread.
+   */
   public synchronized void submit(final ControllableTask task) {
-    Thread t = new Thread(() -> {
-      try {
-        task.setRunState(true);
-        task.run();
-      } catch (Throwable throwable) {
-        if (!concurrentExceptionQueue
-            .offer(new PerformanceAnalyzerThreadException(throwable, task.getName()))) {
-          LOG.error("Encountered exception: {}, however exception queue was full, so dropping the"
-              + " exception!", throwable.getMessage());
-          LOG.error(throwable);
-          task.setRunState(false);
-        }
-      }
-    });
 
-    t.setName((task.getName()));
+    task.setRunState(true);
+    Thread t = new Thread(task, task.getName());
+
     addThreadInfo(t, task);
     t.start();
   }
@@ -52,15 +50,15 @@ public class TaskManager {
   public void waitForExceptionsOrTermination() {
     while (true) {
       try {
-        PerformanceAnalyzerThreadException e = concurrentExceptionQueue.poll(1, TimeUnit.SECONDS);
-        Thread.sleep(4000);
-        if (e != null) {
+        long startTime = System.currentTimeMillis();
+        List<PerformanceAnalyzerTaskException> exceptionList = new ArrayList<>();
+        concurrentExceptionQueue.drainTo(exceptionList);
+        for (PerformanceAnalyzerTaskException e : exceptionList) {
           handleException(e);
-        } else {
-          if (allThreadsDead()) {
-            LOG.info("All PerformanceAnalyzer agent threads are dead. Agent will terminate now.");
-            break;
-          }
+        }
+        long duration = System.currentTimeMillis() - startTime;
+        if (duration < EXCEPTION_POLL_INTERVAL_IN_MS) {
+          Thread.sleep(EXCEPTION_POLL_INTERVAL_IN_MS - duration);
         }
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
@@ -70,8 +68,8 @@ public class TaskManager {
     }
   }
 
-  private void handleException(PerformanceAnalyzerThreadException e) {
-    LOG.error(e.getThreadName(), e.getThrowable());
+  private void handleException(PerformanceAnalyzerTaskException e) {
+    LOG.error(e.getTaskName(), e.getThrowable());
     LOG.error(e.getThrowable());
   }
 

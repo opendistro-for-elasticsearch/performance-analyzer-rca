@@ -1,14 +1,28 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerTaskException;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
+import java.util.concurrent.BlockingQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class RcaControllerTask implements ControllableTask {
+public class RcaControllerTask extends BaseThreadTask {
 
   private static final Logger LOG = LogManager.getLogger(RcaControllerTask.class);
   private static final String TASK_NAME = "rca-controller";
+  private final RcaController rcaController;
+  private final int interval;
 
   private boolean shouldRun = false;
+
+  public RcaControllerTask(final RcaController rcaController, final int stateCheckInterval,
+      final BlockingQueue<PerformanceAnalyzerTaskException> exceptionQueue) {
+    super(exceptionQueue);
+    this.rcaController = rcaController;
+    this.interval = stateCheckInterval;
+  }
   /**
    * Gets the name of this task
    *
@@ -41,15 +55,33 @@ public class RcaControllerTask implements ControllableTask {
     return this.shouldRun;
   }
 
-  /**
-   * Unlike the {@link Runnable#run()} method, this method will allow for throwing exceptions.
-   * Exceptions thrown from here are caught by the runner's run method and signalled to the top
-   * level thread.
-   *
-   * @throws Throwable the exception encountered while executing the task.
-   */
   @Override
-  public void run() throws Throwable {
+  public void run() {
+    while (shouldRun) {
+      try {
+        long startTime = System.currentTimeMillis();
+        rcaController.readRcaEnabledFromConf();
+        if (rcaController.isRcaEnabled()) {
+          final NodeDetails nodeDetails = ClusterDetailsEventProcessor.getCurrentNodeDetails();
+          if (nodeDetails != null) {
+            rcaController.handleNodeRoleChange(nodeDetails);
+          }
+        }
 
+        rcaController.checkAndUpdateSchedulerState();
+        long duration = System.currentTimeMillis() - startTime;
+        if (duration < interval) {
+          Thread.sleep(interval - duration);
+        }
+      } catch (Throwable e) {
+        LOG.error("{} Encountered Exception: {}", TASK_NAME, e.getCause());
+        LOG.error(e);
+        if (!this.exceptionQueue.offer(new PerformanceAnalyzerTaskException(e, TASK_NAME))) {
+          LOG.error("Couldn't update the queue with the exception. Task: {} will now fail.",
+              TASK_NAME);
+          shouldRun = false;
+        }
+      }
+    }
   }
 }

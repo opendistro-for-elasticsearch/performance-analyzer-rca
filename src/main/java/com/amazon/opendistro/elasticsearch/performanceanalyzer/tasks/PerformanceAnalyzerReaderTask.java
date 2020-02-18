@@ -1,20 +1,27 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerTaskException;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.TroubleshootingConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
+import java.util.concurrent.BlockingQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class PerformanceAnalyzerReaderTask implements ControllableTask {
+public class PerformanceAnalyzerReaderTask extends BaseThreadTask {
 
   private static final Logger LOG = LogManager.getLogger(PerformanceAnalyzerReaderTask.class);
 
   private static final String TASK_NAME = "pa-reader";
 
   private boolean shouldRun = false;
+
+  public PerformanceAnalyzerReaderTask(
+      BlockingQueue<PerformanceAnalyzerTaskException> exceptionQueue) {
+    super(exceptionQueue);
+  }
 
   /**
    * Gets the name of this task
@@ -48,23 +55,17 @@ public class PerformanceAnalyzerReaderTask implements ControllableTask {
     return shouldRun;
   }
 
-  /**
-   * Unlike the {@link Runnable#run()} method, this method will allow for throwing exceptions.
-   * Exceptions thrown from here are caught by the runner's run method and signalled to the top
-   * level thread.
-   *
-   * @throws Throwable the exception encountered while executing the task.
-   */
   @Override
-  public void run() throws Throwable {
+  public void run() {
     final PluginSettings settings = PluginSettings.instance();
-    while (true) {
+    while (shouldRun) {
       try {
         ReaderMetricsProcessor mp =
             new ReaderMetricsProcessor(settings.getMetricsLocation(), true);
         ReaderMetricsProcessor.setCurrentInstance(mp);
         mp.run();
       } catch (Throwable e) {
+        LOG.error("{} encountered an exception: {}", TASK_NAME, e.getCause());
         if (TroubleshootingConfig.getEnableDevAssert()) {
           break;
         }
@@ -73,7 +74,11 @@ public class PerformanceAnalyzerReaderTask implements ControllableTask {
             StatExceptionCode.READER_RESTART_PROCESSING.toString());
         StatsCollector.instance()
                       .logException(StatExceptionCode.READER_RESTART_PROCESSING);
-        throw e;
+        if (!this.exceptionQueue.offer(new PerformanceAnalyzerTaskException(e, TASK_NAME))) {
+          LOG.error("Couldn't update the queue with the exception. Task: {} will now fail.",
+              TASK_NAME);
+          shouldRun = false;
+        }
       }
     }
   }

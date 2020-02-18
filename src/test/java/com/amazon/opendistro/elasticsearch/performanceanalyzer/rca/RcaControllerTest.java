@@ -90,11 +90,8 @@ public class RcaControllerTest {
             rcaEnabledFileLoc.toString(),
             Paths.get(rcaEnabledFileLoc.toString(), "rca_elected_master.conf").toString(),
             Paths.get(rcaEnabledFileLoc.toString(), "rca_master.conf").toString(),
-            Paths.get(rcaEnabledFileLoc.toString(), "rca.conf").toString(),
-            1,
-            1,
-            1,
-            TimeUnit.MILLISECONDS);
+            Paths.get(rcaEnabledFileLoc.toString(), "rca.conf").toString()
+        );
 
     setMyIp(masterIP, AllMetrics.NodeRole.UNKNOWN);
     rcaController.startPollers();
