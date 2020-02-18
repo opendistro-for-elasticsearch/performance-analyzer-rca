@@ -28,7 +28,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectio
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetServer;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.JvmMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
@@ -42,36 +41,24 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.emitter
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.listeners.IListener;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryMetricsRequestHandler;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks.ControllableTask;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks.GrpcServerRunnerTask;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks.PerformanceAnalyzerReaderTask;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks.RcaControllerTask;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks.WebServerRunnerTask;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.sun.net.httpserver.HttpServer;
-import com.sun.net.httpserver.HttpsConfigurator;
-import com.sun.net.httpserver.HttpsServer;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.security.KeyStore;
-import java.security.Security;
-import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class PerformanceAnalyzerApp {
-  private static final int WEBSERVICE_DEFAULT_PORT = 9600;
-  private static final String WEBSERVICE_PORT_CONF_NAME = "webservice-listener-port";
-  private static final String WEBSERVICE_BIND_HOST_NAME = "webservice-bind-host";
-  // Use system default for max backlog.
-  private static final int INCOMING_QUEUE_LENGTH = 1;
   public static final String QUERY_URL = "/_opendistro/_performanceanalyzer/metrics";
   private static final Logger LOG = LogManager.getLogger(PerformanceAnalyzerApp.class);
   private static final ScheduledMetricCollectorsExecutor METRIC_COLLECTOR_EXECUTOR =
@@ -82,6 +69,8 @@ public class PerformanceAnalyzerApp {
 
   private static RcaController rcaController = null;
   private static Thread rcaNetServerThread = null;
+  private static BlockingQueue<PerformanceAnalyzerThreadException> concurrentQueue =
+      new LinkedBlockingQueue<>(10);
 
   public static final SampleAggregator RCA_GRAPH_METRICS_AGGREGATOR =
           new SampleAggregator(RcaGraphMetrics.values());
@@ -115,33 +104,26 @@ public class PerformanceAnalyzerApp {
     METRIC_COLLECTOR_EXECUTOR.addScheduledMetricCollector(StatsCollector.instance());
     StatsCollector.instance().addDefaultExceptionCode(StatExceptionCode.READER_RESTART_PROCESSING);
     METRIC_COLLECTOR_EXECUTOR.setEnabled(true);
+    // Sensitive thread: Need to refactor with caution as it has implications on the writer.
     METRIC_COLLECTOR_EXECUTOR.start();
+    ClientServers clientServers = getClientServers();
 
-    Thread readerThread =
-        new Thread(
-            () -> {
-              while (true) {
-                try {
-                  ReaderMetricsProcessor mp =
-                      new ReaderMetricsProcessor(settings.getMetricsLocation(), true);
-                  ReaderMetricsProcessor.setCurrentInstance(mp);
-                  mp.run();
-                } catch (Throwable e) {
-                  if (TroubleshootingConfig.getEnableDevAssert()) {
-                    break;
-                  }
-                  LOG.error(
-                      "Error in ReaderMetricsProcessor...restarting, ExceptionCode: {}",
-                      StatExceptionCode.READER_RESTART_PROCESSING.toString());
-                  StatsCollector.instance()
-                      .logException(StatExceptionCode.READER_RESTART_PROCESSING);
-                }
-              }
-            });
-    readerThread.start();
+    // the top level thread manager.
+    TaskManager taskManager = new TaskManager(concurrentQueue);
 
-    ClientServers clientServers = startServers();
-    startRcaController(clientServers);
+    ControllableTask readerTask = new PerformanceAnalyzerReaderTask();
+    taskManager.submit(readerTask);
+
+    ControllableTask grpcServerRunnerTask = new GrpcServerRunnerTask(clientServers.getNetServer());
+    taskManager.submit(grpcServerRunnerTask);
+
+    ControllableTask webServerTask = new WebServerRunnerTask(clientServers.getHttpServer());
+    taskManager.submit(webServerTask);
+
+    ControllableTask rcaControllerTask = new RcaControllerTask();
+    taskManager.submit(rcaControllerTask);
+
+    taskManager.waitForExceptionsOrTermination();
   }
 
   /**
@@ -152,7 +134,7 @@ public class PerformanceAnalyzerApp {
    *
    * @return gRPC client and the gRPC server and the httpServer wrapped in a class.
    */
-  public static ClientServers startServers() {
+  public static ClientServers getClientServers() {
     boolean useHttps = PluginSettings.instance().getHttpsEnabled();
 
     GRPCConnectionManager connectionManager = new GRPCConnectionManager(useHttps);
@@ -161,17 +143,11 @@ public class PerformanceAnalyzerApp {
     MetricsRestUtil metricsRestUtil = new MetricsRestUtil();
 
     netServer.setMetricsHandler(new MetricsServerHandler());
-    startRpcServerThread(netServer);
-    HttpServer httpServer = createInternalServer(PluginSettings.instance(), getPortNumber());
+    PerformanceAnalyzerWebServer webServer = new PerformanceAnalyzerWebServer();
+    HttpServer httpServer = webServer.createInternalServer();
     httpServer.createContext(QUERY_URL, new QueryMetricsRequestHandler(netClient, metricsRestUtil));
 
-    return new ClientServers(httpServer, netServer, netClient);
-  }
-
-  /** This starts the GRPC server in a thread of its own. */
-  private static void startRpcServerThread(NetServer netServer) {
-    rcaNetServerThread = new Thread(netServer);
-    rcaNetServerThread.start();
+    return new ClientServers(httpServer, netServer, netClient, connectionManager);
   }
 
   /**
@@ -183,13 +159,10 @@ public class PerformanceAnalyzerApp {
    * @param clientServers The httpServer, the gRPC server and client wrapper.
    */
   private static void startRcaController(ClientServers clientServers) {
-    boolean useHttps = PluginSettings.instance().getHttpsEnabled();
-
-    GRPCConnectionManager connectionManager = new GRPCConnectionManager(useHttps);
     rcaController =
         new RcaController(
             netOperationsExecutor,
-            connectionManager,
+            clientServers.getConnectionManager(),
             clientServers.getNetClient(),
             clientServers.getNetServer(),
             clientServers.getHttpServer(),
@@ -203,125 +176,5 @@ public class PerformanceAnalyzerApp {
             RcaConsts.rcaPollerPeriodicityTimeUnit);
 
     rcaController.startPollers();
-  }
-
-  public static HttpServer createInternalServer(PluginSettings settings, int internalPort) {
-    try {
-      Security.addProvider(new BouncyCastleProvider());
-      HttpServer server;
-      if (settings.getHttpsEnabled()) {
-        server = createHttpsServer(internalPort);
-      } else {
-        server = createHttpServer(internalPort);
-      }
-      server.setExecutor(Executors.newCachedThreadPool());
-      server.start();
-      return server;
-    } catch (java.net.BindException ex) {
-      Runtime.getRuntime().halt(1);
-    } catch (Exception ex) {
-      ex.printStackTrace();
-      Runtime.getRuntime().halt(1);
-    }
-
-    return null;
-  }
-
-  private static HttpServer createHttpsServer(int readerPort) throws Exception {
-    HttpsServer server = null;
-    String bindHost = getBindHost();
-    if (bindHost != null && !bindHost.trim().isEmpty()) {
-      LOG.info("Binding to Interface: {}", bindHost);
-      server =
-          HttpsServer.create(
-              new InetSocketAddress(InetAddress.getByName(bindHost.trim()), readerPort),
-              INCOMING_QUEUE_LENGTH);
-    } else {
-      LOG.info(
-          "Value Not Configured for: {} Using default value: binding to all interfaces",
-          WEBSERVICE_BIND_HOST_NAME);
-      server = HttpsServer.create(new InetSocketAddress(readerPort), INCOMING_QUEUE_LENGTH);
-    }
-
-    TrustManager[] trustAllCerts =
-        new TrustManager[] {
-          new X509TrustManager() {
-
-            public X509Certificate[] getAcceptedIssuers() {
-              return null;
-            }
-
-            public void checkClientTrusted(X509Certificate[] certs, String authType) {}
-
-            public void checkServerTrusted(X509Certificate[] certs, String authType) {}
-          }
-        };
-
-    HostnameVerifier allHostsValid =
-        new HostnameVerifier() {
-          public boolean verify(String hostname, SSLSession session) {
-            return true;
-          }
-        };
-
-    // Install the all-trusting trust manager
-    SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
-
-    KeyStore ks = CertificateUtils.createKeyStore();
-    KeyManagerFactory kmf = KeyManagerFactory.getInstance("NewSunX509");
-    kmf.init(ks, CertificateUtils.IN_MEMORY_PWD.toCharArray());
-    sslContext.init(kmf.getKeyManagers(), trustAllCerts, null);
-
-    HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
-    HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
-    server.setHttpsConfigurator(new HttpsConfigurator(sslContext));
-    return server;
-  }
-
-  private static HttpServer createHttpServer(int readerPort) throws Exception {
-    HttpServer server = null;
-    String bindHost = getBindHost();
-    if (bindHost != null && !bindHost.trim().isEmpty()) {
-      LOG.info("Binding to Interface: {}", bindHost);
-      server =
-          HttpServer.create(
-              new InetSocketAddress(InetAddress.getByName(bindHost.trim()), readerPort),
-              INCOMING_QUEUE_LENGTH);
-    } else {
-      LOG.info(
-          "Value Not Configured for: {} Using default value: binding to all interfaces",
-          WEBSERVICE_BIND_HOST_NAME);
-      server = HttpServer.create(new InetSocketAddress(readerPort), INCOMING_QUEUE_LENGTH);
-    }
-
-    return server;
-  }
-
-  private static int getPortNumber() {
-    String readerPortValue;
-    try {
-      readerPortValue = PluginSettings.instance().getSettingValue(WEBSERVICE_PORT_CONF_NAME);
-
-      if (readerPortValue == null) {
-        LOG.info(
-            "{} not configured; using default value: {}",
-            WEBSERVICE_PORT_CONF_NAME,
-            WEBSERVICE_DEFAULT_PORT);
-        return WEBSERVICE_DEFAULT_PORT;
-      }
-
-      return Integer.parseInt(readerPortValue);
-    } catch (Exception ex) {
-      LOG.error(
-          "Invalid Configuration: {} Using default value: {} AND Error: {}",
-          WEBSERVICE_PORT_CONF_NAME,
-          WEBSERVICE_DEFAULT_PORT,
-          ex.toString());
-      return WEBSERVICE_DEFAULT_PORT;
-    }
-  }
-
-  private static String getBindHost() {
-    return PluginSettings.instance().getSettingValue(WEBSERVICE_BIND_HOST_NAME);
   }
 }

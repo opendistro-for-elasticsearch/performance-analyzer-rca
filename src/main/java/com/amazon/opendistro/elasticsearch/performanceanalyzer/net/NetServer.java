@@ -39,8 +39,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Class that runs the RPC server and implements the RPC methods.
  */
-public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBase
-    implements Runnable {
+public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBase {
 
   private static final Logger LOG = LogManager.getLogger(NetServer.class);
 
@@ -85,18 +84,7 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
     this.useHttps = useHttps;
   }
 
-  /**
-   * When an object implementing interface <code>Runnable</code> is used to create a thread,
-   * starting the thread causes the object's <code>run</code> method to be called in that separately
-   * executing thread.
-   *
-   * <p>The general contract of the method <code>run</code> is that it may take any action
-   * whatsoever.
-   *
-   * @see Thread#run()
-   */
-  @Override
-  public void run() {
+  public void run() throws Exception {
     LOG.info(
         "Starting the gRPC server on port {} with {} threads. Using HTTPS: {}",
         port,
@@ -111,6 +99,7 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
       LOG.info(" gRPC server terminating..");
     } catch (InterruptedException | IOException e) {
       e.printStackTrace();
+      throw e;
     }
   }
 

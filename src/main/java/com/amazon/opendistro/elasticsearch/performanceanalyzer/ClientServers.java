@@ -1,5 +1,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetServer;
 import com.sun.net.httpserver.HttpServer;
@@ -15,10 +16,15 @@ public class ClientServers {
   /** Client to make gRPC requests. */
   private final NetClient netClient;
 
-  public ClientServers(HttpServer httpServer, NetServer netServer, NetClient netClient) {
+  /** The connection manager. Manages connections to other hosts in the network. */
+  private final GRPCConnectionManager connectionManager;
+
+  public ClientServers(HttpServer httpServer, NetServer netServer, NetClient netClient,
+      GRPCConnectionManager connectionManager) {
     this.httpServer = httpServer;
     this.netServer = netServer;
     this.netClient = netClient;
+    this.connectionManager = connectionManager;
   }
 
   public HttpServer getHttpServer() {
@@ -31,5 +37,9 @@ public class ClientServers {
 
   public NetClient getNetClient() {
     return netClient;
+  }
+
+  public GRPCConnectionManager getConnectionManager() {
+    return connectionManager;
   }
 }

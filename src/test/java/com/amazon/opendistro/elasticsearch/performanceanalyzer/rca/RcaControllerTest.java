@@ -49,7 +49,7 @@ public class RcaControllerTest {
     netOperationsExecutor =
         Executors.newScheduledThreadPool(
             3, new ThreadFactoryBuilder().setNameFormat("test-network-thread-%d").build());
-    clientServers = PerformanceAnalyzerApp.startServers();
+    clientServers = PerformanceAnalyzerApp.getClientServers();
 
     URI uri = URI.create(RcaController.getCatMasterUrl());
     masterIP = "";
