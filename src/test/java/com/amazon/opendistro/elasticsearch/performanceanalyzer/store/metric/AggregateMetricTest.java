@@ -42,11 +42,11 @@ public class AggregateMetricTest {
     Metric testMetric = new AggregateMetric(1, TABLE_NAME, AggregateFunction.SUM,
         CommonDimension.OPERATION.toString());
     MetricFlowUnit flowUnit = testMetric.gather(queryable);
-    assertFalse(flowUnit.getData() == null || flowUnit.getData().isEmpty() || flowUnit.getData().get(0).isEmpty());
-    assertEquals("other", flowUnit.getData().get(1).get(0));
-    assertEquals("9.0", flowUnit.getData().get(1).get(1));
-    assertEquals("bulk", flowUnit.getData().get(2).get(0));
-    assertEquals("3.0", flowUnit.getData().get(2).get(1));
+    assertFalse(flowUnit.getData() == null || flowUnit.getData().isEmpty());
+    assertEquals("other", flowUnit.getData().get(0).getValue(0, String.class));
+    assertEquals("9.0", flowUnit.getData().get(0).getValue(1, String.class));
+    assertEquals("bulk", flowUnit.getData().get(1).getValue(0, String.class));
+    assertEquals("3.0", flowUnit.getData().get(1).getValue(1, String.class));
   }
 
   @Test
@@ -74,13 +74,13 @@ public class AggregateMetricTest {
     Metric testMetric = new AggregateMetric(1, TABLE_NAME, AggregateFunction.SUM,
         CommonDimension.SHARD_ID.toString(), CommonDimension.OPERATION.toString());
     MetricFlowUnit flowUnit = testMetric.gather(queryable);
-    assertFalse(flowUnit.getData() == null || flowUnit.getData().isEmpty() || flowUnit.getData().get(0).isEmpty());
-    assertEquals("shard3", flowUnit.getData().get(1).get(0));
-    assertEquals("other", flowUnit.getData().get(1).get(1));
-    assertEquals("10.0", flowUnit.getData().get(1).get(2));
-    assertEquals("shard1", flowUnit.getData().get(2).get(0));
-    assertEquals("bulk", flowUnit.getData().get(2).get(1));
-    assertEquals("5.0", flowUnit.getData().get(2).get(2));
+    assertFalse(flowUnit.getData() == null || flowUnit.getData().isEmpty());
+    assertEquals("shard3", flowUnit.getData().get(0).get(0, String.class));
+    assertEquals("other", flowUnit.getData().get(0).get(1, String.class));
+    assertEquals("10.0", flowUnit.getData().get(0).get(2, String.class));
+    assertEquals("shard1", flowUnit.getData().get(1).get(0, String.class));
+    assertEquals("bulk", flowUnit.getData().get(1).get(1, String.class));
+    assertEquals("5.0", flowUnit.getData().get(1).get(2, String.class));
   }
 
   @Test
@@ -108,10 +108,10 @@ public class AggregateMetricTest {
     Metric testMetric = new AggregateMetric(1, TABLE_NAME, AggregateFunction.MAX,
         CommonDimension.OPERATION.toString());
     MetricFlowUnit flowUnit = testMetric.gather(queryable);
-    assertFalse(flowUnit.getData() == null || flowUnit.getData().isEmpty() || flowUnit.getData().get(0).isEmpty());
-    assertEquals("other", flowUnit.getData().get(1).get(0));
-    assertEquals("5.0", flowUnit.getData().get(1).get(1));
-    assertEquals("bulk", flowUnit.getData().get(2).get(0));
-    assertEquals("4.0", flowUnit.getData().get(2).get(1));
+    assertFalse(flowUnit.getData() == null || flowUnit.getData().isEmpty());
+    assertEquals("other", flowUnit.getData().get(0).get(0, String.class));
+    assertEquals("5.0", flowUnit.getData().get(0).get(1, String.class));
+    assertEquals("bulk", flowUnit.getData().get(1).get(0, String.class));
+    assertEquals("4.0", flowUnit.getData().get(1).get(1, String.class));
   }
 }

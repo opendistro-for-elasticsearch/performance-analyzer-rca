@@ -28,6 +28,8 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jooq.Record;
+import org.jooq.Result;
 import org.jooq.exception.DataAccessException;
 
 public abstract class Metric extends LeafNode<MetricFlowUnit> {
@@ -68,7 +70,7 @@ public abstract class Metric extends LeafNode<MetricFlowUnit> {
       return MetricFlowUnit.generic();
     }
     try {
-      List<List<String>> result = queryable.queryMetrics(db, name);
+      Result<Record> result = queryable.queryMetrics(db, name);
       return new MetricFlowUnit(queryable.getDBTimestamp(db), result);
     } catch (DataAccessException dex) {
       // This can happen if the RCA started querying for metrics before the Reader obtained them.

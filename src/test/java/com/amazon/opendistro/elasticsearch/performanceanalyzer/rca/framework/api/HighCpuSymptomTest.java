@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension.SHARD_ID;
 import static org.junit.Assert.assertEquals;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -29,13 +30,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.MetricsDBProviderTestHelper;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.helpers.OSMetricHelper;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.jooq.Record;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -79,53 +80,39 @@ public class HighCpuSymptomTest {
       boolean shouldReportOperation = false;
 
       MetricFlowUnit cpuMetric = cpuMetrics.get(0);
-      List<List<String>> allData = cpuMetric.getData();
-      List<String> cols = allData.get(0);
-      int shardIDIdx = -1;
-      int maxColIdx = -1;
-
-      // Get the index of the shardID column.
-      for (int i = 0; i < cols.size(); i++) {
-        if (cols.get(i).equals(OSMetricHelper.getDims().get(0))) {
-          shardIDIdx = i;
-          break;
-        }
-      }
-
-      // Get the index of the max column.
-      for (int i = 0; i < cols.size(); i++) {
-        if (cols.get(i).equals(MetricsDB.MAX)) {
-          maxColIdx = i;
-          break;
-        }
-      }
-
       Map<String, MovingAverage> averageMap = new HashMap<>();
       final double HIGH_CPU_THRESHOLD = 90.0;
       List<List<String>> ret = new ArrayList<>();
-      // The first row is the column names, so we start from the row 1.
-      for (int i = 1; i < allData.size(); i++) {
-        List<String> row = allData.get(i);
-        String shardId = row.get(shardIDIdx);
-        MovingAverage entry = averageMap.get(shardId);
-        if (null == entry) {
-          entry = new MovingAverage(3);
-          averageMap.put(shardId, entry);
-        }
-        double val = entry.next(Double.parseDouble(row.get(maxColIdx)));
-        if (val > HIGH_CPU_THRESHOLD) {
-          List<String> dataRow = Collections.singletonList(shardId);
-          // context.put("threshold", String.valueOf(HIGH_CPU_THRESHOLD));
-          // context.put("actual", String.valueOf(val));
-          ret.add(dataRow);
-          System.out.println(
-              String.format(
-                  "Shard %s is hot. Average max CPU (%f) above: %f",
-                  shardId, val, HIGH_CPU_THRESHOLD));
-          shouldReportOperation = true;
+      if (cpuMetric.getData() != null) {
+        for (Record record : cpuMetric.getData()) {
+          try {
+            String shardId = record.getValue(SHARD_ID.toString(), String.class);
+            double data = record.getValue(MetricsDB.MAX, Double.class);
+            MovingAverage entry = averageMap.get(shardId);
+            if (null == entry) {
+              entry = new MovingAverage(3);
+              averageMap.put(shardId, entry);
+            }
+            double val = entry.next(data);
+            if (val > HIGH_CPU_THRESHOLD) {
+              List<String> dataRow = Collections.singletonList(shardId);
+              // context.put("threshold", String.valueOf(HIGH_CPU_THRESHOLD));
+              // context.put("actual", String.valueOf(val));
+              ret.add(dataRow);
+              System.out.println(
+                  String.format(
+                      "Shard %s is hot. Average max CPU (%f) above: %f",
+                      shardId, val, HIGH_CPU_THRESHOLD));
+              shouldReportOperation = true;
+            }
+          }
+          catch (Exception e) {
+            System.out.println(
+                String.format(
+                    "Fail to parse data"));
+          }
         }
       }
-
       if (shouldReportOperation) {
         return new SymptomFlowUnit(
             System.currentTimeMillis(), ret, new SymptomContext(Resources.State.UNHEALTHY));

@@ -19,7 +19,6 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.Al
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_YOUNG_GC;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -31,10 +30,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.time.Clock;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -119,40 +118,37 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
 
   @Override
   public ResourceFlowUnit operate() {
-    List<MetricFlowUnit> heapUsedMetrics = heap_Used.getFlowUnits();
-    List<MetricFlowUnit> gcCollectionTimeMetrics = gc_Collection_Time.getFlowUnits();
-
-    double totYoungGCTime = Double.NaN;
-    double oldGenHeapUsed = Double.NaN;
+    long currTimeStamp = this.clock.millis();
     counter += 1;
 
-    if (!heapUsedMetrics.isEmpty() && !heapUsedMetrics.get(0).isEmpty()) {
-      double ret = heapUsedMetrics.get(0)
-          .getDataFromMetric(MEM_TYPE.toString(), OLD_GEN.toString(), MetricsDB.MAX);
-      if (Double.isNaN(ret)) {
+    //parsing flowunits from heap_used and push them into sliding window
+    for (MetricFlowUnit metricFU : heap_Used.getFlowUnits()) {
+      if (metricFU.isEmpty()) {
+        continue;
+      }
+      double oldGenHeapUsed = SQLParsingUtil.readDataFromSqlResult(metricFU.getData(),
+          MEM_TYPE.getField(), OLD_GEN.toString(), MetricsDB.MAX);
+      if (!Double.isNaN(oldGenHeapUsed)) {
+        promotionRateDeque.next(new SlidingWindowData(currTimeStamp, oldGenHeapUsed / CONVERT_BYTES_TO_MEGABYTES));
+      }
+      else {
         LOG.error("Failed to parse metric in FlowUnit from {}", heap_Used.getClass().getName());
-      } else {
-        oldGenHeapUsed = ret / CONVERT_BYTES_TO_MEGABYTES;
       }
     }
 
-    if (!gcCollectionTimeMetrics.isEmpty() && !gcCollectionTimeMetrics.get(0).isEmpty()) {
-      double ret = gcCollectionTimeMetrics.get(0)
-          .getDataFromMetric(MEM_TYPE.toString(), TOT_YOUNG_GC.toString(), MetricsDB.MAX);
-      if (Double.isNaN(ret)) {
-        LOG.error("Failed to parse metric in FlowUnit from {}",
-            gc_Collection_Time.getClass().getName());
-      } else {
-        totYoungGCTime = ret;
+    //parsing flowunits from gc_Collection_Time and push them into sliding window
+    for (MetricFlowUnit metricFU : gc_Collection_Time.getFlowUnits()) {
+      if (metricFU.isEmpty()) {
+        continue;
       }
-    }
-
-    long currTimeStamp = this.clock.millis();
-    if (!Double.isNaN(oldGenHeapUsed)) {
-      promotionRateDeque.next(new SlidingWindowData(currTimeStamp, oldGenHeapUsed));
-    }
-    if (!Double.isNaN(totYoungGCTime)) {
-      gcTimeDeque.next(new SlidingWindowData(currTimeStamp, totYoungGCTime));
+      double totYoungGCTime = SQLParsingUtil.readDataFromSqlResult(metricFU.getData(),
+          MEM_TYPE.getField(), TOT_YOUNG_GC.toString(), MetricsDB.MAX);
+      if (!Double.isNaN(totYoungGCTime)) {
+        gcTimeDeque.next(new SlidingWindowData(currTimeStamp, totYoungGCTime));
+      }
+      else {
+        LOG.error("Failed to parse metric in FlowUnit from {}", gc_Collection_Time.getClass().getName());
+      }
     }
 
     if (counter == rcaPeriod) {
@@ -192,20 +188,11 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
   }
 
   /**
-   * TODO: Move this method out of the RCA class. The scheduler should set the flow units it drains
-   * from the Rx queue between the scheduler and the networking thread into the node.
-   *
-   * @param args The wrapper around the flow unit operation.
+   * This is a local node RCA which by definition can not be serialize/de-serialized
+   * over gRPC.
    */
   @Override
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-    final List<FlowUnitMessage> flowUnitMessages =
-        args.getWireHopper().readFromWire(args.getNode());
-    List<ResourceFlowUnit> flowUnitList = new ArrayList<>();
-    LOG.debug("rca: Executing fromWire: {}", this.getClass().getSimpleName());
-    for (FlowUnitMessage flowUnitMessage : flowUnitMessages) {
-      flowUnitList.add(ResourceFlowUnit.buildFlowUnitFromWrapper(flowUnitMessage));
-    }
-    setFlowUnits(flowUnitList);
+    LOG.error("RCA: {} should not be send over from network", this.getClass().getSimpleName());
   }
 }

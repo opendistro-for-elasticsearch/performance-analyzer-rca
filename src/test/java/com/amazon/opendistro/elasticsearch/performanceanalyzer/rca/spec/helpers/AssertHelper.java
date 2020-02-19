@@ -19,6 +19,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.List;
 import java.util.Map;
+import org.jooq.Record;
 
 public class AssertHelper {
   public static <T extends Comparable> void compareLists(List<T> list1, List<T> list2) {
@@ -43,6 +44,16 @@ public class AssertHelper {
       } else {
         assertEquals(value, value2);
       }
+    }
+  }
+
+  public static void compareRecord(List<String> fieldName, List<String> valName, Record record) {
+    int sz = record.size();
+    assertEquals(fieldName.size(), sz);
+    assertEquals(valName.size(), sz);
+    for (int i = 0; i < sz; i++) {
+      assertEquals(fieldName.get(i), record.field(i).getName());
+      assertEquals(valName.get(i), record.getValue(i, String.class));
     }
   }
 }
