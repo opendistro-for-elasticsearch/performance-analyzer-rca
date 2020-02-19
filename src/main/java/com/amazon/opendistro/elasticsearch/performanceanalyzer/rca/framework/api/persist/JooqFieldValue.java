@@ -17,6 +17,11 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import org.jooq.Field;
 
+/**
+ * This interface helps writing enums for the field in each RCA table (FlowUnit, summaries etc.)
+ * We can call this getField method to read the field object directly without worrying about
+ * the field's name and data type.
+ */
 public interface JooqFieldValue {
   Field getField();
 }

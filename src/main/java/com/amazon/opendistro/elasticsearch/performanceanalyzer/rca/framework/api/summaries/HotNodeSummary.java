@@ -26,6 +26,13 @@ import org.jooq.impl.DSL;
 /**
  * HotNodeSummary collects and aggregates hot resource summaries on each data node It contains info
  * such as nodeID and node ip address. It is created by hot node RCA.
+ *
+ * <p>This object is persisted in SQLite table
+ * Table name : HotNodeSummary
+ *
+ * <p>schema :
+ * | ID(primary key) |        Node ID         | Host IP Address | ID in HotClusterSummary(foreign key)
+ * |      1          | EIsMtfSdStSEisU6-x23Gw |   172.29.0.2    |          5
  */
 public class HotNodeSummary extends GenericSummary {
 

@@ -30,6 +30,13 @@ import org.jooq.impl.DSL;
  * HotResourceSummary contains information such as the name of the hot resource, the current value
  * threshold, etc. It also contains the top K consumers of this particular resource. It is created
  * by some RCAs who work directly on some type of resource(JVM, CPU etc.)
+ *
+ * <p>This object is persisted in SQLite table
+ * Table name : HotResourceSummary
+ *
+ * <p>schema :
+ * | ID(primary key) | Resource Type | Threshold | Value | Avg | Min | Max | Unit Type | Time Period |ID in HotNodeSummary(foreign key)
+ * |      1          |    old gen    |    0.65   |  0.7  |     |     |     | percentage|    600      |          5
  */
 public class HotResourceSummary extends GenericSummary {
 

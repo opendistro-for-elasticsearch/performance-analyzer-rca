@@ -24,6 +24,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.QueryUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaResponseUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -32,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.CreateTableConstraintStep;
@@ -131,22 +134,28 @@ class SQLitePersistor extends PersistorBase {
   // This reads all SQLite tables in the latest SQLite file and converts the read data to JSON.
   @Override
   synchronized String readTables() {
-    StringBuilder jsonResult = new StringBuilder();
-    jsonResult.append("{");
-    String tableJson =
-        super.tableNames.stream()
-            .map(f -> readTable(f))
-            .collect(Collectors.joining(","));
-    jsonResult.append(tableJson);
-    jsonResult.append("}");
-    LOG.debug("JSON Result - " + jsonResult);
-    return jsonResult.toString();
+    JsonParser jsonParser = new JsonParser();
+    JsonObject tablesObject = new JsonObject();
+    super.tableNames.forEach(
+        table -> {
+            String tableStr = readTable(table);
+            try {
+              JsonElement tableElement = jsonParser.parse(tableStr);
+              tablesObject.add(table, tableElement);
+            }
+            catch (JsonSyntaxException se) {
+              LOG.error("RCA: Json parsing fails when reading from table {}", table);
+            }
+        }
+    );
+    return tablesObject.toString();
   }
 
+  //read table content and convert it into JSON format
   private synchronized String readTable(String tableName) {
-    final JSONFormat jsonFormat = new JSONFormat().header(false);
-    StringBuilder jsonForEachTable = new StringBuilder();
-    jsonForEachTable.append("\"" + tableName + "\":");
+    String tableStr;
+    //StringBuilder jsonForEachTable = new StringBuilder();
+    //jsonForEachTable.append("\"" + tableName + "\":");
     try {
       Result<Record> result;
       if (tableName.equals(ResourceFlowUnit.FLOWUNIT_TABLE_NAME)) {
@@ -158,12 +167,12 @@ class SQLitePersistor extends PersistorBase {
       else {
         result = create.select().from(tableName).fetch();
       }
-      jsonForEachTable.append(result.formatJSON(jsonFormat));
+      tableStr = result.formatJSON(new JSONFormat().header(false));
     } catch (DataAccessException e) {
       LOG.error("Fail to read table {}", tableName);
-      jsonForEachTable.append("[]");
+      tableStr = "[]";
     }
-    return jsonForEachTable.toString();
+    return tableStr;
   }
 
   @Override

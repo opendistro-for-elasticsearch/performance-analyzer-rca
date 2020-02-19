@@ -28,6 +28,16 @@ import java.util.List;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
 
+/**
+ * ResourceFlowUnit is the flowunit type that is emitted by RCA vertex.
+ * It is persisted in the FlowUnit SQLite table
+ *
+ * <p>The SQL table name  : FlowUnit
+ *
+ * <p>SQL Schema :
+ * | ID(primary key) | Timestamp |      RCA_Name        | state
+ * |      1          |  151000   |  HighHeapYoungGenRca | healthy
+ */
 public class ResourceFlowUnit extends GenericFlowUnit {
 
   public static final String FLOWUNIT_TABLE_NAME = "FlowUnit";
@@ -127,6 +137,10 @@ public class ResourceFlowUnit extends GenericFlowUnit {
     }
   }
 
+  /**
+   * Read the SQL schema of the FlowUnit table that persists this FlowUnit.
+   * @return list of Field object.
+   */
   public List<Field<?>> getSqlSchema() {
     List<Field<?>> schema = new ArrayList<>();
     if (!this.isEmpty()) {
@@ -137,6 +151,11 @@ public class ResourceFlowUnit extends GenericFlowUnit {
     return schema;
   }
 
+  /**
+   * Read the values of this FlowUnit as a SQL row.
+   * @param rcaName The name of the RCA vertex to be inserted into SQL
+   * @return List of Objects
+   */
   public List<Object> getSqlValue(String rcaName) {
     List<Object> value = new ArrayList<>();
     if (!this.isEmpty()) {
@@ -176,7 +195,7 @@ public class ResourceFlowUnit extends GenericFlowUnit {
 
   public static class SQL_SCHEMA_CONSTANTS {
 
-    public static final String TIMESTAMP_COL_NAME = "TimeStamp";
-    public static final String RCA_COL_NAME = "RCA Name";
+    public static final String TIMESTAMP_COL_NAME = "Timestamp";
+    public static final String RCA_COL_NAME = "RCA_Name";
   }
 }
