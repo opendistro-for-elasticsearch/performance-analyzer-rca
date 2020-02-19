@@ -154,8 +154,6 @@ class SQLitePersistor extends PersistorBase {
   //read table content and convert it into JSON format
   private synchronized String readTable(String tableName) {
     String tableStr;
-    //StringBuilder jsonForEachTable = new StringBuilder();
-    //jsonForEachTable.append("\"" + tableName + "\":");
     try {
       Result<Record> result;
       if (tableName.equals(ResourceFlowUnit.FLOWUNIT_TABLE_NAME)) {
