@@ -16,11 +16,18 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.JooqFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.protobuf.GeneratedMessageV3;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jooq.Field;
+import org.jooq.Record;
+import org.jooq.exception.DataTypeException;
 import org.jooq.impl.DSL;
 
 /**
@@ -38,6 +45,7 @@ import org.jooq.impl.DSL;
 public class HotClusterSummary extends GenericSummary {
 
   public static final String HOT_CLUSTER_SUMMARY_TABLE = HotClusterSummary.class.getSimpleName();
+  private static final Logger LOG = LogManager.getLogger(HotClusterSummary.class);
   private int numOfNodes;
   private int numOfUnhealthyNodes;
 
@@ -67,11 +75,15 @@ public class HotClusterSummary extends GenericSummary {
   }
 
   @Override
+  public String getTableName() {
+    return HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE;
+  }
+
+  @Override
   public List<Field<?>> getSqlSchema() {
     List<Field<?>> schema = new ArrayList<>();
-    schema.add(DSL.field(DSL.name(SQL_SCHEMA_CONSTANTS.NUM_OF_NODES_COL_NAME), Integer.class));
-    schema.add(
-        DSL.field(DSL.name(SQL_SCHEMA_CONSTANTS.NUM_OF_UNHEALTHY_NODES_COL_NAME), Integer.class));
+    schema.add(ClusterSummaryField.NUM_OF_NODES_FIELD.getField());
+    schema.add(ClusterSummaryField.NUM_OF_UNHEALTHY_NODES_FILELD.getField());
     return schema;
   }
 
@@ -83,10 +95,75 @@ public class HotClusterSummary extends GenericSummary {
     return value;
   }
 
+  /**
+   * Convert this summary object to JsonElement
+   * @return JsonElement
+   */
+  @Override
+  public JsonElement toJson() {
+    JsonObject summaryObj = new JsonObject();
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NUM_OF_NODES_COL_NAME, this.numOfNodes);
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NUM_OF_UNHEALTHY_NODES_COL_NAME, this.numOfUnhealthyNodes);
+    this.nestedSummaryList.forEach(
+        summary -> {
+          summaryObj.add(summary.getTableName(), summary.toJson());
+        }
+    );
+    return summaryObj;
+  }
+
   public static class SQL_SCHEMA_CONSTANTS {
 
-    public static final String NUM_OF_NODES_COL_NAME = "Number of Nodes";
-    public static final String NUM_OF_UNHEALTHY_NODES_COL_NAME = "Number of Unhealthy Nodes";
+    public static final String NUM_OF_NODES_COL_NAME = "number_of_nodes";
+    public static final String NUM_OF_UNHEALTHY_NODES_COL_NAME = "number_of_unhealthy_nodes";
+  }
+
+  /**
+   * Cluster summary SQL fields
+   */
+  public enum ClusterSummaryField implements JooqFieldValue {
+    NUM_OF_NODES_FIELD(SQL_SCHEMA_CONSTANTS.NUM_OF_NODES_COL_NAME, Integer.class),
+    NUM_OF_UNHEALTHY_NODES_FILELD(SQL_SCHEMA_CONSTANTS.NUM_OF_UNHEALTHY_NODES_COL_NAME,
+        Integer.class);
+
+    private String name;
+    private Class<?> clazz;
+
+    ClusterSummaryField(final String name, Class<?> clazz) {
+      this.name = name;
+      this.clazz = clazz;
+    }
+
+    @Override
+    public Field<?> getField() {
+      return DSL.field(DSL.name(this.name), this.clazz);
+    }
+
+    @Override
+    public String getName() {
+      return this.name;
+    }
+  }
+
+  /**
+   * parse SQL query result and fill the result into summary obj.
+   * @param record SQLite record
+   * @return whether parsing is successful or not
+   */
+  public static GenericSummary buildSummary(Record record) {
+    GenericSummary summary = null;
+    try {
+      Integer numOfNodes = record.get(ClusterSummaryField.NUM_OF_NODES_FIELD.getField(), Integer.class);
+      Integer numOfUnhealthyNodes = record.get(ClusterSummaryField.NUM_OF_UNHEALTHY_NODES_FILELD.getField(), Integer.class);
+      summary = new HotClusterSummary(numOfNodes, numOfUnhealthyNodes);
+    }
+    catch (IllegalArgumentException ie) {
+      LOG.error("Some field is not found in record, cause : {}", ie.getMessage());
+    }
+    catch (DataTypeException de) {
+      LOG.error("Fails to convert data type");
+    }
+    return summary;
   }
 
 }

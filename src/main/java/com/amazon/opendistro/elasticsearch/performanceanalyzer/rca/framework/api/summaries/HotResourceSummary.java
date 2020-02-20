@@ -17,13 +17,18 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PANetworking;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType.ResourceTypeOneofCase;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.JooqFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jooq.Field;
+import org.jooq.Record;
+import org.jooq.exception.DataTypeException;
 import org.jooq.impl.DSL;
 
 /**
@@ -42,6 +47,7 @@ import org.jooq.impl.DSL;
 public class HotResourceSummary extends GenericSummary {
 
   public static final String HOT_RESOURCE_SUMMARY_TABLE = HotResourceSummary.class.getSimpleName();
+  private static final Logger LOG = LogManager.getLogger(HotResourceSummary.class);
   private final ResourceType resourceType;
   private double threshold;
   private double value;
@@ -73,21 +79,6 @@ public class HotResourceSummary extends GenericSummary {
 
   public ResourceType getResourceType() {
     return this.resourceType;
-  }
-
-  public String getResourceTypeName() {
-    String resourceName = "unknown resource type";
-    if (this.resourceType != null) {
-      if (this.resourceType.getResourceTypeOneofCase() == ResourceTypeOneofCase.JVM) {
-        resourceName = this.resourceType.getJVM().getValueDescriptor()
-            .getOptions().getExtension(PANetworking.resourceTypeName);
-      }
-      else if (this.resourceType.getResourceTypeOneofCase() == ResourceTypeOneofCase.HARDWARE_RESOURCE_TYPE) {
-        resourceName = this.resourceType.getHardwareResourceType().getValueDescriptor()
-            .getOptions().getExtension(PANetworking.resourceTypeName);
-      }
-    }
-    return resourceName;
   }
 
   public double getValue() {
@@ -144,7 +135,7 @@ public class HotResourceSummary extends GenericSummary {
   @Override
   public String toString() {
     return new StringBuilder()
-        .append(this.getResourceTypeName())
+        .append(ResourceTypeUtil.getResourceTypeName(this.resourceType))
         .append(" ")
         .append(this.threshold)
         .append(" ")
@@ -157,23 +148,28 @@ public class HotResourceSummary extends GenericSummary {
   }
 
   @Override
+  public String getTableName() {
+    return HotResourceSummary.HOT_RESOURCE_SUMMARY_TABLE;
+  }
+
+  @Override
   public List<Field<?>> getSqlSchema() {
     List<Field<?>> schema = new ArrayList<>();
-    schema.add(DSL.field(DSL.name(SQL_SCHEMA_CONSTANTS.RESOURCE_TYPE_COL_NAME), String.class));
-    schema.add(DSL.field(DSL.name(SQL_SCHEMA_CONSTANTS.THRESHOLD_COL_NAME), Double.class));
-    schema.add(DSL.field(DSL.name(SQL_SCHEMA_CONSTANTS.VALUE_COL_NAME), Double.class));
-    schema.add(DSL.field(DSL.name(SQL_SCHEMA_CONSTANTS.AVG_VALUE_COL_NAME), Double.class));
-    schema.add(DSL.field(DSL.name(SQL_SCHEMA_CONSTANTS.MIN_VALUE_COL_NAME), Double.class));
-    schema.add(DSL.field(DSL.name(SQL_SCHEMA_CONSTANTS.MAX_VALUE_COL_NAME), Double.class));
-    schema.add(DSL.field(DSL.name(SQL_SCHEMA_CONSTANTS.UNIT_TYPE_COL_NAME), String.class));
-    schema.add(DSL.field(DSL.name(SQL_SCHEMA_CONSTANTS.TIME_PERIOD_COL_NAME), Integer.class));
+    schema.add(ResourceSummaryField.RESOURCE_TYPE_FIELD.getField());
+    schema.add(ResourceSummaryField.THRESHOLD_FILELD.getField());
+    schema.add(ResourceSummaryField.VALUE_FILELD.getField());
+    schema.add(ResourceSummaryField.AVG_VALUE_FILELD.getField());
+    schema.add(ResourceSummaryField.MIN_VALUE_FILELD.getField());
+    schema.add(ResourceSummaryField.MAX_VALUE_FILELD.getField());
+    schema.add(ResourceSummaryField.UNIT_TYPE_FILELD.getField());
+    schema.add(ResourceSummaryField.TIME_PERIOD_FILELD.getField());
     return schema;
   }
 
   @Override
   public List<Object> getSqlValue() {
     List<Object> value = new ArrayList<>();
-    value.add(this.getResourceTypeName());
+    value.add(ResourceTypeUtil.getResourceTypeName(this.resourceType));
     value.add(Double.valueOf(this.threshold));
     value.add(Double.valueOf(this.value));
     value.add(Double.valueOf(this.avgValue));
@@ -182,6 +178,30 @@ public class HotResourceSummary extends GenericSummary {
     value.add(this.unitType);
     value.add(Integer.valueOf(this.timePeriod));
     return value;
+  }
+
+  /**
+   * Convert this summary object to JsonElement
+   * @return JsonElement
+   */
+  @Override
+  public JsonElement toJson() {
+    JsonObject summaryObj = new JsonObject();
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.RESOURCE_TYPE_COL_NAME,
+        ResourceTypeUtil.getResourceTypeName(this.resourceType));
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.THRESHOLD_COL_NAME, this.threshold);
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.VALUE_COL_NAME, this.value);
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.AVG_VALUE_COL_NAME, this.avgValue);
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.MIN_VALUE_COL_NAME, this.minValue);
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.MAX_VALUE_COL_NAME, this.maxValue);
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.UNIT_TYPE_COL_NAME, this.unitType);
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.TIME_PERIOD_COL_NAME, this.timePeriod);
+    this.nestedSummaryList.forEach(
+        summary -> {
+          summaryObj.add(summary.getTableName(), summary.toJson());
+        }
+    );
+    return summaryObj;
   }
 
   public static class SQL_SCHEMA_CONSTANTS {
@@ -194,5 +214,71 @@ public class HotResourceSummary extends GenericSummary {
     public static final String MAX_VALUE_COL_NAME = "max";
     public static final String UNIT_TYPE_COL_NAME = "unit_type";
     public static final String TIME_PERIOD_COL_NAME = "time_period_seconds";
+  }
+
+  /**
+   * Cluster summary SQL fields
+   */
+  public enum ResourceSummaryField implements JooqFieldValue {
+    RESOURCE_TYPE_FIELD(SQL_SCHEMA_CONSTANTS.RESOURCE_TYPE_COL_NAME, String.class),
+    THRESHOLD_FILELD(SQL_SCHEMA_CONSTANTS.THRESHOLD_COL_NAME, Double.class),
+    VALUE_FILELD(SQL_SCHEMA_CONSTANTS.VALUE_COL_NAME, Double.class),
+    AVG_VALUE_FILELD(SQL_SCHEMA_CONSTANTS.AVG_VALUE_COL_NAME, Double.class),
+    MIN_VALUE_FILELD(SQL_SCHEMA_CONSTANTS.MIN_VALUE_COL_NAME, Double.class),
+    MAX_VALUE_FILELD(SQL_SCHEMA_CONSTANTS.MAX_VALUE_COL_NAME, Double.class),
+    UNIT_TYPE_FILELD(SQL_SCHEMA_CONSTANTS.UNIT_TYPE_COL_NAME, String.class),
+    TIME_PERIOD_FILELD(SQL_SCHEMA_CONSTANTS.TIME_PERIOD_COL_NAME, Integer.class);
+
+
+    private String name;
+    private Class<?> clazz;
+
+    ResourceSummaryField(final String name, Class<?> clazz) {
+      this.name = name;
+      this.clazz = clazz;
+    }
+
+    @Override
+    public Field<?> getField() {
+      return DSL.field(DSL.name(this.name), this.clazz);
+    }
+
+    @Override
+    public String getName() {
+      return this.name;
+    }
+  }
+
+  /**
+   * Re-generate the node summary object from SQL query result.
+   * @param record SQLite record
+   * @return node summary object
+   */
+  public static HotResourceSummary buildSummary(Record record) {
+    HotResourceSummary summary = null;
+    try {
+      String resourceTypeName = record.get(ResourceSummaryField.RESOURCE_TYPE_FIELD.getField(), String.class);
+      Double threshold = record.get(ResourceSummaryField.THRESHOLD_FILELD.getField(), Double.class);
+      Double value = record.get(ResourceSummaryField.VALUE_FILELD.getField(), Double.class);
+      Double avgValue = record.get(ResourceSummaryField.AVG_VALUE_FILELD.getField(), Double.class);
+      Double minValue = record.get(ResourceSummaryField.MIN_VALUE_FILELD.getField(), Double.class);
+      Double maxValue = record.get(ResourceSummaryField.MAX_VALUE_FILELD.getField(), Double.class);
+      String unitType = record.get(ResourceSummaryField.UNIT_TYPE_FILELD.getField(), String.class);
+      Integer timePeriod = record.get(ResourceSummaryField.TIME_PERIOD_FILELD.getField(), Integer.class);
+      summary = new HotResourceSummary(ResourceTypeUtil.buildResourceType(resourceTypeName),
+          threshold, value, unitType, timePeriod);
+      if ((!Double.isNaN(avgValue))
+          && (!Double.isNaN(minValue))
+          && (!Double.isNaN(maxValue))) {
+        summary.setValueDistribution(minValue, maxValue, avgValue);
+      }
+    }
+    catch (IllegalArgumentException ie) {
+      LOG.error("Some field is not found in record, cause : {}", ie.getMessage());
+    }
+    catch (DataTypeException de) {
+      LOG.error("Fails to convert data type");
+    }
+    return summary;
   }
 }

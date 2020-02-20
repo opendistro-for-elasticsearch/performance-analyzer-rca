@@ -15,16 +15,14 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rest;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca.HIGH_HEAP_USAGE_CLUSTER_RCA_TABLE;
-
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsRestUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.gson.FieldNamingPolicy;
-import com.google.gson.GsonBuilder;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import java.io.IOException;
@@ -33,8 +31,6 @@ import java.net.HttpURLConnection;
 import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
@@ -59,11 +55,9 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
   private static final String DUMP_ALL = "all";
   private Persistable persistable;
   private MetricsRestUtil metricsRestUtil;
-  private Set<String> validRCA;
 
   public QueryRcaRequestHandler() {
     metricsRestUtil = new MetricsRestUtil();
-    validRCA = ImmutableSet.of(HIGH_HEAP_USAGE_CLUSTER_RCA_TABLE);
   }
 
   @Override
@@ -84,17 +78,30 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
           else {
             Map<String, String> params = getParamsMap(query);
             List<String> rcaList = metricsRestUtil.parseArrayParam(params, "name", true);
-
+            // query all cluster level RCAs if no RCA is specified in name.
+            if (rcaList.isEmpty()) {
+              rcaList = SQLiteQueryUtils.getClusterLevelRca();
+            }
+            //check if RCA is valid
             if (!validParams(rcaList)) {
-              sendResponse(exchange, "{\"error\":\"Invalid RCA.\"}",
+              JsonObject errResponse = new JsonObject();
+              JsonArray errReason = new JsonArray();
+              SQLiteQueryUtils.getClusterLevelRca().forEach(errReason::add);
+              errResponse.addProperty("error", "Invalid RCA.");
+              errResponse.add("valid_cluster_rca", errReason);
+              sendResponse(exchange, errResponse.toString(),
                   HttpURLConnection.HTTP_BAD_REQUEST);
               return;
             }
-            if (rcaList.isEmpty()) {
-              rcaList = ImmutableList.copyOf(validRCA);
+            //check if we are querying from elected master
+            if (!validNodeRole()) {
+              JsonObject errResponse = new JsonObject();
+              errResponse.addProperty("error", "Node being queried is not elected master.");
+              sendResponse(exchange, errResponse.toString(),
+                  HttpURLConnection.HTTP_BAD_REQUEST);
+              return;
             }
-
-            String response = getRcaData(persistable, rcaList);
+            String response = getRcaData(persistable, rcaList).toString();
             sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
           }
         }
@@ -127,23 +134,28 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
     }
   }
 
+  // check whether RCAs are cluster level RCAs
   private boolean validParams(List<String> rcaList) {
     return rcaList.stream()
-            .allMatch(e -> validRCA.contains(e));
+            .allMatch(SQLiteQueryUtils::isClusterLevelRca);
   }
 
-  private String getRcaData(Persistable persistable, List<String> rcaList) {
+  // check if we are querying from elected master
+  private boolean validNodeRole() {
+    ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor
+        .getCurrentNodeDetails();
+    return currentNode.getIsMasterNode();
+  }
+
+  private JsonElement getRcaData(Persistable persistable, List<String> rcaList) {
     LOG.debug("RCA: in getRcaData");
-    List<RcaResponse> rcaResponseList = null;
+    JsonObject jsonObject = new JsonObject();
     if (persistable != null) {
-      rcaResponseList =  rcaList.stream().map(rca -> persistable.readRca(rca))
-              .filter(r -> r != null)
-              .collect(Collectors.toList());
+      rcaList.forEach(rca ->
+          jsonObject.add(rca, persistable.read(rca))
+      );
     }
-    return new GsonBuilder()
-            .setFieldNamingStrategy(FieldNamingPolicy.UPPER_CAMEL_CASE)
-            .create()
-            .toJson(rcaResponseList);
+    return jsonObject;
   }
 
   private String dumpAllRcaTables() {

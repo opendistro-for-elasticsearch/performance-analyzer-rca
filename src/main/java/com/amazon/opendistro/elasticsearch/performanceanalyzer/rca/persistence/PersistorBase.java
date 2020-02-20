@@ -19,6 +19,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -107,7 +109,7 @@ public abstract class PersistorBase implements Persistable {
 
   abstract String readTables();
 
-  abstract RcaResponse readRcaTable(String rca);
+  abstract RcaResponse readRca(String rca);
 
   abstract void createNewDSLContext();
 
@@ -123,8 +125,15 @@ public abstract class PersistorBase implements Persistable {
     return readTables();
   }
 
-  public synchronized RcaResponse readRca(String rca) {
-    return readRcaTable(rca);
+  // TODO : readRca might return a list of RcaResponse if using range query
+  @Override
+  public synchronized JsonElement read(String rca) {
+    JsonArray rcaJson = new JsonArray();
+    RcaResponse response = readRca(rca);
+    if (response != null) {
+      rcaJson.add(response.toJson());
+    }
+    return rcaJson;
   }
 
   public synchronized void openNewDBFile() throws SQLException {
