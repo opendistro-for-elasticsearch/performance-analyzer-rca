@@ -87,7 +87,7 @@ public class PersistFlowUnitAndSummaryTest {
     }
   }
 
-  static class DataNodeGraphTest extends AnalysisGraph {
+  static class DataNodeGraph extends AnalysisGraph {
 
     @Override
     public void construct() {
@@ -103,7 +103,7 @@ public class PersistFlowUnitAndSummaryTest {
     }
   }
 
-  static class MasterNodeGraphTest extends AnalysisGraph {
+  static class MasterNodeGraph extends AnalysisGraph {
 
     @Override
     public void construct() {
@@ -155,7 +155,7 @@ public class PersistFlowUnitAndSummaryTest {
       Assert.assertTrue("got exception when generating cluster details event", false);
       return;
     }
-    AnalysisGraph graph = new DataNodeGraphTest();
+    AnalysisGraph graph = new DataNodeGraph();
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
     Persistable persistable = PersistenceFactory.create(rcaConf);
     RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, AllMetrics.NodeRole.DATA);
@@ -180,7 +180,7 @@ public class PersistFlowUnitAndSummaryTest {
       Assert.assertTrue("got exception when generating cluster details event", false);
       return;
     }
-    AnalysisGraph graph = new MasterNodeGraphTest();
+    AnalysisGraph graph = new MasterNodeGraph();
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_elected_master.conf").toString());
     Persistable persistable = PersistenceFactory.create(rcaConf);
     RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, NodeRole.ELECTED_MASTER);

@@ -27,6 +27,13 @@ import org.jooq.impl.DSL;
  * HotClusterSummary is a cluster level summary. It collects and aggregates node summaries from each
  * data nodes and additional info will be added by master. This type of summary is created by
  * cluster level RCAs whcih only run on elected master.
+ *
+ * <p>This object is persisted in SQLite table
+ * Table name : HotClusterSummary
+ *
+ * <p>schema :
+ * | ID(primary key) | Number of nodes | unhealthy nodes | ID in FlowUnit(foreign key)
+ * |      1          |      5          |        1        |          5
  */
 public class HotClusterSummary extends GenericSummary {
 

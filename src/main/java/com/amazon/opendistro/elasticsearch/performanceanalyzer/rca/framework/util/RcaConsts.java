@@ -81,5 +81,8 @@ public class RcaConsts {
 
     public static final String LOCUS_DATA_NODE = "data-node";
     public static final String LOCUS_MASTER_NODE = "master-node";
+    public static final String LOCUS_DATA_MASTER_NODE = String.join(RcaTagConstants.SEPARATOR,
+        RcaTagConstants.LOCUS_DATA_NODE,
+        RcaTagConstants.LOCUS_MASTER_NODE);
   }
 }

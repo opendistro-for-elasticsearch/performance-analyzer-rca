@@ -30,6 +30,14 @@ import org.jooq.impl.DSL;
  * HotResourceSummary contains information such as the name of the hot resource, the current value
  * threshold, etc. It also contains the top K consumers of this particular resource. It is created
  * by some RCAs who work directly on some type of resource(JVM, CPU etc.)
+ *
+ * <p>This object is persisted in SQLite table
+ * Table name : HotResourceSummary
+ *
+ * <p>schema :
+ * | ID           | Resource Type | Threshold | Value | Avg | Min | Max | Unit Type | Time_Period_Seconds |ID in HotNodeSummary
+ *  (primary key)                                                                                           (foreign key)
+ * |      1       |    old gen    |    0.65   |  0.7  |     |     |     | percentage|          600        |          5
  */
 public class HotResourceSummary extends GenericSummary {
 
@@ -178,13 +186,13 @@ public class HotResourceSummary extends GenericSummary {
 
   public static class SQL_SCHEMA_CONSTANTS {
 
-    public static final String RESOURCE_TYPE_COL_NAME = "Resource Type";
-    public static final String THRESHOLD_COL_NAME = "Threshold";
-    public static final String VALUE_COL_NAME = "Value";
-    public static final String AVG_VALUE_COL_NAME = "Avg Value";
-    public static final String MIN_VALUE_COL_NAME = "Min Value";
-    public static final String MAX_VALUE_COL_NAME = "Max Value";
-    public static final String UNIT_TYPE_COL_NAME = "Unit Type";
-    public static final String TIME_PERIOD_COL_NAME = "Time Period";
+    public static final String RESOURCE_TYPE_COL_NAME = "resource_type";
+    public static final String THRESHOLD_COL_NAME = "threshold";
+    public static final String VALUE_COL_NAME = "value";
+    public static final String AVG_VALUE_COL_NAME = "avg";
+    public static final String MIN_VALUE_COL_NAME = "min";
+    public static final String MAX_VALUE_COL_NAME = "max";
+    public static final String UNIT_TYPE_COL_NAME = "unit_type";
+    public static final String TIME_PERIOD_COL_NAME = "time_period_seconds";
   }
 }
