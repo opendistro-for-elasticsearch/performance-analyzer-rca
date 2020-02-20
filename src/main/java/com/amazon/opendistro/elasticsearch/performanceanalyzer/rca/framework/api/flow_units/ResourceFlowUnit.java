@@ -40,7 +40,7 @@ import org.jooq.impl.DSL;
  */
 public class ResourceFlowUnit extends GenericFlowUnit {
 
-  public static final String FLOWUNIT_TABLE_NAME = "FlowUnit";
+  public static final String RCA_TABLE_NAME = "RCA";
   private ResourceContext resourceContext = null;
   private GenericSummary resourceSummary = null;
   // whether summary needs to be persisted as well when persisting this flowunit

@@ -211,7 +211,7 @@ public abstract class PersistorBase implements Persistable {
 
   private <T extends ResourceFlowUnit> void tryWriteFlowUnit(
           T flowUnit, String nodeName) throws SQLException {
-    String tableName = ResourceFlowUnit.FLOWUNIT_TABLE_NAME;
+    String tableName = ResourceFlowUnit.RCA_TABLE_NAME;
     if (!tableNames.contains(tableName)) {
       LOG.info(
               "RCA: Table '{}' does not exist. Creating one with columns: {}",

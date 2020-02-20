@@ -156,7 +156,7 @@ class SQLitePersistor extends PersistorBase {
     String tableStr;
     try {
       Result<Record> result;
-      if (tableName.equals(ResourceFlowUnit.FLOWUNIT_TABLE_NAME)) {
+      if (tableName.equals(ResourceFlowUnit.RCA_TABLE_NAME)) {
         result = create.select()
             .from(tableName)
             .orderBy(ResourceFlowUnitFieldValue.RCA_NAME_FILELD.getField())
