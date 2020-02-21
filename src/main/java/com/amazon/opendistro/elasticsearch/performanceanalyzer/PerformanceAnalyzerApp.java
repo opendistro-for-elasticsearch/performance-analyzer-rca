@@ -63,6 +63,8 @@ public class PerformanceAnalyzerApp {
   private static final String WEBSERVICE_BIND_HOST_NAME = "webservice-bind-host";
   // Use system default for max backlog.
   private static final int INCOMING_QUEUE_LENGTH = 1;
+  // current number of threads spawned through the thread provider.
+  private static final int EXCEPTION_QUEUE_LENGTH = 5;
   public static final String QUERY_URL = "/_opendistro/_performanceanalyzer/metrics";
   private static final Logger LOG = LogManager.getLogger(PerformanceAnalyzerApp.class);
   private static final ScheduledMetricCollectorsExecutor METRIC_COLLECTOR_EXECUTOR =
@@ -97,7 +99,8 @@ public class PerformanceAnalyzerApp {
       new PeriodicSamplers(JVM_METRICS_AGGREGATOR, AllJvmSamplers.getJvmSamplers(),
           (MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval) / 2,
           TimeUnit.MILLISECONDS);
-  public static final BlockingQueue<PAThreadException> exceptionQueue = new LinkedBlockingQueue<>();
+  public static final BlockingQueue<PAThreadException> exceptionQueue =
+      new LinkedBlockingQueue<>(EXCEPTION_QUEUE_LENGTH);
   private static final int ERROR_HANDLING_POLLING_INTERVAL_IN_MS = 5000;
 
   public static void main(String[] args) throws Exception {
@@ -120,7 +123,8 @@ public class PerformanceAnalyzerApp {
             connectionManager,
             clientServers,
             Util.DATA_DIR,
-            RcaConsts.RCA_STATE_CHECK_INTERVAL_IN_MS
+            RcaConsts.RCA_STATE_CHECK_INTERVAL_IN_MS,
+            RcaConsts.nodeRolePollerPeriodicityInSeconds * 1000
         );
 
     Thread rcaControllerThread = ThreadProvider.instance()

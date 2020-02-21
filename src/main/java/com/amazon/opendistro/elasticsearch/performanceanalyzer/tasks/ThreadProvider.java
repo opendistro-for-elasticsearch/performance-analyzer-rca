@@ -8,7 +8,7 @@ import org.apache.logging.log4j.Logger;
 public class ThreadProvider {
 
   private static final Logger LOG = LogManager.getLogger(ThreadProvider.class);
-  private static ThreadProvider _instance = null;
+  private static volatile ThreadProvider _instance = null;
   private int numberOfThreadsSpunUp = 0;
 
   /**
@@ -31,7 +31,11 @@ public class ThreadProvider {
       try {
         innerRunnable.run();
       } catch (Throwable innerThrowable) {
-        PerformanceAnalyzerApp.exceptionQueue.offer(new PAThreadException(name, innerThrowable));
+        if (!PerformanceAnalyzerApp.exceptionQueue.offer(new PAThreadException(name,
+            innerThrowable))) {
+          LOG.error("Unable to write to exception queue. Dropping exception: {}",
+              innerThrowable.getMessage(), innerThrowable.getCause());
+        }
       }
     });
 

@@ -1,6 +1,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks.exceptions;
 
-public class PAThreadException {
+public class PAThreadException extends Exception {
 
   private final String threadName;
 

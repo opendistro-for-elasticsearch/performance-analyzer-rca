@@ -92,7 +92,8 @@ public class RcaControllerTest {
             connectionManager,
             clientServers,
             rcaEnabledFileLoc.toString(),
-            100
+            100,
+            200
         );
 
     setMyIp(masterIP, AllMetrics.NodeRole.UNKNOWN);

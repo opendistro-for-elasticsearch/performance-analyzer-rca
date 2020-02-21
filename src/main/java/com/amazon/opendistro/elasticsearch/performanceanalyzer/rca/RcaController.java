@@ -75,7 +75,6 @@ public class RcaController {
   private static final Logger LOG = LogManager.getLogger(RcaController.class);
 
   private static final String RCA_ENABLED_CONF_FILE = "rca_enabled.conf";
-  private static final int ONE_MINUTE_IN_MILLIS = 60 * 1000;
 
   private final ScheduledExecutorService netOpsExecutorService;
   private final boolean useHttps;
@@ -100,8 +99,8 @@ public class RcaController {
   private SubscriptionManager subscriptionManager;
 
   private final String RCA_ENABLED_CONF_LOCATION;
-  private final int rcaStateCheckIntervalMillis;
-  private final int roleCheckPeriodicity;
+  private final long rcaStateCheckIntervalMillis;
+  private final long roleCheckPeriodicity;
 
   // Atomic reference to the networking threadpool as it is used by multiple threads. When we
   // replace the threadpool instance, we want the update to be visible to all others holding a
@@ -114,7 +113,8 @@ public class RcaController {
       final GRPCConnectionManager grpcConnectionManager,
       final ClientServers clientServers,
       final String rca_enabled_conf_location,
-      final int rcaStateCheckIntervalMillis) {
+      final long rcaStateCheckIntervalMillis,
+      final long nodeRoleCheckPeriodicityMillis) {
     this.netOpsExecutorService = netOpsExecutorService;
     this.rcaNetClient = clientServers.getNetClient();
     this.rcaNetServer = clientServers.getNetServer();
@@ -127,7 +127,7 @@ public class RcaController {
     queryRcaRequestHandler = new QueryRcaRequestHandler();
     this.rcaScheduler = null;
     this.rcaStateCheckIntervalMillis = rcaStateCheckIntervalMillis;
-    this.roleCheckPeriodicity = ONE_MINUTE_IN_MILLIS / rcaStateCheckIntervalMillis;
+    this.roleCheckPeriodicity = nodeRoleCheckPeriodicityMillis;
   }
 
   private void start() {
@@ -199,12 +199,13 @@ public class RcaController {
   }
 
   public void run() {
-    int tick = 1;
+    long tick = 1;
+    long nodeRoleCheckInTicks = roleCheckPeriodicity / rcaStateCheckIntervalMillis;
     while (true) {
       try {
         long startTime = System.currentTimeMillis();
         readRcaEnabledFromConf();
-        if (rcaEnabled && tick % roleCheckPeriodicity == 0) {
+        if (rcaEnabled && tick % nodeRoleCheckInTicks == 0) {
           tick = 0;
           final NodeDetails nodeDetails = ClusterDetailsEventProcessor.getCurrentNodeDetails();
           if (nodeDetails != null) {
