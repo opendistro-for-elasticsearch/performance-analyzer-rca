@@ -75,6 +75,7 @@ public class RcaController {
   private static final Logger LOG = LogManager.getLogger(RcaController.class);
 
   private static final String RCA_ENABLED_CONF_FILE = "rca_enabled.conf";
+  private static final int ONE_MINUTE_IN_MILLIS = 60 * 1000;
 
   private final ScheduledExecutorService netOpsExecutorService;
   private final boolean useHttps;
@@ -100,6 +101,7 @@ public class RcaController {
 
   private final String RCA_ENABLED_CONF_LOCATION;
   private final int rcaStateCheckIntervalMillis;
+  private final int roleCheckPeriodicity;
 
   // Atomic reference to the networking threadpool as it is used by multiple threads. When we
   // replace the threadpool instance, we want the update to be visible to all others holding a
@@ -125,6 +127,7 @@ public class RcaController {
     queryRcaRequestHandler = new QueryRcaRequestHandler();
     this.rcaScheduler = null;
     this.rcaStateCheckIntervalMillis = rcaStateCheckIntervalMillis;
+    this.roleCheckPeriodicity = ONE_MINUTE_IN_MILLIS / rcaStateCheckIntervalMillis;
   }
 
   private void start() {
@@ -196,11 +199,13 @@ public class RcaController {
   }
 
   public void run() {
+    int tick = 1;
     while (true) {
       try {
         long startTime = System.currentTimeMillis();
         readRcaEnabledFromConf();
-        if (rcaEnabled) {
+        if (rcaEnabled && tick % roleCheckPeriodicity == 0) {
+          tick = 0;
           final NodeDetails nodeDetails = ClusterDetailsEventProcessor.getCurrentNodeDetails();
           if (nodeDetails != null) {
             checkUpdateNodeRole(nodeDetails);
@@ -217,6 +222,7 @@ public class RcaController {
         LOG.error(ie);
         break;
       }
+      tick++;
     }
   }
 
