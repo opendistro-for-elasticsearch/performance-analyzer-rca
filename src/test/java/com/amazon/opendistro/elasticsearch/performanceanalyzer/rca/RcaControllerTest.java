@@ -9,6 +9,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCA
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RcaSchedulerState;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks.ThreadProvider;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
@@ -40,6 +41,7 @@ public class RcaControllerTest {
   private HttpServer dummyEsServer;
   private RcaController rcaController;
   private String masterIP;
+  private Thread controllerThread;
 
   @Before
   public void setUp() throws IOException {
@@ -49,7 +51,10 @@ public class RcaControllerTest {
     netOperationsExecutor =
         Executors.newScheduledThreadPool(
             3, new ThreadFactoryBuilder().setNameFormat("test-network-thread-%d").build());
-    clientServers = PerformanceAnalyzerApp.startServers();
+    boolean useHttps = PluginSettings.instance().getHttpsEnabled();
+    connectionManager = new GRPCConnectionManager(useHttps);
+    clientServers = PerformanceAnalyzerApp.startServers(connectionManager);
+    clientServers.getHttpServer().start();
 
     URI uri = URI.create(RcaController.getCatMasterUrl());
     masterIP = "";
@@ -78,27 +83,22 @@ public class RcaControllerTest {
     dummyEsServer.start();
     System.out.println("Started dummy endpoint..");
 
-    boolean useHttps = PluginSettings.instance().getHttpsEnabled();
-    connectionManager = new GRPCConnectionManager(useHttps);
+    RcaControllerHelper.set(Paths.get(rcaEnabledFileLoc.toString(), "rca.conf").toString(),
+        Paths.get(rcaEnabledFileLoc.toString(), "rca_master.conf").toString(),
+        Paths.get(rcaEnabledFileLoc.toString(), "rca_elected_master.conf").toString());
     rcaController =
         new RcaController(
             netOperationsExecutor,
             connectionManager,
-            clientServers.getNetClient(),
-            clientServers.getNetServer(),
-            clientServers.getHttpServer(),
+            clientServers,
             rcaEnabledFileLoc.toString(),
-            Paths.get(rcaEnabledFileLoc.toString(), "rca_elected_master.conf").toString(),
-            Paths.get(rcaEnabledFileLoc.toString(), "rca_master.conf").toString(),
-            Paths.get(rcaEnabledFileLoc.toString(), "rca.conf").toString(),
-            1,
-            1,
-            1,
-            TimeUnit.MILLISECONDS);
+            100
+        );
 
     setMyIp(masterIP, AllMetrics.NodeRole.UNKNOWN);
-    rcaController.startPollers();
-
+    controllerThread =
+        ThreadProvider.instance().createThreadForRunnable(() -> rcaController.run(), "rca-test");
+    controllerThread.start();
     // We just want to wait enough so that we all the pollers start up.
     try {
       Thread.sleep(1000);
@@ -118,8 +118,16 @@ public class RcaControllerTest {
     clientServers.getHttpServer().stop(0);
     clientServers.getNetClient().stop();
     clientServers.getNetServer().stop();
+
     // connectionManager.stop();
     dummyEsServer.stop(0);
+    controllerThread.interrupt();
+
+    try {
+      Thread.sleep(1000);
+    } catch (InterruptedException ie) {
+      ie.printStackTrace();
+    }
   }
 
   @Test

@@ -28,7 +28,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectio
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetServer;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.JvmMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
@@ -42,31 +41,23 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.emitter
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.listeners.IListener;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryMetricsRequestHandler;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks.ThreadProvider;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks.exceptions.PAThreadException;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.sun.net.httpserver.HttpServer;
-import com.sun.net.httpserver.HttpsConfigurator;
-import com.sun.net.httpserver.HttpsServer;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.security.KeyStore;
-import java.security.Security;
-import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class PerformanceAnalyzerApp {
+
   private static final int WEBSERVICE_DEFAULT_PORT = 9600;
   private static final String WEBSERVICE_PORT_CONF_NAME = "webservice-listener-port";
   private static final String WEBSERVICE_BIND_HOST_NAME = "webservice-bind-host";
@@ -84,64 +75,123 @@ public class PerformanceAnalyzerApp {
   private static Thread rcaNetServerThread = null;
 
   public static final SampleAggregator RCA_GRAPH_METRICS_AGGREGATOR =
-          new SampleAggregator(RcaGraphMetrics.values());
-  public  static final SampleAggregator RCA_RUNTIME_METRICS_AGGREGATOR =
-          new SampleAggregator(RcaRuntimeMetrics.values());
+      new SampleAggregator(RcaGraphMetrics.values());
+  public static final SampleAggregator RCA_RUNTIME_METRICS_AGGREGATOR =
+      new SampleAggregator(RcaRuntimeMetrics.values());
 
   private static final IListener MISBEHAVING_NODES_LISTENER =
-          new MisbehavingGraphOperateMethodListener();
+      new MisbehavingGraphOperateMethodListener();
   public static final SampleAggregator ERRORS_AND_EXCEPTIONS_AGGREGATOR =
-          new SampleAggregator(MISBEHAVING_NODES_LISTENER.getMeasurementsListenedTo(),
-                  MISBEHAVING_NODES_LISTENER,
-                  ExceptionsAndErrors.values());
+      new SampleAggregator(MISBEHAVING_NODES_LISTENER.getMeasurementsListenedTo(),
+          MISBEHAVING_NODES_LISTENER,
+          ExceptionsAndErrors.values());
 
   public static final SampleAggregator JVM_METRICS_AGGREGATOR =
-          new SampleAggregator(JvmMetrics.values());
+      new SampleAggregator(JvmMetrics.values());
 
   public static final RcaStatsReporter RCA_STATS_REPORTER =
-          new RcaStatsReporter(Arrays.asList(RCA_GRAPH_METRICS_AGGREGATOR,
-                  RCA_RUNTIME_METRICS_AGGREGATOR, ERRORS_AND_EXCEPTIONS_AGGREGATOR,
-                  JVM_METRICS_AGGREGATOR));
+      new RcaStatsReporter(Arrays.asList(RCA_GRAPH_METRICS_AGGREGATOR,
+          RCA_RUNTIME_METRICS_AGGREGATOR, ERRORS_AND_EXCEPTIONS_AGGREGATOR,
+          JVM_METRICS_AGGREGATOR));
   public static final PeriodicSamplers PERIODIC_SAMPLERS =
-          new PeriodicSamplers(JVM_METRICS_AGGREGATOR, AllJvmSamplers.getJvmSamplers(),
-                  (MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval) / 2,
-                  TimeUnit.MILLISECONDS);
+      new PeriodicSamplers(JVM_METRICS_AGGREGATOR, AllJvmSamplers.getJvmSamplers(),
+          (MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval) / 2,
+          TimeUnit.MILLISECONDS);
+  public static final BlockingQueue<PAThreadException> exceptionQueue = new LinkedBlockingQueue<>();
+  private static final int ERROR_HANDLING_POLLING_INTERVAL_IN_MS = 5000;
 
   public static void main(String[] args) throws Exception {
-    // Initialize settings before creating threads.
     PluginSettings settings = PluginSettings.instance();
+    final GRPCConnectionManager connectionManager = new GRPCConnectionManager(
+        settings.getHttpsEnabled());
+    final ClientServers clientServers = startServers(connectionManager);
+    startErrorHandlingThread();
+    startReaderThread();
+    startGrpcServerThread(clientServers.getNetServer());
+    startWebServerThread(clientServers.getHttpServer());
+    startRcaTopLevelThread(clientServers, connectionManager);
+  }
 
-    StatsCollector.STATS_TYPE = "agent-stats-metadata";
-    METRIC_COLLECTOR_EXECUTOR.addScheduledMetricCollector(StatsCollector.instance());
-    StatsCollector.instance().addDefaultExceptionCode(StatExceptionCode.READER_RESTART_PROCESSING);
-    METRIC_COLLECTOR_EXECUTOR.setEnabled(true);
-    METRIC_COLLECTOR_EXECUTOR.start();
+  private static void startRcaTopLevelThread(final ClientServers clientServers,
+      final GRPCConnectionManager connectionManager) {
+    rcaController =
+        new RcaController(
+            netOperationsExecutor,
+            connectionManager,
+            clientServers,
+            Util.DATA_DIR,
+            RcaConsts.RCA_STATE_CHECK_INTERVAL_IN_MS
+        );
 
-    Thread readerThread =
-        new Thread(
-            () -> {
-              while (true) {
-                try {
-                  ReaderMetricsProcessor mp =
-                      new ReaderMetricsProcessor(settings.getMetricsLocation(), true);
-                  ReaderMetricsProcessor.setCurrentInstance(mp);
-                  mp.run();
-                } catch (Throwable e) {
-                  if (TroubleshootingConfig.getEnableDevAssert()) {
-                    break;
-                  }
-                  LOG.error(
-                      "Error in ReaderMetricsProcessor...restarting, ExceptionCode: {}",
-                      StatExceptionCode.READER_RESTART_PROCESSING.toString());
-                  StatsCollector.instance()
-                      .logException(StatExceptionCode.READER_RESTART_PROCESSING);
-                }
-              }
-            });
+    Thread rcaControllerThread = ThreadProvider.instance()
+                                               .createThreadForRunnable(() -> rcaController.run(),
+                                                   "rca-controller");
+    rcaControllerThread.start();
+  }
+
+  private static void startErrorHandlingThread() {
+    final Thread errorHandlingThread = ThreadProvider.instance().createThreadForRunnable(() -> {
+      while (true) {
+        try {
+          long startTime = System.currentTimeMillis();
+          List<PAThreadException> exceptions = new ArrayList<>();
+          exceptionQueue.drainTo(exceptions);
+          for (PAThreadException e : exceptions) {
+            handle(e);
+          }
+          long duration = System.currentTimeMillis() - startTime;
+          if (duration < ERROR_HANDLING_POLLING_INTERVAL_IN_MS) {
+            Thread.sleep(ERROR_HANDLING_POLLING_INTERVAL_IN_MS - duration);
+          }
+        } catch (InterruptedException ie) {
+          LOG.error("Exception handling thread was interrupted. Cause: {}", ie.getCause(), ie);
+        }
+      }
+    }, "pa-err-handler");
+
+    errorHandlingThread.start();
+  }
+
+  private static void handle(PAThreadException exception) {
+    LOG.error("Thread: {} ran into an uncaught exception: {}", exception.getThreadName(),
+        exception.getInnerThrowable());
+  }
+
+  private static void startWebServerThread(final HttpServer server) {
+    final Thread webServerThread = ThreadProvider.instance().createThreadForRunnable(server::start,
+        "pa-web-server");
+    webServerThread.start();
+  }
+
+  private static void startGrpcServerThread(final NetServer server) {
+    final Thread grpcServerThread = ThreadProvider.instance()
+                                                  .createThreadForRunnable(server, "grpc-server");
+    grpcServerThread.start();
+  }
+
+  private static void startReaderThread() {
+    PluginSettings settings = PluginSettings.instance();
+    final Thread readerThread = ThreadProvider.instance().createThreadForRunnable(() -> {
+      while (true) {
+        try {
+          ReaderMetricsProcessor mp =
+              new ReaderMetricsProcessor(settings.getMetricsLocation(), true);
+          ReaderMetricsProcessor.setCurrentInstance(mp);
+          mp.run();
+        } catch (Throwable e) {
+          if (TroubleshootingConfig.getEnableDevAssert()) {
+            break;
+          }
+          LOG.error(
+              "Error in ReaderMetricsProcessor...restarting, ExceptionCode: {}",
+              StatExceptionCode.READER_RESTART_PROCESSING.toString());
+          StatsCollector.instance()
+                        .logException(StatExceptionCode.READER_RESTART_PROCESSING);
+        }
+      }
+    }, "pa-reader");
+
     readerThread.start();
-
-    ClientServers clientServers = startServers();
-    startRcaController(clientServers);
   }
 
   /**
@@ -152,176 +202,18 @@ public class PerformanceAnalyzerApp {
    *
    * @return gRPC client and the gRPC server and the httpServer wrapped in a class.
    */
-  public static ClientServers startServers() {
+  public static ClientServers startServers(final GRPCConnectionManager connectionManager) {
     boolean useHttps = PluginSettings.instance().getHttpsEnabled();
 
-    GRPCConnectionManager connectionManager = new GRPCConnectionManager(useHttps);
     NetServer netServer = new NetServer(Util.RPC_PORT, 1, useHttps);
     NetClient netClient = new NetClient(connectionManager);
     MetricsRestUtil metricsRestUtil = new MetricsRestUtil();
 
     netServer.setMetricsHandler(new MetricsServerHandler());
-    startRpcServerThread(netServer);
-    HttpServer httpServer = createInternalServer(PluginSettings.instance(), getPortNumber());
+    HttpServer httpServer =
+        PerformanceAnalyzerWebServer.createInternalServer(PluginSettings.instance());
     httpServer.createContext(QUERY_URL, new QueryMetricsRequestHandler(netClient, metricsRestUtil));
 
     return new ClientServers(httpServer, netServer, netClient);
-  }
-
-  /** This starts the GRPC server in a thread of its own. */
-  private static void startRpcServerThread(NetServer netServer) {
-    rcaNetServerThread = new Thread(netServer);
-    rcaNetServerThread.start();
-  }
-
-  /**
-   * This starts the necessary threads to facilitate the running of the RCA framework. This may or
-   * may not cause the RCA to start. RCA is started only if enableRCA flag is set through POST
-   * request, otherwise, this method just spins up the necessary threads to start RCA on demand
-   * without requiring a process restart.
-   *
-   * @param clientServers The httpServer, the gRPC server and client wrapper.
-   */
-  private static void startRcaController(ClientServers clientServers) {
-    boolean useHttps = PluginSettings.instance().getHttpsEnabled();
-
-    GRPCConnectionManager connectionManager = new GRPCConnectionManager(useHttps);
-    rcaController =
-        new RcaController(
-            netOperationsExecutor,
-            connectionManager,
-            clientServers.getNetClient(),
-            clientServers.getNetServer(),
-            clientServers.getHttpServer(),
-            Util.DATA_DIR,
-            RcaConsts.RCA_CONF_MASTER_PATH,
-            RcaConsts.RCA_CONF_IDLE_MASTER_PATH,
-            RcaConsts.RCA_CONF_PATH,
-            RcaConsts.rcaNannyPollerPeriodicity,
-            RcaConsts.rcaConfPollerPeriodicity,
-            RcaConsts.nodeRolePollerPeriodicity,
-            RcaConsts.rcaPollerPeriodicityTimeUnit);
-
-    rcaController.startPollers();
-  }
-
-  public static HttpServer createInternalServer(PluginSettings settings, int internalPort) {
-    try {
-      Security.addProvider(new BouncyCastleProvider());
-      HttpServer server;
-      if (settings.getHttpsEnabled()) {
-        server = createHttpsServer(internalPort);
-      } else {
-        server = createHttpServer(internalPort);
-      }
-      server.setExecutor(Executors.newCachedThreadPool());
-      server.start();
-      return server;
-    } catch (java.net.BindException ex) {
-      Runtime.getRuntime().halt(1);
-    } catch (Exception ex) {
-      ex.printStackTrace();
-      Runtime.getRuntime().halt(1);
-    }
-
-    return null;
-  }
-
-  private static HttpServer createHttpsServer(int readerPort) throws Exception {
-    HttpsServer server = null;
-    String bindHost = getBindHost();
-    if (bindHost != null && !bindHost.trim().isEmpty()) {
-      LOG.info("Binding to Interface: {}", bindHost);
-      server =
-          HttpsServer.create(
-              new InetSocketAddress(InetAddress.getByName(bindHost.trim()), readerPort),
-              INCOMING_QUEUE_LENGTH);
-    } else {
-      LOG.info(
-          "Value Not Configured for: {} Using default value: binding to all interfaces",
-          WEBSERVICE_BIND_HOST_NAME);
-      server = HttpsServer.create(new InetSocketAddress(readerPort), INCOMING_QUEUE_LENGTH);
-    }
-
-    TrustManager[] trustAllCerts =
-        new TrustManager[] {
-          new X509TrustManager() {
-
-            public X509Certificate[] getAcceptedIssuers() {
-              return null;
-            }
-
-            public void checkClientTrusted(X509Certificate[] certs, String authType) {}
-
-            public void checkServerTrusted(X509Certificate[] certs, String authType) {}
-          }
-        };
-
-    HostnameVerifier allHostsValid =
-        new HostnameVerifier() {
-          public boolean verify(String hostname, SSLSession session) {
-            return true;
-          }
-        };
-
-    // Install the all-trusting trust manager
-    SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
-
-    KeyStore ks = CertificateUtils.createKeyStore();
-    KeyManagerFactory kmf = KeyManagerFactory.getInstance("NewSunX509");
-    kmf.init(ks, CertificateUtils.IN_MEMORY_PWD.toCharArray());
-    sslContext.init(kmf.getKeyManagers(), trustAllCerts, null);
-
-    HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
-    HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
-    server.setHttpsConfigurator(new HttpsConfigurator(sslContext));
-    return server;
-  }
-
-  private static HttpServer createHttpServer(int readerPort) throws Exception {
-    HttpServer server = null;
-    String bindHost = getBindHost();
-    if (bindHost != null && !bindHost.trim().isEmpty()) {
-      LOG.info("Binding to Interface: {}", bindHost);
-      server =
-          HttpServer.create(
-              new InetSocketAddress(InetAddress.getByName(bindHost.trim()), readerPort),
-              INCOMING_QUEUE_LENGTH);
-    } else {
-      LOG.info(
-          "Value Not Configured for: {} Using default value: binding to all interfaces",
-          WEBSERVICE_BIND_HOST_NAME);
-      server = HttpServer.create(new InetSocketAddress(readerPort), INCOMING_QUEUE_LENGTH);
-    }
-
-    return server;
-  }
-
-  private static int getPortNumber() {
-    String readerPortValue;
-    try {
-      readerPortValue = PluginSettings.instance().getSettingValue(WEBSERVICE_PORT_CONF_NAME);
-
-      if (readerPortValue == null) {
-        LOG.info(
-            "{} not configured; using default value: {}",
-            WEBSERVICE_PORT_CONF_NAME,
-            WEBSERVICE_DEFAULT_PORT);
-        return WEBSERVICE_DEFAULT_PORT;
-      }
-
-      return Integer.parseInt(readerPortValue);
-    } catch (Exception ex) {
-      LOG.error(
-          "Invalid Configuration: {} Using default value: {} AND Error: {}",
-          WEBSERVICE_PORT_CONF_NAME,
-          WEBSERVICE_DEFAULT_PORT,
-          ex.toString());
-      return WEBSERVICE_DEFAULT_PORT;
-    }
-  }
-
-  private static String getBindHost() {
-    return PluginSettings.instance().getSettingValue(WEBSERVICE_BIND_HOST_NAME);
   }
 }
