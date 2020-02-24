@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerThreads;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
@@ -142,9 +143,9 @@ public class PersistFlowUnitAndSummaryTest {
             persistable,
             new WireHopper(null, null, null, null, null));
     scheduler.setRole(role);
+    ThreadProvider threadProvider = new ThreadProvider();
     Thread rcaSchedulerThread =
-        ThreadProvider.instance().createThreadForRunnable(scheduler::start, "rca-sched"
-            + "-thread");
+        threadProvider.createThreadForRunnable(scheduler::start, PerformanceAnalyzerThreads.RCA_SCHEDULER);
     rcaSchedulerThread.start();
     return scheduler;
   }

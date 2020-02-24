@@ -1,6 +1,8 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerThreads;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks.exceptions.PAThreadException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -8,40 +10,26 @@ import org.apache.logging.log4j.Logger;
 public class ThreadProvider {
 
   private static final Logger LOG = LogManager.getLogger(ThreadProvider.class);
-  private static volatile ThreadProvider _instance = null;
-  private int numberOfThreadsSpunUp = 0;
+  private static final String PA_THREADS_SPUN_METRIC_NAME = "NumberOfPAThreads";
 
-  /**
-   * Empty private default ctor to prevent instantiation.
-   */
-  private ThreadProvider() {
-  }
-
-  public static ThreadProvider instance() {
-    if (_instance != null) {
-      return _instance;
-    }
-
-    _instance = new ThreadProvider();
-    return _instance;
-  }
-
-  public Thread createThreadForRunnable(final Runnable innerRunnable, final String name) {
+  public synchronized Thread createThreadForRunnable(final Runnable innerRunnable,
+      final PerformanceAnalyzerThreads paThread) {
     Thread t = new Thread(() -> {
       try {
         innerRunnable.run();
       } catch (Throwable innerThrowable) {
-        if (!PerformanceAnalyzerApp.exceptionQueue.offer(new PAThreadException(name,
-            innerThrowable))) {
-          LOG.error("Unable to write to exception queue. Dropping exception: {}",
-              innerThrowable.getMessage(), innerThrowable.getCause());
+        try {
+          PerformanceAnalyzerApp.exceptionQueue.put(new PAThreadException(paThread,
+              innerThrowable));
+        } catch (InterruptedException e) {
+          LOG.error("Thread was interrupted while waiting to put an exception into the queue. "
+              + "Message: {}", e.getMessage(), e);
         }
       }
     });
 
-    LOG.info("Spun up a thread with name: {}", name);
-    this.numberOfThreadsSpunUp++;
-
+    LOG.info("Spun up a thread with name: {}", paThread.toString());
+    StatsCollector.instance().logMetric(PA_THREADS_SPUN_METRIC_NAME);
     return t;
   }
 }

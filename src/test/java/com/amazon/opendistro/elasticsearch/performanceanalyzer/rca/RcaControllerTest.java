@@ -2,6 +2,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.ClientServers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerThreads;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
@@ -42,9 +43,11 @@ public class RcaControllerTest {
   private RcaController rcaController;
   private String masterIP;
   private Thread controllerThread;
+  private ThreadProvider threadProvider;
 
   @Before
   public void setUp() throws IOException {
+    threadProvider = new ThreadProvider();
     String cwd = System.getProperty("user.dir");
     rcaEnabledFileLoc = Paths.get(cwd, "src", "test", "resources", "rca");
     rcaEnabledFile = Paths.get(rcaEnabledFileLoc.toString(), RcaController.getRcaEnabledConfFile());
@@ -53,7 +56,7 @@ public class RcaControllerTest {
             3, new ThreadFactoryBuilder().setNameFormat("test-network-thread-%d").build());
     boolean useHttps = PluginSettings.instance().getHttpsEnabled();
     connectionManager = new GRPCConnectionManager(useHttps);
-    clientServers = PerformanceAnalyzerApp.startServers(connectionManager);
+    clientServers = PerformanceAnalyzerApp.createClientServers(connectionManager);
     clientServers.getHttpServer().start();
 
     URI uri = URI.create(RcaController.getCatMasterUrl());
@@ -88,6 +91,7 @@ public class RcaControllerTest {
         Paths.get(rcaEnabledFileLoc.toString(), "rca_elected_master.conf").toString());
     rcaController =
         new RcaController(
+            threadProvider,
             netOperationsExecutor,
             connectionManager,
             clientServers,
@@ -98,7 +102,8 @@ public class RcaControllerTest {
 
     setMyIp(masterIP, AllMetrics.NodeRole.UNKNOWN);
     controllerThread =
-        ThreadProvider.instance().createThreadForRunnable(() -> rcaController.run(), "rca-test");
+        threadProvider.createThreadForRunnable(() -> rcaController.run(),
+            PerformanceAnalyzerThreads.RCA_CONTROLLER);
     controllerThread.start();
     // We just want to wait enough so that we all the pollers start up.
     try {

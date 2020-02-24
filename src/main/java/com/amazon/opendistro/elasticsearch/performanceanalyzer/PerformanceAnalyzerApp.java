@@ -45,24 +45,16 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks.ThreadProvi
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks.exceptions.PAThreadException;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.sun.net.httpserver.HttpServer;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class PerformanceAnalyzerApp {
-
-  private static final int WEBSERVICE_DEFAULT_PORT = 9600;
-  private static final String WEBSERVICE_PORT_CONF_NAME = "webservice-listener-port";
-  private static final String WEBSERVICE_BIND_HOST_NAME = "webservice-bind-host";
-  // Use system default for max backlog.
-  private static final int INCOMING_QUEUE_LENGTH = 1;
   // current number of threads spawned through the thread provider.
   private static final int EXCEPTION_QUEUE_LENGTH = 5;
   public static final String QUERY_URL = "/_opendistro/_performanceanalyzer/metrics";
@@ -74,7 +66,7 @@ public class PerformanceAnalyzerApp {
           2, new ThreadFactoryBuilder().setNameFormat("network-thread-%d").build());
 
   private static RcaController rcaController = null;
-  private static Thread rcaNetServerThread = null;
+  private static final ThreadProvider THREAD_PROVIDER = new ThreadProvider();
 
   public static final SampleAggregator RCA_GRAPH_METRICS_AGGREGATOR =
       new SampleAggregator(RcaGraphMetrics.values());
@@ -100,14 +92,19 @@ public class PerformanceAnalyzerApp {
           (MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval) / 2,
           TimeUnit.MILLISECONDS);
   public static final BlockingQueue<PAThreadException> exceptionQueue =
-      new LinkedBlockingQueue<>(EXCEPTION_QUEUE_LENGTH);
-  private static final int ERROR_HANDLING_POLLING_INTERVAL_IN_MS = 5000;
+      new ArrayBlockingQueue<>(EXCEPTION_QUEUE_LENGTH);
 
   public static void main(String[] args) throws Exception {
     PluginSettings settings = PluginSettings.instance();
+    StatsCollector.STATS_TYPE = "agent-stats-metadata";
+    METRIC_COLLECTOR_EXECUTOR.addScheduledMetricCollector(StatsCollector.instance());
+    StatsCollector.instance().addDefaultExceptionCode(StatExceptionCode.READER_RESTART_PROCESSING);
+    METRIC_COLLECTOR_EXECUTOR.setEnabled(true);
+    METRIC_COLLECTOR_EXECUTOR.start();
+
     final GRPCConnectionManager connectionManager = new GRPCConnectionManager(
         settings.getHttpsEnabled());
-    final ClientServers clientServers = startServers(connectionManager);
+    final ClientServers clientServers = createClientServers(connectionManager);
     startErrorHandlingThread();
     startReaderThread();
     startGrpcServerThread(clientServers.getNetServer());
@@ -119,6 +116,7 @@ public class PerformanceAnalyzerApp {
       final GRPCConnectionManager connectionManager) {
     rcaController =
         new RcaController(
+            THREAD_PROVIDER,
             netOperationsExecutor,
             connectionManager,
             clientServers,
@@ -127,55 +125,63 @@ public class PerformanceAnalyzerApp {
             RcaConsts.nodeRolePollerPeriodicityInSeconds * 1000
         );
 
-    Thread rcaControllerThread = ThreadProvider.instance()
-                                               .createThreadForRunnable(() -> rcaController.run(),
-                                                   "rca-controller");
+    Thread rcaControllerThread = THREAD_PROVIDER.createThreadForRunnable(() -> rcaController.run(),
+        PerformanceAnalyzerThreads.RCA_CONTROLLER);
     rcaControllerThread.start();
   }
 
   private static void startErrorHandlingThread() {
-    final Thread errorHandlingThread = ThreadProvider.instance().createThreadForRunnable(() -> {
+    final Thread errorHandlingThread = THREAD_PROVIDER.createThreadForRunnable(() -> {
       while (true) {
         try {
-          long startTime = System.currentTimeMillis();
-          List<PAThreadException> exceptions = new ArrayList<>();
-          exceptionQueue.drainTo(exceptions);
-          for (PAThreadException e : exceptions) {
-            handle(e);
-          }
-          long duration = System.currentTimeMillis() - startTime;
-          if (duration < ERROR_HANDLING_POLLING_INTERVAL_IN_MS) {
-            Thread.sleep(ERROR_HANDLING_POLLING_INTERVAL_IN_MS - duration);
-          }
-        } catch (InterruptedException ie) {
-          LOG.error("Exception handling thread was interrupted. Cause: {}", ie.getCause(), ie);
+          final PAThreadException exception = exceptionQueue.take();
+          handle(exception);
+        } catch (InterruptedException e) {
+          LOG.error("Exception handling thread interrupted. Reason: {}", e.getMessage(), e);
+          break;
         }
       }
-    }, "pa-err-handler");
+    }, PerformanceAnalyzerThreads.PA_ERROR_HANDLER);
 
     errorHandlingThread.start();
   }
 
+  /**
+   * Handles any exception thrown from the threads which are not handled by the thread itself.
+   * @param exception The exception thrown from the thread.
+   */
   private static void handle(PAThreadException exception) {
-    LOG.error("Thread: {} ran into an uncaught exception: {}", exception.getThreadName(),
+    // Currently this will only log an exception and increment a metric indicating that the
+    // thread has died.
+    // As an improvement to this functionality, once we know what exceptions are retryable, we
+    // can have each thread also register an error handler for itself. This handler will know
+    // what to do when the thread has stopped due to an unexpected exception.
+    LOG.error("Thread: {} ran into an uncaught exception: {}", exception.getPaThreadName(),
         exception.getInnerThrowable());
+    StatsCollector.instance().logException(exception.getExceptionCode());
   }
 
   private static void startWebServerThread(final HttpServer server) {
-    final Thread webServerThread = ThreadProvider.instance().createThreadForRunnable(server::start,
-        "pa-web-server");
+    final Thread webServerThread = THREAD_PROVIDER
+        .createThreadForRunnable(server::start, PerformanceAnalyzerThreads.WEB_SERVER);
+    // We don't want to hold up the app from restarting just because the web server is up and all
+    // other threads have died.
+    webServerThread.setDaemon(true);
     webServerThread.start();
   }
 
   private static void startGrpcServerThread(final NetServer server) {
-    final Thread grpcServerThread = ThreadProvider.instance()
-                                                  .createThreadForRunnable(server, "grpc-server");
+    final Thread grpcServerThread = THREAD_PROVIDER.createThreadForRunnable(server,
+        PerformanceAnalyzerThreads.GRPC_SERVER);
+    // We don't want to hold up the app from restarting just because the grpc server is up and
+    // all other threads have died.
+    grpcServerThread.setDaemon(true);
     grpcServerThread.start();
   }
 
   private static void startReaderThread() {
     PluginSettings settings = PluginSettings.instance();
-    final Thread readerThread = ThreadProvider.instance().createThreadForRunnable(() -> {
+    final Thread readerThread = THREAD_PROVIDER.createThreadForRunnable(() -> {
       while (true) {
         try {
           ReaderMetricsProcessor mp =
@@ -193,7 +199,7 @@ public class PerformanceAnalyzerApp {
                         .logException(StatExceptionCode.READER_RESTART_PROCESSING);
         }
       }
-    }, "pa-reader");
+    }, PerformanceAnalyzerThreads.PA_READER);
 
     readerThread.start();
   }
@@ -206,7 +212,7 @@ public class PerformanceAnalyzerApp {
    *
    * @return gRPC client and the gRPC server and the httpServer wrapped in a class.
    */
-  public static ClientServers startServers(final GRPCConnectionManager connectionManager) {
+  public static ClientServers createClientServers(final GRPCConnectionManager connectionManager) {
     boolean useHttps = PluginSettings.instance().getHttpsEnabled();
 
     NetServer netServer = new NetServer(Util.RPC_PORT, 1, useHttps);

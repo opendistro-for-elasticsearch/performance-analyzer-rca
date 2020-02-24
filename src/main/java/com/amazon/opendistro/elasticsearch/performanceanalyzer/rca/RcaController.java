@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.ClientServers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerThreads;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
@@ -87,6 +88,7 @@ public class RcaController {
   // This needs to be volatile as the NodeRolePoller writes it but the Nanny reads it.
   private volatile NodeRole currentRole = NodeRole.UNKNOWN;
 
+  private final ThreadProvider threadProvider;
   private RCAScheduler rcaScheduler;
 
   private NetPersistor netPersistor;
@@ -109,12 +111,14 @@ public class RcaController {
   private ReceivedFlowUnitStore receivedFlowUnitStore;
 
   public RcaController(
+      final ThreadProvider threadProvider,
       final ScheduledExecutorService netOpsExecutorService,
       final GRPCConnectionManager grpcConnectionManager,
       final ClientServers clientServers,
       final String rca_enabled_conf_location,
       final long rcaStateCheckIntervalMillis,
       final long nodeRoleCheckPeriodicityMillis) {
+    this.threadProvider = threadProvider;
     this.netOpsExecutorService = netOpsExecutorService;
     this.rcaNetClient = clientServers.getNetClient();
     this.rcaNetServer = clientServers.getNetServer();
@@ -155,9 +159,8 @@ public class RcaController {
           new SubscribeServerHandler(subscriptionManager, networkThreadPoolReference));
 
       rcaScheduler.setRole(currentRole);
-      Thread rcaSchedulerThread = ThreadProvider.instance()
-                                                .createThreadForRunnable(() -> rcaScheduler.start(),
-                                                    "rca-scheduler");
+      Thread rcaSchedulerThread = threadProvider.createThreadForRunnable(() -> rcaScheduler.start(),
+          PerformanceAnalyzerThreads.RCA_SCHEDULER);
 
       rcaSchedulerThread.start();
     } catch (ClassNotFoundException
