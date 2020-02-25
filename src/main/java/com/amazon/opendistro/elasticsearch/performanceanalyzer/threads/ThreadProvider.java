@@ -40,7 +40,7 @@ public class ThreadProvider {
    * @param paThread      The thread enum value from {@link PerformanceAnalyzerThreads}
    * @return The thread with the wrapped runnable.
    */
-  public synchronized Thread createThreadForRunnable(final Runnable innerRunnable,
+  public Thread createThreadForRunnable(final Runnable innerRunnable,
       final PerformanceAnalyzerThreads paThread) {
     Thread t = new Thread(() -> {
       try {
