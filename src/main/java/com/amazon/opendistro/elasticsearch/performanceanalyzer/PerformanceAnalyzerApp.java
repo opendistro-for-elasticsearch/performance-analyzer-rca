@@ -55,8 +55,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class PerformanceAnalyzerApp {
-  // current number of threads spawned through the thread provider.
-  private static final int EXCEPTION_QUEUE_LENGTH = 5;
+  private static final int EXCEPTION_QUEUE_LENGTH = 1;
   public static final String QUERY_URL = "/_opendistro/_performanceanalyzer/metrics";
   private static final Logger LOG = LogManager.getLogger(PerformanceAnalyzerApp.class);
   private static final ScheduledMetricCollectorsExecutor METRIC_COLLECTOR_EXECUTOR =
