@@ -111,6 +111,7 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
       LOG.info(" gRPC server terminating..");
     } catch (InterruptedException | IOException e) {
       e.printStackTrace();
+      server.shutdownNow();
     }
   }
 

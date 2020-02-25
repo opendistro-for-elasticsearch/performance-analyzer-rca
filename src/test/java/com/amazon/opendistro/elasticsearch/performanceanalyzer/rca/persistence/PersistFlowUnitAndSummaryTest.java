@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerThreads;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
@@ -41,6 +42,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.MetricsD
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
 import java.nio.file.Paths;
 import java.util.Collections;
 import org.junit.After;
@@ -141,7 +143,10 @@ public class PersistFlowUnitAndSummaryTest {
             persistable,
             new WireHopper(null, null, null, null, null));
     scheduler.setRole(role);
-    scheduler.start();
+    ThreadProvider threadProvider = new ThreadProvider();
+    Thread rcaSchedulerThread =
+        threadProvider.createThreadForRunnable(scheduler::start, PerformanceAnalyzerThreads.RCA_SCHEDULER);
+    rcaSchedulerThread.start();
     return scheduler;
   }
 

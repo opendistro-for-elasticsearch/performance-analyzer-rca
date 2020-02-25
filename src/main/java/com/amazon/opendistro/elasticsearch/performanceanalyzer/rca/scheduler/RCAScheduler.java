@@ -15,25 +15,18 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ThresholdMain;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
@@ -54,7 +47,7 @@ public class RCAScheduler {
 
   private WireHopper net;
   private boolean shutdownRequested;
-  private RcaSchedulerState schedulerState = RcaSchedulerState.STATE_NOT_STARTED;
+  private volatile RcaSchedulerState schedulerState = RcaSchedulerState.STATE_NOT_STARTED;
   private NodeRole role = NodeRole.UNKNOWN;
   final ThreadFactory schedThreadFactory =
       new ThreadFactoryBuilder().setNameFormat("sched-%d").setDaemon(true).build();
@@ -72,6 +65,7 @@ public class RCAScheduler {
   ThresholdMain thresholdMain;
   Persistable persistable;
   static final int PERIODICITY_SECONDS = 1;
+  static final int PERIODICITY_IN_MS = PERIODICITY_SECONDS * 1000;
   ScheduledFuture<?> futureHandle;
 
   private static final Logger LOG = LogManager.getLogger(RCAScheduler.class);
@@ -99,50 +93,28 @@ public class RCAScheduler {
     createExecutorPools();
 
     if (scheduledPool != null && role != NodeRole.UNKNOWN) {
-      futureHandle =
-          scheduledPool.scheduleAtFixedRate(
-              new RCASchedulerTask(
-                  10000, rcaSchedulerPeriodicExecutor, connectedComponents, db, persistable, rcaConf, net),
-              1,
-              PERIODICITY_SECONDS,
-              TimeUnit.SECONDS);
-      startExceptionHandlerThread();
       schedulerState = RcaSchedulerState.STATE_STARTED;
+
+      final RCASchedulerTask task = new RCASchedulerTask(
+          10000, rcaSchedulerPeriodicExecutor, connectedComponents, db, persistable, rcaConf, net);
+      while (schedulerState == RcaSchedulerState.STATE_STARTED) {
+        try {
+          long startTime = System.currentTimeMillis();
+          task.run();
+          long duration = System.currentTimeMillis() - startTime;
+          if (duration < PERIODICITY_IN_MS) {
+            Thread.sleep(PERIODICITY_IN_MS - duration);
+          }
+        } catch (InterruptedException ie) {
+          LOG.error("Rca scheduler thread sleep interrupted. Reason: {}", ie.getMessage());
+          LOG.error(ie);
+          shutdown();
+          schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
+        }
+      }
     } else {
       LOG.error("Couldn't start RCA scheduler. Executor pool is not set.");
     }
-  }
-
-  // This thread exists for exception handling and error recovery and safe shutdown. This is called
-  // from within
-  // the start method. This creates a new thread and waits on the future to complete. If it catches
-  // an exception,
-  // then it does a clean shutdown nd logs the shutdown event.
-  private void startExceptionHandlerThread() {
-    new Thread(
-            () -> {
-              while (true) {
-                try {
-                  futureHandle.get();
-                } catch (RejectedExecutionException
-                    | ExecutionException
-                    | CancellationException ex) {
-                  if (!shutdownRequested) {
-                    LOG.error("RCA Exception cause : {}", ex.getCause());
-                    PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
-                            ExceptionsAndErrors.RCA_FRAMEWORK_CRASH, ex.getCause().toString(), 1);
-                    shutdown();
-                    schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
-                    StatsCollector.instance().logException(StatExceptionCode.RCA_SCHEDULER_STOPPED_ERROR);
-                  }
-                } catch (InterruptedException ix) {
-                  LOG.error("RCA Interrupted exception cause : {}", ix.getCause());
-                  shutdown();
-                  schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
-                }
-              }
-            })
-        .start();
   }
 
   /**
