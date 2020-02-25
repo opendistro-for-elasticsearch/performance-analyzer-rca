@@ -42,7 +42,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.MetricsD
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks.ThreadProvider;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
 import java.nio.file.Paths;
 import java.util.Collections;
 import org.junit.After;

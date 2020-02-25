@@ -10,7 +10,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCA
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RcaSchedulerState;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks.ThreadProvider;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;

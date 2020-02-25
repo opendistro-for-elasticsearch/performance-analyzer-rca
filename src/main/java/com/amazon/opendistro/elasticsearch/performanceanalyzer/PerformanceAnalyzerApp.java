@@ -41,8 +41,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.emitter
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.listeners.IListener;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryMetricsRequestHandler;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks.ThreadProvider;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks.exceptions.PAThreadException;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.exceptions.PAThreadException;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.sun.net.httpserver.HttpServer;
 import java.util.Arrays;

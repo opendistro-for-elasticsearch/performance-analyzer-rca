@@ -49,7 +49,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.Rca
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryRcaRequestHandler;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.tasks.ThreadProvider;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
