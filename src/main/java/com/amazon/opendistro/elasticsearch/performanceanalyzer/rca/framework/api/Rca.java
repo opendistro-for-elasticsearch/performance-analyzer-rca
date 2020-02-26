@@ -58,7 +58,7 @@ public abstract class Rca<T extends ResourceFlowUnit> extends NonLeafNode<T> {
     PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
         RcaGraphMetrics.GRAPH_NODE_OPERATE_CALL, this.name(), duration);
 
-    setFlowUnits(Collections.singletonList(result));
+    setLocalFlowUnit(result);
   }
 
   @Override
