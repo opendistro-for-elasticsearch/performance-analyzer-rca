@@ -52,6 +52,12 @@ private static final long serialVersionUID = 0L;
             resourceTypeOneof_ = rawValue;
             break;
           }
+          case 16: {
+            int rawValue = input.readEnum();
+            resourceTypeOneofCase_ = 2;
+            resourceTypeOneof_ = rawValue;
+            break;
+          }
           default: {
             if (!parseUnknownField(
                 input, unknownFields, extensionRegistry, tag)) {
@@ -89,6 +95,7 @@ private static final long serialVersionUID = 0L;
   public enum ResourceTypeOneofCase
       implements com.google.protobuf.Internal.EnumLite {
     JVM(1),
+    HARDWARE_RESOURCE_TYPE(2),
     RESOURCETYPEONEOF_NOT_SET(0);
     private final int value;
     private ResourceTypeOneofCase(int value) {
@@ -105,6 +112,7 @@ private static final long serialVersionUID = 0L;
     public static ResourceTypeOneofCase forNumber(int value) {
       switch (value) {
         case 1: return JVM;
+        case 2: return HARDWARE_RESOURCE_TYPE;
         case 0: return RESOURCETYPEONEOF_NOT_SET;
         default: return null;
       }
@@ -143,6 +151,29 @@ private static final long serialVersionUID = 0L;
     return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum.OLD_GEN;
   }
 
+  public static final int HARDWARE_RESOURCE_TYPE_FIELD_NUMBER = 2;
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum hardware_resource_type = 2;</code>
+   */
+  public int getHardwareResourceTypeValue() {
+    if (resourceTypeOneofCase_ == 2) {
+      return (java.lang.Integer) resourceTypeOneof_;
+    }
+    return 0;
+  }
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum hardware_resource_type = 2;</code>
+   */
+  public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum getHardwareResourceType() {
+    if (resourceTypeOneofCase_ == 2) {
+      @SuppressWarnings("deprecation")
+      com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum result = com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum.valueOf(
+          (java.lang.Integer) resourceTypeOneof_);
+      return result == null ? com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum.UNRECOGNIZED : result;
+    }
+    return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum.CPU;
+  }
+
   private byte memoizedIsInitialized = -1;
   @java.lang.Override
   public final boolean isInitialized() {
@@ -160,6 +191,9 @@ private static final long serialVersionUID = 0L;
     if (resourceTypeOneofCase_ == 1) {
       output.writeEnum(1, ((java.lang.Integer) resourceTypeOneof_));
     }
+    if (resourceTypeOneofCase_ == 2) {
+      output.writeEnum(2, ((java.lang.Integer) resourceTypeOneof_));
+    }
     unknownFields.writeTo(output);
   }
 
@@ -172,6 +206,10 @@ private static final long serialVersionUID = 0L;
     if (resourceTypeOneofCase_ == 1) {
       size += com.google.protobuf.CodedOutputStream
         .computeEnumSize(1, ((java.lang.Integer) resourceTypeOneof_));
+    }
+    if (resourceTypeOneofCase_ == 2) {
+      size += com.google.protobuf.CodedOutputStream
+        .computeEnumSize(2, ((java.lang.Integer) resourceTypeOneof_));
     }
     size += unknownFields.getSerializedSize();
     memoizedSize = size;
@@ -194,6 +232,10 @@ private static final long serialVersionUID = 0L;
         if (getJVMValue()
             != other.getJVMValue()) return false;
         break;
+      case 2:
+        if (getHardwareResourceTypeValue()
+            != other.getHardwareResourceTypeValue()) return false;
+        break;
       case 0:
       default:
     }
@@ -212,6 +254,10 @@ private static final long serialVersionUID = 0L;
       case 1:
         hash = (37 * hash) + JVM_FIELD_NUMBER;
         hash = (53 * hash) + getJVMValue();
+        break;
+      case 2:
+        hash = (37 * hash) + HARDWARE_RESOURCE_TYPE_FIELD_NUMBER;
+        hash = (53 * hash) + getHardwareResourceTypeValue();
         break;
       case 0:
       default:
@@ -384,6 +430,9 @@ private static final long serialVersionUID = 0L;
       if (resourceTypeOneofCase_ == 1) {
         result.resourceTypeOneof_ = resourceTypeOneof_;
       }
+      if (resourceTypeOneofCase_ == 2) {
+        result.resourceTypeOneof_ = resourceTypeOneof_;
+      }
       result.resourceTypeOneofCase_ = resourceTypeOneofCase_;
       onBuilt();
       return result;
@@ -436,6 +485,10 @@ private static final long serialVersionUID = 0L;
       switch (other.getResourceTypeOneofCase()) {
         case JVM: {
           setJVMValue(other.getJVMValue());
+          break;
+        }
+        case HARDWARE_RESOURCE_TYPE: {
+          setHardwareResourceTypeValue(other.getHardwareResourceTypeValue());
           break;
         }
         case RESOURCETYPEONEOF_NOT_SET: {
@@ -533,6 +586,60 @@ private static final long serialVersionUID = 0L;
      */
     public Builder clearJVM() {
       if (resourceTypeOneofCase_ == 1) {
+        resourceTypeOneofCase_ = 0;
+        resourceTypeOneof_ = null;
+        onChanged();
+      }
+      return this;
+    }
+
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum hardware_resource_type = 2;</code>
+     */
+    public int getHardwareResourceTypeValue() {
+      if (resourceTypeOneofCase_ == 2) {
+        return ((java.lang.Integer) resourceTypeOneof_).intValue();
+      }
+      return 0;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum hardware_resource_type = 2;</code>
+     */
+    public Builder setHardwareResourceTypeValue(int value) {
+      resourceTypeOneofCase_ = 2;
+      resourceTypeOneof_ = value;
+      onChanged();
+      return this;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum hardware_resource_type = 2;</code>
+     */
+    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum getHardwareResourceType() {
+      if (resourceTypeOneofCase_ == 2) {
+        @SuppressWarnings("deprecation")
+        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum result = com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum.valueOf(
+            (java.lang.Integer) resourceTypeOneof_);
+        return result == null ? com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum.UNRECOGNIZED : result;
+      }
+      return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum.CPU;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum hardware_resource_type = 2;</code>
+     */
+    public Builder setHardwareResourceType(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum value) {
+      if (value == null) {
+        throw new NullPointerException();
+      }
+      resourceTypeOneofCase_ = 2;
+      resourceTypeOneof_ = value.getNumber();
+      onChanged();
+      return this;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum hardware_resource_type = 2;</code>
+     */
+    public Builder clearHardwareResourceType() {
+      if (resourceTypeOneofCase_ == 2) {
         resourceTypeOneofCase_ = 0;
         resourceTypeOneof_ = null;
         onChanged();

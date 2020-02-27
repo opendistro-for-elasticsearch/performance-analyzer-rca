@@ -21,17 +21,17 @@ public interface HotResourceSummaryMessageOrBuilder extends
   com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOrBuilder getResourceTypeOrBuilder();
 
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ConsumersList consumers = 2;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.TopConsumerSummaryList consumers = 2;</code>
    */
   boolean hasConsumers();
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ConsumersList consumers = 2;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.TopConsumerSummaryList consumers = 2;</code>
    */
-  com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ConsumersList getConsumers();
+  com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.TopConsumerSummaryList getConsumers();
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ConsumersList consumers = 2;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.TopConsumerSummaryList consumers = 2;</code>
    */
-  com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ConsumersListOrBuilder getConsumersOrBuilder();
+  com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.TopConsumerSummaryListOrBuilder getConsumersOrBuilder();
 
   /**
    * <code>double threshold = 3;</code>

@@ -16,5 +16,14 @@ public interface ResourceTypeOrBuilder extends
    */
   com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum getJVM();
 
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum hardware_resource_type = 2;</code>
+   */
+  int getHardwareResourceTypeValue();
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum hardware_resource_type = 2;</code>
+   */
+  com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum getHardwareResourceType();
+
   public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType.ResourceTypeOneofCase getResourceTypeOneofCase();
 }
