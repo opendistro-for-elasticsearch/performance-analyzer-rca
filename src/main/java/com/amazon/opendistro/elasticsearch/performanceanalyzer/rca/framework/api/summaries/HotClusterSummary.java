@@ -23,6 +23,7 @@ import com.google.gson.JsonObject;
 import com.google.protobuf.GeneratedMessageV3;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.Field;
@@ -150,6 +151,7 @@ public class HotClusterSummary extends GenericSummary {
    * @param record SQLite record
    * @return whether parsing is successful or not
    */
+  @Nullable
   public static GenericSummary buildSummary(Record record) {
     GenericSummary summary = null;
     try {
@@ -158,7 +160,7 @@ public class HotClusterSummary extends GenericSummary {
       summary = new HotClusterSummary(numOfNodes, numOfUnhealthyNodes);
     }
     catch (IllegalArgumentException ie) {
-      LOG.error("Some field is not found in record, cause : {}", ie.getMessage());
+      LOG.error("Some fields might not be found in record, cause : {}", ie.getMessage());
     }
     catch (DataTypeException de) {
       LOG.error("Fails to convert data type");

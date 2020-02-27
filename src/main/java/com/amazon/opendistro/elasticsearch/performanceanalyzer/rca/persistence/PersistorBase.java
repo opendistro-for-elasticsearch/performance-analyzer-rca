@@ -126,6 +126,9 @@ public abstract class PersistorBase implements Persistable {
   }
 
   // TODO : readRca might return a list of RcaResponse if using range query
+  //  The current API does not support this and BeagleRock does not need this either at this moment.
+  //  we will revisit this function to decide what are the inputs of the new API which support range query and
+  //  we might want to define a seperate abstract method in interface to address that use case.
   @Override
   public synchronized JsonElement read(String rca) {
     JsonArray rcaJson = new JsonArray();

@@ -159,7 +159,7 @@ public class ResourceFlowUnit extends GenericFlowUnit {
   public List<Object> getSqlValue(String rcaName) {
     List<Object> value = new ArrayList<>();
     if (!this.isEmpty()) {
-      value.add(this.getTimeStamp());
+      value.add(getTimeStamp());
       value.add(rcaName);
       value.addAll(this.getResourceContext().getSqlValue());
     }

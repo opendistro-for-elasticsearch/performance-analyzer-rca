@@ -23,6 +23,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.Field;
@@ -172,6 +173,7 @@ public class HotNodeSummary extends GenericSummary {
    * @param record SQLite record
    * @return node summary object
    */
+  @Nullable
   public static HotNodeSummary buildSummary(Record record) {
     HotNodeSummary summary = null;
     try {
@@ -180,7 +182,7 @@ public class HotNodeSummary extends GenericSummary {
       summary = new HotNodeSummary(nodeId, ipAddress);
     }
     catch (IllegalArgumentException ie) {
-      LOG.error("Some field is not found in record, cause : {}", ie.getMessage());
+      LOG.error("Some fields might not be found in record, cause : {}", ie.getMessage());
     }
     catch (DataTypeException de) {
       LOG.error("Fails to convert data type");
