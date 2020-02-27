@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaControllerHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.JsonConverter;
 import com.google.common.collect.ImmutableList;
@@ -166,7 +167,15 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
       return role;
     }
 
-    public Boolean getIsMasterNode() {
+    public boolean getIsMasterNode() {
+      // TODO : this is added to support backward compatibility for _cat/master fix.
+      //  We can remove this later if the writer changes has been adapted by all clusters in fleet.
+      // query cat master api directly to read the node's role in case the ClusterDetailsEvent
+      // received from writer does not have "IS_MASTER_NODE" field.
+      if (isMasterNode == null) {
+        final String electedMasterHostAddress = RcaControllerHelper.getElectedMasterHostAddress();
+        isMasterNode = this.hostAddress.equalsIgnoreCase(electedMasterHostAddress);
+      }
       return isMasterNode;
     }
   }
