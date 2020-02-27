@@ -232,14 +232,8 @@ public class RcaController {
 
   private void checkUpdateNodeRole(final NodeDetails currentNode) {
     final NodeRole currentNodeRole = NodeRole.valueOf(currentNode.getRole());
-    Boolean isMasterNode = currentNode.getIsMasterNode();
-    if (isMasterNode != null) {
-      currentRole = isMasterNode ? NodeRole.ELECTED_MASTER : currentNodeRole;
-    } else {
-      final String electedMasterHostAddress = RcaControllerHelper.getElectedMasterHostAddress();
-      currentRole = currentNode.getHostAddress().equalsIgnoreCase(electedMasterHostAddress)
-          ? NodeRole.ELECTED_MASTER : currentNodeRole;
-    }
+    boolean isMasterNode = currentNode.getIsMasterNode();
+    currentRole = isMasterNode ? NodeRole.ELECTED_MASTER : currentNodeRole;
   }
 
   /**
