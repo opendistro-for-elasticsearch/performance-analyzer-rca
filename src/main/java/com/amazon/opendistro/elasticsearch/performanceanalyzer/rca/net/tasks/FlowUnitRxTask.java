@@ -15,8 +15,10 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.ReceivedFlowUnitStore;
@@ -55,6 +57,7 @@ public class FlowUnitRxTask implements Runnable {
 
   /**
    * Updates the per vertex flow unit collection.
+   *
    * @see Thread#run()
    */
   @Override
@@ -68,5 +71,8 @@ public class FlowUnitRxTask implements Runnable {
       LOG.warn("Dropped a flow unit because the vertex buffer was full for vertex: {}", vertex);
       StatsCollector.instance().logMetric(RcaConsts.VERTEX_BUFFER_FULL_METRIC);
     }
+
+    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR
+        .updateStat(RcaGraphMetrics.RCA_NODES_FU_CONSUME_COUNT, vertex, 1);
   }
 }

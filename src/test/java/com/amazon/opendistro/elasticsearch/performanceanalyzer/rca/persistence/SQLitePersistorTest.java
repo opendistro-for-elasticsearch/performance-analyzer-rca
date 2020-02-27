@@ -94,7 +94,7 @@ public class SQLitePersistorTest {
             71,
             "heap usage in percentage",
             60);
-    ResourceFlowUnit rfu = new ResourceFlowUnit(System.currentTimeMillis(), context, summary);
+    ResourceFlowUnit rfu = new ResourceFlowUnit(System.currentTimeMillis(), context, summary, true);
 
     Node rca = new TestRca();
 

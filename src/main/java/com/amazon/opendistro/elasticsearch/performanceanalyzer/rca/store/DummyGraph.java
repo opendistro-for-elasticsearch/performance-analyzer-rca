@@ -15,6 +15,12 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.LOCUS_DATA_MASTER_NODE;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.LOCUS_DATA_NODE;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.LOCUS_MASTER_NODE;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_AGGREGATE_UPSTREAM;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_LOCUS;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
@@ -23,7 +29,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.GC_Collection_Time;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Used;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageOldGenRca;
@@ -33,10 +38,6 @@ import java.util.Collections;
 
 public class DummyGraph extends AnalysisGraph {
 
-  public static final String LOCUS = "locus";
-  public static final String DATA_NODE = "data-node";
-  public static final String MASTER_NODE = "master-node";
-
   @Override
   public void construct() {
     Metric heapUsed = new Heap_Used(5);
@@ -44,15 +45,10 @@ public class DummyGraph extends AnalysisGraph {
     Metric heapMax = new Heap_Max(5);
     Metric gc_Collection_Time = new GC_Collection_Time(5);
 
-    heapUsed.addTag(LOCUS, String.join(RcaTagConstants.SEPARATOR, RcaTagConstants.LOCUS_DATA_NODE,
-        RcaTagConstants.LOCUS_MASTER_NODE));
-    gcEvent.addTag(LOCUS, String.join(RcaTagConstants.SEPARATOR, RcaTagConstants.LOCUS_DATA_NODE,
-        RcaTagConstants.LOCUS_MASTER_NODE));
-    heapMax.addTag(LOCUS, String.join(RcaTagConstants.SEPARATOR, RcaTagConstants.LOCUS_DATA_NODE,
-        RcaTagConstants.LOCUS_MASTER_NODE));
-    gc_Collection_Time
-        .addTag(LOCUS, String.join(RcaTagConstants.SEPARATOR, RcaTagConstants.LOCUS_DATA_NODE,
-            RcaTagConstants.LOCUS_MASTER_NODE));
+    heapUsed.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    gcEvent.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    heapMax.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    gc_Collection_Time.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     addLeaf(heapUsed);
     addLeaf(gcEvent);
     addLeaf(heapMax);
@@ -60,28 +56,23 @@ public class DummyGraph extends AnalysisGraph {
 
     Rca<ResourceFlowUnit> highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(12, heapUsed, gcEvent,
         heapMax);
-    highHeapUsageOldGenRca.addTag(LOCUS,
-        String.join(RcaTagConstants.SEPARATOR,
-            RcaTagConstants.LOCUS_DATA_NODE,
-            RcaTagConstants.LOCUS_MASTER_NODE));
+    highHeapUsageOldGenRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     highHeapUsageOldGenRca.addAllUpstreams(Arrays.asList(heapUsed, gcEvent, heapMax));
 
     Rca<ResourceFlowUnit> highHeapUsageYoungGenRca = new HighHeapUsageYoungGenRca(12, heapUsed,
         gc_Collection_Time);
-    highHeapUsageYoungGenRca.addTag(LOCUS, String.join(RcaTagConstants.SEPARATOR,
-        RcaTagConstants.LOCUS_DATA_NODE, RcaTagConstants.LOCUS_MASTER_NODE));
+    highHeapUsageYoungGenRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     highHeapUsageYoungGenRca.addAllUpstreams(Arrays.asList(heapUsed, gc_Collection_Time));
 
     Rca<ResourceFlowUnit> hotJVMNodeRca = new HotNodeRca(12, highHeapUsageOldGenRca,
         highHeapUsageYoungGenRca);
-    hotJVMNodeRca.addTag(LOCUS, String.join(RcaTagConstants.SEPARATOR,
-        RcaTagConstants.LOCUS_DATA_NODE, RcaTagConstants.LOCUS_MASTER_NODE));
+    hotJVMNodeRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     hotJVMNodeRca.addAllUpstreams(Arrays.asList(highHeapUsageOldGenRca, highHeapUsageYoungGenRca));
 
     Rca<ResourceFlowUnit> highHeapUsageClusterRca =
         new HighHeapUsageClusterRca(12, hotJVMNodeRca);
-    highHeapUsageClusterRca.addTag(LOCUS, MASTER_NODE);
+    highHeapUsageClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     highHeapUsageClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
-    highHeapUsageClusterRca.addTag(RcaTagConstants.TAG_AGGREGATE_UPSTREAM, DATA_NODE);
+    highHeapUsageClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
   }
 }

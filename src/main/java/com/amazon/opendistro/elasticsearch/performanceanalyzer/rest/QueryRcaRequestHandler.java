@@ -78,7 +78,7 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
         synchronized (this) {
           String query = exchange.getRequestURI().getQuery();
           //first check if we want to dump all SQL tables for debugging purpose
-          if (query.equals(DUMP_ALL)) {
+          if (query != null && query.equals(DUMP_ALL)) {
             sendResponse(exchange, dumpAllRcaTables(), HttpURLConnection.HTTP_OK);
           }
           else {

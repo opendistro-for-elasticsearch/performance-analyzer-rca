@@ -32,6 +32,7 @@ public class RcaConsts {
   public static final int NETWORK_MAX_THREAD_COUNT = 1;
   public static final String RCA_SCHEDULER_RESTART_METRIC = "RcaSchedulerRestart";
   public static final int DEFAULT_PER_NODE_FLOWUNIT_Q_SIZE = 200;
+  public static final long RCA_STATE_CHECK_INTERVAL_IN_MS = 5000;
   private static final String RCA_CONF_FILENAME = "rca.conf";
   private static final String RCA_CONF_IDLE_MASTER_FILENAME = "rca_idle_master.conf";
   private static final String THRESHOLDS_DIR_NAME = "thresholds";
@@ -66,7 +67,7 @@ public class RcaConsts {
 
   public static final long rcaNannyPollerPeriodicity = 5;
   public static final long rcaConfPollerPeriodicity = 5;
-  public static final long nodeRolePollerPeriodicity = 60;
+  public static final long nodeRolePollerPeriodicityInSeconds = 60;
   public static final TimeUnit rcaPollerPeriodicityTimeUnit = TimeUnit.SECONDS;
 
   /**
@@ -81,5 +82,8 @@ public class RcaConsts {
 
     public static final String LOCUS_DATA_NODE = "data-node";
     public static final String LOCUS_MASTER_NODE = "master-node";
+    public static final String LOCUS_DATA_MASTER_NODE = String.join(RcaTagConstants.SEPARATOR,
+        RcaTagConstants.LOCUS_DATA_NODE,
+        RcaTagConstants.LOCUS_MASTER_NODE);
   }
 }

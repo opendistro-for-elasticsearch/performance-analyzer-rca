@@ -18,20 +18,14 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
 import static org.junit.Assert.assertEquals;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
 
-import java.sql.SQLException;
 import java.util.List;
 
+import org.junit.Assert;
 import org.junit.Test;
 
-public class ClusterDetailsEventProcessorTests extends AbstractReaderTests {
-
-  public ClusterDetailsEventProcessorTests() throws SQLException, ClassNotFoundException {
-    super();
-  }
+public class ClusterDetailsEventProcessorTests {
 
   @Test
   public void testProcessEvent() throws Exception {
@@ -44,16 +38,15 @@ public class ClusterDetailsEventProcessorTests extends AbstractReaderTests {
     String address2 = "10.212.52.241";
     boolean isMasterNode2 = false;
 
-    StringBuilder stringBuilder = new StringBuilder()
-        .append(PerformanceAnalyzerMetrics.getJsonCurrentMilliSeconds())
-        .append(System.getProperty("line.separator"))
-        .append(createNodeDetailsMetrics(nodeId1, address1, isMasterNode1))
-        .append(System.getProperty("line.separator"))
-        .append(createNodeDetailsMetrics(nodeId2, address2, isMasterNode2));
-
-    Event testEvent = new Event("", stringBuilder.toString(), 0);
-    ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
-    clusterDetailsEventProcessor.processEvent(testEvent);
+    try {
+      ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
+      clusterDetailsEventProcessorTestHelper.addNodeDetails(nodeId1, address1, isMasterNode1);
+      clusterDetailsEventProcessorTestHelper.addNodeDetails(nodeId2, address2, isMasterNode2);
+      clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
+    } catch (Exception e) {
+      Assert.assertTrue("got exception when generating cluster details event", false);
+      return;
+    }
 
     List<NodeDetails> nodes = ClusterDetailsEventProcessor.getNodesDetails();
 

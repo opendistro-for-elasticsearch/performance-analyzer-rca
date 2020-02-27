@@ -16,12 +16,14 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
@@ -82,13 +84,29 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
         .getDataNodesDetails()) {
       ImmutableList<ResourceFlowUnit> nodeStateList = currentMap.get(nodeDetails.getId());
       if (nodeStateList != null) {
-        int unhealthyNodeCnt = 0;
+        int unhealthyOldGenCnt = 0;
+        int unhealthyYoungGenCnt = 0;
         for (ResourceFlowUnit flowUnit : nodeStateList) {
           if (flowUnit.getResourceContext().getState() == Resources.State.UNHEALTHY) {
-            unhealthyNodeCnt++;
+            HotNodeSummary currentNodSummary = (HotNodeSummary) flowUnit.getResourceSummary();
+            for (GenericSummary resourceSummary : currentNodSummary.getNestedSummaryList()) {
+              if (resourceSummary instanceof HotResourceSummary) {
+                if (((HotResourceSummary) resourceSummary).getResourceType().getJVM() == JvmEnum.YOUNG_GEN) {
+                  unhealthyYoungGenCnt++;
+                  break;
+                }
+                else if (((HotResourceSummary) resourceSummary).getResourceType().getJVM() == JvmEnum.OLD_GEN) {
+                  unhealthyOldGenCnt++;
+                  break;
+                }
+              }
+              else {
+                LOG.error("RCA : The summary that hot node RCA carries is not resource type summary. ");
+              }
+            }
           }
         }
-        if (unhealthyNodeCnt >= UNHEALTHY_FLOWUNIT_THRESHOLD) {
+        if (unhealthyYoungGenCnt >= UNHEALTHY_FLOWUNIT_THRESHOLD || unhealthyOldGenCnt >= UNHEALTHY_FLOWUNIT_THRESHOLD) {
           unhealthyNodeList.add(nodeStateList.get(0).getResourceSummary());
         }
       }
@@ -140,7 +158,7 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
       } else {
         context = new ResourceContext(Resources.State.HEALTHY);
       }
-      return new ResourceFlowUnit(System.currentTimeMillis(), context, summary);
+      return new ResourceFlowUnit(System.currentTimeMillis(), context, summary, true);
     } else {
       // we return an empty FlowUnit RCA for now. Can change to healthy (or previous known RCA state)
       LOG.debug("Empty FlowUnit returned for {}", this.getClass().getName());

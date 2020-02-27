@@ -15,11 +15,13 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.handler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PublishResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PublishResponse.PublishResponseStatus;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.ReceivedFlowUnitStore;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks.FlowUnitRxTask;
@@ -33,8 +35,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/** Service handler for the /sendData RPC. */
+/**
+ * Service handler for the /sendData RPC.
+ */
 public class PublishRequestHandler {
+
   private static final Logger LOG = LogManager.getLogger(PublishRequestHandler.class);
   private final AtomicReference<ExecutorService> executorReference;
   private final NodeStateManager nodeStateManager;
@@ -45,7 +50,7 @@ public class PublishRequestHandler {
   public PublishRequestHandler(
       NodeStateManager nodeStateManager,
       ReceivedFlowUnitStore receivedFlowUnitStore,
-    final AtomicReference<ExecutorService> executorReference) {
+      final AtomicReference<ExecutorService> executorReference) {
     this.executorReference = executorReference;
     this.nodeStateManager = nodeStateManager;
     this.receivedFlowUnitStore = receivedFlowUnitStore;
@@ -66,6 +71,7 @@ public class PublishRequestHandler {
   }
 
   private class SendDataClientStreamUpdateConsumer implements StreamObserver<FlowUnitMessage> {
+
     private final StreamObserver<PublishResponse> serviceResponse;
 
     SendDataClientStreamUpdateConsumer(final StreamObserver<PublishResponse> serviceResponse) {
@@ -84,10 +90,14 @@ public class PublishRequestHandler {
         try {
           executorService.execute(
               new FlowUnitRxTask(nodeStateManager, receivedFlowUnitStore, flowUnitMessage));
+          PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR
+              .updateStat(RcaGraphMetrics.NET_BYTES_IN, flowUnitMessage.getGraphNode(),
+                  flowUnitMessage.getSerializedSize());
         } catch (final RejectedExecutionException ree) {
           LOG.warn("Dropped handling received flow unit because the netwwork threadpool queue is "
               + "full");
-          StatsCollector.instance().logException(StatExceptionCode.RCA_NETWORK_THREADPOOL_QUEUE_FULL_ERROR);
+          StatsCollector.instance()
+                        .logException(StatExceptionCode.RCA_NETWORK_THREADPOOL_QUEUE_FULL_ERROR);
         }
       }
     }

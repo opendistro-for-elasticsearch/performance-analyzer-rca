@@ -23,8 +23,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
 
@@ -32,12 +30,19 @@ import org.jooq.impl.DSL;
  * HotResourceSummary contains information such as the name of the hot resource, the current value
  * threshold, etc. It also contains the top K consumers of this particular resource. It is created
  * by some RCAs who work directly on some type of resource(JVM, CPU etc.)
+ *
+ * <p>This object is persisted in SQLite table
+ * Table name : HotResourceSummary
+ *
+ * <p>schema :
+ * | ID           | Resource Type | Threshold | Value | Avg | Min | Max | Unit Type | Time_Period_Seconds |ID in HotNodeSummary
+ *  (primary key)                                                                                           (foreign key)
+ * |      1       |    old gen    |    0.65   |  0.7  |     |     |     | percentage|          600        |          5
  */
 public class HotResourceSummary extends GenericSummary {
 
   public static final String HOT_RESOURCE_SUMMARY_TABLE = HotResourceSummary.class.getSimpleName();
   private final ResourceType resourceType;
-  private List<String> consumers;
   private double threshold;
   private double value;
   private String unitType;
@@ -60,10 +65,6 @@ public class HotResourceSummary extends GenericSummary {
     this.timePeriod = timePeriod;
   }
 
-  public void addConsumers(List<String> consumers) {
-    this.consumers = consumers;
-  }
-
   public void setValueDistribution(double minValue, double maxValue, double avgValue) {
     this.minValue = minValue;
     this.maxValue = maxValue;
@@ -79,6 +80,10 @@ public class HotResourceSummary extends GenericSummary {
     if (this.resourceType != null) {
       if (this.resourceType.getResourceTypeOneofCase() == ResourceTypeOneofCase.JVM) {
         resourceName = this.resourceType.getJVM().getValueDescriptor()
+            .getOptions().getExtension(PANetworking.resourceTypeName);
+      }
+      else if (this.resourceType.getResourceTypeOneofCase() == ResourceTypeOneofCase.HARDWARE_RESOURCE_TYPE) {
+        resourceName = this.resourceType.getHardwareResourceType().getValueDescriptor()
             .getOptions().getExtension(PANetworking.resourceTypeName);
       }
     }
@@ -109,6 +114,10 @@ public class HotResourceSummary extends GenericSummary {
     summaryMessageBuilder.setMaxValue(this.maxValue);
     summaryMessageBuilder.setUnitType(this.unitType);
     summaryMessageBuilder.setTimePeriod(this.timePeriod);
+    for (GenericSummary nestedSummary : this.nestedSummaryList) {
+      summaryMessageBuilder.getConsumersBuilder()
+          .addConsumer(nestedSummary.buildSummaryMessage());
+    }
     return summaryMessageBuilder.build();
   }
 
@@ -123,18 +132,28 @@ public class HotResourceSummary extends GenericSummary {
         message.getValue(), message.getUnitType(), message.getTimePeriod());
     newSummary
         .setValueDistribution(message.getMinValue(), message.getMaxValue(), message.getAvgValue());
-    if (message.hasConsumers() && message.getConsumers().getConsumerCount() > 0) {
-      newSummary.addConsumers(IntStream.range(0, message.getConsumers().getConsumerCount())
-          .mapToObj(i -> message.getConsumers().getConsumer(i))
-          .collect(Collectors.toList()));
+    if (message.hasConsumers()) {
+      for (int i = 0; i < message.getConsumers().getConsumerCount(); i++) {
+        newSummary.addNestedSummaryList(TopConsumerSummary.buildTopConsumerSummaryFromMessage(
+            message.getConsumers().getConsumer(i)));
+      }
     }
     return newSummary;
   }
 
   @Override
   public String toString() {
-    return this.getResourceTypeName() + " " + this.consumers + " " + this.threshold + " "
-        + this.value + " " + this.unitType;
+    return new StringBuilder()
+        .append(this.getResourceTypeName())
+        .append(" ")
+        .append(this.threshold)
+        .append(" ")
+        .append(this.value)
+        .append(" ")
+        .append(this.unitType)
+        .append(" ")
+        .append(this.nestedSummaryList)
+        .toString();
   }
 
   @Override
@@ -167,13 +186,13 @@ public class HotResourceSummary extends GenericSummary {
 
   public static class SQL_SCHEMA_CONSTANTS {
 
-    public static final String RESOURCE_TYPE_COL_NAME = "Resource Type";
-    public static final String THRESHOLD_COL_NAME = "Threshold";
-    public static final String VALUE_COL_NAME = "Value";
-    public static final String AVG_VALUE_COL_NAME = "Avg Value";
-    public static final String MIN_VALUE_COL_NAME = "Min Value";
-    public static final String MAX_VALUE_COL_NAME = "Max Value";
-    public static final String UNIT_TYPE_COL_NAME = "Unit Type";
-    public static final String TIME_PERIOD_COL_NAME = "Time Period";
+    public static final String RESOURCE_TYPE_COL_NAME = "resource_type";
+    public static final String THRESHOLD_COL_NAME = "threshold";
+    public static final String VALUE_COL_NAME = "value";
+    public static final String AVG_VALUE_COL_NAME = "avg";
+    public static final String MIN_VALUE_COL_NAME = "min";
+    public static final String MAX_VALUE_COL_NAME = "max";
+    public static final String UNIT_TYPE_COL_NAME = "unit_type";
+    public static final String TIME_PERIOD_COL_NAME = "time_period_seconds";
   }
 }

@@ -94,7 +94,10 @@ public class HotNodeRca extends Rca<ResourceFlowUnit> {
       // reset the variables
       counter = 0;
       hasUnhealthyFlowUnit = false;
-      return new ResourceFlowUnit(System.currentTimeMillis(), context, summary);
+      //check if the current node is data node. If it is the data node
+      //then HotNodeRca is the top level RCA on this node and we want to persist summaries in flowunit.
+      boolean isDataNode = !currentNode.getIsMasterNode();
+      return new ResourceFlowUnit(System.currentTimeMillis(), context, summary, isDataNode);
     } else {
       return new ResourceFlowUnit(System.currentTimeMillis());
     }
