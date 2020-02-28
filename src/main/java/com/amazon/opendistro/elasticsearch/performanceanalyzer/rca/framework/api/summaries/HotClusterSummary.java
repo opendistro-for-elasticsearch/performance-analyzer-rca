@@ -84,7 +84,7 @@ public class HotClusterSummary extends GenericSummary {
   public List<Field<?>> getSqlSchema() {
     List<Field<?>> schema = new ArrayList<>();
     schema.add(ClusterSummaryField.NUM_OF_NODES_FIELD.getField());
-    schema.add(ClusterSummaryField.NUM_OF_UNHEALTHY_NODES_FILELD.getField());
+    schema.add(ClusterSummaryField.NUM_OF_UNHEALTHY_NODES_FIELD.getField());
     return schema;
   }
 
@@ -124,7 +124,7 @@ public class HotClusterSummary extends GenericSummary {
    */
   public enum ClusterSummaryField implements JooqFieldValue {
     NUM_OF_NODES_FIELD(SQL_SCHEMA_CONSTANTS.NUM_OF_NODES_COL_NAME, Integer.class),
-    NUM_OF_UNHEALTHY_NODES_FILELD(SQL_SCHEMA_CONSTANTS.NUM_OF_UNHEALTHY_NODES_COL_NAME,
+    NUM_OF_UNHEALTHY_NODES_FIELD(SQL_SCHEMA_CONSTANTS.NUM_OF_UNHEALTHY_NODES_COL_NAME,
         Integer.class);
 
     private String name;
@@ -156,7 +156,7 @@ public class HotClusterSummary extends GenericSummary {
     GenericSummary summary = null;
     try {
       Integer numOfNodes = record.get(ClusterSummaryField.NUM_OF_NODES_FIELD.getField(), Integer.class);
-      Integer numOfUnhealthyNodes = record.get(ClusterSummaryField.NUM_OF_UNHEALTHY_NODES_FILELD.getField(), Integer.class);
+      Integer numOfUnhealthyNodes = record.get(ClusterSummaryField.NUM_OF_UNHEALTHY_NODES_FIELD.getField(), Integer.class);
       summary = new HotClusterSummary(numOfNodes, numOfUnhealthyNodes);
     }
     catch (IllegalArgumentException ie) {
