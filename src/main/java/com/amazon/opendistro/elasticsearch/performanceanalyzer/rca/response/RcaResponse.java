@@ -15,95 +15,106 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response;
 
-import java.util.ArrayList;
-import java.util.HashSet;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.ResourceFlowUnitFieldValue;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.SQL_SCHEMA_CONSTANTS;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.protobuf.GeneratedMessageV3;
 import java.util.List;
-import java.util.Objects;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jooq.Field;
+import org.jooq.Record;
+import org.jooq.exception.DataTypeException;
 
 /**
  * RcaResponse contains cluster level info such as cluster state, number of healthy and unhealthy
  * nodes for a particular rca.
  */
-public class RcaResponse {
-  private String name;
+public class RcaResponse extends GenericSummary {
+  private static final Logger LOG = LogManager.getLogger(RcaResponse.class);
+  private String rcaName;
   private String state;
-  private Integer numOfNodes;
-  private Integer numOfUnhealthyNodes;
-  private String timeStamp;
-  private List<NodeSummaryResponse> summary;
+  private long timeStamp;
 
-  public RcaResponse(String name, String state, String timeStamp) {
-    this.name = name;
+  public RcaResponse(String rcaName, String state, long timeStamp) {
+    this.rcaName = rcaName;
     this.state = state;
     this.timeStamp = timeStamp;
-    this.summary = new ArrayList<>();
   }
 
-  public RcaResponse(
-      String name,
-      String state,
-      Integer numOfNodes,
-      Integer numOfUnhealthyNodes,
-      String timeStamp) {
-    this.name = name;
-    this.state = state;
-    this.numOfNodes = numOfNodes;
-    this.numOfUnhealthyNodes = numOfUnhealthyNodes;
-    this.timeStamp = timeStamp;
-    this.summary = new ArrayList<>();
-  }
 
-  public String getName() {
-    return name;
+  public String getRcaName() {
+    return rcaName;
   }
 
   public String getState() {
     return state;
   }
 
-  public Integer getNumOfNodes() {
-    return numOfNodes;
-  }
-
-  public Integer getNumOfUnhealthyNodes() {
-    return numOfUnhealthyNodes;
-  }
-
-  public String getTimeStamp() {
+  public long getTimeStamp() {
     return timeStamp;
   }
 
-  public void addSummary(NodeSummaryResponse nodeSummaryResponse) {
-    this.summary.add(nodeSummaryResponse);
+  public static RcaResponse buildResponse(Record record) {
+    RcaResponse response = null;
+    try {
+      String rcaName = record.get(ResourceFlowUnitFieldValue.RCA_NAME_FILELD.getField(), String.class);
+      String state = record.get(ResourceFlowUnitFieldValue.STATE_NAME_FILELD.getField(), String.class);
+      Long timeStamp = record.get(ResourceFlowUnitFieldValue.TIMESTAMP_FIELD.getField(), Long.class);
+      response = new RcaResponse(rcaName, state, timeStamp);
+    }
+    catch (IllegalArgumentException ie) {
+      LOG.error("Some field is not found in record, cause : {}", ie.getMessage());
+    }
+    catch (DataTypeException de) {
+      LOG.error("Fails to convert data type");
+    }
+    return response;
+  }
+
+  /**
+   * Since RcaResponse Object is a API wrapper for Flowunit & summaries
+   * we do not need to support gPRC. Neither will we persist this wrapper.
+   */
+  @Override
+  public GeneratedMessageV3 buildSummaryMessage() {
+    return null;
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    RcaResponse that = (RcaResponse) o;
-    return Objects.equals(name, that.name)
-        && Objects.equals(state, that.state)
-        && Objects.equals(numOfNodes, that.numOfNodes)
-        && Objects.equals(numOfUnhealthyNodes, that.numOfUnhealthyNodes)
-        && Objects.equals(timeStamp, that.timeStamp)
-        && Objects.equals(new HashSet<>(summary), new HashSet<>(that.summary));
+  public void buildSummaryMessageAndAddToFlowUnit(FlowUnitMessage.Builder messageBuilder) {
   }
 
   @Override
-  public int hashCode() {
-    return new HashCodeBuilder(17, 37)
-        .append(name)
-        .append(state)
-        .append(numOfNodes)
-        .append(numOfUnhealthyNodes)
-        .append(timeStamp)
-        .append(summary)
-        .toHashCode();
+  public String getTableName() {
+    return ResourceFlowUnit.RCA_TABLE_NAME;
+  }
+
+  @Override
+  public List<Field<?>> getSqlSchema() {
+    return null;
+  }
+
+  @Override
+  public List<Object> getSqlValue() {
+    return null;
+  }
+
+  @Override
+  public JsonElement toJson() {
+    JsonObject summaryObj = new JsonObject();
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.RCA_COL_NAME, this.rcaName);
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, this.timeStamp);
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.STATE_COL_NAME, this.state);
+    this.nestedSummaryList.forEach(
+        summary -> {
+          summaryObj.add(summary.getTableName(), summary.toJson());
+        }
+    );
+    return summaryObj;
   }
 }

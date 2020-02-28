@@ -15,14 +15,14 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary.HOT_NODE_SUMMARY_TABLE;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary.HOT_RESOURCE_SUMMARY_TABLE;
-
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources.State;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.ResourceFlowUnitFieldValue;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.QueryUtils;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaResponseUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -31,10 +31,8 @@ import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,6 +44,7 @@ import org.jooq.JSONFormat;
 import org.jooq.Record;
 import org.jooq.Result;
 import org.jooq.SQLDialect;
+import org.jooq.SelectJoinStep;
 import org.jooq.Table;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
@@ -173,21 +172,67 @@ class SQLitePersistor extends PersistorBase {
     return tableStr;
   }
 
+  // TODO: we only query the most recent RCA entry in this API. might need to extend this
+  // to support range query based on timestamp.
   @Override
-  synchronized RcaResponse readRcaTable(String rca) {
-    Set<String> tableNames = super.tableNames;
-    if (!tableNames.contains(rca)) {
-      return null;
+  public synchronized RcaResponse readRca(String rca) {
+    RcaResponse response = null;
+    Field<Integer> primaryKeyField = DSL.field(
+        SQLiteQueryUtils.getPrimaryKeyColumnName(ResourceFlowUnit.RCA_TABLE_NAME), Integer.class);
+    SelectJoinStep<Record> rcaQuery = SQLiteQueryUtils
+        .buildRcaQuery(create, rca);
+    try {
+      List<Record> recordList = rcaQuery.fetch();
+      if (recordList.size() > 0) {
+        Record mostRecentRecord = recordList.get(0);
+        response = RcaResponse.buildResponse(mostRecentRecord);
+        if (response.getState().equals(State.UNHEALTHY.toString())) {
+          readSummary(response, mostRecentRecord.get(primaryKeyField));
+        }
+      }
     }
-    List<Record> rcaResponseRecordList = QueryUtils.getRcaRecordList(create, rca, getSummaryTableMap(rca), tableNames);
-    return RcaResponseUtil.getRcaResponse(rca, rcaResponseRecordList, tableNames);
+    catch (DataAccessException de) {
+      // it is totally fine if we fail to read some certain tables.
+      LOG.warn("Fail to read RCA : {}, query = {},  exceptions : {}", rca, rcaQuery.toString(), de.getStackTrace());
+    }
+    return response;
   }
 
-  private Map<String,String> getSummaryTableMap(String rca) {
-    Map<String,String> map = new LinkedHashMap<>();
-    map.put(HOT_CLUSTER_SUMMARY_TABLE, getPrimaryKeyColumnName(rca));
-    map.put(HOT_NODE_SUMMARY_TABLE, getPrimaryKeyColumnName(HOT_CLUSTER_SUMMARY_TABLE));
-    map.put(HOT_RESOURCE_SUMMARY_TABLE, getPrimaryKeyColumnName(HOT_NODE_SUMMARY_TABLE));
-    return map;
+  private void readSummary(GenericSummary upperLevelSummary, int upperLevelPrimaryKey) {
+    String upperLevelTable = upperLevelSummary.getTableName();
+    // stop the recursion at here if the table does not have any nested summary.
+    if (!SQLiteQueryUtils.getNestedTableMap().containsKey(upperLevelTable)) {
+      return;
+    }
+    String currLevelTable = SQLiteQueryUtils.getNestedTableMap().get(upperLevelTable);
+    Field<Integer> foreignKeyField = DSL.field(
+        SQLiteQueryUtils.getPrimaryKeyColumnName(upperLevelTable), Integer.class);
+    SelectJoinStep<Record> rcaQuery = SQLiteQueryUtils
+        .buildSummaryQuery(create, currLevelTable, upperLevelPrimaryKey, foreignKeyField);
+    try {
+      List<Record> recordList = rcaQuery.fetch();
+      for (Record record : recordList) {
+        GenericSummary summary = null;
+        if (upperLevelSummary instanceof RcaResponse) {
+          summary = HotClusterSummary.buildSummary(record);
+        }
+        else if (upperLevelSummary instanceof HotClusterSummary) {
+          summary = HotNodeSummary.buildSummary(record);
+        }
+        else if (upperLevelSummary instanceof HotNodeSummary) {
+          summary = HotResourceSummary.buildSummary(record);
+        }
+        if (summary != null) {
+          Field<Integer> primaryKeyField = DSL.field(
+              SQLiteQueryUtils.getPrimaryKeyColumnName(summary.getTableName()), Integer.class);
+          readSummary(summary, record.get(primaryKeyField));
+          upperLevelSummary.addNestedSummaryList(summary);
+        }
+      }
+    }
+    catch (DataAccessException de) {
+      // it is totally fine if we fail to read some certain tables.
+      LOG.warn("Fail to read Summary table : {}, query = {},  exceptions : {}", currLevelTable, rcaQuery.toString(), de.getStackTrace());
+    }
   }
 }

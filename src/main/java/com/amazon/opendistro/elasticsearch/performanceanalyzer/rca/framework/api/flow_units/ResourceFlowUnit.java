@@ -146,7 +146,7 @@ public class ResourceFlowUnit extends GenericFlowUnit {
     if (!this.isEmpty()) {
       schema.add(ResourceFlowUnitFieldValue.TIMESTAMP_FIELD.getField());
       schema.add(ResourceFlowUnitFieldValue.RCA_NAME_FILELD.getField());
-      schema.addAll(this.getResourceContext().getSqlSchema());
+      schema.add(ResourceFlowUnitFieldValue.STATE_NAME_FILELD.getField());
     }
     return schema;
   }
@@ -159,7 +159,7 @@ public class ResourceFlowUnit extends GenericFlowUnit {
   public List<Object> getSqlValue(String rcaName) {
     List<Object> value = new ArrayList<>();
     if (!this.isEmpty()) {
-      value.add(String.valueOf(this.getTimeStamp()));
+      value.add(getTimeStamp());
       value.add(rcaName);
       value.addAll(this.getResourceContext().getSqlValue());
     }
@@ -172,8 +172,9 @@ public class ResourceFlowUnit extends GenericFlowUnit {
   }
 
   public enum ResourceFlowUnitFieldValue implements JooqFieldValue {
-    TIMESTAMP_FIELD(SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, String.class),
-    RCA_NAME_FILELD(SQL_SCHEMA_CONSTANTS.RCA_COL_NAME, String.class);
+    TIMESTAMP_FIELD(SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, Long.class),
+    RCA_NAME_FILELD(SQL_SCHEMA_CONSTANTS.RCA_COL_NAME, String.class),
+    STATE_NAME_FILELD(SQL_SCHEMA_CONSTANTS.STATE_COL_NAME, String.class);
 
     private String name;
     private Class<?> clazz;
@@ -188,14 +189,16 @@ public class ResourceFlowUnit extends GenericFlowUnit {
     }
 
     @Override
-    public String toString() {
+    public String getName() {
       return this.name;
     }
   }
 
   public static class SQL_SCHEMA_CONSTANTS {
 
-    public static final String TIMESTAMP_COL_NAME = "Timestamp";
-    public static final String RCA_COL_NAME = "RCA_Name";
+    public static final String TIMESTAMP_COL_NAME = "timestamp";
+    public static final String RCA_COL_NAME = "rca_name";
+    public static final String STATE_COL_NAME = "state";
+
   }
 }
