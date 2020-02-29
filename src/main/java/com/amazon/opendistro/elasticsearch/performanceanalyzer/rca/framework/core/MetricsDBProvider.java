@@ -47,22 +47,6 @@ public class MetricsDBProvider implements Queryable {
     return dbEntry.getValue();
   }
 
-  private List<List<String>> parseResult(final Result<Record> queryResult) {
-    List<List<String>> retResults = new ArrayList<>();
-    List<String> columnNames =
-        Arrays.stream(queryResult.fields()).map(Field::getName).collect(Collectors.toList());
-    retResults.add(columnNames);
-
-    for (Record r : queryResult) {
-      List<String> row = new ArrayList<>();
-      for (String col : columnNames) {
-        row.add(String.valueOf(r.getValue(col)));
-      }
-      retResults.add(row);
-    }
-    return retResults;
-  }
-
   /**
    * This queries the MetricsDB to get all the data for the given metric.
    *
