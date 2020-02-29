@@ -19,7 +19,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class Heap_AllocRate extends Metric {
+  public static final String NAME = AllMetrics.OSMetrics.HEAP_ALLOC_RATE.toString();
+
   public Heap_AllocRate(long evaluationIntervalSeconds) {
-    super(AllMetrics.OSMetrics.HEAP_ALLOC_RATE.toString(), evaluationIntervalSeconds);
+    super(NAME, evaluationIntervalSeconds);
   }
 }

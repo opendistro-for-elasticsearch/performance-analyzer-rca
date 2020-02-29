@@ -15,6 +15,11 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -25,17 +30,15 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPathExpressionException;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.FileAppender;
-import org.xml.sax.SAXException;
+import org.jooq.tools.json.JSONObject;
 
 public class RcaTestHelper {
   public static List<String> getAllLinesFromStatsLog() {
     try {
       return Files.readAllLines(Paths.get(getLogFilePath(LogType.StatsLog)));
-    } catch (IOException | ParserConfigurationException | SAXException | XPathExpressionException e) {
+    } catch (IOException e) {
       e.printStackTrace();
     }
     return Collections.EMPTY_LIST;
@@ -54,7 +57,7 @@ public class RcaTestHelper {
   public static List<String> getAllLinesFromLog(LogType logType) {
     try {
       return Files.readAllLines(Paths.get(getLogFilePath(logType)));
-    } catch (IOException | ParserConfigurationException | SAXException | XPathExpressionException e) {
+    } catch (IOException e) {
       e.printStackTrace();
     }
     return Collections.EMPTY_LIST;
@@ -75,8 +78,7 @@ public class RcaTestHelper {
     StatsLog
   }
 
-  public static String getLogFilePath(LogType logType)
-          throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
+  public static String getLogFilePath(LogType logType) {
     System.out.println(LoggerContext.getContext().getRootLogger().getAppenders());
     org.apache.logging.log4j.core.Logger logger = null;
     if (logType == LogType.StatsLog) {
@@ -89,12 +91,33 @@ public class RcaTestHelper {
   }
 
   public static void cleanUpLogs() {
-    try {
-      truncate(Paths.get(getLogFilePath(LogType.PerformanceAnalyzerLog)).toFile());
-      truncate(Paths.get(getLogFilePath(LogType.StatsLog)).toFile());
-    } catch (ParserConfigurationException | SAXException | XPathExpressionException | IOException e) {
-      e.printStackTrace();
+    truncate(Paths.get(getLogFilePath(LogType.PerformanceAnalyzerLog)).toFile());
+    truncate(Paths.get(getLogFilePath(LogType.StatsLog)).toFile());
+  }
+
+  public static void setEvaluationTimeForAllNodes(List<ConnectedComponent> connectedComponents,
+                                                  long val) {
+    for (ConnectedComponent connectedComponent: connectedComponents) {
+      for (Node node: connectedComponent.getAllNodes()) {
+        node.setEvaluationIntervalSeconds(val);
+      }
     }
+  }
+
+  public static void setMyIp(String ip, AllMetrics.NodeRole nodeRole) {
+    JSONObject jtime = new JSONObject();
+    jtime.put("current_time", 1566414001749L);
+
+    JSONObject jNode = new JSONObject();
+    jNode.put(AllMetrics.NodeDetailColumns.ID.toString(), "4sqG_APMQuaQwEW17_6zwg");
+    jNode.put(AllMetrics.NodeDetailColumns.HOST_ADDRESS.toString(), ip);
+    jNode.put(AllMetrics.NodeDetailColumns.ROLE.toString(), nodeRole);
+    jNode.put(AllMetrics.NodeDetailColumns.IS_MASTER_NODE,
+            nodeRole == AllMetrics.NodeRole.ELECTED_MASTER ? true : false);
+
+    ClusterDetailsEventProcessor eventProcessor = new ClusterDetailsEventProcessor();
+    eventProcessor.processEvent(
+            new Event("", jtime.toString() + System.lineSeparator() + jNode.toString(), 0));
   }
 
   public static void truncate(File file) {
