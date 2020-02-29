@@ -531,15 +531,34 @@ task generateLoad {
             //println("starting indexing: " + System.currentTimeMillis())
             runCommand(bulk, null, wdir, false)
             //println("completed indexing: " + System.currentTimeMillis())
-            Thread.sleep(5000)
+            Thread.sleep(1000)
             //println("starting search" + System.currentTimeMillis())
             runCommand(search, null, wdir, false)
-            Thread.sleep(5000)
+            Thread.sleep(300)
             //println("completed search" + System.currentTimeMillis())
             runCommand(deleteIndex, null, wdir, false)
-            Thread.sleep(5000)
+            Thread.sleep(1000)
         }
     }
 }
 
+task runRally {
+    dependsOn(enablePaAndRca, runPerftop)
 
+    doLast {
+        String rallyTrack='pmc'
+
+        String[] esrally = ['docker', 'run', '--network=host', 'elastic/rally',
+                                '--track=' + rallyTrack, '--test-mode', '--pipeline=benchmark-only',
+                '--target-hosts=localhost:9200']
+
+        String wdir = Paths.get(getProjectDir().getAbsolutePath(), 'src', 'test', 'resources')
+                .toString()
+        while (true) {
+            runCommand(esrally, null, wdir, true)
+            println('Get all RCAs using:')
+            println('curl localhost:9600/_opendistro/_performanceanalyzer/rca?all | python -m json.tool')
+            Thread.sleep(1000)
+        }
+    }
+}

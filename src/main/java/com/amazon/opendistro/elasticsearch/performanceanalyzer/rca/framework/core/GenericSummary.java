@@ -31,7 +31,7 @@ public abstract class GenericSummary {
     nestedSummaryList = new ArrayList<>();
   }
 
-  protected final List<GenericSummary> nestedSummaryList;
+  private final List<GenericSummary> nestedSummaryList;
 
   public List<GenericSummary> getNestedSummaryList() {
     return nestedSummaryList;
