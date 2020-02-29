@@ -31,7 +31,7 @@ public class ConnectedComponent {
   private List<List<Node<?>>> dependencyOrderedNodes;
   private int graphId;
 
-  private Set<Node<?>> getAllNodes() {
+  public Set<Node<?>> getAllNodes() {
     Set<Node<?>> traversed = new HashSet<>();
     Deque<Node<?>> inline = new ArrayDeque<>(leafNodes);
     while (!inline.isEmpty()) {

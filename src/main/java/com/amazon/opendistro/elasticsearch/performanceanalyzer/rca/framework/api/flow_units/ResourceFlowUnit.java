@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.CompactNodeTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.JooqFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
@@ -128,6 +129,10 @@ public class ResourceFlowUnit extends GenericFlowUnit {
           == FlowUnitMessage.SummaryOneofCase.HOTNODESUMMARY.getNumber()
           && message.hasHotNodeSummary()) {
         newSummary = HotNodeSummary.buildHotNodeSummaryFromMessage(message.getHotNodeSummary());
+      } else if (message.getSummaryOneofCase().getNumber()
+              == FlowUnitMessage.SummaryOneofCase.NODETEMPERATURESUMMARY.getNumber()
+              && message.hasNodeTemperatureSummary()) {
+        return CompactNodeTemperatureFlowUnit.buildFlowUnitFromWrapper(message);
       }
       return new ResourceFlowUnit(message.getTimeStamp(), newContext, newSummary);
     } else {

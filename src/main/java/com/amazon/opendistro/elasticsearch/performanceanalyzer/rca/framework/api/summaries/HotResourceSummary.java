@@ -132,7 +132,7 @@ public class HotResourceSummary extends GenericSummary {
     summaryMessageBuilder.setMinValue(this.minValue);
     summaryMessageBuilder.setMaxValue(this.maxValue);
     summaryMessageBuilder.setTimePeriod(this.timePeriod);
-    for (GenericSummary nestedSummary : this.nestedSummaryList) {
+    for (GenericSummary nestedSummary : getNestedSummaryList()) {
       summaryMessageBuilder.getConsumersBuilder()
           .addConsumer(nestedSummary.buildSummaryMessage());
     }
@@ -168,7 +168,7 @@ public class HotResourceSummary extends GenericSummary {
         .append(" ")
         .append(ResourceTypeUtil.getResourceTypeUnit(this.resourceType))
         .append(" ")
-        .append(this.nestedSummaryList)
+        .append(getNestedSummaryList())
         .toString();
   }
 
@@ -222,8 +222,8 @@ public class HotResourceSummary extends GenericSummary {
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.UNIT_TYPE_COL_NAME,
         ResourceTypeUtil.getResourceTypeUnit(this.resourceType));
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.TIME_PERIOD_COL_NAME, this.timePeriod);
-    if (!this.nestedSummaryList.isEmpty()) {
-      String tableName = this.nestedSummaryList.get(0).getTableName();
+    if (!getNestedSummaryList().isEmpty()) {
+      String tableName = getNestedSummaryList().get(0).getTableName();
       summaryObj.add(tableName, this.nestedSummaryListToJson());
     }
     return summaryObj;

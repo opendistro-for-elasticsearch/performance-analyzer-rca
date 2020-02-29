@@ -25,10 +25,10 @@ import org.jooq.Record;
 import org.jooq.Result;
 import org.junit.Test;
 
-public class ShardRequestMetricsSnapshotTests {
+public class ShardProfileSummaryRequestMetricsSnapshotTests {
   private static final String DB_URL = "jdbc:sqlite:";
 
-  public ShardRequestMetricsSnapshotTests() throws ClassNotFoundException {
+  public ShardProfileSummaryRequestMetricsSnapshotTests() throws ClassNotFoundException {
     System.setProperty("java.io.tmpdir", "/tmp");
     Class.forName("org.sqlite.JDBC");
   }
