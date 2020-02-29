@@ -107,6 +107,22 @@ message HotClusterSummaryMessage {
     int32 nodeCount = 1;
     HotNodeSummaryList hotNodeSummaryList = 2;
 }
+
+message ResourceTemperatureMessage {
+    string resourceName = 1;
+    // The mean usage is the mean over all shards. There is also a shard independent component
+    // that is accounted for in the hte totalUsage
+    int32 meanUsage = 2;
+    int32 numberOfShards = 3;
+    double totalUsage = 4;
+}
+
+message NodeTemperatureSummaryMessage {
+    string nodeID = 1;
+    string hostAddress = 2;
+    repeated ResourceTemperatureMessage cpuTemperature = 3;
+}
+
 /*
  gRPC message wrapper for ResourceFlowUnit
 */
@@ -119,6 +135,7 @@ message FlowUnitMessage {
         HotResourceSummaryMessage hotResourceSummary = 5;
         HotNodeSummaryMessage hotNodeSummary =6;
         HotClusterSummaryMessage hotClusterSummary = 7;
+        NodeTemperatureSummaryMessage nodeTemperatureSummary = 8;
     }
 }
 

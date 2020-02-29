@@ -15,6 +15,11 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -31,6 +36,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import org.jooq.tools.json.JSONObject;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -95,6 +101,29 @@ public class RcaTestHelper {
     } catch (ParserConfigurationException | SAXException | XPathExpressionException | IOException e) {
       e.printStackTrace();
     }
+  }
+
+  public static void setEvaluationTimeForAllNodes(List<ConnectedComponent> connectedComponents,
+                                                  long val) {
+    for (ConnectedComponent connectedComponent: connectedComponents) {
+      for (Node node: connectedComponent.getAllNodes()) {
+        node.setEvaluationIntervalSeconds(val);
+      }
+    }
+  }
+
+  public static void setMyIp(String ip, AllMetrics.NodeRole nodeRole) {
+    JSONObject jtime = new JSONObject();
+    jtime.put("current_time", 1566414001749L);
+
+    JSONObject jNode = new JSONObject();
+    jNode.put(AllMetrics.NodeDetailColumns.ID.toString(), "4sqG_APMQuaQwEW17_6zwg");
+    jNode.put(AllMetrics.NodeDetailColumns.HOST_ADDRESS.toString(), ip);
+    jNode.put(AllMetrics.NodeDetailColumns.ROLE.toString(), nodeRole);
+
+    ClusterDetailsEventProcessor eventProcessor = new ClusterDetailsEventProcessor();
+    eventProcessor.processEvent(
+            new Event("", jtime.toString() + System.lineSeparator() + jNode.toString(), 0));
   }
 
   public static void truncate(File file) {

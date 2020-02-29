@@ -19,9 +19,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metrics
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -44,63 +44,104 @@ import org.jooq.impl.DSL;
  */
 public class AggregateMetric extends Metric {
 
-  private static final Logger LOG = LogManager.getLogger(AggregateMetric.class);
-  public static final String NAME = AggregateMetric.class.getSimpleName();
-  private final String tableName;
-  private final List<String> groupByFieldsName;
-  private final AggregateFunction aggregateFunction;
+    private static final Logger LOG = LogManager.getLogger(AggregateMetric.class);
+    private final String tableName;
+    private final List<String> groupByFieldsName;
+    private final AggregateFunction aggregateFunction;
+    private final String metricsDBAggrColumn;
 
-  public AggregateMetric(final long evaluationIntervalSeconds, final String tableName,
-      final AggregateFunction aggregateFunction, final String... groupByFieldsName) {
-    super(AggregateMetric.NAME, evaluationIntervalSeconds);
-    this.tableName = tableName;
-    this.groupByFieldsName = new ArrayList<>(Arrays.asList(groupByFieldsName));
-    this.aggregateFunction = aggregateFunction;
-  }
+    public AggregateMetric(final long evaluationIntervalSeconds, final String tableName,
+                           final AggregateFunction aggregateFunction,
+                           String metricsDBCol, final String... groupByFieldsName) {
+        super("", evaluationIntervalSeconds);
+        this.tableName = tableName;
+        this.groupByFieldsName = new ArrayList<>(Arrays.asList(groupByFieldsName));
+        this.aggregateFunction = aggregateFunction;
 
-  @Override
-  public MetricFlowUnit gather(final Queryable queryable) {
-    LOG.debug("Metric: Trying to gather metrics for {}", tableName);
-    final Result<Record> result;
-    final List<Field<?>> groupByFieldsList = new ArrayList<>();
-    final List<Field<?>> fieldsList;
-    try {
-      final MetricsDB db = queryable.getMetricsDB();
-      final DSLContext context = db.getDSLContext();
-      groupByFieldsName.forEach(f -> groupByFieldsList.add(DSL.field(DSL.name(f))));
-      final Field<Double> numDimension = DSL.field(DSL.name(MetricsDB.AVG), Double.class);
-      final Field<?> aggDimension = getAggDimension(numDimension);
-      fieldsList = new ArrayList<>(groupByFieldsList);
-      fieldsList.add(aggDimension);
-      result = context
-          .select(fieldsList)
-          .from(tableName)
-          .groupBy(groupByFieldsList)
-          .orderBy(aggDimension.desc())
-          .fetch();
+        switch (metricsDBCol) {
+            case MetricsDB.SUM:
+            case MetricsDB.AVG:
+            case MetricsDB.MIN:
+            case MetricsDB.MAX:
+                this.metricsDBAggrColumn = metricsDBCol;
+                break;
+            default:
+                throw new IllegalArgumentException("Unrecognized metricsDB col: " + metricsDBCol);
+        }
+    }
 
-    } catch (Exception e) {
-      //TODO: Emit log/stats that gathering failed.
-      LOG.error("RCA: Caught an exception while getting the DB {}", e.getMessage());
-      return MetricFlowUnit.generic();
+    protected Result<Record> createDslAndFetch(final DSLContext context,
+                                               final String tableName,
+                                               final Field<?> aggDimension,
+                                               final List<Field<?>> groupByFieldsList,
+                                               final List<Field<?>> selectFieldsList) {
+        return context
+                .select(selectFieldsList)
+                .from(tableName)
+                .groupBy(groupByFieldsList)
+                .orderBy(aggDimension.desc())
+                .fetch();
     }
-    return new MetricFlowUnit(0, result);
-  }
 
-  private Field<?> getAggDimension(final Field<Double> numDimension) {
-    if (this.aggregateFunction == AggregateFunction.MAX) {
-      return DSL.max(numDimension);
+    protected List<Field<?>> getGroupByFieldsList() {
+        if (groupByFieldsName.isEmpty()) {
+            return Collections.emptyList();
+        }
+        final List<Field<?>> groupByFieldsList = new ArrayList<>();
+        groupByFieldsName.forEach(f -> groupByFieldsList.add(DSL.field(DSL.name(f))));
+        return groupByFieldsList;
     }
-    else if (this.aggregateFunction == AggregateFunction.MIN) {
-      return DSL.min(numDimension);
+
+    protected List<Field<?>> getSelectFieldsList(final List<Field<?>> groupByFields,
+                                              Field<?> aggrDimension) {
+        List<Field<?>> fieldsList = new ArrayList<>(groupByFields);
+        fieldsList.add(aggrDimension);
+        return fieldsList;
     }
-    else if (this.aggregateFunction == AggregateFunction.AVG) {
-      return DSL.avg(numDimension);
+
+    protected Field<?> getAggrDimension() {
+        // This is the column from metricsDB that we want to SELECT from.
+        final Field<Double> numDimension = DSL.field(DSL.name(metricsDBAggrColumn), Double.class);
+
+        // This aggregate function is applied after group by.
+        return getAggDimension(numDimension, this.aggregateFunction);
     }
-    else {
-      return DSL.sum(numDimension);
+
+    @Override
+    public MetricFlowUnit gather(final Queryable queryable) {
+        LOG.debug("Metric: Trying to gather metrics for {}", tableName);
+        final Result<Record> result;
+        List<Field<?>> selectFieldsList;
+        try {
+            final MetricsDB db = queryable.getMetricsDB();
+            final DSLContext context = db.getDSLContext();
+
+            final Field<?> aggDimension = getAggrDimension();
+            final List<Field<?>> groupByFieldsList = getGroupByFieldsList();
+            selectFieldsList = getSelectFieldsList(groupByFieldsList, aggDimension);
+
+            result = createDslAndFetch(context, tableName, aggDimension, groupByFieldsList,
+                    selectFieldsList);
+        } catch (Exception e) {
+            //TODO: Emit log/stats that gathering failed.
+            LOG.error("RCA: Caught an exception while getting the DB {}", e.getMessage());
+            return MetricFlowUnit.generic();
+        }
+        return new MetricFlowUnit(0, result);
     }
-  }
+
+    protected static Field<?> getAggDimension(final Field<Double> numDimension,
+                                              AggregateFunction aggregateFunction) {
+        if (aggregateFunction == AggregateFunction.MAX) {
+            return DSL.max(numDimension);
+        } else if (aggregateFunction == AggregateFunction.MIN) {
+            return DSL.min(numDimension);
+        } else if (aggregateFunction == AggregateFunction.AVG) {
+            return DSL.avg(numDimension);
+        } else {
+            return DSL.sum(numDimension);
+        }
+    }
 
   public enum AggregateFunction {
     SUM,
