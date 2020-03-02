@@ -15,6 +15,10 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.JooqFieldValue;
+import org.jooq.Field;
+import org.jooq.impl.DSL;
+
 /**
  * Contract between reader and writer. Writer write using the same values of these enums as json
  * keys (See all MetricStatus's subclasses in
@@ -171,7 +175,7 @@ public class AllMetrics {
     }
   }
 
-  public enum HeapDimension implements MetricDimension {
+  public enum HeapDimension implements MetricDimension, JooqFieldValue {
     MEM_TYPE(Constants.TYPE_VALUE);
 
     private final String value;
@@ -182,6 +186,16 @@ public class AllMetrics {
 
     @Override
     public String toString() {
+      return value;
+    }
+
+    @Override
+    public Field<String> getField() {
+      return DSL.field(DSL.name(this.value), String.class);
+    }
+
+    @Override
+    public String getName() {
       return value;
     }
 

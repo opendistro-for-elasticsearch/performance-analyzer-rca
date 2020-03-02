@@ -84,16 +84,7 @@ public class AggregateMetric extends Metric {
       LOG.error("RCA: Caught an exception while getting the DB {}", e.getMessage());
       return MetricFlowUnit.generic();
     }
-    final List<List<String>> flowUnitData = new ArrayList<>();
-    flowUnitData.add(fieldsList.stream()
-        .map(Field::getName)
-        .collect(Collectors.toList()));
-    for (Record record : result) {
-      flowUnitData.add(fieldsList.stream()
-          .map(f -> record.getValue(f, String.class))
-          .collect(Collectors.toList()));
-    }
-    return new MetricFlowUnit(0, flowUnitData);
+    return new MetricFlowUnit(0, result);
   }
 
   private Field<?> getAggDimension(final Field<Double> numDimension) {

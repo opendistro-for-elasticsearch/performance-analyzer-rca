@@ -23,5 +23,7 @@ import org.jooq.Field;
  * casting the field's name and data type.
  */
 public interface JooqFieldValue {
+  String getName();
+
   Field getField();
 }

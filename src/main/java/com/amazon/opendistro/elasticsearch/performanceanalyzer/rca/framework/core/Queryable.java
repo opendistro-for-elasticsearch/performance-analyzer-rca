@@ -17,14 +17,16 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.co
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import java.util.List;
+import org.jooq.Record;
+import org.jooq.Result;
 
 public interface Queryable {
 
   MetricsDB getMetricsDB() throws Exception;
 
-  List<List<String>> queryMetrics(MetricsDB db, String metricName);
+  Result<Record> queryMetrics(MetricsDB db, String metricName);
 
-  List<List<String>> queryMetrics(
+  Result<Record> queryMetrics(
       MetricsDB db, String metricName, String dimension, String aggregation) throws Exception;
 
   long getDBTimestamp(MetricsDB db);

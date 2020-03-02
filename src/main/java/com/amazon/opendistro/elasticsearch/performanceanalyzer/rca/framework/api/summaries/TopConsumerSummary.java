@@ -18,8 +18,11 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.TopConsumerSummaryMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.google.gson.JsonElement;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
 
@@ -28,6 +31,8 @@ import org.jooq.impl.DSL;
  */
 public class TopConsumerSummary extends GenericSummary {
 
+  public static final String TOP_CONSUMER_SUMMARY_TABLE = TopConsumerSummary.class.getSimpleName();
+  private static final Logger LOG = LogManager.getLogger(HotClusterSummary.class);
   private final String name;
   private final double value;
 
@@ -72,6 +77,11 @@ public class TopConsumerSummary extends GenericSummary {
   }
 
   @Override
+  public String getTableName() {
+    return TopConsumerSummary.TOP_CONSUMER_SUMMARY_TABLE;
+  }
+
+  @Override
   public List<Field<?>> getSqlSchema() {
     List<Field<?>> schema = new ArrayList<>();
     schema.add(DSL.field(DSL.name(TopConsumerSummary.SQL_SCHEMA_CONSTANTS.CONSUMER_NAME_COL_NAME), String.class));
@@ -85,6 +95,11 @@ public class TopConsumerSummary extends GenericSummary {
     value.add(this.name);
     value.add(this.value);
     return value;
+  }
+
+  @Override
+  public JsonElement toJson() {
+    return null;
   }
 
   public static class SQL_SCHEMA_CONSTANTS {

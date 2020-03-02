@@ -24,6 +24,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.MetricsDBProviderTestHelper;
 import java.util.List;
+import org.jooq.Record;
+import org.jooq.Result;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -61,12 +63,12 @@ public class OperateGatherThrowingExceptionTest {
     }
 
     @Override
-    public List<List<String>> queryMetrics(MetricsDB db, String metricName) {
+    public Result<Record> queryMetrics(MetricsDB db, String metricName) {
       throw new RuntimeException();
     }
 
     @Override
-    public List<List<String>> queryMetrics(
+    public Result<Record> queryMetrics(
         MetricsDB db, String metricName, String dimension, String aggregation) throws Exception {
       return null;
     }

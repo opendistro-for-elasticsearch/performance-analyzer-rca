@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.google.gson.JsonElement;
 import com.google.protobuf.GeneratedMessageV3;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -46,7 +47,15 @@ public abstract class GenericSummary {
 
   public abstract void buildSummaryMessageAndAddToFlowUnit(FlowUnitMessage.Builder messageBuilder);
 
+  //get the name of SQL table for each summary
+  public abstract String getTableName();
+
   public abstract List<Field<?>> getSqlSchema();
 
   public abstract List<Object> getSqlValue();
+
+  /**
+   * convert the summary object to Gson object
+   */
+  public abstract JsonElement toJson();
 }

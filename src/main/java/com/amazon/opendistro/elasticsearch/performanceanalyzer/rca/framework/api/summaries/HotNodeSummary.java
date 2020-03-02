@@ -17,10 +17,18 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.JooqFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jooq.Field;
+import org.jooq.Record;
+import org.jooq.exception.DataTypeException;
 import org.jooq.impl.DSL;
 
 /**
@@ -37,6 +45,7 @@ import org.jooq.impl.DSL;
 public class HotNodeSummary extends GenericSummary {
 
   public static final String HOT_NODE_SUMMARY_TABLE = HotNodeSummary.class.getSimpleName();
+  private static final Logger LOG = LogManager.getLogger(HotNodeSummary.class);
   private final String nodeID;
   private final String hostAddress;
 
@@ -89,10 +98,15 @@ public class HotNodeSummary extends GenericSummary {
   }
 
   @Override
+  public String getTableName() {
+    return HotNodeSummary.HOT_NODE_SUMMARY_TABLE;
+  }
+
+  @Override
   public List<Field<?>> getSqlSchema() {
     List<Field<?>> schema = new ArrayList<>();
-    schema.add(DSL.field(DSL.name(SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME), String.class));
-    schema.add(DSL.field(DSL.name(SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME), String.class));
+    schema.add(NodeSummaryField.NODE_ID_FIELD.getField());
+    schema.add(NodeSummaryField.HOST_IP_ADDRESS_FILELD.getField());
     return schema;
   }
 
@@ -104,9 +118,75 @@ public class HotNodeSummary extends GenericSummary {
     return value;
   }
 
+  /**
+   * Convert this summary object to JsonElement
+   * @return JsonElement
+   */
+  @Override
+  public JsonElement toJson() {
+    JsonObject summaryObj = new JsonObject();
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME, this.nodeID);
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME, this.hostAddress);
+    this.nestedSummaryList.forEach(
+        summary -> {
+          summaryObj.add(summary.getTableName(), summary.toJson());
+        }
+    );
+    return summaryObj;
+  }
+
   public static class SQL_SCHEMA_CONSTANTS {
 
-    public static final String NODE_ID_COL_NAME = "Node ID";
-    public static final String HOST_IP_ADDRESS_COL_NAME = "Host IP";
+    public static final String NODE_ID_COL_NAME = "node_id";
+    public static final String HOST_IP_ADDRESS_COL_NAME = "host_address";
+  }
+
+  /**
+   * Cluster summary SQL fields
+   */
+  public enum NodeSummaryField implements JooqFieldValue {
+    NODE_ID_FIELD(SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME, String.class),
+    HOST_IP_ADDRESS_FILELD(SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME,
+        String.class);
+
+    private String name;
+    private Class<?> clazz;
+
+    NodeSummaryField(final String name, Class<?> clazz) {
+      this.name = name;
+      this.clazz = clazz;
+    }
+
+    @Override
+    public Field<?> getField() {
+      return DSL.field(DSL.name(this.name), this.clazz);
+    }
+
+    @Override
+    public String getName() {
+      return this.name;
+    }
+  }
+
+  /**
+   * Re-generate the node summary object from SQL query result.
+   * @param record SQLite record
+   * @return node summary object
+   */
+  @Nullable
+  public static HotNodeSummary buildSummary(Record record) {
+    HotNodeSummary summary = null;
+    try {
+      String nodeId = record.get(NodeSummaryField.NODE_ID_FIELD.getField(), String.class);
+      String ipAddress = record.get(NodeSummaryField.HOST_IP_ADDRESS_FILELD.getField(), String.class);
+      summary = new HotNodeSummary(nodeId, ipAddress);
+    }
+    catch (IllegalArgumentException ie) {
+      LOG.error("Some fields might not be found in record, cause : {}", ie.getMessage());
+    }
+    catch (DataTypeException de) {
+      LOG.error("Fails to convert data type");
+    }
+    return summary;
   }
 }

@@ -31,6 +31,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.time.Clock;
@@ -116,7 +117,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
         continue;
       }
       double ret =
-          heapUsedMetric.getDataFromMetric(MEM_TYPE.toString(), OLD_GEN.toString(), MetricsDB.MAX);
+          SQLParsingUtil.readDataFromSqlResult(heapUsedMetric.getData(), MEM_TYPE.getField(), OLD_GEN.toString(), MetricsDB.MAX);
       if (Double.isNaN(ret)) {
         LOG.error("Failed to parse metric in FlowUnit from {}", heap_Used.getClass().getName());
       } else {
@@ -129,8 +130,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
         continue;
       }
       double ret =
-          gcEventMetric.getDataFromMetric(
-              MEM_TYPE.toString(), TOT_FULL_GC.toString(), MetricsDB.MAX);
+          SQLParsingUtil.readDataFromSqlResult(gcEventMetric.getData(), MEM_TYPE.getField(), TOT_FULL_GC.toString(), MetricsDB.MAX);
       if (Double.isNaN(ret)) {
         LOG.error("Failed to parse metric in FlowUnit from {}", gc_event.getClass().getName());
       } else {
@@ -143,7 +143,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
         continue;
       }
       double ret =
-          heapMaxMetric.getDataFromMetric(MEM_TYPE.toString(), OLD_GEN.toString(), MetricsDB.MAX);
+          SQLParsingUtil.readDataFromSqlResult(heapMaxMetric.getData(), MEM_TYPE.getField(), OLD_GEN.toString(), MetricsDB.MAX);
       if (Double.isNaN(ret)) {
         LOG.error("Failed to parse metric in FlowUnit from {}", heap_Max.getClass().getName());
       } else {
@@ -232,15 +232,12 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
     }
   }
 
+  /**
+   * This is a local node RCA which by definition can not be serialize/de-serialized
+   * over gRPC.
+   */
   @Override
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-    final List<FlowUnitMessage> flowUnitMessages =
-        args.getWireHopper().readFromWire(args.getNode());
-    List<ResourceFlowUnit> flowUnitList = new ArrayList<>();
-    LOG.debug("rca: Executing fromWire: {}", this.getClass().getSimpleName());
-    for (FlowUnitMessage flowUnitMessage : flowUnitMessages) {
-      flowUnitList.add(ResourceFlowUnit.buildFlowUnitFromWrapper(flowUnitMessage));
-    }
-    setFlowUnits(flowUnitList);
+    LOG.error("RCA: {} should not be send over from network", this.getClass().getSimpleName());
   }
 }

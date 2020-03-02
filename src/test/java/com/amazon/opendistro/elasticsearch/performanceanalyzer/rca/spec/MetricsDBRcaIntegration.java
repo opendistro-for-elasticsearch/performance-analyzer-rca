@@ -22,6 +22,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.helpers.AssertHelper;
 import java.util.ArrayList;
 import java.util.List;
+import org.jooq.Record;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -61,12 +62,10 @@ public class MetricsDBRcaIntegration {
     expectedReturn.add(cols);
     expectedReturn.add(row1);
 
-    int idx = 0;
     MetricsDB db = queryable.getMetricsDB();
-    for (List<String> row :
+    for (Record record :
         queryable.queryMetrics(db, AllMetrics.OSMetrics.CPU_UTILIZATION.toString())) {
-      AssertHelper.compareLists(expectedReturn.get(idx), row);
-      ++idx;
+      AssertHelper.compareRecord(cols, row1, record);
     }
   }
 }

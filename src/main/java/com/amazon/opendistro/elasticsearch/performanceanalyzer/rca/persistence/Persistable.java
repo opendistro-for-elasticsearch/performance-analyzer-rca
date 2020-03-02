@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
+import com.google.gson.JsonElement;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
@@ -29,9 +30,20 @@ public interface Persistable {
    */
   List<ResourceFlowUnit> read(Node<?> node);
 
+  /**
+   * Read the raw RCA tables and print the
+   * tables in json format
+   * @return
+   */
   String read();
 
-  RcaResponse readRca(String rca);
+  /**
+   * Read the most recent status o a particular RCA from database
+   * and convert the result into json
+   * @param rca name of RCA to query
+   * @return json result
+   */
+  JsonElement read(String rca);
 
   /**
    * Write data to the database.
