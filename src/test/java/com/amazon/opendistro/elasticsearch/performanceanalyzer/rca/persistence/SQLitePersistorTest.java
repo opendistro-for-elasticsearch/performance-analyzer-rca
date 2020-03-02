@@ -92,7 +92,6 @@ public class SQLitePersistorTest {
             ResourceType.newBuilder().setJVM(JvmEnum.OLD_GEN).build(),
             70,
             71,
-            "heap usage in percentage",
             60);
     ResourceFlowUnit rfu = new ResourceFlowUnit(System.currentTimeMillis(), context, summary, true);
 

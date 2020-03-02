@@ -66,7 +66,7 @@ public class PersistFlowUnitAndSummaryTest {
       ResourceContext context = new ResourceContext(Resources.State.UNHEALTHY);
       HotResourceSummary summary = new HotResourceSummary(
           ResourceType.newBuilder().setJVM(JvmEnum.YOUNG_GEN).build(),
-          400, 100, "promotion rate in mb/s", 60);
+          400, 100, 60);
       return new ResourceFlowUnit(System.currentTimeMillis(), context, summary);
     }
 
