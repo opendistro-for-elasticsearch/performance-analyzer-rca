@@ -47,22 +47,6 @@ public class MetricsDBProvider implements Queryable {
     return dbEntry.getValue();
   }
 
-  private List<List<String>> parseResult(final Result<Record> queryResult) {
-    List<List<String>> retResults = new ArrayList<>();
-    List<String> columnNames =
-        Arrays.stream(queryResult.fields()).map(Field::getName).collect(Collectors.toList());
-    retResults.add(columnNames);
-
-    for (Record r : queryResult) {
-      List<String> row = new ArrayList<>();
-      for (String col : columnNames) {
-        row.add(String.valueOf(r.getValue(col)));
-      }
-      retResults.add(row);
-    }
-    return retResults;
-  }
-
   /**
    * This queries the MetricsDB to get all the data for the given metric.
    *
@@ -73,13 +57,12 @@ public class MetricsDBProvider implements Queryable {
    * @return Returns the metrics data in a tabular form.
    */
   @Override
-  public List<List<String>> queryMetrics(MetricsDB db, String metricName) {
-    Result<Record> queryResult = db.queryMetric(metricName);
-    return parseResult(queryResult);
+  public Result<Record> queryMetrics(MetricsDB db, String metricName) {
+    return db.queryMetric(metricName);
   }
 
   @Override
-  public List<List<String>> queryMetrics(
+  public Result<Record> queryMetrics(
       final MetricsDB db,
       final String metricName,
       final String dimension,
@@ -89,7 +72,7 @@ public class MetricsDBProvider implements Queryable {
               Collections.singletonList(metricName),
               Collections.singletonList(aggregation),
               Collections.singletonList(dimension));
-      return parseResult(queryResult);
+      return queryResult;
   }
 
   @Override
