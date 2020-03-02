@@ -21,11 +21,15 @@ import java.util.Collections;
 import java.util.List;
 
 public enum RcaRuntimeMetrics implements MeasurementSet {
-  /** The number of times the framework was stopped by the operator. */
+  /**
+   * The number of times the framework was stopped by the operator.
+   */
   RCA_STOPPED_BY_OPERATOR(
       "RcaStoppedByOperator", "count", Collections.singletonList(Statistics.COUNT)),
 
-  /** The number of times the framework was restarted by the operator. */
+  /**
+   * The number of times the framework was restarted by the operator.
+   */
   RCA_RESTARTED_BY_OPERATOR(
       "RcaRestartedByOperator", "count", Collections.singletonList(Statistics.COUNT)),
 
@@ -33,9 +37,17 @@ public enum RcaRuntimeMetrics implements MeasurementSet {
    * ES APIs calls are expensive and we want to keep track of how many we are making. This is a
    * named counter and therefore we can get a count per ES API.
    */
-  ES_APIS_CALLED("ESApisCalled", "count", Collections.singletonList(Statistics.NAMED_COUNTERS));
+  ES_APIS_CALLED("ESApisCalled", "count", Collections.singletonList(Statistics.NAMED_COUNTERS)),
 
-  /** What we want to appear as the metric name. */
+  /**
+   * Metric tracking if RCA is enabled or disabled. We write a 0 if RCA is disabled and 1 if it is
+   * enabled.
+   */
+  RCA_ENABLED("RcaEnabled", "count", Collections.singletonList(Statistics.COUNT));
+
+  /**
+   * What we want to appear as the metric name.
+   */
   private String name;
 
   /**
