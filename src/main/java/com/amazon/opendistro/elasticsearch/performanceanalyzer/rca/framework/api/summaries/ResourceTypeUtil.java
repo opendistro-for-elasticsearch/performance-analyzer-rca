@@ -20,12 +20,17 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PANetworking;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType.ResourceTypeOneofCase;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions;
 import com.google.protobuf.ProtocolMessageEnum;
+import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A utility class to parse and build grpc ResourceType
  */
 public class ResourceTypeUtil {
+  private static final Logger LOG = LogManager.getLogger(ResourceTypeUtil.class);
 
   /**
    * Read the resourceType name from the ResourceType object
@@ -34,20 +39,50 @@ public class ResourceTypeUtil {
    */
   public static String getResourceTypeName(ResourceType resourceType) {
     String resourceName = "unknown resource type";
-    if (resourceType != null) {
-      if (resourceType.getResourceTypeOneofCase() == ResourceTypeOneofCase.JVM) {
-        resourceName = ResourceTypeUtil.getResourceTypeName(resourceType.getJVM());
-      }
-      else if (resourceType.getResourceTypeOneofCase() == ResourceTypeOneofCase.HARDWARE_RESOURCE_TYPE) {
-        resourceName = ResourceTypeUtil.getResourceTypeName(resourceType.getHardwareResourceType());
-      }
+    ResourceTypeOptions resourceTypeOptions = ResourceTypeUtil.getResourceTypeOptions(resourceType);
+    if (resourceTypeOptions != null) {
+      resourceName = resourceTypeOptions.getResourceTypeName();
     }
     return resourceName;
   }
 
-  private static String getResourceTypeName(ProtocolMessageEnum resourceEnum) {
+  /**
+   * Read the resourceType unit type from the ResourceType object
+   * @param resourceType grpc ResourceType object
+   * @return resource unit type
+   */
+  public static String getResourceTypeUnit(ResourceType resourceType) {
+    String resourceName = "unknown resource unit type";
+    ResourceTypeOptions resourceTypeOptions = ResourceTypeUtil.getResourceTypeOptions(resourceType);
+    if (resourceTypeOptions != null) {
+      resourceName = resourceTypeOptions.getResourceTypeUnit();
+    }
+    return resourceName;
+  }
+
+  private static ResourceTypeOptions getResourceTypeOptions(ResourceType resourceType) {
+    ProtocolMessageEnum resourceEnum;
+    if (resourceType == null) {
+      LOG.error("resourceType is null");
+      return null;
+    }
+    if (resourceType.getResourceTypeOneofCase() == ResourceTypeOneofCase.JVM) {
+      resourceEnum = resourceType.getJVM();
+    }
+    else if (resourceType.getResourceTypeOneofCase() == ResourceTypeOneofCase.HARDWARE_RESOURCE_TYPE) {
+      resourceEnum = resourceType.getHardwareResourceType();
+    }
+    else {
+      LOG.error("unknown resource enum type");
+      return null;
+    }
     return resourceEnum.getValueDescriptor().getOptions()
-        .getExtension(PANetworking.resourceTypeName);
+        .getExtension(PANetworking.resourceTypeOptions);
+  }
+
+  private static ResourceTypeOptions getResourceTypeOptions(ProtocolMessageEnum resourceEnum) {
+    return resourceEnum.getValueDescriptor().getOptions()
+        .getExtension(PANetworking.resourceTypeOptions);
   }
 
   /**
@@ -55,19 +90,20 @@ public class ResourceTypeUtil {
    * @param resourceTypeName The resourceTypeName field defined in protbuf.
    * @return ResourceType enum object
    */
+  @Nullable
   public static ResourceType buildResourceType(String resourceTypeName) {
     ResourceType resourceType = null;
     if (resourceTypeName == null) {
       return resourceType;
     }
     ResourceType.Builder builder = null;
-    if (resourceTypeName.equals(ResourceTypeUtil.getResourceTypeName(JvmEnum.OLD_GEN))) {
+    if (resourceTypeName.equals(ResourceTypeUtil.getResourceTypeOptions(JvmEnum.OLD_GEN).getResourceTypeName())) {
       builder = ResourceType.newBuilder().setJVM(JvmEnum.OLD_GEN);
     }
-    else if (resourceTypeName.equals(ResourceTypeUtil.getResourceTypeName(JvmEnum.YOUNG_GEN))) {
+    else if (resourceTypeName.equals(ResourceTypeUtil.getResourceTypeOptions(JvmEnum.YOUNG_GEN).getResourceTypeName())) {
       builder = ResourceType.newBuilder().setJVM(JvmEnum.YOUNG_GEN);
     }
-    else if (resourceTypeName.equals(ResourceTypeUtil.getResourceTypeName(HardwareEnum.CPU))) {
+    else if (resourceTypeName.equals(ResourceTypeUtil.getResourceTypeOptions(HardwareEnum.CPU).getResourceTypeName())) {
       builder = ResourceType.newBuilder().setHardwareResourceType(HardwareEnum.CPU);
     }
     if (builder != null) {

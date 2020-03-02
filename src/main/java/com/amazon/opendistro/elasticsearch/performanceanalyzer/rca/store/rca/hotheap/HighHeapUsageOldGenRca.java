@@ -186,8 +186,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
           && !Double.isNaN(currentMinOldGenUsage)
           && currentMinOldGenUsage / maxOldGenHeapSize > OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE * this.lowerBoundThreshold) {
         summary = new HotResourceSummary(this.resourceType,
-            OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE, currentMinOldGenUsage / maxOldGenHeapSize,
-            "heap usage in percentage", SLIDING_WINDOW_SIZE_IN_MINS * 60);
+            OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE, currentMinOldGenUsage / maxOldGenHeapSize, SLIDING_WINDOW_SIZE_IN_MINS * 60);
       }
 
       LOG.debug("High Heap Usage RCA Context = " + context.toString());
