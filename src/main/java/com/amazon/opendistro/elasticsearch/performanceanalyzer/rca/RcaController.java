@@ -83,7 +83,7 @@ public class RcaController {
   private boolean rcaEnabledDefaultValue = false;
 
   // This needs to be volatile as the RcaConfPoller writes it but the Nanny reads it.
-  private volatile boolean rcaEnabled = false;
+  private static volatile boolean rcaEnabled = false;
 
   // This needs to be volatile as the NodeRolePoller writes it but the Nanny reads it.
   private volatile NodeRole currentRole = NodeRole.UNKNOWN;
@@ -304,7 +304,7 @@ public class RcaController {
     return RCA_ENABLED_CONF_FILE;
   }
 
-  public boolean isRcaEnabled() {
+  public static boolean isRcaEnabled() {
     return rcaEnabled;
   }
 
