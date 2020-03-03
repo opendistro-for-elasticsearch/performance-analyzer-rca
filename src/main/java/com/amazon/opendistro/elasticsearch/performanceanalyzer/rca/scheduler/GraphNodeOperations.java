@@ -27,7 +27,7 @@ public class GraphNodeOperations {
 
   static void readFromLocal(FlowUnitOperationArgWrapper args) {
     if (Stats.getInstance().isNodeMuted(args.getNode().name())) {
-      args.getNode().setFlowUnits(Collections.EMPTY_LIST);
+      args.getNode().handleNodeMuted();
       return;
     }
     args.getNode().generateFlowUnitListFromLocal(args);

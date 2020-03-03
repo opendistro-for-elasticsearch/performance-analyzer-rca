@@ -59,6 +59,15 @@ public abstract class Symptom extends NonLeafNode<SymptomFlowUnit> {
   }
 
   /**
+   * This method specifies what needs to be done when the current node is muted for throwing
+   * exceptions.
+   */
+  @Override
+  public void handleNodeMuted() {
+    setLocalFlowUnit(SymptomFlowUnit.generic());
+  }
+
+  /**
    * Persists a flow unit.
    *
    * @param args The arg wrapper.
