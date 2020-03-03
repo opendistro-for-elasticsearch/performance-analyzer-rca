@@ -43,7 +43,7 @@ public enum RcaRuntimeMetrics implements MeasurementSet {
    * Metric tracking if RCA is enabled or disabled. We write a 0 if RCA is disabled and 1 if it is
    * enabled.
    */
-  RCA_ENABLED("RcaEnabled", "count", Collections.singletonList(Statistics.MAX));
+  RCA_ENABLED("RcaEnabled", "count", Collections.singletonList(Statistics.SAMPLE));
 
   /**
    * What we want to appear as the metric name.
