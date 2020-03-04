@@ -107,4 +107,13 @@ public abstract class Metric extends LeafNode<MetricFlowUnit> {
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
     LOG.error("we are not supposed to read metric flowunit from wire.");
   }
+
+  /**
+   * This method specifies what needs to be done when the current node is muted for throwing
+   * exceptions.
+   */
+  @Override
+  public void handleNodeMuted() {
+    setLocalFlowUnit(MetricFlowUnit.generic());
+  }
 }

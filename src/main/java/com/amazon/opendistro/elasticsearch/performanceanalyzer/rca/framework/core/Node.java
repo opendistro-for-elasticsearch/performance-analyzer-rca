@@ -135,6 +135,12 @@ public abstract class Node<T extends GenericFlowUnit> {
 
   public abstract void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args);
 
+  /**
+   * This method specifies what needs to be done when the current node is muted for throwing
+   * exceptions.
+   */
+  public abstract void handleNodeMuted();
+
   public void setEmptyFlowUnitList() {
     flowUnits = Collections.emptyList();
   }

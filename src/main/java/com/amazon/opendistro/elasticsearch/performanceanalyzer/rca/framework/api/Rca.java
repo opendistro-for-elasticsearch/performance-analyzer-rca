@@ -61,6 +61,15 @@ public abstract class Rca<T extends ResourceFlowUnit> extends NonLeafNode<T> {
     setLocalFlowUnit(result);
   }
 
+  /**
+   * This method specifies what needs to be done when the current node is muted for throwing
+   * exceptions.
+   */
+  @Override
+  public void handleNodeMuted() {
+    setLocalFlowUnit((T) T.generic());
+  }
+
   @Override
   public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
     long startTime = System.currentTimeMillis();
