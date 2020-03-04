@@ -32,6 +32,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.met
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.JvmMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaRuntimeMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaVerticesMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.sys.AllJvmSamplers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.listener.MisbehavingGraphOperateMethodListener;
@@ -77,6 +78,8 @@ public class PerformanceAnalyzerApp {
       new SampleAggregator(RcaGraphMetrics.values());
   public static final SampleAggregator RCA_RUNTIME_METRICS_AGGREGATOR =
       new SampleAggregator(RcaRuntimeMetrics.values());
+  public static final SampleAggregator RCA_VERTICES_METRICS_AGGREGATOR =
+      new SampleAggregator(RcaVerticesMetrics.values());
 
   private static final IListener MISBEHAVING_NODES_LISTENER =
       new MisbehavingGraphOperateMethodListener();
@@ -90,8 +93,8 @@ public class PerformanceAnalyzerApp {
 
   public static final RcaStatsReporter RCA_STATS_REPORTER =
       new RcaStatsReporter(Arrays.asList(RCA_GRAPH_METRICS_AGGREGATOR,
-          RCA_RUNTIME_METRICS_AGGREGATOR, ERRORS_AND_EXCEPTIONS_AGGREGATOR,
-          PERIODIC_SAMPLE_AGGREGATOR));
+          RCA_RUNTIME_METRICS_AGGREGATOR, RCA_VERTICES_METRICS_AGGREGATOR,
+          ERRORS_AND_EXCEPTIONS_AGGREGATOR, PERIODIC_SAMPLE_AGGREGATOR));
   public static final PeriodicSamplers PERIODIC_SAMPLERS =
       new PeriodicSamplers(PERIODIC_SAMPLE_AGGREGATOR, getAllSamplers(),
           (MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval) / 2,
