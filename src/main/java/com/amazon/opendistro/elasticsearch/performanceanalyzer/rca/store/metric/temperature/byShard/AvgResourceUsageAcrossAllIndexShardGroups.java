@@ -34,6 +34,7 @@ public class AvgResourceUsageAcrossAllIndexShardGroups extends SumOverOperations
     }
 
     public static final String ALIAS = "sum_max";
+    public static final String SHARD_AVG = "shard_avg";
 
     protected Field<?> getAggrDimension() {
         return super.getAggrDimension().as(ALIAS);

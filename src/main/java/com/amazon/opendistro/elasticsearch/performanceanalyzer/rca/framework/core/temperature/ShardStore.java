@@ -15,7 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.profile.level.ShardProfile;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ShardProfileSummary;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +34,7 @@ public class ShardStore {
      * The key for the outer map is indexName. The key for inner map is the ShardID. Given an
      * indexName and shardId, a shard can be uniquely identified.
      */
-    Map<String, Map<Integer, ShardProfile>> list;
+    Map<String, Map<Integer, ShardProfileSummary>> list;
 
     public ShardStore() {
         // ShardStore is modified by all the RcaGraph nodes that calculate temperature along a
@@ -44,27 +44,27 @@ public class ShardStore {
     }
 
     @Nonnull
-    public ShardProfile getOrCreateIfAbsent(String indexName, int shardId) {
-        Map<Integer, ShardProfile> innerMap = list.get(indexName);
+    public ShardProfileSummary getOrCreateIfAbsent(String indexName, int shardId) {
+        Map<Integer, ShardProfileSummary> innerMap = list.get(indexName);
         if (innerMap == null) {
             // No element with the index name exists; create one.
             innerMap = new ConcurrentHashMap<>();
             list.put(indexName, innerMap);
         }
-        ShardProfile shardProfile = innerMap.get(shardId);
-        if (shardProfile == null) {
+        ShardProfileSummary shardProfileSummary = innerMap.get(shardId);
+        if (shardProfileSummary == null) {
             // Could not find a shard with the given indexname and shardId; create one.
-            shardProfile = new ShardProfile(indexName, shardId);
-            innerMap.put(shardId, shardProfile);
+            shardProfileSummary = new ShardProfileSummary(indexName, shardId);
+            innerMap.put(shardId, shardProfileSummary);
         }
-        return shardProfile;
+        return shardProfileSummary;
     }
 
-    public List<ShardProfile> getAllShards() {
-        List<ShardProfile> shardProfileList = new ArrayList<>();
-        for (Map<Integer, ShardProfile> shardIdToShardMap : list.values()) {
-            shardProfileList.addAll(shardIdToShardMap.values());
+    public List<ShardProfileSummary> getAllShards() {
+        List<ShardProfileSummary> shardProfileSummaryList = new ArrayList<>();
+        for (Map<Integer, ShardProfileSummary> shardIdToShardMap : list.values()) {
+            shardProfileSummaryList.addAll(shardIdToShardMap.values());
         }
-        return shardProfileList;
+        return shardProfileSummaryList;
     }
 }

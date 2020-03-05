@@ -16,7 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.DetailedNodeTemperatureFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.DimensionalTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
@@ -25,7 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.NodeLevelUsageForCpu;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.CpuUtilShardIndependent;
 
-public class CpuUtilHeatRca extends Rca<DetailedNodeTemperatureFlowUnit> {
+public class CpuUtilHeatRca extends Rca<DimensionalTemperatureFlowUnit> {
     private final NodeLevelUsageForCpu CPU_UTIL_PEAK_USAGE;
     private final CpuUtilByShard CPU_UTIL_BY_SHARD;
     private final AvgCpuUtilByShards AVG_CPU_UTIL_BY_SHARD;
@@ -53,9 +53,9 @@ public class CpuUtilHeatRca extends Rca<DetailedNodeTemperatureFlowUnit> {
     }
 
     @Override
-    public DetailedNodeTemperatureFlowUnit operate() {
+    public DimensionalTemperatureFlowUnit operate() {
         System.out.println("Executing: " + name());
-        DetailedNodeTemperatureFlowUnit flowUnit = ResourceHeatCalculator.getResourceHeat(
+        DimensionalTemperatureFlowUnit flowUnit = DimensionalHeatCalculator.getTemperatureForDimension(
                 shardStore,
                 TemperatureVector.Dimension.CpuUtil,
                 CPU_UTIL_BY_SHARD,

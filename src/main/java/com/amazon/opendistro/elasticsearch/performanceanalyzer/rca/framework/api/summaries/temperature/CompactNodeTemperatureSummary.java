@@ -21,7 +21,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTemp
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.profile.level.FullNodeProfile;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
@@ -43,18 +42,33 @@ public class CompactNodeTemperatureSummary extends GenericSummary {
     private double totalConsumedByDimension[];
     private int numOfShards[];
 
-    public CompactNodeTemperatureSummary(String nodeId, String hostAddress) {
+    /**
+     * A {@code CompactNodeTemperatureSummary} is created at the node level and saved and also
+     * the same is created at the elected master level and also saved. So in a co-located master,
+     * this will be saved twice and therefore, we distinguish it using this field.
+     */
+    public enum Level {
+        MASTER,
+        DATA
+    }
+
+    private final Level level;
+
+    public CompactNodeTemperatureSummary(String nodeId, String hostAddress, Level level) {
         super();
         this.nodeId = nodeId;
         this.hostAddress = hostAddress;
+        this.level = level;
         this.temperatureVector = new TemperatureVector();
+        this.totalConsumedByDimension = new double[TemperatureVector.Dimension.values().length];
+        this.numOfShards = new int[TemperatureVector.Dimension.values().length];
     }
 
-    public void fillFromNodeProfile(FullNodeProfile nodeProfile) {
+    public void fillFromNodeProfile(FullNodeTemperatureSummary nodeProfile) {
         this.temperatureVector = nodeProfile.getTemperatureVector();
         this.totalConsumedByDimension = new double[TemperatureVector.Dimension.values().length];
         this.numOfShards = new int[TemperatureVector.Dimension.values().length];
-        for (DetailedNodeTemperatureSummary nodeDimensionProfile : nodeProfile.getNodeDimensionProfiles()) {
+        for (DimensionalTemperatureSummary nodeDimensionProfile : nodeProfile.getNodeDimensionProfiles()) {
             if (nodeDimensionProfile != null) {
                 int index = nodeDimensionProfile.getProfileForDimension().ordinal();
                 totalConsumedByDimension[index] = nodeDimensionProfile.getTotalUsage();
@@ -129,7 +143,8 @@ public class CompactNodeTemperatureSummary extends GenericSummary {
 
     public static CompactNodeTemperatureSummary buildNodeTemperatureProfileFromMessage(NodeTemperatureSummaryMessage message) {
         CompactNodeTemperatureSummary compactNodeTemperatureSummary =
-                new CompactNodeTemperatureSummary(message.getNodeID(), message.getHostAddress());
+                new CompactNodeTemperatureSummary(message.getNodeID(), message.getHostAddress(),
+                        Level.MASTER);
 
         compactNodeTemperatureSummary.totalConsumedByDimension = new double[TemperatureVector.Dimension.values().length];
         compactNodeTemperatureSummary.numOfShards = new int[TemperatureVector.Dimension.values().length];
@@ -154,6 +169,7 @@ public class CompactNodeTemperatureSummary extends GenericSummary {
         List<Field<?>> schema = new ArrayList<>();
         schema.add(DSL.field(DSL.name(HotNodeSummary.SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME), String.class));
         schema.add(DSL.field(DSL.name(HotNodeSummary.SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME), String.class));
+        schema.add(DSL.field(DSL.name("level"), String.class));
         for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
             schema.add(DSL.field(DSL.name(dimension.NAME + "_mean"), String.class));
             schema.add(DSL.field(DSL.name(dimension.NAME + "_total"), String.class));
@@ -167,6 +183,7 @@ public class CompactNodeTemperatureSummary extends GenericSummary {
         List<Object> value = new ArrayList<>();
         value.add(nodeId);
         value.add(hostAddress);
+        value.add(level);
 
         for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
             value.add(temperatureVector.getTemperatureFor(dimension));
@@ -181,6 +198,7 @@ public class CompactNodeTemperatureSummary extends GenericSummary {
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("node_id", nodeId);
         jsonObject.addProperty("host", hostAddress);
+        jsonObject.addProperty("level", level.toString());
         jsonObject.add("temperature", temperatureVector.toJson());
         return jsonObject;
     }

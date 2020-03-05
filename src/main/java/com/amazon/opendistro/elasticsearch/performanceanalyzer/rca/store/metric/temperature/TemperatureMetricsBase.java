@@ -27,7 +27,7 @@ import org.jooq.Record;
 import org.jooq.Result;
 import org.jooq.impl.DSL;
 
-public abstract class PyrometerAggrMetrics extends AggregateMetric {
+public abstract class TemperatureMetricsBase extends AggregateMetric {
 
     /**
      * Metrics are gathered each time they are sampled by the reader. Although the reader polls
@@ -48,8 +48,11 @@ public abstract class PyrometerAggrMetrics extends AggregateMetric {
      */
     public static final AggregateFunction AGGR_TYPE_OVER_METRICS_DB_COLUMN = AggregateFunction.SUM;
 
-    public PyrometerAggrMetrics(TemperatureVector.Dimension metricType,
-                                String[] groupByDimensions) {
+    public static final String AGGR_OVER_AGGR_NAME =
+            AGGR_TYPE_OVER_METRICS_DB_COLUMN + "_of_" + METRICS_DB_AGG_COLUMN_USED;
+
+    public TemperatureMetricsBase(TemperatureVector.Dimension metricType,
+                                  String[] groupByDimensions) {
         // The temperature intendeds to spread the temperature around the cluster by re-allocating shards
         // from the hottest of nodes to the nodes that are relatively cold (with some randomness
         // so that it does not overwhelm the coldest node). Pyrometer also wants to size for peak
@@ -69,8 +72,9 @@ public abstract class PyrometerAggrMetrics extends AggregateMetric {
     protected List<Field<?>> aggrColumnAsSelectField() {
 
         final Field<Double> numDimension = DSL.field(
-                DSL.name(PyrometerAggrMetrics.METRICS_DB_AGG_COLUMN_USED), Double.class);
+                DSL.name(TemperatureMetricsBase.METRICS_DB_AGG_COLUMN_USED), Double.class);
         // This aggregate function is applied after group by.
-        return Arrays.asList(getAggDimension(numDimension, AGGR_TYPE_OVER_METRICS_DB_COLUMN));
+        return Arrays.asList(
+                getAggDimension(numDimension, AGGR_TYPE_OVER_METRICS_DB_COLUMN).as(AGGR_OVER_AGGR_NAME));
     }
 }

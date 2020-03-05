@@ -16,7 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.PyrometerAggrMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.TemperatureMetricsBase;
 import java.util.List;
 import org.jooq.DSLContext;
 import org.jooq.Field;
@@ -28,7 +28,7 @@ import org.jooq.Result;
  * tract resource utilization by shard ID. Shard on a node can be uniquely identified by the
  * index name and shard ID. It might also help to also consider the Operation dimension ?
  */
-public class NodeLevelUsageForResourceType extends PyrometerAggrMetrics {
+public class NodeLevelUsageForResourceType extends TemperatureMetricsBase {
     // For peak usage there is no group by clause used, therefore this is empty.
     private static final String[] dimensions = {};
 

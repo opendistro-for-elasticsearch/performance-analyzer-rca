@@ -16,7 +16,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.google.gson.JsonElement;
@@ -29,31 +28,32 @@ import org.jooq.Field;
 import org.jooq.impl.DSL;
 
 public class ClusterTemperatureSummary extends GenericSummary {
-    private List<CompactNodeTemperatureSummary> nodesSummary;
+    private List<CompactNodeTemperatureSummary> nodesSummaries;
     private TemperatureVector temperatureVector;
+    private int numberOfNodes;
+    private double[] totalUsageByDimension;
 
-    public ClusterTemperatureSummary() {
-        nodesSummary = new ArrayList<>();
+    public ClusterTemperatureSummary(int numberOfNodes) {
+        nodesSummaries = new ArrayList<>();
         temperatureVector = new TemperatureVector();
-    }
-
-
-    public TemperatureVector getTemperatureVector() {
-        return temperatureVector;
+        totalUsageByDimension = new double[TemperatureVector.Dimension.values().length];
+        this.numberOfNodes = numberOfNodes;
     }
 
     public void setTemperatureByDimension(TemperatureVector.Dimension dimension,
-                                          TemperatureVector.NormalizedValue value) {
+                                          TemperatureVector.NormalizedValue value,
+                                          double totalUsage) {
         temperatureVector.updateTemperatureForDimension(dimension, value);
+        totalUsageByDimension[dimension.ordinal()] = totalUsage;
     }
 
     public void addNodesSummaries(Collection<CompactNodeTemperatureSummary> nodeTemperatureSummaries) {
-        nodesSummary.addAll(nodeTemperatureSummaries);
+        nodesSummaries.addAll(nodeTemperatureSummaries);
     }
 
     public List<GenericSummary> getNestedSummaryList() {
         List<GenericSummary> summaries = new ArrayList<>();
-        for (GenericSummary summary: nodesSummary) {
+        for (GenericSummary summary: nodesSummaries) {
             summaries.add(summary);
         }
         return summaries;
@@ -77,8 +77,10 @@ public class ClusterTemperatureSummary extends GenericSummary {
     @Override
     public List<Field<?>> getSqlSchema() {
         List<Field<?>> schema = new ArrayList<>();
+        schema.add(DSL.field(DSL.name("node_count"), Integer.class));
         for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
-            schema.add(DSL.field(DSL.name(dimension.NAME), Short.class));
+            schema.add(DSL.field(DSL.name(dimension.NAME + "_mean"), Short.class));
+            schema.add(DSL.field(DSL.name(dimension.NAME + "_total"), Double.class));
         }
         return schema;
     }
@@ -86,13 +88,16 @@ public class ClusterTemperatureSummary extends GenericSummary {
     @Override
     public List<Object> getSqlValue() {
         List<Object> values = new ArrayList<>();
+        values.add(numberOfNodes);
         for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
             TemperatureVector.NormalizedValue normalizedValue =
                     temperatureVector.getTemperatureFor(dimension);
             if (normalizedValue == null) {
-                values.add(null);
+                values.add(null);  // null for mean
+                values.add(null);  // null for total
             } else {
                 values.add(temperatureVector.getTemperatureFor(dimension).getPOINTS());
+                values.add(totalUsageByDimension[dimension.ordinal()]);
             }
         }
         return values;
@@ -102,7 +107,7 @@ public class ClusterTemperatureSummary extends GenericSummary {
     public JsonElement toJson() {
         JsonObject summaryObj = new JsonObject();
         summaryObj.add("temperature", temperatureVector.toJson());
-        this.nestedSummaryList.forEach(
+        getNestedSummaryList().forEach(
                 summary -> {
                     summaryObj.add(summary.getTableName(), summary.toJson());
                 }

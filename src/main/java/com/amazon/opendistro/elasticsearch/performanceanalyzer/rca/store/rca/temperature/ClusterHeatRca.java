@@ -23,18 +23,14 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.CompactNodeTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.CompactNodeTemperatureSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.NormalizedConsumption;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class ClusterHeatRca extends Rca<ResourceFlowUnit> {
     private final NodeHeatRca nodeHeatRca;
-    private static final Logger LOG = LogManager.getLogger(ClusterHeatRca.class);
 
     public ClusterHeatRca(NodeHeatRca nodeHeatRca) {
         super(5);
@@ -54,18 +50,19 @@ public class ClusterHeatRca extends Rca<ResourceFlowUnit> {
     public ResourceFlowUnit operate() {
         List<CompactNodeTemperatureFlowUnit> flowUnits = nodeHeatRca.getFlowUnits();
         Map<String, CompactNodeTemperatureSummary> nodeTemperatureSummaryMap = new HashMap<>();
+        final int NUM_NODES = flowUnits.size();
 
-        ClusterTemperatureSummary clusterTemperatureSummary = new ClusterTemperatureSummary();
+        ClusterTemperatureSummary clusterTemperatureSummary = new ClusterTemperatureSummary(NUM_NODES);
         for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
             double totalForDimension = 0.0;
             for (CompactNodeTemperatureFlowUnit nodeFlowUnit : flowUnits) {
                 CompactNodeTemperatureSummary summary = nodeFlowUnit.getCompactNodeTemperatureSummary();
                 totalForDimension += summary.getTotalConsumedByDimension(dimension);
             }
-            double averageForDimension = totalForDimension / flowUnits.size();
+            double nodeAverageForDimension = totalForDimension / NUM_NODES;
             TemperatureVector.NormalizedValue value =
-                    NormalizedConsumption.calculate(averageForDimension, totalForDimension);
-            clusterTemperatureSummary.setTemperatureByDimension(dimension, value);
+                    TemperatureVector.NormalizedValue.calculate(nodeAverageForDimension, totalForDimension);
+            clusterTemperatureSummary.setTemperatureByDimension(dimension, value, totalForDimension);
 
             for (CompactNodeTemperatureFlowUnit nodeFlowUnit : flowUnits) {
                 CompactNodeTemperatureSummary obtainedNodeTempSummary =
@@ -73,12 +70,13 @@ public class ClusterHeatRca extends Rca<ResourceFlowUnit> {
                 String key = obtainedNodeTempSummary.getNodeId();
 
                 nodeTemperatureSummaryMap.putIfAbsent(key,
-                        new CompactNodeTemperatureSummary(obtainedNodeTempSummary.getNodeId(), obtainedNodeTempSummary.getHostAddress()));
+                        new CompactNodeTemperatureSummary(obtainedNodeTempSummary.getNodeId(),
+                                obtainedNodeTempSummary.getHostAddress(), CompactNodeTemperatureSummary.Level.MASTER));
                 CompactNodeTemperatureSummary constructedCompactNodeTemperatureSummary = nodeTemperatureSummaryMap.get(key);
 
                 double obtainedTotal = obtainedNodeTempSummary.getTotalConsumedByDimension(dimension);
                 TemperatureVector.NormalizedValue newClusterBasedValue =
-                        NormalizedConsumption.calculate(obtainedTotal, totalForDimension);
+                        TemperatureVector.NormalizedValue.calculate(obtainedTotal, totalForDimension);
 
                 constructedCompactNodeTemperatureSummary.setTemperatureForDimension(dimension, newClusterBasedValue);
                 constructedCompactNodeTemperatureSummary.setNumOfShards(dimension,

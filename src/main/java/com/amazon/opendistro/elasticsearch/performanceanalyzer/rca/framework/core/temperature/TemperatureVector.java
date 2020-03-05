@@ -53,6 +53,15 @@ public class TemperatureVector {
             this.POINTS = heatValue;
         }
 
+        /**
+         * Units of a resource consumed is a number between 0 and 10 where 0 being cold(not using any
+         * resource) and 10 being hot(almost all the units of the resource were consumed by it).
+         * Temperature is calculated by determining what parts of 10 is consumed by the resource.
+         */
+        public static NormalizedValue calculate(double consumedByCandidate, double totalConsumption) {
+            return new NormalizedValue((short) (consumedByCandidate * 10 / totalConsumption));
+        }
+
         public NormalizedValue diff(NormalizedValue b) {
             return new NormalizedValue((short) (POINTS - b.POINTS));
         }

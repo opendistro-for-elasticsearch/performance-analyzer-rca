@@ -110,7 +110,7 @@ public class RcaResponse extends GenericSummary {
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.RCA_COL_NAME, this.rcaName);
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, this.timeStamp);
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.STATE_COL_NAME, this.state);
-    this.nestedSummaryList.forEach(
+    getNestedSummaryList().forEach(
         summary -> {
           summaryObj.add(summary.getTableName(), summary.toJson());
         }

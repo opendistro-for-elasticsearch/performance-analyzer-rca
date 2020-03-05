@@ -16,11 +16,9 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.profile.level.ShardProfile;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.protobuf.GeneratedMessageV3;
@@ -34,7 +32,7 @@ import org.jooq.impl.DSL;
 /**
  * A node dimension profile is categorization of all shards in the node into different heatZones.
  */
-public class DetailedNodeTemperatureSummary extends GenericSummary {
+public class DimensionalTemperatureSummary extends GenericSummary {
     private final TemperatureVector.Dimension profileForDimension;
     private final TemperatureVector.NormalizedValue meanTemperature;
     private final double totalUsage;
@@ -42,8 +40,9 @@ public class DetailedNodeTemperatureSummary extends GenericSummary {
     private final ZoneProfileSummary[] zoneProfiles;
     private int numberOfShards;
 
-    public DetailedNodeTemperatureSummary(TemperatureVector.Dimension profileForDimension,
-                                          TemperatureVector.NormalizedValue meanTemperature, double totalUsage) {
+    public DimensionalTemperatureSummary(TemperatureVector.Dimension profileForDimension,
+                                         TemperatureVector.NormalizedValue meanTemperature,
+                                         double totalUsage) {
         this.profileForDimension = profileForDimension;
         this.meanTemperature = meanTemperature;
         this.totalUsage = totalUsage;
@@ -61,7 +60,7 @@ public class DetailedNodeTemperatureSummary extends GenericSummary {
         this.numberOfShards = numberOfShards;
     }
 
-    public void addShardToZone(ShardProfile shard, HeatZoneAssigner.Zone zone) {
+    public void addShardToZone(ShardProfileSummary shard, HeatZoneAssigner.Zone zone) {
         ZoneProfileSummary profile = zoneProfiles[zone.ordinal()];
         profile.addShard(shard);
     }
@@ -137,7 +136,7 @@ public class DetailedNodeTemperatureSummary extends GenericSummary {
         summaryObj.addProperty("mean", getMeanTemperature().getPOINTS());
         summaryObj.addProperty("total", getTotalUsage());
         summaryObj.addProperty("numShards", getNumberOfShards());
-        this.nestedSummaryList.forEach(
+        getNestedSummaryList().forEach(
                 summary -> {
                     summaryObj.add(summary.getTableName(), summary.toJson());
                 }
@@ -146,18 +145,19 @@ public class DetailedNodeTemperatureSummary extends GenericSummary {
     }
 
     class ZoneProfileSummary extends GenericSummary {
-        List<ShardProfile> shardProfiles;
-        ShardProfile minShard;
-        ShardProfile maxShard;
+        List<ShardProfileSummary> shardProfileSummaries;
+        ShardProfileSummary minShard;
+        ShardProfileSummary maxShard;
 
         private final HeatZoneAssigner.Zone myZone;
 
         ZoneProfileSummary(HeatZoneAssigner.Zone myZone) {
             this.myZone = myZone;
-            shardProfiles = new ArrayList<>();
+            shardProfileSummaries = new ArrayList<>();
         }
 
-        void addShard(ShardProfile shard) {
+        void addShard(ShardProfileSummary shard) {
+            shardProfileSummaries.add(shard);
             if (minShard == null) {
                 minShard = shard;
             } else {
@@ -195,7 +195,7 @@ public class DetailedNodeTemperatureSummary extends GenericSummary {
         public String toString() {
             return "{"
                     + "myZone=" + myZone
-                    + ", shardProfiles=" + shardProfiles
+                    + ", shardProfiles=" + shardProfileSummaries
                     + ", minShard=" + minShard
                     + ", maxShard=" + maxShard
                     + '}';
@@ -225,6 +225,14 @@ public class DetailedNodeTemperatureSummary extends GenericSummary {
             return schema;
         }
 
+        public List<GenericSummary> getNestedSummaryList() {
+            List<GenericSummary> shardSummaries = new ArrayList<>();
+            for (ShardProfileSummary shardProfileSummary : shardProfileSummaries) {
+                shardSummaries.add(shardProfileSummary);
+            }
+            return shardSummaries;
+        }
+
         @Override
         public List<Object> getSqlValue() {
             List<Object> values = new ArrayList<>();
@@ -240,7 +248,7 @@ public class DetailedNodeTemperatureSummary extends GenericSummary {
             summaryObj.addProperty("zone_name", myZone.name());
             summaryObj.add("min_shard", minShard.toJson());
             summaryObj.add("max_shard", maxShard.toJson());
-            this.nestedSummaryList.forEach(
+            getNestedSummaryList().forEach(
                     summary -> {
                         summaryObj.add(summary.getTableName(), summary.toJson());
                     }

@@ -68,7 +68,7 @@ public class HotNodeSummary extends GenericSummary {
     final HotNodeSummaryMessage.Builder summaryMessageBuilder = HotNodeSummaryMessage.newBuilder();
     summaryMessageBuilder.setNodeID(this.nodeID);
     summaryMessageBuilder.setHostAddress(this.hostAddress);
-    for (GenericSummary nestedSummary : this.nestedSummaryList) {
+    for (GenericSummary nestedSummary : getNestedSummaryList()) {
       summaryMessageBuilder.getHotResourceSummaryListBuilder()
           .addHotResourceSummary(nestedSummary.buildSummaryMessage());
     }
@@ -94,7 +94,7 @@ public class HotNodeSummary extends GenericSummary {
 
   @Override
   public String toString() {
-    return this.nodeID + " " + this.hostAddress + " " + this.nestedSummaryList;
+    return this.nodeID + " " + this.hostAddress + " " + getNestedSummaryList();
   }
 
   @Override
@@ -127,7 +127,7 @@ public class HotNodeSummary extends GenericSummary {
     JsonObject summaryObj = new JsonObject();
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME, this.nodeID);
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME, this.hostAddress);
-    this.nestedSummaryList.forEach(
+    getNestedSummaryList().forEach(
         summary -> {
           summaryObj.add(summary.getTableName(), summary.toJson());
         }

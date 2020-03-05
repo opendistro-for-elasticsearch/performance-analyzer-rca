@@ -17,7 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 
-public class IOWriteSyscallsShardIndependent extends PyrometerAggrMetricsShardIndependent {
+public class IOWriteSyscallsShardIndependent extends TemperatureMetricsBaseShardIndependent {
     public IOWriteSyscallsShardIndependent() {
         super(TemperatureVector.Dimension.IOWriteSysCallsRate);
     }

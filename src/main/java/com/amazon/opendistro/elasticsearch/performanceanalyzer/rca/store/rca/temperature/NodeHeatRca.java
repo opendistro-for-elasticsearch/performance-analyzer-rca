@@ -20,10 +20,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.CompactNodeTemperatureFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.DetailedNodeTemperatureFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.DimensionalTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.CompactNodeTemperatureSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.DetailedNodeTemperatureSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.profile.level.FullNodeProfile;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.DimensionalTemperatureSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.FullNodeTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.util.ArrayList;
@@ -64,34 +64,34 @@ public class NodeHeatRca extends Rca<CompactNodeTemperatureFlowUnit> {
      */
     @Override
     public CompactNodeTemperatureFlowUnit operate() {
-        List<DetailedNodeTemperatureFlowUnit> cpuFlowUnits = cpuUtilHeatRca.getFlowUnits();
+        List<DimensionalTemperatureFlowUnit> cpuFlowUnits = cpuUtilHeatRca.getFlowUnits();
         // EachResourceLevelHeat RCA should generate a one @{code DimensionalFlowUnit}.
         if (cpuFlowUnits.size() != 1) {
             throw new IllegalArgumentException("One flow unit expected. Found: " + cpuFlowUnits);
         }
 
-        List<DetailedNodeTemperatureSummary> nodeDimensionProfiles = new ArrayList<>();
+        List<DimensionalTemperatureSummary> nodeDimensionProfiles = new ArrayList<>();
         nodeDimensionProfiles.add(cpuFlowUnits.get(0).getNodeDimensionProfile());
-        FullNodeProfile nodeProfile = buildNodeProfile(nodeDimensionProfiles);
+        FullNodeTemperatureSummary nodeProfile = buildNodeProfile(nodeDimensionProfiles);
 
         System.out.println("Executing: " + name());
 
 
         ResourceContext resourceContext = new ResourceContext(Resources.State.UNKNOWN);
         CompactNodeTemperatureSummary summary = new CompactNodeTemperatureSummary(nodeProfile.getNodeId(),
-                nodeProfile.getHostAddress());
+                nodeProfile.getHostAddress(), CompactNodeTemperatureSummary.Level.DATA);
         summary.fillFromNodeProfile(nodeProfile);
 
         return new CompactNodeTemperatureFlowUnit(System.currentTimeMillis(), resourceContext, summary,
                 true);
     }
 
-    private FullNodeProfile buildNodeProfile(List<DetailedNodeTemperatureSummary> dimensionProfiles) {
+    private FullNodeTemperatureSummary buildNodeProfile(List<DimensionalTemperatureSummary> dimensionProfiles) {
         ClusterDetailsEventProcessor.NodeDetails currentNodeDetails =
                 ClusterDetailsEventProcessor.getCurrentNodeDetails();
-        FullNodeProfile nodeProfile = new FullNodeProfile(currentNodeDetails.getId(),
+        FullNodeTemperatureSummary nodeProfile = new FullNodeTemperatureSummary(currentNodeDetails.getId(),
                 currentNodeDetails.getHostAddress());
-        for (DetailedNodeTemperatureSummary profile: dimensionProfiles) {
+        for (DimensionalTemperatureSummary profile: dimensionProfiles) {
             nodeProfile.updateNodeDimensionProfile(profile);
         }
         return nodeProfile;

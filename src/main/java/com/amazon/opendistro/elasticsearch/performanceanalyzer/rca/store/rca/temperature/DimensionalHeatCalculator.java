@@ -16,36 +16,27 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.DetailedNodeTemperatureFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.DetailedNodeTemperatureSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.DimensionalTemperatureFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.DimensionalTemperatureSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ShardProfileSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.NormalizedConsumption;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.profile.level.ShardProfile;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.PyrometerAggrMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.TemperatureMetricsBase;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.AvgResourceUsageAcrossAllIndexShardGroups;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.SumOverOperationsForIndexShardGroup;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.NodeLevelUsageForResourceType;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.PyrometerAggrMetricsShardIndependent;
-import java.util.HashMap;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.TemperatureMetricsBaseShardIndependent;
 import java.util.List;
-import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jooq.Record;
 import org.jooq.Result;
 
-public class ResourceHeatCalculator {
-    private static final Logger LOG = LogManager.getLogger(ResourceHeatCalculator.class);
-
+public class DimensionalHeatCalculator {
     enum ColumnTypes {
         IndexName,
         ShardID,
         sum;
     }
-
-    ;
 
     /**
      * The categorization of shards as hot, warm, lukeWarm and cold based on the average resource
@@ -65,11 +56,11 @@ public class ResourceHeatCalculator {
      *                                 should be the sum of the other two.
      * @return The return is a composition of three things:
      */
-    public static DetailedNodeTemperatureFlowUnit getResourceHeat(
+    public static DimensionalTemperatureFlowUnit getTemperatureForDimension(
             ShardStore shardStore, TemperatureVector.Dimension metricType,
             SumOverOperationsForIndexShardGroup resourceByShardId,
             AvgResourceUsageAcrossAllIndexShardGroups avgResUsageByAllShards,
-            PyrometerAggrMetricsShardIndependent resourceShardIndependent,
+            TemperatureMetricsBaseShardIndependent resourceShardIndependent,
             NodeLevelUsageForResourceType resourcePeakUsage,
             TemperatureVector.NormalizedValue threshold) {
         List<MetricFlowUnit> shardIdBasedFlowUnits = resourceByShardId.getFlowUnits();
@@ -84,29 +75,32 @@ public class ResourceHeatCalculator {
             // number of indices and shards in the node.
             throw new IllegalArgumentException("Size more than expected: " + shardIdBasedFlowUnits);
         }
-        if (avgResUsageFlowUnits.size() != 1 || avgResUsageFlowUnits.get(0).getData().size() != 2) {
-            throw new IllegalArgumentException("Size more than expected: " + avgResUsageFlowUnits);
+        if (avgResUsageFlowUnits.size() != 1 || avgResUsageFlowUnits.get(0).getData().intoArrays().length != 1) {
+            throw new IllegalArgumentException("Size more than expected:\n" + avgResUsageFlowUnits.get(0).getData()
+                    + "\n found: " + avgResUsageFlowUnits.get(0).getData().intoArrays().length);
         }
-        if (shardIdIndependentFlowUnits.size() != 1 || shardIdIndependentFlowUnits.get(0).getData().size() != 2) {
-            throw new IllegalArgumentException("Size more than expected: " + shardIdIndependentFlowUnits);
+        if (shardIdIndependentFlowUnits.size() != 1 || shardIdIndependentFlowUnits.get(0).getData().intoArrays().length != 1) {
+            throw new IllegalArgumentException("Size more than expected: \n"
+                    + shardIdIndependentFlowUnits.get(0).getData());
         }
-        if (resourcePeakFlowUnits.size() != 1 || resourcePeakFlowUnits.get(0).getData().size() != 2) {
-            throw new IllegalArgumentException("Size more than expected: " + resourcePeakFlowUnits);
+        if (resourcePeakFlowUnits.size() != 1 || resourcePeakFlowUnits.get(0).getData().intoArrays().length != 1) {
+            throw new IllegalArgumentException("Size more than expected: \n"
+                    + resourcePeakFlowUnits.get(0).getData());
         }
 
         double avgValOverShards =
-                avgResUsageFlowUnits.get(0).getData().getValues(AvgResourceUsageAcrossAllIndexShardGroups.ALIAS,
+                avgResUsageFlowUnits.get(0).getData().getValues(AvgResourceUsageAcrossAllIndexShardGroups.SHARD_AVG,
                         Double.class).get(0);
         double totalConsumedInNode =
                 resourcePeakFlowUnits.get(0).getData().getValues(
-                        PyrometerAggrMetrics.AGGR_TYPE_OVER_METRICS_DB_COLUMN.name(), Double.class).get(0);
+                        TemperatureMetricsBase.AGGR_OVER_AGGR_NAME, Double.class).get(0);
         TemperatureVector.NormalizedValue avgUsageAcrossShards =
-                NormalizedConsumption.calculate(avgValOverShards, totalConsumedInNode);
+                TemperatureVector.NormalizedValue.calculate(avgValOverShards, totalConsumedInNode);
 
         Result<Record> rowsPerShard = shardIdBasedFlowUnits.get(0).getData();
 
-        DetailedNodeTemperatureSummary nodeDimensionProfile =
-                new DetailedNodeTemperatureSummary(metricType, avgUsageAcrossShards, totalConsumedInNode);
+        DimensionalTemperatureSummary nodeDimensionProfile =
+                new DimensionalTemperatureSummary(metricType, avgUsageAcrossShards, totalConsumedInNode);
 
         // The shardIdBasedFlowUnits is supposed to contain one row per shard.
         nodeDimensionProfile.setNumberOfShards(rowsPerShard.size());
@@ -119,25 +113,14 @@ public class ResourceHeatCalculator {
             double usage = record.getValue(ColumnTypes.sum.name(), Double.class);
 
             TemperatureVector.NormalizedValue normalizedConsumptionByShard =
-                    NormalizedConsumption.calculate(usage, totalConsumedInNode);
+                    TemperatureVector.NormalizedValue.calculate(usage, totalConsumedInNode);
             HeatZoneAssigner.Zone heatZoneForShard =
                     HeatZoneAssigner.assign(normalizedConsumptionByShard, avgUsageAcrossShards, threshold);
 
-            ShardProfile shardProfile = shardStore.getOrCreateIfAbsent(indexName, shardId);
-            shardProfile.addTemperatureForDimension(metricType, normalizedConsumptionByShard);
-            nodeDimensionProfile.addShardToZone(shardProfile, heatZoneForShard);
+            ShardProfileSummary shardProfileSummary = shardStore.getOrCreateIfAbsent(indexName, shardId);
+            shardProfileSummary.addTemperatureForDimension(metricType, normalizedConsumptionByShard);
+            nodeDimensionProfile.addShardToZone(shardProfileSummary, heatZoneForShard);
         }
-        return new DetailedNodeTemperatureFlowUnit(System.currentTimeMillis(), nodeDimensionProfile);
-    }
-
-    private static double parseDoubleValue(String val, String identifier) {
-        try {
-            double totalConsumedInNode =
-                    Double.parseDouble(val);
-            return totalConsumedInNode;
-        } catch (NumberFormatException ne) {
-            LOG.error("Error parsing double from in {}, found {}: " + identifier, val);
-            throw ne;
-        }
+        return new DimensionalTemperatureFlowUnit(System.currentTimeMillis(), nodeDimensionProfile);
     }
 }

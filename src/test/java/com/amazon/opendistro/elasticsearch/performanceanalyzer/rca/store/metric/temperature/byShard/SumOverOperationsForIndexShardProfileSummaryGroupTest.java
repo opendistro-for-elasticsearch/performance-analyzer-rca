@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.TemperatureMetricsBase;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.NodeLevelUsageForCpu;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.CpuUtilShardIndependent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.SQLiteReader;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SumOverOperationsForIndexShardProfileGroupTest {
+public class SumOverOperationsForIndexShardProfileSummaryGroupTest {
 
     @Test
     public void readCPU() throws SQLException {
@@ -78,6 +79,7 @@ public class SumOverOperationsForIndexShardProfileGroupTest {
         NodeLevelUsageForCpu cpuUtilPeakUsage = new NodeLevelUsageForCpu();
         mfu = cpuUtilPeakUsage.gather(reader);
         Assert.assertEquals("0.1331311626",
-                mfu.getData().getValues("sum", String.class).get(0).substring(0, 12));
+                mfu.getData().getValues(TemperatureMetricsBase.AGGR_OVER_AGGR_NAME, String.class)
+                        .get(0).substring(0, 12));
     }
 }

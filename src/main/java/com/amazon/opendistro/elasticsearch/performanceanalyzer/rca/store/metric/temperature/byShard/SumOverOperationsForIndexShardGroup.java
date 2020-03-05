@@ -17,7 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.PyrometerAggrMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.TemperatureMetricsBase;
 import java.util.List;
 import org.jooq.DSLContext;
 import org.jooq.Field;
@@ -33,7 +33,7 @@ import org.jooq.impl.DSL;
  *
  * <p>This class calculates the sum over all operations for an index,shard pair.
  */
-public class SumOverOperationsForIndexShardGroup extends PyrometerAggrMetrics {
+public class SumOverOperationsForIndexShardGroup extends TemperatureMetricsBase {
     private static final String[] dimensions = {
             AllMetrics.CommonDimension.INDEX_NAME.toString(),
             AllMetrics.CommonDimension.SHARD_ID.toString()

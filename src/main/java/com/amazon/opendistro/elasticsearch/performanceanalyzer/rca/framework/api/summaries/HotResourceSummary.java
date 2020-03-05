@@ -106,7 +106,7 @@ public class HotResourceSummary extends GenericSummary {
     summaryMessageBuilder.setMaxValue(this.maxValue);
     summaryMessageBuilder.setUnitType(this.unitType);
     summaryMessageBuilder.setTimePeriod(this.timePeriod);
-    for (GenericSummary nestedSummary : this.nestedSummaryList) {
+    for (GenericSummary nestedSummary : getNestedSummaryList()) {
       summaryMessageBuilder.getConsumersBuilder()
           .addConsumer(nestedSummary.buildSummaryMessage());
     }
@@ -144,7 +144,7 @@ public class HotResourceSummary extends GenericSummary {
         .append(" ")
         .append(this.unitType)
         .append(" ")
-        .append(this.nestedSummaryList)
+        .append(getNestedSummaryList())
         .toString();
   }
 
@@ -197,7 +197,7 @@ public class HotResourceSummary extends GenericSummary {
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.MAX_VALUE_COL_NAME, this.maxValue);
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.UNIT_TYPE_COL_NAME, this.unitType);
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.TIME_PERIOD_COL_NAME, this.timePeriod);
-    this.nestedSummaryList.forEach(
+    getNestedSummaryList().forEach(
         summary -> {
           summaryObj.add(summary.getTableName(), summary.toJson());
         }

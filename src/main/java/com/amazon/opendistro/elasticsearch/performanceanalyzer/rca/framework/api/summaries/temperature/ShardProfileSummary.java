@@ -13,20 +13,28 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.profile.level;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.google.gson.JsonObject;
+import com.google.protobuf.GeneratedMessageV3;
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Nullable;
+import org.jooq.Field;
+import org.jooq.impl.DSL;
 
-public class ShardProfile {
+public class ShardProfileSummary extends GenericSummary {
     private final String indexName;
     private final int shardId;
 
     private final TemperatureVector temperatureVector;
 
 
-    public ShardProfile(String indexName, int shardId) {
+    public ShardProfileSummary(String indexName, int shardId) {
         this.indexName = indexName;
         this.shardId = shardId;
         this.temperatureVector = new TemperatureVector();
@@ -39,6 +47,43 @@ public class ShardProfile {
                 + ", shardId=" + shardId
                 + ", temp=" + temperatureVector
                 + '}';
+    }
+
+    @Override
+    public <T extends GeneratedMessageV3> T buildSummaryMessage() {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public void buildSummaryMessageAndAddToFlowUnit(FlowUnitMessage.Builder messageBuilder) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public String getTableName() {
+        return this.getClass().getSimpleName();
+    }
+
+    @Override
+    public List<Field<?>> getSqlSchema() {
+        List<Field<?>> schema = new ArrayList<>();
+        schema.add(DSL.field(DSL.name("index_name"), String.class));
+        schema.add(DSL.field(DSL.name("shard_id"), Integer.class));
+        for (TemperatureVector.Dimension dimension: TemperatureVector.Dimension.values()) {
+            schema.add(DSL.field(DSL.name(dimension.NAME), Short.class));
+        }
+        return schema;
+    }
+
+    @Override
+    public List<Object> getSqlValue() {
+        List<Object> values = new ArrayList<>();
+        values.add(indexName);
+        values.add(shardId);
+        for (TemperatureVector.Dimension dimension: TemperatureVector.Dimension.values()) {
+            values.add(temperatureVector.getTemperatureFor(dimension));
+        }
+        return values;
     }
 
     public JsonObject toJson() {

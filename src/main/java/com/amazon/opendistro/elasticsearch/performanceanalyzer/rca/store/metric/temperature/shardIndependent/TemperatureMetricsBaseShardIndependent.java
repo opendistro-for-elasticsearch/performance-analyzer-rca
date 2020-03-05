@@ -17,7 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.PyrometerAggrMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.TemperatureMetricsBase;
 import java.util.List;
 import org.jooq.DSLContext;
 import org.jooq.Field;
@@ -48,12 +48,12 @@ import org.jooq.impl.DSL;
  * percentages will be accounted for in the system CPU, where as they should have been
  * associated with as shard and shard movement would have helped lessen the node temperature.
  */
-public class PyrometerAggrMetricsShardIndependent extends PyrometerAggrMetrics {
+public class TemperatureMetricsBaseShardIndependent extends TemperatureMetricsBase {
     private static final String[] dimensions = {
             AllMetrics.CommonDimension.OPERATION.toString()
     };
 
-    public PyrometerAggrMetricsShardIndependent(TemperatureVector.Dimension metricType) {
+    public TemperatureMetricsBaseShardIndependent(TemperatureVector.Dimension metricType) {
         super(metricType, dimensions);
     }
 

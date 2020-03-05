@@ -26,7 +26,8 @@ public class HeatZoneAssigner {
         COLD
     }
 
-    public static Zone assign(final TemperatureVector.NormalizedValue consumed, final TemperatureVector.NormalizedValue nodeAvg,
+    public static Zone assign(final TemperatureVector.NormalizedValue consumed,
+                              final TemperatureVector.NormalizedValue nodeAvg,
                               final TemperatureVector.NormalizedValue threshold) {
         Zone zone;
         if (consumed.isGreaterThan(nodeAvg)) {
