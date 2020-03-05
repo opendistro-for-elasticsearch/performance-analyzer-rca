@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.Field;
+import org.jooq.Log;
 import org.jooq.Record;
 import org.jooq.exception.DataTypeException;
 import org.jooq.impl.DSL;
@@ -52,19 +53,17 @@ public class HotResourceSummary extends GenericSummary {
   private final ResourceType resourceType;
   private double threshold;
   private double value;
-  private String unitType;
   private double avgValue;
   private double minValue;
   private double maxValue;
   private int timePeriod;
 
   public HotResourceSummary(ResourceType resourceType, double threshold,
-      double value, String unitType, int timePeriod) {
+      double value, int timePeriod) {
     super();
     this.resourceType = resourceType;
     this.threshold = threshold;
     this.value = value;
-    this.unitType = unitType;
 
     this.avgValue = Double.NaN;
     this.minValue = Double.NaN;
@@ -86,10 +85,6 @@ public class HotResourceSummary extends GenericSummary {
     return this.value;
   }
 
-  public String getUnitType() {
-    return this.unitType;
-  }
-
   public int getTimePeriod() {
     return this.timePeriod;
   }
@@ -104,7 +99,6 @@ public class HotResourceSummary extends GenericSummary {
     summaryMessageBuilder.setAvgValue(this.avgValue);
     summaryMessageBuilder.setMinValue(this.minValue);
     summaryMessageBuilder.setMaxValue(this.maxValue);
-    summaryMessageBuilder.setUnitType(this.unitType);
     summaryMessageBuilder.setTimePeriod(this.timePeriod);
     for (GenericSummary nestedSummary : this.nestedSummaryList) {
       summaryMessageBuilder.getConsumersBuilder()
@@ -121,7 +115,7 @@ public class HotResourceSummary extends GenericSummary {
   public static HotResourceSummary buildHotResourceSummaryFromMessage(
       HotResourceSummaryMessage message) {
     HotResourceSummary newSummary = new HotResourceSummary(message.getResourceType(), message.getThreshold(),
-        message.getValue(), message.getUnitType(), message.getTimePeriod());
+        message.getValue(), message.getTimePeriod());
     newSummary
         .setValueDistribution(message.getMinValue(), message.getMaxValue(), message.getAvgValue());
     if (message.hasConsumers()) {
@@ -142,7 +136,7 @@ public class HotResourceSummary extends GenericSummary {
         .append(" ")
         .append(this.value)
         .append(" ")
-        .append(this.unitType)
+        .append(ResourceTypeUtil.getResourceTypeUnit(this.resourceType))
         .append(" ")
         .append(this.nestedSummaryList)
         .toString();
@@ -176,7 +170,7 @@ public class HotResourceSummary extends GenericSummary {
     value.add(Double.valueOf(this.avgValue));
     value.add(Double.valueOf(this.minValue));
     value.add(Double.valueOf(this.maxValue));
-    value.add(this.unitType);
+    value.add(ResourceTypeUtil.getResourceTypeUnit(this.resourceType));
     value.add(Integer.valueOf(this.timePeriod));
     return value;
   }
@@ -195,13 +189,13 @@ public class HotResourceSummary extends GenericSummary {
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.AVG_VALUE_COL_NAME, this.avgValue);
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.MIN_VALUE_COL_NAME, this.minValue);
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.MAX_VALUE_COL_NAME, this.maxValue);
-    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.UNIT_TYPE_COL_NAME, this.unitType);
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.UNIT_TYPE_COL_NAME,
+        ResourceTypeUtil.getResourceTypeUnit(this.resourceType));
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.TIME_PERIOD_COL_NAME, this.timePeriod);
-    this.nestedSummaryList.forEach(
-        summary -> {
-          summaryObj.add(summary.getTableName(), summary.toJson());
-        }
-    );
+    if (!this.nestedSummaryList.isEmpty()) {
+      String tableName = this.nestedSummaryList.get(0).getTableName();
+      summaryObj.add(tableName, this.nestedSummaryListToJson());
+    }
     return summaryObj;
   }
 
@@ -265,13 +259,13 @@ public class HotResourceSummary extends GenericSummary {
       Double avgValue = record.get(ResourceSummaryField.AVG_VALUE_FILELD.getField(), Double.class);
       Double minValue = record.get(ResourceSummaryField.MIN_VALUE_FILELD.getField(), Double.class);
       Double maxValue = record.get(ResourceSummaryField.MAX_VALUE_FILELD.getField(), Double.class);
-      String unitType = record.get(ResourceSummaryField.UNIT_TYPE_FILELD.getField(), String.class);
       Integer timePeriod = record.get(ResourceSummaryField.TIME_PERIOD_FILELD.getField(), Integer.class);
       summary = new HotResourceSummary(ResourceTypeUtil.buildResourceType(resourceTypeName),
-          threshold, value, unitType, timePeriod);
-      if ((!Double.isNaN(avgValue))
-          && (!Double.isNaN(minValue))
-          && (!Double.isNaN(maxValue))) {
+          threshold, value, timePeriod);
+      // those three fields are optional. check before setting to the obj
+      if (avgValue != null
+          && minValue != null
+          && maxValue != null) {
         summary.setValueDistribution(minValue, maxValue, avgValue);
       }
     }
@@ -280,6 +274,10 @@ public class HotResourceSummary extends GenericSummary {
     }
     catch (DataTypeException de) {
       LOG.error("Fails to convert data type");
+    }
+    // we are very unlikely to catch this exception unless some fields are not persisted properly.
+    catch (NullPointerException ne) {
+      LOG.error("read null object from SQL, trace : {} ", ne.getStackTrace());
     }
     return summary;
   }

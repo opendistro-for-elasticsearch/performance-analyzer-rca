@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.JooqFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.protobuf.GeneratedMessageV3;
@@ -105,11 +106,10 @@ public class HotClusterSummary extends GenericSummary {
     JsonObject summaryObj = new JsonObject();
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NUM_OF_NODES_COL_NAME, this.numOfNodes);
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NUM_OF_UNHEALTHY_NODES_COL_NAME, this.numOfUnhealthyNodes);
-    this.nestedSummaryList.forEach(
-        summary -> {
-          summaryObj.add(summary.getTableName(), summary.toJson());
-        }
-    );
+    if (!this.nestedSummaryList.isEmpty()) {
+      String tableName = this.nestedSummaryList.get(0).getTableName();
+      summaryObj.add(tableName, this.nestedSummaryListToJson());
+    }
     return summaryObj;
   }
 
@@ -164,6 +164,10 @@ public class HotClusterSummary extends GenericSummary {
     }
     catch (DataTypeException de) {
       LOG.error("Fails to convert data type");
+    }
+    // we are very unlikely to catch this exception unless some fields are not persisted properly.
+    catch (NullPointerException ne) {
+      LOG.error("read null object from SQL, trace : {} ", ne.getStackTrace());
     }
     return summary;
   }

@@ -48,17 +48,22 @@ message ResourceContextMessage {
 /*
   Enum for different resource type
 */
+message ResourceTypeOptions {
+  string resourceTypeName = 1;
+  string resourceTypeUnit = 2;
+}
+
 extend google.protobuf.EnumValueOptions {
-  string resourceTypeName = 50000;
+  ResourceTypeOptions resourceTypeOptions = 50000;
 }
 
 enum JvmEnum {
-  OLD_GEN = 0 [(resourceTypeName) = "old gen"];
-  YOUNG_GEN = 1 [(resourceTypeName) = "young gen"];
+  OLD_GEN = 0 [(resourceTypeOptions).resourceTypeName = "old gen", (resourceTypeOptions).resourceTypeUnit = "heap usage in percentage"];
+  YOUNG_GEN = 1 [(resourceTypeOptions).resourceTypeName = "young gen", (resourceTypeOptions).resourceTypeUnit = "promotion rate in mb/s"];
 }
 
 enum HardwareEnum {
-  CPU = 0 [(resourceTypeName) = "cpu usage"];
+  CPU = 0 [(resourceTypeOptions).resourceTypeName = "cpu usage", (resourceTypeOptions).resourceTypeUnit = "cpu usage in percentage"];
 }
 
 /*
@@ -95,8 +100,7 @@ message HotResourceSummaryMessage {
     double avgValue = 5;
     double minValue = 6;
     double maxValue = 7;
-    string unitType = 8;
-    int32 timePeriod = 9;
+    int32 timePeriod = 8;
 }
 message HotNodeSummaryMessage {
     string nodeID = 1;

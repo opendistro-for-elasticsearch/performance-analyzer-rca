@@ -174,7 +174,7 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
       if (!Double.isNaN(avgPromotionRate)
           && avgPromotionRate > PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC * this.lowerBoundThreshold) {
         summary = new HotResourceSummary(this.resourceType,
-            PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC, avgPromotionRate, "promotion rate in mb/s",
+            PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC, avgPromotionRate,
             PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
       }
 
