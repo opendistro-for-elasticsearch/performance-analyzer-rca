@@ -20,34 +20,19 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.measure
 import java.util.Collections;
 import java.util.List;
 
-public enum RcaRuntimeMetrics implements MeasurementSet {
-  /**
-   * The number of times the framework was stopped by the operator.
-   */
-  RCA_STOPPED_BY_OPERATOR(
-      "RcaStoppedByOperator", "count", Collections.singletonList(Statistics.COUNT)),
+/**
+ * metrics added by each RCA vertex in RCA graph. All metrics under this category are
+ * RCA specific
+ */
+public enum RcaVerticesMetrics implements MeasurementSet {
+  NUM_YOUNG_GEN_RCA_TRIGGERED(
+      "YoungGenRcaCount", "count", Collections.singletonList(Statistics.COUNT)),
+  NUM_OLD_GEN_RCA_TRIGGERED(
+      "YoungGenRcaCount", "count", Collections.singletonList(Statistics.COUNT)),
+  NUM_HIGH_HEAP_CLUSTER_RCA_TRIGGERED(
+      "HighHeapClusterRcaCount", "count", Collections.singletonList(Statistics.COUNT));
 
-  /**
-   * The number of times the framework was restarted by the operator.
-   */
-  RCA_RESTARTED_BY_OPERATOR(
-      "RcaRestartedByOperator", "count", Collections.singletonList(Statistics.COUNT)),
-
-  /**
-   * ES APIs calls are expensive and we want to keep track of how many we are making. This is a
-   * named counter and therefore we can get a count per ES API.
-   */
-  ES_APIS_CALLED("ESApisCalled", "count", Collections.singletonList(Statistics.NAMED_COUNTERS)),
-
-  /**
-   * Metric tracking if RCA is enabled or disabled. We write a 0 if RCA is disabled and 1 if it is
-   * enabled.
-   */
-  RCA_ENABLED("RcaEnabled", "count", Collections.singletonList(Statistics.SAMPLE));
-
-  /**
-   * What we want to appear as the metric name.
-   */
+  /** What we want to appear as the metric name. */
   private String name;
 
   /**
@@ -62,7 +47,7 @@ public enum RcaRuntimeMetrics implements MeasurementSet {
    */
   private List<Statistics> statsList;
 
-  RcaRuntimeMetrics(String name, String unit, List<Statistics> statisticList) {
+  RcaVerticesMetrics(String name, String unit, List<Statistics> statisticList) {
     this.name = name;
     this.unit = unit;
     this.statsList = statisticList;

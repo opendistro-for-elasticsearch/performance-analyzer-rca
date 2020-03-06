@@ -127,11 +127,10 @@ public class HotNodeSummary extends GenericSummary {
     JsonObject summaryObj = new JsonObject();
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME, this.nodeID);
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME, this.hostAddress);
-    this.nestedSummaryList.forEach(
-        summary -> {
-          summaryObj.add(summary.getTableName(), summary.toJson());
-        }
-    );
+    if (!this.nestedSummaryList.isEmpty()) {
+      String tableName = this.nestedSummaryList.get(0).getTableName();
+      summaryObj.add(tableName, this.nestedSummaryListToJson());
+    }
     return summaryObj;
   }
 
@@ -186,6 +185,10 @@ public class HotNodeSummary extends GenericSummary {
     }
     catch (DataTypeException de) {
       LOG.error("Fails to convert data type");
+    }
+    // we are very unlikely to catch this exception unless some fields are not persisted properly.
+    catch (NullPointerException ne) {
+      LOG.error("read null object from SQL, trace : {} ", ne.getStackTrace());
     }
     return summary;
   }

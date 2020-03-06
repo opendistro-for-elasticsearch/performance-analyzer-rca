@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rest;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsRestUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.Version;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
@@ -53,6 +54,8 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
   private static final Logger LOG = LogManager.getLogger(QueryRcaRequestHandler.class);
   private static final int HTTP_CLIENT_CONNECTION_TIMEOUT = 200;
   private static final String DUMP_ALL = "all";
+  private static final String VERSION_PARAM = "v";
+  private static final String VERSION_RESPONSE_PROPERTY = "version";
   private Persistable persistable;
   private MetricsRestUtil metricsRestUtil;
 
@@ -71,6 +74,10 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
       try {
         synchronized (this) {
           String query = exchange.getRequestURI().getQuery();
+          if (query != null && query.equalsIgnoreCase(VERSION_PARAM)) {
+            sendResponse(exchange, getVersion(), HttpURLConnection.HTTP_OK);
+            return;
+          }
           //first check if we want to dump all SQL tables for debugging purpose
           if (query != null && query.equals(DUMP_ALL)) {
             sendResponse(exchange, dumpAllRcaTables(), HttpURLConnection.HTTP_OK);
@@ -178,5 +185,16 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
 
   public synchronized void setPersistable(Persistable persistable) {
     this.persistable = persistable;
+  }
+
+  /**
+   * Gets the current RCA framework version.
+   * @return The version number as a json string.
+   */
+  public String getVersion() {
+    final JsonObject versionObject = new JsonObject();
+    versionObject.addProperty(VERSION_RESPONSE_PROPERTY, Version.getRcaVersion());
+
+    return versionObject.toString();
   }
 }

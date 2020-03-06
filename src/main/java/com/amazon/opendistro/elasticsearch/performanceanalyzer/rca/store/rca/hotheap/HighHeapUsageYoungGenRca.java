@@ -19,6 +19,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.Al
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_YOUNG_GC;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -32,6 +33,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaVerticesMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.time.Clock;
 import java.util.List;
@@ -166,6 +168,8 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
           && avgYoungGCTime > YOUNG_GC_TIME_THRESHOLD_IN_MS_PER_SEC) {
         LOG.debug("avgPromotionRate = {} , avgGCTime = {}", avgPromotionRate, avgYoungGCTime);
         context = new ResourceContext(Resources.State.UNHEALTHY);
+        PerformanceAnalyzerApp.RCA_VERTICES_METRICS_AGGREGATOR.updateStat(
+            RcaVerticesMetrics.NUM_YOUNG_GEN_RCA_TRIGGERED, "", 1);
       } else {
         context = new ResourceContext(Resources.State.HEALTHY);
       }
@@ -174,7 +178,7 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
       if (!Double.isNaN(avgPromotionRate)
           && avgPromotionRate > PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC * this.lowerBoundThreshold) {
         summary = new HotResourceSummary(this.resourceType,
-            PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC, avgPromotionRate, "promotion rate in mb/s",
+            PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC, avgPromotionRate,
             PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
       }
 

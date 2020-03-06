@@ -32,20 +32,26 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.met
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.JvmMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaRuntimeMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaVerticesMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.sys.AllJvmSamplers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.listener.MisbehavingGraphOperateMethodListener;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.samplers.RcaStateSamplers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.RcaStatsReporter;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.collectors.SampleAggregator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.emitters.ISampler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.emitters.PeriodicSamplers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.listeners.IListener;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.measurements.MeasurementSet;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryMetricsRequestHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.exceptions.PAThreadException;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.sun.net.httpserver.HttpServer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
@@ -55,6 +61,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class PerformanceAnalyzerApp {
+
   private static final int EXCEPTION_QUEUE_LENGTH = 1;
   public static final String QUERY_URL = "/_opendistro/_performanceanalyzer/metrics";
   private static final Logger LOG = LogManager.getLogger(PerformanceAnalyzerApp.class);
@@ -71,6 +78,8 @@ public class PerformanceAnalyzerApp {
       new SampleAggregator(RcaGraphMetrics.values());
   public static final SampleAggregator RCA_RUNTIME_METRICS_AGGREGATOR =
       new SampleAggregator(RcaRuntimeMetrics.values());
+  public static final SampleAggregator RCA_VERTICES_METRICS_AGGREGATOR =
+      new SampleAggregator(RcaVerticesMetrics.values());
 
   private static final IListener MISBEHAVING_NODES_LISTENER =
       new MisbehavingGraphOperateMethodListener();
@@ -79,15 +88,15 @@ public class PerformanceAnalyzerApp {
           MISBEHAVING_NODES_LISTENER,
           ExceptionsAndErrors.values());
 
-  public static final SampleAggregator JVM_METRICS_AGGREGATOR =
-      new SampleAggregator(JvmMetrics.values());
+  public static final SampleAggregator PERIODIC_SAMPLE_AGGREGATOR =
+      new SampleAggregator(getPeriodicMeasurementSets());
 
   public static final RcaStatsReporter RCA_STATS_REPORTER =
       new RcaStatsReporter(Arrays.asList(RCA_GRAPH_METRICS_AGGREGATOR,
-          RCA_RUNTIME_METRICS_AGGREGATOR, ERRORS_AND_EXCEPTIONS_AGGREGATOR,
-          JVM_METRICS_AGGREGATOR));
+          RCA_RUNTIME_METRICS_AGGREGATOR, RCA_VERTICES_METRICS_AGGREGATOR,
+          ERRORS_AND_EXCEPTIONS_AGGREGATOR, PERIODIC_SAMPLE_AGGREGATOR));
   public static final PeriodicSamplers PERIODIC_SAMPLERS =
-      new PeriodicSamplers(JVM_METRICS_AGGREGATOR, AllJvmSamplers.getJvmSamplers(),
+      new PeriodicSamplers(PERIODIC_SAMPLE_AGGREGATOR, getAllSamplers(),
           (MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval) / 2,
           TimeUnit.MILLISECONDS);
   public static final BlockingQueue<PAThreadException> exceptionQueue =
@@ -147,6 +156,7 @@ public class PerformanceAnalyzerApp {
 
   /**
    * Handles any exception thrown from the threads which are not handled by the thread itself.
+   *
    * @param exception The exception thrown from the thread.
    */
   private static void handle(PAThreadException exception) {
@@ -225,4 +235,21 @@ public class PerformanceAnalyzerApp {
 
     return new ClientServers(httpServer, netServer, netClient);
   }
+
+  private static List<ISampler> getAllSamplers() {
+    List<ISampler> allSamplers = new ArrayList<>();
+    allSamplers.addAll(AllJvmSamplers.getJvmSamplers());
+    allSamplers.add(RcaStateSamplers.getRcaEnabledSampler());
+
+    return allSamplers;
+  }
+
+  private static MeasurementSet[] getPeriodicMeasurementSets() {
+    List<MeasurementSet> measurementSets = new ArrayList<>();
+    measurementSets.addAll(Arrays.asList(JvmMetrics.values()));
+    measurementSets.add(RcaRuntimeMetrics.RCA_ENABLED);
+
+    return measurementSets.toArray(new MeasurementSet[]{});
+  }
+
 }

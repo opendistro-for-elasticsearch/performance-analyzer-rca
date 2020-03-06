@@ -9,14 +9,14 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc;
 public enum HardwareEnum
     implements com.google.protobuf.ProtocolMessageEnum {
   /**
-   * <code>CPU = 0 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.resourceTypeName) = "cpu usage"];</code>
+   * <code>CPU = 0 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.resourceTypeOptions) = { ... }</code>
    */
   CPU(0),
   UNRECOGNIZED(-1),
   ;
 
   /**
-   * <code>CPU = 0 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.resourceTypeName) = "cpu usage"];</code>
+   * <code>CPU = 0 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.resourceTypeOptions) = { ... }</code>
    */
   public static final int CPU_VALUE = 0;
 

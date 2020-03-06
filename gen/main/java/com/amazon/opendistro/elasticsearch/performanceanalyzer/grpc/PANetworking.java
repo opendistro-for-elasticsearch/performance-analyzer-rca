@@ -7,7 +7,7 @@ public final class PANetworking {
   private PANetworking() {}
   public static void registerAllExtensions(
       com.google.protobuf.ExtensionRegistryLite registry) {
-    registry.add(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PANetworking.resourceTypeName);
+    registry.add(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PANetworking.resourceTypeOptions);
   }
 
   public static void registerAllExtensions(
@@ -15,17 +15,17 @@ public final class PANetworking {
     registerAllExtensions(
         (com.google.protobuf.ExtensionRegistryLite) registry);
   }
-  public static final int RESOURCETYPENAME_FIELD_NUMBER = 50000;
+  public static final int RESOURCETYPEOPTIONS_FIELD_NUMBER = 50000;
   /**
    * <code>extend .google.protobuf.EnumValueOptions { ... }</code>
    */
   public static final
     com.google.protobuf.GeneratedMessage.GeneratedExtension<
       com.google.protobuf.DescriptorProtos.EnumValueOptions,
-      java.lang.String> resourceTypeName = com.google.protobuf.GeneratedMessage
+      com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions> resourceTypeOptions = com.google.protobuf.GeneratedMessage
           .newFileScopedGeneratedExtension(
-        java.lang.String.class,
-        null);
+        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions.class,
+        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions.getDefaultInstance());
   static final com.google.protobuf.Descriptors.Descriptor
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_SubscribeMessage_descriptor;
   static final 
@@ -46,6 +46,11 @@ public final class PANetworking {
   static final 
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_ResourceContextMessage_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_ResourceTypeOptions_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_ResourceTypeOptions_fieldAccessorTable;
   static final com.google.protobuf.Descriptors.Descriptor
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_ResourceType_descriptor;
   static final 
@@ -129,84 +134,90 @@ public final class PANetworking {
       "ormanceanalyzer.grpc.SubscribeResponse.S" +
       "ubscriptionStatus\"3\n\022SubscriptionStatus\022" +
       "\013\n\007SUCCESS\020\000\022\020\n\014TAG_MISMATCH\020\001\"\'\n\026Resour" +
-      "ceContextMessage\022\r\n\005state\030\001 \001(\005\"\351\001\n\014Reso" +
-      "urceType\022T\n\003JVM\030\001 \001(\0162E.com.amazon.opend" +
-      "istro.elasticsearch.performanceanalyzer." +
-      "grpc.JvmEnumH\000\022l\n\026hardware_resource_type" +
-      "\030\002 \001(\0162J.com.amazon.opendistro.elasticse" +
-      "arch.performanceanalyzer.grpc.HardwareEn" +
-      "umH\000B\025\n\023resource_type_oneof\"\203\001\n\026TopConsu" +
-      "merSummaryList\022i\n\010consumer\030\001 \003(\0132W.com.a" +
-      "mazon.opendistro.elasticsearch.performan" +
-      "ceanalyzer.grpc.TopConsumerSummaryMessag" +
-      "e\"\215\001\n\026HotResourceSummaryList\022s\n\022hotResou" +
-      "rceSummary\030\001 \003(\0132W.com.amazon.opendistro" +
+      "ceContextMessage\022\r\n\005state\030\001 \001(\005\"I\n\023Resou" +
+      "rceTypeOptions\022\030\n\020resourceTypeName\030\001 \001(\t" +
+      "\022\030\n\020resourceTypeUnit\030\002 \001(\t\"\351\001\n\014ResourceT" +
+      "ype\022T\n\003JVM\030\001 \001(\0162E.com.amazon.opendistro" +
       ".elasticsearch.performanceanalyzer.grpc." +
-      "HotResourceSummaryMessage\"\201\001\n\022HotNodeSum" +
-      "maryList\022k\n\016hotNodeSummary\030\001 \003(\0132S.com.a" +
-      "mazon.opendistro.elasticsearch.performan" +
-      "ceanalyzer.grpc.HotNodeSummaryMessage\"8\n" +
-      "\031TopConsumerSummaryMessage\022\014\n\004name\030\001 \001(\t" +
-      "\022\r\n\005value\030\002 \001(\001\"\344\002\n\031HotResourceSummaryMe" +
-      "ssage\022`\n\014resourceType\030\001 \001(\0132J.com.amazon" +
+      "JvmEnumH\000\022l\n\026hardware_resource_type\030\002 \001(" +
+      "\0162J.com.amazon.opendistro.elasticsearch." +
+      "performanceanalyzer.grpc.HardwareEnumH\000B" +
+      "\025\n\023resource_type_oneof\"\203\001\n\026TopConsumerSu" +
+      "mmaryList\022i\n\010consumer\030\001 \003(\0132W.com.amazon" +
       ".opendistro.elasticsearch.performanceana" +
-      "lyzer.grpc.ResourceType\022g\n\tconsumers\030\002 \001" +
-      "(\0132T.com.amazon.opendistro.elasticsearch" +
-      ".performanceanalyzer.grpc.TopConsumerSum" +
-      "maryList\022\021\n\tthreshold\030\003 \001(\001\022\r\n\005value\030\004 \001" +
-      "(\001\022\020\n\010avgValue\030\005 \001(\001\022\020\n\010minValue\030\006 \001(\001\022\020" +
-      "\n\010maxValue\030\007 \001(\001\022\020\n\010unitType\030\010 \001(\t\022\022\n\nti" +
-      "mePeriod\030\t \001(\005\"\262\001\n\025HotNodeSummaryMessage" +
-      "\022\016\n\006nodeID\030\001 \001(\t\022\023\n\013hostAddress\030\002 \001(\t\022t\n" +
-      "\026hotResourceSummaryList\030\003 \001(\0132T.com.amaz" +
-      "on.opendistro.elasticsearch.performancea" +
-      "nalyzer.grpc.HotResourceSummaryList\"\233\001\n\030" +
-      "HotClusterSummaryMessage\022\021\n\tnodeCount\030\001 " +
-      "\001(\005\022l\n\022hotNodeSummaryList\030\002 \001(\0132P.com.am" +
-      "azon.opendistro.elasticsearch.performanc" +
-      "eanalyzer.grpc.HotNodeSummaryList\"\242\004\n\017Fl" +
-      "owUnitMessage\022\021\n\tgraphNode\030\001 \001(\t\022\016\n\006esNo" +
-      "de\030\002 \001(\t\022\021\n\ttimeStamp\030\003 \001(\004\022m\n\017resourceC" +
-      "ontext\030\004 \001(\0132T.com.amazon.opendistro.ela" +
-      "sticsearch.performanceanalyzer.grpc.Reso" +
-      "urceContextMessage\022u\n\022hotResourceSummary" +
-      "\030\005 \001(\0132W.com.amazon.opendistro.elasticse" +
+      "lyzer.grpc.TopConsumerSummaryMessage\"\215\001\n" +
+      "\026HotResourceSummaryList\022s\n\022hotResourceSu" +
+      "mmary\030\001 \003(\0132W.com.amazon.opendistro.elas" +
+      "ticsearch.performanceanalyzer.grpc.HotRe" +
+      "sourceSummaryMessage\"\201\001\n\022HotNodeSummaryL" +
+      "ist\022k\n\016hotNodeSummary\030\001 \003(\0132S.com.amazon" +
+      ".opendistro.elasticsearch.performanceana" +
+      "lyzer.grpc.HotNodeSummaryMessage\"8\n\031TopC" +
+      "onsumerSummaryMessage\022\014\n\004name\030\001 \001(\t\022\r\n\005v" +
+      "alue\030\002 \001(\001\"\322\002\n\031HotResourceSummaryMessage" +
+      "\022`\n\014resourceType\030\001 \001(\0132J.com.amazon.open" +
+      "distro.elasticsearch.performanceanalyzer" +
+      ".grpc.ResourceType\022g\n\tconsumers\030\002 \001(\0132T." +
+      "com.amazon.opendistro.elasticsearch.perf" +
+      "ormanceanalyzer.grpc.TopConsumerSummaryL" +
+      "ist\022\021\n\tthreshold\030\003 \001(\001\022\r\n\005value\030\004 \001(\001\022\020\n" +
+      "\010avgValue\030\005 \001(\001\022\020\n\010minValue\030\006 \001(\001\022\020\n\010max" +
+      "Value\030\007 \001(\001\022\022\n\ntimePeriod\030\010 \001(\005\"\262\001\n\025HotN" +
+      "odeSummaryMessage\022\016\n\006nodeID\030\001 \001(\t\022\023\n\013hos" +
+      "tAddress\030\002 \001(\t\022t\n\026hotResourceSummaryList" +
+      "\030\003 \001(\0132T.com.amazon.opendistro.elasticse" +
       "arch.performanceanalyzer.grpc.HotResourc" +
-      "eSummaryMessageH\000\022m\n\016hotNodeSummary\030\006 \001(" +
-      "\0132S.com.amazon.opendistro.elasticsearch." +
-      "performanceanalyzer.grpc.HotNodeSummaryM" +
-      "essageH\000\022s\n\021hotClusterSummary\030\007 \001(\0132V.co" +
-      "m.amazon.opendistro.elasticsearch.perfor" +
-      "manceanalyzer.grpc.HotClusterSummaryMess" +
-      "ageH\000B\017\n\rsummary_oneof\"\304\001\n\017PublishRespon" +
-      "se\022x\n\013data_status\030\001 \001(\0162c.com.amazon.ope" +
+      "eSummaryList\"\233\001\n\030HotClusterSummaryMessag" +
+      "e\022\021\n\tnodeCount\030\001 \001(\005\022l\n\022hotNodeSummaryLi" +
+      "st\030\002 \001(\0132P.com.amazon.opendistro.elastic" +
+      "search.performanceanalyzer.grpc.HotNodeS" +
+      "ummaryList\"\242\004\n\017FlowUnitMessage\022\021\n\tgraphN" +
+      "ode\030\001 \001(\t\022\016\n\006esNode\030\002 \001(\t\022\021\n\ttimeStamp\030\003" +
+      " \001(\004\022m\n\017resourceContext\030\004 \001(\0132T.com.amaz" +
+      "on.opendistro.elasticsearch.performancea" +
+      "nalyzer.grpc.ResourceContextMessage\022u\n\022h" +
+      "otResourceSummary\030\005 \001(\0132W.com.amazon.ope" +
       "ndistro.elasticsearch.performanceanalyze" +
-      "r.grpc.PublishResponse.PublishResponseSt" +
-      "atus\"7\n\025PublishResponseStatus\022\013\n\007SUCCESS" +
-      "\020\000\022\021\n\rNODE_SHUTDOWN\020\001\"I\n\016MetricsRequest\022" +
-      "\023\n\013metric_list\030\001 \003(\t\022\020\n\010agg_list\030\002 \003(\t\022\020" +
-      "\n\010dim_list\030\003 \003(\t\")\n\017MetricsResponse\022\026\n\016m" +
-      "etrics_result\030\001 \001(\t*A\n\007JvmEnum\022\030\n\007OLD_GE" +
-      "N\020\000\032\013\202\265\030\007old gen\022\034\n\tYOUNG_GEN\020\001\032\r\202\265\030\tyou" +
-      "ng gen*&\n\014HardwareEnum\022\026\n\003CPU\020\000\032\r\202\265\030\tcpu" +
-      " usage2\242\004\n\023InterNodeRpcService\022\253\001\n\007Publi" +
-      "sh\022M.com.amazon.opendistro.elasticsearch" +
-      ".performanceanalyzer.grpc.FlowUnitMessag" +
-      "e\032M.com.amazon.opendistro.elasticsearch." +
-      "performanceanalyzer.grpc.PublishResponse" +
-      "\"\000(\001\022\256\001\n\tSubscribe\022N.com.amazon.opendist" +
+      "r.grpc.HotResourceSummaryMessageH\000\022m\n\016ho" +
+      "tNodeSummary\030\006 \001(\0132S.com.amazon.opendist" +
       "ro.elasticsearch.performanceanalyzer.grp" +
-      "c.SubscribeMessage\032O.com.amazon.opendist" +
-      "ro.elasticsearch.performanceanalyzer.grp" +
-      "c.SubscribeResponse\"\000\022\253\001\n\nGetMetrics\022L.c" +
-      "om.amazon.opendistro.elasticsearch.perfo" +
-      "rmanceanalyzer.grpc.MetricsRequest\032M.com" +
-      ".amazon.opendistro.elasticsearch.perform" +
-      "anceanalyzer.grpc.MetricsResponse\"\000:=\n\020r" +
-      "esourceTypeName\022!.google.protobuf.EnumVa" +
-      "lueOptions\030\320\206\003 \001(\tBN\n<com.amazon.opendis" +
-      "tro.elasticsearch.performanceanalyzer.gr" +
-      "pcB\014PANetworkingP\001b\006proto3"
+      "c.HotNodeSummaryMessageH\000\022s\n\021hotClusterS" +
+      "ummary\030\007 \001(\0132V.com.amazon.opendistro.ela" +
+      "sticsearch.performanceanalyzer.grpc.HotC" +
+      "lusterSummaryMessageH\000B\017\n\rsummary_oneof\"" +
+      "\304\001\n\017PublishResponse\022x\n\013data_status\030\001 \001(\016" +
+      "2c.com.amazon.opendistro.elasticsearch.p" +
+      "erformanceanalyzer.grpc.PublishResponse." +
+      "PublishResponseStatus\"7\n\025PublishResponse" +
+      "Status\022\013\n\007SUCCESS\020\000\022\021\n\rNODE_SHUTDOWN\020\001\"I" +
+      "\n\016MetricsRequest\022\023\n\013metric_list\030\001 \003(\t\022\020\n" +
+      "\010agg_list\030\002 \003(\t\022\020\n\010dim_list\030\003 \003(\t\")\n\017Met" +
+      "ricsResponse\022\026\n\016metrics_result\030\001 \001(\t*\177\n\007" +
+      "JvmEnum\0228\n\007OLD_GEN\020\000\032+\202\265\030\t\n\007old gen\202\265\030\032\022" +
+      "\030heap usage in percentage\022:\n\tYOUNG_GEN\020\001" +
+      "\032+\202\265\030\013\n\tyoung gen\202\265\030\030\022\026promotion rate in" +
+      " mb/s*E\n\014HardwareEnum\0225\n\003CPU\020\000\032,\202\265\030\013\n\tcp" +
+      "u usage\202\265\030\031\022\027cpu usage in percentage2\242\004\n" +
+      "\023InterNodeRpcService\022\253\001\n\007Publish\022M.com.a" +
+      "mazon.opendistro.elasticsearch.performan" +
+      "ceanalyzer.grpc.FlowUnitMessage\032M.com.am" +
+      "azon.opendistro.elasticsearch.performanc" +
+      "eanalyzer.grpc.PublishResponse\"\000(\001\022\256\001\n\tS" +
+      "ubscribe\022N.com.amazon.opendistro.elastic" +
+      "search.performanceanalyzer.grpc.Subscrib" +
+      "eMessage\032O.com.amazon.opendistro.elastic" +
+      "search.performanceanalyzer.grpc.Subscrib" +
+      "eResponse\"\000\022\253\001\n\nGetMetrics\022L.com.amazon." +
+      "opendistro.elasticsearch.performanceanal" +
+      "yzer.grpc.MetricsRequest\032M.com.amazon.op" +
+      "endistro.elasticsearch.performanceanalyz" +
+      "er.grpc.MetricsResponse\"\000:\223\001\n\023resourceTy" +
+      "peOptions\022!.google.protobuf.EnumValueOpt" +
+      "ions\030\320\206\003 \001(\0132Q.com.amazon.opendistro.ela" +
+      "sticsearch.performanceanalyzer.grpc.Reso" +
+      "urceTypeOptionsBN\n<com.amazon.opendistro" +
+      ".elasticsearch.performanceanalyzer.grpcB" +
+      "\014PANetworkingP\001b\006proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -245,82 +256,88 @@ public final class PANetworking {
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_ResourceContextMessage_descriptor,
         new java.lang.String[] { "State", });
-    internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_ResourceType_descriptor =
+    internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_ResourceTypeOptions_descriptor =
       getDescriptor().getMessageTypes().get(3);
+    internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_ResourceTypeOptions_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_ResourceTypeOptions_descriptor,
+        new java.lang.String[] { "ResourceTypeName", "ResourceTypeUnit", });
+    internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_ResourceType_descriptor =
+      getDescriptor().getMessageTypes().get(4);
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_ResourceType_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_ResourceType_descriptor,
         new java.lang.String[] { "JVM", "HardwareResourceType", "ResourceTypeOneof", });
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_TopConsumerSummaryList_descriptor =
-      getDescriptor().getMessageTypes().get(4);
+      getDescriptor().getMessageTypes().get(5);
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_TopConsumerSummaryList_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_TopConsumerSummaryList_descriptor,
         new java.lang.String[] { "Consumer", });
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_HotResourceSummaryList_descriptor =
-      getDescriptor().getMessageTypes().get(5);
+      getDescriptor().getMessageTypes().get(6);
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_HotResourceSummaryList_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_HotResourceSummaryList_descriptor,
         new java.lang.String[] { "HotResourceSummary", });
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_HotNodeSummaryList_descriptor =
-      getDescriptor().getMessageTypes().get(6);
+      getDescriptor().getMessageTypes().get(7);
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_HotNodeSummaryList_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_HotNodeSummaryList_descriptor,
         new java.lang.String[] { "HotNodeSummary", });
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_TopConsumerSummaryMessage_descriptor =
-      getDescriptor().getMessageTypes().get(7);
+      getDescriptor().getMessageTypes().get(8);
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_TopConsumerSummaryMessage_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_TopConsumerSummaryMessage_descriptor,
         new java.lang.String[] { "Name", "Value", });
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_HotResourceSummaryMessage_descriptor =
-      getDescriptor().getMessageTypes().get(8);
+      getDescriptor().getMessageTypes().get(9);
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_HotResourceSummaryMessage_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_HotResourceSummaryMessage_descriptor,
-        new java.lang.String[] { "ResourceType", "Consumers", "Threshold", "Value", "AvgValue", "MinValue", "MaxValue", "UnitType", "TimePeriod", });
+        new java.lang.String[] { "ResourceType", "Consumers", "Threshold", "Value", "AvgValue", "MinValue", "MaxValue", "TimePeriod", });
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_HotNodeSummaryMessage_descriptor =
-      getDescriptor().getMessageTypes().get(9);
+      getDescriptor().getMessageTypes().get(10);
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_HotNodeSummaryMessage_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_HotNodeSummaryMessage_descriptor,
         new java.lang.String[] { "NodeID", "HostAddress", "HotResourceSummaryList", });
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_HotClusterSummaryMessage_descriptor =
-      getDescriptor().getMessageTypes().get(10);
+      getDescriptor().getMessageTypes().get(11);
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_HotClusterSummaryMessage_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_HotClusterSummaryMessage_descriptor,
         new java.lang.String[] { "NodeCount", "HotNodeSummaryList", });
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_FlowUnitMessage_descriptor =
-      getDescriptor().getMessageTypes().get(11);
+      getDescriptor().getMessageTypes().get(12);
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_FlowUnitMessage_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_FlowUnitMessage_descriptor,
         new java.lang.String[] { "GraphNode", "EsNode", "TimeStamp", "ResourceContext", "HotResourceSummary", "HotNodeSummary", "HotClusterSummary", "SummaryOneof", });
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_PublishResponse_descriptor =
-      getDescriptor().getMessageTypes().get(12);
+      getDescriptor().getMessageTypes().get(13);
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_PublishResponse_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_PublishResponse_descriptor,
         new java.lang.String[] { "DataStatus", });
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_MetricsRequest_descriptor =
-      getDescriptor().getMessageTypes().get(13);
+      getDescriptor().getMessageTypes().get(14);
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_MetricsRequest_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_MetricsRequest_descriptor,
         new java.lang.String[] { "MetricList", "AggList", "DimList", });
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_MetricsResponse_descriptor =
-      getDescriptor().getMessageTypes().get(14);
+      getDescriptor().getMessageTypes().get(15);
     internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_MetricsResponse_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_MetricsResponse_descriptor,
         new java.lang.String[] { "MetricsResult", });
-    resourceTypeName.internalInit(descriptor.getExtensions().get(0));
+    resourceTypeOptions.internalInit(descriptor.getExtensions().get(0));
     com.google.protobuf.ExtensionRegistry registry =
         com.google.protobuf.ExtensionRegistry.newInstance();
-    registry.add(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PANetworking.resourceTypeName);
+    registry.add(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PANetworking.resourceTypeOptions);
     com.google.protobuf.Descriptors.FileDescriptor
         .internalUpdateFileDescriptor(descriptor, registry);
     com.google.protobuf.DescriptorProtos.getDescriptor();

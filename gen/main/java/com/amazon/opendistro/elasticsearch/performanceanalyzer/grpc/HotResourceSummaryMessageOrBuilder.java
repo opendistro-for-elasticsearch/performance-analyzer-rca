@@ -59,17 +59,7 @@ public interface HotResourceSummaryMessageOrBuilder extends
   double getMaxValue();
 
   /**
-   * <code>string unitType = 8;</code>
-   */
-  java.lang.String getUnitType();
-  /**
-   * <code>string unitType = 8;</code>
-   */
-  com.google.protobuf.ByteString
-      getUnitTypeBytes();
-
-  /**
-   * <code>int32 timePeriod = 9;</code>
+   * <code>int32 timePeriod = 8;</code>
    */
   int getTimePeriod();
 }

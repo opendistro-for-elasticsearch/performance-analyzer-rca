@@ -43,7 +43,7 @@ public class RcaTestHelper extends Rca<ResourceFlowUnit> {
 
   public static ResourceFlowUnit generateFlowUnit(ResourceType type, String nodeID, Resources.State healthy) {
     HotResourceSummary resourceSummary = new HotResourceSummary(type,
-        10, 5, "testing", 60);
+        10, 5, 60);
     HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, "127.0.0.0");
     nodeSummary.addNestedSummaryList(resourceSummary);
     return new ResourceFlowUnit(System.currentTimeMillis(), new ResourceContext(healthy), nodeSummary);

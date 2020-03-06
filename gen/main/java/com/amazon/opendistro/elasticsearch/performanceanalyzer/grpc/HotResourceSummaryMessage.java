@@ -16,7 +16,6 @@ private static final long serialVersionUID = 0L;
     super(builder);
   }
   private HotResourceSummaryMessage() {
-    unitType_ = "";
   }
 
   @java.lang.Override
@@ -94,13 +93,7 @@ private static final long serialVersionUID = 0L;
             maxValue_ = input.readDouble();
             break;
           }
-          case 66: {
-            java.lang.String s = input.readStringRequireUtf8();
-
-            unitType_ = s;
-            break;
-          }
-          case 72: {
+          case 64: {
 
             timePeriod_ = input.readInt32();
             break;
@@ -224,44 +217,10 @@ private static final long serialVersionUID = 0L;
     return maxValue_;
   }
 
-  public static final int UNITTYPE_FIELD_NUMBER = 8;
-  private volatile java.lang.Object unitType_;
-  /**
-   * <code>string unitType = 8;</code>
-   */
-  public java.lang.String getUnitType() {
-    java.lang.Object ref = unitType_;
-    if (ref instanceof java.lang.String) {
-      return (java.lang.String) ref;
-    } else {
-      com.google.protobuf.ByteString bs = 
-          (com.google.protobuf.ByteString) ref;
-      java.lang.String s = bs.toStringUtf8();
-      unitType_ = s;
-      return s;
-    }
-  }
-  /**
-   * <code>string unitType = 8;</code>
-   */
-  public com.google.protobuf.ByteString
-      getUnitTypeBytes() {
-    java.lang.Object ref = unitType_;
-    if (ref instanceof java.lang.String) {
-      com.google.protobuf.ByteString b = 
-          com.google.protobuf.ByteString.copyFromUtf8(
-              (java.lang.String) ref);
-      unitType_ = b;
-      return b;
-    } else {
-      return (com.google.protobuf.ByteString) ref;
-    }
-  }
-
-  public static final int TIMEPERIOD_FIELD_NUMBER = 9;
+  public static final int TIMEPERIOD_FIELD_NUMBER = 8;
   private int timePeriod_;
   /**
-   * <code>int32 timePeriod = 9;</code>
+   * <code>int32 timePeriod = 8;</code>
    */
   public int getTimePeriod() {
     return timePeriod_;
@@ -302,11 +261,8 @@ private static final long serialVersionUID = 0L;
     if (maxValue_ != 0D) {
       output.writeDouble(7, maxValue_);
     }
-    if (!getUnitTypeBytes().isEmpty()) {
-      com.google.protobuf.GeneratedMessageV3.writeString(output, 8, unitType_);
-    }
     if (timePeriod_ != 0) {
-      output.writeInt32(9, timePeriod_);
+      output.writeInt32(8, timePeriod_);
     }
     unknownFields.writeTo(output);
   }
@@ -345,12 +301,9 @@ private static final long serialVersionUID = 0L;
       size += com.google.protobuf.CodedOutputStream
         .computeDoubleSize(7, maxValue_);
     }
-    if (!getUnitTypeBytes().isEmpty()) {
-      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(8, unitType_);
-    }
     if (timePeriod_ != 0) {
       size += com.google.protobuf.CodedOutputStream
-        .computeInt32Size(9, timePeriod_);
+        .computeInt32Size(8, timePeriod_);
     }
     size += unknownFields.getSerializedSize();
     memoizedSize = size;
@@ -392,8 +345,6 @@ private static final long serialVersionUID = 0L;
     if (java.lang.Double.doubleToLongBits(getMaxValue())
         != java.lang.Double.doubleToLongBits(
             other.getMaxValue())) return false;
-    if (!getUnitType()
-        .equals(other.getUnitType())) return false;
     if (getTimePeriod()
         != other.getTimePeriod()) return false;
     if (!unknownFields.equals(other.unknownFields)) return false;
@@ -430,8 +381,6 @@ private static final long serialVersionUID = 0L;
     hash = (37 * hash) + MAXVALUE_FIELD_NUMBER;
     hash = (53 * hash) + com.google.protobuf.Internal.hashLong(
         java.lang.Double.doubleToLongBits(getMaxValue()));
-    hash = (37 * hash) + UNITTYPE_FIELD_NUMBER;
-    hash = (53 * hash) + getUnitType().hashCode();
     hash = (37 * hash) + TIMEPERIOD_FIELD_NUMBER;
     hash = (53 * hash) + getTimePeriod();
     hash = (29 * hash) + unknownFields.hashCode();
@@ -589,8 +538,6 @@ private static final long serialVersionUID = 0L;
 
       maxValue_ = 0D;
 
-      unitType_ = "";
-
       timePeriod_ = 0;
 
       return this;
@@ -634,7 +581,6 @@ private static final long serialVersionUID = 0L;
       result.avgValue_ = avgValue_;
       result.minValue_ = minValue_;
       result.maxValue_ = maxValue_;
-      result.unitType_ = unitType_;
       result.timePeriod_ = timePeriod_;
       onBuilt();
       return result;
@@ -704,10 +650,6 @@ private static final long serialVersionUID = 0L;
       }
       if (other.getMaxValue() != 0D) {
         setMaxValue(other.getMaxValue());
-      }
-      if (!other.getUnitType().isEmpty()) {
-        unitType_ = other.unitType_;
-        onChanged();
       }
       if (other.getTimePeriod() != 0) {
         setTimePeriod(other.getTimePeriod());
@@ -1105,84 +1047,15 @@ private static final long serialVersionUID = 0L;
       return this;
     }
 
-    private java.lang.Object unitType_ = "";
-    /**
-     * <code>string unitType = 8;</code>
-     */
-    public java.lang.String getUnitType() {
-      java.lang.Object ref = unitType_;
-      if (!(ref instanceof java.lang.String)) {
-        com.google.protobuf.ByteString bs =
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        unitType_ = s;
-        return s;
-      } else {
-        return (java.lang.String) ref;
-      }
-    }
-    /**
-     * <code>string unitType = 8;</code>
-     */
-    public com.google.protobuf.ByteString
-        getUnitTypeBytes() {
-      java.lang.Object ref = unitType_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        unitType_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    /**
-     * <code>string unitType = 8;</code>
-     */
-    public Builder setUnitType(
-        java.lang.String value) {
-      if (value == null) {
-    throw new NullPointerException();
-  }
-  
-      unitType_ = value;
-      onChanged();
-      return this;
-    }
-    /**
-     * <code>string unitType = 8;</code>
-     */
-    public Builder clearUnitType() {
-      
-      unitType_ = getDefaultInstance().getUnitType();
-      onChanged();
-      return this;
-    }
-    /**
-     * <code>string unitType = 8;</code>
-     */
-    public Builder setUnitTypeBytes(
-        com.google.protobuf.ByteString value) {
-      if (value == null) {
-    throw new NullPointerException();
-  }
-  checkByteStringIsUtf8(value);
-      
-      unitType_ = value;
-      onChanged();
-      return this;
-    }
-
     private int timePeriod_ ;
     /**
-     * <code>int32 timePeriod = 9;</code>
+     * <code>int32 timePeriod = 8;</code>
      */
     public int getTimePeriod() {
       return timePeriod_;
     }
     /**
-     * <code>int32 timePeriod = 9;</code>
+     * <code>int32 timePeriod = 8;</code>
      */
     public Builder setTimePeriod(int value) {
       
@@ -1191,7 +1064,7 @@ private static final long serialVersionUID = 0L;
       return this;
     }
     /**
-     * <code>int32 timePeriod = 9;</code>
+     * <code>int32 timePeriod = 8;</code>
      */
     public Builder clearTimePeriod() {
       

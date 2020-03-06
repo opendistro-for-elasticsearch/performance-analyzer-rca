@@ -9,22 +9,22 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc;
 public enum JvmEnum
     implements com.google.protobuf.ProtocolMessageEnum {
   /**
-   * <code>OLD_GEN = 0 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.resourceTypeName) = "old gen"];</code>
+   * <code>OLD_GEN = 0 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.resourceTypeOptions) = { ... }</code>
    */
   OLD_GEN(0),
   /**
-   * <code>YOUNG_GEN = 1 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.resourceTypeName) = "young gen"];</code>
+   * <code>YOUNG_GEN = 1 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.resourceTypeOptions) = { ... }</code>
    */
   YOUNG_GEN(1),
   UNRECOGNIZED(-1),
   ;
 
   /**
-   * <code>OLD_GEN = 0 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.resourceTypeName) = "old gen"];</code>
+   * <code>OLD_GEN = 0 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.resourceTypeOptions) = { ... }</code>
    */
   public static final int OLD_GEN_VALUE = 0;
   /**
-   * <code>YOUNG_GEN = 1 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.resourceTypeName) = "young gen"];</code>
+   * <code>YOUNG_GEN = 1 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.resourceTypeOptions) = { ... }</code>
    */
   public static final int YOUNG_GEN_VALUE = 1;
 
