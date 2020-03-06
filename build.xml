@@ -24,6 +24,7 @@
     <property name="findbugs.exclude.filter" location="${basedir}/checkstyle/findbugs-exclude.xml" />
     <property name="checkstyle.failOnError" value="false" />
     <property name="checkstyle.configuration.file" value="${bp:[A9SearchCloudStaticConfig]pkg.src}/checkstyle/checkstyle-rules.xml" />
+    <property name="libfarm.dir" value="${bp:run.libfarm}" />
     <ht:import file="happier-trails.xml"/>
 
     <target name="copy-generated-src" extensionOf="ht-pre-build" if="hasAdditionalSources">
@@ -90,7 +91,12 @@
         <copydir src="${lib.dir}" dest="${plugin_orig.dir}"/>
     </target>
 
+    <target name="copy-runtime-libs">
+        <copydir src="${libfarm.dir}/lib" dest="${plugin.dir}/lib" />
+    </target>
+
     <target name="clean" depends="clean-grpc" />
-    <target name="build" depends="compile-grpc,standard-build,copy-artifacts,copy-test-files"/>
+    <target name="build"
+      depends="compile-grpc,standard-build,copy-artifacts,copy-test-files,copy-runtime-libs"/>
     <target name="test" depends="copy-test-files,copy-artifacts,standard-test"/>
 </project>
