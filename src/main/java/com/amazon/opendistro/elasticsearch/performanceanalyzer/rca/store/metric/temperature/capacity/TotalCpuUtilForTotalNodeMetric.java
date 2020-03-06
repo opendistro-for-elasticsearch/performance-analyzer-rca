@@ -13,13 +13,14 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.calculators.TotalNodeTemperatureCalculator;
 
-public class CpuUtilShardIndependent extends TemperatureMetricsBaseShardIndependent {
+public class TotalCpuUtilForTotalNodeMetric extends TotalNodeTemperatureCalculator {
 
-    public CpuUtilShardIndependent() {
+    public TotalCpuUtilForTotalNodeMetric() {
         super(TemperatureVector.Dimension.CpuUtil);
     }
 }

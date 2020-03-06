@@ -13,7 +13,7 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.calculators;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
@@ -48,12 +48,12 @@ import org.jooq.impl.DSL;
  * percentages will be accounted for in the system CPU, where as they should have been
  * associated with as shard and shard movement would have helped lessen the node temperature.
  */
-public class TemperatureMetricsBaseShardIndependent extends TemperatureMetricsBase {
+public class ShardIndependentTemperatureCalculator extends TemperatureMetricsBase {
     private static final String[] dimensions = {
             AllMetrics.CommonDimension.OPERATION.toString()
     };
 
-    public TemperatureMetricsBaseShardIndependent(TemperatureVector.Dimension metricType) {
+    public ShardIndependentTemperatureCalculator(TemperatureVector.Dimension metricType) {
         super(metricType, dimensions);
     }
 

@@ -18,7 +18,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.te
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.ClusterTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.CompactNodeTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
@@ -29,12 +28,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ClusterHeatRca extends Rca<ResourceFlowUnit> {
-    private final NodeHeatRca nodeHeatRca;
+public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
+    private final NodeTemperatureRca nodeTemperatureRca;
 
-    public ClusterHeatRca(NodeHeatRca nodeHeatRca) {
+    public ClusterTemperatureRca(NodeTemperatureRca nodeTemperatureRca) {
         super(5);
-        this.nodeHeatRca = nodeHeatRca;
+        this.nodeTemperatureRca = nodeTemperatureRca;
     }
 
     @Override
@@ -47,8 +46,8 @@ public class ClusterHeatRca extends Rca<ResourceFlowUnit> {
      * @return
      */
     @Override
-    public ResourceFlowUnit operate() {
-        List<CompactNodeTemperatureFlowUnit> flowUnits = nodeHeatRca.getFlowUnits();
+    public ClusterTemperatureFlowUnit operate() {
+        List<CompactNodeTemperatureFlowUnit> flowUnits = nodeTemperatureRca.getFlowUnits();
         Map<String, CompactNodeTemperatureSummary> nodeTemperatureSummaryMap = new HashMap<>();
         final int NUM_NODES = flowUnits.size();
 

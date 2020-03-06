@@ -23,15 +23,15 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.TemperatureMetricsBase;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.AvgResourceUsageAcrossAllIndexShardGroups;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.SumOverOperationsForIndexShardGroup;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.NodeLevelUsageForResourceType;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.TemperatureMetricsBaseShardIndependent;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.calculators.AvgShardBasedTemperatureCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.calculators.ShardBasedTemperatureCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.calculators.TotalNodeTemperatureCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.calculators.ShardIndependentTemperatureCalculator;
 import java.util.List;
 import org.jooq.Record;
 import org.jooq.Result;
 
-public class DimensionalHeatCalculator {
+public class DimensionalTemperatureCalculator {
     enum ColumnTypes {
         IndexName,
         ShardID,
@@ -58,10 +58,10 @@ public class DimensionalHeatCalculator {
      */
     public static DimensionalTemperatureFlowUnit getTemperatureForDimension(
             ShardStore shardStore, TemperatureVector.Dimension metricType,
-            SumOverOperationsForIndexShardGroup resourceByShardId,
-            AvgResourceUsageAcrossAllIndexShardGroups avgResUsageByAllShards,
-            TemperatureMetricsBaseShardIndependent resourceShardIndependent,
-            NodeLevelUsageForResourceType resourcePeakUsage,
+            ShardBasedTemperatureCalculator resourceByShardId,
+            AvgShardBasedTemperatureCalculator avgResUsageByAllShards,
+            ShardIndependentTemperatureCalculator resourceShardIndependent,
+            TotalNodeTemperatureCalculator resourcePeakUsage,
             TemperatureVector.NormalizedValue threshold) {
         List<MetricFlowUnit> shardIdBasedFlowUnits = resourceByShardId.getFlowUnits();
         List<MetricFlowUnit> avgResUsageFlowUnits = avgResUsageByAllShards.getFlowUnits();
@@ -89,7 +89,7 @@ public class DimensionalHeatCalculator {
         }
 
         double avgValOverShards =
-                avgResUsageFlowUnits.get(0).getData().getValues(AvgResourceUsageAcrossAllIndexShardGroups.SHARD_AVG,
+                avgResUsageFlowUnits.get(0).getData().getValues(AvgShardBasedTemperatureCalculator.SHARD_AVG,
                         Double.class).get(0);
         double totalConsumedInNode =
                 resourcePeakFlowUnits.get(0).getData().getValues(

@@ -13,7 +13,7 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.calculators;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import java.util.List;
@@ -28,8 +28,8 @@ import org.jooq.impl.DSL;
  * This builds over the query from {@code SumOverOperationsForIndexShardGroup}.
  * It calculates the average over all index,shard groups.
  */
-public class AvgResourceUsageAcrossAllIndexShardGroups extends SumOverOperationsForIndexShardGroup {
-    public AvgResourceUsageAcrossAllIndexShardGroups(TemperatureVector.Dimension metricType) {
+public class AvgShardBasedTemperatureCalculator extends ShardBasedTemperatureCalculator {
+    public AvgShardBasedTemperatureCalculator(TemperatureVector.Dimension metricType) {
         super(metricType);
     }
 

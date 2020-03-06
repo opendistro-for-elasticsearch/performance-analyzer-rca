@@ -13,7 +13,13 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard;
 
-public class IOWriteSysCallsHeatRca {
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.calculators.AvgShardBasedTemperatureCalculator;
+
+public class AvgCpuUtilByShardsMetricBasedTemperatureCalculator extends AvgShardBasedTemperatureCalculator {
+    public AvgCpuUtilByShardsMetricBasedTemperatureCalculator() {
+        super(TemperatureVector.Dimension.CpuUtil);
+    }
 }

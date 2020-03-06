@@ -18,8 +18,8 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.TemperatureMetricsBase;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.NodeLevelUsageForCpu;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.CpuUtilShardIndependent;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.TotalCpuUtilForTotalNodeMetric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.ShardIndependentTemperatureCalculatorCpuUtilMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.SQLiteReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,7 +40,7 @@ public class SumOverOperationsForIndexShardProfileSummaryGroupTest {
         Path sqliteFile = Paths.get(cwd, "src", "test", "resources", "metricsdbs",
                 "metricsdb_1582661700000");
         Queryable reader = new SQLiteReader(sqliteFile.toString());
-        CpuUtilByShard cpuUtilByShard = new CpuUtilByShard();
+        CpuUtilByShardsMetricBasedTemperatureCalculator cpuUtilByShard = new CpuUtilByShardsMetricBasedTemperatureCalculator();
         MetricFlowUnit mfu = cpuUtilByShard.gather(reader);
 
         List<String> expected = new ArrayList<String>() {{
@@ -59,7 +59,7 @@ public class SumOverOperationsForIndexShardProfileSummaryGroupTest {
             }
         }
 
-        AvgCpuUtilByShards avgCpuUtilByShards = new AvgCpuUtilByShards();
+        AvgCpuUtilByShardsMetricBasedTemperatureCalculator avgCpuUtilByShards = new AvgCpuUtilByShardsMetricBasedTemperatureCalculator();
         Assert.assertEquals("0.0064432211",
                 avgCpuUtilByShards.gather(reader).getData().getValues("shard_avg", String.class).get(0).substring(0, 12));
 
@@ -67,7 +67,7 @@ public class SumOverOperationsForIndexShardProfileSummaryGroupTest {
             put("sum", "0.1266879414");
         }};
 
-        CpuUtilShardIndependent shardIndependent = new CpuUtilShardIndependent();
+        ShardIndependentTemperatureCalculatorCpuUtilMetric shardIndependent = new ShardIndependentTemperatureCalculatorCpuUtilMetric();
         mfu = shardIndependent.gather(reader);
 
         // We expect the mfu.getdata() to be: [[sum], [0.126687941459211]]
@@ -76,7 +76,7 @@ public class SumOverOperationsForIndexShardProfileSummaryGroupTest {
                 mfu.getData().getValues("sum", String.class).get(0).substring(0, 12));
 
 
-        NodeLevelUsageForCpu cpuUtilPeakUsage = new NodeLevelUsageForCpu();
+        TotalCpuUtilForTotalNodeMetric cpuUtilPeakUsage = new TotalCpuUtilForTotalNodeMetric();
         mfu = cpuUtilPeakUsage.gather(reader);
         Assert.assertEquals("0.1331311626",
                 mfu.getData().getValues(TemperatureMetricsBase.AGGR_OVER_AGGR_NAME, String.class)

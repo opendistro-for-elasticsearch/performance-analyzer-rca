@@ -13,12 +13,14 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.calculators.ShardBasedTemperatureCalculator;
 
-public class NodeLevelUsageForIOWriteSyscalls extends NodeLevelUsageForResourceType {
-    public NodeLevelUsageForIOWriteSyscalls() {
-        super(TemperatureVector.Dimension.IOWriteSysCallsRate);
+public class CpuUtilByShardsMetricBasedTemperatureCalculator extends ShardBasedTemperatureCalculator {
+
+    public CpuUtilByShardsMetricBasedTemperatureCalculator() {
+        super(TemperatureVector.Dimension.CpuUtil);
     }
 }

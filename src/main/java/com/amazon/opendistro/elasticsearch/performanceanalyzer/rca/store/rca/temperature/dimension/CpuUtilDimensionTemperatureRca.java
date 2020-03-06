@@ -13,36 +13,37 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.DimensionalTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.AvgCpuUtilByShards;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.CpuUtilByShard;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.NodeLevelUsageForCpu;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.CpuUtilShardIndependent;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.AvgCpuUtilByShardsMetricBasedTemperatureCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.CpuUtilByShardsMetricBasedTemperatureCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.TotalCpuUtilForTotalNodeMetric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.ShardIndependentTemperatureCalculatorCpuUtilMetric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.DimensionalTemperatureCalculator;
 
-public class CpuUtilHeatRca extends Rca<DimensionalTemperatureFlowUnit> {
-    private final NodeLevelUsageForCpu CPU_UTIL_PEAK_USAGE;
-    private final CpuUtilByShard CPU_UTIL_BY_SHARD;
-    private final AvgCpuUtilByShards AVG_CPU_UTIL_BY_SHARD;
-    private final CpuUtilShardIndependent CPU_UTIL_SHARD_INDEPENDENT;
+public class CpuUtilDimensionTemperatureRca extends Rca<DimensionalTemperatureFlowUnit> {
+    private final TotalCpuUtilForTotalNodeMetric CPU_UTIL_PEAK_USAGE;
+    private final CpuUtilByShardsMetricBasedTemperatureCalculator CPU_UTIL_BY_SHARD;
+    private final AvgCpuUtilByShardsMetricBasedTemperatureCalculator AVG_CPU_UTIL_BY_SHARD;
+    private final ShardIndependentTemperatureCalculatorCpuUtilMetric CPU_UTIL_SHARD_INDEPENDENT;
 
     private final ShardStore shardStore;
 
     private final TemperatureVector.NormalizedValue THRESHOLD_PERCENT_FOR_HEAT_ZONE_ASSIGNMENT =
             new TemperatureVector.NormalizedValue((short) 2);
 
-    public CpuUtilHeatRca(ShardStore shardStore, CpuUtilByShard cpuUtilByShard,
-                          AvgCpuUtilByShards avgCpuUtilByShards,
-                          CpuUtilShardIndependent cpuUtilShardIndependent, NodeLevelUsageForCpu cpuUtilPeakUsage) {
+    public CpuUtilDimensionTemperatureRca(ShardStore shardStore, CpuUtilByShardsMetricBasedTemperatureCalculator cpuUtilByShard,
+                                          AvgCpuUtilByShardsMetricBasedTemperatureCalculator avgCpuUtilByShards,
+                                          ShardIndependentTemperatureCalculatorCpuUtilMetric shardIndependentCpuUtilMetric, TotalCpuUtilForTotalNodeMetric cpuUtilPeakUsage) {
         super(5);
         this.CPU_UTIL_PEAK_USAGE = cpuUtilPeakUsage;
         this.CPU_UTIL_BY_SHARD = cpuUtilByShard;
-        this.CPU_UTIL_SHARD_INDEPENDENT = cpuUtilShardIndependent;
+        this.CPU_UTIL_SHARD_INDEPENDENT = shardIndependentCpuUtilMetric;
         this.AVG_CPU_UTIL_BY_SHARD = avgCpuUtilByShards;
         this.shardStore = shardStore;
     }
@@ -55,7 +56,7 @@ public class CpuUtilHeatRca extends Rca<DimensionalTemperatureFlowUnit> {
     @Override
     public DimensionalTemperatureFlowUnit operate() {
         System.out.println("Executing: " + name());
-        DimensionalTemperatureFlowUnit flowUnit = DimensionalHeatCalculator.getTemperatureForDimension(
+        DimensionalTemperatureFlowUnit flowUnit = DimensionalTemperatureCalculator.getTemperatureForDimension(
                 shardStore,
                 TemperatureVector.Dimension.CpuUtil,
                 CPU_UTIL_BY_SHARD,

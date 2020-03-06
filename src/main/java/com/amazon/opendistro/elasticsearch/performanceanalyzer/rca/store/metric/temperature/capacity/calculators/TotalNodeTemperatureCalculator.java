@@ -13,7 +13,7 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.calculators;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.TemperatureMetricsBase;
@@ -28,11 +28,11 @@ import org.jooq.Result;
  * tract resource utilization by shard ID. Shard on a node can be uniquely identified by the
  * index name and shard ID. It might also help to also consider the Operation dimension ?
  */
-public class NodeLevelUsageForResourceType extends TemperatureMetricsBase {
+public class TotalNodeTemperatureCalculator extends TemperatureMetricsBase {
     // For peak usage there is no group by clause used, therefore this is empty.
     private static final String[] dimensions = {};
 
-    public NodeLevelUsageForResourceType(TemperatureVector.Dimension metricType) {
+    public TotalNodeTemperatureCalculator(TemperatureVector.Dimension metricType) {
         super(metricType, dimensions);
     }
 
@@ -54,14 +54,5 @@ public class NodeLevelUsageForResourceType extends TemperatureMetricsBase {
     protected List<Field<?>> getSelectFieldsList(final List<Field<?>> groupByFields,
                                                  Field<?> aggrDimension) {
         return aggrColumnAsSelectField();
-        // List<Field<?>> selectFieldsList = new ArrayList<>(aggrColumnAsSelectField());
-
-        // final Field<Double> numDimension = DSL.field(
-        //         DSL.name(PyrometerAggrMetrics.METRICS_DB_AGG_COLUMN_USED), Double.class);
-        // // This aggregate function is applied after group by.
-
-        // selectFieldsList.add(getAggDimension(numDimension, AggregateFunction.AVG));
-
-        // return selectFieldsList;
     }
 }

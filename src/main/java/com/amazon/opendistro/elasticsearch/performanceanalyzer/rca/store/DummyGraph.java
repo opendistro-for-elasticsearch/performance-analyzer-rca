@@ -30,17 +30,17 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Used;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.AvgCpuUtilByShards;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.CpuUtilByShard;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.NodeLevelUsageForCpu;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.CpuUtilShardIndependent;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.AvgCpuUtilByShardsMetricBasedTemperatureCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.CpuUtilByShardsMetricBasedTemperatureCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.TotalCpuUtilForTotalNodeMetric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.ShardIndependentTemperatureCalculatorCpuUtilMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageOldGenRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageYoungGenRca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterHeatRca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.CpuUtilHeatRca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeHeatRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -83,41 +83,41 @@ public class DummyGraph extends AnalysisGraph {
         highHeapUsageClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
         highHeapUsageClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
-        constructResourceHeatMapGraph();
+        // constructResourceHeatMapGraph();
     }
 
     protected void constructResourceHeatMapGraph() {
         ShardStore shardStore = new ShardStore();
 
-        CpuUtilByShard cpuUtilByShard = new CpuUtilByShard();
-        AvgCpuUtilByShards avgCpuUtilByShards = new AvgCpuUtilByShards();
-        CpuUtilShardIndependent cpuUtilShardIndependent = new CpuUtilShardIndependent();
-        NodeLevelUsageForCpu cpuUtilPeakUsage = new NodeLevelUsageForCpu();
+        CpuUtilByShardsMetricBasedTemperatureCalculator cpuUtilByShard = new CpuUtilByShardsMetricBasedTemperatureCalculator();
+        AvgCpuUtilByShardsMetricBasedTemperatureCalculator avgCpuUtilByShards = new AvgCpuUtilByShardsMetricBasedTemperatureCalculator();
+        ShardIndependentTemperatureCalculatorCpuUtilMetric shardIndependentCpuUtilMetric = new ShardIndependentTemperatureCalculatorCpuUtilMetric();
+        TotalCpuUtilForTotalNodeMetric cpuUtilPeakUsage = new TotalCpuUtilForTotalNodeMetric();
 
         // heap map is developed only for data nodes.
         cpuUtilByShard.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
         avgCpuUtilByShards.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-        cpuUtilShardIndependent.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
+        shardIndependentCpuUtilMetric.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
         cpuUtilPeakUsage.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
 
         addLeaf(cpuUtilByShard);
         addLeaf(avgCpuUtilByShards);
-        addLeaf(cpuUtilShardIndependent);
+        addLeaf(shardIndependentCpuUtilMetric);
         addLeaf(cpuUtilPeakUsage);
 
-        CpuUtilHeatRca cpuUtilHeat = new CpuUtilHeatRca(shardStore, cpuUtilByShard,
+        CpuUtilDimensionTemperatureRca cpuUtilHeat = new CpuUtilDimensionTemperatureRca(shardStore, cpuUtilByShard,
                 avgCpuUtilByShards,
-                cpuUtilShardIndependent, cpuUtilPeakUsage);
+                shardIndependentCpuUtilMetric, cpuUtilPeakUsage);
         cpuUtilHeat.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
         cpuUtilHeat.addAllUpstreams(Arrays.asList(cpuUtilByShard, avgCpuUtilByShards,
-                cpuUtilShardIndependent, cpuUtilPeakUsage));
+                shardIndependentCpuUtilMetric, cpuUtilPeakUsage));
 
-        NodeHeatRca nodeHeatRca = new NodeHeatRca(cpuUtilHeat);
-        nodeHeatRca.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-        nodeHeatRca.addAllUpstreams(Arrays.asList(cpuUtilHeat));
+        NodeTemperatureRca nodeTemperatureRca = new NodeTemperatureRca(cpuUtilHeat);
+        nodeTemperatureRca.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
+        nodeTemperatureRca.addAllUpstreams(Arrays.asList(cpuUtilHeat));
 
-        ClusterHeatRca clusterHeatRca = new ClusterHeatRca(nodeHeatRca);
-        clusterHeatRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-        clusterHeatRca.addAllUpstreams(Arrays.asList(nodeHeatRca));
+        ClusterTemperatureRca clusterTemperatureRca = new ClusterTemperatureRca(nodeTemperatureRca);
+        clusterTemperatureRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+        clusterTemperatureRca.addAllUpstreams(Arrays.asList(nodeTemperatureRca));
     }
 }

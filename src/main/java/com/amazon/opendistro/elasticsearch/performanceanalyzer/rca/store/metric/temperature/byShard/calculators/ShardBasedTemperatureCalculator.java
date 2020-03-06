@@ -13,7 +13,7 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.calculators;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
@@ -33,13 +33,13 @@ import org.jooq.impl.DSL;
  *
  * <p>This class calculates the sum over all operations for an index,shard pair.
  */
-public class SumOverOperationsForIndexShardGroup extends TemperatureMetricsBase {
+public class ShardBasedTemperatureCalculator extends TemperatureMetricsBase {
     private static final String[] dimensions = {
             AllMetrics.CommonDimension.INDEX_NAME.toString(),
             AllMetrics.CommonDimension.SHARD_ID.toString()
     };
 
-    public SumOverOperationsForIndexShardGroup(TemperatureVector.Dimension metricType) {
+    public ShardBasedTemperatureCalculator(TemperatureVector.Dimension metricType) {
         // The temperature intendeds to spread the temperature around the cluster by re-allocating shards
         // from the hottest of nodes to the nodes that are relatively cold (with some randomness
         // so that it does not overwhelm the coldest node). Pyrometer also wants to size for peak
