@@ -25,10 +25,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
  */
 public class HighCpuRca extends GenericResourceRca {
   private static final double CPU_USAGE_THRESHOLD = 0.7;
+
   public <M extends Metric> HighCpuRca(final int rcaPeriod, final M cpuUsageGroupByOperation) {
     super(rcaPeriod, ResourceType.newBuilder().setHardwareResourceType(HardwareEnum.CPU).build(),
         0, cpuUsageGroupByOperation);
     int cores = Runtime.getRuntime().availableProcessors();
-    this.setThreshold(CPU_USAGE_THRESHOLD*(double)cores);
+    this.setThreshold(CPU_USAGE_THRESHOLD * (double)cores);
   }
 }

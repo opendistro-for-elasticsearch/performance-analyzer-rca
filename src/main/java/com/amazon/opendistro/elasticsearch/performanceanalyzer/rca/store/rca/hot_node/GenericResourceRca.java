@@ -17,23 +17,21 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.ho
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindow;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindowData;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.TopConsumerSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.time.Clock;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindow;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindowData;
 import org.jooq.Record;
 import org.jooq.Result;
 import org.jooq.exception.DataTypeException;
@@ -128,11 +126,11 @@ public class GenericResourceRca extends Rca<ResourceFlowUnit> {
           break;
         }
         try {
-          double num = record.getValue(fieldSize-1, Double.class);
+          double num = record.getValue(fieldSize - 1, Double.class);
           totalUsage += num;
         }
         catch (DataTypeException de) {
-          LOG.error("Fail to data field from SQL record, field index : {}, trace : {}", fieldSize-1, de.getStackTrace());
+          LOG.error("Fail to data field from SQL record, field index : {}, trace : {}", fieldSize - 1, de.getStackTrace());
           recordParsingError = true;
           break;
         }
@@ -180,7 +178,7 @@ public class GenericResourceRca extends Rca<ResourceFlowUnit> {
         }
         int fieldSize = record.size();
         try {
-          double num = record.getValue(fieldSize-1, Double.class);
+          double num = record.getValue(fieldSize - 1, Double.class);
           String name = record.getValue(0, String.class);
           summary.addNestedSummaryList(new TopConsumerSummary(name, num));
         }
