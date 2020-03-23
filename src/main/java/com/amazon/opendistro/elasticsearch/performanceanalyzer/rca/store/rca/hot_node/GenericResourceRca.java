@@ -51,9 +51,9 @@ public class GenericResourceRca extends Rca<ResourceFlowUnit> {
   private final int rcaPeriod;
   private int counter;
   private final ResourceType resourceType;
-  private double threshold;
-  private double lowerBoundThreshold;
-  private int topK;
+  private volatile double threshold;
+  private volatile double lowerBoundThreshold;
+  private volatile int topK;
   protected Clock clock;
 
   /**
@@ -81,6 +81,7 @@ public class GenericResourceRca extends Rca<ResourceFlowUnit> {
 
   /**
    * set the number of top consumers to report
+   * This method is thread safe
    * @param topK number of top consumers
    */
   public void setTopK(final int topK) {
@@ -89,6 +90,7 @@ public class GenericResourceRca extends Rca<ResourceFlowUnit> {
 
   /**
    * set threshold to identify contented resource
+   * This method is thread safe
    * @param threshold threshold
    */
   public void setThreshold(final double threshold) {
@@ -98,6 +100,7 @@ public class GenericResourceRca extends Rca<ResourceFlowUnit> {
   /**
    * set lower bound threshold and drop unwanted noisy data
    * if lower than the threshold
+   * This method is thread safe
    * @param lowerBoundThreshold lower bound threshold
    */
   public void setLowerBoundThreshold(final double lowerBoundThreshold) {
