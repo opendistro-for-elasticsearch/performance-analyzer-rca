@@ -106,7 +106,7 @@ public class HotNodeSummary extends GenericSummary {
   public List<Field<?>> getSqlSchema() {
     List<Field<?>> schema = new ArrayList<>();
     schema.add(NodeSummaryField.NODE_ID_FIELD.getField());
-    schema.add(NodeSummaryField.HOST_IP_ADDRESS_FILELD.getField());
+    schema.add(NodeSummaryField.HOST_IP_ADDRESS_FIELD.getField());
     return schema;
   }
 
@@ -145,7 +145,7 @@ public class HotNodeSummary extends GenericSummary {
    */
   public enum NodeSummaryField implements JooqFieldValue {
     NODE_ID_FIELD(SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME, String.class),
-    HOST_IP_ADDRESS_FILELD(SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME,
+    HOST_IP_ADDRESS_FIELD(SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME,
         String.class);
 
     private String name;
@@ -177,7 +177,7 @@ public class HotNodeSummary extends GenericSummary {
     HotNodeSummary summary = null;
     try {
       String nodeId = record.get(NodeSummaryField.NODE_ID_FIELD.getField(), String.class);
-      String ipAddress = record.get(NodeSummaryField.HOST_IP_ADDRESS_FILELD.getField(), String.class);
+      String ipAddress = record.get(NodeSummaryField.HOST_IP_ADDRESS_FIELD.getField(), String.class);
       summary = new HotNodeSummary(nodeId, ipAddress);
     }
     catch (IllegalArgumentException ie) {
