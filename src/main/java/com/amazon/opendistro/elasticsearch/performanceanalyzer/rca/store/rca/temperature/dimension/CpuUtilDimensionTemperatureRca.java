@@ -34,7 +34,7 @@ public class CpuUtilDimensionTemperatureRca extends Rca<DimensionalTemperatureFl
 
     private final ShardStore shardStore;
 
-    private final TemperatureVector.NormalizedValue THRESHOLD_PERCENT_FOR_HEAT_ZONE_ASSIGNMENT =
+    public static final TemperatureVector.NormalizedValue THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT =
             new TemperatureVector.NormalizedValue((short) 2);
 
     public CpuUtilDimensionTemperatureRca(ShardStore shardStore,
@@ -63,7 +63,7 @@ public class CpuUtilDimensionTemperatureRca extends Rca<DimensionalTemperatureFl
                 TemperatureVector.Dimension.CpuUtil,
                 CPU_UTIL_BY_SHARD,
                 AVG_CPU_UTIL_BY_SHARD, CPU_UTIL_SHARD_INDEPENDENT, CPU_UTIL_PEAK_USAGE,
-                THRESHOLD_PERCENT_FOR_HEAT_ZONE_ASSIGNMENT);
+                THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT);
         return flowUnit;
     }
 }

@@ -52,6 +52,14 @@ public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
         final int NUM_NODES = flowUnits.size();
 
         ClusterTemperatureSummary clusterTemperatureSummary = new ClusterTemperatureSummary(NUM_NODES);
+
+        // For each dimension go through the temperature profiles sent by each node and figure
+        // out the cluster level average along that dimension. Then this method recreates a
+        // temperature profile for each of the nodes. This is required because what nodes sent was
+        // respect to the nodes but at cluster level they need to be re-calibrated at the cluster
+        // level. Note that temperature is a normalized value, normalized by total usage. At node
+        // level, the total usage is at the node level (over all shards and shard-independent
+        // factors), at the master the total usage is the sum over all nodes.
         for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
             double totalForDimension = 0.0;
             for (CompactNodeTemperatureFlowUnit nodeFlowUnit : flowUnits) {
@@ -59,32 +67,44 @@ public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
                 totalForDimension += summary.getTotalConsumedByDimension(dimension);
             }
             double nodeAverageForDimension = totalForDimension / NUM_NODES;
-            TemperatureVector.NormalizedValue value =
+            TemperatureVector.NormalizedValue normalizedAvgForDimension =
                     TemperatureVector.NormalizedValue.calculate(nodeAverageForDimension, totalForDimension);
-            clusterTemperatureSummary.setTemperatureByDimension(dimension, value, totalForDimension);
 
-            for (CompactNodeTemperatureFlowUnit nodeFlowUnit : flowUnits) {
-                CompactNodeTemperatureSummary obtainedNodeTempSummary =
-                        nodeFlowUnit.getCompactNodeTemperatureSummary();
-                String key = obtainedNodeTempSummary.getNodeId();
+            clusterTemperatureSummary.createClusterDimensionalTemperature(dimension,
+                    normalizedAvgForDimension, totalForDimension);
 
-                nodeTemperatureSummaryMap.putIfAbsent(key,
-                        new CompactNodeTemperatureSummary(obtainedNodeTempSummary.getNodeId(),
-                                obtainedNodeTempSummary.getHostAddress(), CompactNodeTemperatureSummary.Level.MASTER));
-                CompactNodeTemperatureSummary constructedCompactNodeTemperatureSummary = nodeTemperatureSummaryMap.get(key);
-
-                double obtainedTotal = obtainedNodeTempSummary.getTotalConsumedByDimension(dimension);
-                TemperatureVector.NormalizedValue newClusterBasedValue =
-                        TemperatureVector.NormalizedValue.calculate(obtainedTotal, totalForDimension);
-
-                constructedCompactNodeTemperatureSummary.setTemperatureForDimension(dimension, newClusterBasedValue);
-                constructedCompactNodeTemperatureSummary.setNumOfShards(dimension,
-                        obtainedNodeTempSummary.getNumberOfShardsByDimension(dimension));
-                constructedCompactNodeTemperatureSummary.setTotalConsumedByDimension(dimension, obtainedTotal);
-            }
+            recalibrateNodeTemperaturesAtClusterLevelUsage(flowUnits, nodeTemperatureSummaryMap,
+                    dimension, totalForDimension, nodeAverageForDimension);
         }
-        clusterTemperatureSummary.addNodesSummaries(nodeTemperatureSummaryMap.values());
+        clusterTemperatureSummary.addNodesSummaries(nodeTemperatureSummaryMap);
         return new ClusterTemperatureFlowUnit(System.currentTimeMillis(),
                 new ResourceContext(Resources.State.UNKNOWN), clusterTemperatureSummary);
+    }
+
+    private void recalibrateNodeTemperaturesAtClusterLevelUsage(List<CompactNodeTemperatureFlowUnit> flowUnits,
+                                                                Map<String,
+                                                                        CompactNodeTemperatureSummary> nodeTemperatureSummaryMap,
+                                                                TemperatureVector.Dimension dimension,
+                                                                double totalForDimension,
+                                                                double avgForTheDimension) {
+        for (CompactNodeTemperatureFlowUnit nodeFlowUnit : flowUnits) {
+            CompactNodeTemperatureSummary obtainedNodeTempSummary =
+                    nodeFlowUnit.getCompactNodeTemperatureSummary();
+            String key = obtainedNodeTempSummary.getNodeId();
+
+            nodeTemperatureSummaryMap.putIfAbsent(key,
+                    new CompactNodeTemperatureSummary(obtainedNodeTempSummary.getNodeId(),
+                            obtainedNodeTempSummary.getHostAddress(), CompactNodeTemperatureSummary.Level.MASTER));
+            CompactNodeTemperatureSummary constructedCompactNodeTemperatureSummary = nodeTemperatureSummaryMap.get(key);
+
+            double obtainedTotal = obtainedNodeTempSummary.getTotalConsumedByDimension(dimension);
+            TemperatureVector.NormalizedValue newClusterBasedValue =
+                    TemperatureVector.NormalizedValue.calculate(obtainedTotal, totalForDimension);
+
+            constructedCompactNodeTemperatureSummary.setTemperatureForDimension(dimension, newClusterBasedValue);
+            constructedCompactNodeTemperatureSummary.setNumOfShards(dimension,
+                    obtainedNodeTempSummary.getNumberOfShardsByDimension(dimension));
+            constructedCompactNodeTemperatureSummary.setTotalConsumedByDimension(dimension, obtainedTotal);
+        }
     }
 }

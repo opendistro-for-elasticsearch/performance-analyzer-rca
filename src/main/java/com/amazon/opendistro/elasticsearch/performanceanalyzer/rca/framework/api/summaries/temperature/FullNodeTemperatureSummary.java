@@ -38,7 +38,7 @@ public class FullNodeTemperatureSummary extends GenericSummary {
      * A node also has the complete list of shards in each dimension, broken down by the
      * different temperature zones.
      */
-    private DimensionalTemperatureSummary[] nodeDimensionProfiles;
+    private NodeDimensionalTemperatureSummary[] nodeDimensionProfiles;
 
     private final String nodeId;
     private final String hostAddress;
@@ -47,7 +47,7 @@ public class FullNodeTemperatureSummary extends GenericSummary {
         this.nodeId = nodeId;
         this.hostAddress = hostAddress;
         this.nodeDimensionProfiles =
-                new DimensionalTemperatureSummary[TemperatureVector.Dimension.values().length];
+                new NodeDimensionalTemperatureSummary[TemperatureVector.Dimension.values().length];
         this.temperatureVector = new TemperatureVector();
     }
 
@@ -55,7 +55,7 @@ public class FullNodeTemperatureSummary extends GenericSummary {
         return temperatureVector;
     }
 
-    public List<DimensionalTemperatureSummary> getNodeDimensionProfiles() {
+    public List<NodeDimensionalTemperatureSummary> getNodeDimensionProfiles() {
         return Arrays.asList(nodeDimensionProfiles);
     }
 
@@ -67,7 +67,7 @@ public class FullNodeTemperatureSummary extends GenericSummary {
         return hostAddress;
     }
 
-    public void updateNodeDimensionProfile(DimensionalTemperatureSummary nodeDimensionProfile) {
+    public void updateNodeDimensionProfile(NodeDimensionalTemperatureSummary nodeDimensionProfile) {
         TemperatureVector.Dimension dimension = nodeDimensionProfile.getProfileForDimension();
         this.nodeDimensionProfiles[dimension.ordinal()] = nodeDimensionProfile;
         temperatureVector.updateTemperatureForDimension(dimension, nodeDimensionProfile.getMeanTemperature());
@@ -75,7 +75,7 @@ public class FullNodeTemperatureSummary extends GenericSummary {
 
     public List<GenericSummary> getNestedSummaryList() {
         List<GenericSummary> dimensionalSummaries = new ArrayList<>();
-        for (DimensionalTemperatureSummary dimSummary : nodeDimensionProfiles) {
+        for (NodeDimensionalTemperatureSummary dimSummary : nodeDimensionProfiles) {
             dimensionalSummaries.add(dimSummary);
         }
         return dimensionalSummaries;
