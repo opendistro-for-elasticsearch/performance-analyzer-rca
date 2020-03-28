@@ -17,7 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.te
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.DimensionalTemperatureFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.DimensionalTemperatureSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.NodeDimensionalTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ShardProfileSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
@@ -99,8 +99,8 @@ public class DimensionalTemperatureCalculator {
 
         Result<Record> rowsPerShard = shardIdBasedFlowUnits.get(0).getData();
 
-        DimensionalTemperatureSummary nodeDimensionProfile =
-                new DimensionalTemperatureSummary(metricType, avgUsageAcrossShards, totalConsumedInNode);
+        NodeDimensionalTemperatureSummary nodeDimensionProfile =
+                new NodeDimensionalTemperatureSummary(metricType, avgUsageAcrossShards, totalConsumedInNode);
 
         // The shardIdBasedFlowUnits is supposed to contain one row per shard.
         nodeDimensionProfile.setNumberOfShards(rowsPerShard.size());

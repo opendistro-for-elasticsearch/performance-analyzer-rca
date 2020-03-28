@@ -68,7 +68,7 @@ public class CompactNodeTemperatureSummary extends GenericSummary {
         this.temperatureVector = nodeProfile.getTemperatureVector();
         this.totalConsumedByDimension = new double[TemperatureVector.Dimension.values().length];
         this.numOfShards = new int[TemperatureVector.Dimension.values().length];
-        for (DimensionalTemperatureSummary nodeDimensionProfile : nodeProfile.getNodeDimensionProfiles()) {
+        for (NodeDimensionalTemperatureSummary nodeDimensionProfile : nodeProfile.getNodeDimensionProfiles()) {
             if (nodeDimensionProfile != null) {
                 int index = nodeDimensionProfile.getProfileForDimension().ordinal();
                 totalConsumedByDimension[index] = nodeDimensionProfile.getTotalUsage();
@@ -94,7 +94,7 @@ public class CompactNodeTemperatureSummary extends GenericSummary {
         this.numOfShards[dimension.ordinal()] = numOfShards;
     }
 
-    public int  getNumberOfShardsByDimension(TemperatureVector.Dimension dimension) {
+    public int getNumberOfShardsByDimension(TemperatureVector.Dimension dimension) {
         return numOfShards[dimension.ordinal()];
     }
 
@@ -105,6 +105,10 @@ public class CompactNodeTemperatureSummary extends GenericSummary {
 
     public String getNodeId() {
         return nodeId;
+    }
+
+    public TemperatureVector.NormalizedValue getTemperatureForDimension(TemperatureVector.Dimension dimension) {
+        return temperatureVector.getTemperatureFor(dimension);
     }
 
     @Override

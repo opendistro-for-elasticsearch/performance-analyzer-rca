@@ -1,4 +1,4 @@
-#Temperature Profile RCAs
+Temperature Profile RCAs
 ---
 
 ## Introduction

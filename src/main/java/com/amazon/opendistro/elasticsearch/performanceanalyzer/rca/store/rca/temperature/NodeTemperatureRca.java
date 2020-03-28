@@ -22,7 +22,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.CompactNodeTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.DimensionalTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.CompactNodeTemperatureSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.DimensionalTemperatureSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.NodeDimensionalTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.FullNodeTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
@@ -71,7 +71,7 @@ public class NodeTemperatureRca extends Rca<CompactNodeTemperatureFlowUnit> {
             throw new IllegalArgumentException("One flow unit expected. Found: " + cpuFlowUnits);
         }
 
-        List<DimensionalTemperatureSummary> nodeDimensionProfiles = new ArrayList<>();
+        List<NodeDimensionalTemperatureSummary> nodeDimensionProfiles = new ArrayList<>();
         nodeDimensionProfiles.add(cpuFlowUnits.get(0).getNodeDimensionProfile());
         FullNodeTemperatureSummary nodeProfile = buildNodeProfile(nodeDimensionProfiles);
 
@@ -84,12 +84,12 @@ public class NodeTemperatureRca extends Rca<CompactNodeTemperatureFlowUnit> {
                 true);
     }
 
-    private FullNodeTemperatureSummary buildNodeProfile(List<DimensionalTemperatureSummary> dimensionProfiles) {
+    private FullNodeTemperatureSummary buildNodeProfile(List<NodeDimensionalTemperatureSummary> dimensionProfiles) {
         ClusterDetailsEventProcessor.NodeDetails currentNodeDetails =
                 ClusterDetailsEventProcessor.getCurrentNodeDetails();
         FullNodeTemperatureSummary nodeProfile = new FullNodeTemperatureSummary(currentNodeDetails.getId(),
                 currentNodeDetails.getHostAddress());
-        for (DimensionalTemperatureSummary profile: dimensionProfiles) {
+        for (NodeDimensionalTemperatureSummary profile: dimensionProfiles) {
             nodeProfile.updateNodeDimensionProfile(profile);
         }
         return nodeProfile;

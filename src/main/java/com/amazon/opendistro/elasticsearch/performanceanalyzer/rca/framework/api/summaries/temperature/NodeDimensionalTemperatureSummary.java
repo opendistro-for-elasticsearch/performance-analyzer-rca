@@ -32,23 +32,23 @@ import org.jooq.impl.DSL;
 /**
  * A node dimension profile is categorization of all shards in the node into different heatZones.
  */
-public class DimensionalTemperatureSummary extends GenericSummary {
+public class NodeDimensionalTemperatureSummary extends GenericSummary {
     private final TemperatureVector.Dimension profileForDimension;
     private final TemperatureVector.NormalizedValue meanTemperature;
     private final double totalUsage;
 
-    private final ZoneProfileSummary[] zoneProfiles;
+    private final NodeZoneProfileSummary[] zoneProfiles;
     private int numberOfShards;
 
-    public DimensionalTemperatureSummary(TemperatureVector.Dimension profileForDimension,
-                                         TemperatureVector.NormalizedValue meanTemperature,
-                                         double totalUsage) {
+    public NodeDimensionalTemperatureSummary(TemperatureVector.Dimension profileForDimension,
+                                             TemperatureVector.NormalizedValue meanTemperature,
+                                             double totalUsage) {
         this.profileForDimension = profileForDimension;
         this.meanTemperature = meanTemperature;
         this.totalUsage = totalUsage;
-        this.zoneProfiles = new ZoneProfileSummary[HeatZoneAssigner.Zone.values().length];
+        this.zoneProfiles = new NodeZoneProfileSummary[HeatZoneAssigner.Zone.values().length];
         for (int i = 0; i < this.zoneProfiles.length; i++) {
-            this.zoneProfiles[i] = new ZoneProfileSummary(HeatZoneAssigner.Zone.values()[i]);
+            this.zoneProfiles[i] = new NodeZoneProfileSummary(HeatZoneAssigner.Zone.values()[i]);
         }
     }
 
@@ -61,7 +61,7 @@ public class DimensionalTemperatureSummary extends GenericSummary {
     }
 
     public void addShardToZone(ShardProfileSummary shard, HeatZoneAssigner.Zone zone) {
-        ZoneProfileSummary profile = zoneProfiles[zone.ordinal()];
+        NodeZoneProfileSummary profile = zoneProfiles[zone.ordinal()];
         profile.addShard(shard);
     }
 
@@ -102,7 +102,7 @@ public class DimensionalTemperatureSummary extends GenericSummary {
 
     public List<GenericSummary> getNestedSummaryList() {
         List<GenericSummary> zoneSummaries = new ArrayList<>();
-        for (ZoneProfileSummary zone : zoneProfiles) {
+        for (NodeZoneProfileSummary zone : zoneProfiles) {
             zoneSummaries.add(zone);
         }
         return zoneSummaries;
@@ -144,14 +144,15 @@ public class DimensionalTemperatureSummary extends GenericSummary {
         return summaryObj;
     }
 
-    class ZoneProfileSummary extends GenericSummary {
+    class NodeZoneProfileSummary extends GenericSummary {
         List<ShardProfileSummary> shardProfileSummaries;
         ShardProfileSummary minShard;
+        //ShardProfileSummary maxShard;
         ShardProfileSummary maxShard;
 
         private final HeatZoneAssigner.Zone myZone;
 
-        ZoneProfileSummary(HeatZoneAssigner.Zone myZone) {
+        NodeZoneProfileSummary(HeatZoneAssigner.Zone myZone) {
             this.myZone = myZone;
             shardProfileSummaries = new ArrayList<>();
         }

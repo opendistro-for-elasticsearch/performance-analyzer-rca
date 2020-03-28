@@ -18,12 +18,12 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.DimensionalTemperatureSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.NodeDimensionalTemperatureSummary;
 
 public class DimensionalTemperatureFlowUnit extends ResourceFlowUnit {
-    private final DimensionalTemperatureSummary nodeDimensionProfile;
+    private final NodeDimensionalTemperatureSummary nodeDimensionProfile;
 
-    public DimensionalTemperatureFlowUnit(long timeStamp, DimensionalTemperatureSummary nodeDimensionProfile) {
+    public DimensionalTemperatureFlowUnit(long timeStamp, NodeDimensionalTemperatureSummary nodeDimensionProfile) {
         super(timeStamp, ResourceContext.generic(), nodeDimensionProfile, true);
         this.nodeDimensionProfile = nodeDimensionProfile;
     }
@@ -34,7 +34,7 @@ public class DimensionalTemperatureFlowUnit extends ResourceFlowUnit {
         throw new IllegalArgumentException("This should not be called.");
     }
 
-    public DimensionalTemperatureSummary getNodeDimensionProfile() {
+    public NodeDimensionalTemperatureSummary getNodeDimensionProfile() {
         return nodeDimensionProfile;
     }
 }
