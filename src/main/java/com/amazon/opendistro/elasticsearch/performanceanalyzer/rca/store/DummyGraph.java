@@ -21,16 +21,21 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_AGGREGATE_UPSTREAM;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_LOCUS;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.CPU_Utilization;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.GC_Collection_Event;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.GC_Collection_Time;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Used;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric.AggregateFunction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hot_node.HighCpuRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageOldGenRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageYoungGenRca;
 import java.util.Arrays;
@@ -44,15 +49,20 @@ public class DummyGraph extends AnalysisGraph {
     Metric gcEvent = new GC_Collection_Event(5);
     Metric heapMax = new Heap_Max(5);
     Metric gc_Collection_Time = new GC_Collection_Time(5);
+    Metric cpuUtilizationGroupByOperation = new AggregateMetric(5, CPU_Utilization.NAME,
+        AggregateFunction.SUM, CommonDimension.OPERATION.toString());
 
     heapUsed.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     gcEvent.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     heapMax.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     gc_Collection_Time.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    cpuUtilizationGroupByOperation.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+
     addLeaf(heapUsed);
     addLeaf(gcEvent);
     addLeaf(heapMax);
     addLeaf(gc_Collection_Time);
+    addLeaf(cpuUtilizationGroupByOperation);
 
     Rca<ResourceFlowUnit> highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(12, heapUsed, gcEvent,
         heapMax);
@@ -64,10 +74,14 @@ public class DummyGraph extends AnalysisGraph {
     highHeapUsageYoungGenRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     highHeapUsageYoungGenRca.addAllUpstreams(Arrays.asList(heapUsed, gc_Collection_Time));
 
+    Rca<ResourceFlowUnit> highCpuRca = new HighCpuRca(12, cpuUtilizationGroupByOperation);
+    highCpuRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    highCpuRca.addAllUpstreams(Collections.singletonList(cpuUtilizationGroupByOperation));
+
     Rca<ResourceFlowUnit> hotJVMNodeRca = new HotNodeRca(12, highHeapUsageOldGenRca,
-        highHeapUsageYoungGenRca);
+        highHeapUsageYoungGenRca, highCpuRca);
     hotJVMNodeRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    hotJVMNodeRca.addAllUpstreams(Arrays.asList(highHeapUsageOldGenRca, highHeapUsageYoungGenRca));
+    hotJVMNodeRca.addAllUpstreams(Arrays.asList(highHeapUsageOldGenRca, highHeapUsageYoungGenRca, highCpuRca));
 
     Rca<ResourceFlowUnit> highHeapUsageClusterRca =
         new HighHeapUsageClusterRca(12, hotJVMNodeRca);
