@@ -17,6 +17,9 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.TopConsumerSummaryMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.TopConsumerSummary.SQL_SCHEMA_CONSTANTS;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import java.util.List;
 import org.jooq.Field;
 import org.junit.Assert;
@@ -87,6 +90,12 @@ public class TopConsumerSummaryTest {
 
     @Test
     public void testToJson() {
-        Assert.assertNull(uut.toJson());
+        JsonElement elem = uut.toJson();
+        Assert.assertTrue(elem.isJsonObject());
+        JsonObject json = ((JsonObject) elem);
+        Assert.assertEquals(NAME,
+            json.get(SQL_SCHEMA_CONSTANTS.CONSUMER_NAME_COL_NAME).getAsString());
+        Assert.assertEquals(VALUE,
+            json.get(SQL_SCHEMA_CONSTANTS.CONSUMER_VALUE_COL_NAME).getAsDouble(), 0.0);
     }
 }
