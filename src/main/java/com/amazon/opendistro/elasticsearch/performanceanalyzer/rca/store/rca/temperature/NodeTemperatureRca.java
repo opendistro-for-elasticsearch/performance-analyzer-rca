@@ -22,8 +22,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.CompactNodeTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.DimensionalTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.CompactNodeTemperatureSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.NodeDimensionalTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.FullNodeTemperatureSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.NodeDimensionalTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
@@ -61,6 +61,7 @@ public class NodeTemperatureRca extends Rca<CompactNodeTemperatureFlowUnit> {
      * <p>This is done by accumulating the {@code DimensionalFlowUnit} s it receives from the
      * individual ResourceHeatRcas. The temperature profile build here is sent to the elected master
      * node where this is used to calculate the cluster temperature profile.
+     *
      * @return
      */
     @Override
@@ -89,7 +90,7 @@ public class NodeTemperatureRca extends Rca<CompactNodeTemperatureFlowUnit> {
                 ClusterDetailsEventProcessor.getCurrentNodeDetails();
         FullNodeTemperatureSummary nodeProfile = new FullNodeTemperatureSummary(currentNodeDetails.getId(),
                 currentNodeDetails.getHostAddress());
-        for (NodeDimensionalTemperatureSummary profile: dimensionProfiles) {
+        for (NodeDimensionalTemperatureSummary profile : dimensionProfiles) {
             nodeProfile.updateNodeDimensionProfile(profile);
         }
         return nodeProfile;
