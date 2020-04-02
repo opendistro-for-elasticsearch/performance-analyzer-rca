@@ -1,3 +1,18 @@
+/*
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ *  permissions and limitations under the License.
+ */
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca;
 
 import static java.time.Instant.ofEpochMilli;
@@ -10,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
@@ -77,12 +93,15 @@ public class HotNodeClusterRcaTest {
     fu = clusterRca.operate();
     Assert.assertTrue(fu.getResourceContext().isUnhealthy());
     Assert.assertTrue(fu.hasResourceSummary());
-    GenericSummary clusterSummary = fu.getResourceSummary();
+    HotClusterSummary clusterSummary = (HotClusterSummary) fu.getResourceSummary();
+    Assert.assertTrue(clusterSummary.getNumOfUnhealthyNodes() == 1);
     Assert.assertTrue(clusterSummary.getNestedSummaryList().size() > 0);
-    GenericSummary nodeSummary = clusterSummary.getNestedSummaryList().get(0);
-    Assert.assertTrue(nodeSummary.getNestedSummaryList().size() > 0);
-    HotResourceSummary resourceSummary = (HotResourceSummary) nodeSummary.getNestedSummaryList().get(0);
 
+    HotNodeSummary nodeSummary = (HotNodeSummary) clusterSummary.getNestedSummaryList().get(0);
+    Assert.assertTrue(nodeSummary.getNodeID().equals("node1"));
+    Assert.assertTrue(nodeSummary.getNestedSummaryList().size() > 0);
+
+    HotResourceSummary resourceSummary = (HotResourceSummary) nodeSummary.getNestedSummaryList().get(0);
     Assert.assertTrue(resourceSummary.getResourceType().equals(buildResourceType(JvmEnum.OLD_GEN)));
     Assert.assertEquals(resourceSummary.getValue(), 10, 0.1);
   }

@@ -22,6 +22,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.ResourceFlowUnitFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -56,7 +57,8 @@ public class SQLiteQueryUtils {
   // currently we can  only query from the cluster level RCAs
   static {
     Set<String> rcaSet = new HashSet<>();
-    rcaSet.add(HighHeapUsageClusterRca.HIGH_HEAP_USAGE_CLUSTER_RCA_TABLE);
+    rcaSet.add(HighHeapUsageClusterRca.RCA_TABLE_NAME);
+    rcaSet.add(HotNodeClusterRca.RCA_TABLE_NAME);
     clusterLevelRCA = Collections.unmodifiableSet(rcaSet);
   }
 
