@@ -31,9 +31,12 @@ package.OpenDistroPerformanceAnalyzerEngine = {
             BouncyCastleCrypto = 1.x;
             OpenDistroPerfTop = 1.0;
             ProtocolBuffersJava = 3.5.x;
-	    JakartaCommons-IO = 2.4;
-	    JakartaCommons-lang3 = 3.0;
-	};
+            JakartaCommons-IO = 2.4;
+            JakartaCommons-lang3 = 3.0;
+            log4j = 1.2;
+            Log4j-api = 2.x;
+            Log4j-core = 2.8;
+        };
     };
 
     build-system = happytrails;
