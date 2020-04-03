@@ -21,8 +21,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsC
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.CompositeSubscribeRequest;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.requests.CompositeSubscribeRequest;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks.SubscriptionRxTask;
 import io.grpc.stub.StreamObserver;
 import java.util.concurrent.ExecutorService;

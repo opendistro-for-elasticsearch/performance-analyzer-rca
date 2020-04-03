@@ -13,7 +13,7 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.requests;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
