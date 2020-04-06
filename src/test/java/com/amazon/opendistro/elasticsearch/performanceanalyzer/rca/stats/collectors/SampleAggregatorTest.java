@@ -101,6 +101,7 @@ public class SampleAggregatorTest {
     PeriodicSamplers periodicSamplers =
         new PeriodicSamplers(
             sampleAggregator, Collections.singletonList(sampler), 10, TimeUnit.HOURS);
+    periodicSamplers.startHeartbeat();
 
     RcaStatsReporter reporter = new RcaStatsReporter(Collections.singletonList(sampleAggregator));
 
