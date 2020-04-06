@@ -21,6 +21,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.collect
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.emitters.ISampler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
+import com.google.common.annotations.VisibleForTesting;
 
 public class RcaEnabledSampler implements ISampler {
 
@@ -29,12 +30,12 @@ public class RcaEnabledSampler implements ISampler {
     sampleCollector.updateStat(RcaRuntimeMetrics.RCA_ENABLED, "", isRcaEnabled());
   }
 
-  private int isRcaEnabled() {
+  @VisibleForTesting
+  int isRcaEnabled() {
     NodeDetails currentNode = ClusterDetailsEventProcessor.getCurrentNodeDetails();
     if (currentNode != null && currentNode.getIsMasterNode()) {
       return RcaController.isRcaEnabled() ? 1 : 0;
     }
-
     return 0;
   }
 }

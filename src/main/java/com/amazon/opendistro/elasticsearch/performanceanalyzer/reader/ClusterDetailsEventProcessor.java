@@ -20,6 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.Performan
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaControllerHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.JsonConverter;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,6 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import lombok.Builder;
+import lombok.Data;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -122,12 +126,30 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
     }
   }
 
+  @Builder
+  @Data
   public static class NodeDetails {
 
     private String id;
     private String hostAddress;
     private String role;
     private Boolean isMasterNode;
+
+    /**
+     * This constructor is provided expressly for testing purposes. In general, NodeDetails should only be
+     * retrieved through method calls such as {@link ClusterDetailsEventProcessor#getCurrentNodeDetails()}
+     * @param id The node's id
+     * @param hostAddress The host's address
+     * @param role The node's role e.g. data-node
+     * @param isMasterNode Whether or not the node is a master node
+     */
+    @VisibleForTesting
+    public NodeDetails(String id, String hostAddress, String role, Boolean isMasterNode) {
+      this.id = id;
+      this.hostAddress = hostAddress;
+      this.role = role;
+      this.isMasterNode = isMasterNode;
+    }
 
     NodeDetails(String stringifiedMetrics) {
       Map<String, Object> map = JsonConverter
