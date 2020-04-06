@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
 import java.sql.SQLException;
@@ -31,6 +32,11 @@ public class ClusterDetailsEventProcessorTestHelper extends AbstractReaderTests 
 
   public void addNodeDetails(String nodeId, String address, boolean isMasterNode) {
     nodeDetails.add(createNodeDetailsMetrics(nodeId, address, isMasterNode));
+  }
+
+  public static ClusterDetailsEventProcessor.NodeDetails newNodeDetails(final String nodeId, final String address,
+                                                                        final boolean isMasterNode) {
+    return createNodeDetails(nodeId, address, isMasterNode);
   }
 
   public void generateClusterDetailsEvent() {
