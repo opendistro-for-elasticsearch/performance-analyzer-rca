@@ -19,6 +19,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMes
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
 import io.grpc.stub.StreamObserver;
 
+import java.util.Objects;
+
 /**
  * Composite object that encapsulates the subscribe request message and the response stream.
  */
@@ -55,5 +57,18 @@ public class CompositeSubscribeRequest {
    */
   public StreamObserver<SubscribeResponse> getSubscribeResponseStream() {
     return subscribeResponseStream;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    CompositeSubscribeRequest that = (CompositeSubscribeRequest) o;
+    return Objects.equals(subscribeMessage, that.subscribeMessage)
+            && Objects.equals(subscribeResponseStream, that.subscribeResponseStream);
   }
 }

@@ -22,6 +22,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.met
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.ReceivedFlowUnitStore;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -74,5 +75,19 @@ public class FlowUnitRxTask implements Runnable {
 
     PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR
         .updateStat(RcaGraphMetrics.RCA_NODES_FU_CONSUME_COUNT, vertex, 1);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    FlowUnitRxTask that = (FlowUnitRxTask) o;
+    return Objects.equals(nodeStateManager, that.nodeStateManager)
+            && Objects.equals(receivedFlowUnitStore, that.receivedFlowUnitStore)
+            && Objects.equals(flowUnitMessage, that.flowUnitMessage);
   }
 }

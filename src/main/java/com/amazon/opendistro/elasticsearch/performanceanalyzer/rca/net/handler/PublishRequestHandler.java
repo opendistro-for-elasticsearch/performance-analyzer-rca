@@ -25,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.met
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.ReceivedFlowUnitStore;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks.FlowUnitRxTask;
+import com.google.common.annotations.VisibleForTesting;
 import io.grpc.stub.StreamObserver;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -56,6 +57,11 @@ public class PublishRequestHandler {
     this.receivedFlowUnitStore = receivedFlowUnitStore;
   }
 
+  @VisibleForTesting
+  List<StreamObserver<PublishResponse>> getUpstreamResponseStreamList() {
+    return upstreamResponseStreamList;
+  }
+
   public StreamObserver<FlowUnitMessage> getClientStream(
       final StreamObserver<PublishResponse> serviceResponse) {
     upstreamResponseStreamList.add(serviceResponse);
@@ -70,12 +76,17 @@ public class PublishRequestHandler {
     }
   }
 
-  private class SendDataClientStreamUpdateConsumer implements StreamObserver<FlowUnitMessage> {
+  @VisibleForTesting
+  class SendDataClientStreamUpdateConsumer implements StreamObserver<FlowUnitMessage> {
 
     private final StreamObserver<PublishResponse> serviceResponse;
 
     SendDataClientStreamUpdateConsumer(final StreamObserver<PublishResponse> serviceResponse) {
       this.serviceResponse = serviceResponse;
+    }
+
+    public StreamObserver<PublishResponse> getServiceResponse() {
+      return serviceResponse;
     }
 
     /**
@@ -109,8 +120,7 @@ public class PublishRequestHandler {
      */
     @Override
     public void onError(Throwable throwable) {
-      LOG.error("Client ran into an error while streaming flow units: {}", throwable.getMessage());
-      throwable.printStackTrace();
+      LOG.error("Client ran into an error while streaming flow units", throwable);
     }
 
     @Override

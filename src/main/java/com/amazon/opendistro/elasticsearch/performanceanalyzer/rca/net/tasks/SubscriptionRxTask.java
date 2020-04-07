@@ -24,6 +24,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.Composite
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
 import io.grpc.stub.StreamObserver;
 import java.util.Map;
+import java.util.Objects;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -79,5 +81,18 @@ public class SubscriptionRxTask implements Runnable {
     PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR
         .updateStat(RcaGraphMetrics.RCA_NODES_SUB_ACK_COUNT,
             request.getRequesterNode() + ":" + request.getDestinationNode(), 1);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    SubscriptionRxTask that = (SubscriptionRxTask) o;
+    return Objects.equals(subscriptionManager, that.subscriptionManager)
+            && Objects.equals(compositeSubscribeRequest, that.compositeSubscribeRequest);
   }
 }
