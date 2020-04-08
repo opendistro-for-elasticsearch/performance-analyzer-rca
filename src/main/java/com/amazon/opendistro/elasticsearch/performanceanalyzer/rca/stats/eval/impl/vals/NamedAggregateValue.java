@@ -33,6 +33,7 @@ public class NamedAggregateValue extends AggregateValue {
   }
 
   @Override
+  // TODO is this correct behavior????? The Statistics parameter here is unused.
   public void format(Formatter formatter, MeasurementSet measurementSet, Statistics stats) {
     formatter.formatNamedAggregatedValue(
         measurementSet, getAggregationType(), getName(), getValue());
