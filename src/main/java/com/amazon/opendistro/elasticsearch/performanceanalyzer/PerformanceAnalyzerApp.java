@@ -105,6 +105,7 @@ public class PerformanceAnalyzerApp {
   public static void main(String[] args) throws Exception {
     PluginSettings settings = PluginSettings.instance();
     StatsCollector.STATS_TYPE = "agent-stats-metadata";
+    PERIODIC_SAMPLERS.startHeartbeat();
     METRIC_COLLECTOR_EXECUTOR.addScheduledMetricCollector(StatsCollector.instance());
     StatsCollector.instance().addDefaultExceptionCode(StatExceptionCode.READER_RESTART_PROCESSING);
     METRIC_COLLECTOR_EXECUTOR.setEnabled(true);
