@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -16,14 +16,21 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericContext;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
-public class SymptomContext extends GenericContext {
-  public SymptomContext(Resources.State state) {
-    super(state);
-  }
+public class SymptomContextTest {
+    private SymptomContext uut;
 
-  public static SymptomContext generic() {
-    return new SymptomContext(Resources.State.UNKNOWN);
-  }
+    @Before
+    public void setup() {
+        uut = new SymptomContext(Resources.State.HEALTHY);
+    }
+
+    @Test
+    public void testGeneric() {
+        SymptomContext generic = SymptomContext.generic();
+        Assert.assertSame(Resources.State.UNKNOWN, generic.getState());
+    }
 }
