@@ -57,6 +57,7 @@ public class HotResourceSummary extends GenericSummary {
   private double minValue;
   private double maxValue;
   private int timePeriod;
+  private String metaData;
 
   public HotResourceSummary(ResourceType resourceType, double threshold,
       double value, int timePeriod) {
@@ -69,6 +70,21 @@ public class HotResourceSummary extends GenericSummary {
     this.minValue = Double.NaN;
     this.maxValue = Double.NaN;
     this.timePeriod = timePeriod;
+    this.metaData = "";
+  }
+
+  public HotResourceSummary(ResourceType resourceType, double threshold,
+                            double value, int timePeriod, String metaData) {
+    super();
+    this.resourceType = resourceType;
+    this.threshold = threshold;
+    this.value = value;
+
+    this.avgValue = Double.NaN;
+    this.minValue = Double.NaN;
+    this.maxValue = Double.NaN;
+    this.timePeriod = timePeriod;
+    this.metaData = metaData;
   }
 
   public void setValueDistribution(double minValue, double maxValue, double avgValue) {
@@ -117,6 +133,10 @@ public class HotResourceSummary extends GenericSummary {
     return this.timePeriod;
   }
 
+  public String getMetaData() {
+    return this.metaData;
+  }
+
   @Override
   public HotResourceSummaryMessage buildSummaryMessage() {
     final HotResourceSummaryMessage.Builder summaryMessageBuilder = HotResourceSummaryMessage
@@ -128,6 +148,7 @@ public class HotResourceSummary extends GenericSummary {
     summaryMessageBuilder.setMinValue(this.minValue);
     summaryMessageBuilder.setMaxValue(this.maxValue);
     summaryMessageBuilder.setTimePeriod(this.timePeriod);
+    summaryMessageBuilder.setMetaData(this.metaData);
     for (GenericSummary nestedSummary : this.nestedSummaryList) {
       summaryMessageBuilder.getConsumersBuilder()
           .addConsumer(nestedSummary.buildSummaryMessage());
@@ -165,6 +186,8 @@ public class HotResourceSummary extends GenericSummary {
         .append(ResourceTypeUtil.getResourceTypeUnit(this.resourceType))
         .append(" ")
         .append(this.nestedSummaryList)
+        .append(" ")
+        .append(this.metaData)
         .toString();
   }
 
@@ -184,6 +207,7 @@ public class HotResourceSummary extends GenericSummary {
     schema.add(ResourceSummaryField.MAX_VALUE_FIELD.getField());
     schema.add(ResourceSummaryField.UNIT_TYPE_FIELD.getField());
     schema.add(ResourceSummaryField.TIME_PERIOD_FIELD.getField());
+    schema.add(ResourceSummaryField.METADATA_FIELD.getField());
     return schema;
   }
 
@@ -198,6 +222,7 @@ public class HotResourceSummary extends GenericSummary {
     value.add(Double.valueOf(this.maxValue));
     value.add(ResourceTypeUtil.getResourceTypeUnit(this.resourceType));
     value.add(Integer.valueOf(this.timePeriod));
+    value.add(metaData);
     return value;
   }
 
@@ -218,6 +243,7 @@ public class HotResourceSummary extends GenericSummary {
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.UNIT_TYPE_COL_NAME,
         ResourceTypeUtil.getResourceTypeUnit(this.resourceType));
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.TIME_PERIOD_COL_NAME, this.timePeriod);
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.META_DATA_COL_NAME, this.metaData);
     if (!this.nestedSummaryList.isEmpty()) {
       String tableName = this.nestedSummaryList.get(0).getTableName();
       summaryObj.add(tableName, this.nestedSummaryListToJson());
@@ -235,6 +261,7 @@ public class HotResourceSummary extends GenericSummary {
     public static final String MAX_VALUE_COL_NAME = "max";
     public static final String UNIT_TYPE_COL_NAME = "unit_type";
     public static final String TIME_PERIOD_COL_NAME = "time_period_seconds";
+    public static final String META_DATA_COL_NAME = "meta_data";
   }
 
   /**
@@ -248,7 +275,8 @@ public class HotResourceSummary extends GenericSummary {
     MIN_VALUE_FIELD(SQL_SCHEMA_CONSTANTS.MIN_VALUE_COL_NAME, Double.class),
     MAX_VALUE_FIELD(SQL_SCHEMA_CONSTANTS.MAX_VALUE_COL_NAME, Double.class),
     UNIT_TYPE_FIELD(SQL_SCHEMA_CONSTANTS.UNIT_TYPE_COL_NAME, String.class),
-    TIME_PERIOD_FIELD(SQL_SCHEMA_CONSTANTS.TIME_PERIOD_COL_NAME, Integer.class);
+    TIME_PERIOD_FIELD(SQL_SCHEMA_CONSTANTS.TIME_PERIOD_COL_NAME, Integer.class),
+    METADATA_FIELD(SQL_SCHEMA_CONSTANTS.META_DATA_COL_NAME, String.class);
 
 
     private String name;
@@ -286,8 +314,9 @@ public class HotResourceSummary extends GenericSummary {
       Double minValue = record.get(ResourceSummaryField.MIN_VALUE_FIELD.getField(), Double.class);
       Double maxValue = record.get(ResourceSummaryField.MAX_VALUE_FIELD.getField(), Double.class);
       Integer timePeriod = record.get(ResourceSummaryField.TIME_PERIOD_FIELD.getField(), Integer.class);
+      String metaData = record.get(ResourceSummaryField.METADATA_FIELD.getField(), String.class);
       summary = new HotResourceSummary(ResourceTypeUtil.buildResourceType(resourceTypeName),
-          threshold, value, timePeriod);
+          threshold, value, timePeriod, metaData);
       // those three fields are optional. check before setting to the obj
       if (avgValue != null
           && minValue != null

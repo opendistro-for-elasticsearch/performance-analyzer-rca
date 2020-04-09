@@ -32,7 +32,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.DummyGraph;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.ElastiSearchAnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageOldGenRca;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -105,8 +105,8 @@ public class RcaSpecTests {
   }
 
   @Test
-  public void testDummyFlowField() {
-    DummyGraph field = new DummyGraph();
+  public void testElastiSearchAnalysisFlowField() {
+    ElastiSearchAnalysisGraph field = new ElastiSearchAnalysisGraph();
     field.construct();
   }
 

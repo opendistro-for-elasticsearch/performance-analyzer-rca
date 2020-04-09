@@ -64,6 +64,8 @@ enum JvmEnum {
 
 enum HardwareEnum {
   CPU = 0 [(resourceTypeOptions).resourceTypeName = "cpu usage", (resourceTypeOptions).resourceTypeUnit = "cpu usage in percentage"];
+  IO_TOTAL_THROUGHPUT = 1 [(resourceTypeOptions).resourceTypeName = "IO total throughput", (resourceTypeOptions).resourceTypeUnit = "number of bytes read/written per second"];
+  IO_TOTAL_SYS_CALLRATE = 2 [(resourceTypeOptions).resourceTypeName = "IO total sys callrate", (resourceTypeOptions).resourceTypeUnit = "read and write system calls per second"];
 }
 
 /*
@@ -85,6 +87,9 @@ message TopConsumerSummaryList {
 message HotResourceSummaryList {
     repeated HotResourceSummaryMessage hotResourceSummary = 1;
 }
+message HotShardSummaryList {
+    repeated HotShardSummaryMessage hotShardSummary = 1;
+}
 message HotNodeSummaryList {
     repeated HotNodeSummaryMessage hotNodeSummary = 1;
 }
@@ -101,11 +106,25 @@ message HotResourceSummaryMessage {
     double minValue = 6;
     double maxValue = 7;
     int32 timePeriod = 8;
+    string metaData = 9;
+}
+message HotShardSummaryMessage {
+    string indexName = 1;
+    string shardId = 2;
+    string nodeId = 3;
+    double cpu_usage = 4;
+    double cpu_usage_threshold = 5;
+    double io_throughput = 6;
+    double io_throughput_threshold = 7;
+    double io_sys_callrate = 8;
+    double io_sys_callrate_threshold = 9;
+    int32 timePeriod = 10;
 }
 message HotNodeSummaryMessage {
     string nodeID = 1;
     string hostAddress = 2;
     HotResourceSummaryList hotResourceSummaryList = 3;
+    HotShardSummaryList hotShardSummaryList = 4;
 }
 message HotClusterSummaryMessage {
     int32 nodeCount = 1;
@@ -121,8 +140,9 @@ message FlowUnitMessage {
     ResourceContextMessage resourceContext = 4;
     oneof summary_oneof {
         HotResourceSummaryMessage hotResourceSummary = 5;
-        HotNodeSummaryMessage hotNodeSummary =6;
-        HotClusterSummaryMessage hotClusterSummary = 7;
+        HotShardSummaryMessage hotShardSummary = 6;
+        HotNodeSummaryMessage hotNodeSummary = 7;
+        HotClusterSummaryMessage hotClusterSummary = 8;
     }
 }
 

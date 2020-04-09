@@ -42,7 +42,8 @@ public class HotNodeSummaryTest {
 
     @Test
     public void testToString() {
-        Assert.assertEquals(NODE_ID + " " + HOST_ADDRESS + " " + uut.getNestedSummaryList(), uut.toString());
+        Assert.assertEquals(NODE_ID + " " + HOST_ADDRESS + " " + uut.getNestedSummaryList() + " " +  uut.getHotShardSummaryList(),
+                uut.toString());
     }
 
     @Test

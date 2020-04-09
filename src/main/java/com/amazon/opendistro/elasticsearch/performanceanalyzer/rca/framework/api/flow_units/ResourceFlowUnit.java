@@ -99,9 +99,9 @@ public class ResourceFlowUnit extends GenericFlowUnit {
     messageBuilder.setGraphNode(graphNode);
     messageBuilder.setEsNode(esNode);
     messageBuilder.setTimeStamp(System.currentTimeMillis());
-      if (resourceContext != null) {
+    if (resourceContext != null) {
           messageBuilder.setResourceContext(resourceContext.buildContextMessage());
-      }
+    }
 
     if (resourceSummary != null) {
       resourceSummary.buildSummaryMessageAndAddToFlowUnit(messageBuilder);
