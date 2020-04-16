@@ -56,6 +56,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
@@ -77,6 +78,8 @@ public class RcaController {
 
   private static final String RCA_ENABLED_CONF_FILE = "rca_enabled.conf";
 
+  private static final String MUTED_RCAS_CONF_FILE = "muted_rcas.conf";
+
   private final ScheduledExecutorService netOpsExecutorService;
   private final boolean useHttps;
 
@@ -84,6 +87,11 @@ public class RcaController {
 
   // This needs to be volatile as the RcaConfPoller writes it but the Nanny reads it.
   private static volatile boolean rcaEnabled = false;
+
+  private String mutedRcasDefaultValue = "";
+
+  // This needs to be volatile as the RcaConfPoller writes it but the Nanny reads it.
+  private static volatile String mutedRcas = "";
 
   // This needs to be volatile as the NodeRolePoller writes it but the Nanny reads it.
   private volatile NodeRole currentRole = NodeRole.UNKNOWN;
@@ -216,7 +224,12 @@ public class RcaController {
           }
         }
 
+        // Read the Muted RCAs value
+        readMutedRcasFromConf();
+
+        // Update the RCA state
         updateRcaState();
+
         long duration = System.currentTimeMillis() - startTime;
         if (duration < rcaStateCheckIntervalMillis) {
           Thread.sleep(rcaStateCheckIntervalMillis - duration);
@@ -256,10 +269,41 @@ public class RcaController {
   }
 
   /**
+   * Reads the mutedRCAs value from the conf file.
+   */
+  private void readMutedRcasFromConf() {
+    // all the config filed are located in same location as RCA_ENABLED_CONF_LOCATION
+    Path filePath = Paths.get(RCA_ENABLED_CONF_LOCATION, MUTED_RCAS_CONF_FILE);
+
+    Util.invokePrivileged(
+            () -> {
+              try (Scanner sc = new Scanner(filePath)) {
+                mutedRcas = sc.nextLine();
+              } catch (IOException e) {
+                LOG.error("Error reading file '{}': {}", filePath.toString(), e.getMessage());
+                e.printStackTrace();
+                mutedRcas = mutedRcasDefaultValue;
+              }
+            });
+  }
+
+  /**
+   * Updates the AnalysisGraph with muted RCA value
+   */
+  private void updateAnalysisGraphWithMutedRcas() {
+    List<String> mutedRcas = Arrays.asList(getMutedRcas().split(","));
+    mutedRcas.forEach(mutedRca -> {
+      Stats.getInstance().addToMutedGraphNodes(mutedRca.trim());
+    });
+  }
+
+  /**
    * Starts or stops the RCA runtime. If the RCA runtime is up but the currently RCA is disabled,
    * then this gracefully shuts down the RCA runtime. It restarts the RCA runtime if the node role
    * has changed in the meantime (such as a new elected master). It also starts the RCA runtime if
    * it wasn't already running but the current state of the flag expects it to.
+   *
+   * Apart from above, the function also updates the AnalysisGraph with current muted RCAs.
    */
   private void updateRcaState() {
     if (rcaScheduler != null && rcaScheduler.getState() == RcaSchedulerState.STATE_STARTED) {
@@ -273,6 +317,9 @@ public class RcaController {
           restart();
           PerformanceAnalyzerApp.RCA_RUNTIME_METRICS_AGGREGATOR.updateStat(
               RcaRuntimeMetrics.RCA_RESTARTED_BY_OPERATOR, "", 1);
+
+          // Update Analysis Graph for Muted RCAs
+          updateAnalysisGraphWithMutedRcas();
         }
       }
     } else {
@@ -283,10 +330,12 @@ public class RcaController {
       if (rcaEnabled && NodeRole.UNKNOWN != currentRole && (rcaScheduler == null
           || rcaScheduler.getState() != RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION)) {
         start();
+
+        // Update Analysis Graph for Muted RCAs
+        updateAnalysisGraphWithMutedRcas();
       }
     }
   }
-
 
   private void removeRcaRequestHandler() {
     try {
@@ -306,6 +355,10 @@ public class RcaController {
 
   public static boolean isRcaEnabled() {
     return rcaEnabled;
+  }
+
+  public static String getMutedRcas() {
+    return mutedRcas;
   }
 
   public NodeRole getCurrentRole() {
