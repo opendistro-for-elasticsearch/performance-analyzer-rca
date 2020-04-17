@@ -21,6 +21,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.TopConsumerSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
@@ -222,6 +223,9 @@ class SQLitePersistor extends PersistorBase {
         else if (upperLevelSummary instanceof HotNodeSummary) {
           summary = HotResourceSummary.buildSummary(record);
         }
+        else if (upperLevelSummary instanceof HotResourceSummary) {
+          summary = TopConsumerSummary.buildSummary(record);
+        }
         if (summary != null) {
           Field<Integer> primaryKeyField = DSL.field(
               SQLiteQueryUtils.getPrimaryKeyColumnName(summary.getTableName()), Integer.class);
@@ -231,7 +235,7 @@ class SQLitePersistor extends PersistorBase {
       }
     }
     catch (DataAccessException de) {
-      // it is totally fine if we fail to read some certain tables.
+      // it is totally fine if we fail to read some certain tables as some types of summaries might be missing
       LOG.warn("Fail to read Summary table : {}, query = {},  exceptions : {}", currLevelTable, rcaQuery.toString(), de.getStackTrace());
     }
   }
