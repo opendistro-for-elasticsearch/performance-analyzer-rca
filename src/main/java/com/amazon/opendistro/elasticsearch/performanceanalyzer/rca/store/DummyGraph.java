@@ -34,6 +34,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric.AggregateFunction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hot_node.HighCpuRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageOldGenRca;
@@ -88,5 +89,10 @@ public class DummyGraph extends AnalysisGraph {
     highHeapUsageClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     highHeapUsageClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
     highHeapUsageClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
+
+    Rca<ResourceFlowUnit> hotNodeClusterRca =
+        new HotNodeClusterRca(12, hotJVMNodeRca);
+    hotNodeClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    hotNodeClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
   }
 }
