@@ -303,7 +303,7 @@ public class RcaController {
    * has changed in the meantime (such as a new elected master). It also starts the RCA runtime if
    * it wasn't already running but the current state of the flag expects it to.
    *
-   * Apart from above, the function also updates the AnalysisGraph with current muted RCAs.
+   * <p>Apart from above, the function also updates the AnalysisGraph with current muted RCAs.
    */
   private void updateRcaState() {
     if (rcaScheduler != null && rcaScheduler.getState() == RcaSchedulerState.STATE_STARTED) {
