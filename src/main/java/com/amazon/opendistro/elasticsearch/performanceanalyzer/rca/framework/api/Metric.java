@@ -75,6 +75,8 @@ public abstract class Metric extends LeafNode<MetricFlowUnit> {
     } catch (DataAccessException dex) {
       // This can happen if the RCA started querying for metrics before the Reader obtained them.
       // This is not an error.
+      // And node stats metrics can be enabled/disabled on writer side so we might end up being here
+      // if RCA is trying to read node stats which are not enabled yet.
       LOG.info("Looking for metric {}, when it does not exist.", name);
     } catch (Exception e) {
       PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(

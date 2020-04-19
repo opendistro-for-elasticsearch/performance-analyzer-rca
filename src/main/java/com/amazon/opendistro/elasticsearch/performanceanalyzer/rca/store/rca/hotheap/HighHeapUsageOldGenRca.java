@@ -20,7 +20,6 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.Al
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -34,10 +33,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.TopConsumerSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaVerticesMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -56,6 +57,14 @@ import org.apache.logging.log4j.Logger;
  * least one full GC during the entire sliding window and then compare the usage with the threshold.
  * To git rid of false positive from sampling, we keep the sliding window big enough to keep at
  * least a couple of such minimum samples to make the min value more accurate.
+ <p>
+ * This RCA read the following node stats from metric and sort them to get the list of top consumers
+ * cache :
+ * Cache_FieldData_Size / Cache_Request_Size / Cache_Query_Size
+ * Lucene memory :
+ * Segments_Memory / Terms_Memory / StoredFields_Memory / TermVectors_Memory / Norms_Memory
+ * Points_Memory / DocValues_Memory / IndexWriter_Memory / Bitset_Memory / VersionMap_Memory
+ </p>
  */
 public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
 
@@ -65,6 +74,8 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
   private final Metric heap_Used;
   private final Metric heap_Max;
   private final Metric gc_event;
+  //list of node stat aggregator to collect node stats
+  private final List<NodeStatAggregator> nodeStatAggregators;
   private final ResourceType resourceType;
   // the amount of RCA period this RCA needs to run before sending out a flowunit
   private final int rcaPeriod;
@@ -80,11 +91,12 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
   // minimum
   private static final double OLD_GEN_GC_THRESHOLD = 1;
   private static final double CONVERT_BYTES_TO_MEGABYTES = Math.pow(1024, 3);
+  private static final int TOP_K = 3;
   protected Clock clock;
 
 
   public <M extends Metric> HighHeapUsageOldGenRca(final int rcaPeriod, final double lowerBoundThreshold,
-      final M heap_Used, final M gc_event, final M heap_Max) {
+      final M heap_Used, final M gc_event, final M heap_Max, final List<Metric> consumers) {
     super(5);
     this.clock = Clock.systemUTC();
     this.heap_Used = heap_Used;
@@ -99,11 +111,17 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
     gcEventSlidingWindow = new SlidingWindow<>(SLIDING_WINDOW_SIZE_IN_MINS, TimeUnit.MINUTES);
     minOldGenSlidingWindow = new MinOldGenSlidingWindow(SLIDING_WINDOW_SIZE_IN_MINS,
         TimeUnit.MINUTES);
+    this.nodeStatAggregators = new ArrayList<>();
+    for (Metric consumerMetric : consumers) {
+      if (consumerMetric != null) {
+        this.nodeStatAggregators.add(new NodeStatAggregator(consumerMetric));
+      }
+    }
   }
 
   public <M extends Metric> HighHeapUsageOldGenRca(final int rcaPeriod,
-      final M heap_Used, final M gc_event, final M heap_Max) {
-    this(rcaPeriod, 1.0, heap_Used, gc_event, heap_Max);
+      final M heap_Used, final M gc_event, final M heap_Max, final List<Metric> consumers) {
+    this(rcaPeriod, 1.0, heap_Used, gc_event, heap_Max, consumers);
   }
 
   @Override
@@ -153,15 +171,20 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
       }
     }
 
+    long currTimeStamp = this.clock.millis();
     if (!Double.isNaN(oldGenHeapUsed)) {
       LOG.debug(
           "oldGenHeapUsed = {}, oldGenGCEvent = {}, maxOldGenHeapSize = {}",
           oldGenHeapUsed,
           oldGenGCEvent,
           maxOldGenHeapSize);
-      long currTimeStamp = this.clock.millis();
       gcEventSlidingWindow.next(new SlidingWindowData(currTimeStamp, oldGenGCEvent));
       minOldGenSlidingWindow.next(new SlidingWindowData(currTimeStamp, oldGenHeapUsed));
+    }
+
+    //collect node stats from metrics
+    for (NodeStatAggregator nodeStatAggregator : this.nodeStatAggregators) {
+      nodeStatAggregator.collect(currTimeStamp);
     }
 
     if (counter == this.rcaPeriod) {
@@ -185,12 +208,12 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
         context = new ResourceContext(Resources.State.HEALTHY);
       }
 
-      //check to see if the value is above lower bound thres
       if (gcEventSlidingWindow.readSum() >= OLD_GEN_GC_THRESHOLD
           && !Double.isNaN(currentMinOldGenUsage)
           && currentMinOldGenUsage / maxOldGenHeapSize > OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE * this.lowerBoundThreshold) {
         summary = new HotResourceSummary(this.resourceType,
             OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE, currentMinOldGenUsage / maxOldGenHeapSize, SLIDING_WINDOW_SIZE_IN_MINS * 60);
+        addTopConsumers(summary);
       }
 
       LOG.debug("High Heap Usage RCA Context = " + context.toString());
@@ -200,6 +223,22 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
       // state)
       LOG.debug("Empty FlowUnit returned for High Heap Usage RCA");
       return new ResourceFlowUnit(this.clock.millis());
+    }
+  }
+
+  //add top k consumers to summary
+  private void addTopConsumers(HotResourceSummary summary) {
+    this.nodeStatAggregators.sort(
+        Comparator.comparingInt(NodeStatAggregator::getSum)
+    );
+    for (NodeStatAggregator aggregator : this.nodeStatAggregators) {
+      if (aggregator.isEmpty()) {
+        continue;
+      }
+      if (summary.getNestedSummaryList().size() >= TOP_K) {
+        break;
+      }
+      summary.addNestedSummaryList(new TopConsumerSummary(aggregator.getName(), aggregator.getSum()));
     }
   }
 

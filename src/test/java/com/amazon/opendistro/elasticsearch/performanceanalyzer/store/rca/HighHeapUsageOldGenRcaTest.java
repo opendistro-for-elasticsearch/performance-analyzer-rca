@@ -28,6 +28,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hot
 import java.time.Clock;
 import java.time.Duration;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Assert;
@@ -39,6 +40,7 @@ public class HighHeapUsageOldGenRcaTest {
   private MetricTestHelper heap_Used;
   private MetricTestHelper gc_event;
   private MetricTestHelper heap_Max;
+  private List<Metric> node_stats;
   private HighHeapUsageOldGenRcaX oldGenRcaX;
   private List<String> columnName;
 
@@ -55,7 +57,10 @@ public class HighHeapUsageOldGenRcaTest {
     heap_Used = new MetricTestHelper(5);
     gc_event = new MetricTestHelper(5);
     heap_Max = new MetricTestHelper(5);
-    oldGenRcaX = new HighHeapUsageOldGenRcaX(1, heap_Used, gc_event, heap_Max);
+    node_stats = new ArrayList<Metric>() {{
+      add(new MetricTestHelper(5));
+    }};
+    oldGenRcaX = new HighHeapUsageOldGenRcaX(1, heap_Used, gc_event, heap_Max, node_stats);
     columnName = Arrays.asList(MEM_TYPE.toString(), MetricsDB.MAX);
     // set max heap size to 100MB
     heap_Max.createTestFlowUnits(columnName, Arrays.asList(OLD_GEN.toString(), String.valueOf(100 * CONVERT_MEGABYTES_TO_BYTES)));
@@ -105,8 +110,8 @@ public class HighHeapUsageOldGenRcaTest {
 
   private static class HighHeapUsageOldGenRcaX extends HighHeapUsageOldGenRca {
     public <M extends Metric> HighHeapUsageOldGenRcaX(final int rcaPeriod,
-        final M heap_Used, final M gc_event, final M heap_Max) {
-      super(rcaPeriod, heap_Used, gc_event, heap_Max);
+        final M heap_Used, final M gc_event, final M heap_Max, final List<Metric> node_stats) {
+      super(rcaPeriod, heap_Used, gc_event, heap_Max, node_stats);
     }
 
     public void setClock(Clock testClock) {

@@ -73,7 +73,7 @@ public class SQLParsingUtil {
     if (result != null) {
       try {
         Record record = SQLParsingUtil.getRecordByName(result, matchedField, matchedFieldName);
-        ret = record.getValue(MetricsDB.MAX, Double.class);
+        ret = record.getValue(dataField, Double.class);
       }
       catch (IllegalArgumentException ie) {
         LOG.error("{} fails to match any row in field {}.", matchedFieldName, matchedField.getName());
