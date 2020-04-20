@@ -112,8 +112,8 @@ public class FileRotate {
 
     Path targetFilePath = Paths.get(dir, targetFileName.toString());
     try {
-      lastRotatedMillis = System.currentTimeMillis();
       Files.move(FILE_TO_ROTATE, targetFilePath);
+      lastRotatedMillis = System.currentTimeMillis();
     } catch (FileAlreadyExistsException fae) {
       LOG.error(fae);
     } catch (IOException e) {
