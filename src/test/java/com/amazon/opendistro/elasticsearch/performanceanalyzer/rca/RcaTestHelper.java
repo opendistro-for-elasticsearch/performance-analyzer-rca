@@ -55,6 +55,7 @@ public class RcaTestHelper {
   }
 
   public static List<String> getAllLinesFromLog(String logName) {
+    System.out.println(logName);
     try {
       return Files.readAllLines(Paths.get(getLogFilePath(logName)));
     } catch (IOException | ParserConfigurationException | SAXException | XPathExpressionException e) {

@@ -137,6 +137,5 @@ public class FileRotateTest {
     currentMillis = System.currentTimeMillis();
     fileRotate.setLastRotated(currentMillis);
     Assert.assertEquals(null, fileRotate.tryRotate(currentMillis));
-
   }
 }
