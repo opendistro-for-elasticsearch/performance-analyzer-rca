@@ -4,10 +4,10 @@
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
         </Console>
-        <File name="PerformanceAnalyzerLog" fileName="/tmp/PerformanceAnalyzer.log" immediateFlush="true" append="true">
+        <File name="PerformanceAnalyzerLog" fileName="${log4j:configParentLocation}/log/PerformanceAnalyzer.log" immediateFlush="true" append="true">
             <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} [PA:Reader] [%t] %-5level %logger{36} - %msg%n"/>
         </File>
-        <File name="StatsLog" fileName="/tmp/performance_analyzer_agent_stats.log" immediateFlush="true" append="true">
+        <File name="StatsLog" fileName="${log4j:configParentLocation}/log/performance_analyzer_agent_stats.log" immediateFlush="true" append="true">
         </File>
     </Appenders>
     <Loggers>
