@@ -129,6 +129,10 @@ public class HotResourceSummary extends GenericSummary {
     return this.value;
   }
 
+  public double getThreshold() {
+    return this.threshold;
+  }
+
   public int getTimePeriod() {
     return this.timePeriod;
   }

@@ -39,7 +39,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class FileGCTest {
-  private Path testLocation = null;
+  private static Path testLocation = null;
   private final String baseFilename = "rca.test.file";
 
   @BeforeClass
@@ -51,14 +51,15 @@ public class FileGCTest {
   public static void cleanup() throws IOException {
     cleanupLogs();
     String cwd = System.getProperty("user.dir");
-    Path tmpPath = Paths.get(cwd, "src", "test", "resources", "tmp");
-    FileUtils.cleanDirectory(tmpPath.toFile());
+    if (testLocation != null) {
+      FileUtils.cleanDirectory(testLocation.toFile());
+    }
   }
 
   @Before
   public void init() throws IOException {
     String cwd = System.getProperty("user.dir");
-    testLocation = Paths.get(cwd, "src", "test", "resources", "tmp", "file_rotate");
+    testLocation = Paths.get(cwd, "src", "test", "resources", "tmp", "file_gc");
     Files.createDirectories(testLocation);
     FileUtils.cleanDirectory(testLocation.toFile());
   }
@@ -88,7 +89,7 @@ public class FileGCTest {
   public void testTimeBasedFileCleanup() throws IOException {
     long currentTime = System.currentTimeMillis();
     // create files with modified time past the limit.
-    long limit = currentTime - 10 * 3;
+    long limit = currentTime - 1000;
 
     // For these set of files, we are trying to set the file modification time to be before the
     // limit so that they will be deleted by the time based cleaner.
@@ -96,7 +97,7 @@ public class FileGCTest {
       String name = baseFilename + "." + i;
       Path filePath = Paths.get(testLocation.toString(), name);
       Files.createFile(filePath);
-      Assert.assertTrue(filePath.toFile().setLastModified(limit - (i + 1) * 10));
+      Assert.assertTrue(filePath.toFile().setLastModified(limit - (i + 1) * 1000));
     }
     FileGCTestHelper fileGc = new FileGCTestHelper();
     String[] files = fileGc.getDbFiles();

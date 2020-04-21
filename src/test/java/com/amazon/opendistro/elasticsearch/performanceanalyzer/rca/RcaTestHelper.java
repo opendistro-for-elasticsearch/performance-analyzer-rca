@@ -25,19 +25,16 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-import org.w3c.dom.Document;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.FileAppender;
 import org.xml.sax.SAXException;
 
 public class RcaTestHelper {
   public static List<String> getAllLinesFromStatsLog() {
     try {
-      return Files.readAllLines(Paths.get(getLogFilePath("StatsLog")));
+      return Files.readAllLines(Paths.get(getLogFilePath(LogType.StatsLog)));
     } catch (IOException | ParserConfigurationException | SAXException | XPathExpressionException e) {
       e.printStackTrace();
     }
@@ -54,18 +51,18 @@ public class RcaTestHelper {
     return matches;
   }
 
-  public static List<String> getAllLinesFromLog(String logName) {
+  public static List<String> getAllLinesFromLog(LogType logType) {
     try {
-      return Files.readAllLines(Paths.get(getLogFilePath(logName)));
+      return Files.readAllLines(Paths.get(getLogFilePath(logType)));
     } catch (IOException | ParserConfigurationException | SAXException | XPathExpressionException e) {
       e.printStackTrace();
     }
     return Collections.EMPTY_LIST;
   }
 
-  public static List<String> getAllLogLinesWithMatchingString(String logName, String pattern) {
+  public static List<String> getAllLogLinesWithMatchingString(LogType logType, String pattern) {
     List<String> matches = new ArrayList<>();
-    for (String line: getAllLinesFromLog(logName)) {
+    for (String line: getAllLinesFromLog(logType)) {
       if (line.contains(pattern)) {
         matches.add(line);
       }
@@ -73,25 +70,28 @@ public class RcaTestHelper {
     return matches;
   }
 
-  public static String getLogFilePath(String filename)
-      throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
-    String cwd = System.getProperty("user.dir");
-    String testResourcesPath =
-        Paths.get(Paths.get(cwd, "src", "test", "resources").toString(), "log4j2.xml").toString();
+  public enum LogType {
+    PerformanceAnalyzerLog,
+    StatsLog
+  }
 
-    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-    DocumentBuilder builder = factory.newDocumentBuilder();
-    Document doc = builder.parse(testResourcesPath);
-    XPathFactory xPathfactory = XPathFactory.newInstance();
-    XPath xpath = xPathfactory.newXPath();
-    return xpath.evaluate(
-        String.format("Configuration/Appenders/File[@name='%s']/@fileName", filename), doc);
+  public static String getLogFilePath(LogType logType)
+          throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
+    System.out.println(LoggerContext.getContext().getRootLogger().getAppenders());
+    org.apache.logging.log4j.core.Logger logger = null;
+    if (logType == LogType.StatsLog) {
+      logger = LoggerContext.getContext().getLogger("stats_log");
+    } else {
+      logger = LoggerContext.getContext().getRootLogger();
+    }
+    FileAppender fileAppender = (FileAppender) logger.getAppenders().get(logType.name());
+    return fileAppender.getFileName();
   }
 
   public static void cleanUpLogs() {
     try {
-      truncate(Paths.get(getLogFilePath("PerformanceAnalyzerLog")).toFile());
-      truncate(Paths.get(getLogFilePath("StatsLog")).toFile());
+      truncate(Paths.get(getLogFilePath(LogType.PerformanceAnalyzerLog)).toFile());
+      truncate(Paths.get(getLogFilePath(LogType.StatsLog)).toFile());
     } catch (ParserConfigurationException | SAXException | XPathExpressionException | IOException e) {
       e.printStackTrace();
     }

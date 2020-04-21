@@ -37,6 +37,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.uti
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric.AggregateFunction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hot_node.HighCpuRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageOldGenRca;
@@ -95,14 +96,18 @@ public class ElastiSearchAnalysisGraph extends AnalysisGraph {
     highHeapUsageClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
     highHeapUsageClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
-    createShardResourceUsageGraph();
+    Rca<ResourceFlowUnit> hotNodeClusterRca =
+        new HotNodeClusterRca(12, hotJVMNodeRca);
+    hotNodeClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    hotNodeClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
+
+    addShardResourceUsage();
   }
 
-  private void createShardResourceUsageGraph() {
+  private void addShardResourceUsage() {
     Metric cpuUsage = new CPU_Utilization(5);
     Metric ioTotThroughput = new IO_TotThroughput(5);
     Metric ioTotSyscallRate = new IO_TotalSyscallRate(5);
-
 
     cpuUsage.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     ioTotThroughput.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
