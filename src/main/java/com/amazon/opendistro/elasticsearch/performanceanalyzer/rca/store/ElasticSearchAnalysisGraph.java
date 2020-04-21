@@ -48,7 +48,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hot
 import java.util.Arrays;
 import java.util.Collections;
 
-public class ElastiSearchAnalysisGraph extends AnalysisGraph {
+public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
   @Override
   public void construct() {
@@ -121,10 +121,9 @@ public class ElastiSearchAnalysisGraph extends AnalysisGraph {
     highCPUShardRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     highCPUShardRca.addAllUpstreams(Arrays.asList(cpuUsage, ioTotThroughput, ioTotSyscallRate));
 
-    // Hot Shard RCA which consumes the HighCPUShardRca
+    // Hot Shard Cluster RCA which consumes the above
     HotShardClusterRca hotShardClusterRca = new HotShardClusterRca(12, highCPUShardRca);
     hotShardClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     hotShardClusterRca.addAllUpstreams(Collections.singletonList(highCPUShardRca));
-    hotShardClusterRca.addTag(RcaTagConstants.TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
   }
 }
