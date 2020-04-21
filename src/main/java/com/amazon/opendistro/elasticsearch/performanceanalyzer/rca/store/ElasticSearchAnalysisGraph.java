@@ -125,5 +125,6 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     HotShardClusterRca hotShardClusterRca = new HotShardClusterRca(12, highCPUShardRca);
     hotShardClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     hotShardClusterRca.addAllUpstreams(Collections.singletonList(highCPUShardRca));
+    hotShardClusterRca.addTag(RcaTagConstants.TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
   }
 }
