@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.ho
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.OLD_GEN;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_FULL_GC;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
+import static java.lang.Integer.compare;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
@@ -208,6 +209,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
         context = new ResourceContext(Resources.State.HEALTHY);
       }
 
+      //check to see if the value is above lower bound thres
       if (gcEventSlidingWindow.readSum() >= OLD_GEN_GC_THRESHOLD
           && !Double.isNaN(currentMinOldGenUsage)
           && currentMinOldGenUsage / maxOldGenHeapSize > OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE * this.lowerBoundThreshold) {
@@ -229,7 +231,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
   //add top k consumers to summary
   private void addTopConsumers(HotResourceSummary summary) {
     this.nodeStatAggregators.sort(
-        Comparator.comparingInt(NodeStatAggregator::getSum)
+        (NodeStatAggregator n1, NodeStatAggregator n2) -> Integer.compare(n2.getSum(), n1.getSum())
     );
     for (NodeStatAggregator aggregator : this.nodeStatAggregators) {
       if (aggregator.isEmpty()) {

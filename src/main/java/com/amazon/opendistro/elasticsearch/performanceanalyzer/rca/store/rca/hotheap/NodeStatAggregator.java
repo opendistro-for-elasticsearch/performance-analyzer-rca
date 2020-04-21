@@ -5,7 +5,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.IndexShardKey;
 import java.util.HashMap;
-import java.util.Map.Entry;
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -98,11 +98,13 @@ public class NodeStatAggregator {
   // in either case, we need to write a function to clean up this hashtable on reader periodically
   // to remove node stats of inactive shards
   private void purgeHashTable(final long timestamp) {
-    for (Entry<IndexShardKey, NodeStatValue> entry : this.shardKeyMap.entrySet()) {
-      long timestampDiff = timestamp - entry.getValue().getTimestamp();
+    Iterator<IndexShardKey> iterator = this.shardKeyMap.keySet().iterator();
+    while (iterator.hasNext()) {
+      IndexShardKey key = iterator.next();
+      long timestampDiff = timestamp - this.shardKeyMap.get(key).getTimestamp();
       if (TimeUnit.MILLISECONDS.toMinutes(timestampDiff) > PURGE_HASH_TABLE_INTERVAL_IN_MINS) {
-        this.sum -= entry.getValue().getValue();
-        this.shardKeyMap.remove(entry.getKey());
+        this.sum -= this.shardKeyMap.get(key).getValue();
+        iterator.remove();
       }
     }
   }
