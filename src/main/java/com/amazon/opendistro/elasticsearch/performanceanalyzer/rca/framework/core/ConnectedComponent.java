@@ -114,4 +114,12 @@ public class ConnectedComponent {
     }
     return dependencyOrderedNodes;
   }
+
+  public Set<String> getNodeNames() {
+    Set<String> nodeNames = new HashSet<>();
+    getAllNodes().forEach(node -> {
+      nodeNames.add(node.name());
+    });
+    return nodeNames;
+  }
 }

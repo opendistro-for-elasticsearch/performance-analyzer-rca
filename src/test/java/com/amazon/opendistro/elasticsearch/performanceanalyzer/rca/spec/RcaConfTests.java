@@ -48,5 +48,6 @@ public class RcaConfTests {
       String expectedValue = tagMap.get(tag.getKey());
       assertEquals(expectedValue, tag.getValue());
     }
+    assertEquals(Arrays.asList("rca1", "rca2"), rcaConf.getMutedRcaList());
   }
 }

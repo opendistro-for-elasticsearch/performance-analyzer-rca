@@ -56,8 +56,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -77,6 +79,8 @@ public class RcaController {
 
   private static final String RCA_ENABLED_CONF_FILE = "rca_enabled.conf";
 
+  private static final String MUTED_RCAS_CONF_FILE = "muted_rcas.conf";
+
   private final ScheduledExecutorService netOpsExecutorService;
   private final boolean useHttps;
 
@@ -84,6 +88,9 @@ public class RcaController {
 
   // This needs to be volatile as the RcaConfPoller writes it but the Nanny reads it.
   private static volatile boolean rcaEnabled = false;
+
+  // This needs to be volatile as the RcaConfPoller writes it but the Nanny reads it.
+  private static volatile long lastModifiedInMemory = 0;
 
   // This needs to be volatile as the NodeRolePoller writes it but the Nanny reads it.
   private volatile NodeRole currentRole = NodeRole.UNKNOWN;
@@ -216,7 +223,14 @@ public class RcaController {
           }
         }
 
+        // Update the RCA state
         updateRcaState();
+
+        // Update Analysis graph with Muted RCAs value
+        if (rcaEnabled && rcaScheduler != null && rcaScheduler.getState() == RcaSchedulerState.STATE_STARTED) {
+          readAndUpdateMutesRcas();
+        }
+
         long duration = System.currentTimeMillis() - startTime;
         if (duration < rcaStateCheckIntervalMillis) {
           Thread.sleep(rcaStateCheckIntervalMillis - duration);
@@ -256,6 +270,40 @@ public class RcaController {
   }
 
   /**
+   * Reads the mutedRCAList value from the rca.conf file, performs validation on the param value
+   * provided and on successful validation, updates the AnalysisGraph with muted RCA value.
+   *
+   */
+  private void readAndUpdateMutesRcas() {
+    // If the rca config file has been updated since the lastModifiedInMemory in memory,
+    // refresh the `muted-rcas` value from rca config file
+    final RcaConf rcaConf = RcaControllerHelper.pickRcaConfForRole(currentRole);
+    long lastModifiedOnDisk = rcaConf.getLastModifiedTime();
+    if (lastModifiedOnDisk > lastModifiedInMemory) {
+      try {
+        // Validate the node value provided as part of `muted-rcas` is present in analysis graph
+        List<String> mutedRcaList = rcaConf.getMutedRcaList();
+        Set<String> graphNodeNames = new HashSet<>();
+        RcaUtil.getAnalysisGraphComponents(rcaConf).forEach(
+                connectedComponent -> graphNodeNames.addAll(connectedComponent.getNodeNames()));
+
+        mutedRcaList.forEach(mutedRca -> {
+          if (graphNodeNames.contains(mutedRca.trim())) {
+            LOG.info("Muting RCA node : {}", mutedRca);
+            Stats.getInstance().addToMutedGraphNodes(mutedRca.trim());
+          } else {
+            LOG.error("Incorrect RCA node : {} provided for muting ", mutedRca);
+          }
+        });
+      } catch (Exception e) {
+        LOG.error("Couldn't read/update the muted RCAs. Ran into {}", e.getMessage());
+        e.printStackTrace();
+      }
+    }
+    lastModifiedInMemory = lastModifiedOnDisk;
+  }
+
+  /**
    * Starts or stops the RCA runtime. If the RCA runtime is up but the currently RCA is disabled,
    * then this gracefully shuts down the RCA runtime. It restarts the RCA runtime if the node role
    * has changed in the meantime (such as a new elected master). It also starts the RCA runtime if
@@ -286,7 +334,6 @@ public class RcaController {
       }
     }
   }
-
 
   private void removeRcaRequestHandler() {
     try {
