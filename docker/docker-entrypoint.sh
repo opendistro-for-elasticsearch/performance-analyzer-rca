@@ -90,6 +90,7 @@ fi
 
 if [[ -d "/usr/share/elasticsearch/plugins/opendistro_performance_analyzer" ]]; then
     CLK_TCK=`/usr/bin/getconf CLK_TCK`
+    DEBUG_OPTS="-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
     ES_JAVA_OPTS="-Djava.security.policy=file:///usr/share/elasticsearch/performance-analyzer-rca/pa_config/es_security.policy -Dclk.tck=$CLK_TCK -Djdk.attach.allowAttachSelf=true $ES_JAVA_OPTS"
     /usr/bin/supervisord -c /usr/share/elasticsearch/performance-analyzer-rca/pa_config/supervisord.conf
 fi
