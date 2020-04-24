@@ -37,7 +37,7 @@ public abstract class GenericSummary {
     return nestedSummaryList;
   }
 
-  public void addNestedSummaryList(Collection<GenericSummary> nestedSummaryList) {
+  public void addNestedSummaryList(Collection<? extends GenericSummary> nestedSummaryList) {
     this.nestedSummaryList.addAll(nestedSummaryList);
   }
 

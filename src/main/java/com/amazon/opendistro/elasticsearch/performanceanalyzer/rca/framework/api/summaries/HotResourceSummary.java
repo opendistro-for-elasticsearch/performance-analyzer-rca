@@ -100,7 +100,7 @@ public class HotResourceSummary extends GenericSummary {
    * error cannot cause an Exception.
    */
   @Override
-  public void addNestedSummaryList(Collection<GenericSummary> nestedSummaryList) {
+  public void addNestedSummaryList(Collection<? extends GenericSummary> nestedSummaryList) {
     for (GenericSummary summary: nestedSummaryList) {
       if (!(summary instanceof TopConsumerSummary)) {
         LOG.error("Attempted to add nested summary of unsupported type {} to HotResourceSummary",

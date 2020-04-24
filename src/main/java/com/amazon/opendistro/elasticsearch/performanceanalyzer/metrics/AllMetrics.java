@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.Constants;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.JooqFieldValue;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
@@ -381,7 +382,7 @@ public class AllMetrics {
     }
   }
 
-  public enum ThreadPoolDimension implements MetricDimension {
+  public enum ThreadPoolDimension implements MetricDimension, JooqFieldValue {
     THREAD_POOL_TYPE(Constants.TYPE_VALUE);
 
     private final String value;
@@ -392,6 +393,16 @@ public class AllMetrics {
 
     @Override
     public String toString() {
+      return value;
+    }
+
+    @Override
+    public Field<String> getField() {
+      return DSL.field(DSL.name(this.value), String.class);
+    }
+
+    @Override
+    public String getName() {
       return value;
     }
 
@@ -422,6 +433,60 @@ public class AllMetrics {
       public static final String REJECTED_VALUE = "ThreadPool_RejectedReqs";
       public static final String THREADS_COUNT_VALUE = "ThreadPool_TotalThreads";
       public static final String THREADS_ACTIVE_VALUE = "ThreadPool_ActiveThreads";
+    }
+  }
+
+  //content of thread pool metrics
+  public enum ThreadPoolType {
+    ANALYZE(Constants.ANALYZE_NAME),
+    FETCH_SHARD_STARTED(Constants.FETCH_SHARD_STARTED_NAME),
+    FETCH_SHARD_STORE(Constants.FETCH_SHARD_STORE_NAME),
+    FLUSH(Constants.FLUSH_NAME),
+    FORCE_MERGE(Constants.FORCE_MERGE_NAME),
+    GENERIC(Constants.GENERIC_NAME),
+    GET(Constants.GET_NAME),
+    LISTENER(Constants.LISTENER_NAME),
+    MANAGEMENT(Constants.MANAGEMENT_NAME),
+    OPEN_DISTRO_JOB_SCHEDULER(Constants.OPEN_DISTRO_JOB_SCHEDULER_NAME),
+    REFRESH(Constants.REFRESH_NAME),
+    SEARCH(Constants.SEARCH_NAME),
+    SEARCH_THROTTLED(Constants.SEARCH_THROTTLED_NAME),
+    SNAPSHOT(Constants.SNAPSHOT_NAME),
+    SNAPSHOT_SEGMENTS(Constants.SNAPSHOT_SEGMENTS_NAME),
+    SQL_WORKER(Constants.SQL_WORKER_NAME),
+    WARMER(Constants.WARMER_NAME),
+    WRITE(Constants.WRITE_NAME);
+
+    private final String value;
+
+    ThreadPoolType(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String ANALYZE_NAME = "analyze";
+      public static final String FETCH_SHARD_STARTED_NAME = "fetch_shard_started";
+      public static final String FETCH_SHARD_STORE_NAME = "fetch_shard_store";
+      public static final String FLUSH_NAME = "flush";
+      public static final String FORCE_MERGE_NAME = "force_merge";
+      public static final String GENERIC_NAME = "generic";
+      public static final String GET_NAME = "get";
+      public static final String LISTENER_NAME = "listener";
+      public static final String MANAGEMENT_NAME = "management";
+      public static final String OPEN_DISTRO_JOB_SCHEDULER_NAME = "open_distro_job_scheduler";
+      public static final String REFRESH_NAME = "refresh";
+      public static final String SEARCH_NAME = "search";
+      public static final String SEARCH_THROTTLED_NAME = "search_throttled";
+      public static final String SNAPSHOT_NAME = "snapshot";
+      public static final String SNAPSHOT_SEGMENTS_NAME = "snapshot_segments";
+      public static final String SQL_WORKER_NAME = "sql-worker";
+      public static final String WARMER_NAME = "warmer";
+      public static final String WRITE_NAME = "write";
     }
   }
 
