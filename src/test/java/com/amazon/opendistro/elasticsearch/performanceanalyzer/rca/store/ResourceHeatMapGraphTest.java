@@ -126,7 +126,7 @@ public class ResourceHeatMapGraphTest {
         clientServers.getNetClient().stop();
     }
 
-    class AnalysisGraphTest extends DummyGraph {
+    class AnalysisGraphTest extends ElasticSearchAnalysisGraph {
         @Override
         public void construct() {
             super.constructResourceHeatMapGraph();

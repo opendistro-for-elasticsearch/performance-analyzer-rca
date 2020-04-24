@@ -156,9 +156,8 @@ message FlowUnitMessage {
     ResourceContextMessage resourceContext = 4;
     oneof summary_oneof {
         HotResourceSummaryMessage hotResourceSummary = 5;
-	HotShardSummaryMessage hotShardSummary = 6;
+        HotShardSummaryMessage hotShardSummary = 6;
         HotNodeSummaryMessage hotNodeSummary = 7;
-        HotClusterSummaryMessage hotClusterSummary = 7;
         NodeTemperatureSummaryMessage nodeTemperatureSummary = 8;
         HotClusterSummaryMessage hotClusterSummary = 9;
     }
