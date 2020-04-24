@@ -22,11 +22,17 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class GenericContextTest {
-    private GenericContext uut;
+    private static class ConcreteGenericContext extends GenericContext {
+        public ConcreteGenericContext(Resources.State state) {
+            super(state);
+        }
+    }
+
+    private ConcreteGenericContext uut;
 
     @Before
     public void setup() {
-        uut = new GenericContext(Resources.State.HEALTHY);
+        uut = new ConcreteGenericContext(Resources.State.HEALTHY);
     }
 
     @Test
@@ -38,16 +44,17 @@ public class GenericContextTest {
     @Test
     public void testIsUnknown() {
         Assert.assertFalse(uut.isUnknown());
-        Assert.assertTrue(GenericContext.generic().isUnknown());
+        ConcreteGenericContext unknown = new ConcreteGenericContext(Resources.State.UNKNOWN);
+        Assert.assertTrue(unknown.isUnknown());
     }
 
     @Test
     public void testIsUnhealthy() {
         Assert.assertFalse(ResourceContext.generic().isUnhealthy());
         Assert.assertFalse(uut.isUnhealthy());
-        uut = new ResourceContext(Resources.State.CONTENDED);
+        uut = new ConcreteGenericContext(Resources.State.CONTENDED);
         Assert.assertTrue(uut.isUnhealthy());
-        uut = new ResourceContext(Resources.State.UNHEALTHY);
+        uut = new ConcreteGenericContext(Resources.State.UNHEALTHY);
         Assert.assertTrue(uut.isUnhealthy());
     }
 }

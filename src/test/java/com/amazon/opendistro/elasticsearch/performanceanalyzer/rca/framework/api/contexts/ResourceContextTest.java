@@ -48,11 +48,19 @@ public class ResourceContextTest {
     }
 
     @Test
+    public void testIsUnknown() {
+        Assert.assertFalse(uut.isUnknown());
+        Assert.assertTrue(ResourceContext.generic().isUnknown());
+    }
+
+    @Test
     public void testGetSqlSchema() {
         List<Field<?>> schema = uut.getSqlSchema();
+        // Done for static class coverage
+        Assert.assertTrue(new ResourceContext.SQL_SCHEMA_CONSTANTS() instanceof ResourceContext.SQL_SCHEMA_CONSTANTS);
         Assert.assertEquals(1, schema.size());
-        Assert.assertEquals("State", ResourceContext.STATE_COL_NAME);
-        Assert.assertEquals(DSL.field(DSL.name(ResourceContext.STATE_COL_NAME), String.class),
+        Assert.assertEquals("State", ResourceContext.SQL_SCHEMA_CONSTANTS.STATE_COL_NAME);
+        Assert.assertEquals(DSL.field(DSL.name(ResourceContext.SQL_SCHEMA_CONSTANTS.STATE_COL_NAME), String.class),
                 schema.get(0));
     }
 

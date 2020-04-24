@@ -27,8 +27,6 @@ import org.jooq.impl.DSL;
  * context that goes along with ResourceFlowUnit.
  */
 public class ResourceContext extends GenericContext {
-  public static final String STATE_COL_NAME = "State";
-
   public ResourceContext(Resources.State state) {
     super(state);
   }
@@ -50,7 +48,7 @@ public class ResourceContext extends GenericContext {
 
   public List<Field<?>> getSqlSchema() {
     List<Field<?>> schemaList = new ArrayList<>();
-    schemaList.add(DSL.field(DSL.name(STATE_COL_NAME), String.class));
+    schemaList.add(DSL.field(DSL.name(SQL_SCHEMA_CONSTANTS.STATE_COL_NAME), String.class));
     return schemaList;
   }
 
@@ -58,5 +56,9 @@ public class ResourceContext extends GenericContext {
     List<Object> valueList = new ArrayList<>();
     valueList.add(getState().toString());
     return valueList;
+  }
+
+  public static class SQL_SCHEMA_CONSTANTS {
+    public static final String STATE_COL_NAME = "State";
   }
 }

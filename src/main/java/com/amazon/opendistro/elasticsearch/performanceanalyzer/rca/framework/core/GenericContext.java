@@ -17,7 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.co
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 
-public class GenericContext {
+public abstract class GenericContext {
     private final Resources.State state;
 
     public GenericContext(Resources.State state) {
@@ -26,11 +26,6 @@ public class GenericContext {
 
     public Resources.State getState() {
         return this.state;
-    }
-
-    // This method can be hidden by subclasses
-    public static GenericContext generic() {
-        return new GenericContext(Resources.State.UNKNOWN);
     }
 
     public boolean isUnhealthy() {
