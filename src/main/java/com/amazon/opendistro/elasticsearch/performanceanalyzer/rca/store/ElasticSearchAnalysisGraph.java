@@ -32,6 +32,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.GC_Collection_Time;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Used;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.IO_TotThroughput;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.IO_TotalSyscallRate;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric.AggregateFunction;
@@ -45,13 +47,16 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.Hot
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hot_node.HighCpuRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageOldGenRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageYoungGenRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HighCPUShardRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
+
 import java.util.Arrays;
 import java.util.Collections;
 
-public class DummyGraph extends AnalysisGraph {
+public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
   @Override
   public void construct() {
@@ -104,7 +109,33 @@ public class DummyGraph extends AnalysisGraph {
     hotNodeClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     hotNodeClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
 
+    constructShardResourceUsageGraph();
+
     // constructResourceHeatMapGraph();
+  }
+
+  private void constructShardResourceUsageGraph() {
+    Metric cpuUsage = new CPU_Utilization(5);
+    Metric ioTotThroughput = new IO_TotThroughput(5);
+    Metric ioTotSyscallRate = new IO_TotalSyscallRate(5);
+
+    cpuUsage.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    ioTotThroughput.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    ioTotSyscallRate.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    addLeaf(cpuUsage);
+    addLeaf(ioTotThroughput);
+    addLeaf(ioTotSyscallRate);
+
+    // High CPU Usage RCA
+    HighCPUShardRca highCPUShardRca = new HighCPUShardRca(5, 12, cpuUsage, ioTotThroughput, ioTotSyscallRate);
+    highCPUShardRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    highCPUShardRca.addAllUpstreams(Arrays.asList(cpuUsage, ioTotThroughput, ioTotSyscallRate));
+
+    // Hot Shard Cluster RCA which consumes the above
+    HotShardClusterRca hotShardClusterRca = new HotShardClusterRca(12, highCPUShardRca);
+    hotShardClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    hotShardClusterRca.addAllUpstreams(Collections.singletonList(highCPUShardRca));
+    hotShardClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
   }
 
     protected void constructResourceHeatMapGraph() {

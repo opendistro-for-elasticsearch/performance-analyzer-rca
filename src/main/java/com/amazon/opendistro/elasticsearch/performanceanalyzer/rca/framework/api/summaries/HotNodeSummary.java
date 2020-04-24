@@ -48,11 +48,20 @@ public class HotNodeSummary extends GenericSummary {
   private static final Logger LOG = LogManager.getLogger(HotNodeSummary.class);
   private final String nodeID;
   private final String hostAddress;
+  private final List<HotShardSummary> hotShardSummaryList;
 
   public HotNodeSummary(String nodeID, String hostAddress) {
     super();
     this.nodeID = nodeID;
     this.hostAddress = hostAddress;
+    this.hotShardSummaryList = new ArrayList<>();
+  }
+
+  public HotNodeSummary(String nodeID, String hostAddress, List<HotShardSummary> hotShardSummaryList) {
+    super();
+    this.nodeID = nodeID;
+    this.hostAddress = hostAddress;
+    this.hotShardSummaryList = hotShardSummaryList;
   }
 
   public String getNodeID() {
@@ -63,6 +72,11 @@ public class HotNodeSummary extends GenericSummary {
     return this.hostAddress;
   }
 
+  public List<HotShardSummary> getHotShardSummaryList() {
+    return hotShardSummaryList;
+  }
+
+
   @Override
   public HotNodeSummaryMessage buildSummaryMessage() {
     final HotNodeSummaryMessage.Builder summaryMessageBuilder = HotNodeSummaryMessage.newBuilder();
@@ -72,6 +86,10 @@ public class HotNodeSummary extends GenericSummary {
       summaryMessageBuilder.getHotResourceSummaryListBuilder()
           .addHotResourceSummary(nestedSummary.buildSummaryMessage());
     }
+
+    this.hotShardSummaryList.stream()
+            .forEach(nestedHotShardSummary -> summaryMessageBuilder.getHotShardSummaryListBuilder()
+                    .addHotShardSummary(nestedHotShardSummary.buildSummaryMessage()));
     return summaryMessageBuilder.build();
   }
 
@@ -89,12 +107,20 @@ public class HotNodeSummary extends GenericSummary {
             message.getHotResourceSummaryList().getHotResourceSummary(i)));
       }
     }
+
+    if (message.hasHotShardSummaryList()
+            && message.getHotShardSummaryList().getHotShardSummaryCount() > 0) {
+      for (int i = 0; i < message.getHotShardSummaryList().getHotShardSummaryCount(); i++) {
+        newSummary.addNestedSummaryList(HotShardSummary.buildHotShardSummaryFromMessage(
+                message.getHotShardSummaryList().getHotShardSummary(i)));
+      }
+    }
     return newSummary;
   }
 
   @Override
   public String toString() {
-    return this.nodeID + " " + this.hostAddress + " " + getNestedSummaryList();
+    return this.nodeID + " " + this.hostAddress + " " + this.nestedSummaryList + " " + this.hotShardSummaryList;
   }
 
   @Override
@@ -115,6 +141,7 @@ public class HotNodeSummary extends GenericSummary {
     List<Object> value = new ArrayList<>();
     value.add(this.nodeID);
     value.add(this.hostAddress);
+    //value.add(this.hotShardSummaryList);
     return value;
   }
 
@@ -131,6 +158,12 @@ public class HotNodeSummary extends GenericSummary {
       String tableName = getNestedSummaryList().get(0).getTableName();
       summaryObj.add(tableName, this.nestedSummaryListToJson());
     }
+
+    this.hotShardSummaryList.forEach(
+        summary -> {
+          summaryObj.add(summary.getTableName(), summary.toJson());
+        }
+    );
     return summaryObj;
   }
 
@@ -192,4 +225,5 @@ public class HotNodeSummary extends GenericSummary {
     }
     return summary;
   }
+
 }
