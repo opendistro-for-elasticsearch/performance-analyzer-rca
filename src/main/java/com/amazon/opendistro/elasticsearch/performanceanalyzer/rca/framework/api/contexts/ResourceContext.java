@@ -27,23 +27,8 @@ import org.jooq.impl.DSL;
  * context that goes along with ResourceFlowUnit.
  */
 public class ResourceContext extends GenericContext {
-
-  private Resources.State state;
-
   public ResourceContext(Resources.State state) {
-    this.state = state;
-  }
-
-  public boolean isUnhealthy() {
-    return this.state == Resources.State.UNHEALTHY || this.state == Resources.State.CONTENDED;
-  }
-
-  public boolean isUnknown() {
-    return this.state == Resources.State.UNKNOWN;
-  }
-
-  public Resources.State getState() {
-    return this.state;
+    super(state);
   }
 
   public static ResourceContext generic() {
@@ -53,17 +38,12 @@ public class ResourceContext extends GenericContext {
   public ResourceContextMessage buildContextMessage() {
     final ResourceContextMessage.Builder contextMessageBuilder = ResourceContextMessage
         .newBuilder();
-    contextMessageBuilder.setState(state.ordinal());
+    contextMessageBuilder.setState(getState().ordinal());
     return contextMessageBuilder.build();
   }
 
   public static ResourceContext buildResourceContextFromMessage(ResourceContextMessage message) {
     return new ResourceContext(Resources.State.values()[message.getState()]);
-  }
-
-  @Override
-  public String toString() {
-    return this.state.toString();
   }
 
   public List<Field<?>> getSqlSchema() {
@@ -74,12 +54,11 @@ public class ResourceContext extends GenericContext {
 
   public List<Object> getSqlValue() {
     List<Object> valueList = new ArrayList<>();
-    valueList.add(this.state.toString());
+    valueList.add(getState().toString());
     return valueList;
   }
 
   public static class SQL_SCHEMA_CONSTANTS {
-
     public static final String STATE_COL_NAME = "State";
   }
 }
