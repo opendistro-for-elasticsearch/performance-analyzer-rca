@@ -15,8 +15,12 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaTestHelper.updateConfFileForMutedRcas;
 import static com.google.common.collect.Maps.newHashMap;
+import static junit.framework.TestCase.assertTrue;
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
@@ -30,8 +34,9 @@ import org.junit.experimental.categories.Category;
 @Category(GradleTaskForRca.class)
 public class RcaConfTests {
   @Test
-  public void testRcaConfRead() {
-    RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
+  public void testRcaConfRead() throws Exception {
+    updateConfFileForMutedRcas(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_master.conf").toString(), "CPU_Utilization, Heap_AllocRate");
+    RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_master.conf").toString());
 
     assertEquals("s3://sifi-store/rcas/", rcaConf.getRcaStoreLoc());
     assertEquals("s3://sifi-store/thresholds/", rcaConf.getThresholdStoreLoc());
@@ -48,5 +53,42 @@ public class RcaConfTests {
       String expectedValue = tagMap.get(tag.getKey());
       assertEquals(expectedValue, tag.getValue());
     }
+    assertEquals(Arrays.asList("CPU_Utilization", "Heap_AllocRate"), rcaConf.getMutedRcaList());
+  }
+
+  @Test
+  public void testMutedRcasValue() throws Exception {
+    String rcaConfPath = Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_master.conf").toString();
+
+    // 1. Comma, followed space
+    updateConfFileForMutedRcas(rcaConfPath, "CPU_Utilization, Heap_AllocRate");
+    RcaConf rcaConf = new RcaConf(rcaConfPath);
+    assertEquals(Arrays.asList("CPU_Utilization", "Heap_AllocRate"), rcaConf.getMutedRcaList());
+
+    // 2. Comma, Without any space
+    updateConfFileForMutedRcas(rcaConfPath, "CPU_Utilization,Heap_AllocRate");
+    rcaConf = new RcaConf(rcaConfPath);
+    assertEquals(Arrays.asList("CPU_Utilization", "Heap_AllocRate"), rcaConf.getMutedRcaList());
+
+    // 3. Without any comma
+    updateConfFileForMutedRcas(rcaConfPath, "CPU_Utilization");
+    rcaConf = new RcaConf(rcaConfPath);
+    assertEquals(Arrays.asList("CPU_Utilization"), rcaConf.getMutedRcaList());
+
+    // 4. Empty String
+    updateConfFileForMutedRcas(rcaConfPath, "");
+    rcaConf = new RcaConf(rcaConfPath);
+    assertTrue(rcaConf.getMutedRcaList().isEmpty());
+
+    // 5. Leading and Trailing space
+    updateConfFileForMutedRcas(rcaConfPath, " CPU_Utilization, Heap_AllocRate ");
+    rcaConf = new RcaConf(rcaConfPath);
+    assertEquals(Arrays.asList(" CPU_Utilization", "Heap_AllocRate "), rcaConf.getMutedRcaList());
+
+    // 6. Space within the muted_rca value
+    updateConfFileForMutedRcas(rcaConfPath, " CPU Utilization, Heap_AllocRate ");
+    rcaConf = new RcaConf(rcaConfPath);
+    assertEquals(Arrays.asList(" CPU Utilization", "Heap_AllocRate "), rcaConf.getMutedRcaList());
+
   }
 }

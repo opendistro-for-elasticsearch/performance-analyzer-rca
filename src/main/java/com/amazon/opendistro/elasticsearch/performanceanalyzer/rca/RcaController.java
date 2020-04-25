@@ -56,12 +56,16 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -84,6 +88,9 @@ public class RcaController {
 
   // This needs to be volatile as the RcaConfPoller writes it but the Nanny reads it.
   private static volatile boolean rcaEnabled = false;
+
+  // This needs to be volatile as the RcaConfPoller writes it but the Nanny reads it.
+  private static volatile long lastModifiedTimeInMillisInMemory = 0;
 
   // This needs to be volatile as the NodeRolePoller writes it but the Nanny reads it.
   private volatile NodeRole currentRole = NodeRole.UNKNOWN;
@@ -215,8 +222,13 @@ public class RcaController {
             checkUpdateNodeRole(nodeDetails);
           }
         }
-
         updateRcaState();
+
+        // Update Analysis graph with Muted RCAs value
+        if (rcaEnabled && rcaScheduler != null && rcaScheduler.getState() == RcaSchedulerState.STATE_STARTED) {
+          readAndUpdateMutesRcas();
+        }
+
         long duration = System.currentTimeMillis() - startTime;
         if (duration < rcaStateCheckIntervalMillis) {
           Thread.sleep(rcaStateCheckIntervalMillis - duration);
@@ -256,6 +268,47 @@ public class RcaController {
   }
 
   /**
+   * Reads the mutedRCAList value from the rca.conf file, performs validation on the param value
+   * provided and on successful validation, updates the AnalysisGraph with muted RCA value.
+   *
+   * <p>In case all the RCAs in param value are incorrect, return without any update.
+   */
+  private void readAndUpdateMutesRcas() {
+    // If the rca config file has been updated since the lastModifiedTimeInMillisInMemory in memory,
+    // refresh the `muted-rcas` value from rca config file.
+    final RcaConf rcaConf = RcaControllerHelper.pickRcaConfForRole(currentRole);
+    long lastModifiedTimeInMillisOnDisk = rcaConf.getLastModifiedTime();
+    if (lastModifiedTimeInMillisOnDisk > lastModifiedTimeInMillisInMemory) {
+      try {
+        List<String> rcasForMute = rcaConf.getMutedRcaList();
+        LOG.info("RCAs provided for muting : {}", rcasForMute);
+
+        Set<String> graphNodeNames = new HashSet<>();
+        RcaUtil.getAnalysisGraphComponents(rcaConf).forEach(
+                connectedComponent -> graphNodeNames.addAll(connectedComponent.getNodeNames()));
+
+        Set<String> validRcasForMute = rcasForMute.stream()
+                .filter(rcaForMute -> graphNodeNames.contains(rcaForMute))
+                .collect(Collectors.toSet());
+
+        // If validRcasForMute is empty but rcasForMute is not empty
+        // all the input RCAs are incorrect, return.
+        if (validRcasForMute.isEmpty() && !rcasForMute.isEmpty()) {
+          LOG.info("Incorrect RCA value, cannot be muted : {}", rcasForMute);
+          return;
+        }
+
+        LOG.info("Updating the muted RCA Graph to : {}", validRcasForMute);
+        Stats.getInstance().updateMutedGraphNodes(validRcasForMute);
+      } catch (Exception e) {
+        LOG.error("Couldn't read/update the muted RCAs. Ran into {}", e.getMessage());
+        e.printStackTrace();
+      }
+    }
+    lastModifiedTimeInMillisInMemory = lastModifiedTimeInMillisOnDisk;
+  }
+
+  /**
    * Starts or stops the RCA runtime. If the RCA runtime is up but the currently RCA is disabled,
    * then this gracefully shuts down the RCA runtime. It restarts the RCA runtime if the node role
    * has changed in the meantime (such as a new elected master). It also starts the RCA runtime if
@@ -286,7 +339,6 @@ public class RcaController {
       }
     }
   }
-
 
   private void removeRcaRequestHandler() {
     try {
