@@ -43,7 +43,7 @@ public class NodeStatAggregator {
    * @return if it has valid node stats
    */
   public boolean isEmpty() {
-    return this.shardKeyMap.isEmpty();
+    return shardKeyMap.isEmpty();
   }
 
   /**

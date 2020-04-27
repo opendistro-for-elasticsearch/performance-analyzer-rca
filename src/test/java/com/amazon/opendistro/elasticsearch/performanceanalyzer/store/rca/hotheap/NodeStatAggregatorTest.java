@@ -65,7 +65,4 @@ public class NodeStatAggregatorTest {
     nodeStatAggregator.collect(TimeUnit.MINUTES.toMillis(32));
     Assert.assertEquals(21, nodeStatAggregator.getSum());
   }
-
-
-
 }

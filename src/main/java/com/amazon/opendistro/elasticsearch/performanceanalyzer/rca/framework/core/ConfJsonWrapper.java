@@ -36,6 +36,7 @@ class ConfJsonWrapper {
   private final String analysisGraphEntryPoint;
   private final int networkQueueLength;
   private final int perVertexBufferLength;
+  private final Map<String, String> highHeapUsageOldGenRcaSettings;
 
   String getRcaStoreLoc() {
     return rcaStoreLoc;
@@ -81,6 +82,10 @@ class ConfJsonWrapper {
     this.datastore.put(RcaConsts.DATASTORE_LOC_KEY, rcaLogLocation);
   }
 
+  Map<String, String> getHighHeapUsageOldGenRcaSettings() {
+    return highHeapUsageOldGenRcaSettings;
+  }
+
   ConfJsonWrapper(
       @JsonProperty("rca-store-location") String rcaStoreLoc,
       @JsonProperty("threshold-store-location") String thresholdStoreLoc,
@@ -91,7 +96,8 @@ class ConfJsonWrapper {
       @JsonProperty("datastore") Map<String, String> datastore,
       @JsonProperty("analysis-graph-implementor") String analysisGraphEntryPoint,
       @JsonProperty("network-queue-length") int networkQueueLength,
-      @JsonProperty("max-flow-units-per-vertex-buffer") int perVertexBufferLength) {
+      @JsonProperty("max-flow-units-per-vertex-buffer") int perVertexBufferLength,
+      @JsonProperty("high-heap-usage-old-gen-rca") Map<String, String> highHeapUsageOldGenRcaSettings) {
     this.creationTime = System.currentTimeMillis();
     this.rcaStoreLoc = rcaStoreLoc;
     this.thresholdStoreLoc = thresholdStoreLoc;
@@ -103,5 +109,6 @@ class ConfJsonWrapper {
     this.analysisGraphEntryPoint = analysisGraphEntryPoint;
     this.networkQueueLength = networkQueueLength;
     this.perVertexBufferLength = perVertexBufferLength;
+    this.highHeapUsageOldGenRcaSettings = highHeapUsageOldGenRcaSettings;
   }
 }

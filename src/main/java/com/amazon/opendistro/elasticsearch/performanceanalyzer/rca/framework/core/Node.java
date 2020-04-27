@@ -171,4 +171,14 @@ public abstract class Node<T extends GenericFlowUnit> {
   public void setLocalFlowUnit(T localFlowUnit) {
     this.localFlowUnit = localFlowUnit;
   }
+
+  /**
+   * callback function to parse local rca.conf file and set RCA thresholds accordingly
+   * The default callback function does nothing because we assume most of the RCA vertices
+   * does not read threshold settings from external config
+   * @param conf RcaConf object
+   */
+  public void readRcaConf(RcaConf conf) {
+    return;
+  }
 }

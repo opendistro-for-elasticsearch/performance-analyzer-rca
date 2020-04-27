@@ -91,13 +91,14 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
         for (ResourceFlowUnit flowUnit : nodeStateList) {
           if (flowUnit.getResourceContext().getState() == Resources.State.UNHEALTHY) {
             HotNodeSummary currentNodSummary = (HotNodeSummary) flowUnit.getResourceSummary();
-            for (GenericSummary resourceSummary : currentNodSummary.getNestedSummaryList()) {
-              if (resourceSummary instanceof HotResourceSummary) {
-                if (((HotResourceSummary) resourceSummary).getResourceType().getJVM() == JvmEnum.YOUNG_GEN) {
-                  youngGenSummaries.add((HotResourceSummary) resourceSummary);
+            for (GenericSummary genericSummary : currentNodSummary.getNestedSummaryList()) {
+              if (genericSummary instanceof HotResourceSummary) {
+                HotResourceSummary resourceSummary = (HotResourceSummary) genericSummary;
+                if (resourceSummary.getResourceType().getJVM() == JvmEnum.YOUNG_GEN) {
+                  youngGenSummaries.add(resourceSummary);
                 }
-                else if (((HotResourceSummary) resourceSummary).getResourceType().getJVM() == JvmEnum.OLD_GEN) {
-                  oldGenSummaries.add((HotResourceSummary) resourceSummary);
+                else if (resourceSummary.getResourceType().getJVM() == JvmEnum.OLD_GEN) {
+                  oldGenSummaries.add(resourceSummary);
                 }
               }
               else {
@@ -181,6 +182,7 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
    */
   @Override
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-    LOG.error("RCA: {} should not be send over from network", this.getClass().getSimpleName());
+    throw new IllegalArgumentException(name() + "'s generateFlowUnitListFromWire() should not "
+        + "be required.");
   }
 }

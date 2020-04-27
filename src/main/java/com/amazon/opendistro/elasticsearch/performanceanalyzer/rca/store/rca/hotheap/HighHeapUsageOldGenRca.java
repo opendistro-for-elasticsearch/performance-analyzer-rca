@@ -35,12 +35,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.TopConsumerSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaVerticesMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.time.Clock;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -93,6 +94,8 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
   private static final double OLD_GEN_GC_THRESHOLD = 1;
   private static final double CONVERT_BYTES_TO_MEGABYTES = Math.pow(1024, 3);
   private static final int TOP_K = 3;
+  private static final String TOP_K_RCA_CONF = "top-k";
+  private int top_k;
   protected Clock clock;
 
 
@@ -118,6 +121,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
         this.nodeStatAggregators.add(new NodeStatAggregator(consumerMetric));
       }
     }
+    this.top_k = TOP_K;
   }
 
   public <M extends Metric> HighHeapUsageOldGenRca(final int rcaPeriod,
@@ -237,7 +241,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
       if (aggregator.isEmpty()) {
         continue;
       }
-      if (summary.getNestedSummaryList().size() >= TOP_K) {
+      if (summary.getNestedSummaryList().size() >= top_k) {
         break;
       }
       summary.addNestedSummaryList(new TopConsumerSummary(aggregator.getName(), aggregator.getSum()));
@@ -277,11 +281,31 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
   }
 
   /**
+   * read top k value from rca.conf
+   * @param conf RcaConf object
+   */
+  @Override
+  public void readRcaConf(RcaConf conf) {
+    Map<String, String> settings = conf.getHighHeapUsageOldGenRcaSettings();
+    if (settings != null) {
+      if (settings.containsKey(TOP_K_RCA_CONF)) {
+        try {
+          top_k = Integer.parseInt(settings.get(TOP_K_RCA_CONF));
+        }
+        catch (NumberFormatException ne) {
+          LOG.error("rca.conf contains invalid top-k number");
+        }
+      }
+    }
+  }
+
+  /**
    * This is a local node RCA which by definition can not be serialize/de-serialized
    * over gRPC.
    */
   @Override
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-    LOG.error("RCA: {} should not be send over from network", this.getClass().getSimpleName());
+    throw new IllegalArgumentException(name() + "'s generateFlowUnitListFromWire() should not "
+        + "be required.");
   }
 }

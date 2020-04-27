@@ -95,4 +95,8 @@ public class RcaConf {
   public int getPerVertexBufferLength() {
     return conf.getPerVertexBufferLength();
   }
+
+  public Map<String, String> getHighHeapUsageOldGenRcaSettings() {
+    return conf.getHighHeapUsageOldGenRcaSettings();
+  }
 }

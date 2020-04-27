@@ -83,10 +83,6 @@ public class DummyGraph extends AnalysisGraph {
 
     //add node stats metrics
     List<Metric> nodeStatsMetrics = constructNodeStatsMetrics();
-    for (Metric metric : nodeStatsMetrics) {
-      metric.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-      addLeaf(metric);
-    }
 
     Rca<ResourceFlowUnit> highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(12, heapUsed, gcEvent,
         heapMax, nodeStatsMetrics);
@@ -137,6 +133,10 @@ public class DummyGraph extends AnalysisGraph {
       add(new Bitset_Memory(5));
       add(new VersionMap_Memory(5));
     }};
+    for (Metric metric : nodeStatsMetrics) {
+      metric.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+      addLeaf(metric);
+    }
     return nodeStatsMetrics;
   }
 }
