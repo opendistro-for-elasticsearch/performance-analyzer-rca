@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -94,6 +95,11 @@ public abstract class Node<T extends GenericFlowUnit> {
 
   public long getEvaluationIntervalSeconds() {
     return evaluationIntervalSeconds;
+  }
+
+  @VisibleForTesting
+  public void setEvaluationIntervalSeconds(long value) {
+    evaluationIntervalSeconds = value;
   }
 
   int getUpStreamNodesCount() {

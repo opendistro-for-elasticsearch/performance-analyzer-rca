@@ -131,14 +131,21 @@ public class AbstractReaderTests extends AbstractTests {
     return new HeapStatus(name.toString(), collectionCount, collectionTime).serialize();
   }
 
-  protected String createNodeDetailsMetrics(String id, String ipAddress, boolean isMasterNode) {
+  protected static String createNodeDetailsMetrics(String id, String ipAddress, boolean isMasterNode) {
     return createNodeDetailsMetrics(id, ipAddress, AllMetrics.NodeRole.DATA, isMasterNode);
   }
 
-  protected String createNodeDetailsMetrics(String id, String ipAddress, AllMetrics.NodeRole nodeRole, boolean isMasterNode) {
+  protected static String createNodeDetailsMetrics(String id, String ipAddress, AllMetrics.NodeRole nodeRole,
+                                            boolean isMasterNode) {
     StringBuffer value = new StringBuffer();
     value.append(new NodeDetailsStatus(id, ipAddress, nodeRole, isMasterNode).serialize());
     return value.toString();
+  }
+
+  protected static ClusterDetailsEventProcessor.NodeDetails createNodeDetails(String id, String ipAddress,
+                                                                              boolean isMasterNode) {
+    return new ClusterDetailsEventProcessor.NodeDetails(
+            createNodeDetailsMetrics(id, ipAddress, isMasterNode));
   }
 
   static void setFinalStatic(Field field, Object newValue) throws Exception {

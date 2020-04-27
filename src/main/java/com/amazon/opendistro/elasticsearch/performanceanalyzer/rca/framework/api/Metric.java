@@ -48,7 +48,7 @@ public abstract class Metric extends LeafNode<MetricFlowUnit> {
 
   public Metric(String name, long evaluationIntervalSeconds) {
     super(0, evaluationIntervalSeconds);
-    this.name = name;
+    this.name = name.isEmpty() ? this.getClass().getSimpleName() : name;
   }
 
   @Override

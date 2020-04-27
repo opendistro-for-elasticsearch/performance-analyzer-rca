@@ -37,14 +37,15 @@ public class SQLParsingUtil {
    * @throws IllegalArgumentException throws an exception if we can't find the name in the field
    */
   private static Record getRecordByName(Result<Record> result, Field<String> field, String name) throws IllegalArgumentException {
+    if (result == null) {
+      throw new IllegalArgumentException("getRecordByName called with null result");
+    }
     int idx = -1;
-    if (result != null) {
-      List<String> fieldNames = result.getValues(field);
-      for (int i = 0; i < fieldNames.size(); i++) {
-        if (fieldNames.get(i).equals(name)) {
-          idx = i;
-          break;
-        }
+    List<String> fieldNames = result.getValues(field);
+    for (int i = 0; i < fieldNames.size(); i++) {
+      if (fieldNames.get(i).equals(name)) {
+        idx = i;
+        break;
       }
     }
     if (idx < 0) {
@@ -70,18 +71,15 @@ public class SQLParsingUtil {
    */
   public static double readDataFromSqlResult(Result<Record> result, Field<String> matchedField, String matchedFieldName, String dataField) {
     double ret = Double.NaN;
-    if (result != null) {
-      try {
-        Record record = SQLParsingUtil.getRecordByName(result, matchedField, matchedFieldName);
-        ret = record.getValue(MetricsDB.MAX, Double.class);
-      }
-      catch (IllegalArgumentException ie) {
-        LOG.error("{} fails to match any row in field {}.", matchedFieldName, matchedField.getName());
-      }
-      catch (
-          DataTypeException de) {
-        LOG.error("Fail to read {} field from SQL result", dataField);
-      }
+    try {
+      Record record = getRecordByName(result, matchedField, matchedFieldName);
+      ret = record.getValue(MetricsDB.MAX, Double.class);
+    }
+    catch (IllegalArgumentException ie) {
+      LOG.error("{} fails to match any row in field {}.", matchedFieldName, matchedField.getName());
+    }
+    catch (DataTypeException de) {
+      LOG.error("Fail to read {} field from SQL result", dataField);
     }
     return ret;
   }

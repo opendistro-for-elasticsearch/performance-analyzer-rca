@@ -19,7 +19,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class IO_WriteSyscallRate extends Metric {
+  public static final String NAME = AllMetrics.OSMetrics.IO_WRITE_SYSCALL_RATE.toString();
+
   public IO_WriteSyscallRate(long evaluationIntervalSeconds) {
-    super(AllMetrics.OSMetrics.IO_WRITE_SYSCALL_RATE.toString(), evaluationIntervalSeconds);
+    super(NAME, evaluationIntervalSeconds);
   }
 }
