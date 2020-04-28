@@ -18,12 +18,12 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.ho
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.OLD_GEN;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_FULL_GC;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
-import static java.lang.Integer.compare;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
@@ -41,7 +41,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.Flo
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -93,9 +92,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
   // minimum
   private static final double OLD_GEN_GC_THRESHOLD = 1;
   private static final double CONVERT_BYTES_TO_MEGABYTES = Math.pow(1024, 3);
-  private static final int TOP_K = 3;
-  private static final String TOP_K_RCA_CONF = "top-k";
-  private int top_k;
+  private int topK;
   protected Clock clock;
 
 
@@ -121,7 +118,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
         this.nodeStatAggregators.add(new NodeStatAggregator(consumerMetric));
       }
     }
-    this.top_k = TOP_K;
+    this.topK = HighHeapUsageOldGenRcaConfig.DEFAULT_TOP_K;
   }
 
   public <M extends Metric> HighHeapUsageOldGenRca(final int rcaPeriod,
@@ -241,7 +238,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
       if (aggregator.isEmpty()) {
         continue;
       }
-      if (summary.getNestedSummaryList().size() >= top_k) {
+      if (summary.getNestedSummaryList().size() >= topK) {
         break;
       }
       summary.addNestedSummaryList(new TopConsumerSummary(aggregator.getName(), aggregator.getSum()));
@@ -286,17 +283,8 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
    */
   @Override
   public void readRcaConf(RcaConf conf) {
-    Map<String, String> settings = conf.getHighHeapUsageOldGenRcaSettings();
-    if (settings != null) {
-      if (settings.containsKey(TOP_K_RCA_CONF)) {
-        try {
-          top_k = Integer.parseInt(settings.get(TOP_K_RCA_CONF));
-        }
-        catch (NumberFormatException ne) {
-          LOG.error("rca.conf contains invalid top-k number");
-        }
-      }
-    }
+    HighHeapUsageOldGenRcaConfig configObj = conf.getHighHeapUsageOldGenRcaConfig();
+    topK = configObj.getTopK();
   }
 
   /**

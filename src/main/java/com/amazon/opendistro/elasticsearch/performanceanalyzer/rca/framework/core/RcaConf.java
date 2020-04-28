@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -96,7 +97,7 @@ public class RcaConf {
     return conf.getPerVertexBufferLength();
   }
 
-  public Map<String, String> getHighHeapUsageOldGenRcaSettings() {
-    return conf.getHighHeapUsageOldGenRcaSettings();
+  public HighHeapUsageOldGenRcaConfig getHighHeapUsageOldGenRcaConfig() {
+    return conf.getHighHeapUsageOldGenRcaConfig();
   }
 }

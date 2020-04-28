@@ -83,7 +83,7 @@ public class NodeStatAggregator {
           this.sum += (value - oldNodeStatValue.getValue());
         }
         catch (Exception e) {
-          LOG.error("Fail to read parse node stats {}", this.getName());
+          LOG.error("Fail to parse node stats {}", this.getName());
         }
       }
     }

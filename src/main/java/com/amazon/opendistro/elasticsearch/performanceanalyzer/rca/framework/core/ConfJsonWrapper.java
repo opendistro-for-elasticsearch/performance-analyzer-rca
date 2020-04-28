@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -36,7 +37,7 @@ class ConfJsonWrapper {
   private final String analysisGraphEntryPoint;
   private final int networkQueueLength;
   private final int perVertexBufferLength;
-  private final Map<String, String> highHeapUsageOldGenRcaSettings;
+  private final HighHeapUsageOldGenRcaConfig highHeapUsageOldGenRcaConfig;
 
   String getRcaStoreLoc() {
     return rcaStoreLoc;
@@ -82,8 +83,8 @@ class ConfJsonWrapper {
     this.datastore.put(RcaConsts.DATASTORE_LOC_KEY, rcaLogLocation);
   }
 
-  Map<String, String> getHighHeapUsageOldGenRcaSettings() {
-    return highHeapUsageOldGenRcaSettings;
+  HighHeapUsageOldGenRcaConfig getHighHeapUsageOldGenRcaConfig() {
+    return highHeapUsageOldGenRcaConfig;
   }
 
   ConfJsonWrapper(
@@ -109,6 +110,6 @@ class ConfJsonWrapper {
     this.analysisGraphEntryPoint = analysisGraphEntryPoint;
     this.networkQueueLength = networkQueueLength;
     this.perVertexBufferLength = perVertexBufferLength;
-    this.highHeapUsageOldGenRcaSettings = highHeapUsageOldGenRcaSettings;
+    this.highHeapUsageOldGenRcaConfig = new HighHeapUsageOldGenRcaConfig(highHeapUsageOldGenRcaSettings);
   }
 }

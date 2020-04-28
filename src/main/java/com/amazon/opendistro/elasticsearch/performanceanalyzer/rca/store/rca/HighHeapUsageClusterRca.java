@@ -107,6 +107,8 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
             }
           }
         }
+        // youngGenSummaries can have multiple elements but we will only consider it as unhealthy if
+        // three consecutive summaries are all unhealthy and we will then pick the first element as the summary for output.
         if (youngGenSummaries.size() >= UNHEALTHY_FLOWUNIT_THRESHOLD || oldGenSummaries.size() >= UNHEALTHY_FLOWUNIT_THRESHOLD) {
           HotNodeSummary nodeSummary = new HotNodeSummary(nodeDetails.getId(), nodeDetails.getHostAddress());
           if (youngGenSummaries.size() >= UNHEALTHY_FLOWUNIT_THRESHOLD) {
