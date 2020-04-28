@@ -30,7 +30,7 @@ import org.junit.experimental.categories.Category;
 public class HighCPUShardRcaTest {
 
     private HighCPUShardRcaX highCPUShardRcaX;
-    private MetricTestHelper cpuUsage;
+    private MetricTestHelper cpuUtilization;
     private MetricTestHelper ioTotThroughput;
     private MetricTestHelper ioTotSyscallRate;
     private List<String> columnName;
@@ -50,11 +50,11 @@ public class HighCPUShardRcaTest {
 
     @Before
     public void setup() {
-        cpuUsage = new MetricTestHelper(5);
+        cpuUtilization = new MetricTestHelper(5);
         ioTotThroughput = new MetricTestHelper(5);
         ioTotSyscallRate = new MetricTestHelper(5);
         highCPUShardRcaX = new HighCPUShardRcaX(5, 1,
-                cpuUsage, ioTotThroughput, ioTotSyscallRate);
+                cpuUtilization, ioTotThroughput, ioTotSyscallRate);
         columnName = Arrays.asList(INDEX_NAME.toString(), SHARD_ID.toString(), MetricsDB.SUM);
 
         try {
@@ -71,7 +71,7 @@ public class HighCPUShardRcaTest {
     // 1. No Flow Units received
     @Test
     public void testOperateForMissingFlowUnits() {
-        cpuUsage = null;
+        cpuUtilization = null;
         ioTotThroughput = null;
         ioTotSyscallRate = null;
 
@@ -82,7 +82,7 @@ public class HighCPUShardRcaTest {
     // 2. Empty Flow Units received
     @Test
     public void testOperateForEmptyFlowUnits() {
-        cpuUsage.createTestFlowUnits(columnName, Collections.emptyList());
+        cpuUtilization.createTestFlowUnits(columnName, Collections.emptyList());
         ioTotThroughput.createTestFlowUnits(columnName, Collections.emptyList());
         ioTotSyscallRate.createTestFlowUnits(columnName, Collections.emptyList());
 
@@ -96,8 +96,8 @@ public class HighCPUShardRcaTest {
         Clock constantClock = Clock.fixed(ofEpochMilli(0), ZoneId.systemDefault());
 
         // ts = 0
-        // index = index_1, shard = shard_1, cpuUsage = 0, ioTotThroughput = 0, ioTotSyscallRate = 0
-        cpuUsage.createTestFlowUnits(columnName,
+        // index = index_1, shard = shard_1, cpuUtilization = 0, ioTotThroughput = 0, ioTotSyscallRate = 0
+        cpuUtilization.createTestFlowUnits(columnName,
                 Arrays.asList(index.index_1.toString(), shard.shard_1.toString(), String.valueOf(0)));
         ioTotThroughput.createTestFlowUnits(columnName,
                 Arrays.asList(index.index_1.toString(), shard.shard_1.toString(), String.valueOf(0)));
@@ -108,8 +108,8 @@ public class HighCPUShardRcaTest {
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
         // ts = 1
-        // index = index_1, shard = shard_1, cpuUsage = 0.005, ioTotThroughput = 200000, ioTotSyscallRate = 0.005
-        cpuUsage.createTestFlowUnits(columnName,
+        // index = index_1, shard = shard_1, cpuUtilization = 0.005, ioTotThroughput = 200000, ioTotSyscallRate = 0.005
+        cpuUtilization.createTestFlowUnits(columnName,
                 Arrays.asList(index.index_1.toString(), shard.shard_1.toString(), String.valueOf(0.005)));
         ioTotThroughput.createTestFlowUnits(columnName,
                 Arrays.asList(index.index_1.toString(), shard.shard_1.toString(), String.valueOf(200000)));
@@ -121,8 +121,8 @@ public class HighCPUShardRcaTest {
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
         //ts = 2
-        // index = index_1, shard = shard_1, cpuUsage = 0.75, ioTotThroughput = 200000, ioTotSyscallRate = 0.005
-        cpuUsage.createTestFlowUnits(columnName,
+        // index = index_1, shard = shard_1, cpuUtilization = 0.75, ioTotThroughput = 200000, ioTotSyscallRate = 0.005
+        cpuUtilization.createTestFlowUnits(columnName,
                 Arrays.asList(index.index_1.toString(), shard.shard_1.toString(), String.valueOf(0.75)));
         ioTotThroughput.createTestFlowUnits(columnName,
                 Arrays.asList(index.index_1.toString(), shard.shard_1.toString(), String.valueOf(200000)));
@@ -141,12 +141,12 @@ public class HighCPUShardRcaTest {
         Assert.assertEquals("node1", hotShardSummaryList1.get(0).getNodeId());
 
         // ts = 3
-        // index = index_1, shard = shard_2, cpuUsage = 0.75, ioTotThroughput = 400000, ioTotSyscallRate = 0.10
+        // index = index_1, shard = shard_2, cpuUtilization = 0.75, ioTotThroughput = 400000, ioTotSyscallRate = 0.10
         //
         // and
         // ts = 4
-        // index = index_1, shard = shard_2, cpuUsage = 0.25, ioTotThroughput = 100000, ioTotSyscallRate = 0.10
-        cpuUsage.createTestFlowUnits(columnName,
+        // index = index_1, shard = shard_2, cpuUtilization = 0.25, ioTotThroughput = 100000, ioTotSyscallRate = 0.10
+        cpuUtilization.createTestFlowUnits(columnName,
                 Arrays.asList(index.index_1.toString(), shard.shard_2.toString(), String.valueOf(0.75)));
         ioTotThroughput.createTestFlowUnits(columnName,
                 Arrays.asList(index.index_1.toString(), shard.shard_2.toString(), String.valueOf(400000)));
@@ -156,7 +156,7 @@ public class HighCPUShardRcaTest {
         highCPUShardRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(3)));
         flowUnit = highCPUShardRcaX.operate();
 
-        cpuUsage.createTestFlowUnits(columnName,
+        cpuUtilization.createTestFlowUnits(columnName,
                 Arrays.asList(index.index_1.toString(), shard.shard_2.toString(), String.valueOf(0.25)));
         ioTotThroughput.createTestFlowUnits(columnName,
                 Arrays.asList(index.index_1.toString(), shard.shard_2.toString(), String.valueOf(100000)));
@@ -181,8 +181,8 @@ public class HighCPUShardRcaTest {
 
     private static class HighCPUShardRcaX extends HighCPUShardRca {
         public <M extends Metric> HighCPUShardRcaX(final long evaluationIntervalSeconds,
-            final int rcaPeriod, final M cpuUsage, final M ioTotThroughput, final M ioTotSyscallRate) {
-          super(evaluationIntervalSeconds, rcaPeriod, cpuUsage, ioTotThroughput,ioTotSyscallRate);
+            final int rcaPeriod, final M cpuUtilization, final M ioTotThroughput, final M ioTotSyscallRate) {
+          super(evaluationIntervalSeconds, rcaPeriod, cpuUtilization, ioTotThroughput,ioTotSyscallRate);
         }
 
         public void setClock(Clock clock) {

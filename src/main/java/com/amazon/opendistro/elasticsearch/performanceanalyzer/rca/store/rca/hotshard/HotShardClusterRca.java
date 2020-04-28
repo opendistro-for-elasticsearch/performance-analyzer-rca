@@ -47,7 +47,7 @@ import org.apache.logging.log4j.Logger;
 public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
 
     private static final Logger LOG = LogManager.getLogger(HotShardClusterRca.class);
-    private static final double CPU_USAGE_DEFAULT_THRESHOLD_IN_PERCENTAGE = 0.3;
+    private static final double CPU_UTILIZATION_DEFAULT_THRESHOLD_IN_PERCENTAGE = 0.3;
     private static final double IO_THROUGHPUT_DEFAULT_THRESHOLD_IN_PERCENTAGE = 0.3;
     private static final double IO_SYSCALLRATE_DEFAULT_THRESHOLD_IN_PERCENTAGE = 0.3;
     private static final int SLIDING_WINDOW_IN_SECONDS = 60;
@@ -56,7 +56,7 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
     private int counter;
 
     // Guava Table with Row: 'Index_Name', Column: 'NodeShardKey', Cell Value: 'Value'
-    private Table<String, NodeShardKey, Double> cpuUsageInfoTable;
+    private Table<String, NodeShardKey, Double> cpuUtilizationInfoTable;
     private Table<String, NodeShardKey, Double> IOThroughputInfoTable;
     private Table<String, NodeShardKey, Double> IOSysCallRateInfoTable;
 
@@ -65,7 +65,7 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
         this.highCPUShardRca = highCPUShardRca;
         this.rcaPeriod = rcaPeriod;
         this.counter = 0;
-        this.cpuUsageInfoTable = HashBasedTable.create();
+        this.cpuUtilizationInfoTable = HashBasedTable.create();
         this.IOThroughputInfoTable = HashBasedTable.create();
         this.IOSysCallRateInfoTable = HashBasedTable.create();
     }
@@ -87,7 +87,7 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
             String indexName = hotShardSummary.getIndexName();
             NodeShardKey nodeShardKey = new NodeShardKey(nodeId, hotShardSummary.getShardId());
             // 1. Populate CPU Table
-            populateResourceInfoTable(indexName, nodeShardKey, hotShardSummary.getCpuUsage(), cpuUsageInfoTable);
+            populateResourceInfoTable(indexName, nodeShardKey, hotShardSummary.getCpuUtilization(), cpuUtilizationInfoTable);
 
             // 2. Populate ioTotThroughput Table
             populateResourceInfoTable(indexName, nodeShardKey, hotShardSummary.getIOThroughput(), IOThroughputInfoTable);
@@ -153,7 +153,7 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
                     ClusterDetailsEventProcessor.getNodesDetails().size(), 0);
 
             findHotShardAndCreateSummary(
-                    cpuUsageInfoTable, CPU_USAGE_DEFAULT_THRESHOLD_IN_PERCENTAGE, hotShardSummaryList,
+                    cpuUtilizationInfoTable, CPU_UTILIZATION_DEFAULT_THRESHOLD_IN_PERCENTAGE, hotShardSummaryList,
                     ResourceType.newBuilder().setHardwareResourceTypeValue(HardwareEnum.CPU_VALUE).build());
 
             findHotShardAndCreateSummary(
@@ -174,7 +174,7 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
 
             // reset the variables
             counter = 0;
-            this.cpuUsageInfoTable.clear();
+            this.cpuUtilizationInfoTable.clear();
             this.IOThroughputInfoTable.clear();
             this.IOSysCallRateInfoTable.clear();
             LOG.debug("Hot Shard Cluster RCA Context :  " + context.toString());

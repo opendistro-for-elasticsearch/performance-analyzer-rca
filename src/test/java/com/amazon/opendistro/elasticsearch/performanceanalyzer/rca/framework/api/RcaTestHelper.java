@@ -57,10 +57,15 @@ public class RcaTestHelper extends Rca<ResourceFlowUnit> {
     return new ResourceFlowUnit(System.currentTimeMillis(), new ResourceContext(healthy), nodeSummary);
   }
 
-  public static ResourceFlowUnit generateFlowUnitForHotShard(String indexName, String shardId, String nodeID, double cpu_usage,
+  public static ResourceFlowUnit generateFlowUnitForHotShard(String indexName, String shardId, String nodeID, double cpu_utilization,
                                                              double io_throughput, double io_sys_callrate, Resources.State health) {
-    HotShardSummary hotShardSummary = new HotShardSummary(indexName, shardId, nodeID, cpu_usage, 0.50,
-            io_throughput, 500000, io_sys_callrate, 0.50, 60);
+    HotShardSummary hotShardSummary = new HotShardSummary(indexName, shardId, nodeID, 60);
+    hotShardSummary.setcpuUtilization(cpu_utilization);
+    hotShardSummary.setCpuUtilizationThreshold(0.50);
+    hotShardSummary.setIoThroughput(io_throughput);
+    hotShardSummary.setIoThroughputThreshold(500000);
+    hotShardSummary.setIoSysCallrate(io_sys_callrate);
+    hotShardSummary.setIoSysCallrateThreshold(0.50);
     HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, "127.0.0.0", Arrays.asList(hotShardSummary));
     return new ResourceFlowUnit(System.currentTimeMillis(), new ResourceContext(health), nodeSummary);
   }

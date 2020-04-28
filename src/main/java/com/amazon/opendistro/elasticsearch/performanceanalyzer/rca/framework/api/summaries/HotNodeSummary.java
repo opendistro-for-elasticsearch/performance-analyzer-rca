@@ -57,7 +57,7 @@ public class HotNodeSummary extends GenericSummary {
     this.hotShardSummaryList = new ArrayList<>();
   }
 
-  public HotNodeSummary(String nodeID, String hostAddress, List<HotShardSummary> hotShardSummaryList) {
+  public HotNodeSummary(String nodeID, String hostAddress, final List<HotShardSummary> hotShardSummaryList) {
     super();
     this.nodeID = nodeID;
     this.hostAddress = hostAddress;

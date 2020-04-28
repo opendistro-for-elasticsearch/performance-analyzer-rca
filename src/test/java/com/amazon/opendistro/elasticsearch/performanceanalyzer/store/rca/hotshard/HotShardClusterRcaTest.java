@@ -100,7 +100,7 @@ public class HotShardClusterRcaTest {
     }
 
     // 3. Healthy FlowUnits received, i.e :
-    //     CPU_USAGE < CPU_USAGE_threshold
+    //     CPU_UTILIZATION < CPU_UTILIZATION_threshold
     // and IO_THROUGHPUT < IO_THROUGHPUT_threshold
     // and IO_SYSCALLRATE < IO_SYSCALLRATE_threshold
     @Test
@@ -149,7 +149,7 @@ public class HotShardClusterRcaTest {
         Assert.assertFalse(flowUnit1.getResourceContext().isUnhealthy());
         Assert.assertTrue(flowUnit1.getResourceSummary().getNestedSummaryList().isEmpty());
 
-        // 4.2  hot shards across an index as per CPU Usage, ie. : CPU_USAGE >= CPU_USAGE_threshold
+        // 4.2  hot shards across an index as per CPU Utilization, ie. : CPU_UTILIZATION >= CPU_UTILIZATION_threshold
         hotShardRca.mockFlowUnits(Arrays.asList(
                 RcaTestHelper.generateFlowUnitForHotShard(
                         index.index_1.name(), shard.shard_1.name(), node.node_1.name(), 0.75,
@@ -174,7 +174,7 @@ public class HotShardClusterRcaTest {
         List<Object> hotShard1 = flowUnit2.getResourceSummary().getNestedSummaryList().get(0).getSqlValue();
         List<Object> hotShard2 = flowUnit2.getResourceSummary().getNestedSummaryList().get(1).getSqlValue();
 
-        // verify the resource type, cpu usage value, node ID, Index Name, shard ID
+        // verify the resource type, cpu utilization value, node ID, Index Name, shard ID
         Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(cpuResourceType), hotShard1.get(0));
         Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(cpuResourceType), hotShard2.get(0));
 
@@ -279,7 +279,7 @@ public class HotShardClusterRcaTest {
     // 5. UnHealthy FlowUnits received, hot shard identification on multiple Dimension
     @Test
     public void testOperateForHotShardonMultipleDimension() {
-        // CPU_USAGE >= CPU_USAGE_threshold, IO_TOTAL_SYS_CALLRATE >= IO_TOTAL_SYS_CALLRATE_threshold
+        // CPU_UTILIZATION >= CPU_UTILIZATION_threshold, IO_TOTAL_SYS_CALLRATE >= IO_TOTAL_SYS_CALLRATE_threshold
         hotShardRca.mockFlowUnits(Arrays.asList(
                 RcaTestHelper.generateFlowUnitForHotShard(
                         index.index_1.name(), shard.shard_1.name(), node.node_1.name(), 0.75,
@@ -309,7 +309,7 @@ public class HotShardClusterRcaTest {
         Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(ioTotalThroughputResourceType), hotShard2.get(0));
         Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(ioTotalSysCallRateResourceType), hotShard3.get(0));
 
-        // verify the resource type, cpu usage value, node ID, Index Name, shard ID
+        // verify the resource type, cpu utilization value, node ID, Index Name, shard ID
         Assert.assertEquals(0.75, hotShard1.get(2));
         String [] nodeIndexShardInfo1 = hotShard1.get(8).toString().split(" ");
         Assert.assertEquals(node.node_1.name(), nodeIndexShardInfo1[0]);

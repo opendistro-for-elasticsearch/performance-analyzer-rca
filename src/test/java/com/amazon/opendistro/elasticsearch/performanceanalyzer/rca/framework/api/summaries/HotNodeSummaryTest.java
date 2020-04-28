@@ -33,16 +33,18 @@ import org.mockito.Mockito;
 public class HotNodeSummaryTest {
     private static final String NODE_ID = "ABC123";
     private static final String HOST_ADDRESS = "127.0.0.0";
-    private static final List<HotShardSummary> HOT_SHARD_SUMMARY_LIST = Arrays.asList(
-            new HotShardSummary("index_1", "shard_1", NODE_ID, 0.45,
-                    0.10, 500000, 250000,
-                    0.232,  0.10, 2020));
-
     private static HotNodeSummary uut;
 
     @BeforeClass
     public static void setup() {
-        uut = new HotNodeSummary(NODE_ID, HOST_ADDRESS, HOT_SHARD_SUMMARY_LIST);
+        HotShardSummary hotShardSummary =  new HotShardSummary("index_1", "shard_1", NODE_ID, 2020);
+        hotShardSummary.setcpuUtilization(0.45);
+        hotShardSummary.setCpuUtilizationThreshold(0.10);
+        hotShardSummary.setIoThroughput(500000);
+        hotShardSummary.setIoThroughputThreshold(250000);
+        hotShardSummary.setIoSysCallrate(0.232);
+        hotShardSummary.setIoSysCallrateThreshold(0.10);
+        uut = new HotNodeSummary(NODE_ID, HOST_ADDRESS, Arrays.asList(hotShardSummary));
     }
 
     @Test

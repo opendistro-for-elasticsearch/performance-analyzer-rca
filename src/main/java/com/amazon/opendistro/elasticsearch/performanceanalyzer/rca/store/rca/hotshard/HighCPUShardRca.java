@@ -66,11 +66,11 @@ public class HighCPUShardRca extends Rca<ResourceFlowUnit> {
     private static final int SLIDING_WINDOW_IN_SECONDS =  60;
 
     //TODO : {@khushbr} refine the threshold values and read same from config file
-    private static final double CPU_USAGE_THRESHOLD = 0.01;
+    private static final double CPU_UTILIZATION_THRESHOLD = 0.01;
     private static final double IO_TOT_THROUGHPUT_THRESHOLD_IN_BYTES = 250000;
     private static final double IO_TOT_SYSCALL_RATE_THRESHOLD_PER_SECOND = 0.01;
 
-    private final Metric cpuUsage;
+    private final Metric cpuUtilization;
     private final Metric ioTotThroughput;
     private final Metric ioTotSyscallRate;
     private final ResourceType resourceType;
@@ -79,27 +79,27 @@ public class HighCPUShardRca extends Rca<ResourceFlowUnit> {
     protected Clock clock;
 
     // HashMap with IndexShardKey object as key and SlidingWindowData object of metric data as value
-    private HashMap<IndexShardKey, SlidingWindow<SlidingWindowData>> cpuUsageHashMap;
-    private HashMap<IndexShardKey, SlidingWindow<SlidingWindowData>> ioTotThroughputHashMap;
-    private HashMap<IndexShardKey, SlidingWindow<SlidingWindowData>>  ioTotSyscallRateHashMap;
+    private HashMap<IndexShardKey, SlidingWindow<SlidingWindowData>> cpuUtilizationMap;
+    private HashMap<IndexShardKey, SlidingWindow<SlidingWindowData>> ioTotThroughputMap;
+    private HashMap<IndexShardKey, SlidingWindow<SlidingWindowData>> ioTotSyscallRateMap;
 
     public <M extends Metric> HighCPUShardRca(final long evaluationIntervalSeconds, final int rcaPeriod,
-            final M cpuUsage, final M ioTotThroughput, final M ioTotSyscallRate) {
+            final M cpuUtilization, final M ioTotThroughput, final M ioTotSyscallRate) {
         super(evaluationIntervalSeconds);
-        this.cpuUsage = cpuUsage;
+        this.cpuUtilization = cpuUtilization;
         this.ioTotThroughput = ioTotThroughput;
         this.ioTotSyscallRate = ioTotSyscallRate;
         this.rcaPeriod = rcaPeriod;
         this.counter = 0;
         this.resourceType = ResourceType.newBuilder().setHardwareResourceTypeValue(HardwareEnum.CPU_VALUE).build();
         this.clock = Clock.systemUTC();
-        this.cpuUsageHashMap = new HashMap<>();
-        this.ioTotThroughputHashMap = new HashMap<>();
-        this.ioTotSyscallRateHashMap = new HashMap<>();
+        this.cpuUtilizationMap = new HashMap<>();
+        this.ioTotThroughputMap = new HashMap<>();
+        this.ioTotSyscallRateMap = new HashMap<>();
     }
 
-    private void consumeFlowUnit(MetricFlowUnit metricFlowUnit, String metricType,
-                                 HashMap<IndexShardKey, SlidingWindow<SlidingWindowData>> metricMap) {
+    private void consumeFlowUnit(final MetricFlowUnit metricFlowUnit, final String metricType,
+                                 final HashMap<IndexShardKey, SlidingWindow<SlidingWindowData>> metricMap) {
         for (Record record : metricFlowUnit.getData()) {
             try {
                 String indexName = record.getValue(INDEX_NAME.toString(), String.class);
@@ -117,13 +117,13 @@ public class HighCPUShardRca extends Rca<ResourceFlowUnit> {
                 usageDeque.next(new SlidingWindowData(this.clock.millis(), usage));
             } catch (Exception e) {
                 // TODO: Add a metric here.
-                LOG.error("Failed to parse metric in FlowUnit from {}", metricType);
+                LOG.error("Failed to parse metric in FlowUnit: {} from {}", record, metricType);
             }
         }
     }
 
-    private void consumeMetrics(List<MetricFlowUnit> metrics,
-                                HashMap<IndexShardKey, SlidingWindow<SlidingWindowData>> metricMap) {
+    private void consumeMetrics(final List<MetricFlowUnit> metrics,
+                                final HashMap<IndexShardKey, SlidingWindow<SlidingWindowData>> metricMap) {
         for (MetricFlowUnit metric: metrics) {
             if (metric.getData() != null) {
                 consumeFlowUnit(metric, metrics.getClass().getName(), metricMap);
@@ -150,40 +150,45 @@ public class HighCPUShardRca extends Rca<ResourceFlowUnit> {
      */
     @Override
     public ResourceFlowUnit operate() {
-        List<MetricFlowUnit> cpuUsageMetrics = cpuUsage.getFlowUnits();
+        List<MetricFlowUnit> cpuUtilizationMetrics = cpuUtilization.getFlowUnits();
         List<MetricFlowUnit> ioTotThroughputMetrics = ioTotThroughput.getFlowUnits();
         List<MetricFlowUnit> ioTotSyscallRateMetrics = ioTotSyscallRate.getFlowUnits();
         counter += 1;
 
         // Populate the Resource HashMaps
-        consumeMetrics(cpuUsageMetrics, cpuUsageHashMap);
-        consumeMetrics(ioTotThroughputMetrics, ioTotThroughputHashMap);
-        consumeMetrics(ioTotSyscallRateMetrics, ioTotSyscallRateHashMap);
+        consumeMetrics(cpuUtilizationMetrics, cpuUtilizationMap);
+        consumeMetrics(ioTotThroughputMetrics, ioTotThroughputMap);
+        consumeMetrics(ioTotSyscallRateMetrics, ioTotSyscallRateMap);
 
         if (counter == rcaPeriod) {
             ResourceContext context = new ResourceContext(Resources.State.HEALTHY);
             List<HotShardSummary> HotShardSummaryList = new ArrayList<>();
             ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor.getCurrentNodeDetails();
 
-            Set<IndexShardKey> indexShardKeySet = new HashSet<>(cpuUsageHashMap.keySet());
-            indexShardKeySet.addAll(ioTotThroughputHashMap.keySet());
-            indexShardKeySet.addAll(ioTotSyscallRateHashMap.keySet());
+            Set<IndexShardKey> indexShardKeySet = new HashSet<>(cpuUtilizationMap.keySet());
+            indexShardKeySet.addAll(ioTotThroughputMap.keySet());
+            indexShardKeySet.addAll(ioTotSyscallRateMap.keySet());
 
             for (IndexShardKey indexShardKey : indexShardKeySet) {
-                double avgCpuUsage = fetchUsageValueFromMap(cpuUsageHashMap, indexShardKey);
-                double avgIoTotThroughput = fetchUsageValueFromMap(ioTotThroughputHashMap, indexShardKey);
-                double avgIoTotSyscallRate = fetchUsageValueFromMap(ioTotSyscallRateHashMap, indexShardKey);
+                double avgCpuUtilization = fetchUsageValueFromMap(cpuUtilizationMap, indexShardKey);
+                double avgIoTotThroughput = fetchUsageValueFromMap(ioTotThroughputMap, indexShardKey);
+                double avgIoTotSyscallRate = fetchUsageValueFromMap(ioTotSyscallRateMap, indexShardKey);
 
-                if (avgCpuUsage > CPU_USAGE_THRESHOLD
+                if (avgCpuUtilization > CPU_UTILIZATION_THRESHOLD
                         || avgIoTotThroughput > IO_TOT_THROUGHPUT_THRESHOLD_IN_BYTES
                         || avgIoTotSyscallRate > IO_TOT_SYSCALL_RATE_THRESHOLD_PER_SECOND) {
-                    HotShardSummaryList.add(new HotShardSummary(
-                            indexShardKey.getIndexName(), indexShardKey.getShardId(), currentNode.getId(),
-                            avgCpuUsage, CPU_USAGE_THRESHOLD, avgIoTotThroughput, IO_TOT_THROUGHPUT_THRESHOLD_IN_BYTES,
-                            avgIoTotSyscallRate, IO_TOT_SYSCALL_RATE_THRESHOLD_PER_SECOND, SLIDING_WINDOW_IN_SECONDS));
+                    HotShardSummary summary = new HotShardSummary(
+                            indexShardKey.getIndexName(), indexShardKey.getShardId(), currentNode.getId(), SLIDING_WINDOW_IN_SECONDS);
+                    summary.setcpuUtilization(avgCpuUtilization);
+                    summary.setCpuUtilizationThreshold(CPU_UTILIZATION_THRESHOLD);
+                    summary.setIoThroughput(avgIoTotThroughput);
+                    summary.setIoThroughputThreshold(IO_TOT_THROUGHPUT_THRESHOLD_IN_BYTES);
+                    summary.setIoSysCallrate(avgIoTotSyscallRate);
+                    summary.setIoSysCallrateThreshold(IO_TOT_SYSCALL_RATE_THRESHOLD_PER_SECOND);
+                    HotShardSummaryList.add(summary);
                     context = new ResourceContext(Resources.State.UNHEALTHY);
-                    LOG.debug("Hot Shard Identified, Shard : {} , avgCpuUsage = {} , avgIoTotThroughput = {}, "
-                            + "avgIoTotSyscallRate = {}", indexShardKey, avgCpuUsage, avgIoTotThroughput, avgIoTotSyscallRate);
+                    LOG.debug("Hot Shard Identified, Shard : {} , avgCpuUtilization = {} , avgIoTotThroughput = {}, "
+                            + "avgIoTotSyscallRate = {}", indexShardKey, avgCpuUtilization, avgIoTotThroughput, avgIoTotSyscallRate);
                 }
             }
 
@@ -193,17 +198,18 @@ public class HighCPUShardRca extends Rca<ResourceFlowUnit> {
             HotNodeSummary summary = new HotNodeSummary(
                     currentNode.getId(), currentNode.getHostAddress(), HotShardSummaryList);
 
-            LOG.debug("High CPU Usage Shard RCA Context :  " + context.toString());
+            LOG.debug("High CPU Utilization Shard RCA Context :  " + context.toString());
             return new ResourceFlowUnit(this.clock.millis(), context, summary);
         } else {
-            LOG.debug("Empty FlowUnit returned for High CPU Usage Shard RCA");
+            LOG.debug("Empty FlowUnit returned for High CPU Utilization Shard RCA");
             return new ResourceFlowUnit(this.clock.millis());
         }
     }
 
   @Override
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-    LOG.error("rca: {} should be executed from Local", this.getClass().getSimpleName());
+        throw new IllegalStateException(this.getClass().getSimpleName() + " should not be passed "
+              + "over the wire.");
   }
 
 }

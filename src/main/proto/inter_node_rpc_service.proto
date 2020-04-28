@@ -112,8 +112,8 @@ message HotShardSummaryMessage {
     string indexName = 1;
     string shardId = 2;
     string nodeId = 3;
-    double cpu_usage = 4;
-    double cpu_usage_threshold = 5;
+    double cpu_utilization = 4;
+    double cpu_utilization_threshold = 5;
     double io_throughput = 6;
     double io_throughput_threshold = 7;
     double io_sys_callrate = 8;

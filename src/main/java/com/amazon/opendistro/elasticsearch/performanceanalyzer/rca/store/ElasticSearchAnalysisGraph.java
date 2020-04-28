@@ -115,21 +115,21 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
   }
 
   private void constructShardResourceUsageGraph() {
-    Metric cpuUsage = new CPU_Utilization(5);
+    Metric cpuUtilization = new CPU_Utilization(5);
     Metric ioTotThroughput = new IO_TotThroughput(5);
     Metric ioTotSyscallRate = new IO_TotalSyscallRate(5);
 
-    cpuUsage.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    cpuUtilization.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     ioTotThroughput.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     ioTotSyscallRate.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    addLeaf(cpuUsage);
+    addLeaf(cpuUtilization);
     addLeaf(ioTotThroughput);
     addLeaf(ioTotSyscallRate);
 
-    // High CPU Usage RCA
-    HighCPUShardRca highCPUShardRca = new HighCPUShardRca(5, 12, cpuUsage, ioTotThroughput, ioTotSyscallRate);
+    // High CPU Utilization RCA
+    HighCPUShardRca highCPUShardRca = new HighCPUShardRca(5, 12, cpuUtilization, ioTotThroughput, ioTotSyscallRate);
     highCPUShardRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    highCPUShardRca.addAllUpstreams(Arrays.asList(cpuUsage, ioTotThroughput, ioTotSyscallRate));
+    highCPUShardRca.addAllUpstreams(Arrays.asList(cpuUtilization, ioTotThroughput, ioTotSyscallRate));
 
     // Hot Shard Cluster RCA which consumes the above
     HotShardClusterRca hotShardClusterRca = new HotShardClusterRca(12, highCPUShardRca);

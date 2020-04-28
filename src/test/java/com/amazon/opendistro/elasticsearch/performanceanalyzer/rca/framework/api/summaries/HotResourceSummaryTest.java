@@ -154,7 +154,6 @@ public class HotResourceSummaryTest {
                 json.get(HotResourceSummary.SQL_SCHEMA_CONSTANTS.MAX_VALUE_COL_NAME).getAsDouble(), 0);
         Assert.assertEquals(ResourceTypeUtil.getResourceTypeUnit(RESOURCE_TYPE),
                 json.get(HotResourceSummary.SQL_SCHEMA_CONSTANTS.UNIT_TYPE_COL_NAME).getAsString());
-        System.out.println(json.get(HotResourceSummary.SQL_SCHEMA_CONSTANTS.TIME_PERIOD_COL_NAME));
         Assert.assertEquals(TIME_PERIOD,
                 json.get(HotResourceSummary.SQL_SCHEMA_CONSTANTS.TIME_PERIOD_COL_NAME).getAsDouble(), 0);
         Assert.assertEquals(META_DATA,
