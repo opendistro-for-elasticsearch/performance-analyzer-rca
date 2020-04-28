@@ -115,11 +115,10 @@ public class ConnectedComponent {
     return dependencyOrderedNodes;
   }
 
-  public Set<String> getNodeNames() {
-    Set<String> nodeNames = new HashSet<>();
+  public void addNodeNames(Set<String> graphNodeNames) {
     getAllNodes().forEach(node -> {
-      nodeNames.add(node.name());
+      graphNodeNames.add(node.name());
     });
-    return nodeNames;
   }
+
 }
