@@ -286,7 +286,7 @@ public class RcaController {
 
         Set<String> graphNodeNames = new HashSet<>();
         RcaUtil.getAnalysisGraphComponents(rcaConf).forEach(
-                connectedComponent -> connectedComponent.addNodeNames(graphNodeNames));
+                connectedComponent -> graphNodeNames.addAll(connectedComponent.getNodeNames()));
 
         // Update rcasForMute to retain only valid RCAs
         rcasForMute.retainAll(graphNodeNames);
