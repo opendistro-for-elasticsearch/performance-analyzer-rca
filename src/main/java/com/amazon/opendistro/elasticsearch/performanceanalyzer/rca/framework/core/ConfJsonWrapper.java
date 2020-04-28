@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -36,6 +37,7 @@ class ConfJsonWrapper {
   private final String analysisGraphEntryPoint;
   private final int networkQueueLength;
   private final int perVertexBufferLength;
+  private final HighHeapUsageOldGenRcaConfig highHeapUsageOldGenRcaConfig;
 
   String getRcaStoreLoc() {
     return rcaStoreLoc;
@@ -81,6 +83,10 @@ class ConfJsonWrapper {
     this.datastore.put(RcaConsts.DATASTORE_LOC_KEY, rcaLogLocation);
   }
 
+  HighHeapUsageOldGenRcaConfig getHighHeapUsageOldGenRcaConfig() {
+    return highHeapUsageOldGenRcaConfig;
+  }
+
   ConfJsonWrapper(
       @JsonProperty("rca-store-location") String rcaStoreLoc,
       @JsonProperty("threshold-store-location") String thresholdStoreLoc,
@@ -91,7 +97,8 @@ class ConfJsonWrapper {
       @JsonProperty("datastore") Map<String, String> datastore,
       @JsonProperty("analysis-graph-implementor") String analysisGraphEntryPoint,
       @JsonProperty("network-queue-length") int networkQueueLength,
-      @JsonProperty("max-flow-units-per-vertex-buffer") int perVertexBufferLength) {
+      @JsonProperty("max-flow-units-per-vertex-buffer") int perVertexBufferLength,
+      @JsonProperty("high-heap-usage-old-gen-rca") Map<String, String> highHeapUsageOldGenRcaSettings) {
     this.creationTime = System.currentTimeMillis();
     this.rcaStoreLoc = rcaStoreLoc;
     this.thresholdStoreLoc = thresholdStoreLoc;
@@ -103,5 +110,6 @@ class ConfJsonWrapper {
     this.analysisGraphEntryPoint = analysisGraphEntryPoint;
     this.networkQueueLength = networkQueueLength;
     this.perVertexBufferLength = perVertexBufferLength;
+    this.highHeapUsageOldGenRcaConfig = new HighHeapUsageOldGenRcaConfig(highHeapUsageOldGenRcaSettings);
   }
 }

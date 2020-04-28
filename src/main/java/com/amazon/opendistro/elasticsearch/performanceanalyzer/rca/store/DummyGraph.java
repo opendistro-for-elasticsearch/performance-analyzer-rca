@@ -27,11 +27,25 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Bitset_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.CPU_Utilization;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_FieldData_Size;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Query_Size;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Size;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.DocValues_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.GC_Collection_Event;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.GC_Collection_Time;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Used;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.IndexWriter_Memory;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Norms_Memory;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Points_Memory;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Segments_Memory;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.StoredFields_Memory;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.TermVectors_Memory;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Terms_Memory;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.VersionMap_Memory;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric.AggregateFunction;
@@ -48,8 +62,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hot
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 public class DummyGraph extends AnalysisGraph {
 
@@ -74,10 +90,15 @@ public class DummyGraph extends AnalysisGraph {
     addLeaf(gc_Collection_Time);
     addLeaf(cpuUtilizationGroupByOperation);
 
+    //add node stats metrics
+    List<Metric> nodeStatsMetrics = constructNodeStatsMetrics();
+
     Rca<ResourceFlowUnit> highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(12, heapUsed, gcEvent,
-        heapMax);
+        heapMax, nodeStatsMetrics);
     highHeapUsageOldGenRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    highHeapUsageOldGenRca.addAllUpstreams(Arrays.asList(heapUsed, gcEvent, heapMax));
+    List<Node<?>> upstream = new ArrayList<>(Arrays.asList(heapUsed, gcEvent, heapMax));
+    upstream.addAll(nodeStatsMetrics);
+    highHeapUsageOldGenRca.addAllUpstreams(upstream);
 
     Rca<ResourceFlowUnit> highHeapUsageYoungGenRca = new HighHeapUsageYoungGenRca(12, heapUsed,
         gc_Collection_Time);
@@ -106,7 +127,30 @@ public class DummyGraph extends AnalysisGraph {
 
     // constructResourceHeatMapGraph();
   }
-
+  
+  private List<Metric> constructNodeStatsMetrics() {
+    List<Metric> nodeStatsMetrics = new ArrayList<Metric>() {{
+      add(new Cache_FieldData_Size(5));
+      add(new Cache_Request_Size(5));
+      add(new Cache_Query_Size(5));
+      add(new Segments_Memory(5));
+      add(new Terms_Memory(5));
+      add(new StoredFields_Memory(5));
+      add(new TermVectors_Memory(5));
+      add(new Norms_Memory(5));
+      add(new Points_Memory(5));
+      add(new DocValues_Memory(5));
+      add(new IndexWriter_Memory(5));
+      add(new Bitset_Memory(5));
+      add(new VersionMap_Memory(5));
+    }};
+    for (Metric metric : nodeStatsMetrics) {
+      metric.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+      addLeaf(metric);
+    }
+    return nodeStatsMetrics;
+  }
+  
     protected void constructResourceHeatMapGraph() {
         ShardStore shardStore = new ShardStore();
 
