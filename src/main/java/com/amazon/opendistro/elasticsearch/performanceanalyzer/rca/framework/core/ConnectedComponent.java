@@ -114,4 +114,11 @@ public class ConnectedComponent {
     }
     return dependencyOrderedNodes;
   }
+
+  public void addNodeNames(Set<String> graphNodeNames) {
+    getAllNodes().forEach(node -> {
+      graphNodeNames.add(node.name());
+    });
+  }
+
 }
