@@ -142,7 +142,6 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     hotNodeClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
 
     constructShardResourceUsageGraph();
-
     // constructResourceHeatMapGraph();
   }
 
