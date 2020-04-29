@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.co
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageYoungGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNodeClusterRcaConfig;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
@@ -100,6 +101,10 @@ public class RcaConf {
 
   public HighHeapUsageOldGenRcaConfig getHighHeapUsageOldGenRcaConfig() {
     return new HighHeapUsageOldGenRcaConfig(conf.getRcaConfigSettings(HighHeapUsageOldGenRcaConfig.CONFIG_NAME));
+  }
+
+  public HighHeapUsageYoungGenRcaConfig getHighHeapUsageYoungGenRcaConfig() {
+    return new HighHeapUsageYoungGenRcaConfig(conf.getRcaConfigSettings(HighHeapUsageYoungGenRcaConfig.CONFIG_NAME));
   }
 
   public HotNodeClusterRcaConfig getHotNodeClusterRcaConfig() {
