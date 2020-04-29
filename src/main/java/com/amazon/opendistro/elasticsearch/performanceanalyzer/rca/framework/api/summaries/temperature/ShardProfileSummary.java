@@ -101,13 +101,8 @@ public class ShardProfileSummary extends GenericSummary {
 
     public void addTemperatureForDimension(TemperatureVector.Dimension dimension,
                                            TemperatureVector.NormalizedValue value) {
-        TemperatureVector.NormalizedValue oldValue = getHeatInDimension(dimension);
-        if (oldValue != null) {
-            String err = String.format("Trying to update the temperature along dimension '%s' of "
-                    + "shard '%s' twice. OldValue: '%s', newValue: '%s'", dimension, toString(),
-                    oldValue, value);
-            throw new IllegalArgumentException(err);
-        }
+        // TODO: Need to handle rcas updating heat profile of a shard along a dimension multiple
+        //  times per tick.
         temperatureVector.updateTemperatureForDimension(dimension, value);
     }
 }

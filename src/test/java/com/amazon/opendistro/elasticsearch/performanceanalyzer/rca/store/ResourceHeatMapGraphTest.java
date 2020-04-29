@@ -485,9 +485,9 @@ public class ResourceHeatMapGraphTest {
                     0.01);
             Assert.assertEquals(3, node.get("CPU_Utilization_num_shards").getAsInt());
 
-            Assert.assertEquals(0, node.get("Heap_AllocRate_mean").getAsInt());
-            Assert.assertEquals(0, node.get("Heap_AllocRate_total").getAsInt());
-            Assert.assertEquals(0, node.get("Heap_AllocRate_num_shards").getAsInt());
+            Assert.assertEquals(10, node.get("Heap_AllocRate_mean").getAsInt());
+            Assert.assertEquals(239855498, node.get("Heap_AllocRate_total").getAsInt());
+            Assert.assertEquals(3, node.get("Heap_AllocRate_num_shards").getAsInt());
 
             Assert.assertEquals(0, node.get("IO_READ_SYSCALL_RATE_mean").getAsInt());
             Assert.assertEquals(0, node.get("IO_READ_SYSCALL_RATE_total").getAsInt());
