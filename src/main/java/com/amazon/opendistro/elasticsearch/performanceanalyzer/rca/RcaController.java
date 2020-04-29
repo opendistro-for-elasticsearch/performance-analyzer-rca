@@ -143,7 +143,6 @@ public class RcaController {
   }
 
   private void start() {
-    rcaConf = RcaControllerHelper.pickRcaConfForRole(currentRole);
     try {
       subscriptionManager.setCurrentLocus(rcaConf.getTagMap().get("locus"));
       List<ConnectedComponent> connectedComponents = RcaUtil.getAnalysisGraphComponents(rcaConf);
@@ -223,13 +222,14 @@ public class RcaController {
             checkUpdateNodeRole(nodeDetails);
           }
         }
-        updateRcaState();
 
         // If RCA is enabled, update Analysis graph with Muted RCAs value
         if (rcaEnabled) {
+          rcaConf = RcaControllerHelper.pickRcaConfForRole(currentRole);
           LOG.debug("Updating Analysis Graph with Muted RCAs");
           readAndUpdateMutesRcas();
         }
+        updateRcaState();
 
         long duration = System.currentTimeMillis() - startTime;
         if (duration < rcaStateCheckIntervalMillis) {
@@ -276,16 +276,11 @@ public class RcaController {
    * <p>In case all the RCAs in param value are incorrect, return without any update.
    */
   private void readAndUpdateMutesRcas() {
-    if (rcaConf == null) {
-      LOG.error("RCA Conf: {} null, returning.", rcaConf);
-      return;
-    }
-
-    // If the rca config file has been updated since the lastModifiedTimeInMillisInMemory in memory,
-    // refresh the `muted-rcas` value from rca config file.
-    long lastModifiedTimeInMillisOnDisk = rcaConf.getLastModifiedTime();
-    if (lastModifiedTimeInMillisOnDisk > lastModifiedTimeInMillisInMemory) {
-      try {
+    try {
+      // If the rca config file has been updated since the lastModifiedTimeInMillisInMemory in memory,
+      // refresh the `muted-rcas` value from rca config file.
+      long lastModifiedTimeInMillisOnDisk = rcaConf.getLastModifiedTime();
+      if (lastModifiedTimeInMillisOnDisk > lastModifiedTimeInMillisInMemory) {
         Set<String> rcasForMute = new HashSet<>(rcaConf.getMutedRcaList());
         LOG.info("RCAs provided for muting : {}", rcasForMute);
 
@@ -302,11 +297,11 @@ public class RcaController {
 
         LOG.info("Updating the muted RCA Graph to : {}", rcasForMute);
         Stats.getInstance().updateMutedGraphNodes(rcasForMute);
-      } catch (Exception e) {
-        LOG.error("Couldn't read/update the muted RCAs.", e);
       }
+      lastModifiedTimeInMillisInMemory = lastModifiedTimeInMillisOnDisk;
+    } catch (Exception e) {
+        LOG.error("Couldn't read/update the muted RCAs.", e);
     }
-    lastModifiedTimeInMillisInMemory = lastModifiedTimeInMillisOnDisk;
   }
 
   /**
