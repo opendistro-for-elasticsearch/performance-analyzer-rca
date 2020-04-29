@@ -1,11 +1,16 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaTestHelper.updateConfFileForMutedRcas;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.ClientServers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerThreads;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCAScheduler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RcaSchedulerState;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
@@ -15,6 +20,8 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -46,7 +53,7 @@ public class RcaControllerTest {
   private ThreadProvider threadProvider;
 
   @Before
-  public void setUp() throws IOException {
+  public void setUp() throws Exception {
     threadProvider = new ThreadProvider();
     String cwd = System.getProperty("user.dir");
     rcaEnabledFileLoc = Paths.get(cwd, "src", "test", "resources", "rca");
@@ -101,6 +108,14 @@ public class RcaControllerTest {
         );
 
     setMyIp(masterIP, AllMetrics.NodeRole.UNKNOWN);
+
+    // since we are using 2 rca.conf files here for testing, 'rca_muted.conf' for testing Muted RCAs
+    // and 'rca.conf' for remainging tests, use reflection to access the private rcaConf class variable.
+    String rcaConfPath = Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString();
+    Field field = rcaController.getClass().getDeclaredField("rcaConf");
+    field.setAccessible(true);
+    field.set(rcaController, new RcaConf(rcaConfPath));
+
     controllerThread =
         threadProvider.createThreadForRunnable(() -> rcaController.run(),
             PerformanceAnalyzerThreads.RCA_CONTROLLER);
@@ -145,6 +160,69 @@ public class RcaControllerTest {
     changeRcaRunState(RcaState.RUN);
     Assert.assertTrue(check(new RcaEnabledEval(rcaController), true));
     Assert.assertTrue(RcaController.isRcaEnabled());
+  }
+
+  @Test
+  public void readAndUpdateMutesRcas() throws Exception {
+    String rcaConfPath = Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_muted.conf").toString();
+    Method readAndUpdateMutesRcas = rcaController.getClass()
+            .getDeclaredMethod("readAndUpdateMutesRcas", null);
+    readAndUpdateMutesRcas.setAccessible(true);
+
+    Field field = rcaController.getClass().getDeclaredField("rcaConf");
+    field.setAccessible(true);
+
+    // 1. Muted Graph : "CPU_Utilization, Heap_AllocRate", updating RCA Config with "CPU_Utilization, Heap_AllocRate"
+    // Muted Graph should have "CPU_Utilization, Heap_AllocRate"
+    updateConfFileForMutedRcas(rcaConfPath, "CPU_Utilization, Heap_AllocRate");
+    field.set(rcaController, new RcaConf(rcaConfPath));
+    readAndUpdateMutesRcas.invoke(rcaController);
+    Assert.assertEquals(2,Stats.getInstance().getMutedGraphNodes().size());
+    Assert.assertTrue(Stats.getInstance().isNodeMuted("CPU_Utilization"));
+    Assert.assertTrue(Stats.getInstance().isNodeMuted("Heap_AllocRate"));
+
+    // 2. Muted Graph : "CPU_Utilization, Heap_AllocRate", updating RCA Config with ""
+    // Muted Graph should have no nodes
+    updateConfFileForMutedRcas(rcaConfPath, "");
+    field.set(rcaController, new RcaConf(rcaConfPath));
+    readAndUpdateMutesRcas.invoke(rcaController);
+    Assert.assertTrue(Stats.getInstance().getMutedGraphNodes().isEmpty());
+
+    // 3. Muted Graph : "", updating RCA Config with ""
+    // Muted Graph should have no nodes
+    updateConfFileForMutedRcas(rcaConfPath, "");
+    field.set(rcaController, new RcaConf(rcaConfPath));
+    readAndUpdateMutesRcas.invoke(rcaController);
+    Assert.assertTrue(Stats.getInstance().getMutedGraphNodes().isEmpty());
+
+    // 4. On RCA Config, "muted-rcas" : "CPU_Utilization, Heap_AllocRate", Updating RCA Config with "Paging_MajfltRate"
+    // Muted Graph should retain only "Paging_MajfltRate"
+    updateConfFileForMutedRcas(rcaConfPath, "Paging_MajfltRate");
+    field.set(rcaController, new RcaConf(rcaConfPath));
+    readAndUpdateMutesRcas.invoke(rcaController);
+    Assert.assertEquals(1, Stats.getInstance().getMutedGraphNodes().size());
+    Assert.assertTrue(Stats.getInstance().isNodeMuted("Paging_MajfltRate"));
+
+    // 5. On RCA Config, "muted-rcas" : "Paging_MajfltRate", Updating RCA Config with "Paging_MajfltRate_Check"
+    // Muted Graph should still have "Paging_MajfltRate"
+    updateConfFileForMutedRcas(rcaConfPath, "Paging_MajfltRate_Check");
+    field.set(rcaController, new RcaConf(rcaConfPath));
+    readAndUpdateMutesRcas.invoke(rcaController);
+    Assert.assertEquals(1, Stats.getInstance().getMutedGraphNodes().size());
+    Assert.assertTrue(Stats.getInstance().isNodeMuted("Paging_MajfltRate"));
+
+    updateConfFileForMutedRcas(rcaConfPath, "CPU_Utilization, Heap_AllocRate");
+    // 6. On RCA Config, "muted-rcas" : "CPU_Utilization, Heap_AllocRate"
+    // Updating RCA Config with "Paging_MajfltRate_Check, Paging_MajfltRate"
+    // Muted Graph should have "Paging_MajfltRate"
+    updateConfFileForMutedRcas(rcaConfPath, "Paging_MajfltRate_Check, Paging_MajfltRate");
+    field.set(rcaController, new RcaConf(rcaConfPath));
+    readAndUpdateMutesRcas.invoke(rcaController);
+    Assert.assertEquals(1, Stats.getInstance().getMutedGraphNodes().size());
+    Assert.assertTrue(Stats.getInstance().isNodeMuted("Paging_MajfltRate"));
+
+    // Re-set the 'rcaConf' variable to track 'rca.conf' for remaining tests
+    field.set(rcaController, new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString()));
   }
 
   @Test
