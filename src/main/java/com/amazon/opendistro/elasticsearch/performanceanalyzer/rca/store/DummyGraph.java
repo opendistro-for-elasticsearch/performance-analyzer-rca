@@ -136,7 +136,7 @@ public class DummyGraph extends AnalysisGraph {
     hotNodeClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     hotNodeClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
 
-    constructResourceHeatMapGraph();
+    // constructResourceHeatMapGraph();
   }
 
   private List<Metric> constructNodeStatsMetrics() {
