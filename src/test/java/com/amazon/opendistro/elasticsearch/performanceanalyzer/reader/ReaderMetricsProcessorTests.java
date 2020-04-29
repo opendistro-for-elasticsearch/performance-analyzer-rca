@@ -44,39 +44,52 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     super();
   }
 
-  // Disabled on purpose
-  // @Test
-  public void testReaderMetricsProcessor() throws Exception {
-    String rootLocation = "build/private/test_resources/dev/shm";
+  @Test
+  public void testReaderMetricsProcessorFrequently() throws Exception {
+    String rootLocation = "build/resources/test/reader/";
     deleteAll();
-    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation);
-    mp.processMetrics(rootLocation, 1535065139000L);
-    mp.processMetrics(rootLocation, 1535065169000L);
-    mp.processMetrics(rootLocation, 1535065199000L);
-    mp.processMetrics(rootLocation, 1535065229000L);
-    mp.processMetrics(rootLocation, 1535065259000L);
-    mp.processMetrics(rootLocation, 1535065289000L);
-    mp.processMetrics(rootLocation, 1535065319000L);
-    mp.processMetrics(rootLocation, 1535065349000L);
+    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true);
+
+    mp.processMetrics(rootLocation, 1566413975000L);
+    mp.processMetrics(rootLocation, 1566413980000L);
+
     Result<Record> res =
-        mp.getMetricsDB()
-            .getValue()
-            .queryMetric(
-                Arrays.asList(OSMetrics.CPU_UTILIZATION.toString()),
-                Arrays.asList("sum"),
-                Arrays.asList(
-                    CommonDimension.SHARD_ID.toString(),
-                    CommonDimension.INDEX_NAME.toString(),
-                    CommonDimension.OPERATION.toString()));
-    Double shardFetchCpu = 0d;
+            mp.getMetricsDB()
+                    .getValue()
+                    .queryMetric(
+                            Arrays.asList("Cache_FieldData_Size"),
+                            Arrays.asList("sum"),
+                            Arrays.asList("ShardID", "IndexName"));
+
     for (Record record : res) {
-      if (record.get(CommonDimension.OPERATION.toString()).equals("shardfetch")) {
-        shardFetchCpu =
-            Double.parseDouble(record.get(OSMetrics.CPU_UTILIZATION.toString()).toString());
-        break;
-      }
+      assertEquals(record.get("IndexName"), "nyc_taxis");
     }
-    assertEquals(0.0016D, shardFetchCpu.doubleValue(), 0.0001);
+
+    mp.trimOldSnapshots();
+    mp.deleteDBs();
+  }
+
+  @Test
+  public void testReaderMetricsProcessorFrequentlyWithDelay() throws Exception {
+    String rootLocation = "build/resources/test/reader/";
+    deleteAll();
+    int delay = 2000;
+    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation);
+
+    mp.processMetrics(rootLocation, 1566413975000L + delay);
+    mp.processMetrics(rootLocation, 1566413980000L + delay);
+
+    Result<Record> res =
+            mp.getMetricsDB()
+                    .getValue()
+                    .queryMetric(
+                            Arrays.asList("Cache_FieldData_Size"),
+                            Arrays.asList("sum"),
+                            Arrays.asList("ShardID", "IndexName"));
+
+    for (Record record : res) {
+      assertEquals(record.get("IndexName"),"nyc_taxis");
+    }
 
     mp.trimOldSnapshots();
     mp.deleteDBs();
