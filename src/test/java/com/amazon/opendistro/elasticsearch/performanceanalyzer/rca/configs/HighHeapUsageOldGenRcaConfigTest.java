@@ -29,17 +29,21 @@ public class HighHeapUsageOldGenRcaConfigTest {
     HighHeapUsageOldGenRcaConfig config = new HighHeapUsageOldGenRcaConfig(null);
     Assert.assertEquals(HighHeapUsageOldGenRcaConfig.DEFAULT_TOP_K, config.getTopK());
 
-    Map<String, String> settings = new HashMap<>();
-    settings.put(TOP_K_RCA_CONF, "5");
+    Map<String, Object> settings = new HashMap<>();
+    settings.put(TOP_K_RCA_CONF, 5);
     config = new HighHeapUsageOldGenRcaConfig(settings);
     Assert.assertEquals(5, config.getTopK());
 
-    settings.put(TOP_K_RCA_CONF, "5.8");
+    settings.put(TOP_K_RCA_CONF, 5.8);
+    config = new HighHeapUsageOldGenRcaConfig(settings);
+    Assert.assertEquals(HighHeapUsageOldGenRcaConfig.DEFAULT_TOP_K, config.getTopK());
+
+    settings.put(TOP_K_RCA_CONF, null);
     config = new HighHeapUsageOldGenRcaConfig(settings);
     Assert.assertEquals(HighHeapUsageOldGenRcaConfig.DEFAULT_TOP_K, config.getTopK());
 
     settings.clear();
-    settings.put("test", "2");
+    settings.put("test", 2);
     config = new HighHeapUsageOldGenRcaConfig(settings);
     Assert.assertEquals(HighHeapUsageOldGenRcaConfig.DEFAULT_TOP_K, config.getTopK());
   }

@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNodeClusterRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
@@ -24,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
@@ -47,8 +49,6 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit> {
 
   public static final String RCA_TABLE_NAME = HotNodeClusterRca.class.getSimpleName();
   private static final Logger LOG = LogManager.getLogger(HotNodeClusterRca.class);
-  private static final double UNBALANCED_RESOURCE_UTILIZATION_THRESHOLD = 0.3;
-  private static final double RESOURCE_USAGE_THRESHOLD_LOWER_BOUND = 0.1;
   private static final double NODE_COUNT_THRESHOLD = 0.8;
   private static final long TIMESTAMP_EXPIRATION_IN_MINS = 5;
   private final Rca hotNodeRca;
@@ -56,6 +56,8 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit> {
   private final int rcaPeriod;
   private int counter;
   private List<NodeDetails> dataNodesDetails;
+  private double unbalancedResourceThreshold;
+  private double resourceUsageLowerBoundThreshold;
   protected Clock clock;
 
   public <R extends Rca> HotNodeClusterRca(final int rcaPeriod,
@@ -66,6 +68,8 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit> {
     this.clock = Clock.systemUTC();
     this.hotNodeRca = hotNodeRca;
     nodeTable = HashBasedTable.create();
+    unbalancedResourceThreshold = HotNodeClusterRcaConfig.DEFAULT_UNBALANCED_RESOURCE_THRES;
+    resourceUsageLowerBoundThreshold = HotNodeClusterRcaConfig.DEFAULT_RESOURCE_USAGE_LOWER_BOUND_THRES;
   }
 
   //add Resource Summary to the corresponding cell in NodeTable
@@ -161,9 +165,9 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit> {
         // if the resource value is a outlier.
         // and we also want to make sure the value we get here is large enough.
         // we might want to filter out noise data if the value < 10% of the threshold of that resource type
-        if (currentUsage.resourceSummary.getValue() >= medium * (1 + UNBALANCED_RESOURCE_UTILIZATION_THRESHOLD)
+        if (currentUsage.resourceSummary.getValue() >= medium * (1 + unbalancedResourceThreshold)
             && currentUsage.resourceSummary.getValue()
-                >= currentUsage.resourceSummary.getThreshold() * RESOURCE_USAGE_THRESHOLD_LOWER_BOUND) {
+                >= currentUsage.resourceSummary.getThreshold() * resourceUsageLowerBoundThreshold) {
           if (!nodeSummaryMap.containsKey(nodeDetail.getId())) {
             nodeSummaryMap.put(nodeDetail.getId(),
                 new HotNodeSummary(nodeDetail.getId(), nodeDetail.getHostAddress()));
@@ -224,12 +228,24 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit> {
   }
 
   /**
+   * read thresholds from rca.conf
+   * @param conf RcaConf object
+   */
+  @Override
+  public void readRcaConf(RcaConf conf) {
+    HotNodeClusterRcaConfig configObj = conf.getHotNodeClusterRcaConfig();
+    unbalancedResourceThreshold = configObj.getUnbalancedResourceThreshold();
+    resourceUsageLowerBoundThreshold = configObj.getResourceUsageLowerBoundThreshold();
+  }
+
+  /**
    * This is a cluster level RCA vertex which by definition can not be serialize/de-serialized
    * over gRPC.
    */
   @Override
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-    LOG.error("RCA: {} should not be send over from network", this.getClass().getSimpleName());
+    throw new IllegalArgumentException(name() + "'s generateFlowUnitListFromWire() should not "
+        + "be required.");
   }
 
   /**

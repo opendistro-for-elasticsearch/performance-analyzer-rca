@@ -27,25 +27,33 @@ public class HighHeapUsageOldGenRcaConfig {
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageOldGenRcaConfig.class);
   private int topK;
   public static final int DEFAULT_TOP_K = 3;
-  private static final String TOP_K_RCA_CONF = "top-k";
+  public static final String CONFIG_NAME = "high-heap-usage-old-gen-rca";
 
-  public HighHeapUsageOldGenRcaConfig(final Map<String, String> settings) {
+  public HighHeapUsageOldGenRcaConfig(final Map<String, Object> settings) {
     this.topK = DEFAULT_TOP_K;
     parseConfig(settings);
   }
 
-  private void parseConfig(final Map<String, String> settings) {
-    if (settings != null && settings.containsKey(TOP_K_RCA_CONF)) {
-      try {
-        topK = Integer.parseInt(settings.get(TOP_K_RCA_CONF));
+  private void parseConfig(final Map<String, Object> settings) {
+    if (settings == null) {
+      return;
+    }
+    try {
+      if (settings.containsKey(RCA_CONF_KEY_CONSTANTS.TOP_K)
+          && settings.get(RCA_CONF_KEY_CONSTANTS.TOP_K) != null) {
+        topK = (Integer) settings.get(RCA_CONF_KEY_CONSTANTS.TOP_K);
       }
-      catch (NumberFormatException ne) {
-        LOG.error("rca.conf contains invalid top-k number");
-      }
+    }
+    catch (ClassCastException ce) {
+      LOG.error("Fail to cast rca configs, trace : {}", ce.getStackTrace());
     }
   }
 
   public int getTopK() {
     return topK;
+  }
+
+  private static class RCA_CONF_KEY_CONSTANTS {
+    private static final String TOP_K = "top-k";
   }
 }

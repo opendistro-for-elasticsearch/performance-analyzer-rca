@@ -15,17 +15,20 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 // TODO: There should be a validation for the expected fields.
 @JsonIgnoreProperties(ignoreUnknown = true)
 class ConfJsonWrapper {
+
+  private static final Logger LOG = LogManager.getLogger(ConfJsonWrapper.class);
   private final String rcaStoreLoc;
   private final String thresholdStoreLoc;
   private final long newRcaCheckPeriocicityMins;
@@ -37,7 +40,7 @@ class ConfJsonWrapper {
   private final String analysisGraphEntryPoint;
   private final int networkQueueLength;
   private final int perVertexBufferLength;
-  private final HighHeapUsageOldGenRcaConfig highHeapUsageOldGenRcaConfig;
+  private final Map<String, Object> rcaConfigSettings;
 
   String getRcaStoreLoc() {
     return rcaStoreLoc;
@@ -83,8 +86,20 @@ class ConfJsonWrapper {
     this.datastore.put(RcaConsts.DATASTORE_LOC_KEY, rcaLogLocation);
   }
 
-  HighHeapUsageOldGenRcaConfig getHighHeapUsageOldGenRcaConfig() {
-    return highHeapUsageOldGenRcaConfig;
+  @SuppressWarnings("unchecked")
+  Map<String, Object> getRcaConfigSettings(final String rcaName) {
+    Map<String, Object> ret = null;
+    if (rcaConfigSettings != null
+        && rcaConfigSettings.containsKey(rcaName)
+        && rcaConfigSettings.get(rcaName) != null) {
+      try {
+        ret = (Map<String, Object>)rcaConfigSettings.get(rcaName);
+      }
+      catch (ClassCastException ce) {
+        LOG.error("Fail to cast rca config into Map object, trace = {}", ce.getStackTrace());
+      }
+    }
+    return ret;
   }
 
   ConfJsonWrapper(
@@ -98,7 +113,7 @@ class ConfJsonWrapper {
       @JsonProperty("analysis-graph-implementor") String analysisGraphEntryPoint,
       @JsonProperty("network-queue-length") int networkQueueLength,
       @JsonProperty("max-flow-units-per-vertex-buffer") int perVertexBufferLength,
-      @JsonProperty("high-heap-usage-old-gen-rca") Map<String, String> highHeapUsageOldGenRcaSettings) {
+      @JsonProperty("rca-config-settings") Map<String, Object> rcaConfigSettings) {
     this.creationTime = System.currentTimeMillis();
     this.rcaStoreLoc = rcaStoreLoc;
     this.thresholdStoreLoc = thresholdStoreLoc;
@@ -110,6 +125,6 @@ class ConfJsonWrapper {
     this.analysisGraphEntryPoint = analysisGraphEntryPoint;
     this.networkQueueLength = networkQueueLength;
     this.perVertexBufferLength = perVertexBufferLength;
-    this.highHeapUsageOldGenRcaConfig = new HighHeapUsageOldGenRcaConfig(highHeapUsageOldGenRcaSettings);
+    this.rcaConfigSettings = rcaConfigSettings;
   }
 }
