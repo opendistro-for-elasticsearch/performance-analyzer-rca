@@ -19,7 +19,7 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class HighHeapUsageYoungGenRcaConfig {
+public class HighHeapUsageYoungGenRcaConfig extends GenericRcaConfig {
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageYoungGenRcaConfig.class);
   public static final String CONFIG_NAME = "high-heap-usage-young-gen-rca";
   private int promotionRateThreshold;
@@ -29,25 +29,30 @@ public class HighHeapUsageYoungGenRcaConfig {
   //young gc time threshold is 400 ms per second
   public static final int DEFAULT_YOUNG_GEN_GC_TIME_THRESHOLD_IN_MS_PER_SEC = 400;
 
-  public HighHeapUsageYoungGenRcaConfig(final Map<String, Object> settings) {
+  public HighHeapUsageYoungGenRcaConfig(final Map<String, Object> rcaConfigSettings) {
     this.promotionRateThreshold = DEFAULT_PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC;
     this.youngGenGcTimeThreshold = DEFAULT_YOUNG_GEN_GC_TIME_THRESHOLD_IN_MS_PER_SEC;
-    parseConfig(settings);
+    parseConfig(rcaConfigSettings);
   }
 
-  private void parseConfig(final Map<String, Object> settings) {
-    if (settings == null) {
-      return;
-    }
+  @Override
+  public String getRcaName() {
+    return CONFIG_NAME;
+  }
+
+  private void parseConfig(final Map<String, Object> rcaConfigSettings) {
     try {
-      Object obj;
-      obj = settings.getOrDefault(RCA_CONF_KEY_CONSTANTS.PROMOTION_RATE_THRES, null);
-      if (obj != null) {
-        promotionRateThreshold = (Integer) obj;
-      }
-      obj = settings.getOrDefault(RCA_CONF_KEY_CONSTANTS.YOUNG_GEN_GC_TIME_THRES, null);
-      if (obj != null) {
-        youngGenGcTimeThreshold = (Integer) obj;
+      Map<String, Object> rcaMapObject = getRcaMapObject(rcaConfigSettings);
+      if (rcaMapObject != null) {
+        Object obj;
+        obj = rcaMapObject.getOrDefault(RCA_CONF_KEY_CONSTANTS.PROMOTION_RATE_THRES, null);
+        if (obj != null) {
+          promotionRateThreshold = (Integer) obj;
+        }
+        obj = rcaMapObject.getOrDefault(RCA_CONF_KEY_CONSTANTS.YOUNG_GEN_GC_TIME_THRES, null);
+        if (obj != null) {
+          youngGenGcTimeThreshold = (Integer) obj;
+        }
       }
     }
     catch (ClassCastException ne) {
@@ -63,8 +68,8 @@ public class HighHeapUsageYoungGenRcaConfig {
     return youngGenGcTimeThreshold;
   }
 
-  private static class RCA_CONF_KEY_CONSTANTS {
-    private static final String PROMOTION_RATE_THRES = "promotion-rate-threshold";
-    private static final String YOUNG_GEN_GC_TIME_THRES = "young-gen-gc-time-threshold";
+  public static class RCA_CONF_KEY_CONSTANTS {
+    public static final String PROMOTION_RATE_THRES = "promotion-rate-mb-per-second";
+    public static final String YOUNG_GEN_GC_TIME_THRES = "young-gen-gc-time-ms-per-second";
   }
 }

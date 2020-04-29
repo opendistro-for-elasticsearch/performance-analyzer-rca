@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig.RCA_CONF_KEY_CONSTANTS.TOP_K;
+
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Assert;
@@ -22,28 +24,26 @@ import org.junit.Test;
 
 public class HighHeapUsageOldGenRcaConfigTest {
 
-  private static final String TOP_K_RCA_CONF = "top-k";
-
   @Test
   public void testHighHeapUsageOldGenRcaConfig() {
     HighHeapUsageOldGenRcaConfig config = new HighHeapUsageOldGenRcaConfig(null);
     Assert.assertEquals(HighHeapUsageOldGenRcaConfig.DEFAULT_TOP_K, config.getTopK());
 
     Map<String, Object> settings = new HashMap<>();
-    settings.put(TOP_K_RCA_CONF, 5);
+    RcaConfigTestUtil.putToRcaMap(settings, config.getRcaName(), TOP_K, 5);
     config = new HighHeapUsageOldGenRcaConfig(settings);
     Assert.assertEquals(5, config.getTopK());
 
-    settings.put(TOP_K_RCA_CONF, 5.8);
+    RcaConfigTestUtil.putToRcaMap(settings, config.getRcaName(), TOP_K, 5.8);
     config = new HighHeapUsageOldGenRcaConfig(settings);
     Assert.assertEquals(HighHeapUsageOldGenRcaConfig.DEFAULT_TOP_K, config.getTopK());
 
-    settings.put(TOP_K_RCA_CONF, null);
+    RcaConfigTestUtil.putToRcaMap(settings, config.getRcaName(), TOP_K, null);
     config = new HighHeapUsageOldGenRcaConfig(settings);
     Assert.assertEquals(HighHeapUsageOldGenRcaConfig.DEFAULT_TOP_K, config.getTopK());
 
-    settings.clear();
-    settings.put("test", 2);
+    RcaConfigTestUtil.clearRcaMap(settings, config.getRcaName());
+    RcaConfigTestUtil.putToRcaMap(settings, config.getRcaName(), "test", 2);
     config = new HighHeapUsageOldGenRcaConfig(settings);
     Assert.assertEquals(HighHeapUsageOldGenRcaConfig.DEFAULT_TOP_K, config.getTopK());
   }

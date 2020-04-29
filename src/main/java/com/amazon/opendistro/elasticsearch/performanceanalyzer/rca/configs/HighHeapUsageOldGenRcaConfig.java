@@ -22,26 +22,30 @@ import org.apache.logging.log4j.Logger;
 /**
  * config object to store rca config settings in rca.conf
  */
-public class HighHeapUsageOldGenRcaConfig {
+public class HighHeapUsageOldGenRcaConfig extends GenericRcaConfig {
 
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageOldGenRcaConfig.class);
   private int topK;
   public static final int DEFAULT_TOP_K = 3;
   public static final String CONFIG_NAME = "high-heap-usage-old-gen-rca";
 
-  public HighHeapUsageOldGenRcaConfig(final Map<String, Object> settings) {
+  public HighHeapUsageOldGenRcaConfig(final Map<String, Object> rcaConfigSettings) {
     this.topK = DEFAULT_TOP_K;
-    parseConfig(settings);
+    parseConfig(rcaConfigSettings);
   }
 
-  private void parseConfig(final Map<String, Object> settings) {
-    if (settings == null) {
-      return;
-    }
+  @Override
+  public String getRcaName() {
+    return CONFIG_NAME;
+  }
+
+  private void parseConfig(final Map<String, Object> rcaConfigSettings) {
     try {
-      if (settings.containsKey(RCA_CONF_KEY_CONSTANTS.TOP_K)
-          && settings.get(RCA_CONF_KEY_CONSTANTS.TOP_K) != null) {
-        topK = (Integer) settings.get(RCA_CONF_KEY_CONSTANTS.TOP_K);
+      Map<String, Object> rcaMapObject = getRcaMapObject(rcaConfigSettings);
+      if (rcaMapObject != null
+          && rcaMapObject.containsKey(RCA_CONF_KEY_CONSTANTS.TOP_K)
+          && rcaMapObject.get(RCA_CONF_KEY_CONSTANTS.TOP_K) != null) {
+        topK = (Integer) rcaMapObject.get(RCA_CONF_KEY_CONSTANTS.TOP_K);
       }
     }
     catch (ClassCastException ce) {
@@ -53,7 +57,7 @@ public class HighHeapUsageOldGenRcaConfig {
     return topK;
   }
 
-  private static class RCA_CONF_KEY_CONSTANTS {
-    private static final String TOP_K = "top-k";
+  public static class RCA_CONF_KEY_CONSTANTS {
+    public static final String TOP_K = "top-k";
   }
 }

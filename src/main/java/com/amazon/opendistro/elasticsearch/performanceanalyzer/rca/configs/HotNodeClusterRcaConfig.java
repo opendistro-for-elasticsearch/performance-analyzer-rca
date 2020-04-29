@@ -22,7 +22,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * config object to store rca config settings for HotNodeClusterRca
  */
-public class HotNodeClusterRcaConfig {
+public class HotNodeClusterRcaConfig extends GenericRcaConfig {
   private static final Logger LOG = LogManager.getLogger(HotNodeClusterRcaConfig.class);
   public static final String CONFIG_NAME = "hot-node-cluster-rca";
   private double unbalancedResourceThreshold;
@@ -30,25 +30,30 @@ public class HotNodeClusterRcaConfig {
   public static final double DEFAULT_UNBALANCED_RESOURCE_THRES = 0.3;
   public static final double DEFAULT_RESOURCE_USAGE_LOWER_BOUND_THRES = 0.1;
 
-  public HotNodeClusterRcaConfig(final Map<String, Object> settings) {
+  public HotNodeClusterRcaConfig(final Map<String, Object> rcaConfigSettings) {
     this.unbalancedResourceThreshold = DEFAULT_UNBALANCED_RESOURCE_THRES;
     this.resourceUsageLowerBoundThreshold = DEFAULT_RESOURCE_USAGE_LOWER_BOUND_THRES;
-    parseConfig(settings);
+    parseConfig(rcaConfigSettings);
   }
 
-  private void parseConfig(final Map<String, Object> settings) {
-    if (settings == null) {
-      return;
-    }
+  @Override
+  public String getRcaName() {
+    return CONFIG_NAME;
+  }
+
+  private void parseConfig(final Map<String, Object> rcaConfigSettings) {
     try {
-      Object obj;
-      obj = settings.getOrDefault(RCA_CONF_KEY_CONSTANTS.UNBALANCED_RESOURCE_THRES, null);
-      if (obj != null) {
-        unbalancedResourceThreshold = (Double) obj;
-      }
-      obj = settings.getOrDefault(RCA_CONF_KEY_CONSTANTS.RESOURCE_USAGE_LOWER_BOUND_THRES, null);
-      if (obj != null) {
-        resourceUsageLowerBoundThreshold = (Double) obj;
+      Map<String, Object> rcaMapObject = getRcaMapObject(rcaConfigSettings);
+      if (rcaMapObject != null) {
+        Object obj;
+        obj = rcaMapObject.getOrDefault(RCA_CONF_KEY_CONSTANTS.UNBALANCED_RESOURCE_THRES, null);
+        if (obj != null) {
+          unbalancedResourceThreshold = (Double) obj;
+        }
+        obj = rcaMapObject.getOrDefault(RCA_CONF_KEY_CONSTANTS.RESOURCE_USAGE_LOWER_BOUND_THRES, null);
+        if (obj != null) {
+          resourceUsageLowerBoundThreshold = (Double) obj;
+        }
       }
     }
     catch (ClassCastException ne) {
@@ -64,8 +69,8 @@ public class HotNodeClusterRcaConfig {
     return resourceUsageLowerBoundThreshold;
   }
 
-  private static class RCA_CONF_KEY_CONSTANTS {
-    private static final String UNBALANCED_RESOURCE_THRES = "unbalanced-resource-threshold";
-    private static final String RESOURCE_USAGE_LOWER_BOUND_THRES = "resource-usage-lower-bound-threshold";
+  public static class RCA_CONF_KEY_CONSTANTS {
+    public static final String UNBALANCED_RESOURCE_THRES = "unbalanced-resource-percentage";
+    public static final String RESOURCE_USAGE_LOWER_BOUND_THRES = "resource-usage-lower-bound-percentage";
   }
 }

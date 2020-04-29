@@ -92,20 +92,8 @@ class ConfJsonWrapper {
     this.datastore.put(RcaConsts.DATASTORE_LOC_KEY, rcaLogLocation);
   }
 
-  @SuppressWarnings("unchecked")
-  Map<String, Object> getRcaConfigSettings(final String rcaName) {
-    Map<String, Object> ret = null;
-    if (rcaConfigSettings != null
-        && rcaConfigSettings.containsKey(rcaName)
-        && rcaConfigSettings.get(rcaName) != null) {
-      try {
-        ret = (Map<String, Object>)rcaConfigSettings.get(rcaName);
-      }
-      catch (ClassCastException ce) {
-        LOG.error("Fail to cast rca config into Map object, trace = {}", ce.getStackTrace());
-      }
-    }
-    return ret;
+  Map<String, Object> getRcaConfigSettings() {
+    return rcaConfigSettings;
   }
 
   ConfJsonWrapper(
@@ -119,7 +107,7 @@ class ConfJsonWrapper {
       @JsonProperty("analysis-graph-implementor") String analysisGraphEntryPoint,
       @JsonProperty("network-queue-length") int networkQueueLength,
       @JsonProperty("max-flow-units-per-vertex-buffer") int perVertexBufferLength,
-      @JsonProperty("rca-config-settings") Map<String, Object> rcaConfigSettings) {
+      @JsonProperty("rca-config-settings") Map<String, Object> rcaConfigSettings,
       @JsonProperty("muted-rcas") String mutedRcas) {
     this.creationTime = System.currentTimeMillis();
     this.rcaStoreLoc = rcaStoreLoc;

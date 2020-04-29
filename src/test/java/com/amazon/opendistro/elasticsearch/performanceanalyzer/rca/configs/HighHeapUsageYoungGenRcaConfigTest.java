@@ -15,13 +15,14 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageYoungGenRcaConfig.RCA_CONF_KEY_CONSTANTS.PROMOTION_RATE_THRES;
+
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class HighHeapUsageYoungGenRcaConfigTest {
-  private static final String PROMOTION_RATE_THRES = "promotion-rate-threshold";
 
   @Test
   public void testHighHeapUsageYoungGenRcaConfig() {
@@ -29,20 +30,20 @@ public class HighHeapUsageYoungGenRcaConfigTest {
     Assert.assertEquals(HighHeapUsageYoungGenRcaConfig.DEFAULT_PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC, config.getPromotionRateThreshold());
 
     Map<String, Object> settings = new HashMap<>();
-    settings.put(PROMOTION_RATE_THRES, 700);
+    RcaConfigTestUtil.putToRcaMap(settings, config.getRcaName(), PROMOTION_RATE_THRES, 700);
     config = new HighHeapUsageYoungGenRcaConfig(settings);
     Assert.assertEquals(700, config.getPromotionRateThreshold());
 
-    settings.put(PROMOTION_RATE_THRES, 800.0);
+    RcaConfigTestUtil.putToRcaMap(settings, config.getRcaName(), PROMOTION_RATE_THRES, 800.0);
     config = new HighHeapUsageYoungGenRcaConfig(settings);
     Assert.assertEquals(HighHeapUsageYoungGenRcaConfig.DEFAULT_PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC, config.getPromotionRateThreshold());
 
-    settings.put(PROMOTION_RATE_THRES, null);
+    RcaConfigTestUtil.putToRcaMap(settings, config.getRcaName(), PROMOTION_RATE_THRES, null);
     config = new HighHeapUsageYoungGenRcaConfig(settings);
     Assert.assertEquals(HighHeapUsageYoungGenRcaConfig.DEFAULT_PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC, config.getPromotionRateThreshold());
 
-    settings.clear();
-    settings.put("test", 700);
+    RcaConfigTestUtil.clearRcaMap(settings, config.getRcaName());
+    RcaConfigTestUtil.putToRcaMap(settings, config.getRcaName(), "test", 700);
     config = new HighHeapUsageYoungGenRcaConfig(settings);
     Assert.assertEquals(HighHeapUsageYoungGenRcaConfig.DEFAULT_PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC, config.getPromotionRateThreshold());
   }

@@ -110,15 +110,15 @@ public class RcaConf {
   }
 
   public HighHeapUsageOldGenRcaConfig getHighHeapUsageOldGenRcaConfig() {
-    return new HighHeapUsageOldGenRcaConfig(conf.getRcaConfigSettings(HighHeapUsageOldGenRcaConfig.CONFIG_NAME));
+    return new HighHeapUsageOldGenRcaConfig(conf.getRcaConfigSettings());
   }
 
   public HighHeapUsageYoungGenRcaConfig getHighHeapUsageYoungGenRcaConfig() {
-    return new HighHeapUsageYoungGenRcaConfig(conf.getRcaConfigSettings(HighHeapUsageYoungGenRcaConfig.CONFIG_NAME));
+    return new HighHeapUsageYoungGenRcaConfig(conf.getRcaConfigSettings());
   }
 
   public HotNodeClusterRcaConfig getHotNodeClusterRcaConfig() {
-    return new HotNodeClusterRcaConfig(conf.getRcaConfigSettings(HotNodeClusterRcaConfig.CONFIG_NAME));
+    return new HotNodeClusterRcaConfig(conf.getRcaConfigSettings());
   }
 
   public List<String> getMutedRcaList() {

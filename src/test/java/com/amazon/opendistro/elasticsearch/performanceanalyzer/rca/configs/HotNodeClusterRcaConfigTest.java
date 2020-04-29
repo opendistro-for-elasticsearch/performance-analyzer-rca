@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNodeClusterRcaConfig.RCA_CONF_KEY_CONSTANTS.UNBALANCED_RESOURCE_THRES;
+
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Assert;
@@ -22,7 +24,6 @@ import org.junit.Test;
 
 public class HotNodeClusterRcaConfigTest {
 
-  private static final String UNBALANCED_RESOURCE_THRES = "unbalanced-resource-threshold";
 
   @Test
   public void testHotNodeClusterRcaConfigTest() {
@@ -30,20 +31,20 @@ public class HotNodeClusterRcaConfigTest {
     Assert.assertEquals(HotNodeClusterRcaConfig.DEFAULT_UNBALANCED_RESOURCE_THRES, config.getUnbalancedResourceThreshold(), 0.01);
 
     Map<String, Object> settings = new HashMap<>();
-    settings.put(UNBALANCED_RESOURCE_THRES, 0.2);
+    RcaConfigTestUtil.putToRcaMap(settings, config.getRcaName(), UNBALANCED_RESOURCE_THRES, 0.2);
     config = new HotNodeClusterRcaConfig(settings);
     Assert.assertEquals(0.2, config.getUnbalancedResourceThreshold(), 0.01);
 
-    settings.put(UNBALANCED_RESOURCE_THRES, 1);
+    RcaConfigTestUtil.putToRcaMap(settings, config.getRcaName(), UNBALANCED_RESOURCE_THRES, 1);
     config = new HotNodeClusterRcaConfig(settings);
     Assert.assertEquals(HotNodeClusterRcaConfig.DEFAULT_UNBALANCED_RESOURCE_THRES, config.getUnbalancedResourceThreshold(), 0.01);
 
-    settings.put(UNBALANCED_RESOURCE_THRES, null);
+    RcaConfigTestUtil.putToRcaMap(settings, config.getRcaName(), UNBALANCED_RESOURCE_THRES, null);
     config = new HotNodeClusterRcaConfig(settings);
     Assert.assertEquals(HotNodeClusterRcaConfig.DEFAULT_UNBALANCED_RESOURCE_THRES, config.getUnbalancedResourceThreshold(), 0.01);
 
-    settings.clear();
-    settings.put("test", 0.2);
+    RcaConfigTestUtil.clearRcaMap(settings, config.getRcaName());
+    RcaConfigTestUtil.putToRcaMap(settings, config.getRcaName(), "test", 0.2);
     config = new HotNodeClusterRcaConfig(settings);
     Assert.assertEquals(HotNodeClusterRcaConfig.DEFAULT_UNBALANCED_RESOURCE_THRES, config.getUnbalancedResourceThreshold(), 0.01);
   }
