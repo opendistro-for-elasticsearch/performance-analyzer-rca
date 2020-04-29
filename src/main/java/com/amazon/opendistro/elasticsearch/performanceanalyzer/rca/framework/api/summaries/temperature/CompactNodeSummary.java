@@ -140,7 +140,7 @@ public class CompactNodeSummary extends GenericSummary {
             }
             builder.setNumberOfShards(numOfShards[index]);
             builder.setTotalUsage(totalConsumedByDimension[index]);
-            summaryBuilder.setCpuTemperature(index, builder);
+            summaryBuilder.addCpuTemperature(index, builder);
         }
         return summaryBuilder.build();
     }
