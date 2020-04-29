@@ -225,6 +225,12 @@ public class RcaController {
         }
         updateRcaState();
 
+        // If RCA is enabled, update Analysis graph with Muted RCAs value
+        if (rcaEnabled) {
+          LOG.debug("Updating Analysis Graph with Muted RCAs");
+          readAndUpdateMutesRcas();
+        }
+
         long duration = System.currentTimeMillis() - startTime;
         if (duration < rcaStateCheckIntervalMillis) {
           Thread.sleep(rcaStateCheckIntervalMillis - duration);
@@ -261,12 +267,6 @@ public class RcaController {
             rcaEnabled = rcaEnabledDefaultValue;
           }
         });
-
-    // If RCA is enabled, update Analysis graph with Muted RCAs value
-    if (rcaEnabled) {
-      LOG.debug("Updating Analysis Graph with Muted RCAs");
-      readAndUpdateMutesRcas();
-    }
   }
 
   /**
@@ -276,6 +276,11 @@ public class RcaController {
    * <p>In case all the RCAs in param value are incorrect, return without any update.
    */
   private void readAndUpdateMutesRcas() {
+    if (rcaConf == null) {
+      LOG.error("RCA Conf: {} null, returning.", rcaConf);
+      return;
+    }
+
     // If the rca config file has been updated since the lastModifiedTimeInMillisInMemory in memory,
     // refresh the `muted-rcas` value from rca config file.
     long lastModifiedTimeInMillisOnDisk = rcaConf.getLastModifiedTime();
