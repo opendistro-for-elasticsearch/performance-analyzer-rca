@@ -172,6 +172,12 @@ public class RcaControllerTest {
     Field field = rcaController.getClass().getDeclaredField("rcaConf");
     field.setAccessible(true);
 
+    // 0. rcaConf is null
+    updateConfFileForMutedRcas(rcaConfPath, "CPU_Utilization, Heap_AllocRate");
+    field.set(rcaController, null);
+    readAndUpdateMutesRcas.invoke(rcaController);
+    Assert.assertTrue(Stats.getInstance().getMutedGraphNodes().isEmpty());
+
     // 1. Muted Graph : "CPU_Utilization, Heap_AllocRate", updating RCA Config with "CPU_Utilization, Heap_AllocRate"
     // Muted Graph should have "CPU_Utilization, Heap_AllocRate"
     updateConfFileForMutedRcas(rcaConfPath, "CPU_Utilization, Heap_AllocRate");
