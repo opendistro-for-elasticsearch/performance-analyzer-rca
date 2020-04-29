@@ -284,18 +284,14 @@ public class RcaController {
         Set<String> rcasForMute = new HashSet<>(rcaConf.getMutedRcaList());
         LOG.info("RCAs provided for muting : {}", rcasForMute);
 
-        Set<String> graphNodeNames = new HashSet<>();
-        RcaUtil.getAnalysisGraphComponents(rcaConf).forEach(
-                connectedComponent -> graphNodeNames.addAll(connectedComponent.getNodeNames()));
-
         // Update rcasForMute to retain only valid RCAs
-        rcasForMute.retainAll(graphNodeNames);
+        rcasForMute.retainAll(ConnectedComponent.getNodeNames());
 
         // If rcasForMute post validation is empty but rcaConf.getMutedRcaList() is not empty
         // all the input RCAs are incorrect, return.
         if (rcasForMute.isEmpty() && !rcaConf.getMutedRcaList().isEmpty()) {
-          LOG.error("Incorrect RCA(s): {}, cannot be muted. Valid RCAs: {}",
-                  rcaConf.getMutedRcaList(), graphNodeNames);
+          LOG.error("Incorrect RCA(s): {}, cannot be muted. Valid RCAs: {}, Muted RCAs: {}",
+                  rcaConf.getMutedRcaList(), ConnectedComponent.getNodeNames(), Stats.getInstance().getMutedGraphNodes());
           return;
         }
 

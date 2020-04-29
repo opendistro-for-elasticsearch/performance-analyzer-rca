@@ -204,11 +204,12 @@ public class RcaControllerTest {
     Assert.assertTrue(Stats.getInstance().isNodeMuted("Paging_MajfltRate"));
 
     // 5. On RCA Config, "muted-rcas" : "Paging_MajfltRate", Updating RCA Config with "Paging_MajfltRate_Check"
-    // Muted Graph should have no nodes
+    // Muted Graph should still have "Paging_MajfltRate"
     updateConfFileForMutedRcas(rcaConfPath, "Paging_MajfltRate_Check");
     field.set(rcaController, new RcaConf(rcaConfPath));
     readAndUpdateMutesRcas.invoke(rcaController);
-    Assert.assertEquals(0, Stats.getInstance().getMutedGraphNodes().size());
+    Assert.assertEquals(1, Stats.getInstance().getMutedGraphNodes().size());
+    Assert.assertTrue(Stats.getInstance().isNodeMuted("Paging_MajfltRate"));
 
     updateConfFileForMutedRcas(rcaConfPath, "CPU_Utilization, Heap_AllocRate");
     // 6. On RCA Config, "muted-rcas" : "CPU_Utilization, Heap_AllocRate"

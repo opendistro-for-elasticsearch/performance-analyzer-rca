@@ -29,12 +29,11 @@ public class ConnectedComponent {
 
   /* The elements in the inner list can be executed in parallel. Two inner lists have to be executed in order. */
   private List<List<Node<?>>> dependencyOrderedNodes;
-  private Set<String> nodeNames;
+  private static Set<String> nodeNames = new HashSet<>();
   private int graphId;
 
   public Set<Node<?>> getAllNodes() {
     Set<Node<?>> traversed = new HashSet<>();
-    nodeNames = new HashSet<>();
     Deque<Node<?>> inline = new ArrayDeque<>(leafNodes);
     while (!inline.isEmpty()) {
       Node<?> currNode = inline.poll();
@@ -118,8 +117,7 @@ public class ConnectedComponent {
     return dependencyOrderedNodes;
   }
 
-  public Set<String> getNodeNames() {
-    getAllNodes();
+  public static Set<String> getNodeNames() {
     return nodeNames;
   }
 
