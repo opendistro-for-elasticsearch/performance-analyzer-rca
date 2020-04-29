@@ -93,12 +93,26 @@ public class Stats {
     return new ArrayList<>(graphs.values());
   }
 
+  public boolean updateMutedGraphNodes(Set<String> nodeNames) {
+    // Add all the rcaNodes if the mutedGraphNodes is empty
+    // else, retain the ones provided in param value
+    if (mutedGraphNodes.isEmpty()) {
+      return mutedGraphNodes.addAll(nodeNames);
+    } else {
+      return mutedGraphNodes.retainAll(nodeNames);
+    }
+  }
+
   public boolean addToMutedGraphNodes(String nodeName) {
     return mutedGraphNodes.add(nodeName);
   }
 
   public boolean isNodeMuted(String nodeName) {
     return mutedGraphNodes.contains(nodeName);
+  }
+
+  public Set<String> getMutedGraphNodes() {
+    return mutedGraphNodes;
   }
 
   public int getMutedGraphNodesCount() {
