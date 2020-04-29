@@ -167,6 +167,7 @@ public class PerformanceAnalyzerApp {
     // what to do when the thread has stopped due to an unexpected exception.
     LOG.error("Thread: {} ran into an uncaught exception: {}", exception.getPaThreadName(),
         exception.getInnerThrowable());
+    exception.getInnerThrowable().printStackTrace();
     StatsCollector.instance().logException(exception.getExceptionCode());
   }
 
