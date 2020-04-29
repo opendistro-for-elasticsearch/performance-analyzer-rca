@@ -21,33 +21,34 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.NodeLevelDimensionalSummary;
 
 /**
- * This is the FlowUnit wrapper over the summary of the given node across all the tracked
- * dimension. The graph nodes, between which this FlowUnit is passed are local to an
- * Elasticsearch node (or in other words, are not transferred over the wire). Therefore, the
- * protobuf message generation is not really required.
+ * This is the FlowUnit wrapper over the summary of the given node across all the tracked dimension.
+ * The graph nodes, between which this FlowUnit is passed are local to an Elasticsearch node (or in
+ * other words, are not transferred over the wire). Therefore, the protobuf message generation is
+ * not really required.
  */
 public class DimensionalTemperatureFlowUnit extends ResourceFlowUnit {
-    private final NodeLevelDimensionalSummary nodeDimensionProfile;
 
-    public DimensionalTemperatureFlowUnit(long timeStamp,
-                                          final NodeLevelDimensionalSummary nodeDimensionProfile) {
-        super(timeStamp, ResourceContext.generic(), nodeDimensionProfile, true);
-        this.nodeDimensionProfile = nodeDimensionProfile;
-    }
+  private final NodeLevelDimensionalSummary nodeDimensionProfile;
 
-    public DimensionalTemperatureFlowUnit(long timestamp) {
-        super(timestamp);
-        nodeDimensionProfile = null;
-    }
+  public DimensionalTemperatureFlowUnit(long timeStamp,
+      final NodeLevelDimensionalSummary nodeDimensionProfile) {
+    super(timeStamp, ResourceContext.generic(), nodeDimensionProfile, true);
+    this.nodeDimensionProfile = nodeDimensionProfile;
+  }
 
-    // A dimension flow unit never leaves a node. So, we don't need to generate protobuf messages.
-    @Override
-    public FlowUnitMessage buildFlowUnitMessage(String graphNode, String esNode) {
-        throw new IllegalStateException(this.getClass().getSimpleName() + " should not be passed "
-                + "over the wire.");
-    }
+  public DimensionalTemperatureFlowUnit(long timestamp) {
+    super(timestamp);
+    nodeDimensionProfile = null;
+  }
 
-    public NodeLevelDimensionalSummary getNodeDimensionProfile() {
-        return nodeDimensionProfile;
-    }
+  // A dimension flow unit never leaves a node. So, we don't need to generate protobuf messages.
+  @Override
+  public FlowUnitMessage buildFlowUnitMessage(String graphNode, String esNode) {
+    throw new IllegalStateException(this.getClass().getSimpleName() + " should not be passed "
+        + "over the wire.");
+  }
+
+  public NodeLevelDimensionalSummary getNodeDimensionProfile() {
+    return nodeDimensionProfile;
+  }
 }

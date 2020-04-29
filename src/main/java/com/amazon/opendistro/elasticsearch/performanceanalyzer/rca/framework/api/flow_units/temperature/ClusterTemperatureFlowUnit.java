@@ -21,17 +21,18 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
 
 public class ClusterTemperatureFlowUnit extends ResourceFlowUnit {
-    private final ClusterTemperatureSummary clusterTemperatureSummary;
 
-    public ClusterTemperatureFlowUnit(long timeStamp, ResourceContext context,
-                                      ClusterTemperatureSummary resourceSummary) {
-        super(timeStamp, context, resourceSummary, true);
-        clusterTemperatureSummary = resourceSummary;
-    }
+  private final ClusterTemperatureSummary clusterTemperatureSummary;
 
-    @Override
-    public FlowUnitMessage buildFlowUnitMessage(String graphNode, String esNode) {
-        throw new IllegalStateException(this.getClass().getSimpleName() + " should not be passed "
-                + "over the wire.");
-    }
+  public ClusterTemperatureFlowUnit(long timeStamp, ResourceContext context,
+      ClusterTemperatureSummary resourceSummary) {
+    super(timeStamp, context, resourceSummary, true);
+    clusterTemperatureSummary = resourceSummary;
+  }
+
+  @Override
+  public FlowUnitMessage buildFlowUnitMessage(String graphNode, String esNode) {
+    throw new IllegalStateException(this.getClass().getSimpleName() + " should not be passed "
+        + "over the wire.");
+  }
 }

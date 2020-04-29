@@ -20,7 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.
 
 public class TotalCpuUtilForTotalNodeMetric extends TotalNodeTemperatureCalculator {
 
-    public TotalCpuUtilForTotalNodeMetric() {
-        super(TemperatureVector.Dimension.CPU_Utilization);
-    }
+  public TotalCpuUtilForTotalNodeMetric() {
+    super(TemperatureVector.Dimension.CPU_Utilization);
+  }
 }

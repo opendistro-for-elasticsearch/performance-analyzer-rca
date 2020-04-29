@@ -16,7 +16,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.google.gson.JsonObject;
@@ -28,86 +27,83 @@ import org.jooq.Field;
 import org.jooq.impl.DSL;
 
 public class ShardProfileSummary extends GenericSummary {
-    private final String indexName;
-    private final int shardId;
 
-    private final TemperatureVector temperatureVector;
+  private final String indexName;
+  private final int shardId;
+
+  private final TemperatureVector temperatureVector;
 
 
-    public ShardProfileSummary(String indexName, int shardId) {
-        this.indexName = indexName;
-        this.shardId = shardId;
-        this.temperatureVector = new TemperatureVector();
+  public ShardProfileSummary(String indexName, int shardId) {
+    this.indexName = indexName;
+    this.shardId = shardId;
+    this.temperatureVector = new TemperatureVector();
+  }
+
+  @Override
+  public String toString() {
+    return "Shard{"
+        + "indexName='" + indexName
+        + ", shardId=" + shardId
+        + ", temp=" + temperatureVector
+        + '}';
+  }
+
+  @Override
+  public <T extends GeneratedMessageV3> T buildSummaryMessage() {
+    throw new IllegalArgumentException();
+  }
+
+  @Override
+  public void buildSummaryMessageAndAddToFlowUnit(FlowUnitMessage.Builder messageBuilder) {
+    throw new IllegalArgumentException();
+  }
+
+  @Override
+  public String getTableName() {
+    return this.getClass().getSimpleName();
+  }
+
+  @Override
+  public List<Field<?>> getSqlSchema() {
+    List<Field<?>> schema = new ArrayList<>();
+    schema.add(DSL.field(DSL.name("index_name"), String.class));
+    schema.add(DSL.field(DSL.name("shard_id"), Integer.class));
+    for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+      schema.add(DSL.field(DSL.name(dimension.NAME), Short.class));
     }
+    return schema;
+  }
 
-    @Override
-    public String toString() {
-        return "Shard{"
-                + "indexName='" + indexName
-                + ", shardId=" + shardId
-                + ", temp=" + temperatureVector
-                + '}';
+  @Override
+  public List<Object> getSqlValue() {
+    List<Object> values = new ArrayList<>();
+    values.add(indexName);
+    values.add(shardId);
+    for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+      values.add(temperatureVector.getTemperatureFor(dimension));
     }
+    return values;
+  }
 
-    @Override
-    public <T extends GeneratedMessageV3> T buildSummaryMessage() {
-        throw new IllegalArgumentException();
-    }
+  public JsonObject toJson() {
+    JsonObject summaryObj = new JsonObject();
+    summaryObj.addProperty("index_name", indexName);
+    summaryObj.addProperty("shard_id", shardId);
+    summaryObj.add("temperature", temperatureVector.toJson());
+    return summaryObj;
+  }
 
-    @Override
-    public void buildSummaryMessageAndAddToFlowUnit(FlowUnitMessage.Builder messageBuilder) {
-        throw new IllegalArgumentException();
-    }
+  @Nullable
+  public TemperatureVector.NormalizedValue getHeatInDimension(
+      TemperatureVector.Dimension dimension) {
+    return temperatureVector.getTemperatureFor(dimension);
+  }
 
-    @Override
-    public String getTableName() {
-        return this.getClass().getSimpleName();
-    }
-
-    @Override
-    public List<Field<?>> getSqlSchema() {
-        List<Field<?>> schema = new ArrayList<>();
-        schema.add(DSL.field(DSL.name("index_name"), String.class));
-        schema.add(DSL.field(DSL.name("shard_id"), Integer.class));
-        for (TemperatureVector.Dimension dimension: TemperatureVector.Dimension.values()) {
-            schema.add(DSL.field(DSL.name(dimension.NAME), Short.class));
-        }
-        return schema;
-    }
-
-    @Override
-    public List<Object> getSqlValue() {
-        List<Object> values = new ArrayList<>();
-        values.add(indexName);
-        values.add(shardId);
-        for (TemperatureVector.Dimension dimension: TemperatureVector.Dimension.values()) {
-            values.add(temperatureVector.getTemperatureFor(dimension));
-        }
-        return values;
-    }
-
-    public JsonObject toJson() {
-        JsonObject summaryObj = new JsonObject();
-        summaryObj.addProperty("index_name", indexName);
-        summaryObj.addProperty("shard_id", shardId);
-        summaryObj.add("temperature", temperatureVector.toJson());
-        return summaryObj;
-    }
-
-    @Nullable
-    public TemperatureVector.NormalizedValue getHeatInDimension(TemperatureVector.Dimension dimension) {
-        return temperatureVector.getTemperatureFor(dimension);
-    }
-
-    public void addTemperatureForDimension(TemperatureVector.Dimension dimension,
-                                           TemperatureVector.NormalizedValue value) {
-        TemperatureVector.NormalizedValue oldValue = getHeatInDimension(dimension);
-        if (oldValue != null) {
-            String err = String.format("Trying to update the temperature along dimension '%s' of "
-                    + "shard '%s' twice. OldValue: '%s', newValue: '%s'", dimension, toString(),
-                    oldValue, value);
-            throw new IllegalArgumentException(err);
-        }
-        temperatureVector.updateTemperatureForDimension(dimension, value);
-    }
+  public void addTemperatureForDimension(TemperatureVector.Dimension dimension,
+      TemperatureVector.NormalizedValue value) {
+    // TODO: May need to handle the case where temperature for a dimension is updated multiple
+    //  times per scheduler tick.
+    temperatureVector.updateTemperatureForDimension(dimension, value);
+  }
 }

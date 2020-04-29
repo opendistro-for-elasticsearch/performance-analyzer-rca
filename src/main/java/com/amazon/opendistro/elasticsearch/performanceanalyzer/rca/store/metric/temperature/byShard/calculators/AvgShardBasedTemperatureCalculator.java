@@ -17,6 +17,8 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
@@ -25,39 +27,41 @@ import org.jooq.SelectSeekStep1;
 import org.jooq.impl.DSL;
 
 /**
- * This builds over the query from {@code SumOverOperationsForIndexShardGroup}.
- * It calculates the average over all index,shard groups.
+ * This builds over the query from {@code SumOverOperationsForIndexShardGroup}. It calculates the
+ * average over all index,shard groups.
  */
 public class AvgShardBasedTemperatureCalculator extends ShardBasedTemperatureCalculator {
-    public AvgShardBasedTemperatureCalculator(TemperatureVector.Dimension metricType) {
-        super(metricType);
-    }
 
-    public static final String ALIAS = "sum_max";
-    public static final String SHARD_AVG = "shard_avg";
+  public static final String ALIAS = "sum_max";
+  public static final String SHARD_AVG = "shard_avg";
 
-    protected Field<?> getAggrDimension() {
-        return super.getAggrDimension().as(ALIAS);
-    }
+  public AvgShardBasedTemperatureCalculator(TemperatureVector.Dimension metricType) {
+    super(metricType);
+  }
 
-    // This uses the return from the getSumOfUtilByIndexShardGroup as inner query and gets an
-    // average over all index-shard groups.
-    @Override
-    protected Result<Record> createDslAndFetch(final DSLContext context,
-                                               final String tableName,
-                                               final Field<?> aggDimension,
-                                               final List<Field<?>> groupByFieldsList,
-                                               final List<Field<?>> selectFieldsList) {
-        SelectSeekStep1<Record, ?> sumByIndexShardGroupsClause =
-                getSumOfUtilByIndexShardGroup(context, tableName, aggDimension, groupByFieldsList, selectFieldsList);
+  protected Field<?> getAggrDimension() {
+    return super.getAggrDimension().as(ALIAS);
+  }
 
-        selectFieldsList.clear();
+  // This uses the return from the getSumOfUtilByIndexShardGroup as inner query and gets an
+  // average over all index-shard groups.
+  @Override
+  protected Result<Record> createDslAndFetch(final DSLContext context,
+      final String tableName,
+      final Field<?> aggDimension,
+      final List<Field<?>> groupByFieldsList,
+      final List<Field<?>> selectFieldsList) {
+    SelectSeekStep1<Record, ?> sumByIndexShardGroupsClause =
+        getSumOfUtilByIndexShardGroup(context, tableName, aggDimension, groupByFieldsList,
+            selectFieldsList);
 
-        Field<?> avgOverShards = DSL.avg(DSL.field(DSL.name(ALIAS), Double.class)).as("shard_avg");
+    selectFieldsList.clear();
 
-        selectFieldsList.add(avgOverShards);
-        Result<?> r = context.select(avgOverShards).from(sumByIndexShardGroupsClause).fetch();
+    Field<?> avgOverShards = DSL.avg(DSL.field(DSL.name(ALIAS), Double.class)).as("shard_avg");
 
-        return (Result<Record>) r;
-    }
+    selectFieldsList.add(avgOverShards);
+    Result<?> r = context.select(avgOverShards).from(sumByIndexShardGroupsClause).fetch();
+
+    return (Result<Record>) r;
+  }
 }

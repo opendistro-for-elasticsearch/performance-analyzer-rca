@@ -15,7 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.DimensionalTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
@@ -30,46 +29,45 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class CpuUtilDimensionTemperatureRca extends Rca<DimensionalTemperatureFlowUnit> {
-    private static final Logger LOG = LogManager.getLogger(CpuUtilDimensionTemperatureRca.class);
 
-    private final TotalCpuUtilForTotalNodeMetric CPU_UTIL_PEAK_USAGE;
-    private final CpuUtilByShardsMetricBasedTemperatureCalculator CPU_UTIL_BY_SHARD;
-    private final AvgCpuUtilByShardsMetricBasedTemperatureCalculator AVG_CPU_UTIL_BY_SHARD;
-    private final ShardIndependentTemperatureCalculatorCpuUtilMetric CPU_UTIL_SHARD_INDEPENDENT;
+  public static final TemperatureVector.NormalizedValue THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT =
+      new TemperatureVector.NormalizedValue((short) 2);
+  private static final Logger LOG = LogManager.getLogger(CpuUtilDimensionTemperatureRca.class);
+  private final TotalCpuUtilForTotalNodeMetric CPU_UTIL_PEAK_USAGE;
+  private final CpuUtilByShardsMetricBasedTemperatureCalculator CPU_UTIL_BY_SHARD;
+  private final AvgCpuUtilByShardsMetricBasedTemperatureCalculator AVG_CPU_UTIL_BY_SHARD;
+  private final ShardIndependentTemperatureCalculatorCpuUtilMetric CPU_UTIL_SHARD_INDEPENDENT;
+  private final ShardStore shardStore;
 
-    private final ShardStore shardStore;
+  public CpuUtilDimensionTemperatureRca(ShardStore shardStore,
+      CpuUtilByShardsMetricBasedTemperatureCalculator cpuUtilByShard,
+      AvgCpuUtilByShardsMetricBasedTemperatureCalculator avgCpuUtilByShards,
+      ShardIndependentTemperatureCalculatorCpuUtilMetric shardIndependentCpuUtilMetric,
+      TotalCpuUtilForTotalNodeMetric cpuUtilPeakUsage) {
+    super(5);
+    this.CPU_UTIL_PEAK_USAGE = cpuUtilPeakUsage;
+    this.CPU_UTIL_BY_SHARD = cpuUtilByShard;
+    this.CPU_UTIL_SHARD_INDEPENDENT = shardIndependentCpuUtilMetric;
+    this.AVG_CPU_UTIL_BY_SHARD = avgCpuUtilByShards;
+    this.shardStore = shardStore;
+  }
 
-    public static final TemperatureVector.NormalizedValue THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT =
-            new TemperatureVector.NormalizedValue((short) 2);
+  @Override
+  public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
+    throw new IllegalArgumentException("Generating from wire is not required.");
+  }
 
-    public CpuUtilDimensionTemperatureRca(ShardStore shardStore,
-                                          CpuUtilByShardsMetricBasedTemperatureCalculator cpuUtilByShard,
-                                          AvgCpuUtilByShardsMetricBasedTemperatureCalculator avgCpuUtilByShards,
-                                          ShardIndependentTemperatureCalculatorCpuUtilMetric shardIndependentCpuUtilMetric,
-                                          TotalCpuUtilForTotalNodeMetric cpuUtilPeakUsage) {
-        super(5);
-        this.CPU_UTIL_PEAK_USAGE = cpuUtilPeakUsage;
-        this.CPU_UTIL_BY_SHARD = cpuUtilByShard;
-        this.CPU_UTIL_SHARD_INDEPENDENT = shardIndependentCpuUtilMetric;
-        this.AVG_CPU_UTIL_BY_SHARD = avgCpuUtilByShards;
-        this.shardStore = shardStore;
-    }
-
-    @Override
-    public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-        throw new IllegalArgumentException("Generating from wire is not required.");
-    }
-
-    @Override
-    public DimensionalTemperatureFlowUnit operate() {
-        LOG.error("executing: {}", name());
-        DimensionalTemperatureFlowUnit flowUnit = DimensionalTemperatureCalculator.getTemperatureForDimension(
-                shardStore,
-                TemperatureVector.Dimension.CPU_Utilization,
-                CPU_UTIL_BY_SHARD,
-                AVG_CPU_UTIL_BY_SHARD, CPU_UTIL_SHARD_INDEPENDENT, CPU_UTIL_PEAK_USAGE,
-                THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT);
-        LOG.error("Dimensional temperature calculated: {}", flowUnit.getNodeDimensionProfile());
-        return flowUnit;
-    }
+  @Override
+  public DimensionalTemperatureFlowUnit operate() {
+    LOG.debug("executing: {}", name());
+    DimensionalTemperatureFlowUnit flowUnit = DimensionalTemperatureCalculator
+        .getTemperatureForDimension(
+            shardStore,
+            TemperatureVector.Dimension.CPU_Utilization,
+            CPU_UTIL_BY_SHARD,
+            AVG_CPU_UTIL_BY_SHARD, CPU_UTIL_SHARD_INDEPENDENT, CPU_UTIL_PEAK_USAGE,
+            THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT);
+    LOG.debug("Dimensional temperature calculated: {}", flowUnit.getNodeDimensionProfile());
+    return flowUnit;
+  }
 }

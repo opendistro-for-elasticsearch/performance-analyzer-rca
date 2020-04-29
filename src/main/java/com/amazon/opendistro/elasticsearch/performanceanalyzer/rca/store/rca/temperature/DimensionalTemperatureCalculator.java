@@ -34,147 +34,150 @@ import org.jooq.Record;
 import org.jooq.Result;
 
 public class DimensionalTemperatureCalculator {
-    private static final Logger LOG = LogManager.getLogger(DimensionalTemperatureCalculator.class);
 
-    enum ColumnTypes {
-        IndexName,
-        ShardID,
-        sum;
+  private static final Logger LOG = LogManager.getLogger(DimensionalTemperatureCalculator.class);
+
+  /**
+   * The categorization of shards as hot, warm, lukeWarm and cold based on the average resource
+   * utilization of the resource across all shards. This value is not the actual number but a
+   * normalized value that is between 0 and 10.
+   *
+   * <p>The shard independent usage of the resource as a normalized value between 0 and 10.
+   *
+   * <p>The Node temperature as the actual value. (If normalized to 10 this will always be 10
+   * as this is the base for the normalization).
+   *
+   * @param resourceByShardId        This gives the resource utilization at a shard level
+   * @param resourceShardIndependent This is the additional component that use resource but cannot
+   *                                 be accounted for at a shard level. For example, HttpServer
+   *                                 consuming CPU will form part of this.
+   * @param resourcePeakUsage        This is the total usage of the resource at the node level. This
+   *                                 should be the sum of the other two.
+   * @return The return is a composition of three things:
+   */
+  public static DimensionalTemperatureFlowUnit getTemperatureForDimension(
+      ShardStore shardStore, TemperatureVector.Dimension metricType,
+      ShardBasedTemperatureCalculator resourceByShardId,
+      AvgShardBasedTemperatureCalculator avgResUsageByAllShards,
+      ShardIndependentTemperatureCalculator resourceShardIndependent,
+      TotalNodeTemperatureCalculator resourcePeakUsage,
+      TemperatureVector.NormalizedValue threshold) {
+    List<MetricFlowUnit> shardIdBasedFlowUnits = resourceByShardId.getFlowUnits();
+    List<MetricFlowUnit> avgResUsageFlowUnits = avgResUsageByAllShards.getFlowUnits();
+    List<MetricFlowUnit> shardIdIndependentFlowUnits = resourceShardIndependent.getFlowUnits();
+    List<MetricFlowUnit>  resourcePeakFlowUnits = resourcePeakUsage.getFlowUnits();
+
+    LOG.info("shardIdBasedFlowUnits: {}", shardIdBasedFlowUnits);
+    LOG.info("avgResUsageFlowUnits: {}", avgResUsageFlowUnits);
+    LOG.info("shardIdIndependentFlowUnits: {}", shardIdIndependentFlowUnits);
+    LOG.info("resourcePeakFlowUnits: {}", resourcePeakFlowUnits);
+
+    // example:
+    // [0: [[IndexName, ShardID, sum], [geonames, 0, 0.35558242693567], [geonames, 2, 0.0320651297686606]]]
+    if (shardIdBasedFlowUnits.size() != 1) {
+      if (shardIdBasedFlowUnits.get(0).isEmpty()) {
+        LOG.info("Empty shardIdBasedFlowUnits");
+        return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
+      }
+
+      if (shardIdBasedFlowUnits.get(0).getData().get(0).size() != 3) {
+        // we expect it to have three columns but the number of rows is determined by the
+        // number of indices and shards in the node.
+        throw new IllegalArgumentException("Size more than expected: " + shardIdBasedFlowUnits);
+      }
     }
 
-    /**
-     * The categorization of shards as hot, warm, lukeWarm and cold based on the average resource
-     * utilization of the resource across all shards. This value is not the actual number but a
-     * normalized value that is between 0 and 10.
-     *
-     * <p>The shard independent usage of the resource as a normalized value between 0 and 10.
-     *
-     * <p>The Node temperature as the actual value. (If normalized to 10 this will always be 10
-     * as this is the base for the normalization).
-     *
-     * @param resourceByShardId        This gives the resource utilization at a shard level
-     * @param resourceShardIndependent This is the additional component that use resource but
-     *                                 cannot be accounted for at a shard level. For
-     *                                 example, HttpServer consuming CPU will form part of this.
-     * @param resourcePeakUsage        This is the total usage of the resource at the node level. This
-     *                                 should be the sum of the other two.
-     * @return The return is a composition of three things:
-     */
-    public static DimensionalTemperatureFlowUnit getTemperatureForDimension(
-            ShardStore shardStore, TemperatureVector.Dimension metricType,
-            ShardBasedTemperatureCalculator resourceByShardId,
-            AvgShardBasedTemperatureCalculator avgResUsageByAllShards,
-            ShardIndependentTemperatureCalculator resourceShardIndependent,
-            TotalNodeTemperatureCalculator resourcePeakUsage,
-            TemperatureVector.NormalizedValue threshold) {
-        List<MetricFlowUnit> shardIdBasedFlowUnits = resourceByShardId.getFlowUnits();
-        List<MetricFlowUnit> avgResUsageFlowUnits = avgResUsageByAllShards.getFlowUnits();
-        List<MetricFlowUnit> shardIdIndependentFlowUnits = resourceShardIndependent.getFlowUnits();
-        List<MetricFlowUnit> resourcePeakFlowUnits = resourcePeakUsage.getFlowUnits();
+    if (avgResUsageFlowUnits.size() != 1) {
+      if (avgResUsageFlowUnits.get(0).isEmpty()) {
+        LOG.info("Empty avgResUsageFlowUnits");
+        return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
+      }
 
-        LOG.info("shardIdBasedFlowUnits: {}", shardIdBasedFlowUnits);
-        LOG.info("avgResUsageFlowUnits: {}", avgResUsageFlowUnits);
-        LOG.info("shardIdIndependentFlowUnits: {}", shardIdIndependentFlowUnits);
-        LOG.info("resourcePeakFlowUnits: {}", resourcePeakFlowUnits);
-
-        // example:
-        // [0: [[IndexName, ShardID, sum], [geonames, 0, 0.35558242693567], [geonames, 2, 0.0320651297686606]]]
-        if (shardIdBasedFlowUnits.size() != 1) {
-            if (shardIdBasedFlowUnits.get(0).isEmpty()) {
-                LOG.info("Empty shardIdBasedFlowUnits");
-                return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
-            }
-
-            if (shardIdBasedFlowUnits.get(0).getData().get(0).size() != 3) {
-                // we expect it to have three columns but the number of rows is determined by the
-                // number of indices and shards in the node.
-                throw new IllegalArgumentException("Size more than expected: " + shardIdBasedFlowUnits);
-            }
-        }
-
-        if (avgResUsageFlowUnits.size() != 1) {
-            if (avgResUsageFlowUnits.get(0).isEmpty()) {
-                LOG.info("Empty avgResUsageFlowUnits");
-                return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
-            }
-
-            if (avgResUsageFlowUnits.get(0).getData().intoArrays().length != 1) {
-                throw new IllegalArgumentException("Size more than expected:\n" + avgResUsageFlowUnits.get(0).getData()
-                        + "\n found: " + avgResUsageFlowUnits.get(0).getData().intoArrays().length);
-            }
-        }
-
-        if (shardIdIndependentFlowUnits.size() != 1) {
-            if (shardIdIndependentFlowUnits.get(0).isEmpty()) {
-                LOG.info("Empty shardIdIndependentFlowUnits");
-                return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
-            }
-
-            if (shardIdIndependentFlowUnits.get(0).getData().intoArrays().length != 1) {
-                throw new IllegalArgumentException("Size more than expected: \n"
-                        + shardIdIndependentFlowUnits.get(0).getData());
-            }
-        }
-
-        if (resourcePeakFlowUnits.size() != 1) {
-            if (resourcePeakFlowUnits.get(0).isEmpty()) {
-                LOG.info("Empty shardIdIndependentFlowUnits");
-                return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
-            }
-            if (resourcePeakFlowUnits.get(0).getData().intoArrays().length != 1) {
-                throw new IllegalArgumentException("Size more than expected: \n"
-                        + resourcePeakFlowUnits.get(0).getData());
-            }
-        }
-
-        double avgValOverShards = -1;
-        try {
-            avgValOverShards =
-                    avgResUsageFlowUnits.get(0).getData().getValues(AvgShardBasedTemperatureCalculator.SHARD_AVG,
-                            Double.class).get(0);
-        } catch (Exception ex) {
-            LOG.error("Error getting shard average: {}.",
-                    avgResUsageFlowUnits.get(0).getData());
-            return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
-        }
-
-        double totalConsumedInNode = -1;
-        try {
-            totalConsumedInNode = resourcePeakFlowUnits.get(0).getData().getValues(
-                    TemperatureMetricsBase.AGGR_OVER_AGGR_NAME, Double.class).get(0);
-        } catch (Exception ex) {
-            LOG.error("Error getting shard average: {}.",
-                    resourcePeakFlowUnits.get(0).getData(), ex);
-            return (DimensionalTemperatureFlowUnit) DimensionalTemperatureFlowUnit.generic();
-        }
-
-        TemperatureVector.NormalizedValue avgUsageAcrossShards =
-                TemperatureVector.NormalizedValue.calculate(avgValOverShards, totalConsumedInNode);
-
-        Result<Record> rowsPerShard = shardIdBasedFlowUnits.get(0).getData();
-
-        NodeLevelDimensionalSummary nodeDimensionProfile =
-                new NodeLevelDimensionalSummary(metricType, avgUsageAcrossShards, totalConsumedInNode);
-
-        // The shardIdBasedFlowUnits is supposed to contain one row per shard.
-        nodeDimensionProfile.setNumberOfShards(rowsPerShard.size());
-
-        for (Record record : rowsPerShard) {
-            // Each row has columns like:
-            // IndexName, ShardID, sum
-            String indexName = record.getValue(ColumnTypes.IndexName.name(), String.class);
-            int shardId = record.getValue(ColumnTypes.ShardID.name(), Integer.class);
-            double usage = record.getValue(ColumnTypes.sum.name(), Double.class);
-
-            TemperatureVector.NormalizedValue normalizedConsumptionByShard =
-                    TemperatureVector.NormalizedValue.calculate(usage, totalConsumedInNode);
-            HeatZoneAssigner.Zone heatZoneForShard =
-                    HeatZoneAssigner.assign(normalizedConsumptionByShard, avgUsageAcrossShards, threshold);
-
-            ShardProfileSummary shardProfileSummary = shardStore.getOrCreateIfAbsent(indexName, shardId);
-            shardProfileSummary.addTemperatureForDimension(metricType, normalizedConsumptionByShard);
-            nodeDimensionProfile.addShardToZone(shardProfileSummary, heatZoneForShard);
-        }
-        return new DimensionalTemperatureFlowUnit(System.currentTimeMillis(), nodeDimensionProfile);
+      if (avgResUsageFlowUnits.get(0).getData().intoArrays().length != 1) {
+        throw new IllegalArgumentException(
+            "Size more than expected:\n" + avgResUsageFlowUnits.get(0).getData()
+                + "\n found: " + avgResUsageFlowUnits.get(0).getData().intoArrays().length);
+      }
     }
+
+    if (shardIdIndependentFlowUnits.size() != 1) {
+      if (shardIdIndependentFlowUnits.get(0).isEmpty()) {
+        LOG.info("Empty shardIdIndependentFlowUnits");
+        return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
+      }
+
+      if (shardIdIndependentFlowUnits.get(0).getData().intoArrays().length != 1) {
+        throw new IllegalArgumentException("Size more than expected: \n"
+            + shardIdIndependentFlowUnits.get(0).getData());
+      }
+    }
+
+    if (resourcePeakFlowUnits.size() != 1) {
+      if (resourcePeakFlowUnits.get(0).isEmpty()) {
+        LOG.info("Empty shardIdIndependentFlowUnits");
+        return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
+      }
+      if (resourcePeakFlowUnits.get(0).getData().intoArrays().length != 1) {
+        throw new IllegalArgumentException("Size more than expected: \n"
+            + resourcePeakFlowUnits.get(0).getData());
+      }
+    }
+
+    double avgValOverShards = -1;
+    try {
+      avgValOverShards =
+          avgResUsageFlowUnits.get(0).getData()
+                              .getValues(AvgShardBasedTemperatureCalculator.SHARD_AVG,
+                                  Double.class).get(0);
+    } catch (Exception ex) {
+      LOG.error("Error getting shard average: {} for {}",
+          avgResUsageFlowUnits.get(0).getData(), metricType.NAME);
+      return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
+    }
+
+    double totalConsumedInNode = -1;
+    try {
+      totalConsumedInNode = resourcePeakFlowUnits.get(0).getData().getValues(
+          TemperatureMetricsBase.AGGR_OVER_AGGR_NAME, Double.class).get(0);
+    } catch (Exception ex) {
+      LOG.error("Error getting shard average: {} for {}",
+          resourcePeakFlowUnits.get(0).getData(), metricType.NAME, ex);
+      return (DimensionalTemperatureFlowUnit) DimensionalTemperatureFlowUnit.generic();
+    }
+
+    TemperatureVector.NormalizedValue avgUsageAcrossShards =
+        TemperatureVector.NormalizedValue.calculate(avgValOverShards, totalConsumedInNode);
+
+    Result<Record> rowsPerShard = shardIdBasedFlowUnits.get(0).getData();
+
+    NodeLevelDimensionalSummary nodeDimensionProfile =
+        new NodeLevelDimensionalSummary(metricType, avgUsageAcrossShards, totalConsumedInNode);
+
+    // The shardIdBasedFlowUnits is supposed to contain one row per shard.
+    nodeDimensionProfile.setNumberOfShards(rowsPerShard.size());
+
+    for (Record record : rowsPerShard) {
+      // Each row has columns like:
+      // IndexName, ShardID, sum
+      String indexName = record.getValue(ColumnTypes.IndexName.name(), String.class);
+      int shardId = record.getValue(ColumnTypes.ShardID.name(), Integer.class);
+      double usage = record.getValue(ColumnTypes.sum.name(), Double.class);
+
+      TemperatureVector.NormalizedValue normalizedConsumptionByShard =
+          TemperatureVector.NormalizedValue.calculate(usage, totalConsumedInNode);
+      HeatZoneAssigner.Zone heatZoneForShard =
+          HeatZoneAssigner.assign(normalizedConsumptionByShard, avgUsageAcrossShards, threshold);
+
+      ShardProfileSummary shardProfileSummary = shardStore.getOrCreateIfAbsent(indexName, shardId);
+      shardProfileSummary.addTemperatureForDimension(metricType, normalizedConsumptionByShard);
+      nodeDimensionProfile.addShardToZone(shardProfileSummary, heatZoneForShard);
+    }
+    return new DimensionalTemperatureFlowUnit(System.currentTimeMillis(), nodeDimensionProfile);
+  }
+
+  enum ColumnTypes {
+    IndexName,
+    ShardID,
+    sum;
+  }
 }

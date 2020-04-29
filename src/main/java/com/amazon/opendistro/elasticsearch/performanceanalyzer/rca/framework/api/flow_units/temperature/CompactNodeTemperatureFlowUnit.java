@@ -28,39 +28,45 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
  * shards, it would be sending too many bytes over the wire.
  */
 public class CompactNodeTemperatureFlowUnit extends ResourceFlowUnit {
-    private final CompactNodeSummary compactNodeTemperatureSummary;
 
-    public CompactNodeTemperatureFlowUnit(long timeStamp, ResourceContext context,
-                                          CompactNodeSummary resourceSummary,
-                                          boolean persistSummary) {
-        super(timeStamp, context, resourceSummary, persistSummary);
-        this.compactNodeTemperatureSummary = resourceSummary;
-    }
+  private final CompactNodeSummary compactNodeTemperatureSummary;
 
-    public CompactNodeTemperatureFlowUnit(long timeStamp) {
-        super(timeStamp);
-        compactNodeTemperatureSummary = null;
-    }
+  public CompactNodeTemperatureFlowUnit(long timeStamp, ResourceContext context,
+      CompactNodeSummary resourceSummary,
+      boolean persistSummary) {
+    super(timeStamp, context, resourceSummary, persistSummary);
+    this.compactNodeTemperatureSummary = resourceSummary;
+  }
 
-    @Override
-    public FlowUnitMessage buildFlowUnitMessage(String graphNode, String esNode) {
-        FlowUnitMessage.Builder builder = FlowUnitMessage.newBuilder();
-        builder.setGraphNode(graphNode);
-        builder.setEsNode(esNode);
-        builder.setTimeStamp(System.currentTimeMillis());
-        compactNodeTemperatureSummary.buildSummaryMessageAndAddToFlowUnit(builder);
-        return builder.build();
-    }
+  public CompactNodeTemperatureFlowUnit(long timeStamp) {
+    super(timeStamp);
+    compactNodeTemperatureSummary = null;
+  }
 
-    public static CompactNodeTemperatureFlowUnit buildFlowUnitFromWrapper(final FlowUnitMessage message) {
-        CompactNodeSummary compactNodeTemperatureSummary =
-                CompactNodeSummary.buildNodeTemperatureProfileFromMessage(message.getNodeTemperatureSummary());
-        return new CompactNodeTemperatureFlowUnit(message.getTimeStamp(), new ResourceContext(Resources.State.UNKNOWN),
-                compactNodeTemperatureSummary, false);
-    }
+  public static CompactNodeTemperatureFlowUnit buildFlowUnitFromWrapper(
+      final FlowUnitMessage message) {
+    CompactNodeSummary compactNodeTemperatureSummary =
+        CompactNodeSummary
+            .buildNodeTemperatureProfileFromMessage(message.getNodeTemperatureSummary());
+    return new CompactNodeTemperatureFlowUnit(message.getTimeStamp(),
+        new ResourceContext(Resources.State.UNKNOWN),
+        compactNodeTemperatureSummary, false);
+  }
 
-    public CompactNodeSummary getCompactNodeTemperatureSummary() {
-        return compactNodeTemperatureSummary;
+  @Override
+  public FlowUnitMessage buildFlowUnitMessage(String graphNode, String esNode) {
+    FlowUnitMessage.Builder builder = FlowUnitMessage.newBuilder();
+    builder.setGraphNode(graphNode);
+    builder.setEsNode(esNode);
+    builder.setTimeStamp(System.currentTimeMillis());
+    if (compactNodeTemperatureSummary != null) {
+      compactNodeTemperatureSummary.buildSummaryMessageAndAddToFlowUnit(builder);
     }
+    return builder.build();
+  }
+
+  public CompactNodeSummary getCompactNodeTemperatureSummary() {
+    return compactNodeTemperatureSummary;
+  }
 
 }

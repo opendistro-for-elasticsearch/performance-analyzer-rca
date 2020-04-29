@@ -18,8 +18,10 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.calculators.AvgShardBasedTemperatureCalculator;
 
-public class AvgCpuUtilByShardsMetricBasedTemperatureCalculator extends AvgShardBasedTemperatureCalculator {
-    public AvgCpuUtilByShardsMetricBasedTemperatureCalculator() {
-        super(TemperatureVector.Dimension.CPU_Utilization);
-    }
+public class AvgCpuUtilByShardsMetricBasedTemperatureCalculator extends
+    AvgShardBasedTemperatureCalculator {
+
+  public AvgCpuUtilByShardsMetricBasedTemperatureCalculator() {
+    super(TemperatureVector.Dimension.CPU_Utilization);
+  }
 }
