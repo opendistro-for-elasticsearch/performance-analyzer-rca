@@ -19,7 +19,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighH
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -105,7 +104,7 @@ class ConfJsonWrapper {
       @JsonProperty("network-queue-length") int networkQueueLength,
       @JsonProperty("max-flow-units-per-vertex-buffer") int perVertexBufferLength,
       @JsonProperty("high-heap-usage-old-gen-rca") Map<String, String> highHeapUsageOldGenRcaSettings,
-      @JsonProperty("muted-rcas") String mutedRcas) {
+      @JsonProperty("muted-rcas") List<String> mutedRcas) {
     this.creationTime = System.currentTimeMillis();
     this.rcaStoreLoc = rcaStoreLoc;
     this.thresholdStoreLoc = thresholdStoreLoc;
@@ -118,16 +117,6 @@ class ConfJsonWrapper {
     this.networkQueueLength = networkQueueLength;
     this.perVertexBufferLength = perVertexBufferLength;
     this.highHeapUsageOldGenRcaConfig = new HighHeapUsageOldGenRcaConfig(highHeapUsageOldGenRcaSettings);
-
-    if (mutedRcas.isEmpty()) {
-      this.mutedRcaList = Collections.emptyList();
-    } else {
-      // Split the string on a delimiter defined as: zero or more whitespace,
-      // a literal comma, zero or more whitespace
-      this.mutedRcaList = Arrays.asList(mutedRcas.split("\\s*,\\s*"));
-      this.mutedRcaList.stream().forEach(
-              mutedRca -> mutedRca.trim()
-      );
-    }
+    this.mutedRcaList = mutedRcas;
   }
 }
