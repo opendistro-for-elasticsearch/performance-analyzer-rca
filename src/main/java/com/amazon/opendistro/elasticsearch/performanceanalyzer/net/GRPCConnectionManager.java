@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.net;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpcServiceGrpc;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpcServiceGrpc.InterNodeRpcServiceStub;
+import com.google.common.annotations.VisibleForTesting;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
@@ -35,7 +36,7 @@ import org.apache.logging.log4j.Logger;
  * Class that manages the channel to other hosts in the cluster. It also performs staleness checks,
  * and initiates a new connection if it deems a channel to have gone stale.
  *
- * <p>It also has listens to cluster state changes and manages handling connections to the changed
+ * <p>It also listens to cluster state changes and manages handling connections to the changed
  * hosts.
  */
 public class GRPCConnectionManager {
@@ -49,8 +50,8 @@ public class GRPCConnectionManager {
       new ConcurrentHashMap<>();
 
   /**
-   * Map of remote host to a grpc client object to that host. The client objects are created over
-   * the channels for those hosts and are used to call RPC methods on.
+   * Map of remote host to a grpc client object of that host. The client objects are created over
+   * the channels for those hosts and are used to call RPC methods on the hosts.
    */
   private ConcurrentMap<String, AtomicReference<InterNodeRpcServiceStub>> perHostClientStubMap =
       new ConcurrentHashMap<>();
@@ -62,6 +63,16 @@ public class GRPCConnectionManager {
 
   public GRPCConnectionManager(final boolean shouldUseHttps) {
     this.shouldUseHttps = shouldUseHttps;
+  }
+
+  @VisibleForTesting
+  public ConcurrentMap<String, AtomicReference<ManagedChannel>> getPerHostChannelMap() {
+    return perHostChannelMap;
+  }
+
+  @VisibleForTesting
+  public ConcurrentMap<String, AtomicReference<InterNodeRpcServiceStub>> getPerHostClientStubMap() {
+    return perHostClientStubMap;
   }
 
   /**

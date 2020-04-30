@@ -100,9 +100,12 @@ public class ReceivedFlowUnitStore {
   /**
    * Drains out all the flow units for all nodes.
    */
-  public void drainAll() {
+  public List<FlowUnitMessage> drainAll() {
+    List<FlowUnitMessage> drained = new ArrayList<>();
     for (final String graphNode : flowUnitMap.keySet()) {
-      drainNode(graphNode);
+      ImmutableList<FlowUnitMessage> messages = drainNode(graphNode);
+      drained.addAll(messages);
     }
+    return drained;
   }
 }
