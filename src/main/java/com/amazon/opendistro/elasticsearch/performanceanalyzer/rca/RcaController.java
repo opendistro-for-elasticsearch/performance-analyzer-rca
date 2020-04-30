@@ -147,6 +147,10 @@ public class RcaController {
     try {
       subscriptionManager.setCurrentLocus(rcaConf.getTagMap().get("locus"));
       List<ConnectedComponent> connectedComponents = RcaUtil.getAnalysisGraphComponents(rcaConf);
+
+      // Mute the rca nodes after the graph creation and before the scheduler start
+      readAndUpdateMutesRcas();
+
       Queryable db = new MetricsDBProvider();
       ThresholdMain thresholdMain = new ThresholdMain(RcaConsts.THRESHOLDS_PATH, rcaConf);
       Persistable persistable = PersistenceFactory.create(rcaConf);
@@ -278,6 +282,11 @@ public class RcaController {
    */
   private void readAndUpdateMutesRcas() {
     try {
+      if(ConnectedComponent.getNodeNames().isEmpty()) {
+        LOG.info("Analysis graph not initialized/has been reset; returning.");
+        return;
+      }
+
       // If the rca config file has been updated since the lastModifiedTimeInMillisInMemory in memory,
       // refresh the `muted-rcas` value from rca config file.
       long lastModifiedTimeInMillisOnDisk = rcaConf.getLastModifiedTime();
