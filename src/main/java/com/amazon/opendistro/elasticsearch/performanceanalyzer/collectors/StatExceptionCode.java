@@ -31,7 +31,6 @@ public enum StatExceptionCode {
   REQUEST_ERROR("RequestError"),
   REQUEST_REMOTE_ERROR("RequestRemoteError"),
   READER_PARSER_ERROR("ReaderParserError"),
-  MUTE_RCA_ERROR("MuteRcaError"),
   READER_RESTART_PROCESSING("ReaderRestartProcessing"),
   RCA_SCHEDULER_RESTART_PROCESSING("RCASchedulerRestartProcessing"),
   RCA_NETWORK_ERROR("RcaNetworkError"),

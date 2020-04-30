@@ -15,10 +15,11 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RCA_MUTE_ERROR_METRIC;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.ClientServers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerThreads;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
@@ -282,7 +283,7 @@ public class RcaController {
    */
   private void readAndUpdateMutesRcas() {
     try {
-      if(ConnectedComponent.getNodeNames().isEmpty()) {
+      if (ConnectedComponent.getNodeNames().isEmpty()) {
         LOG.info("Analysis graph not initialized/has been reset; returning.");
         return;
       }
@@ -311,7 +312,7 @@ public class RcaController {
       lastModifiedTimeInMillisInMemory = lastModifiedTimeInMillisOnDisk;
     } catch (Exception e) {
       LOG.error("Couldn't read/update the muted RCAs", e);
-      StatsCollector.instance().logException(StatExceptionCode.MUTE_RCA_ERROR);
+      StatsCollector.instance().logMetric(RCA_MUTE_ERROR_METRIC);
     }
   }
 
