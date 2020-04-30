@@ -170,7 +170,7 @@ public class RcaControllerTest {
   }
 
   @Test
-  public void readAndUpdateMutesRcasBeforeGraphCreation() throws Exception {
+  public void readAndUpdateMutedRcasBeforeGraphCreation() throws Exception {
     Method readAndUpdateMutesRcas = rcaController.getClass()
             .getDeclaredMethod("readAndUpdateMutesRcas", null);
     readAndUpdateMutesRcas.setAccessible(true);
@@ -195,7 +195,7 @@ public class RcaControllerTest {
   }
 
   @Test
-  public void readAndUpdateMutesRcas() throws Exception {
+  public void readAndUpdateMutedRcas() throws Exception {
     String rcaConfPath = Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_muted.conf").toString();
     List<String> mutedRcas1 = Arrays.asList("CPU_Utilization", "Heap_AllocRate");
     List<String> mutedRcas2 = Arrays.asList("Paging_MajfltRate");
