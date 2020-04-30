@@ -21,6 +21,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTemp
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector.NormalizedValue;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
@@ -131,10 +132,15 @@ public class CompactNodeSummary extends GenericSummary {
             int index = dimension.ordinal();
             ResourceTemperatureMessage.Builder builder = ResourceTemperatureMessage.newBuilder();
             builder.setResourceName(dimension.NAME);
-            builder.setMeanUsage(temperatureVector.getTemperatureFor(dimension).getPOINTS());
+            NormalizedValue normalizedMean = temperatureVector.getTemperatureFor(dimension);
+            if (normalizedMean != null) {
+                builder.setMeanUsage(normalizedMean.getPOINTS());
+            } else {
+                builder.setMeanUsage(0);
+            }
             builder.setNumberOfShards(numOfShards[index]);
             builder.setTotalUsage(totalConsumedByDimension[index]);
-            summaryBuilder.setCpuTemperature(index, builder);
+            summaryBuilder.addCpuTemperature(index, builder);
         }
         return summaryBuilder.build();
     }

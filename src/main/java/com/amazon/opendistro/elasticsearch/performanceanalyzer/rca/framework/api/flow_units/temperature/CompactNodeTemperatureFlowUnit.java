@@ -48,7 +48,9 @@ public class CompactNodeTemperatureFlowUnit extends ResourceFlowUnit {
         builder.setGraphNode(graphNode);
         builder.setEsNode(esNode);
         builder.setTimeStamp(System.currentTimeMillis());
-        compactNodeTemperatureSummary.buildSummaryMessageAndAddToFlowUnit(builder);
+        if (compactNodeTemperatureSummary != null) {
+            compactNodeTemperatureSummary.buildSummaryMessageAndAddToFlowUnit(builder);
+        }
         return builder.build();
     }
 
