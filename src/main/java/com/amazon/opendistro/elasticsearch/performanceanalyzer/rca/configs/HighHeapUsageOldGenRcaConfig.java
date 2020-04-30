@@ -15,41 +15,24 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs;
 
-import java.util.Map;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * config object to store rca config settings in rca.conf
  */
-public class HighHeapUsageOldGenRcaConfig extends GenericRcaConfig {
+public class HighHeapUsageOldGenRcaConfig {
 
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageOldGenRcaConfig.class);
-  private int topK;
+  private Integer topK;
   public static final int DEFAULT_TOP_K = 3;
   public static final String CONFIG_NAME = "high-heap-usage-old-gen-rca";
 
-  public HighHeapUsageOldGenRcaConfig(final Map<String, Object> rcaConfigSettings) {
-    this.topK = DEFAULT_TOP_K;
-    parseConfig(rcaConfigSettings);
-  }
-
-  @Override
-  public String getRcaName() {
-    return CONFIG_NAME;
-  }
-
-  private void parseConfig(final Map<String, Object> rcaConfigSettings) {
-    try {
-      Map<String, Object> rcaMapObject = getRcaMapObject(rcaConfigSettings);
-      if (rcaMapObject != null
-          && rcaMapObject.containsKey(RCA_CONF_KEY_CONSTANTS.TOP_K)
-          && rcaMapObject.get(RCA_CONF_KEY_CONSTANTS.TOP_K) != null) {
-        topK = (Integer) rcaMapObject.get(RCA_CONF_KEY_CONSTANTS.TOP_K);
-      }
-    }
-    catch (ClassCastException ce) {
-      LOG.error("Fail to cast rca configs, trace : {}", ce.getStackTrace());
+  public HighHeapUsageOldGenRcaConfig(final RcaConf rcaConf) {
+    topK = rcaConf.readRcaConfig(CONFIG_NAME, RCA_CONF_KEY_CONSTANTS.TOP_K, Integer.class);
+    if (topK == null) {
+      topK = DEFAULT_TOP_K;
     }
   }
 

@@ -110,18 +110,41 @@ public class RcaConf {
   }
 
   public HighHeapUsageOldGenRcaConfig getHighHeapUsageOldGenRcaConfig() {
-    return new HighHeapUsageOldGenRcaConfig(conf.getRcaConfigSettings());
+    return new HighHeapUsageOldGenRcaConfig(this);
   }
 
   public HighHeapUsageYoungGenRcaConfig getHighHeapUsageYoungGenRcaConfig() {
-    return new HighHeapUsageYoungGenRcaConfig(conf.getRcaConfigSettings());
+    return new HighHeapUsageYoungGenRcaConfig(this);
   }
 
   public HotNodeClusterRcaConfig getHotNodeClusterRcaConfig() {
-    return new HotNodeClusterRcaConfig(conf.getRcaConfigSettings());
+    return new HotNodeClusterRcaConfig(this);
   }
 
   public List<String> getMutedRcaList() {
     return conf.getMutedRcaList();
+  }
+
+  @SuppressWarnings("unchecked")
+  public <T> T readRcaConfig(String rcaName, String key, Class<? extends T> clazz) {
+    T setting = null;
+    try {
+      Map<String, Object> rcaObj = null;
+      if (conf.getRcaConfigSettings() != null
+          && conf.getRcaConfigSettings().containsKey(rcaName)
+          && conf.getRcaConfigSettings().get(rcaName) != null) {
+        rcaObj = (Map<String, Object>)conf.getRcaConfigSettings().get(rcaName);
+      }
+
+      if (rcaObj != null
+          && rcaObj.containsKey(key)
+          && rcaObj.get(key) != null) {
+        setting = clazz.cast(rcaObj.get(key));
+      }
+    }
+    catch (ClassCastException ne) {
+      LOG.error("rca.conf contains value in invalid format, trace : {}", ne.getMessage());
+    }
+    return setting;
   }
 }

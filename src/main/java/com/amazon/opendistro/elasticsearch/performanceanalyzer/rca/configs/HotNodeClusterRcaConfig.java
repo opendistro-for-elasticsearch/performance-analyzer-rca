@@ -15,49 +15,31 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs;
 
-import java.util.Map;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * config object to store rca config settings for HotNodeClusterRca
  */
-public class HotNodeClusterRcaConfig extends GenericRcaConfig {
+public class HotNodeClusterRcaConfig {
   private static final Logger LOG = LogManager.getLogger(HotNodeClusterRcaConfig.class);
   public static final String CONFIG_NAME = "hot-node-cluster-rca";
-  private double unbalancedResourceThreshold;
-  private double resourceUsageLowerBoundThreshold;
+  private Double unbalancedResourceThreshold;
+  private Double resourceUsageLowerBoundThreshold;
   public static final double DEFAULT_UNBALANCED_RESOURCE_THRES = 0.3;
   public static final double DEFAULT_RESOURCE_USAGE_LOWER_BOUND_THRES = 0.1;
 
-  public HotNodeClusterRcaConfig(final Map<String, Object> rcaConfigSettings) {
-    this.unbalancedResourceThreshold = DEFAULT_UNBALANCED_RESOURCE_THRES;
-    this.resourceUsageLowerBoundThreshold = DEFAULT_RESOURCE_USAGE_LOWER_BOUND_THRES;
-    parseConfig(rcaConfigSettings);
-  }
-
-  @Override
-  public String getRcaName() {
-    return CONFIG_NAME;
-  }
-
-  private void parseConfig(final Map<String, Object> rcaConfigSettings) {
-    try {
-      Map<String, Object> rcaMapObject = getRcaMapObject(rcaConfigSettings);
-      if (rcaMapObject != null) {
-        Object obj;
-        obj = rcaMapObject.getOrDefault(RCA_CONF_KEY_CONSTANTS.UNBALANCED_RESOURCE_THRES, null);
-        if (obj != null) {
-          unbalancedResourceThreshold = (Double) obj;
-        }
-        obj = rcaMapObject.getOrDefault(RCA_CONF_KEY_CONSTANTS.RESOURCE_USAGE_LOWER_BOUND_THRES, null);
-        if (obj != null) {
-          resourceUsageLowerBoundThreshold = (Double) obj;
-        }
-      }
+  public HotNodeClusterRcaConfig(final RcaConf rcaConf) {
+    unbalancedResourceThreshold = rcaConf.readRcaConfig(CONFIG_NAME,
+        RCA_CONF_KEY_CONSTANTS.UNBALANCED_RESOURCE_THRES, Double.class);
+    resourceUsageLowerBoundThreshold = rcaConf.readRcaConfig(CONFIG_NAME,
+        RCA_CONF_KEY_CONSTANTS.RESOURCE_USAGE_LOWER_BOUND_THRES, Double.class);
+    if (unbalancedResourceThreshold == null) {
+      unbalancedResourceThreshold = DEFAULT_UNBALANCED_RESOURCE_THRES;
     }
-    catch (ClassCastException ne) {
-      LOG.error("rca.conf contains value in invalid format, trace : {}", ne.getMessage());
+    if (resourceUsageLowerBoundThreshold == null) {
+      resourceUsageLowerBoundThreshold = DEFAULT_RESOURCE_USAGE_LOWER_BOUND_THRES;
     }
   }
 

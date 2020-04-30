@@ -15,48 +15,28 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs;
 
-import java.util.Map;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class HighHeapUsageYoungGenRcaConfig extends GenericRcaConfig {
+public class HighHeapUsageYoungGenRcaConfig {
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageYoungGenRcaConfig.class);
   public static final String CONFIG_NAME = "high-heap-usage-young-gen-rca";
-  private int promotionRateThreshold;
-  private int youngGenGcTimeThreshold;
+  private Integer promotionRateThreshold;
+  private Integer youngGenGcTimeThreshold;
   //promotion rate threshold is 500 Mb/s
   public static final int DEFAULT_PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC = 500;
   //young gc time threshold is 400 ms per second
   public static final int DEFAULT_YOUNG_GEN_GC_TIME_THRESHOLD_IN_MS_PER_SEC = 400;
 
-  public HighHeapUsageYoungGenRcaConfig(final Map<String, Object> rcaConfigSettings) {
-    this.promotionRateThreshold = DEFAULT_PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC;
-    this.youngGenGcTimeThreshold = DEFAULT_YOUNG_GEN_GC_TIME_THRESHOLD_IN_MS_PER_SEC;
-    parseConfig(rcaConfigSettings);
-  }
-
-  @Override
-  public String getRcaName() {
-    return CONFIG_NAME;
-  }
-
-  private void parseConfig(final Map<String, Object> rcaConfigSettings) {
-    try {
-      Map<String, Object> rcaMapObject = getRcaMapObject(rcaConfigSettings);
-      if (rcaMapObject != null) {
-        Object obj;
-        obj = rcaMapObject.getOrDefault(RCA_CONF_KEY_CONSTANTS.PROMOTION_RATE_THRES, null);
-        if (obj != null) {
-          promotionRateThreshold = (Integer) obj;
-        }
-        obj = rcaMapObject.getOrDefault(RCA_CONF_KEY_CONSTANTS.YOUNG_GEN_GC_TIME_THRES, null);
-        if (obj != null) {
-          youngGenGcTimeThreshold = (Integer) obj;
-        }
-      }
+  public HighHeapUsageYoungGenRcaConfig(final RcaConf rcaConf) {
+    promotionRateThreshold = rcaConf.readRcaConfig(CONFIG_NAME, RCA_CONF_KEY_CONSTANTS.PROMOTION_RATE_THRES, Integer.class);
+    youngGenGcTimeThreshold = rcaConf.readRcaConfig(CONFIG_NAME, RCA_CONF_KEY_CONSTANTS.YOUNG_GEN_GC_TIME_THRES, Integer.class);
+    if (promotionRateThreshold == null) {
+      promotionRateThreshold = DEFAULT_PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC;
     }
-    catch (ClassCastException ne) {
-      LOG.error("rca.conf contains value in invalid format, trace : {}", ne.getMessage());
+    if (youngGenGcTimeThreshold == null) {
+      youngGenGcTimeThreshold = DEFAULT_YOUNG_GEN_GC_TIME_THRESHOLD_IN_MS_PER_SEC;
     }
   }
 
