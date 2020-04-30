@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.util.ClusterUtils;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import java.util.HashSet;
 import java.util.List;
@@ -35,12 +36,12 @@ public class NodeStateManager {
   /**
    * Map of host address of a remote node to the last time we received a flow unit from that node.
    */
-  private ConcurrentMap<String, Long> lastReceivedTimestampMap = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, Long> lastReceivedTimestampMap = new ConcurrentHashMap<>();
 
   /**
    * Map of host address to the current subscription status of that host.
    */
-  private ConcurrentMap<String, AtomicReference<SubscriptionStatus>> subscriptionStatusMap =
+  private final ConcurrentMap<String, AtomicReference<SubscriptionStatus>> subscriptionStatusMap =
       new ConcurrentHashMap<>();
 
   /**
@@ -67,12 +68,19 @@ public class NodeStateManager {
    */
   public long getLastReceivedTimestamp(String graphNode, String host) {
     final String compositeKey = graphNode + SEPARATOR + host;
-    if (lastReceivedTimestampMap.containsKey(compositeKey)) {
-      return lastReceivedTimestampMap.get(compositeKey);
-    }
+    // Return the last received value or a value that is in the distant past.
+    return lastReceivedTimestampMap.getOrDefault(compositeKey, 0L);
+  }
 
-    // Return a value that is in the distant past.
-    return 0;
+  @VisibleForTesting
+  SubscriptionStatus getSubscriptionStatus(String graphNode, String host) {
+    final String compositeKey = graphNode + SEPARATOR + host;
+    // Return the last received value or a value that is in the distant past.
+    AtomicReference<SubscriptionStatus> ref = subscriptionStatusMap.get(compositeKey);
+    if (ref == null) {
+      return null;
+    }
+    return ref.get();
   }
 
   /**

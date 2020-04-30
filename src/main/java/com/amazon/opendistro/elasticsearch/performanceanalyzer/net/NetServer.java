@@ -85,6 +85,12 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
     this.useHttps = useHttps;
   }
 
+  // postStartHook executes after the NetServer has successfully started its Server
+  protected void postStartHook() {}
+
+  // shutdownHook executes after the NetServer has shutdown its Server
+  protected void shutdownHook() {}
+
   /**
    * When an object implementing interface <code>Runnable</code> is used to create a thread,
    * starting the thread causes the object's <code>run</code> method to be called in that separately
@@ -102,16 +108,17 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
         port,
         numServerThreads,
         useHttps);
-
     server = useHttps ? buildHttpsServer() : buildHttpServer();
     try {
       server.start();
       LOG.info("gRPC server started successfully!");
+      postStartHook();
       server.awaitTermination();
       LOG.info(" gRPC server terminating..");
     } catch (InterruptedException | IOException e) {
       e.printStackTrace();
       server.shutdownNow();
+      shutdownHook();
     }
   }
 
