@@ -166,18 +166,16 @@ public class PersistFlowUnitAndSummaryTest {
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
     Persistable persistable = PersistenceFactory.create(rcaConf);
     RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, AllMetrics.NodeRole.DATA);
-    // Wait at most 1 minute for the persisted data to show up
+    // Wait at most 1 minute for the persisted data to show up with the correct contents
     WaitFor.waitFor(() -> {
       String readTableStr = persistable.read();
-      return readTableStr != null && readTableStr.contains("HotResourceSummary");
+      if (readTableStr != null) {
+        return readTableStr.contains("HotResourceSummary") && readTableStr.contains("DummyYoungGenRca")
+                && readTableStr.contains("HotNodeSummary") && readTableStr.contains("HotNodeRcaX")
+                && readTableStr.contains("HighHeapUsageClusterRcaX");
+      }
+      return false;
     }, 1, TimeUnit.MINUTES);
-    // Verify the persisted data's contents
-    String readTableStr = persistable.read();
-    Assert.assertTrue(readTableStr.contains("HotResourceSummary"));
-    Assert.assertTrue(readTableStr.contains("DummyYoungGenRca"));
-    Assert.assertTrue(readTableStr.contains("HotNodeSummary"));
-    Assert.assertTrue(readTableStr.contains("HotNodeRcaX"));
-    Assert.assertFalse(readTableStr.contains("HighHeapUsageClusterRcaX"));
     scheduler.shutdown();
     persistable.close();
   }
@@ -196,18 +194,16 @@ public class PersistFlowUnitAndSummaryTest {
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_elected_master.conf").toString());
     Persistable persistable = PersistenceFactory.create(rcaConf);
     RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, NodeRole.ELECTED_MASTER);
-    // Wait at most 1 minute for the persisted data to show up
+    // Wait at most 1 minute for the persisted data to show up with the correct contents
     WaitFor.waitFor(() -> {
       String readTableStr = persistable.read();
-      return readTableStr != null && readTableStr.contains("HotResourceSummary");
+      if (readTableStr != null) {
+        return readTableStr.contains("HotResourceSummary") && readTableStr.contains("DummyYoungGenRca")
+                && readTableStr.contains("HotNodeSummary") && readTableStr.contains("HotNodeRcaX")
+                && readTableStr.contains("HighHeapUsageClusterRcaX");
+      }
+      return false;
     }, 1, TimeUnit.MINUTES);
-    // Verify the persisted data's contents
-    String readTableStr = persistable.read();
-    Assert.assertTrue(readTableStr.contains("HotResourceSummary"));
-    Assert.assertTrue(readTableStr.contains("DummyYoungGenRca"));
-    Assert.assertTrue(readTableStr.contains("HotNodeSummary"));
-    Assert.assertTrue(readTableStr.contains("HotNodeRcaX"));
-    Assert.assertTrue(readTableStr.contains("HighHeapUsageClusterRcaX"));
     scheduler.shutdown();
     persistable.close();
   }
