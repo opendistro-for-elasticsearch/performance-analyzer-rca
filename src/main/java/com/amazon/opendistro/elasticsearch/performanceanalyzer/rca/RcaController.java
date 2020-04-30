@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.ClientServers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerThreads;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
@@ -300,7 +301,8 @@ public class RcaController {
       }
       lastModifiedTimeInMillisInMemory = lastModifiedTimeInMillisOnDisk;
     } catch (Exception e) {
-        LOG.error("Couldn't read/update the muted RCAs.", e);
+      LOG.error("Couldn't read/update the muted RCAs", e);
+      StatsCollector.instance().logException(StatExceptionCode.MUTE_RCA_ERROR);
     }
   }
 
