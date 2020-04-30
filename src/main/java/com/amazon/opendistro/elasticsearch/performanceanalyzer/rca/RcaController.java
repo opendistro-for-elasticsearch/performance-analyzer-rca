@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RCA_MUTE_ERROR_METRIC;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.ClientServers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerThreads;
@@ -146,6 +148,10 @@ public class RcaController {
     try {
       subscriptionManager.setCurrentLocus(rcaConf.getTagMap().get("locus"));
       List<ConnectedComponent> connectedComponents = RcaUtil.getAnalysisGraphComponents(rcaConf);
+
+      // Mute the rca nodes after the graph creation and before the scheduler start
+      readAndUpdateMutesRcas();
+
       Queryable db = new MetricsDBProvider();
       ThresholdMain thresholdMain = new ThresholdMain(RcaConsts.THRESHOLDS_PATH, rcaConf);
       Persistable persistable = PersistenceFactory.create(rcaConf);
@@ -277,6 +283,11 @@ public class RcaController {
    */
   private void readAndUpdateMutesRcas() {
     try {
+      if (ConnectedComponent.getNodeNames().isEmpty()) {
+        LOG.info("Analysis graph not initialized/has been reset; returning.");
+        return;
+      }
+
       // If the rca config file has been updated since the lastModifiedTimeInMillisInMemory in memory,
       // refresh the `muted-rcas` value from rca config file.
       long lastModifiedTimeInMillisOnDisk = rcaConf.getLastModifiedTime();
@@ -300,7 +311,8 @@ public class RcaController {
       }
       lastModifiedTimeInMillisInMemory = lastModifiedTimeInMillisOnDisk;
     } catch (Exception e) {
-        LOG.error("Couldn't read/update the muted RCAs.", e);
+      LOG.error("Couldn't read/update the muted RCAs", e);
+      StatsCollector.instance().logMetric(RCA_MUTE_ERROR_METRIC);
     }
   }
 
