@@ -164,9 +164,11 @@ public class WireHopperTest {
         uut.sendData(msg);
         WaitFor.waitFor(() -> nodeStateManager.getLastReceivedTimestamp(NODE1, LOCALHOST) != 0, 1,
                 TimeUnit.SECONDS);
-        List<FlowUnitMessage> receivedMags = receivedFlowUnitStore.drainNode(NODE1);
-        Assert.assertEquals(1L, receivedMags.size());
-
+        // Verify that the data gets persisted into receivedFlowUnitStore once it's received
+        WaitFor.waitFor(() -> {
+            List<FlowUnitMessage> receivedMags = receivedFlowUnitStore.drainNode(NODE1);
+            return receivedMags.size() == 1;
+        }, 10, TimeUnit.SECONDS);
         // verify resilience to RejectedExecutionException
         clientExecutor.set(rejectingExecutor);
         uut.sendData(msg);
