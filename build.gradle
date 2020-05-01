@@ -123,7 +123,8 @@ jacocoTestReport {
         classDirectories.from = files(classDirectories.files.collect {
             fileTree(dir: it,
                     include: [
-                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/rca/**'
+                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/rca/**',
+                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/reader/**'
                     ],
                     exclude: [
                             '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/grpc/**',
@@ -139,7 +140,8 @@ jacocoTestCoverageVerification {
         classDirectories.from = files(classDirectories.files.collect {
             fileTree(dir: it,
                     include: [
-                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/rca/**'
+                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/rca/**',
+                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/reader/**'
                     ],
                     exclude: [
                             '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/grpc/**'])
@@ -336,6 +338,15 @@ task copyAllArtifacts(type: Copy) {
     from(rcaArtifacts)
     from(paArtifacts)
     into(dockerArtifactsDir)
+}
+
+task copyReaderMetricsFiles(type: Copy) {
+    dependsOn(buildPa)
+    copy{
+        from ('src/test/resources/reader'){
+        }
+        into 'build/private/test_resources'
+    }
 }
 
 task buildDocker(type: Exec) {
