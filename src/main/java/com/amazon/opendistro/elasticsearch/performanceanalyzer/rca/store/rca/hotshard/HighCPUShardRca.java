@@ -15,9 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension.INDEX_NAME;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension.SHARD_ID;
-
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -102,13 +99,8 @@ public class HighCPUShardRca extends Rca<ResourceFlowUnit> {
                                  final HashMap<IndexShardKey, SlidingWindow<SlidingWindowData>> metricMap) {
         for (Record record : metricFlowUnit.getData()) {
             try {
-                String indexName = record.getValue(INDEX_NAME.toString(), String.class);
-                String shardId = record.getValue(SHARD_ID.toString(), String.class);
-                if (indexName == null || shardId == null) {
-                    continue;
-                }
+                IndexShardKey indexShardKey = IndexShardKey.buildIndexShardKey(record);
                 double usage = record.getValue(MetricsDB.SUM, Double.class);
-                IndexShardKey indexShardKey = new IndexShardKey(indexName, Integer.parseInt(shardId));
                 SlidingWindow<SlidingWindowData> usageDeque = metricMap.get(indexShardKey);
                 if (null == usageDeque) {
                     usageDeque = new SlidingWindow<>(SLIDING_WINDOW_IN_SECONDS, TimeUnit.SECONDS);
@@ -122,11 +114,11 @@ public class HighCPUShardRca extends Rca<ResourceFlowUnit> {
         }
     }
 
-    private void consumeMetrics(final List<MetricFlowUnit> metrics,
+    private void consumeMetrics(final Metric metric,
                                 final HashMap<IndexShardKey, SlidingWindow<SlidingWindowData>> metricMap) {
-        for (MetricFlowUnit metric: metrics) {
-            if (metric.getData() != null) {
-                consumeFlowUnit(metric, metrics.getClass().getName(), metricMap);
+        for (MetricFlowUnit metricFlowUnit : metric.getFlowUnits()) {
+            if (metricFlowUnit.getData() != null) {
+                consumeFlowUnit(metricFlowUnit, metric.getClass().getName(), metricMap);
             }
         }
     }
@@ -150,15 +142,12 @@ public class HighCPUShardRca extends Rca<ResourceFlowUnit> {
      */
     @Override
     public ResourceFlowUnit operate() {
-        List<MetricFlowUnit> cpuUtilizationMetrics = cpuUtilization.getFlowUnits();
-        List<MetricFlowUnit> ioTotThroughputMetrics = ioTotThroughput.getFlowUnits();
-        List<MetricFlowUnit> ioTotSyscallRateMetrics = ioTotSyscallRate.getFlowUnits();
         counter += 1;
 
         // Populate the Resource HashMaps
-        consumeMetrics(cpuUtilizationMetrics, cpuUtilizationMap);
-        consumeMetrics(ioTotThroughputMetrics, ioTotThroughputMap);
-        consumeMetrics(ioTotSyscallRateMetrics, ioTotSyscallRateMap);
+        consumeMetrics(cpuUtilization, cpuUtilizationMap);
+        consumeMetrics(ioTotThroughput, ioTotThroughputMap);
+        consumeMetrics(ioTotSyscallRate, ioTotSyscallRateMap);;
 
         if (counter == rcaPeriod) {
             ResourceContext context = new ResourceContext(Resources.State.HEALTHY);

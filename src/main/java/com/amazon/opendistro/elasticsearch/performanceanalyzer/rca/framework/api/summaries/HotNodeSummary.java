@@ -141,7 +141,6 @@ public class HotNodeSummary extends GenericSummary {
     List<Object> value = new ArrayList<>();
     value.add(this.nodeID);
     value.add(this.hostAddress);
-    //value.add(this.hotShardSummaryList);
     return value;
   }
 
