@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.Record;
@@ -66,7 +67,10 @@ public class IndexShardKey {
 
   @Override
   public int hashCode() {
-    return indexName.hashCode() * 31 + shardId;
+    return new HashCodeBuilder(17, 37)
+            .append(indexName)
+            .append(shardId)
+            .toHashCode();
   }
 
   @Override
