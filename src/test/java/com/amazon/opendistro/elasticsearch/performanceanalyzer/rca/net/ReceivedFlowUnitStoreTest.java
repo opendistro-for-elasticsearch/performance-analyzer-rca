@@ -18,6 +18,10 @@ import org.junit.experimental.categories.Category;
 public class ReceivedFlowUnitStoreTest {
 
   private static final String TEST_NODE = "testNode";
+  private static final String TEST_NODE_2 = "testNode2";
+  private static final long TIMESTAMP_1 = 1L;
+  private static final long TIMESTAMP_2 = 2L;
+  private static final long TIMESTAMP_3 = 3L;
   private static final int Q_SIZE = 1000;
   private static final int NUM_THREADS = 2;
 
@@ -51,6 +55,21 @@ public class ReceivedFlowUnitStoreTest {
     testFlowUnitStore.enqueue(TEST_NODE, buildTestFlowUnitMessage());
 
     Assert.assertEquals(1, testFlowUnitStore.drainNode(TEST_NODE).size());
+  }
+
+  @Test
+  public void testDrainAll() {
+    FlowUnitMessage msg1 = FlowUnitMessage.newBuilder().setTimeStamp(TIMESTAMP_1).build();
+    FlowUnitMessage msg2 = FlowUnitMessage.newBuilder().setTimeStamp(TIMESTAMP_2).build();
+    FlowUnitMessage msg3 = FlowUnitMessage.newBuilder().setTimeStamp(TIMESTAMP_3).build();
+    testFlowUnitStore.enqueue(TEST_NODE, msg1);
+    testFlowUnitStore.enqueue(TEST_NODE, msg2);
+    testFlowUnitStore.enqueue(TEST_NODE_2, msg3);
+    List<FlowUnitMessage> drained = testFlowUnitStore.drainAll();
+    Assert.assertEquals(3, drained.size());
+    Assert.assertTrue(drained.contains(msg1));
+    Assert.assertTrue(drained.contains(msg2));
+    Assert.assertTrue(drained.contains(msg3));
   }
 
   private FlowUnitMessage buildTestFlowUnitMessage() {

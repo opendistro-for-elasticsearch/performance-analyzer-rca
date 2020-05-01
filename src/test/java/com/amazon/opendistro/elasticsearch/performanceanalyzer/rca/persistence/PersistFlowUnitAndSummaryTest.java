@@ -43,8 +43,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.Hig
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.WaitFor;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -164,13 +166,16 @@ public class PersistFlowUnitAndSummaryTest {
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
     Persistable persistable = PersistenceFactory.create(rcaConf);
     RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, AllMetrics.NodeRole.DATA);
-    Thread.sleep(4000);
-    String readTableStr = persistable.read();
-    Assert.assertTrue(readTableStr.contains("HotResourceSummary"));
-    Assert.assertTrue(readTableStr.contains("DummyYoungGenRca"));
-    Assert.assertTrue(readTableStr.contains("HotNodeSummary"));
-    Assert.assertTrue(readTableStr.contains("HotNodeRcaX"));
-    Assert.assertFalse(readTableStr.contains("HighHeapUsageClusterRcaX"));
+    // Wait at most 1 minute for the persisted data to show up with the correct contents
+    WaitFor.waitFor(() -> {
+      String readTableStr = persistable.read();
+      if (readTableStr != null) {
+        return readTableStr.contains("HotResourceSummary") && readTableStr.contains("DummyYoungGenRca")
+                && readTableStr.contains("HotNodeSummary") && readTableStr.contains("HotNodeRcaX")
+                && readTableStr.contains("HighHeapUsageClusterRcaX");
+      }
+      return false;
+    }, 1, TimeUnit.MINUTES);
     scheduler.shutdown();
     persistable.close();
   }
@@ -189,13 +194,16 @@ public class PersistFlowUnitAndSummaryTest {
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_elected_master.conf").toString());
     Persistable persistable = PersistenceFactory.create(rcaConf);
     RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, NodeRole.ELECTED_MASTER);
-    Thread.sleep(4000);
-    String readTableStr = persistable.read();
-    Assert.assertTrue(readTableStr.contains("HotResourceSummary"));
-    Assert.assertTrue(readTableStr.contains("DummyYoungGenRca"));
-    Assert.assertTrue(readTableStr.contains("HotNodeSummary"));
-    Assert.assertTrue(readTableStr.contains("HotNodeRcaX"));
-    Assert.assertTrue(readTableStr.contains("HighHeapUsageClusterRcaX"));
+    // Wait at most 1 minute for the persisted data to show up with the correct contents
+    WaitFor.waitFor(() -> {
+      String readTableStr = persistable.read();
+      if (readTableStr != null) {
+        return readTableStr.contains("HotResourceSummary") && readTableStr.contains("DummyYoungGenRca")
+                && readTableStr.contains("HotNodeSummary") && readTableStr.contains("HotNodeRcaX")
+                && readTableStr.contains("HighHeapUsageClusterRcaX");
+      }
+      return false;
+    }, 1, TimeUnit.MINUTES);
     scheduler.shutdown();
     persistable.close();
   }

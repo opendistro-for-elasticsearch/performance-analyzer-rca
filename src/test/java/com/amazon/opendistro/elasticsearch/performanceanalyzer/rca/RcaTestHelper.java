@@ -20,16 +20,26 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Scanner;
+
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.FileAppender;
 import org.jooq.tools.json.JSONObject;
@@ -129,4 +139,20 @@ public class RcaTestHelper {
       e.printStackTrace();
     }
   }
+
+  public static void updateConfFileForMutedRcas(String rcaConfPath, String mutedRcas) throws Exception {
+
+    // create the config json Object from rca config file
+    Scanner scanner = new Scanner(new FileInputStream(rcaConfPath), StandardCharsets.UTF_8.name());
+    String jsonText = scanner.useDelimiter("\\A").next();
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
+    mapper.enable(SerializationFeature.INDENT_OUTPUT);
+    JsonNode configObject = mapper.readTree(jsonText);
+
+    // update the `MUTED_RCAS_CONFIG` value in config Object
+    ((ObjectNode) configObject).put("muted-rcas", mutedRcas);
+    mapper.writeValue(new FileOutputStream(rcaConfPath), configObject);
+  }
+
 }

@@ -194,6 +194,9 @@ public class RCASchedulerTask implements Runnable {
           // This node will be executed locally, so add it to the set to keep track of this.
           locallyExecutableSet.add(node);
 
+          // read rca.conf to set threshold if needed.
+          node.readRcaConf(conf);
+
           // Now we gather all the remote dependencies if there are any and request an intent to
           // consume their data.
           CreatedTasklets newTasklets =

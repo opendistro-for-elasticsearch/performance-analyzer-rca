@@ -15,9 +15,29 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
+
 public abstract class GenericContext {
-  // TODO
-  // The GenericContext class currently has only one derived class ResourceContext.
-  // We are expecting to add more different types of context and some abstract methods can be added
-  // here
+    private final Resources.State state;
+
+    public GenericContext(Resources.State state) {
+        this.state = state;
+    }
+
+    public Resources.State getState() {
+        return this.state;
+    }
+
+    public boolean isUnhealthy() {
+        return this.state == Resources.State.UNHEALTHY || this.state == Resources.State.CONTENDED;
+    }
+
+    public boolean isUnknown() {
+        return this.state == Resources.State.UNKNOWN;
+    }
+
+    @Override
+    public String toString() {
+        return this.state.toString();
+    }
 }

@@ -19,23 +19,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericContext;
 
 public class SymptomContext extends GenericContext {
-
-  private Resources.State state;
-
   public SymptomContext(Resources.State state) {
-    this.state = state;
-  }
-
-  public Resources.State getState() {
-    return this.state;
+    super(state);
   }
 
   public static SymptomContext generic() {
     return new SymptomContext(Resources.State.UNKNOWN);
-  }
-
-  @Override
-  public String toString() {
-    return this.state.toString();
   }
 }

@@ -108,7 +108,7 @@ public class HighCPUShardRca extends Rca<ResourceFlowUnit> {
                     continue;
                 }
                 double usage = record.getValue(MetricsDB.SUM, Double.class);
-                IndexShardKey indexShardKey = new IndexShardKey(indexName, shardId);
+                IndexShardKey indexShardKey = new IndexShardKey(indexName, Integer.parseInt(shardId));
                 SlidingWindow<SlidingWindowData> usageDeque = metricMap.get(indexShardKey);
                 if (null == usageDeque) {
                     usageDeque = new SlidingWindow<>(SLIDING_WINDOW_IN_SECONDS, TimeUnit.SECONDS);
@@ -177,8 +177,8 @@ public class HighCPUShardRca extends Rca<ResourceFlowUnit> {
                 if (avgCpuUtilization > CPU_UTILIZATION_THRESHOLD
                         || avgIoTotThroughput > IO_TOT_THROUGHPUT_THRESHOLD_IN_BYTES
                         || avgIoTotSyscallRate > IO_TOT_SYSCALL_RATE_THRESHOLD_PER_SECOND) {
-                    HotShardSummary summary = new HotShardSummary(
-                            indexShardKey.getIndexName(), indexShardKey.getShardId(), currentNode.getId(), SLIDING_WINDOW_IN_SECONDS);
+                    HotShardSummary summary = new HotShardSummary(indexShardKey.getIndexName(),
+                            String.valueOf(indexShardKey.getShardId()), currentNode.getId(), SLIDING_WINDOW_IN_SECONDS);
                     summary.setcpuUtilization(avgCpuUtilization);
                     summary.setCpuUtilizationThreshold(CPU_UTILIZATION_THRESHOLD);
                     summary.setIoThroughput(avgIoTotThroughput);

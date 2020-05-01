@@ -16,8 +16,10 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
@@ -28,6 +30,7 @@ import org.apache.logging.log4j.Logger;
 
 public class RcaConf {
   protected String configFileLoc;
+  protected long lastModifiedTime;
   protected ConfJsonWrapper conf;
 
   protected static RcaConf instance;
@@ -38,8 +41,11 @@ public class RcaConf {
     JsonFactory factory = new JsonFactory();
     factory.enable(JsonParser.Feature.ALLOW_COMMENTS);
     ObjectMapper mapper = new ObjectMapper(factory);
+    mapper.enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
     try {
-      this.conf = mapper.readValue(new File(this.configFileLoc), ConfJsonWrapper.class);
+      File configFile = new File(this.configFileLoc);
+      this.lastModifiedTime = configFile.lastModified();
+      this.conf = mapper.readValue(configFile, ConfJsonWrapper.class);
     } catch (IOException e) {
       LOG.error(e.getMessage());
     }
@@ -84,6 +90,11 @@ public class RcaConf {
     return configFileLoc;
   }
 
+  // Returns the last modified time of Rca Conf file
+  public long getLastModifiedTime() {
+    return lastModifiedTime;
+  }
+
   public String getAnalysisGraphEntryPoint() {
     return conf.getAnalysisGraphEntryPoint();
   }
@@ -94,5 +105,13 @@ public class RcaConf {
 
   public int getPerVertexBufferLength() {
     return conf.getPerVertexBufferLength();
+  }
+
+  public HighHeapUsageOldGenRcaConfig getHighHeapUsageOldGenRcaConfig() {
+    return conf.getHighHeapUsageOldGenRcaConfig();
+  }
+
+  public List<String> getMutedRcaList() {
+    return conf.getMutedRcaList();
   }
 }

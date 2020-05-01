@@ -113,7 +113,7 @@ public class RcaSpecTests {
   // @Test(expected = RuntimeException.class)
   public void testAddToFlowFieldBeforeAddingAsDependency() {
     Metric heapUsed = new Heap_Used(5);
-    HighHeapUsageOldGenRca highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(1, heapUsed, null, null);
+    HighHeapUsageOldGenRca highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(1, heapUsed, null, null, null);
     highHeapUsageOldGenRca.addAllUpstreams(Collections.singletonList(heapUsed));
   }
 

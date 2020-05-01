@@ -15,9 +15,11 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +38,8 @@ class ConfJsonWrapper {
   private final String analysisGraphEntryPoint;
   private final int networkQueueLength;
   private final int perVertexBufferLength;
+  private final HighHeapUsageOldGenRcaConfig highHeapUsageOldGenRcaConfig;
+  private final List<String> mutedRcaList;
 
   String getRcaStoreLoc() {
     return rcaStoreLoc;
@@ -77,8 +81,16 @@ class ConfJsonWrapper {
     return perVertexBufferLength;
   }
 
+  List<String> getMutedRcaList() {
+    return mutedRcaList;
+  }
+
   public void setDatastoreRcaLogDirectory(String rcaLogLocation) {
     this.datastore.put(RcaConsts.DATASTORE_LOC_KEY, rcaLogLocation);
+  }
+
+  HighHeapUsageOldGenRcaConfig getHighHeapUsageOldGenRcaConfig() {
+    return highHeapUsageOldGenRcaConfig;
   }
 
   ConfJsonWrapper(
@@ -91,7 +103,9 @@ class ConfJsonWrapper {
       @JsonProperty("datastore") Map<String, String> datastore,
       @JsonProperty("analysis-graph-implementor") String analysisGraphEntryPoint,
       @JsonProperty("network-queue-length") int networkQueueLength,
-      @JsonProperty("max-flow-units-per-vertex-buffer") int perVertexBufferLength) {
+      @JsonProperty("max-flow-units-per-vertex-buffer") int perVertexBufferLength,
+      @JsonProperty("high-heap-usage-old-gen-rca") Map<String, String> highHeapUsageOldGenRcaSettings,
+      @JsonProperty("muted-rcas") String mutedRcas) {
     this.creationTime = System.currentTimeMillis();
     this.rcaStoreLoc = rcaStoreLoc;
     this.thresholdStoreLoc = thresholdStoreLoc;
@@ -103,5 +117,17 @@ class ConfJsonWrapper {
     this.analysisGraphEntryPoint = analysisGraphEntryPoint;
     this.networkQueueLength = networkQueueLength;
     this.perVertexBufferLength = perVertexBufferLength;
+    this.highHeapUsageOldGenRcaConfig = new HighHeapUsageOldGenRcaConfig(highHeapUsageOldGenRcaSettings);
+
+    if (mutedRcas.isEmpty()) {
+      this.mutedRcaList = Collections.emptyList();
+    } else {
+      // Split the string on a delimiter defined as: zero or more whitespace,
+      // a literal comma, zero or more whitespace
+      this.mutedRcaList = Arrays.asList(mutedRcas.split("\\s*,\\s*"));
+      this.mutedRcaList.stream().forEach(
+              mutedRca -> mutedRca.trim()
+      );
+    }
   }
 }
