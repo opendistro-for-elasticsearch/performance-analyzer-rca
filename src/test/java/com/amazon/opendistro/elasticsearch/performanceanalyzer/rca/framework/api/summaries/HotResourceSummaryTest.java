@@ -38,6 +38,7 @@ public class HotResourceSummaryTest {
     private final double MIN_VALUE = 0;
     private final double MAX_VALUE = 6.022;
     private final int TIME_PERIOD = 2020;
+    private final String META_DATA = "128G JVM";
     private final String CONSUMER_NAME = "CONSUMER";
     private final double CONSUMER_VALUE = 8.854;
 
@@ -45,7 +46,7 @@ public class HotResourceSummaryTest {
 
     @Before
     public void setup() {
-        uut = new HotResourceSummary(RESOURCE_TYPE, THRESHOLD, VALUE, TIME_PERIOD);
+        uut = new HotResourceSummary(RESOURCE_TYPE, THRESHOLD, VALUE, TIME_PERIOD, META_DATA);
         uut.setValueDistribution(MIN_VALUE, MAX_VALUE, AVG_VALUE);
         uut.addNestedSummaryList(new TopConsumerSummary(CONSUMER_NAME, CONSUMER_VALUE));
     }
@@ -62,6 +63,7 @@ public class HotResourceSummaryTest {
         Assert.assertEquals(MIN_VALUE, msg.getMinValue(), 0);
         Assert.assertEquals(MAX_VALUE, msg.getMaxValue(), 0);
         Assert.assertEquals(TIME_PERIOD, msg.getTimePeriod());
+        Assert.assertEquals(META_DATA, msg.getMetaData());
         Assert.assertEquals(1, msg.getConsumers().getConsumerCount());
         Assert.assertEquals(CONSUMER_NAME, msg.getConsumers().getConsumer(0).getName());
         Assert.assertEquals(CONSUMER_VALUE, msg.getConsumers().getConsumer(0).getValue(), 0);
@@ -85,6 +87,7 @@ public class HotResourceSummaryTest {
         Assert.assertEquals(MIN_VALUE, msg.getMinValue(), 0);
         Assert.assertEquals(MAX_VALUE, msg.getMaxValue(), 0);
         Assert.assertEquals(TIME_PERIOD, msg.getTimePeriod());
+        Assert.assertEquals(META_DATA, msg.getMetaData());
         Assert.assertEquals(1, msg.getConsumers().getConsumerCount());
         Assert.assertEquals(CONSUMER_NAME, msg.getConsumers().getConsumer(0).getName());
         Assert.assertEquals(CONSUMER_VALUE, msg.getConsumers().getConsumer(0).getValue(), 0);
@@ -93,7 +96,8 @@ public class HotResourceSummaryTest {
     @Test
     public void testToString() {
         String expected = ResourceTypeUtil.getResourceTypeName(RESOURCE_TYPE) + " " + THRESHOLD + " " + VALUE
-                + " " + ResourceTypeUtil.getResourceTypeUnit(RESOURCE_TYPE) + " " + uut.getNestedSummaryList();
+                + " " + ResourceTypeUtil.getResourceTypeUnit(RESOURCE_TYPE) + " " + uut.getNestedSummaryList()
+                + " " + META_DATA;
         Assert.assertEquals(expected, uut.toString());
     }
 
@@ -105,7 +109,7 @@ public class HotResourceSummaryTest {
     @Test
     public void testGetSqlSchema() {
         List<Field<?>> schema = uut.getSqlSchema();
-        Assert.assertEquals(8, schema.size());
+        Assert.assertEquals(9, schema.size());
         Assert.assertEquals(HotResourceSummary.ResourceSummaryField.RESOURCE_TYPE_FIELD.getField(), schema.get(0));
         Assert.assertEquals(HotResourceSummary.ResourceSummaryField.THRESHOLD_FIELD.getField(), schema.get(1));
         Assert.assertEquals(HotResourceSummary.ResourceSummaryField.VALUE_FIELD.getField(), schema.get(2));
@@ -119,7 +123,7 @@ public class HotResourceSummaryTest {
     @Test
     public void testGetSqlValue() {
         List<Object> values = uut.getSqlValue();
-        Assert.assertEquals(8, values.size());
+        Assert.assertEquals(9, values.size());
         Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(RESOURCE_TYPE), values.get(0));
         Assert.assertEquals(THRESHOLD, values.get(1));
         Assert.assertEquals(VALUE, values.get(2));
@@ -128,6 +132,7 @@ public class HotResourceSummaryTest {
         Assert.assertEquals(MAX_VALUE, values.get(5));
         Assert.assertEquals(ResourceTypeUtil.getResourceTypeUnit(RESOURCE_TYPE), values.get(6));
         Assert.assertEquals(TIME_PERIOD, values.get(7));
+        Assert.assertEquals(META_DATA, values.get(8));
     }
 
     @Test
@@ -151,6 +156,8 @@ public class HotResourceSummaryTest {
                 json.get(HotResourceSummary.SQL_SCHEMA_CONSTANTS.UNIT_TYPE_COL_NAME).getAsString());
         Assert.assertEquals(TIME_PERIOD,
                 json.get(HotResourceSummary.SQL_SCHEMA_CONSTANTS.TIME_PERIOD_COL_NAME).getAsDouble(), 0);
+        Assert.assertEquals(META_DATA,
+                json.get(HotResourceSummary.SQL_SCHEMA_CONSTANTS.META_DATA_COL_NAME).getAsString());
         Assert.assertEquals(uut.nestedSummaryListToJson(),
                 json.get(uut.getNestedSummaryList().get(0).getTableName()).getAsJsonArray());
     }
@@ -177,7 +184,7 @@ public class HotResourceSummaryTest {
         GenericSummary summary = HotResourceSummary.buildSummary(testRecord);
         Assert.assertNotNull(summary);
         List<Object> values = summary.getSqlValue();
-        Assert.assertEquals(8, values.size());
+        Assert.assertEquals(9, values.size());
         Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(RESOURCE_TYPE), values.get(0));
         Assert.assertEquals(THRESHOLD, values.get(1));
         Assert.assertEquals(VALUE, values.get(2));

@@ -20,6 +20,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSumma
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
+import java.util.Arrays;
 import java.util.List;
 import org.jooq.Field;
 import org.jooq.Record;
@@ -31,12 +33,18 @@ import org.mockito.Mockito;
 public class HotNodeSummaryTest {
     private static final String NODE_ID = "ABC123";
     private static final String HOST_ADDRESS = "127.0.0.0";
-
     private static HotNodeSummary uut;
 
     @BeforeClass
     public static void setup() {
-        uut = new HotNodeSummary(NODE_ID, HOST_ADDRESS);
+        HotShardSummary hotShardSummary =  new HotShardSummary("index_1", "shard_1", NODE_ID, 2020);
+        hotShardSummary.setcpuUtilization(0.45);
+        hotShardSummary.setCpuUtilizationThreshold(0.10);
+        hotShardSummary.setIoThroughput(500000);
+        hotShardSummary.setIoThroughputThreshold(250000);
+        hotShardSummary.setIoSysCallrate(0.232);
+        hotShardSummary.setIoSysCallrateThreshold(0.10);
+        uut = new HotNodeSummary(NODE_ID, HOST_ADDRESS, Arrays.asList(hotShardSummary));
     }
 
     @Test
@@ -45,6 +53,7 @@ public class HotNodeSummaryTest {
         Assert.assertNotNull(msg);
         Assert.assertEquals(NODE_ID, msg.getNodeID());
         Assert.assertEquals(HOST_ADDRESS, msg.getHostAddress());
+        Assert.assertEquals(1, uut.getHotShardSummaryList().size());
     }
 
     @Test
@@ -57,7 +66,8 @@ public class HotNodeSummaryTest {
 
     @Test
     public void testToString() {
-        Assert.assertEquals(NODE_ID + " " + HOST_ADDRESS + " " + uut.getNestedSummaryList(), uut.toString());
+        Assert.assertEquals(NODE_ID + " " + HOST_ADDRESS + " " + uut.getNestedSummaryList() + " " +  uut.getHotShardSummaryList(),
+                uut.toString());
     }
 
     @Test
