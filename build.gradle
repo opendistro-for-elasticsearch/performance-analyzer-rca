@@ -128,6 +128,7 @@ jacocoTestReport {
                     exclude: [
                             '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/grpc/**',
                             '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/rca/framework/api/metrics/**',
+                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/rca/net/requests**'
                     ])
         })
     }

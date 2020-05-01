@@ -17,6 +17,7 @@ public class NodeStateManagerTest {
   private static final String TEST_NODE_1 = "node1";
   private static final String TEST_HOST_2 = "host2";
   private static final String TEST_HOST_3 = "host3";
+  private static final String TEST_HOST_4 = "host4";
   private static final int MS_IN_S = 1000;
   private static final int TEN_S_IN_MILLIS = 10 * MS_IN_S;
   private static final ClusterDetailsEventProcessor.NodeDetails EMPTY_DETAILS =
@@ -89,7 +90,7 @@ public class NodeStateManagerTest {
 
     ImmutableList<String> hostsToSubscribeTo =
         testNodeStateManager.getStaleOrNotSubscribedNodes(TEST_NODE_1, TEN_S_IN_MILLIS,
-            ImmutableSet.of(TEST_HOST_1, TEST_HOST_2));
+            ImmutableSet.of(TEST_HOST_1, TEST_HOST_2, TEST_HOST_4));
 
     Assert.assertEquals(2, hostsToSubscribeTo.size());
     Assert.assertTrue(hostsToSubscribeTo.contains(TEST_HOST_1));

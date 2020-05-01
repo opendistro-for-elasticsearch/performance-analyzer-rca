@@ -136,7 +136,7 @@ public class AbstractReaderTests extends AbstractTests {
   }
 
   protected static String createNodeDetailsMetrics(String id, String ipAddress, AllMetrics.NodeRole nodeRole,
-                                            boolean isMasterNode) {
+                                                   boolean isMasterNode) {
     StringBuffer value = new StringBuffer();
     value.append(new NodeDetailsStatus(id, ipAddress, nodeRole, isMasterNode).serialize());
     return value.toString();
