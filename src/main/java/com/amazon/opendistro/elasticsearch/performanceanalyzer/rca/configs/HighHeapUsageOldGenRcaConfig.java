@@ -15,7 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs;
 
-import java.util.Map;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,27 +25,22 @@ import org.apache.logging.log4j.Logger;
 public class HighHeapUsageOldGenRcaConfig {
 
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageOldGenRcaConfig.class);
-  private int topK;
+  private Integer topK;
   public static final int DEFAULT_TOP_K = 3;
-  private static final String TOP_K_RCA_CONF = "top-k";
+  public static final String CONFIG_NAME = "high-heap-usage-old-gen-rca";
 
-  public HighHeapUsageOldGenRcaConfig(final Map<String, String> settings) {
-    this.topK = DEFAULT_TOP_K;
-    parseConfig(settings);
-  }
-
-  private void parseConfig(final Map<String, String> settings) {
-    if (settings != null && settings.containsKey(TOP_K_RCA_CONF)) {
-      try {
-        topK = Integer.parseInt(settings.get(TOP_K_RCA_CONF));
-      }
-      catch (NumberFormatException ne) {
-        LOG.error("rca.conf contains invalid top-k number");
-      }
+  public HighHeapUsageOldGenRcaConfig(final RcaConf rcaConf) {
+    topK = rcaConf.readRcaConfig(CONFIG_NAME, RCA_CONF_KEY_CONSTANTS.TOP_K, Integer.class);
+    if (topK == null) {
+      topK = DEFAULT_TOP_K;
     }
   }
 
   public int getTopK() {
     return topK;
+  }
+
+  public static class RCA_CONF_KEY_CONSTANTS {
+    public static final String TOP_K = "top-k";
   }
 }

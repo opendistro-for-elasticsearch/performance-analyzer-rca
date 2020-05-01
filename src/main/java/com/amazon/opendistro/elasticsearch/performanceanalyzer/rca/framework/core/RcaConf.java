@@ -17,6 +17,8 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.co
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageYoungGenRcaConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNodeClusterRcaConfig;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -108,10 +110,41 @@ public class RcaConf {
   }
 
   public HighHeapUsageOldGenRcaConfig getHighHeapUsageOldGenRcaConfig() {
-    return conf.getHighHeapUsageOldGenRcaConfig();
+    return new HighHeapUsageOldGenRcaConfig(this);
+  }
+
+  public HighHeapUsageYoungGenRcaConfig getHighHeapUsageYoungGenRcaConfig() {
+    return new HighHeapUsageYoungGenRcaConfig(this);
+  }
+
+  public HotNodeClusterRcaConfig getHotNodeClusterRcaConfig() {
+    return new HotNodeClusterRcaConfig(this);
   }
 
   public List<String> getMutedRcaList() {
     return conf.getMutedRcaList();
+  }
+
+  @SuppressWarnings("unchecked")
+  public <T> T readRcaConfig(String rcaName, String key, Class<? extends T> clazz) {
+    T setting = null;
+    try {
+      Map<String, Object> rcaObj = null;
+      if (conf.getRcaConfigSettings() != null
+          && conf.getRcaConfigSettings().containsKey(rcaName)
+          && conf.getRcaConfigSettings().get(rcaName) != null) {
+        rcaObj = (Map<String, Object>)conf.getRcaConfigSettings().get(rcaName);
+      }
+
+      if (rcaObj != null
+          && rcaObj.containsKey(key)
+          && rcaObj.get(key) != null) {
+        setting = clazz.cast(rcaObj.get(key));
+      }
+    }
+    catch (ClassCastException ne) {
+      LOG.error("rca.conf contains value in invalid format, trace : {}", ne.getMessage());
+    }
+    return setting;
   }
 }
