@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.File;
@@ -140,7 +141,7 @@ public class RcaTestHelper {
     }
   }
 
-  public static void updateConfFileForMutedRcas(String rcaConfPath, String mutedRcas) throws Exception {
+  public static void updateConfFileForMutedRcas(String rcaConfPath, List<String> mutedRcas) throws Exception {
 
     // create the config json Object from rca config file
     Scanner scanner = new Scanner(new FileInputStream(rcaConfPath), StandardCharsets.UTF_8.name());
@@ -151,7 +152,8 @@ public class RcaTestHelper {
     JsonNode configObject = mapper.readTree(jsonText);
 
     // update the `MUTED_RCAS_CONFIG` value in config Object
-    ((ObjectNode) configObject).put("muted-rcas", mutedRcas);
+    ArrayNode array = mapper.valueToTree(mutedRcas);
+    ((ObjectNode) configObject).putArray("muted-rcas").addAll(array);
     mapper.writeValue(new FileOutputStream(rcaConfPath), configObject);
   }
 

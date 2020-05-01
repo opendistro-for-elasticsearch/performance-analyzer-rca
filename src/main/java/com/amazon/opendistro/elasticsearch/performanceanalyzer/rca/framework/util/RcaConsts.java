@@ -46,6 +46,7 @@ public class RcaConsts {
       Paths.get(CONFIG_DIR_PATH, RCA_CONF_IDLE_MASTER_FILENAME).toString();
   public static final String THRESHOLDS_PATH =
       Paths.get(CONFIG_DIR_PATH, THRESHOLDS_DIR_NAME).toString();
+  public static final String RCA_MUTE_ERROR_METRIC = "RcaMuteError";
 
   static final String dir = System.getProperty("user.dir");
   public static final String TEST_CONFIG_PATH =
