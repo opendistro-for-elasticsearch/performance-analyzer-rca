@@ -68,7 +68,7 @@ public class GenericResourceRcaTest {
     cpuUtilizationGroupByOperation.createTestFlowUnits(columnName, Arrays.asList("App1", "0.8"));
     highTotalCpuRcaX.setClock(Clock.offset(constantClock, Duration.ofMinutes(11)));
     flowUnit = highTotalCpuRcaX.operate();
-    Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
+    Assert.assertTrue(flowUnit.getResourceContext().isContented());
     Assert.assertTrue(flowUnit.hasResourceSummary());
 
     // ts = 15, cpu = [0.8, 0.2]
@@ -76,7 +76,7 @@ public class GenericResourceRcaTest {
     cpuUtilizationGroupByOperation.createTestFlowUnits(columnName, Arrays.asList("App1", "0.2"));
     highTotalCpuRcaX.setClock(Clock.offset(constantClock, Duration.ofMinutes(11)));
     flowUnit = highTotalCpuRcaX.operate();
-    Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
+    Assert.assertFalse(flowUnit.getResourceContext().isContented());
     Assert.assertTrue(flowUnit.hasResourceSummary());
   }
 

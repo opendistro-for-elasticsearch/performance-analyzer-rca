@@ -53,7 +53,7 @@ public class GenericContextTest {
         Assert.assertFalse(ResourceContext.generic().isUnhealthy());
         Assert.assertFalse(uut.isUnhealthy());
         uut = new ConcreteGenericContext(Resources.State.CONTENDED);
-        Assert.assertTrue(uut.isUnhealthy());
+        Assert.assertFalse(uut.isUnhealthy());
         uut = new ConcreteGenericContext(Resources.State.UNHEALTHY);
         Assert.assertTrue(uut.isUnhealthy());
     }

@@ -41,7 +41,7 @@ import org.junit.experimental.categories.Category;
 public class QueueRejectionRcaTest {
 
   private MetricTestHelper threadPool_RejectedReqs;
-  private QueueRejectionRcaX queueRejectionRcaX;
+  private QueueRejectionRca queueRejectionRca;
   private List<String> columnName;
 
   /**
@@ -59,7 +59,7 @@ public class QueueRejectionRcaTest {
   @Before
   public void init() {
     threadPool_RejectedReqs = new MetricTestHelper(5);
-    queueRejectionRcaX = new QueueRejectionRcaX(1, threadPool_RejectedReqs);
+    queueRejectionRca = new QueueRejectionRca(1, threadPool_RejectedReqs);
     columnName = Arrays.asList(THREAD_POOL_TYPE.toString(), MetricsDB.MAX);
   }
 
@@ -69,28 +69,28 @@ public class QueueRejectionRcaTest {
     Clock constantClock = Clock.fixed(ofEpochMilli(0), ZoneId.systemDefault());
 
     mockFlowUnits(0, 0);
-    queueRejectionRcaX.setClock(constantClock);
-    flowUnit = queueRejectionRcaX.operate();
+    queueRejectionRca.setClock(constantClock);
+    flowUnit = queueRejectionRca.operate();
     Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
     mockFlowUnits(0, 0);
-    queueRejectionRcaX.setClock(Clock.offset(constantClock, Duration.ofMinutes(3)));
-    flowUnit = queueRejectionRcaX.operate();
+    queueRejectionRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(3)));
+    flowUnit = queueRejectionRca.operate();
     Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
     mockFlowUnits(1, 0);
-    queueRejectionRcaX.setClock(Clock.offset(constantClock, Duration.ofMinutes(4)));
-    flowUnit = queueRejectionRcaX.operate();
+    queueRejectionRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(4)));
+    flowUnit = queueRejectionRca.operate();
     Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
     mockFlowUnits(1, 0);
-    queueRejectionRcaX.setClock(Clock.offset(constantClock, Duration.ofMinutes(7)));
-    flowUnit = queueRejectionRcaX.operate();
+    queueRejectionRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(7)));
+    flowUnit = queueRejectionRca.operate();
     Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
     mockFlowUnits(1, 0);
-    queueRejectionRcaX.setClock(Clock.offset(constantClock, Duration.ofMinutes(10)));
-    flowUnit = queueRejectionRcaX.operate();
+    queueRejectionRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(10)));
+    flowUnit = queueRejectionRca.operate();
     Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
 
     Assert.assertTrue(flowUnit.hasResourceSummary());
@@ -103,9 +103,9 @@ public class QueueRejectionRcaTest {
     Assert.assertEquals(0.01, 6.0, consumerSummary.getValue());
 
     mockFlowUnits(0, 0);
-    queueRejectionRcaX.setClock(Clock.offset(constantClock, Duration.ofMinutes(12)));
-    flowUnit = queueRejectionRcaX.operate();
-    Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
+    queueRejectionRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(12)));
+    flowUnit = queueRejectionRca.operate();
+    Assert.assertTrue(flowUnit.getResourceContext().isHealthy());
   }
 
   @Test
@@ -114,23 +114,23 @@ public class QueueRejectionRcaTest {
     Clock constantClock = Clock.fixed(ofEpochMilli(0), ZoneId.systemDefault());
 
     mockFlowUnits(0, 0);
-    queueRejectionRcaX.setClock(constantClock);
-    flowUnit = queueRejectionRcaX.operate();
+    queueRejectionRca.setClock(constantClock);
+    flowUnit = queueRejectionRca.operate();
     Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
     mockFlowUnits(0, 1);
-    queueRejectionRcaX.setClock(Clock.offset(constantClock, Duration.ofMinutes(3)));
-    flowUnit = queueRejectionRcaX.operate();
+    queueRejectionRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(3)));
+    flowUnit = queueRejectionRca.operate();
     Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
     mockFlowUnits(1, 1);
-    queueRejectionRcaX.setClock(Clock.offset(constantClock, Duration.ofMinutes(5)));
-    flowUnit = queueRejectionRcaX.operate();
+    queueRejectionRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(5)));
+    flowUnit = queueRejectionRca.operate();
     Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
     mockFlowUnits(1, 1);
-    queueRejectionRcaX.setClock(Clock.offset(constantClock, Duration.ofMinutes(12)));
-    flowUnit = queueRejectionRcaX.operate();
+    queueRejectionRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(12)));
+    flowUnit = queueRejectionRca.operate();
     Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
 
     Assert.assertTrue(flowUnit.hasResourceSummary());
@@ -144,16 +144,5 @@ public class QueueRejectionRcaTest {
     consumerSummary = (TopConsumerSummary) resourceSummary.getNestedSummaryList().get(1);
     Assert.assertEquals(ThreadPoolType.WRITE.toString(), consumerSummary.getName());
     Assert.assertEquals(0.01, 7.0, consumerSummary.getValue());
-  }
-
-  private static class QueueRejectionRcaX extends QueueRejectionRca {
-
-    public <M extends Metric> QueueRejectionRcaX(final int rcaPeriod, final M threadPool_RejectedReqs) {
-      super(rcaPeriod, threadPool_RejectedReqs);
-    }
-
-    public void setClock(Clock testClock) {
-      this.clock = testClock;
-    }
   }
 }

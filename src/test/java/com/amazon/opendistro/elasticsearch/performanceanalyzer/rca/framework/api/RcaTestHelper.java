@@ -22,7 +22,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotShardSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -34,6 +33,10 @@ public class RcaTestHelper extends Rca<ResourceFlowUnit> {
 
   public void mockFlowUnit(ResourceFlowUnit flowUnit) {
     this.flowUnits = Collections.singletonList(flowUnit);
+  }
+
+  public void mockFlowUnit(ResourceFlowUnit flowUnit1, ResourceFlowUnit flowUnit2) {
+    this.flowUnits = Arrays.asList(flowUnit1, flowUnit2);
   }
 
   public void mockFlowUnits(List<ResourceFlowUnit> flowUnitList) {

@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources.State;
 
 public abstract class GenericContext {
     private final Resources.State state;
@@ -29,7 +30,15 @@ public abstract class GenericContext {
     }
 
     public boolean isUnhealthy() {
-        return this.state == Resources.State.UNHEALTHY || this.state == Resources.State.CONTENDED;
+        return this.state == Resources.State.UNHEALTHY;
+    }
+
+    public boolean isHealthy() {
+        return this.state == Resources.State.HEALTHY;
+    }
+
+    public boolean isContented() {
+        return this.state == State.CONTENDED;
     }
 
     public boolean isUnknown() {
