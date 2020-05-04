@@ -11,7 +11,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.MetricTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotShardSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HighCPUShardRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
 
 import java.time.Clock;
@@ -27,9 +27,9 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 @Category(GradleTaskForRca.class)
-public class HighCPUShardRcaTest {
+public class HotShardRcaTest {
 
-    private HighCPUShardRcaX highCPUShardRcaX;
+    private HotShardRcaX hotShardRcaX;
     private MetricTestHelper cpuUtilization;
     private MetricTestHelper ioTotThroughput;
     private MetricTestHelper ioTotSyscallRate;
@@ -47,7 +47,7 @@ public class HighCPUShardRcaTest {
         cpuUtilization = new MetricTestHelper(5);
         ioTotThroughput = new MetricTestHelper(5);
         ioTotSyscallRate = new MetricTestHelper(5);
-        highCPUShardRcaX = new HighCPUShardRcaX(5, 1,
+        hotShardRcaX = new HotShardRcaX(5, 1,
                 cpuUtilization, ioTotThroughput, ioTotSyscallRate);
         columnName = Arrays.asList(INDEX_NAME.toString(), SHARD_ID.toString(), MetricsDB.SUM);
 
@@ -69,7 +69,7 @@ public class HighCPUShardRcaTest {
         ioTotThroughput = null;
         ioTotSyscallRate = null;
 
-        ResourceFlowUnit flowUnit = highCPUShardRcaX.operate();
+        ResourceFlowUnit flowUnit = hotShardRcaX.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
     }
 
@@ -80,7 +80,7 @@ public class HighCPUShardRcaTest {
         ioTotThroughput.createTestFlowUnits(columnName, Collections.emptyList());
         ioTotSyscallRate.createTestFlowUnits(columnName, Collections.emptyList());
 
-        ResourceFlowUnit flowUnit = highCPUShardRcaX.operate();
+        ResourceFlowUnit flowUnit = hotShardRcaX.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
     }
 
@@ -97,8 +97,8 @@ public class HighCPUShardRcaTest {
                 Arrays.asList(index.index_1.toString(), "1", String.valueOf(0)));
         ioTotSyscallRate.createTestFlowUnits(columnName,
                 Arrays.asList(index.index_1.toString(), "1", String.valueOf(0)));
-        highCPUShardRcaX.setClock(constantClock);
-        ResourceFlowUnit flowUnit = highCPUShardRcaX.operate();
+        hotShardRcaX.setClock(constantClock);
+        ResourceFlowUnit flowUnit = hotShardRcaX.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
         // ts = 1
@@ -110,8 +110,8 @@ public class HighCPUShardRcaTest {
         ioTotSyscallRate.createTestFlowUnits(columnName,
                 Arrays.asList(index.index_1.toString(), "1", String.valueOf(0.005)));
 
-        highCPUShardRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(1)));
-        flowUnit = highCPUShardRcaX.operate();
+        hotShardRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(1)));
+        flowUnit = hotShardRcaX.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
         //ts = 2
@@ -123,8 +123,8 @@ public class HighCPUShardRcaTest {
         ioTotSyscallRate.createTestFlowUnits(columnName,
                 Arrays.asList(index.index_1.toString(), "1", String.valueOf(0.005)));
 
-        highCPUShardRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(2)));
-        flowUnit = highCPUShardRcaX.operate();
+        hotShardRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(2)));
+        flowUnit = hotShardRcaX.operate();
         HotNodeSummary summary1 = (HotNodeSummary) flowUnit.getResourceSummary();
         List<HotShardSummary> hotShardSummaryList1 = summary1.getHotShardSummaryList();
 
@@ -147,8 +147,8 @@ public class HighCPUShardRcaTest {
         ioTotSyscallRate.createTestFlowUnits(columnName,
                 Arrays.asList(index.index_1.toString(), "2", String.valueOf(0.10)));;
 
-        highCPUShardRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(3)));
-        flowUnit = highCPUShardRcaX.operate();
+        hotShardRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(3)));
+        flowUnit = hotShardRcaX.operate();
 
         cpuUtilization.createTestFlowUnits(columnName,
                 Arrays.asList(index.index_1.toString(), "2", String.valueOf(0.25)));
@@ -157,8 +157,8 @@ public class HighCPUShardRcaTest {
         ioTotSyscallRate.createTestFlowUnits(columnName,
                 Arrays.asList(index.index_1.toString(), "2", String.valueOf(0.10)));;
 
-        highCPUShardRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(4)));
-        flowUnit = highCPUShardRcaX.operate();
+        hotShardRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(4)));
+        flowUnit = hotShardRcaX.operate();
         HotNodeSummary summary2 = (HotNodeSummary) flowUnit.getResourceSummary();
         List<HotShardSummary> hotShardSummaryList2 = summary2.getHotShardSummaryList();
 
@@ -173,9 +173,9 @@ public class HighCPUShardRcaTest {
 
     }
 
-    private static class HighCPUShardRcaX extends HighCPUShardRca {
-        public <M extends Metric> HighCPUShardRcaX(final long evaluationIntervalSeconds,
-            final int rcaPeriod, final M cpuUtilization, final M ioTotThroughput, final M ioTotSyscallRate) {
+    private static class HotShardRcaX extends HotShardRca {
+        public <M extends Metric> HotShardRcaX(final long evaluationIntervalSeconds, final int rcaPeriod,
+                                               final M cpuUtilization, final M ioTotThroughput, final M ioTotSyscallRate) {
           super(evaluationIntervalSeconds, rcaPeriod, cpuUtilization, ioTotThroughput,ioTotSyscallRate);
         }
 
