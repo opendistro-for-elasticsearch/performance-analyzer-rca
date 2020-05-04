@@ -22,15 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class MetricsRestUtil {
-
-  private static final String WEBSERVICE_BIND_HOST_NAME = "webservice-bind-host";
-  private static final Logger LOG = LogManager.getLogger(MetricsRestUtil.class);
-  private static final int INCOMING_QUEUE_LENGTH = 1;
-  private static final String QUERY_URL = "/_opendistro/_performanceanalyzer/metrics";
 
   public String nodeJsonBuilder(ConcurrentHashMap<String, String> nodeResponses) {
     StringBuilder outputJson = new StringBuilder();
