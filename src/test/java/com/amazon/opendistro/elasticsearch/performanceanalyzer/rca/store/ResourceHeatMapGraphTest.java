@@ -62,11 +62,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
-//TODO:
-@Ignore
 public class ResourceHeatMapGraphTest {
     private final int THREADS = 3;
     private final String cwd = System.getProperty("user.dir");
