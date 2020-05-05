@@ -38,6 +38,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.P
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.MetricsDBProviderTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageOldGenRca;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import org.junit.After;
 import org.junit.Before;
@@ -62,7 +63,7 @@ public class RCASchedulerTests {
       addLeaf(heapUsed);
       addLeaf(gcEvent);
       addLeaf(heapMax);
-      Rca highHeapUsageRca = new HighHeapUsageOldGenRca(1, heapUsed, gcEvent, heapMax);
+      Rca highHeapUsageRca = new HighHeapUsageOldGenRca(1, heapUsed, gcEvent, heapMax, new ArrayList<>());
       highHeapUsageRca.addAllUpstreams(Arrays.asList(heapUsed, gcEvent, heapMax));
     }
   }

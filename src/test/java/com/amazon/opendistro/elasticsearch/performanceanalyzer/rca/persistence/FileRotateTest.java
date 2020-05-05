@@ -28,8 +28,11 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+//TODO
+@Ignore
 public class FileRotateTest {
   private Path fileToRotate = null;
   private static Path testLocation = null;
