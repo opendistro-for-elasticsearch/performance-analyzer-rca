@@ -40,7 +40,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * This RCA is used to find hot shards per index in a cluster using the HotShardSummary
- * sent from each node via 'HighCPUShardRca'. If the resource utilization is (threshold)%
+ * sent from each node via 'HotShardRca'. If the resource utilization is (threshold)%
  * higher than the mean resource utilization for the index, we declare the shard hot.
  *
  */
@@ -51,7 +51,7 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
     private static final double IO_THROUGHPUT_DEFAULT_THRESHOLD_IN_PERCENTAGE = 0.3;
     private static final double IO_SYSCALLRATE_DEFAULT_THRESHOLD_IN_PERCENTAGE = 0.3;
     private static final int SLIDING_WINDOW_IN_SECONDS = 60;
-    private final Rca<ResourceFlowUnit> highCPUShardRca;
+    private final Rca<ResourceFlowUnit> hotShardRca;
     private int rcaPeriod;
     private int counter;
 
@@ -60,9 +60,9 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
     private Table<String, NodeShardKey, Double> IOThroughputInfoTable;
     private Table<String, NodeShardKey, Double> IOSysCallRateInfoTable;
 
-    public <R extends Rca> HotShardClusterRca(final int rcaPeriod, final R highCPUShardRca) {
+    public <R extends Rca> HotShardClusterRca(final int rcaPeriod, final R hotShardRca) {
         super(5);
-        this.highCPUShardRca = highCPUShardRca;
+        this.hotShardRca = hotShardRca;
         this.rcaPeriod = rcaPeriod;
         this.counter = 0;
         this.cpuUtilizationInfoTable = HashBasedTable.create();
@@ -135,7 +135,7 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
         counter++;
 
         // Populate the Table, compiling the information per index
-        final List<ResourceFlowUnit> resourceFlowUnits = highCPUShardRca.getFlowUnits();
+        final List<ResourceFlowUnit> resourceFlowUnits = hotShardRca.getFlowUnits();
         for (final ResourceFlowUnit resourceFlowUnit : resourceFlowUnits) {
             if (resourceFlowUnit.isEmpty()) {
                 continue;

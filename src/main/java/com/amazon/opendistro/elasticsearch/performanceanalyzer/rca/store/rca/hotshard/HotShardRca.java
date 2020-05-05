@@ -57,9 +57,9 @@ import org.jooq.Record;
  * 2. Paging_RSS
  *
  */
-public class HighCPUShardRca extends Rca<ResourceFlowUnit> {
+public class HotShardRca extends Rca<ResourceFlowUnit> {
 
-    private static final Logger LOG = LogManager.getLogger(HighCPUShardRca.class);
+    private static final Logger LOG = LogManager.getLogger(HotShardRca.class);
     private static final int SLIDING_WINDOW_IN_SECONDS =  60;
 
     //TODO : {@khushbr} refine the threshold values and read same from config file
@@ -80,8 +80,8 @@ public class HighCPUShardRca extends Rca<ResourceFlowUnit> {
     private HashMap<IndexShardKey, SlidingWindow<SlidingWindowData>> ioTotThroughputMap;
     private HashMap<IndexShardKey, SlidingWindow<SlidingWindowData>> ioTotSyscallRateMap;
 
-    public <M extends Metric> HighCPUShardRca(final long evaluationIntervalSeconds, final int rcaPeriod,
-            final M cpuUtilization, final M ioTotThroughput, final M ioTotSyscallRate) {
+    public <M extends Metric> HotShardRca(final long evaluationIntervalSeconds, final int rcaPeriod,
+                                          final M cpuUtilization, final M ioTotThroughput, final M ioTotSyscallRate) {
         super(evaluationIntervalSeconds);
         this.cpuUtilization = cpuUtilization;
         this.ioTotThroughput = ioTotThroughput;
