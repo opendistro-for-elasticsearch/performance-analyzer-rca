@@ -166,7 +166,7 @@ public class PerformanceAnalyzerApp {
     // can have each thread also register an error handler for itself. This handler will know
     // what to do when the thread has stopped due to an unexpected exception.
     LOG.error("Thread: {} ran into an uncaught exception: {}", exception.getPaThreadName(),
-        exception.getInnerThrowable());
+        exception.getInnerThrowable(), exception);
     StatsCollector.instance().logException(exception.getExceptionCode());
   }
 

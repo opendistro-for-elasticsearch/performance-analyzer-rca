@@ -13,7 +13,7 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca.hotheap;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.OLD_GEN;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_YOUNG_GC;

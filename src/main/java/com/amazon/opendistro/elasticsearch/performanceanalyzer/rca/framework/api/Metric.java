@@ -48,7 +48,7 @@ public abstract class Metric extends LeafNode<MetricFlowUnit> {
 
   public Metric(String name, long evaluationIntervalSeconds) {
     super(0, evaluationIntervalSeconds);
-    this.name = name;
+    this.name = name.isEmpty() ? this.getClass().getSimpleName() : name;
   }
 
   @Override
@@ -75,7 +75,9 @@ public abstract class Metric extends LeafNode<MetricFlowUnit> {
     } catch (DataAccessException dex) {
       // This can happen if the RCA started querying for metrics before the Reader obtained them.
       // This is not an error.
-      LOG.info("Looking for metric {}, when it does not exist.", name);
+      // And node stats metrics can be enabled/disabled on writer side so we might end up being here
+      // if RCA is trying to read node stats which are not enabled yet.
+      LOG.warn("Looking for metric {}, when it does not exist.", name);
     } catch (Exception e) {
       PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
           ExceptionsAndErrors.EXCEPTION_IN_GATHER, name(), 1);

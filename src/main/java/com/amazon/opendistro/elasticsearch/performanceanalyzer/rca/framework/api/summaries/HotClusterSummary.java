@@ -18,7 +18,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.JooqFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.protobuf.GeneratedMessageV3;
@@ -71,9 +70,17 @@ public class HotClusterSummary extends GenericSummary {
   public void buildSummaryMessageAndAddToFlowUnit(FlowUnitMessage.Builder messageBuilder) {
   }
 
+  public int getNumOfNodes() {
+    return numOfNodes;
+  }
+
+  public int getNumOfUnhealthyNodes() {
+    return numOfUnhealthyNodes;
+  }
+
   @Override
   public String toString() {
-    return this.numOfNodes + " " + this.numOfUnhealthyNodes + " " + this.nestedSummaryList;
+    return this.numOfNodes + " " + this.numOfUnhealthyNodes + " " + getNestedSummaryList();
   }
 
   @Override
@@ -106,8 +113,8 @@ public class HotClusterSummary extends GenericSummary {
     JsonObject summaryObj = new JsonObject();
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NUM_OF_NODES_COL_NAME, this.numOfNodes);
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NUM_OF_UNHEALTHY_NODES_COL_NAME, this.numOfUnhealthyNodes);
-    if (!this.nestedSummaryList.isEmpty()) {
-      String tableName = this.nestedSummaryList.get(0).getTableName();
+    if (!getNestedSummaryList().isEmpty()) {
+      String tableName = getNestedSummaryList().get(0).getTableName();
       summaryObj.add(tableName, this.nestedSummaryListToJson());
     }
     return summaryObj;

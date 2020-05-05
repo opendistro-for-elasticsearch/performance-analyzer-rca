@@ -44,13 +44,13 @@ public class SubscriptionManager {
   /**
    * Map of vertex to a set of hosts that are publishing flow units for that vertex.
    */
-  private ConcurrentMap<String, Set<String>> publisherMap = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, Set<String>> publisherMap = new ConcurrentHashMap<>();
 
   /**
    * Map of vertex to a set of hosts that are interested in consuming the flow units for that
    * vertex.
    */
-  private ConcurrentMap<String, Set<String>> subscriberMap = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, Set<String>> subscriberMap = new ConcurrentHashMap<>();
 
   /**
    * The current locus of the node.

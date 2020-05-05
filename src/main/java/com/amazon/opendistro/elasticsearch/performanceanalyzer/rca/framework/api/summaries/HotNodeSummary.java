@@ -48,11 +48,20 @@ public class HotNodeSummary extends GenericSummary {
   private static final Logger LOG = LogManager.getLogger(HotNodeSummary.class);
   private final String nodeID;
   private final String hostAddress;
+  private final List<HotShardSummary> hotShardSummaryList;
 
   public HotNodeSummary(String nodeID, String hostAddress) {
     super();
     this.nodeID = nodeID;
     this.hostAddress = hostAddress;
+    this.hotShardSummaryList = new ArrayList<>();
+  }
+
+  public HotNodeSummary(String nodeID, String hostAddress, final List<HotShardSummary> hotShardSummaryList) {
+    super();
+    this.nodeID = nodeID;
+    this.hostAddress = hostAddress;
+    this.hotShardSummaryList = hotShardSummaryList;
   }
 
   public String getNodeID() {
@@ -63,15 +72,24 @@ public class HotNodeSummary extends GenericSummary {
     return this.hostAddress;
   }
 
+  public List<HotShardSummary> getHotShardSummaryList() {
+    return hotShardSummaryList;
+  }
+
+
   @Override
   public HotNodeSummaryMessage buildSummaryMessage() {
     final HotNodeSummaryMessage.Builder summaryMessageBuilder = HotNodeSummaryMessage.newBuilder();
     summaryMessageBuilder.setNodeID(this.nodeID);
     summaryMessageBuilder.setHostAddress(this.hostAddress);
-    for (GenericSummary nestedSummary : this.nestedSummaryList) {
+    for (GenericSummary nestedSummary : getNestedSummaryList()) {
       summaryMessageBuilder.getHotResourceSummaryListBuilder()
           .addHotResourceSummary(nestedSummary.buildSummaryMessage());
     }
+
+    this.hotShardSummaryList.stream()
+            .forEach(nestedHotShardSummary -> summaryMessageBuilder.getHotShardSummaryListBuilder()
+                    .addHotShardSummary(nestedHotShardSummary.buildSummaryMessage()));
     return summaryMessageBuilder.build();
   }
 
@@ -89,12 +107,20 @@ public class HotNodeSummary extends GenericSummary {
             message.getHotResourceSummaryList().getHotResourceSummary(i)));
       }
     }
+
+    if (message.hasHotShardSummaryList()
+            && message.getHotShardSummaryList().getHotShardSummaryCount() > 0) {
+      for (int i = 0; i < message.getHotShardSummaryList().getHotShardSummaryCount(); i++) {
+        newSummary.addNestedSummaryList(HotShardSummary.buildHotShardSummaryFromMessage(
+                message.getHotShardSummaryList().getHotShardSummary(i)));
+      }
+    }
     return newSummary;
   }
 
   @Override
   public String toString() {
-    return this.nodeID + " " + this.hostAddress + " " + this.nestedSummaryList;
+    return this.nodeID + " " + this.hostAddress + " " + this.nestedSummaryList + " " + this.hotShardSummaryList;
   }
 
   @Override
@@ -106,7 +132,7 @@ public class HotNodeSummary extends GenericSummary {
   public List<Field<?>> getSqlSchema() {
     List<Field<?>> schema = new ArrayList<>();
     schema.add(NodeSummaryField.NODE_ID_FIELD.getField());
-    schema.add(NodeSummaryField.HOST_IP_ADDRESS_FILELD.getField());
+    schema.add(NodeSummaryField.HOST_IP_ADDRESS_FIELD.getField());
     return schema;
   }
 
@@ -127,10 +153,16 @@ public class HotNodeSummary extends GenericSummary {
     JsonObject summaryObj = new JsonObject();
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME, this.nodeID);
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME, this.hostAddress);
-    if (!this.nestedSummaryList.isEmpty()) {
-      String tableName = this.nestedSummaryList.get(0).getTableName();
+    if (!getNestedSummaryList().isEmpty()) {
+      String tableName = getNestedSummaryList().get(0).getTableName();
       summaryObj.add(tableName, this.nestedSummaryListToJson());
     }
+
+    this.hotShardSummaryList.forEach(
+        summary -> {
+          summaryObj.add(summary.getTableName(), summary.toJson());
+        }
+    );
     return summaryObj;
   }
 
@@ -145,7 +177,7 @@ public class HotNodeSummary extends GenericSummary {
    */
   public enum NodeSummaryField implements JooqFieldValue {
     NODE_ID_FIELD(SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME, String.class),
-    HOST_IP_ADDRESS_FILELD(SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME,
+    HOST_IP_ADDRESS_FIELD(SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME,
         String.class);
 
     private String name;
@@ -177,7 +209,7 @@ public class HotNodeSummary extends GenericSummary {
     HotNodeSummary summary = null;
     try {
       String nodeId = record.get(NodeSummaryField.NODE_ID_FIELD.getField(), String.class);
-      String ipAddress = record.get(NodeSummaryField.HOST_IP_ADDRESS_FILELD.getField(), String.class);
+      String ipAddress = record.get(NodeSummaryField.HOST_IP_ADDRESS_FIELD.getField(), String.class);
       summary = new HotNodeSummary(nodeId, ipAddress);
     }
     catch (IllegalArgumentException ie) {
@@ -192,4 +224,5 @@ public class HotNodeSummary extends GenericSummary {
     }
     return summary;
   }
+
 }

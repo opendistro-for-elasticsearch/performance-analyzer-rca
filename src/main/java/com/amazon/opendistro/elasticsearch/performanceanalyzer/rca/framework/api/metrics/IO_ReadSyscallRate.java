@@ -19,7 +19,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class IO_ReadSyscallRate extends Metric {
-  public IO_ReadSyscallRate(long evaluationIntervalSeconds) {
-    super(AllMetrics.OSMetrics.IO_READ_SYSCALL_RATE.name(), evaluationIntervalSeconds);
-  }
+    public static final String NAME = AllMetrics.OSMetrics.IO_READ_SYSCALL_RATE.name();
+
+    public IO_ReadSyscallRate(long evaluationIntervalSeconds) {
+        super(NAME, evaluationIntervalSeconds);
+    }
 }

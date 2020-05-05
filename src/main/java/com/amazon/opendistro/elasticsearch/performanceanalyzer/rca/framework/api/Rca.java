@@ -47,7 +47,7 @@ public abstract class Rca<T extends ResourceFlowUnit> extends NonLeafNode<T> {
     try {
       result = this.operate();
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LOG.error("Exception in operate.", ex);
       PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
           ExceptionsAndErrors.EXCEPTION_IN_OPERATE, name(), 1);
       result = (T) T.generic();

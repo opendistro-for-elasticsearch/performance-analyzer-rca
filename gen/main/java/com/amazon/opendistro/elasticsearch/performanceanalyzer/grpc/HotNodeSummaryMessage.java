@@ -69,6 +69,19 @@ private static final long serialVersionUID = 0L;
 
             break;
           }
+          case 34: {
+            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList.Builder subBuilder = null;
+            if (hotShardSummaryList_ != null) {
+              subBuilder = hotShardSummaryList_.toBuilder();
+            }
+            hotShardSummaryList_ = input.readMessage(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList.parser(), extensionRegistry);
+            if (subBuilder != null) {
+              subBuilder.mergeFrom(hotShardSummaryList_);
+              hotShardSummaryList_ = subBuilder.buildPartial();
+            }
+
+            break;
+          }
           default: {
             if (!parseUnknownField(
                 input, unknownFields, extensionRegistry, tag)) {
@@ -190,6 +203,27 @@ private static final long serialVersionUID = 0L;
     return getHotResourceSummaryList();
   }
 
+  public static final int HOTSHARDSUMMARYLIST_FIELD_NUMBER = 4;
+  private com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList hotShardSummaryList_;
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList hotShardSummaryList = 4;</code>
+   */
+  public boolean hasHotShardSummaryList() {
+    return hotShardSummaryList_ != null;
+  }
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList hotShardSummaryList = 4;</code>
+   */
+  public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList getHotShardSummaryList() {
+    return hotShardSummaryList_ == null ? com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList.getDefaultInstance() : hotShardSummaryList_;
+  }
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList hotShardSummaryList = 4;</code>
+   */
+  public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryListOrBuilder getHotShardSummaryListOrBuilder() {
+    return getHotShardSummaryList();
+  }
+
   private byte memoizedIsInitialized = -1;
   @java.lang.Override
   public final boolean isInitialized() {
@@ -213,6 +247,9 @@ private static final long serialVersionUID = 0L;
     if (hotResourceSummaryList_ != null) {
       output.writeMessage(3, getHotResourceSummaryList());
     }
+    if (hotShardSummaryList_ != null) {
+      output.writeMessage(4, getHotShardSummaryList());
+    }
     unknownFields.writeTo(output);
   }
 
@@ -231,6 +268,10 @@ private static final long serialVersionUID = 0L;
     if (hotResourceSummaryList_ != null) {
       size += com.google.protobuf.CodedOutputStream
         .computeMessageSize(3, getHotResourceSummaryList());
+    }
+    if (hotShardSummaryList_ != null) {
+      size += com.google.protobuf.CodedOutputStream
+        .computeMessageSize(4, getHotShardSummaryList());
     }
     size += unknownFields.getSerializedSize();
     memoizedSize = size;
@@ -256,6 +297,11 @@ private static final long serialVersionUID = 0L;
       if (!getHotResourceSummaryList()
           .equals(other.getHotResourceSummaryList())) return false;
     }
+    if (hasHotShardSummaryList() != other.hasHotShardSummaryList()) return false;
+    if (hasHotShardSummaryList()) {
+      if (!getHotShardSummaryList()
+          .equals(other.getHotShardSummaryList())) return false;
+    }
     if (!unknownFields.equals(other.unknownFields)) return false;
     return true;
   }
@@ -274,6 +320,10 @@ private static final long serialVersionUID = 0L;
     if (hasHotResourceSummaryList()) {
       hash = (37 * hash) + HOTRESOURCESUMMARYLIST_FIELD_NUMBER;
       hash = (53 * hash) + getHotResourceSummaryList().hashCode();
+    }
+    if (hasHotShardSummaryList()) {
+      hash = (37 * hash) + HOTSHARDSUMMARYLIST_FIELD_NUMBER;
+      hash = (53 * hash) + getHotShardSummaryList().hashCode();
     }
     hash = (29 * hash) + unknownFields.hashCode();
     memoizedHashCode = hash;
@@ -418,6 +468,12 @@ private static final long serialVersionUID = 0L;
         hotResourceSummaryList_ = null;
         hotResourceSummaryListBuilder_ = null;
       }
+      if (hotShardSummaryListBuilder_ == null) {
+        hotShardSummaryList_ = null;
+      } else {
+        hotShardSummaryList_ = null;
+        hotShardSummaryListBuilder_ = null;
+      }
       return this;
     }
 
@@ -450,6 +506,11 @@ private static final long serialVersionUID = 0L;
         result.hotResourceSummaryList_ = hotResourceSummaryList_;
       } else {
         result.hotResourceSummaryList_ = hotResourceSummaryListBuilder_.build();
+      }
+      if (hotShardSummaryListBuilder_ == null) {
+        result.hotShardSummaryList_ = hotShardSummaryList_;
+      } else {
+        result.hotShardSummaryList_ = hotShardSummaryListBuilder_.build();
       }
       onBuilt();
       return result;
@@ -509,6 +570,9 @@ private static final long serialVersionUID = 0L;
       }
       if (other.hasHotResourceSummaryList()) {
         mergeHotResourceSummaryList(other.getHotResourceSummaryList());
+      }
+      if (other.hasHotShardSummaryList()) {
+        mergeHotShardSummaryList(other.getHotShardSummaryList());
       }
       this.mergeUnknownFields(other.unknownFields);
       onChanged();
@@ -792,6 +856,123 @@ private static final long serialVersionUID = 0L;
         hotResourceSummaryList_ = null;
       }
       return hotResourceSummaryListBuilder_;
+    }
+
+    private com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList hotShardSummaryList_;
+    private com.google.protobuf.SingleFieldBuilderV3<
+        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryListOrBuilder> hotShardSummaryListBuilder_;
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList hotShardSummaryList = 4;</code>
+     */
+    public boolean hasHotShardSummaryList() {
+      return hotShardSummaryListBuilder_ != null || hotShardSummaryList_ != null;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList hotShardSummaryList = 4;</code>
+     */
+    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList getHotShardSummaryList() {
+      if (hotShardSummaryListBuilder_ == null) {
+        return hotShardSummaryList_ == null ? com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList.getDefaultInstance() : hotShardSummaryList_;
+      } else {
+        return hotShardSummaryListBuilder_.getMessage();
+      }
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList hotShardSummaryList = 4;</code>
+     */
+    public Builder setHotShardSummaryList(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList value) {
+      if (hotShardSummaryListBuilder_ == null) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        hotShardSummaryList_ = value;
+        onChanged();
+      } else {
+        hotShardSummaryListBuilder_.setMessage(value);
+      }
+
+      return this;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList hotShardSummaryList = 4;</code>
+     */
+    public Builder setHotShardSummaryList(
+        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList.Builder builderForValue) {
+      if (hotShardSummaryListBuilder_ == null) {
+        hotShardSummaryList_ = builderForValue.build();
+        onChanged();
+      } else {
+        hotShardSummaryListBuilder_.setMessage(builderForValue.build());
+      }
+
+      return this;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList hotShardSummaryList = 4;</code>
+     */
+    public Builder mergeHotShardSummaryList(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList value) {
+      if (hotShardSummaryListBuilder_ == null) {
+        if (hotShardSummaryList_ != null) {
+          hotShardSummaryList_ =
+            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList.newBuilder(hotShardSummaryList_).mergeFrom(value).buildPartial();
+        } else {
+          hotShardSummaryList_ = value;
+        }
+        onChanged();
+      } else {
+        hotShardSummaryListBuilder_.mergeFrom(value);
+      }
+
+      return this;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList hotShardSummaryList = 4;</code>
+     */
+    public Builder clearHotShardSummaryList() {
+      if (hotShardSummaryListBuilder_ == null) {
+        hotShardSummaryList_ = null;
+        onChanged();
+      } else {
+        hotShardSummaryList_ = null;
+        hotShardSummaryListBuilder_ = null;
+      }
+
+      return this;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList hotShardSummaryList = 4;</code>
+     */
+    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList.Builder getHotShardSummaryListBuilder() {
+      
+      onChanged();
+      return getHotShardSummaryListFieldBuilder().getBuilder();
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList hotShardSummaryList = 4;</code>
+     */
+    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryListOrBuilder getHotShardSummaryListOrBuilder() {
+      if (hotShardSummaryListBuilder_ != null) {
+        return hotShardSummaryListBuilder_.getMessageOrBuilder();
+      } else {
+        return hotShardSummaryList_ == null ?
+            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList.getDefaultInstance() : hotShardSummaryList_;
+      }
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList hotShardSummaryList = 4;</code>
+     */
+    private com.google.protobuf.SingleFieldBuilderV3<
+        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryListOrBuilder> 
+        getHotShardSummaryListFieldBuilder() {
+      if (hotShardSummaryListBuilder_ == null) {
+        hotShardSummaryListBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
+            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryListOrBuilder>(
+                getHotShardSummaryList(),
+                getParentForChildren(),
+                isClean());
+        hotShardSummaryList_ = null;
+      }
+      return hotShardSummaryListBuilder_;
     }
     @java.lang.Override
     public final Builder setUnknownFields(

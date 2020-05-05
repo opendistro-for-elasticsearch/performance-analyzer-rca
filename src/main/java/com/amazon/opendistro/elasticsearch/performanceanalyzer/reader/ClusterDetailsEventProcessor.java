@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -159,10 +160,12 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
       return id;
     }
 
+    @Nullable
     public String getHostAddress() {
       return hostAddress;
     }
 
+    @Nullable
     public String getRole() {
       return role;
     }

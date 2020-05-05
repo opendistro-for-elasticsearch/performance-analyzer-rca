@@ -62,4 +62,14 @@ public interface HotResourceSummaryMessageOrBuilder extends
    * <code>int32 timePeriod = 8;</code>
    */
   int getTimePeriod();
+
+  /**
+   * <code>string metaData = 9;</code>
+   */
+  java.lang.String getMetaData();
+  /**
+   * <code>string metaData = 9;</code>
+   */
+  com.google.protobuf.ByteString
+      getMetaDataBytes();
 }

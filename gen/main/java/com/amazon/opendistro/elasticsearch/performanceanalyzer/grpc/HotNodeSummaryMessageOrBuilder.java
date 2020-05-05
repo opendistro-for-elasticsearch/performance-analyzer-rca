@@ -39,4 +39,17 @@ public interface HotNodeSummaryMessageOrBuilder extends
    * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryList hotResourceSummaryList = 3;</code>
    */
   com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryListOrBuilder getHotResourceSummaryListOrBuilder();
+
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList hotShardSummaryList = 4;</code>
+   */
+  boolean hasHotShardSummaryList();
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList hotShardSummaryList = 4;</code>
+   */
+  com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList getHotShardSummaryList();
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryList hotShardSummaryList = 4;</code>
+   */
+  com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryListOrBuilder getHotShardSummaryListOrBuilder();
 }

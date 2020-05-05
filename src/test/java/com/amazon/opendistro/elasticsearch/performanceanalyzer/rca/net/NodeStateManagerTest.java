@@ -1,40 +1,33 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
-import static org.mockito.Mockito.when;
-import static org.powermock.api.mockito.PowerMockito.mockStatic;
-
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.util.ClusterUtils;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import java.util.Arrays;
+import com.google.common.collect.Lists;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@Category(GradleTaskForRca.class)
-@RunWith(PowerMockRunner.class)
-@PrepareForTest(ClusterUtils.class)
 public class NodeStateManagerTest {
 
   private static final String TEST_HOST_1 = "host1";
   private static final String TEST_NODE_1 = "node1";
   private static final String TEST_HOST_2 = "host2";
   private static final String TEST_HOST_3 = "host3";
+  private static final String TEST_HOST_4 = "host4";
   private static final int MS_IN_S = 1000;
   private static final int TEN_S_IN_MILLIS = 10 * MS_IN_S;
+  private static final ClusterDetailsEventProcessor.NodeDetails EMPTY_DETAILS =
+          ClusterDetailsEventProcessorTestHelper.newNodeDetails("", "", false);
 
   private NodeStateManager testNodeStateManager;
 
   @Before
   public void setUp() {
     this.testNodeStateManager = new NodeStateManager();
-    mockStatic(ClusterUtils.class);
   }
 
   @Test
@@ -62,10 +55,11 @@ public class NodeStateManagerTest {
 
     testNodeStateManager
         .updateSubscriptionState(TEST_NODE_1, TEST_HOST_1, SubscriptionStatus.SUCCESS);
-    when(ClusterUtils.getAllPeerHostAddresses())
-        .thenReturn(Arrays.asList(TEST_HOST_1, TEST_HOST_2));
-    when(ClusterUtils.isHostAddressInCluster(TEST_HOST_1)).thenReturn(true);
-    when(ClusterUtils.isHostAddressInCluster(TEST_HOST_2)).thenReturn(true);
+    ClusterDetailsEventProcessor.setNodesDetails(Lists.newArrayList(
+            EMPTY_DETAILS,
+            ClusterDetailsEventProcessorTestHelper.newNodeDetails(null, TEST_HOST_1, false),
+            ClusterDetailsEventProcessorTestHelper.newNodeDetails(null, TEST_HOST_2, false)
+    ));
 
     ImmutableList<String> hostsToSubscribeTo =
         testNodeStateManager.getStaleOrNotSubscribedNodes(TEST_NODE_1, TEN_S_IN_MILLIS,
@@ -87,14 +81,16 @@ public class NodeStateManagerTest {
     testNodeStateManager.updateReceiveTime(TEST_HOST_2, TEST_NODE_1, currentTime);
     testNodeStateManager.updateSubscriptionState(TEST_NODE_1, TEST_HOST_2, SubscriptionStatus.SUCCESS);
 
-    when(ClusterUtils.getAllPeerHostAddresses())
-        .thenReturn(Arrays.asList(TEST_HOST_1, TEST_HOST_2, TEST_HOST_3));
-    when(ClusterUtils.isHostAddressInCluster(TEST_HOST_1)).thenReturn(true);
-    when(ClusterUtils.isHostAddressInCluster(TEST_HOST_2)).thenReturn(true);
+    ClusterDetailsEventProcessor.setNodesDetails(Lists.newArrayList(
+            EMPTY_DETAILS,
+            ClusterDetailsEventProcessorTestHelper.newNodeDetails(null, TEST_HOST_1, false),
+            ClusterDetailsEventProcessorTestHelper.newNodeDetails(null, TEST_HOST_2, false),
+            ClusterDetailsEventProcessorTestHelper.newNodeDetails(null, TEST_HOST_3, false)
+    ));
 
     ImmutableList<String> hostsToSubscribeTo =
         testNodeStateManager.getStaleOrNotSubscribedNodes(TEST_NODE_1, TEN_S_IN_MILLIS,
-            ImmutableSet.of(TEST_HOST_1, TEST_HOST_2));
+            ImmutableSet.of(TEST_HOST_1, TEST_HOST_2, TEST_HOST_4));
 
     Assert.assertEquals(2, hostsToSubscribeTo.size());
     Assert.assertTrue(hostsToSubscribeTo.contains(TEST_HOST_1));

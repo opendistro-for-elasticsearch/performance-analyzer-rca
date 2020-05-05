@@ -52,7 +52,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
 
-  public static final String HIGH_HEAP_USAGE_CLUSTER_RCA_TABLE = HighHeapUsageClusterRca.class.getSimpleName();
+  public static final String RCA_TABLE_NAME = HighHeapUsageClusterRca.class.getSimpleName();
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageClusterRca.class);
   private static final int UNHEALTHY_FLOWUNIT_THRESHOLD = 3;
   private static final int CACHE_EXPIRATION_TIMEOUT = 10;
@@ -86,20 +86,19 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
         .getDataNodesDetails()) {
       ImmutableList<ResourceFlowUnit> nodeStateList = currentMap.get(nodeDetails.getId());
       if (nodeStateList != null) {
-        int unhealthyOldGenCnt = 0;
-        int unhealthyYoungGenCnt = 0;
+        List<HotResourceSummary> oldGenSummaries = new ArrayList<>();
+        List<HotResourceSummary> youngGenSummaries = new ArrayList<>();
         for (ResourceFlowUnit flowUnit : nodeStateList) {
           if (flowUnit.getResourceContext().getState() == Resources.State.UNHEALTHY) {
             HotNodeSummary currentNodSummary = (HotNodeSummary) flowUnit.getResourceSummary();
-            for (GenericSummary resourceSummary : currentNodSummary.getNestedSummaryList()) {
-              if (resourceSummary instanceof HotResourceSummary) {
-                if (((HotResourceSummary) resourceSummary).getResourceType().getJVM() == JvmEnum.YOUNG_GEN) {
-                  unhealthyYoungGenCnt++;
-                  break;
+            for (GenericSummary genericSummary : currentNodSummary.getNestedSummaryList()) {
+              if (genericSummary instanceof HotResourceSummary) {
+                HotResourceSummary resourceSummary = (HotResourceSummary) genericSummary;
+                if (resourceSummary.getResourceType().getJVM() == JvmEnum.YOUNG_GEN) {
+                  youngGenSummaries.add(resourceSummary);
                 }
-                else if (((HotResourceSummary) resourceSummary).getResourceType().getJVM() == JvmEnum.OLD_GEN) {
-                  unhealthyOldGenCnt++;
-                  break;
+                else if (resourceSummary.getResourceType().getJVM() == JvmEnum.OLD_GEN) {
+                  oldGenSummaries.add(resourceSummary);
                 }
               }
               else {
@@ -108,8 +107,17 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
             }
           }
         }
-        if (unhealthyYoungGenCnt >= UNHEALTHY_FLOWUNIT_THRESHOLD || unhealthyOldGenCnt >= UNHEALTHY_FLOWUNIT_THRESHOLD) {
-          unhealthyNodeList.add(nodeStateList.get(0).getResourceSummary());
+        // youngGenSummaries can have multiple elements but we will only consider it as unhealthy if
+        // three consecutive summaries are all unhealthy and we will then pick the first element as the summary for output.
+        if (youngGenSummaries.size() >= UNHEALTHY_FLOWUNIT_THRESHOLD || oldGenSummaries.size() >= UNHEALTHY_FLOWUNIT_THRESHOLD) {
+          HotNodeSummary nodeSummary = new HotNodeSummary(nodeDetails.getId(), nodeDetails.getHostAddress());
+          if (youngGenSummaries.size() >= UNHEALTHY_FLOWUNIT_THRESHOLD) {
+            nodeSummary.addNestedSummaryList(youngGenSummaries.get(0));
+          }
+          if (oldGenSummaries.size() >= UNHEALTHY_FLOWUNIT_THRESHOLD) {
+            nodeSummary.addNestedSummaryList(oldGenSummaries.get(0));
+          }
+          unhealthyNodeList.add(nodeSummary);
         }
       }
     }
@@ -170,15 +178,13 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
     }
   }
 
+  /**
+   * This is a cluster level RCA vertex which by definition can not be serialize/de-serialized
+   * over gRPC.
+   */
   @Override
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-    final List<FlowUnitMessage> flowUnitMessages =
-        args.getWireHopper().readFromWire(args.getNode());
-    List<ResourceFlowUnit> flowUnitList = new ArrayList<>();
-    LOG.debug("rca: Executing fromWire: {}", this.getClass().getSimpleName());
-    for (FlowUnitMessage flowUnitMessage : flowUnitMessages) {
-      flowUnitList.add(ResourceFlowUnit.buildFlowUnitFromWrapper(flowUnitMessage));
-    }
-    setFlowUnits(flowUnitList);
+    throw new IllegalArgumentException(name() + "'s generateFlowUnitListFromWire() should not "
+        + "be required.");
   }
 }
