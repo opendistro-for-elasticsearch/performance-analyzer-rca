@@ -43,6 +43,7 @@ public enum StatExceptionCode {
   WEB_SERVER_THREAD_STOPPED("WebServerThreadStopped"),
   RCA_CONTROLLER_THREAD_STOPPED("RcaControllerThreadStopped"),
   RCA_SCHEDULER_THREAD_STOPPED("RcaSchedulerThreadStopped"),
+  REMEDIATION_CONTROLLER_THREAD_STOPPED("RemediationControllerThreadStopped"),
   OTHER("Other");
 
   private final String value;

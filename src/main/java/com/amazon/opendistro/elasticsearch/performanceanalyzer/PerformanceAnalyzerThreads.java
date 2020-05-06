@@ -28,7 +28,8 @@ public enum PerformanceAnalyzerThreads {
   GRPC_SERVER("grpc-server", StatExceptionCode.GRPC_SERVER_THREAD_STOPPED),
   WEB_SERVER("web-server", StatExceptionCode.WEB_SERVER_THREAD_STOPPED),
   RCA_CONTROLLER("rca-controller", StatExceptionCode.RCA_CONTROLLER_THREAD_STOPPED),
-  RCA_SCHEDULER("rca-scheduler", StatExceptionCode.RCA_SCHEDULER_THREAD_STOPPED);
+  RCA_SCHEDULER("rca-scheduler", StatExceptionCode.RCA_SCHEDULER_THREAD_STOPPED),
+  REMEDIATION_CONTROLLER("remediation-controller", StatExceptionCode.REMEDIATION_CONTROLLER_THREAD_STOPPED);
 
   private final String value;
   private final StatExceptionCode threadExceptionCode;

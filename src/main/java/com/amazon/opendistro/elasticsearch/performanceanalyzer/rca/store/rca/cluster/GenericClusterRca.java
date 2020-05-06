@@ -197,7 +197,7 @@ public class GenericClusterRca extends Rca<ResourceFlowUnit> {
       removeInactiveNodeFromTable();
       return generateFlowunit();
     } else {
-      return new ResourceFlowUnit(System.currentTimeMillis());
+      return new ResourceFlowUnit(clock.millis());
     }
   }
 

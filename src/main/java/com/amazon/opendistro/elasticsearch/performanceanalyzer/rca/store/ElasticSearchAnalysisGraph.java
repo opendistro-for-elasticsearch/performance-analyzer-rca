@@ -50,6 +50,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.VersionMap_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.decision_maker.QueueAutoTuningDecisionMaker;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric.AggregateFunction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.AvgCpuUtilByShardsMetricBasedTemperatureCalculator;
@@ -194,6 +195,11 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
         new QueueRejectionClusterRca(RCA_PERIOD_1_MIN, hotNodeRca);
     queueRejectionClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     queueRejectionClusterRca.addAllUpstreams(Collections.singletonList(hotNodeRca));
+
+    Rca<ResourceFlowUnit> queueAutoTuningDM =
+        new QueueAutoTuningDecisionMaker(12, queueRejectionClusterRca, highHeapUsageClusterRca);
+    queueAutoTuningDM.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    queueAutoTuningDM.addAllUpstreams(Arrays.asList(queueRejectionClusterRca, highHeapUsageClusterRca));
   }
 
   private void constructShardResourceUsageGraph() {

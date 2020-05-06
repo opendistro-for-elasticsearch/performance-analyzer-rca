@@ -112,13 +112,10 @@ public class QueueRejectionRca extends Rca<ResourceFlowUnit> {
     }
   }
 
-  /**
-   * This is a local node RCA which by definition can not be serialize/de-serialized
-   * over gRPC.
-   */
   @Override
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-    LOG.error("RCA: {} should not be send over from network", this.getClass().getSimpleName());
+    throw new IllegalArgumentException(name() + "'s generateFlowUnitListFromWire() should not "
+        + "be required.");
   }
 
   private static class QueueRejectedReqsWrapper {

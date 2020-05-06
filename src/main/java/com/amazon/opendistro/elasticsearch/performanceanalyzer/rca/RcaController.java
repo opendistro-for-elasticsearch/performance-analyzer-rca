@@ -46,6 +46,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.handler.S
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.NetPersistor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.PersistenceFactory;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.remediation.RemediationController;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCAScheduler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RcaSchedulerState;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
@@ -176,6 +177,13 @@ public class RcaController {
           PerformanceAnalyzerThreads.RCA_SCHEDULER);
 
       rcaSchedulerThread.start();
+      //run remediation controller on elected master only
+      if (currentRole == NodeRole.ELECTED_MASTER) {
+        Thread remediationControllerThread = threadProvider.createThreadForRunnable(
+            () -> RemediationController.instance().run(),
+            PerformanceAnalyzerThreads.REMEDIATION_CONTROLLER);
+        remediationControllerThread.start();
+      }
     } catch (ClassNotFoundException
         | NoSuchMethodException
         | InvocationTargetException
