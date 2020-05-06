@@ -17,6 +17,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.Rca
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.WaitFor;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
@@ -204,8 +205,12 @@ public class RcaControllerTest {
     changeRcaRunState(RcaState.RUN);
     setMyIp(masterIP, AllMetrics.NodeRole.MASTER);
     RcaControllerHelper.set(Paths.get(rcaEnabledFileLoc.toString(), "rca.conf").toString(),
-            Paths.get(rcaEnabledFileLoc.toString(), "rca_muted.conf").toString(),
+            mutedRcaConfPath,
             Paths.get(rcaEnabledFileLoc.toString(), "rca_elected_master.conf").toString());
+
+    WaitFor.waitFor(() -> rcaController.getCurrentRole() == AllMetrics.NodeRole.MASTER, 10, TimeUnit.SECONDS);
+    WaitFor.waitFor(() -> RcaControllerHelper.pickRcaConfForRole(AllMetrics.NodeRole.MASTER).getConfigFileLoc() == mutedRcaConfPath,
+            10, TimeUnit.SECONDS);
 
     // 1. Muted Graph : "CPU_Utilization, Heap_AllocRate", updating RCA Config with "CPU_Utilization, Heap_AllocRate"
     // Muted Graph should have "CPU_Utilization, Heap_AllocRate"
