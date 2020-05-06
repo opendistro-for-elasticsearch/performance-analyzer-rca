@@ -159,10 +159,10 @@ public class HotShardClusterRcaTest {
                         400000, 0.30, Resources.State.UNHEALTHY),
                 RcaTestHelper.generateFlowUnitForHotShard(
                         index.index_1.name(), shard.shard_1.name(), node.node_2.name(), 0.10,
-                        400000, 0.30, Resources.State.UNHEALTHY),
+                        400000, 0.35, Resources.State.UNHEALTHY),
                 RcaTestHelper.generateFlowUnitForHotShard(
                         index.index_2.name(), shard.shard_1.name(), node.node_1.name(), 0.10,
-                        400000, 0.30, Resources.State.UNHEALTHY),
+                        400000, 0.37, Resources.State.UNHEALTHY),
                 RcaTestHelper.generateFlowUnitForHotShard(
                         index.index_2.name(), shard.shard_2.name(), node.node_2.name(), 0.80,
                         400000, 0.30, Resources.State.UNHEALTHY)));
@@ -195,13 +195,16 @@ public class HotShardClusterRcaTest {
         hotShardRca.mockFlowUnits(Arrays.asList(
                 RcaTestHelper.generateFlowUnitForHotShard(
                         index.index_1.name(), shard.shard_1.name(), node.node_1.name(), 0.35,
-                        100000, 0.40, Resources.State.UNHEALTHY),
+                        200000, 0.40, Resources.State.UNHEALTHY),
                 RcaTestHelper.generateFlowUnitForHotShard(
                         index.index_1.name(), shard.shard_2.name(), node.node_1.name(), 0.40,
                         550000, 0.30, Resources.State.UNHEALTHY),
                 RcaTestHelper.generateFlowUnitForHotShard(
                         index.index_1.name(), shard.shard_1.name(), node.node_2.name(), 0.30,
-                        480000, 0.30, Resources.State.UNHEALTHY),
+                        430000, 0.35, Resources.State.UNHEALTHY),
+                RcaTestHelper.generateFlowUnitForHotShard(
+                        index.index_1.name(), shard.shard_2.name(), node.node_2.name(), 0.30,
+                        400000, 0.35, Resources.State.UNHEALTHY),
                 RcaTestHelper.generateFlowUnitForHotShard(
                         index.index_2.name(), shard.shard_1.name(), node.node_1.name(), 0.20,
                         650000, 0.30, Resources.State.UNHEALTHY),
@@ -237,7 +240,7 @@ public class HotShardClusterRcaTest {
         hotShardRca.mockFlowUnits(Arrays.asList(
                 RcaTestHelper.generateFlowUnitForHotShard(
                         index.index_1.name(), shard.shard_1.name(), node.node_1.name(), 0.45,
-                        550000, 0.75, Resources.State.UNHEALTHY),
+                        490000, 0.75, Resources.State.UNHEALTHY),
                 RcaTestHelper.generateFlowUnitForHotShard(
                         index.index_1.name(), shard.shard_2.name(), node.node_1.name(), 0.50,
                         400000, 0.25, Resources.State.UNHEALTHY),
