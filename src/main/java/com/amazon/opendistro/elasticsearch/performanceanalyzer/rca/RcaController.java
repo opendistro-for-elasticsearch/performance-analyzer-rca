@@ -150,7 +150,7 @@ public class RcaController {
       List<ConnectedComponent> connectedComponents = RcaUtil.getAnalysisGraphComponents(rcaConf);
 
       // Mute the rca nodes after the graph creation and before the scheduler start
-      readAndUpdateMutesRcas();
+      readAndUpdateMutesRcasDuringStart();
 
       Queryable db = new MetricsDBProvider();
       ThresholdMain thresholdMain = new ThresholdMain(RcaConsts.THRESHOLDS_PATH, rcaConf);
@@ -275,6 +275,17 @@ public class RcaController {
         });
   }
 
+  private void readAndUpdateMutesRcasDuringStart() {
+    try {
+      Set<String> rcasForMute = new HashSet<>(rcaConf.getMutedRcaList());
+      rcasForMute.forEach(mutedRca -> Stats.getInstance().addToMutedGraphNodes(mutedRca));
+      LOG.info("Updated the muted RCA Graph to : {}", rcaConf.getMutedRcaList());
+    } catch (Exception e) {
+      LOG.error("Couldn't read/update the muted RCAs during start()", e);
+      StatsCollector.instance().logMetric(RCA_MUTE_ERROR_METRIC);
+    }
+  }
+
   /**
    * Reads the mutedRCAList value from the rca.conf file, performs validation on the param value
    * provided and on successful validation, updates the AnalysisGraph with muted RCA value.
@@ -308,8 +319,8 @@ public class RcaController {
 
         LOG.info("Updating the muted RCA Graph to : {}", rcasForMute);
         Stats.getInstance().updateMutedGraphNodes(rcasForMute);
+        lastModifiedTimeInMillisInMemory = lastModifiedTimeInMillisOnDisk;
       }
-      lastModifiedTimeInMillisInMemory = lastModifiedTimeInMillisOnDisk;
     } catch (Exception e) {
       LOG.error("Couldn't read/update the muted RCAs", e);
       StatsCollector.instance().logMetric(RCA_MUTE_ERROR_METRIC);
