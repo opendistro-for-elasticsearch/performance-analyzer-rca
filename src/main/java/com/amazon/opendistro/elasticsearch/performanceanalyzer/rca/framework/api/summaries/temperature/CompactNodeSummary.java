@@ -30,6 +30,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
@@ -43,6 +45,8 @@ import org.jooq.impl.DSL;
  * information. So, this summary is kept generic so that both can use it.
  */
 public class CompactNodeSummary extends GenericSummary {
+
+    private static final Logger LOG = LogManager.getLogger(CompactNodeSummary.class);
     /**
      * This will determine the name of the SQLite when this summary is persisted.
      */
@@ -77,6 +81,8 @@ public class CompactNodeSummary extends GenericSummary {
     public static CompactNodeSummary buildSummaryFromDatabase(Result<Record> records,
         DSLContext context) {
         if (records.size() != 1) {
+            LOG.error("Expected 1 compact node summary, got {}. Summaries: {}", records.size(),
+                records);
             throw new IllegalArgumentException(
                 "Only 1 CompactNodeSummary expected. Found: " + records.size());
         }

@@ -240,6 +240,7 @@ class SQLitePersistor extends PersistorBase {
         response.addNestedSummaryList(summary);
       }
     } catch (DataAccessException dex) {
+      LOG.error("Failed to read temperature profile RCA for {}", rca, dex);
       dex.printStackTrace();
     }
 
