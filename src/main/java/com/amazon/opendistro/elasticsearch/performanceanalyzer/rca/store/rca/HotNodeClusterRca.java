@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNodeClusterRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
@@ -56,6 +58,7 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit> {
   private final int rcaPeriod;
   private int counter;
   private List<NodeDetails> dataNodesDetails;
+  private final HashSet<ResourceType> resourceTypes;
   private double unbalancedResourceThreshold;
   private double resourceUsageLowerBoundThreshold;
   protected Clock clock;
@@ -70,6 +73,11 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit> {
     nodeTable = HashBasedTable.create();
     unbalancedResourceThreshold = HotNodeClusterRcaConfig.DEFAULT_UNBALANCED_RESOURCE_THRES;
     resourceUsageLowerBoundThreshold = HotNodeClusterRcaConfig.DEFAULT_RESOURCE_USAGE_LOWER_BOUND_THRES;
+    this.resourceTypes = new HashSet<ResourceType>() {{
+        add(ResourceType.newBuilder().setJVM(JvmEnum.YOUNG_GEN).build());
+        add(ResourceType.newBuilder().setJVM(JvmEnum.OLD_GEN).build());
+        add(ResourceType.newBuilder().setHardwareResourceType(HardwareEnum.CPU).build());
+    }};
   }
 
   //add Resource Summary to the corresponding cell in NodeTable
@@ -90,10 +98,13 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit> {
       for (GenericSummary summary : nodeSummary.getNestedSummaryList()) {
         if (summary instanceof HotResourceSummary) {
           HotResourceSummary resourceSummary = (HotResourceSummary) summary;
-          NodeResourceUsage oldUsage = nodeTable.get(nodeSummary.getNodeID(), ((HotResourceSummary) summary).getResourceType());
-          if (oldUsage == null || oldUsage.timestamp < timestamp) {
-            nodeTable.put(nodeSummary.getNodeID(), resourceSummary.getResourceType(),
-                new NodeResourceUsage(timestamp, resourceSummary));
+          ResourceType resourceType = resourceSummary.getResourceType();
+          if (resourceTypes.contains(resourceType)) {
+            NodeResourceUsage oldUsage = nodeTable.get(nodeSummary.getNodeID(), resourceType);
+            if (oldUsage == null || oldUsage.timestamp < timestamp) {
+              nodeTable.put(nodeSummary.getNodeID(), resourceType,
+                  new NodeResourceUsage(timestamp, resourceSummary));
+            }
           }
         } else {
           LOG.error("RCA : unexpected summary type !");

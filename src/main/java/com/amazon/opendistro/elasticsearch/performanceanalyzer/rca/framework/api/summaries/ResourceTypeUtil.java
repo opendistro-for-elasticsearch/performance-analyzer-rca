@@ -21,8 +21,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PANetworking
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType.ResourceTypeOneofCase;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ProtocolMessageEnum;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,9 +36,23 @@ import org.apache.logging.log4j.Logger;
  */
 public class ResourceTypeUtil {
   private static final Logger LOG = LogManager.getLogger(ResourceTypeUtil.class);
+  private static final Map<String, ResourceType> resourceTypeMap;
 
   static final String UNKNOWN_RESOURCE_TYPE_NAME = "unknown resource type";
   static final String UNKNOWN_RESOURCE_TYPE_UNIT = "unknown resource unit type";
+
+  static {
+    Map<String, ResourceType> tableMap = new HashMap<>();
+    tableMap.put(ResourceTypeUtil.getResourceTypeOptions(JvmEnum.OLD_GEN).getResourceTypeName(),
+        ResourceType.newBuilder().setJVM(JvmEnum.OLD_GEN).build());
+    tableMap.put(ResourceTypeUtil.getResourceTypeOptions(JvmEnum.YOUNG_GEN).getResourceTypeName(),
+        ResourceType.newBuilder().setJVM(JvmEnum.YOUNG_GEN).build());
+    tableMap.put(ResourceTypeUtil.getResourceTypeOptions(HardwareEnum.CPU).getResourceTypeName(),
+        ResourceType.newBuilder().setHardwareResourceType(HardwareEnum.CPU).build());
+    tableMap.put(ResourceTypeUtil.getResourceTypeOptions(ThreadPoolEnum.THREADPOOL_REJECTED_REQS).getResourceTypeName(),
+        ResourceType.newBuilder().setThreadpool(ThreadPoolEnum.THREADPOOL_REJECTED_REQS).build());
+    resourceTypeMap = Collections.unmodifiableMap(tableMap);
+  }
 
   /**
    * Read the resourceType name from the ResourceType object
@@ -100,24 +118,10 @@ public class ResourceTypeUtil {
    */
   @Nullable
   public static ResourceType buildResourceType(String resourceTypeName) {
-    ResourceType resourceType = null;
     if (resourceTypeName == null) {
-      return resourceType;
+      return null;
     }
-    ResourceType.Builder builder = null;
-    if (resourceTypeName.equals(ResourceTypeUtil.getResourceTypeOptions(JvmEnum.OLD_GEN).getResourceTypeName())) {
-      builder = ResourceType.newBuilder().setJVM(JvmEnum.OLD_GEN);
-    }
-    else if (resourceTypeName.equals(ResourceTypeUtil.getResourceTypeOptions(JvmEnum.YOUNG_GEN).getResourceTypeName())) {
-      builder = ResourceType.newBuilder().setJVM(JvmEnum.YOUNG_GEN);
-    }
-    else if (resourceTypeName.equals(ResourceTypeUtil.getResourceTypeOptions(HardwareEnum.CPU).getResourceTypeName())) {
-      builder = ResourceType.newBuilder().setHardwareResourceType(HardwareEnum.CPU);
-    }
-    if (builder != null) {
-      resourceType = builder.build();
-    }
-    return resourceType;
+    return resourceTypeMap.getOrDefault(resourceTypeName, null);
   }
 
 }

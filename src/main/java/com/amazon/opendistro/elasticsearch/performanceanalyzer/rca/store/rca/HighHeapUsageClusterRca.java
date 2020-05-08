@@ -16,8 +16,8 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
@@ -59,6 +59,8 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
   private final Rca<ResourceFlowUnit> hotNodeRca;
   private final LoadingCache<String, ImmutableList<ResourceFlowUnit>> nodeStateCache;
   private final int rcaPeriod;
+  private final ResourceType youngGenResourceType;
+  private final ResourceType oldGenResourceType;
   private int counter;
 
   public <R extends Rca> HighHeapUsageClusterRca(final int rcaPeriod, final R hotNodeRca) {
@@ -76,6 +78,8 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
                             return ImmutableList.copyOf(new ArrayList<>());
                           }
                         });
+    youngGenResourceType = ResourceType.newBuilder().setJVM(JvmEnum.YOUNG_GEN).build();
+    oldGenResourceType = ResourceType.newBuilder().setJVM(JvmEnum.OLD_GEN).build();
   }
 
   private List<GenericSummary> getUnhealthyNodeList() {
@@ -94,10 +98,10 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
             for (GenericSummary genericSummary : currentNodSummary.getNestedSummaryList()) {
               if (genericSummary instanceof HotResourceSummary) {
                 HotResourceSummary resourceSummary = (HotResourceSummary) genericSummary;
-                if (resourceSummary.getResourceType().getJVM() == JvmEnum.YOUNG_GEN) {
+                if (resourceSummary.getResourceType().equals(youngGenResourceType)) {
                   youngGenSummaries.add(resourceSummary);
                 }
-                else if (resourceSummary.getResourceType().getJVM() == JvmEnum.OLD_GEN) {
+                else if (resourceSummary.getResourceType().equals(oldGenResourceType)) {
                   oldGenSummaries.add(resourceSummary);
                 }
               }
