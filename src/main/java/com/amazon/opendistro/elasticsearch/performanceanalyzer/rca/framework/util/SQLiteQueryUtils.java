@@ -26,6 +26,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
@@ -69,6 +70,7 @@ public class SQLiteQueryUtils {
     rcaSet.add(ClusterTemperatureRca.TABLE_NAME);
     rcaSet.add(HighHeapUsageClusterRca.RCA_TABLE_NAME);
     rcaSet.add(HotNodeClusterRca.RCA_TABLE_NAME);
+    rcaSet.add(QueueRejectionClusterRca.RCA_TABLE_NAME);
     clusterLevelRCA = Collections.unmodifiableSet(rcaSet);
   }
 

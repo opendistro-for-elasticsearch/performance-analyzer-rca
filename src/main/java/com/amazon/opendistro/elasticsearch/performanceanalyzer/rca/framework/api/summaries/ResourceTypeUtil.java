@@ -76,6 +76,9 @@ public class ResourceTypeUtil {
     else if (resourceType.getResourceTypeOneofCase() == ResourceTypeOneofCase.HARDWARE_RESOURCE_TYPE) {
       resourceEnum = resourceType.getHardwareResourceType();
     }
+    else if (resourceType.getResourceTypeOneofCase() == ResourceTypeOneofCase.THREADPOOL) {
+      resourceEnum = resourceType.getThreadpool();
+    }
     else {
       LOG.error("unknown resource enum type");
       return null;

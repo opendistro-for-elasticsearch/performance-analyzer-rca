@@ -46,6 +46,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.StoredFields_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.TermVectors_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Terms_Memory;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_RejectedReqs;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.VersionMap_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
@@ -62,11 +63,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hot_node.HighCpuRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageOldGenRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageYoungGenRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.queue.QueueRejectionRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
@@ -92,18 +95,21 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     Metric cpuUtilizationGroupByOperation = new AggregateMetric(1, CPU_Utilization.NAME,
             AggregateFunction.SUM,
             MetricsDB.AVG, CommonDimension.OPERATION.toString());
+    Metric threadPool_RejectedReqs = new ThreadPool_RejectedReqs(5);
 
     heapUsed.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     gcEvent.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     heapMax.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     gc_Collection_Time.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     cpuUtilizationGroupByOperation.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    threadPool_RejectedReqs.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
 
     addLeaf(heapUsed);
     addLeaf(gcEvent);
     addLeaf(heapMax);
     addLeaf(gc_Collection_Time);
     addLeaf(cpuUtilizationGroupByOperation);
+    addLeaf(threadPool_RejectedReqs);
 
     //add node stats metrics
     List<Metric> nodeStatsMetrics = constructNodeStatsMetrics();
@@ -124,22 +130,31 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     highCpuRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     highCpuRca.addAllUpstreams(Collections.singletonList(cpuUtilizationGroupByOperation));
 
-    Rca<ResourceFlowUnit> hotJVMNodeRca = new HotNodeRca(12, highHeapUsageOldGenRca,
-            highHeapUsageYoungGenRca, highCpuRca);
-    hotJVMNodeRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    hotJVMNodeRca.addAllUpstreams(
-            Arrays.asList(highHeapUsageOldGenRca, highHeapUsageYoungGenRca, highCpuRca));
+    Rca<ResourceFlowUnit> queueRejectionRca = new QueueRejectionRca(12, threadPool_RejectedReqs);
+    queueRejectionRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    queueRejectionRca.addAllUpstreams(Collections.singletonList(threadPool_RejectedReqs));
+
+    Rca<ResourceFlowUnit> hotNodeRca = new HotNodeRca(12, highHeapUsageOldGenRca,
+            highHeapUsageYoungGenRca, highCpuRca, queueRejectionRca);
+    hotNodeRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    hotNodeRca.addAllUpstreams(
+            Arrays.asList(highHeapUsageOldGenRca, highHeapUsageYoungGenRca, highCpuRca, queueRejectionRca));
 
     Rca<ResourceFlowUnit> highHeapUsageClusterRca =
-            new HighHeapUsageClusterRca(12, hotJVMNodeRca);
+            new HighHeapUsageClusterRca(12, hotNodeRca);
     highHeapUsageClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    highHeapUsageClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
+    highHeapUsageClusterRca.addAllUpstreams(Collections.singletonList(hotNodeRca));
     highHeapUsageClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
     Rca<ResourceFlowUnit> hotNodeClusterRca =
-            new HotNodeClusterRca(12, hotJVMNodeRca);
+            new HotNodeClusterRca(12, hotNodeRca);
     hotNodeClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    hotNodeClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
+    hotNodeClusterRca.addAllUpstreams(Collections.singletonList(hotNodeRca));
+
+    Rca<ResourceFlowUnit> queueRejectionClusterRca =
+        new QueueRejectionClusterRca(12, hotNodeRca);
+    queueRejectionClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    queueRejectionClusterRca.addAllUpstreams(Collections.singletonList(hotNodeRca));
 
     constructShardResourceUsageGraph();
 
