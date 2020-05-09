@@ -65,8 +65,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.Hot
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hot_node.HighCpuRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageOldGenRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageYoungGenRca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HighCPUShardRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
@@ -158,14 +158,14 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     addLeaf(ioTotSyscallRate);
 
     // High CPU Utilization RCA
-    HighCPUShardRca highCPUShardRca = new HighCPUShardRca(5, 12, cpuUtilization, ioTotThroughput, ioTotSyscallRate);
-    highCPUShardRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    highCPUShardRca.addAllUpstreams(Arrays.asList(cpuUtilization, ioTotThroughput, ioTotSyscallRate));
+    HotShardRca hotShardRca = new HotShardRca(5, 12, cpuUtilization, ioTotThroughput, ioTotSyscallRate);
+    hotShardRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    hotShardRca.addAllUpstreams(Arrays.asList(cpuUtilization, ioTotThroughput, ioTotSyscallRate));
 
     // Hot Shard Cluster RCA which consumes the above
-    HotShardClusterRca hotShardClusterRca = new HotShardClusterRca(12, highCPUShardRca);
+    HotShardClusterRca hotShardClusterRca = new HotShardClusterRca(12, hotShardRca);
     hotShardClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    hotShardClusterRca.addAllUpstreams(Collections.singletonList(highCPUShardRca));
+    hotShardClusterRca.addAllUpstreams(Collections.singletonList(hotShardRca));
     hotShardClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
   }
 

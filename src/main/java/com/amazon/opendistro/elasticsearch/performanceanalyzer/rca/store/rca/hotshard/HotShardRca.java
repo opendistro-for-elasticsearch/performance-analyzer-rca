@@ -15,9 +15,13 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.HOT_SHARD_RCA_ERROR_METRIC;
+
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
@@ -28,6 +32,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotShardSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.time.Clock;
@@ -57,15 +62,14 @@ import org.jooq.Record;
  * 2. Paging_RSS
  *
  */
-public class HighCPUShardRca extends Rca<ResourceFlowUnit> {
+public class HotShardRca extends Rca<ResourceFlowUnit> {
 
-    private static final Logger LOG = LogManager.getLogger(HighCPUShardRca.class);
+    private static final Logger LOG = LogManager.getLogger(HotShardRca.class);
     private static final int SLIDING_WINDOW_IN_SECONDS =  60;
 
-    //TODO : {@khushbr} refine the threshold values and read same from config file
-    private static final double CPU_UTILIZATION_THRESHOLD = 0.01;
-    private static final double IO_TOT_THROUGHPUT_THRESHOLD_IN_BYTES = 250000;
-    private static final double IO_TOT_SYSCALL_RATE_THRESHOLD_PER_SECOND = 0.01;
+    private double cpuUtilizationThreshold;
+    private double ioTotThroughputThreshold;
+    private double ioTotSysCallRateThreshold;
 
     private final Metric cpuUtilization;
     private final Metric ioTotThroughput;
@@ -80,8 +84,8 @@ public class HighCPUShardRca extends Rca<ResourceFlowUnit> {
     private HashMap<IndexShardKey, SlidingWindow<SlidingWindowData>> ioTotThroughputMap;
     private HashMap<IndexShardKey, SlidingWindow<SlidingWindowData>> ioTotSyscallRateMap;
 
-    public <M extends Metric> HighCPUShardRca(final long evaluationIntervalSeconds, final int rcaPeriod,
-            final M cpuUtilization, final M ioTotThroughput, final M ioTotSyscallRate) {
+    public <M extends Metric> HotShardRca(final long evaluationIntervalSeconds, final int rcaPeriod,
+                                          final M cpuUtilization, final M ioTotThroughput, final M ioTotSyscallRate) {
         super(evaluationIntervalSeconds);
         this.cpuUtilization = cpuUtilization;
         this.ioTotThroughput = ioTotThroughput;
@@ -93,6 +97,9 @@ public class HighCPUShardRca extends Rca<ResourceFlowUnit> {
         this.cpuUtilizationMap = new HashMap<>();
         this.ioTotThroughputMap = new HashMap<>();
         this.ioTotSyscallRateMap = new HashMap<>();
+        this.cpuUtilizationThreshold = HotShardRcaConfig.DEFAULT_CPU_UTILIZATION_THRESHOLD;
+        this.ioTotThroughputThreshold = HotShardRcaConfig.DEFAULT_IO_TOTAL_THROUGHPUT_THRESHOLD_IN_BYTE_PER_SEC;
+        this.ioTotSysCallRateThreshold = HotShardRcaConfig.DEFAULT_IO_TOTAL_SYSCALL_RATE_THRESHOLD_PER_SEC;
     }
 
     private void consumeFlowUnit(final MetricFlowUnit metricFlowUnit, final String metricType,
@@ -108,7 +115,7 @@ public class HighCPUShardRca extends Rca<ResourceFlowUnit> {
                 }
                 usageDeque.next(new SlidingWindowData(this.clock.millis(), usage));
             } catch (Exception e) {
-                // TODO: Add a metric here.
+                StatsCollector.instance().logMetric(HOT_SHARD_RCA_ERROR_METRIC);
                 LOG.error("Failed to parse metric in FlowUnit: {} from {}", record, metricType);
             }
         }
@@ -163,17 +170,17 @@ public class HighCPUShardRca extends Rca<ResourceFlowUnit> {
                 double avgIoTotThroughput = fetchUsageValueFromMap(ioTotThroughputMap, indexShardKey);
                 double avgIoTotSyscallRate = fetchUsageValueFromMap(ioTotSyscallRateMap, indexShardKey);
 
-                if (avgCpuUtilization > CPU_UTILIZATION_THRESHOLD
-                        || avgIoTotThroughput > IO_TOT_THROUGHPUT_THRESHOLD_IN_BYTES
-                        || avgIoTotSyscallRate > IO_TOT_SYSCALL_RATE_THRESHOLD_PER_SECOND) {
+                if (avgCpuUtilization > cpuUtilizationThreshold
+                        || avgIoTotThroughput > ioTotThroughputThreshold
+                        || avgIoTotSyscallRate > ioTotSysCallRateThreshold) {
                     HotShardSummary summary = new HotShardSummary(indexShardKey.getIndexName(),
                             String.valueOf(indexShardKey.getShardId()), currentNode.getId(), SLIDING_WINDOW_IN_SECONDS);
                     summary.setcpuUtilization(avgCpuUtilization);
-                    summary.setCpuUtilizationThreshold(CPU_UTILIZATION_THRESHOLD);
+                    summary.setCpuUtilizationThreshold(cpuUtilizationThreshold);
                     summary.setIoThroughput(avgIoTotThroughput);
-                    summary.setIoThroughputThreshold(IO_TOT_THROUGHPUT_THRESHOLD_IN_BYTES);
+                    summary.setIoThroughputThreshold(ioTotThroughputThreshold);
                     summary.setIoSysCallrate(avgIoTotSyscallRate);
-                    summary.setIoSysCallrateThreshold(IO_TOT_SYSCALL_RATE_THRESHOLD_PER_SECOND);
+                    summary.setIoSysCallrateThreshold(ioTotSysCallRateThreshold);
                     HotShardSummaryList.add(summary);
                     context = new ResourceContext(Resources.State.UNHEALTHY);
                     LOG.debug("Hot Shard Identified, Shard : {} , avgCpuUtilization = {} , avgIoTotThroughput = {}, "
@@ -195,10 +202,25 @@ public class HighCPUShardRca extends Rca<ResourceFlowUnit> {
         }
     }
 
-  @Override
-  public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-        throw new IllegalStateException(this.getClass().getSimpleName() + " should not be passed "
-              + "over the wire.");
-  }
+    /**
+     * read threshold values from rca.conf
+     * @param conf RcaConf object
+     */
+    @Override
+    public void readRcaConf(RcaConf conf) {
+        HotShardRcaConfig configObj = conf.getHotShardRcaConfig();
+        cpuUtilizationThreshold = configObj.getCpuUtilizationThreshold();
+        ioTotThroughputThreshold = configObj.getIoTotThroughputThreshold();
+        ioTotSysCallRateThreshold = configObj.getIoTotSysCallRateThreshold();
+    }
 
+    /**
+     * This is a local node RCA which by definition can not be serialize/de-serialized
+     * over gRPC.
+     */
+    @Override
+    public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
+        throw new IllegalStateException(this.getClass().getSimpleName() + " should not be passed "
+                + "over the wire.");
+    }
 }
