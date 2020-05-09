@@ -293,6 +293,8 @@ task cloneGitRepo(type: GitClone) {
     dockerBuildDir = Paths.get(getProject().getBuildDir().toString(), "docker-build").toString()
     mkdir dockerBuildDir
     if (localPaDir != null && !localPaDir.empty) {
+        // If you already have the performance Analyzer sources checked out then update the
+        // localPaDir in gradle.properties with the path.
         paDir = localPaDir
     } else {
         paDir = Paths.get(dockerBuildDir, "pa").toString()
