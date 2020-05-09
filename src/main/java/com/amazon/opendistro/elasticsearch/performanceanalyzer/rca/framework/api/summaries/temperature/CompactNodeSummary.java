@@ -36,6 +36,7 @@ import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.Result;
+import org.jooq.exception.DataTypeException;
 import org.jooq.impl.DSL;
 
 /**
@@ -104,42 +105,59 @@ public class CompactNodeSummary extends GenericSummary {
     }
 
     private static void readAndSetTemperatureVector(Record record, CompactNodeSummary summary) {
-        for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
-            String normalizedMeanUsageForDimension = record
-                .get((DSL.field(DSL.name(dimension.NAME + MEAN_SUFFIX_KEY),
-                    String.class)));
-            short value = 0;
-            if (normalizedMeanUsageForDimension != null && !normalizedMeanUsageForDimension.isEmpty()) {
-                value = Short.parseShort(normalizedMeanUsageForDimension);
+        try {
+            for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+                String normalizedMeanUsageForDimension = record
+                    .get((DSL.field(DSL.name(dimension.NAME + MEAN_SUFFIX_KEY),
+                        String.class)));
+                short value = 0;
+                if (normalizedMeanUsageForDimension != null && !normalizedMeanUsageForDimension
+                    .isEmpty()) {
+                    value = Short.parseShort(normalizedMeanUsageForDimension);
+                }
+                summary.setTemperatureForDimension(dimension,
+                    new NormalizedValue(value));
             }
-            summary.setTemperatureForDimension(dimension,
-                new NormalizedValue(value));
+        } catch (final DataTypeException dte) {
+            LOG.error("Couldn't convert to the right data type while reading temperature vector "
+                + "from the DB. {}", dte.getMessage(), dte);
         }
     }
 
     private static void readAndSetNumShardsPerDimension(Record record, CompactNodeSummary summary) {
-        for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
-            String numShardsForDimension = record
-                .get((DSL.field(DSL.name(dimension.NAME + NUM_SHARDS_SUFFIX_KEY),
-                    String.class)));
-            int value = 0;
-            if (numShardsForDimension != null && !numShardsForDimension.isEmpty()) {
-                value = Integer.parseInt(numShardsForDimension);
+        try {
+            for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+                String numShardsForDimension = record
+                    .get((DSL.field(DSL.name(dimension.NAME + NUM_SHARDS_SUFFIX_KEY),
+                        String.class)));
+                int value = 0;
+                if (numShardsForDimension != null && !numShardsForDimension.isEmpty()) {
+                    value = Integer.parseInt(numShardsForDimension);
+                }
+                summary.setNumOfShards(dimension, value);
             }
-            summary.setNumOfShards(dimension, value);
+        } catch (final DataTypeException dte) {
+            LOG.error("Couldn't convert to the right data type while reading num shards per"
+                + " dimension from the DB. {}", dte.getMessage(), dte);
         }
     }
 
     private static void readAndSetTotalConsumedPerDimension(Record record,
         CompactNodeSummary summary) {
-        for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
-            String totalConsumedForDimension =
-                record.get((DSL.field(DSL.name(dimension.NAME + TOTAL_SUFFIX_KEY), String.class)));
-            double value = 0;
-            if (totalConsumedForDimension != null && !totalConsumedForDimension.isEmpty()) {
-                value = Double.parseDouble(totalConsumedForDimension);
+        try {
+            for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+                String totalConsumedForDimension =
+                    record.get(
+                        (DSL.field(DSL.name(dimension.NAME + TOTAL_SUFFIX_KEY), String.class)));
+                double value = 0;
+                if (totalConsumedForDimension != null && !totalConsumedForDimension.isEmpty()) {
+                    value = Double.parseDouble(totalConsumedForDimension);
+                }
+                summary.setTotalConsumedByDimension(dimension, value);
             }
-            summary.setTotalConsumedByDimension(dimension, value);
+        } catch (final DataTypeException dte) {
+            LOG.error("Couldn't convert to the right data type while reading total consumed per"
+                + " dimension from the DB. {}", dte.getMessage(), dte);
         }
     }
 
