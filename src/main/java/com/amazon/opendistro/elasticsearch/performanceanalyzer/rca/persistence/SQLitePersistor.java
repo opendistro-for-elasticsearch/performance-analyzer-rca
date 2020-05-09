@@ -219,6 +219,9 @@ class SQLitePersistor extends PersistorBase {
       Record mostRecentRecord = recordList.get(0);
       response = RcaResponse.buildResponse(mostRecentRecord);
 
+      // ClusterTemperatureRca can only be retrieved from the elected master. If the request is
+      // made from a data node, it returns a 400 saying it can only be queried from the elected
+      // master.
       if (rca.equals(ClusterTemperatureRca.TABLE_NAME)) {
         Field<Integer> foreignKeyField = DSL.field(
             SQLiteQueryUtils.getPrimaryKeyColumnName(ResourceFlowUnit.RCA_TABLE_NAME),
