@@ -55,17 +55,22 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadPro
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -268,18 +273,75 @@ public class RcaController {
             String nextLine = sc.nextLine();
             rcaEnabled = Boolean.parseBoolean(nextLine);
           } catch (IOException e) {
-            LOG.error("Error reading file '{}': {}", filePath.toString(), e.getMessage());
+            LOG.error("Error reading file '{}': {}", filePath.toString(), e);
             e.printStackTrace();
             rcaEnabled = rcaEnabledDefaultValue;
           }
         });
   }
 
+  private Set<String> getAllClasses() {
+    // We are assuming that all the metrics and RCA files will be located under
+    // `com.amazon.opendistro.elasticsearch.performanceanalyzer.rca`
+    String packageName = "com.amazon.opendistro.elasticsearch.performanceanalyzer.rca";
+    Set<String> classes = new TreeSet<>();
+    try {
+      ClassLoader classLoader = RcaController.class.getClassLoader();
+      String packagePath = packageName.replace('.', '/');
+      Enumeration<URL> resources = classLoader.getResources(packagePath);
+      while (resources.hasMoreElements()) {
+        URL resource = resources.nextElement();
+        classes.addAll(findClasses(resource.getFile(), packagePath));
+      }
+    } catch (Exception e) {
+      LOG.error("Failed to get all the classes for muting", e);
+    }
+    return classes;
+  }
+
+  private static Set<String> findClasses(String path, String packagePath) throws Exception {
+    Set<String> classes = new TreeSet<>();
+    if (path.startsWith("file:") && path.contains("!")) {
+      URL jar = new URL(path.split("!")[0]);
+      ZipInputStream zip = new ZipInputStream(jar.openStream());
+      ZipEntry entry;
+      while ((entry = zip.getNextEntry()) != null) {
+        String classFilePath = entry.getName();
+        if (classFilePath.startsWith(packagePath) && classFilePath.endsWith(".class")) {
+          String className = classFilePath.substring(
+                  classFilePath.lastIndexOf("/") + 1, classFilePath.indexOf("."));
+          classes.add(className);
+        }
+      }
+    }
+    return classes;
+  }
+
   private void readAndUpdateMutesRcasDuringStart() {
     try {
-      Set<String> rcasForMute = new HashSet<>(rcaConf.getMutedRcaList());
-      rcasForMute.forEach(mutedRca -> Stats.getInstance().addToMutedGraphNodes(mutedRca));
-      LOG.info("Updated the muted RCA Graph to : {}", rcaConf.getMutedRcaList());
+      /* We have an edge case where both `readAndUpdateMutesRcas()` and `readAndUpdateMutesRcasDuringStart()`
+       * can try to update the muted Rca list back to back, reading rca.conf twice. This will happen when rca
+       * was turned off and then on.
+       *
+       * <p> `readAndUpdateMutesRcasDuringStart()` should only be read at the start of the process, when
+       * RCA graph is not constructed and we cannot validate the new new muted RCAs. For any other update\
+       * to the muted list, the periodic rca.conf update checker will take care of it.
+       *
+       */
+      if (lastModifiedTimeInMillisInMemory == 0) {
+        Set<String> rcasForMute = new HashSet<>(rcaConf.getMutedRcaList());
+        final Set<String> classes = getAllClasses();
+        rcasForMute.forEach(
+                mutedRca -> {
+                  if (classes.contains(mutedRca)) {
+                    Stats.getInstance().addToMutedGraphNodes(mutedRca);
+                  } else {
+                    LOG.error("RCA: {} provided for muting isn't valid", mutedRca);
+                  }
+                }
+        );
+        LOG.info("Updated the muted RCA Graph to : {}", rcaConf.getMutedRcaList());
+      }
     } catch (Exception e) {
       LOG.error("Couldn't read/update the muted RCAs during start()", e);
       StatsCollector.instance().logMetric(RCA_MUTE_ERROR_METRIC);
@@ -310,11 +372,17 @@ public class RcaController {
         rcasForMute.retainAll(ConnectedComponent.getNodeNames());
 
         // If rcasForMute post validation is empty but rcaConf.getMutedRcaList() is not empty
-        // all the input RCAs are incorrect, return.
+        // all the input RCAs are incorrect.
         if (rcasForMute.isEmpty() && !rcaConf.getMutedRcaList().isEmpty()) {
-          LOG.error("Incorrect RCA(s): {}, cannot be muted. Valid RCAs: {}, Muted RCAs: {}",
-                  rcaConf.getMutedRcaList(), ConnectedComponent.getNodeNames(), Stats.getInstance().getMutedGraphNodes());
-          return;
+          if (lastModifiedTimeInMillisInMemory == 0) {
+            LOG.error("Removing Incorrect RCA(s): {} provided before RCA Scheduler start. Valid RCAs: {}.",
+                    rcaConf.getMutedRcaList(), ConnectedComponent.getNodeNames());
+
+          } else {
+            LOG.error("Incorrect RCA(s): {}, cannot be muted. Valid RCAs: {}, Muted RCAs: {}",
+                    rcaConf.getMutedRcaList(), ConnectedComponent.getNodeNames(), Stats.getInstance().getMutedGraphNodes());
+            return;
+          }
         }
 
         LOG.info("Updating the muted RCA Graph to : {}", rcasForMute);
