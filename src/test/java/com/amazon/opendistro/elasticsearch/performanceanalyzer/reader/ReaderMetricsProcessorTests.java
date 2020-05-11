@@ -18,10 +18,8 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MasterPendingValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MetricName;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.OSMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -35,18 +33,24 @@ import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.Result;
 import org.jooq.impl.DSL;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 public class ReaderMetricsProcessorTests extends AbstractReaderTests {
+  public String rootLocation;
 
   public ReaderMetricsProcessorTests() throws SQLException, ClassNotFoundException {
     super();
   }
 
+  @Before
+  public void before() throws Exception {
+    rootLocation = "build/resources/test/reader/";
+  }
+
   @Test
   public void testReaderMetricsProcessorFrequently() throws Exception {
-    String rootLocation = "build/resources/test/reader/";
     deleteAll();
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true);
 
@@ -71,7 +75,6 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
 
   @Test
   public void testReaderMetricsProcessorFrequentlyWithDelay() throws Exception {
-    String rootLocation = "build/resources/test/reader/";
     deleteAll();
     int delay = 2000;
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation);
