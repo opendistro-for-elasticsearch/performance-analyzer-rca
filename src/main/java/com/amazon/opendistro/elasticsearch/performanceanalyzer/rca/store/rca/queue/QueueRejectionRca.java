@@ -39,6 +39,11 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * This RCA reads ThreadPool_RejectionReqs from upstream metrics and it keeps track of
+ * the amount of the time period(tp) when requests in the queues are continuously being rejected.
+ * This RCA is marked as unhealthy if tp we find in write/search queue is above the threshold.
+ */
 public class QueueRejectionRca extends Rca<ResourceFlowUnit> {
   private static final Logger LOG = LogManager.getLogger(QueueRejectionRca.class);
   private static final int REJECTION_TIME_PERIOD_IN_SECONDS = 300;

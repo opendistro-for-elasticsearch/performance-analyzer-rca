@@ -85,17 +85,30 @@ import org.apache.logging.log4j.Logger;
 public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
   private static final Logger LOG = LogManager.getLogger(ElasticSearchAnalysisGraph.class);
+  private static final int EVAL_INTERVAL_IN_SEC = 5;
+  private static final int RCA_PERIOD_1_MIN = 12;
 
   @Override
   public void construct() {
-    Metric heapUsed = new Heap_Used(5);
-    Metric gcEvent = new GC_Collection_Event(5);
-    Metric heapMax = new Heap_Max(5);
-    Metric gc_Collection_Time = new GC_Collection_Time(5);
-    Metric cpuUtilizationGroupByOperation = new AggregateMetric(1, CPU_Utilization.NAME,
-            AggregateFunction.SUM,
-            MetricsDB.AVG, CommonDimension.OPERATION.toString());
-    Metric threadPool_RejectedReqs = new ThreadPool_RejectedReqs(5);
+    //construct node level metrics and RCAs. HotNodeRCA will subscribe to all node level RCAs
+    Rca<ResourceFlowUnit> hotNodeRca = constructNodeLevelRcas();
+    //construct cluster level RCAs
+    constructClusterLevelRcas(hotNodeRca);
+
+    constructShardResourceUsageGraph();
+
+    // constructResourceHeatMapGraph();
+  }
+
+  private Rca<ResourceFlowUnit> constructNodeLevelRcas() {
+    Metric heapUsed = new Heap_Used(EVAL_INTERVAL_IN_SEC);
+    Metric gcEvent = new GC_Collection_Event(EVAL_INTERVAL_IN_SEC);
+    Metric heapMax = new Heap_Max(EVAL_INTERVAL_IN_SEC);
+    Metric gc_Collection_Time = new GC_Collection_Time(EVAL_INTERVAL_IN_SEC);
+    Metric cpuUtilizationGroupByOperation = new AggregateMetric(EVAL_INTERVAL_IN_SEC, CPU_Utilization.NAME,
+        AggregateFunction.SUM,
+        MetricsDB.AVG, CommonDimension.OPERATION.toString());
+    Metric threadPool_RejectedReqs = new ThreadPool_RejectedReqs(EVAL_INTERVAL_IN_SEC);
 
     heapUsed.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     gcEvent.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
@@ -114,51 +127,73 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     //add node stats metrics
     List<Metric> nodeStatsMetrics = constructNodeStatsMetrics();
 
-    Rca<ResourceFlowUnit> highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(12, heapUsed, gcEvent,
-            heapMax, nodeStatsMetrics);
+    Rca<ResourceFlowUnit> highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(RCA_PERIOD_1_MIN, heapUsed, gcEvent,
+        heapMax, nodeStatsMetrics);
     highHeapUsageOldGenRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     List<Node<?>> upstream = new ArrayList<>(Arrays.asList(heapUsed, gcEvent, heapMax));
     upstream.addAll(nodeStatsMetrics);
     highHeapUsageOldGenRca.addAllUpstreams(upstream);
 
-    Rca<ResourceFlowUnit> highHeapUsageYoungGenRca = new HighHeapUsageYoungGenRca(12, heapUsed,
-            gc_Collection_Time);
+    Rca<ResourceFlowUnit> highHeapUsageYoungGenRca = new HighHeapUsageYoungGenRca(RCA_PERIOD_1_MIN, heapUsed,
+        gc_Collection_Time);
     highHeapUsageYoungGenRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     highHeapUsageYoungGenRca.addAllUpstreams(Arrays.asList(heapUsed, gc_Collection_Time));
 
-    Rca<ResourceFlowUnit> highCpuRca = new HighCpuRca(12, cpuUtilizationGroupByOperation);
+    Rca<ResourceFlowUnit> highCpuRca = new HighCpuRca(RCA_PERIOD_1_MIN, cpuUtilizationGroupByOperation);
     highCpuRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     highCpuRca.addAllUpstreams(Collections.singletonList(cpuUtilizationGroupByOperation));
 
-    Rca<ResourceFlowUnit> queueRejectionRca = new QueueRejectionRca(12, threadPool_RejectedReqs);
+    Rca<ResourceFlowUnit> queueRejectionRca = new QueueRejectionRca(RCA_PERIOD_1_MIN, threadPool_RejectedReqs);
     queueRejectionRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     queueRejectionRca.addAllUpstreams(Collections.singletonList(threadPool_RejectedReqs));
 
-    Rca<ResourceFlowUnit> hotNodeRca = new HotNodeRca(12, highHeapUsageOldGenRca,
-            highHeapUsageYoungGenRca, highCpuRca, queueRejectionRca);
+    Rca<ResourceFlowUnit> hotNodeRca = new HotNodeRca(RCA_PERIOD_1_MIN, highHeapUsageOldGenRca,
+        highHeapUsageYoungGenRca, highCpuRca, queueRejectionRca);
     hotNodeRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     hotNodeRca.addAllUpstreams(
-            Arrays.asList(highHeapUsageOldGenRca, highHeapUsageYoungGenRca, highCpuRca, queueRejectionRca));
+        Arrays.asList(highHeapUsageOldGenRca, highHeapUsageYoungGenRca, highCpuRca, queueRejectionRca));
+    return hotNodeRca;
+  }
 
+  private List<Metric> constructNodeStatsMetrics() {
+    List<Metric> nodeStatsMetrics = new ArrayList<Metric>() {{
+      add(new Cache_FieldData_Size(EVAL_INTERVAL_IN_SEC));
+      add(new Cache_Request_Size(EVAL_INTERVAL_IN_SEC));
+      add(new Cache_Query_Size(EVAL_INTERVAL_IN_SEC));
+      add(new Segments_Memory(EVAL_INTERVAL_IN_SEC));
+      add(new Terms_Memory(EVAL_INTERVAL_IN_SEC));
+      add(new StoredFields_Memory(EVAL_INTERVAL_IN_SEC));
+      add(new TermVectors_Memory(EVAL_INTERVAL_IN_SEC));
+      add(new Norms_Memory(EVAL_INTERVAL_IN_SEC));
+      add(new Points_Memory(EVAL_INTERVAL_IN_SEC));
+      add(new DocValues_Memory(EVAL_INTERVAL_IN_SEC));
+      add(new IndexWriter_Memory(EVAL_INTERVAL_IN_SEC));
+      add(new Bitset_Memory(EVAL_INTERVAL_IN_SEC));
+      add(new VersionMap_Memory(EVAL_INTERVAL_IN_SEC));
+    }};
+    for (Metric metric : nodeStatsMetrics) {
+      metric.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+      addLeaf(metric);
+    }
+    return nodeStatsMetrics;
+  }
+
+  private void constructClusterLevelRcas(Rca<ResourceFlowUnit> hotNodeRca) {
     Rca<ResourceFlowUnit> highHeapUsageClusterRca =
-            new HighHeapUsageClusterRca(12, hotNodeRca);
+        new HighHeapUsageClusterRca(RCA_PERIOD_1_MIN, hotNodeRca);
     highHeapUsageClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     highHeapUsageClusterRca.addAllUpstreams(Collections.singletonList(hotNodeRca));
     highHeapUsageClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
     Rca<ResourceFlowUnit> hotNodeClusterRca =
-            new HotNodeClusterRca(12, hotNodeRca);
+        new HotNodeClusterRca(RCA_PERIOD_1_MIN, hotNodeRca);
     hotNodeClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     hotNodeClusterRca.addAllUpstreams(Collections.singletonList(hotNodeRca));
 
     Rca<ResourceFlowUnit> queueRejectionClusterRca =
-        new QueueRejectionClusterRca(12, hotNodeRca);
+        new QueueRejectionClusterRca(RCA_PERIOD_1_MIN, hotNodeRca);
     queueRejectionClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     queueRejectionClusterRca.addAllUpstreams(Collections.singletonList(hotNodeRca));
-
-    constructShardResourceUsageGraph();
-
-    // constructResourceHeatMapGraph();
   }
 
   private void constructShardResourceUsageGraph() {
@@ -183,29 +218,6 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     hotShardClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     hotShardClusterRca.addAllUpstreams(Collections.singletonList(hotShardRca));
     hotShardClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
-  }
-
-  private List<Metric> constructNodeStatsMetrics() {
-    List<Metric> nodeStatsMetrics = new ArrayList<Metric>() {{
-      add(new Cache_FieldData_Size(5));
-      add(new Cache_Request_Size(5));
-      add(new Cache_Query_Size(5));
-      add(new Segments_Memory(5));
-      add(new Terms_Memory(5));
-      add(new StoredFields_Memory(5));
-      add(new TermVectors_Memory(5));
-      add(new Norms_Memory(5));
-      add(new Points_Memory(5));
-      add(new DocValues_Memory(5));
-      add(new IndexWriter_Memory(5));
-      add(new Bitset_Memory(5));
-      add(new VersionMap_Memory(5));
-    }};
-    for (Metric metric : nodeStatsMetrics) {
-      metric.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-      addLeaf(metric);
-    }
-    return nodeStatsMetrics;
   }
 
   protected void constructResourceHeatMapGraph() {
