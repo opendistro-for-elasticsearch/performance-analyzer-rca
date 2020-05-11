@@ -508,6 +508,28 @@ task unzipPerfTop(type: Copy) {
     enabled = !file(perfTopBin).exists()
 }
 
+task enablePa(type: Exec) {
+    dependsOn(waitForES)
+    doFirst {
+        sleep(5000)
+    }
+    commandLine('curl', 'localhost:9200/_opendistro/_performanceanalyzer/cluster/config', '-H',
+            'Content-Type: application/json', '-d', '{"enabled": true}')
+    doLast {
+        sleep(5000)
+    }
+}
+
+task enablePaAndRca(type: Exec) {
+    dependsOn(enablePa)
+    commandLine('curl', 'localhost:9200/_opendistro/_performanceanalyzer/rca/cluster/config',
+            '-H', 'Content-Type: application/json', '-d', '{"enabled": true}')
+    doLast {
+        sleep(5000)
+    }
+}
+
+/*
 task enablePaAndRca(type: Exec) {
     dependsOn(waitForES)
     commandLine('curl', 'localhost:9200/_opendistro/_performanceanalyzer/cluster/config', '-H',
@@ -515,6 +537,7 @@ task enablePaAndRca(type: Exec) {
     commandLine('curl', 'localhost:9200/_opendistro/_performanceanalyzer/rca/cluster/config',
             '-H', 'Content-Type: application/json', '-d', '{"enabled": true}')
 }
+ */
 
 task runPerftop {
     dependsOn(enablePaAndRca, unzipPerfTop)
