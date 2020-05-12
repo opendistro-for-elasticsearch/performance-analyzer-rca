@@ -175,6 +175,9 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
             }
         }
 
+        LOG.info("MOCHI, consumeFlowUnit() completed. cpuUtilizationInfoTable: {}", cpuUtilizationInfoTable);
+        LOG.info("MOCHI, consumeFlowUnit() completed. IOThroughputInfoTable: {}", IOThroughputInfoTable);
+        LOG.info("MOCHI, consumeFlowUnit() completed. IOSysCallRateInfoTable: {}", IOSysCallRateInfoTable);
         if (counter >= rcaPeriod) {
             List<GenericSummary> hotShardSummaryList = new ArrayList<>();
             ResourceContext context;
@@ -194,6 +197,7 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
                     IOSysCallRateInfoTable, ioTotSysCallRateClusterThreshold, hotShardSummaryList,
                     ResourceType.newBuilder().setHardwareResourceTypeValue(HardwareEnum.IO_TOTAL_SYS_CALLRATE_VALUE).build());
 
+            LOG.info("MOCHI, inside rcaPeriod. hotShardSummaryList: {}", hotShardSummaryList);
             if (hotShardSummaryList.isEmpty()) {
                 context = new ResourceContext(Resources.State.HEALTHY);
             } else {
