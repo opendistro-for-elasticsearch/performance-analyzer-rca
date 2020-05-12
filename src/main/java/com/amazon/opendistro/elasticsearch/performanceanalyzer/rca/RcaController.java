@@ -288,7 +288,7 @@ public class RcaController {
        */
       if (lastModifiedTimeInMillisInMemory == 0) {
         Set<String> rcasForMute = new HashSet<>(rcaConf.getMutedRcaList());
-        rcasForMute.forEach(mutedRca -> Stats.getInstance().addToMutedGraphNodes(mutedRca));
+        Stats.getInstance().updateMutedGraphNodes(rcasForMute);
         LOG.info("Updated the muted RCA Graph to : {}", rcaConf.getMutedRcaList());
       }
     } catch (Exception e) {
