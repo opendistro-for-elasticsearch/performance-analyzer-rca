@@ -22,12 +22,19 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.ResourceFlowUnitFieldValue;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.TopConsumerSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterDimensionalSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,22 +51,24 @@ import org.jooq.impl.DSL;
  * A utility class to query cluster, node and resource level summary for a rca
  */
 public class SQLiteQueryUtils {
-  private static final Map<String, String> nestedTableMap;
+  private static final Map<Class<? extends GenericSummary>, List<Class<? extends GenericSummary>>> nestedTableMap;
   private static final Set<String> clusterLevelRCA;
 
   // to map table => its nested table
   // e.g. HotClusterSummary => HotNodeSummary
   static {
-    Map<String, String> tableMap = new HashMap<>();
-    tableMap.put(ResourceFlowUnit.RCA_TABLE_NAME, ClusterTemperatureSummary.TABLE_NAME);
-    tableMap.put(ClusterTemperatureSummary.TABLE_NAME, ClusterDimensionalSummary.TABLE_NAME);
-
-    tableMap.put(ResourceFlowUnit.RCA_TABLE_NAME, HOT_CLUSTER_SUMMARY_TABLE);
-    tableMap.put(HOT_CLUSTER_SUMMARY_TABLE, HOT_NODE_SUMMARY_TABLE);
-    tableMap.put(HOT_NODE_SUMMARY_TABLE, HOT_RESOURCE_SUMMARY_TABLE);
-    tableMap.put(HOT_RESOURCE_SUMMARY_TABLE, TOP_CONSUMER_SUMMARY_TABLE);
+    Map<Class<? extends GenericSummary>, List<Class<? extends GenericSummary>>> tableMap = new HashMap<>();
+    tableMap.put(RcaResponse.class, Collections.unmodifiableList(Collections.singletonList(
+        HotClusterSummary.class)));
+    tableMap.put(HotClusterSummary.class, Collections.unmodifiableList(Collections.singletonList(
+        HotNodeSummary.class)));
+    tableMap.put(HotNodeSummary.class, Collections.unmodifiableList(Collections.singletonList(
+        HotResourceSummary.class)));
+    tableMap.put(HotResourceSummary.class, Collections.unmodifiableList(Collections.singletonList(
+        TopConsumerSummary.class)));
     nestedTableMap = Collections.unmodifiableMap(tableMap);
   }
+
 
   // RCAs that can be queried by RCA API
   // currently we can only query from the cluster level RCAs
@@ -77,7 +86,7 @@ public class SQLiteQueryUtils {
    * e.g. HotClusterSummary => HotNodeSummary
    * @return map table => its nested table
    */
-  public static Map<String, String> getNestedTableMap() {
+  public static Map<Class<? extends GenericSummary>, List<Class<? extends GenericSummary>>>  getNestedTableMap() {
     return nestedTableMap;
   }
 

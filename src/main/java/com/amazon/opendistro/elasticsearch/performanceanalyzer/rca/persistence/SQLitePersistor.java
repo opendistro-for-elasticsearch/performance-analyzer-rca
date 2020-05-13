@@ -18,10 +18,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources.State;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.ResourceFlowUnitFieldValue;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.TopConsumerSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
@@ -32,6 +28,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -218,42 +215,39 @@ class SQLitePersistor extends PersistorBase {
 
   private void readSummary(GenericSummary upperLevelSummary, int upperLevelPrimaryKey) {
     String upperLevelTable = upperLevelSummary.getTableName();
+    List<Class<? extends GenericSummary>> clazzList = SQLiteQueryUtils.getNestedTableMap().getOrDefault(upperLevelSummary.getClass(), null);
+
     // stop the recursion here if the table does not have any nested summary.
-    if (!SQLiteQueryUtils.getNestedTableMap().containsKey(upperLevelTable)) {
+    if (clazzList == null) {
       return;
     }
-    String currLevelTable = SQLiteQueryUtils.getNestedTableMap().get(upperLevelTable);
-    Field<Integer> foreignKeyField = DSL.field(
-        SQLiteQueryUtils.getPrimaryKeyColumnName(upperLevelTable), Integer.class);
-    SelectJoinStep<Record> rcaQuery = SQLiteQueryUtils
-        .buildSummaryQuery(create, currLevelTable, upperLevelPrimaryKey, foreignKeyField);
-    try {
-      Result<Record> recordList = rcaQuery.fetch();
-      for (Record record : recordList) {
-        GenericSummary summary = null;
-        if (upperLevelSummary instanceof RcaResponse) {
-          summary = HotClusterSummary.buildSummary(record);
-        }
-        else if (upperLevelSummary instanceof HotClusterSummary) {
-          summary = HotNodeSummary.buildSummary(record);
-        }
-        else if (upperLevelSummary instanceof HotNodeSummary) {
-          summary = HotResourceSummary.buildSummary(record);
-        }
-        else if (upperLevelSummary instanceof HotResourceSummary) {
-          summary = TopConsumerSummary.buildSummary(record);
-        }
-        if (summary != null) {
-          Field<Integer> primaryKeyField = DSL.field(
-              SQLiteQueryUtils.getPrimaryKeyColumnName(summary.getTableName()), Integer.class);
-          readSummary(summary, record.get(primaryKeyField));
-          upperLevelSummary.addNestedSummaryList(summary);
+    for (Class<? extends GenericSummary> clazz : clazzList) {
+      Field<Integer> foreignKeyField = DSL.field(
+          SQLiteQueryUtils.getPrimaryKeyColumnName(upperLevelTable), Integer.class);
+      SelectJoinStep<Record> rcaQuery = SQLiteQueryUtils
+          .buildSummaryQuery(create, clazz.getSimpleName(), upperLevelPrimaryKey, foreignKeyField);
+      try {
+        Result<Record> recordList = rcaQuery.fetch();
+        for (Record record : recordList) {
+          Method method = clazz.getMethod("buildSummary", Record.class);
+          GenericSummary summary = (GenericSummary) method.invoke(null, record);
+          if (summary != null) {
+            Field<Integer> primaryKeyField = DSL.field(
+                SQLiteQueryUtils.getPrimaryKeyColumnName(summary.getTableName()), Integer.class);
+            readSummary(summary, record.get(primaryKeyField));
+            upperLevelSummary.addNestedSummaryList(summary);
+          }
         }
       }
-    }
-    catch (DataAccessException de) {
-      // it is totally fine if we fail to read some certain tables as some types of summaries might be missing
-      LOG.warn("Fail to read Summary table : {}, query = {},  exceptions : {}", currLevelTable, rcaQuery.toString(), de.getStackTrace());
+      catch (DataAccessException de) {
+        // it is totally fine if we fail to read some certain tables as some types of summaries might be missing
+        LOG.warn("Fail to read Summary table : {}, query = {},  exceptions : {}",
+            clazz.getSimpleName(), rcaQuery.toString(), de.getStackTrace());
+      } catch (Exception e) {
+        // we might got a reflection issue if running into this. Check the NestedTableMap and make sure
+        // the summary class has been added.
+        LOG.error("Fail to use reflection to build GenericSummary, trace = {}", e.getStackTrace());
+      }
     }
   }
 }
