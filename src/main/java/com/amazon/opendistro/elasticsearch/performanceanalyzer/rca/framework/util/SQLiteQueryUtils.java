@@ -69,6 +69,7 @@ public class SQLiteQueryUtils {
     rcaSet.add(ClusterTemperatureRca.TABLE_NAME);
     rcaSet.add(HighHeapUsageClusterRca.RCA_TABLE_NAME);
     rcaSet.add(HotNodeClusterRca.RCA_TABLE_NAME);
+    rcaSet.add(HotShardClusterRca.RCA_TABLE_NAME);
     clusterLevelRCA = Collections.unmodifiableSet(rcaSet);
   }
 

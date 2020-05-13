@@ -48,6 +48,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
 
+    public static final String RCA_TABLE_NAME = HotShardClusterRca.class.getSimpleName();
     private static final Logger LOG = LogManager.getLogger(HotShardClusterRca.class);
     private static final int SLIDING_WINDOW_IN_SECONDS = 60;
 
@@ -165,7 +166,9 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
 
         // Populate the Table, compiling the information per index
         final List<ResourceFlowUnit> resourceFlowUnits = hotShardRca.getFlowUnits();
+        LOG.info("MOMO, resourceFlowUnits: {}", resourceFlowUnits);
         for (final ResourceFlowUnit resourceFlowUnit : resourceFlowUnits) {
+            LOG.info("MOMO, resourceFlowUnit: {}", resourceFlowUnit);
             if (resourceFlowUnit.isEmpty()) {
                 continue;
             }
@@ -175,9 +178,9 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
             }
         }
 
-        LOG.info("MOCHI, consumeFlowUnit() completed. cpuUtilizationInfoTable: {}", cpuUtilizationInfoTable);
-        LOG.info("MOCHI, consumeFlowUnit() completed. IOThroughputInfoTable: {}", IOThroughputInfoTable);
-        LOG.info("MOCHI, consumeFlowUnit() completed. IOSysCallRateInfoTable: {}", IOSysCallRateInfoTable);
+        LOG.info("MOMO, consumeFlowUnit() completed. cpuUtilizationInfoTable: {}", cpuUtilizationInfoTable);
+        LOG.info("MOMO, consumeFlowUnit() completed. IOThroughputInfoTable: {}", IOThroughputInfoTable);
+        LOG.info("MOMO, consumeFlowUnit() completed. IOSysCallRateInfoTable: {}", IOSysCallRateInfoTable);
         if (counter >= rcaPeriod) {
             List<GenericSummary> hotShardSummaryList = new ArrayList<>();
             ResourceContext context;
@@ -197,7 +200,7 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
                     IOSysCallRateInfoTable, ioTotSysCallRateClusterThreshold, hotShardSummaryList,
                     ResourceType.newBuilder().setHardwareResourceTypeValue(HardwareEnum.IO_TOTAL_SYS_CALLRATE_VALUE).build());
 
-            LOG.info("MOCHI, inside rcaPeriod. hotShardSummaryList: {}", hotShardSummaryList);
+            LOG.info("MOMO, inside rcaPeriod. hotShardSummaryList: {}", hotShardSummaryList);
             if (hotShardSummaryList.isEmpty()) {
                 context = new ResourceContext(Resources.State.HEALTHY);
             } else {
