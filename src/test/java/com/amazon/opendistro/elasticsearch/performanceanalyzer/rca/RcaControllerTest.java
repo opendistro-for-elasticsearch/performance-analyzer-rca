@@ -196,6 +196,36 @@ public class RcaControllerTest {
   }
 
   @Test
+  public void readAndUpdateMutedRcasWithRCAEnableAndDisabled() throws Exception {
+    String mutedRcaConfPath = Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_muted.conf").toString();
+    List<String> mutedRcas1 = Arrays.asList("CPU_Utilization", "Heap_AllocRate");
+    List<String> mutedRcas2 = Arrays.asList("Paging_MajfltRate");
+
+    // RCA enabled, mutedRcas1 is muted nodes
+    changeRcaRunState(RcaState.RUN);
+    setMyIp(masterIP, AllMetrics.NodeRole.MASTER);
+    RcaControllerHelper.set(Paths.get(rcaEnabledFileLoc.toString(), "rca.conf").toString(),
+            mutedRcaConfPath,
+            Paths.get(rcaEnabledFileLoc.toString(), "rca_elected_master.conf").toString());
+    WaitFor.waitFor(() -> rcaController.getCurrentRole() == AllMetrics.NodeRole.MASTER, 10, TimeUnit.SECONDS);
+    WaitFor.waitFor(() -> RcaControllerHelper.pickRcaConfForRole(AllMetrics.NodeRole.MASTER).getConfigFileLoc() == mutedRcaConfPath,
+            10, TimeUnit.SECONDS);
+    updateConfFileForMutedRcas(mutedRcaConfPath, mutedRcas1);
+    Assert.assertTrue(check(new MutedRCAEval(rcaController), mutedRcas1));
+
+    // Disable RCA
+    changeRcaRunState(RcaState.STOP);
+    Assert.assertTrue(check(new MutedRCAEval(rcaController), mutedRcas1));
+
+    // Update rca.conf
+    updateConfFileForMutedRcas(mutedRcaConfPath, mutedRcas2);
+
+    // Enable RCA, assert mutedRcas2 is muted nodes
+    changeRcaRunState(RcaState.RUN);
+    Assert.assertTrue(check(new MutedRCAEval(rcaController), mutedRcas2));
+  }
+
+  @Test
   public void readAndUpdateMutedRcas() throws Exception {
     String mutedRcaConfPath = Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_muted.conf").toString();
     List<String> mutedRcas1 = Arrays.asList("CPU_Utilization", "Heap_AllocRate");
