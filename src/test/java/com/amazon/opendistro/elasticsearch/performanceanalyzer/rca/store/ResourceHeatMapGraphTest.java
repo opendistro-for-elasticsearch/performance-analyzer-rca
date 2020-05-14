@@ -126,34 +126,16 @@ public class ResourceHeatMapGraphTest {
         clientServers.getNetClient().stop();
     }
 
-    class AnalysisGraphTest extends ElasticSearchAnalysisGraph {
+    private static class AnalysisGraphX extends ElasticSearchAnalysisGraph {
         @Override
         public void construct() {
             super.constructResourceHeatMapGraph();
         }
     }
 
-    class RcaSchedulerTaskT extends RCASchedulerTask {
-
-        public RcaSchedulerTaskT(List<ConnectedComponent> connectedComponents, RcaConf rcaConf,
-                                 SubscriptionManager subscriptionManager) {
-            super(
-                    1000,
-                    Executors.newFixedThreadPool(THREADS),
-                    connectedComponents,
-                    reader,
-                    persistable,
-                    rcaConf,
-                    new WireHopper(new NodeStateManager(), clientServers.getNetClient(),
-                            subscriptionManager,
-                            networkThreadPoolReference,
-                            new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength())));
-        }
-    }
-
     @Test
     public void constructResourceHeatMapGraph() {
-        AnalysisGraph analysisGraph = new ResourceHeatMapGraphTest.AnalysisGraphTest();
+        AnalysisGraph analysisGraph = new AnalysisGraphX();
         List<ConnectedComponent> connectedComponents =
                 RcaUtil.getAnalysisGraphComponents(analysisGraph);
         RcaTestHelper.setEvaluationTimeForAllNodes(connectedComponents, 1);
@@ -165,9 +147,20 @@ public class ResourceHeatMapGraphTest {
                 new SubscriptionManager(new GRPCConnectionManager(false));
         subscriptionManager.setCurrentLocus(rcaConf.getTagMap().get("locus"));
 
+        WireHopper wireHopper = new WireHopper(new NodeStateManager(), clientServers.getNetClient(),
+            subscriptionManager,
+            networkThreadPoolReference,
+            new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()));
+
         RCASchedulerTask rcaSchedulerTaskData =
-                new ResourceHeatMapGraphTest.RcaSchedulerTaskT(connectedComponents, rcaConf,
-                        subscriptionManager);
+                new RCASchedulerTask(
+                    1000,
+                    Executors.newFixedThreadPool(THREADS),
+                    connectedComponents,
+                    reader,
+                    persistable,
+                    rcaConf,
+                    wireHopper);
         AllMetrics.NodeRole nodeRole = AllMetrics.NodeRole.DATA;
         RcaTestHelper.setMyIp("192.168.0.1", nodeRole);
         rcaSchedulerTaskData.run();
@@ -179,9 +172,21 @@ public class ResourceHeatMapGraphTest {
         SubscriptionManager subscriptionManager2 =
                 new SubscriptionManager(new GRPCConnectionManager(false));
         subscriptionManager2.setCurrentLocus(rcaConf2.getTagMap().get("locus"));
+
+        WireHopper wireHopper2 = new WireHopper(new NodeStateManager(), clientServers.getNetClient(),
+            subscriptionManager2,
+            networkThreadPoolReference,
+            new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()));
+
         RCASchedulerTask rcaSchedulerTaskMaster =
-                new ResourceHeatMapGraphTest.RcaSchedulerTaskT(connectedComponents, rcaConf2,
-                        subscriptionManager2);
+            new RCASchedulerTask(
+                1000,
+                Executors.newFixedThreadPool(THREADS),
+                connectedComponents,
+                reader,
+                persistable,
+                rcaConf2,
+                wireHopper2);
         AllMetrics.NodeRole nodeRole2 = AllMetrics.NodeRole.ELECTED_MASTER;
         RcaTestHelper.setMyIp("192.168.0.2", nodeRole2);
         rcaSchedulerTaskMaster.run();

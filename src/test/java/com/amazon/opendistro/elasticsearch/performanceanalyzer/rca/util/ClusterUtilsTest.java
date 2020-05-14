@@ -5,6 +5,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDet
 import com.google.common.collect.Lists;
 import java.util.Collections;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ClusterUtilsTest {
@@ -13,9 +14,13 @@ public class ClusterUtilsTest {
     private static final ClusterDetailsEventProcessor.NodeDetails EMPTY_DETAILS =
             ClusterDetailsEventProcessorTestHelper.newNodeDetails("", "", false);
 
+    @Before
+    public void setup() {
+        ClusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(EMPTY_DETAILS));
+    }
+
     @Test
     public void testGetCurrentHostAddress() {
-        ClusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(EMPTY_DETAILS));
         Assert.assertEquals(ClusterUtils.EMPTY_STRING, ClusterUtils.getCurrentNodeHostAddress());
         ClusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(
                 ClusterDetailsEventProcessorTestHelper.newNodeDetails(null, HOST, false)
@@ -26,7 +31,6 @@ public class ClusterUtilsTest {
     @Test
     public void testGetAllPeerHostAddresses() {
         // method should behave when fed an empty list of peers
-        ClusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(EMPTY_DETAILS));
         Assert.assertEquals(Collections.emptyList(), ClusterUtils.getAllPeerHostAddresses());
         // method should not include the current node in the list of peers
         ClusterDetailsEventProcessor.setNodesDetails(Lists.newArrayList(
@@ -43,6 +47,8 @@ public class ClusterUtilsTest {
 
     @Test
     public void testIsHostAddressInCluster() {
+        // Explicitly reset ClusterDetailsEventProcessor. Test fails on mac otherwise.
+        ClusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(EMPTY_DETAILS));
         // method should return false when there are no peers
         Assert.assertFalse(ClusterUtils.isHostAddressInCluster(HOST));
         // method should properly recognize which hosts are peers and which aren't

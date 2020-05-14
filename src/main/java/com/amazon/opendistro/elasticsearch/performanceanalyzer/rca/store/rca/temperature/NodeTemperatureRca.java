@@ -35,6 +35,7 @@ import org.apache.logging.log4j.Logger;
 
 public class NodeTemperatureRca extends Rca<CompactNodeTemperatureFlowUnit> {
 
+  public static final String TABLE_NAME = NodeTemperatureRca.class.getSimpleName();
   private static final Logger LOG = LogManager.getLogger(NodeTemperatureRca.class);
   private final CpuUtilDimensionTemperatureRca cpuUtilDimensionTemperatureRca;
   private final HeapAllocRateTemperatureRca heapAllocRateTemperatureRca;

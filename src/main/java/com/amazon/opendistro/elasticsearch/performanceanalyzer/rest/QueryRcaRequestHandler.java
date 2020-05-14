@@ -52,10 +52,11 @@ import org.apache.logging.log4j.util.Supplier;
 public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandler {
 
   private static final Logger LOG = LogManager.getLogger(QueryRcaRequestHandler.class);
-  private static final int HTTP_CLIENT_CONNECTION_TIMEOUT = 200;
   private static final String DUMP_ALL = "all";
   private static final String VERSION_PARAM = "v";
+  private static final String LOCAL_PARAM = "local";
   private static final String VERSION_RESPONSE_PROPERTY = "version";
+  public static final String NAME_PARAM = "name";
   private Persistable persistable;
   private MetricsRestUtil metricsRestUtil;
 
@@ -84,32 +85,11 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
           }
           else {
             Map<String, String> params = getParamsMap(query);
-            List<String> rcaList = metricsRestUtil.parseArrayParam(params, "name", true);
-            // query all cluster level RCAs if no RCA is specified in name.
-            if (rcaList.isEmpty()) {
-              rcaList = SQLiteQueryUtils.getClusterLevelRca();
+            if (isLocalTemperatureProfileRequest(params)) {
+              handleLocalRcaRequest(params, exchange);
+            } else {
+              handleClusterRcaRequest(params, exchange);
             }
-            //check if RCA is valid
-            if (!validParams(rcaList)) {
-              JsonObject errResponse = new JsonObject();
-              JsonArray errReason = new JsonArray();
-              SQLiteQueryUtils.getClusterLevelRca().forEach(errReason::add);
-              errResponse.addProperty("error", "Invalid RCA.");
-              errResponse.add("valid_cluster_rca", errReason);
-              sendResponse(exchange, errResponse.toString(),
-                  HttpURLConnection.HTTP_BAD_REQUEST);
-              return;
-            }
-            //check if we are querying from elected master
-            if (!validNodeRole()) {
-              JsonObject errResponse = new JsonObject();
-              errResponse.addProperty("error", "Node being queried is not elected master.");
-              sendResponse(exchange, errResponse.toString(),
-                  HttpURLConnection.HTTP_BAD_REQUEST);
-              return;
-            }
-            String response = getRcaData(persistable, rcaList).toString();
-            sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
           }
         }
       } catch (InvalidParameterException e) {
@@ -141,10 +121,68 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
     }
   }
 
+  private void handleClusterRcaRequest(Map<String, String> params, HttpExchange exchange)
+      throws IOException {
+    List<String> rcaList = metricsRestUtil.parseArrayParam(params, NAME_PARAM, true);
+    // query all cluster level RCAs if no RCA is specified in name.
+    if (rcaList.isEmpty()) {
+      rcaList = SQLiteQueryUtils.getClusterLevelRca();
+    }
+    //check if RCA is valid
+    if (!validParams(rcaList)) {
+      JsonObject errResponse = new JsonObject();
+      JsonArray errReason = new JsonArray();
+      SQLiteQueryUtils.getClusterLevelRca().forEach(errReason::add);
+      errResponse.addProperty("error", "Invalid RCA.");
+      errResponse.add("valid_cluster_rca", errReason);
+      sendResponse(exchange, errResponse.toString(),
+          HttpURLConnection.HTTP_BAD_REQUEST);
+      return;
+    }
+    //check if we are querying from elected master
+    if (!validNodeRole()) {
+      JsonObject errResponse = new JsonObject();
+      errResponse.addProperty("error", "Node being queried is not elected master.");
+      sendResponse(exchange, errResponse.toString(),
+          HttpURLConnection.HTTP_BAD_REQUEST);
+      return;
+    }
+    String response = getRcaData(persistable, rcaList).toString();
+    sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
+  }
+
+  private boolean isLocalTemperatureProfileRequest(final Map<String, String> params) {
+    final List<String> temperatureProfileRcas = SQLiteQueryUtils.getTemperatureProfileRcas();
+    if (params.containsKey(LOCAL_PARAM)) {
+      if (!Boolean.parseBoolean(params.get(LOCAL_PARAM))) {
+        return false;
+      }
+
+      String requestedRca = params.get(NAME_PARAM);
+      return temperatureProfileRcas.contains(requestedRca);
+    }
+
+    return false;
+  }
+
+  private void handleLocalRcaRequest(final Map<String, String> params,
+      final HttpExchange exchange) throws IOException {
+    String rcaRequested = params.get(NAME_PARAM);
+    if (rcaRequested == null || rcaRequested.isEmpty()) {
+      JsonObject errorResponse = new JsonObject();
+      errorResponse.addProperty("error", "name parameter is empty or null");
+      sendResponse(exchange, errorResponse.toString(), HttpURLConnection.HTTP_BAD_REQUEST);
+      return;
+    }
+
+    String response = getTemperatureProfileRca(persistable, rcaRequested).toString();
+    sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
+  }
+
   // check whether RCAs are cluster level RCAs
   private boolean validParams(List<String> rcaList) {
     return rcaList.stream()
-            .allMatch(SQLiteQueryUtils::isClusterLevelRca);
+                  .allMatch(SQLiteQueryUtils::isClusterLevelRca);
   }
 
   // check if we are querying from elected master
@@ -163,6 +201,14 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
       );
     }
     return jsonObject;
+  }
+
+  private JsonElement getTemperatureProfileRca(final Persistable persistable, String rca) {
+    JsonObject responseJson = new JsonObject();
+    if (persistable != null) {
+      responseJson.add(rca, persistable.read(rca));
+    }
+    return responseJson;
   }
 
   private String dumpAllRcaTables() {

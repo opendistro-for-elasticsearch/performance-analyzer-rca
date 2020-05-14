@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.ho
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardClusterRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
@@ -27,14 +28,15 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotShardSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalDouble;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,10 +49,12 @@ import org.apache.logging.log4j.Logger;
 public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
 
     private static final Logger LOG = LogManager.getLogger(HotShardClusterRca.class);
-    private static final double CPU_UTILIZATION_DEFAULT_THRESHOLD_IN_PERCENTAGE = 0.3;
-    private static final double IO_THROUGHPUT_DEFAULT_THRESHOLD_IN_PERCENTAGE = 0.3;
-    private static final double IO_SYSCALLRATE_DEFAULT_THRESHOLD_IN_PERCENTAGE = 0.3;
     private static final int SLIDING_WINDOW_IN_SECONDS = 60;
+
+    private double cpuUtilizationClusterThreshold;
+    private double ioTotThroughputClusterThreshold;
+    private double ioTotSysCallRateClusterThreshold;
+
     private final Rca<ResourceFlowUnit> hotShardRca;
     private int rcaPeriod;
     private int counter;
@@ -68,6 +72,9 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
         this.cpuUtilizationInfoTable = HashBasedTable.create();
         this.IOThroughputInfoTable = HashBasedTable.create();
         this.IOSysCallRateInfoTable = HashBasedTable.create();
+        this.cpuUtilizationClusterThreshold = HotShardClusterRcaConfig.DEFAULT_CPU_UTILIZATION_CLUSTER_THRESHOLD;
+        this.ioTotThroughputClusterThreshold = HotShardClusterRcaConfig.DEFAULT_IO_TOTAL_THROUGHPUT_CLUSTER_THRESHOLD;
+        this.ioTotSysCallRateClusterThreshold = HotShardClusterRcaConfig.DEFAULT_IO_TOTAL_SYSCALL_RATE_CLUSTER_THRESHOLD;
     }
 
     private void populateResourceInfoTable(String indexName, NodeShardKey nodeShardKey,
@@ -97,14 +104,35 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
         }
     }
 
+    /**
+     * Evaluates the threshold value for resource usage across shards for given index.
+     * @param perIndexShardInfo Resource usage across shards for given index
+     * @param thresholdInPercentage Threshold for the resource in percentage
+     *
+     */
     private double getThresholdValue(Map<NodeShardKey, Double> perIndexShardInfo, double thresholdInPercentage) {
-        OptionalDouble average = perIndexShardInfo.values().stream().mapToDouble(usage -> usage).average();
-        if (average.isPresent()) {
-            return (average.getAsDouble() * (1 + thresholdInPercentage));
+        // To handle the outlier(s) in the data, using median instead of mean
+        double[] perIndexShardUsage = perIndexShardInfo.values().stream().mapToDouble(usage -> usage).toArray();
+        Arrays.sort(perIndexShardUsage);
+
+        double median;
+        int length = perIndexShardUsage.length;
+        if (length % 2 != 0) {
+            median = perIndexShardUsage[length / 2];
+        } else {
+            median = (perIndexShardUsage[(length - 1) / 2] + perIndexShardUsage[length / 2]) / 2.0;
         }
-        return Double.NaN;
+        return (median * (1 + thresholdInPercentage));
     }
 
+    /**
+     * Finds hot shard(s) across an index and creates HotResourceSummary for them.
+     * @param resourceInfoTable Guava Table with 'Index_Name', 'NodeShardKey' and 'UsageValue'
+     * @param thresholdInPercentage Threshold for the resource in percentage
+     * @param hotResourceSummaryList Summary List for hot shards
+     * @param resourceType Resource Type
+     *
+     */
     private void findHotShardAndCreateSummary(Table<String, NodeShardKey, Double> resourceInfoTable, double thresholdInPercentage,
                                               List<GenericSummary> hotResourceSummaryList, ResourceType resourceType) {
         for (String indexName : resourceInfoTable.rowKeySet()) {
@@ -115,6 +143,7 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
                     // Shard Identifier is represented by "Node_ID Index_Name Shard_ID" string
                     String shardIdentifier =  String.join(" ", new String[]
                             { shardInfo.getKey().getNodeId(), indexName, shardInfo.getKey().getShardId() });
+
                     // Add to hotResourceSummaryList
                     hotResourceSummaryList.add(new HotResourceSummary(resourceType, thresholdValue,
                             shardInfo.getValue(), SLIDING_WINDOW_IN_SECONDS, shardIdentifier));
@@ -146,22 +175,23 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
             }
         }
 
-        if (counter == rcaPeriod) {
+        if (counter >= rcaPeriod) {
             List<GenericSummary> hotShardSummaryList = new ArrayList<>();
             ResourceContext context;
             HotClusterSummary summary = new HotClusterSummary(
                     ClusterDetailsEventProcessor.getNodesDetails().size(), 0);
 
+            // We evaluate hot shards individually on all the 3 dimensions
             findHotShardAndCreateSummary(
-                    cpuUtilizationInfoTable, CPU_UTILIZATION_DEFAULT_THRESHOLD_IN_PERCENTAGE, hotShardSummaryList,
+                    cpuUtilizationInfoTable, cpuUtilizationClusterThreshold, hotShardSummaryList,
                     ResourceType.newBuilder().setHardwareResourceTypeValue(HardwareEnum.CPU_VALUE).build());
 
             findHotShardAndCreateSummary(
-                    IOThroughputInfoTable, IO_THROUGHPUT_DEFAULT_THRESHOLD_IN_PERCENTAGE, hotShardSummaryList,
+                    IOThroughputInfoTable, ioTotThroughputClusterThreshold, hotShardSummaryList,
                     ResourceType.newBuilder().setHardwareResourceTypeValue(HardwareEnum.IO_TOTAL_THROUGHPUT_VALUE).build());
 
             findHotShardAndCreateSummary(
-                    IOSysCallRateInfoTable, IO_SYSCALLRATE_DEFAULT_THRESHOLD_IN_PERCENTAGE, hotShardSummaryList,
+                    IOSysCallRateInfoTable, ioTotSysCallRateClusterThreshold, hotShardSummaryList,
                     ResourceType.newBuilder().setHardwareResourceTypeValue(HardwareEnum.IO_TOTAL_SYS_CALLRATE_VALUE).build());
 
             if (hotShardSummaryList.isEmpty()) {
@@ -185,6 +215,22 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
         }
     }
 
+    /**
+     * read threshold values from rca.conf
+     * @param conf RcaConf object
+     */
+    @Override
+    public void readRcaConf(RcaConf conf) {
+        HotShardClusterRcaConfig configObj = conf.getHotShardClusterRcaConfig();
+        cpuUtilizationClusterThreshold = configObj.getCpuUtilizationClusterThreshold();
+        ioTotThroughputClusterThreshold = configObj.getIoTotThroughputClusterThreshold();
+        ioTotSysCallRateClusterThreshold = configObj.getIoTotSysCallRateClusterThreshold();
+    }
+
+    /**
+     * This is a local node RCA which by definition can not be serialize/de-serialized
+     * over gRPC.
+     */
     @Override
     public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
         final List<FlowUnitMessage> flowUnitMessages =

@@ -23,11 +23,15 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.ResourceFlowUnitFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterDimensionalSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterDimensionalSummary.ZoneSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.NodeLevelDimensionalSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ShardProfileSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,13 +50,14 @@ import org.jooq.impl.DSL;
  */
 public class SQLiteQueryUtils {
   private static final Map<String, String> nestedTableMap;
+  private static final Map<String, String> temperatureProfileNestedSummaryMap;
   private static final Set<String> clusterLevelRCA;
+  private static final Set<String> temperatureProfileRCASet;
 
   // to map table => its nested table
   // e.g. HotClusterSummary => HotNodeSummary
   static {
     Map<String, String> tableMap = new HashMap<>();
-    tableMap.put(ResourceFlowUnit.RCA_TABLE_NAME, ClusterTemperatureSummary.TABLE_NAME);
     tableMap.put(ClusterTemperatureSummary.TABLE_NAME, ClusterDimensionalSummary.TABLE_NAME);
 
     tableMap.put(ResourceFlowUnit.RCA_TABLE_NAME, HOT_CLUSTER_SUMMARY_TABLE);
@@ -60,6 +65,18 @@ public class SQLiteQueryUtils {
     tableMap.put(HOT_NODE_SUMMARY_TABLE, HOT_RESOURCE_SUMMARY_TABLE);
     tableMap.put(HOT_RESOURCE_SUMMARY_TABLE, TOP_CONSUMER_SUMMARY_TABLE);
     nestedTableMap = Collections.unmodifiableMap(tableMap);
+  }
+
+  static {
+    Map<String, String> temperatureSummaryMap = new HashMap<>();
+    temperatureSummaryMap.put(ResourceFlowUnit.RCA_TABLE_NAME,
+        NodeLevelDimensionalSummary.SUMMARY_TABLE_NAME);
+    temperatureSummaryMap.put(NodeLevelDimensionalSummary.SUMMARY_TABLE_NAME,
+        NodeLevelDimensionalSummary.ZONE_SUMMARY_TABLE_NAME);
+    temperatureSummaryMap.put(NodeLevelDimensionalSummary.ZONE_SUMMARY_TABLE_NAME,
+        ShardProfileSummary.SUMMARY_TABLE_NAME);
+
+    temperatureProfileNestedSummaryMap = Collections.unmodifiableMap(temperatureSummaryMap);
   }
 
   // RCAs that can be queried by RCA API
@@ -72,6 +89,15 @@ public class SQLiteQueryUtils {
     rcaSet.add(HotNodeClusterRca.RCA_TABLE_NAME);
     rcaSet.add(QueueRejectionClusterRca.RCA_TABLE_NAME);
     clusterLevelRCA = Collections.unmodifiableSet(rcaSet);
+  }
+
+  // Temperature profile RCAs that can be queried by the RCA API.
+  static {
+    Set<String> tempProfileRcaSet = new HashSet<>();
+
+    tempProfileRcaSet.add(NodeTemperatureRca.TABLE_NAME);
+    tempProfileRcaSet.add(ClusterTemperatureRca.TABLE_NAME);
+    temperatureProfileRCASet = Collections.unmodifiableSet(tempProfileRcaSet);
   }
 
   /**
@@ -144,6 +170,18 @@ public class SQLiteQueryUtils {
    */
   public static String getPrimaryKeyColumnName(String tableName) {
     return tableName + "_ID";
+  }
+
+  public static List<String> getTemperatureProfileRcas() {
+    return ImmutableList.copyOf(temperatureProfileRCASet);
+  }
+
+  public static boolean isTemperatureProfileRca(String rca) {
+    if (rca == null) {
+      return false;
+    }
+
+    return temperatureProfileRCASet.contains(rca);
   }
 }
 

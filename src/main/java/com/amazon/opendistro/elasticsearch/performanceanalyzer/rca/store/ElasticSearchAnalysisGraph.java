@@ -97,7 +97,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
     constructShardResourceUsageGraph();
 
-    // constructResourceHeatMapGraph();
+    constructResourceHeatMapGraph();
   }
 
   private Rca<ResourceFlowUnit> constructNodeLevelRcas() {
