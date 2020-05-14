@@ -150,7 +150,7 @@ public class RcaController {
       List<ConnectedComponent> connectedComponents = RcaUtil.getAnalysisGraphComponents(rcaConf);
 
       // Mute the rca nodes after the graph creation and before the scheduler start
-      readAndUpdateMutesRcas();
+      readAndUpdateMutesRcasDuringStart();
 
       Queryable db = new MetricsDBProvider();
       ThresholdMain thresholdMain = new ThresholdMain(RcaConsts.THRESHOLDS_PATH, rcaConf);
@@ -268,11 +268,33 @@ public class RcaController {
             String nextLine = sc.nextLine();
             rcaEnabled = Boolean.parseBoolean(nextLine);
           } catch (IOException e) {
-            LOG.error("Error reading file '{}': {}", filePath.toString(), e.getMessage());
+            LOG.error("Error reading file '{}': {}", filePath.toString(), e);
             e.printStackTrace();
             rcaEnabled = rcaEnabledDefaultValue;
           }
         });
+  }
+
+  private void readAndUpdateMutesRcasDuringStart() {
+    try {
+      /* We have an edge case where both `readAndUpdateMutesRcas()` and `readAndUpdateMutesRcasDuringStart()`
+       * can try to update the muted Rca list back to back, reading rca.conf twice. This will happen when rca
+       * was turned off and then on.
+       *
+       * <p> `readAndUpdateMutesRcasDuringStart()` should only be read at the start of the process, when
+       * RCA graph is not constructed and we cannot validate the new new muted RCAs. For any other update
+       * to the muted list, the periodic rca.conf update checker will take care of it.
+       *
+       */
+      if (lastModifiedTimeInMillisInMemory == 0) {
+        Set<String> rcasForMute = new HashSet<>(rcaConf.getMutedRcaList());
+        Stats.getInstance().updateMutedGraphNodes(rcasForMute);
+        LOG.info("Updated the muted RCA Graph to : {}", rcaConf.getMutedRcaList());
+      }
+    } catch (Exception e) {
+      LOG.error("Couldn't read/update the muted RCAs during start()", e);
+      StatsCollector.instance().logMetric(RCA_MUTE_ERROR_METRIC);
+    }
   }
 
   /**
@@ -299,17 +321,23 @@ public class RcaController {
         rcasForMute.retainAll(ConnectedComponent.getNodeNames());
 
         // If rcasForMute post validation is empty but rcaConf.getMutedRcaList() is not empty
-        // all the input RCAs are incorrect, return.
+        // all the input RCAs are incorrect.
         if (rcasForMute.isEmpty() && !rcaConf.getMutedRcaList().isEmpty()) {
-          LOG.error("Incorrect RCA(s): {}, cannot be muted. Valid RCAs: {}, Muted RCAs: {}",
-                  rcaConf.getMutedRcaList(), ConnectedComponent.getNodeNames(), Stats.getInstance().getMutedGraphNodes());
-          return;
+          if (lastModifiedTimeInMillisInMemory == 0) {
+            LOG.error("Removing Incorrect RCA(s): {} provided before RCA Scheduler start. Valid RCAs: {}.",
+                    rcaConf.getMutedRcaList(), ConnectedComponent.getNodeNames());
+
+          } else {
+            LOG.error("Incorrect RCA(s): {}, cannot be muted. Valid RCAs: {}, Muted RCAs: {}",
+                    rcaConf.getMutedRcaList(), ConnectedComponent.getNodeNames(), Stats.getInstance().getMutedGraphNodes());
+            return;
+          }
         }
 
         LOG.info("Updating the muted RCA Graph to : {}", rcasForMute);
         Stats.getInstance().updateMutedGraphNodes(rcasForMute);
+        lastModifiedTimeInMillisInMemory = lastModifiedTimeInMillisOnDisk;
       }
-      lastModifiedTimeInMillisInMemory = lastModifiedTimeInMillisOnDisk;
     } catch (Exception e) {
       LOG.error("Couldn't read/update the muted RCAs", e);
       StatsCollector.instance().logMetric(RCA_MUTE_ERROR_METRIC);
