@@ -36,6 +36,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import sun.tools.attach.HotSpotVirtualMachine;
 
 /** Traverses and prints the stack traces for all Java threads in the remote VM */
@@ -176,43 +177,54 @@ public class ThreadList {
     long[] ids = threadBean.getAllThreadIds();
     ThreadInfo[] infos = threadBean.getThreadInfo(ids);
     for (ThreadInfo info : infos) {
-      long id = info.getThreadId();
-      String name = info.getThreadName();
-      Thread.State state = info.getThreadState();
-
-      // following captures cumulative allocated bytes + TLAB used bytes
-      // and it is cumulative
-      long mem = ((com.sun.management.ThreadMXBean) threadBean).getThreadAllocatedBytes(id);
-
-      ThreadState t = jTidMap.get(id);
-      if (t == null) {
-        continue;
+      try {
+        parseThreadInfo(info);
+      } catch (Exception ex) {
+        // If the ids provided to the getThreadInfo() call are not valid ids or the threads no
+        //longer exists, then the corresponding info object will contain null.
+        StatsCollector.instance()
+                .logException(StatExceptionCode.JVM_THREAD_ID_NO_LONGER_EXISTS);
       }
-      t.heapUsage = mem;
-      t.state = state;
-      t.blockedCount = info.getBlockedCount();
-      t.blockedTime = info.getBlockedTime();
-      ThreadHistory.add(t.nativeTid, (state == Thread.State.BLOCKED) ? samplingInterval : 0);
-
-      long curRunTime = System.currentTimeMillis();
-      ThreadState oldt = oldNativeTidMap.get(t.nativeTid);
-      if (curRunTime > lastRunTime && oldt != null) {
-        t.heapAllocRate =
-            Math.max(t.heapUsage - oldt.heapUsage, 0) * 1.0e3 / (curRunTime - lastRunTime);
-        if (t.blockedTime != -1 && t.blockedCount > oldt.blockedCount) {
-          t.avgBlockedTime =
-              1.0e-3 * (t.blockedTime - oldt.blockedTime) / (t.blockedCount - oldt.blockedCount);
-        } else {
-          CircularLongArray arr = ThreadHistory.tidHistoryMap.get(t.nativeTid);
-          // NOTE: this is an upper bound
-          if (arr != null) {
-            t.avgBlockedTime = 1.0 * arr.getAvgValue() / samplingInterval;
-          }
-        }
-      }
-      jTidNameMap.put(id, name);
     }
     ThreadHistory.cleanup();
+  }
+
+  private static void parseThreadInfo(@Nullable  final ThreadInfo info) {
+    long id = info.getThreadId();
+    String name = info.getThreadName();
+    Thread.State state = info.getThreadState();
+
+    // following captures cumulative allocated bytes + TLAB used bytes
+    // and it is cumulative
+    long mem = ((com.sun.management.ThreadMXBean) threadBean).getThreadAllocatedBytes(id);
+
+    ThreadState t = jTidMap.get(id);
+    if (t == null) {
+      return;
+    }
+    t.heapUsage = mem;
+    t.state = state;
+    t.blockedCount = info.getBlockedCount();
+    t.blockedTime = info.getBlockedTime();
+    ThreadHistory.add(t.nativeTid, (state == Thread.State.BLOCKED) ? samplingInterval : 0);
+
+    long curRunTime = System.currentTimeMillis();
+    ThreadState oldt = oldNativeTidMap.get(t.nativeTid);
+    if (curRunTime > lastRunTime && oldt != null) {
+      t.heapAllocRate =
+              Math.max(t.heapUsage - oldt.heapUsage, 0) * 1.0e3 / (curRunTime - lastRunTime);
+      if (t.blockedTime != -1 && t.blockedCount > oldt.blockedCount) {
+        t.avgBlockedTime =
+                1.0e-3 * (t.blockedTime - oldt.blockedTime) / (t.blockedCount - oldt.blockedCount);
+      } else {
+        CircularLongArray arr = ThreadHistory.tidHistoryMap.get(t.nativeTid);
+        // NOTE: this is an upper bound
+        if (arr != null) {
+          t.avgBlockedTime = 1.0 * arr.getAvgValue() / samplingInterval;
+        }
+      }
+    }
+    jTidNameMap.put(id, name);
   }
 
   static void runThreadDump(String pid, String[] args) {
