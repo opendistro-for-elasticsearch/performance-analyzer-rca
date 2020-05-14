@@ -196,6 +196,8 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     queueRejectionClusterRca.addAllUpstreams(Collections.singletonList(hotNodeRca));
   }
 
+  //TODO : move this method into constructNodeStatsMetrics() and constructClusterLevelRcas()
+  // to reuse some RCA vertices that are allready there in this graph.
   private void constructShardResourceUsageGraph() {
     Metric cpuUtilization = new CPU_Utilization(5);
     Metric ioTotThroughput = new IO_TotThroughput(5);

@@ -42,6 +42,12 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * This is a generic cluster level RCA which subscripts a single upstream vertex HotNodeRca.
+ * This cluster RCA maintains a two dimensional table indexed by (NodeId, ResourceType). And within
+ * each cell, it keeps track of the last three consecutive resource summaries and will mark the node
+ * as unhealthy if all three resource summaries received from that node are unhealthy,
+ */
 public class GenericClusterRca extends Rca<ResourceFlowUnit> {
   private static final Logger LOG = LogManager.getLogger(GenericClusterRca.class);
   private static final int UNHEALTHY_FLOWUNIT_THRESHOLD = 3;
