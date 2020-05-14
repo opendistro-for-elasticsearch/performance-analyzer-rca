@@ -47,6 +47,8 @@ public class ClusterUtilsTest {
 
     @Test
     public void testIsHostAddressInCluster() {
+        // Explicitly reset ClusterDetailsEventProcessor. Test fails on mac otherwise.
+        ClusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(EMPTY_DETAILS));
         // method should return false when there are no peers
         Assert.assertFalse(ClusterUtils.isHostAddressInCluster(HOST));
         // method should properly recognize which hosts are peers and which aren't

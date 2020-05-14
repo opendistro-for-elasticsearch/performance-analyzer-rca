@@ -33,7 +33,11 @@ import org.jooq.impl.DSL;
  * A node dimension profile is categorization of all shards in the node into different heatZones.
  */
 public class NodeLevelDimensionalSummary extends GenericSummary {
-    private final TemperatureVector.Dimension profileForDimension;
+
+  public static final String SUMMARY_TABLE_NAME = "NodeLevelDimensionalSummary";
+  public static final String ZONE_SUMMARY_TABLE_NAME = "NodeLevelZoneSummary";
+
+  private final TemperatureVector.Dimension profileForDimension;
     private final TemperatureVector.NormalizedValue meanTemperature;
     private final double totalUsage;
 
