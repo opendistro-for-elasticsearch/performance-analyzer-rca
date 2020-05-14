@@ -44,6 +44,7 @@ public enum StatExceptionCode {
   RCA_CONTROLLER_THREAD_STOPPED("RcaControllerThreadStopped"),
   RCA_SCHEDULER_THREAD_STOPPED("RcaSchedulerThreadStopped"),
   JVM_THREAD_ID_NO_LONGER_EXISTS("JVM_THREAD_ID_NO_LONGER_EXISTS"),
+  ES_REQUEST_INTERCEPTOR_ERROR("ES_REQUEST_INTERCEPTOR_ERROR"),
   OTHER("Other");
 
   private final String value;
