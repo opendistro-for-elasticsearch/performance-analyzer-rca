@@ -112,7 +112,7 @@ public class RequestEventProcessor implements EventProcessor {
     String[] items = entry.key.split(File.separatorChar == '\\' ? "\\\\" : File.separator);
     // This is for readability.
     String startOrEnd = items[4];
-    Map<String, String> keyValueMap = MetricsParser.extractEntryData(entry.value);
+    Map<String, String> keyValueMap = ReaderMetricsProcessor.extractEntryData(entry.value);
     if (startOrEnd.equals(PerformanceAnalyzerMetrics.START_FILE_NAME)) {
       emitStartMetric(items, keyValueMap);
     } else if (startOrEnd.equals(PerformanceAnalyzerMetrics.FINISH_FILE_NAME)) {

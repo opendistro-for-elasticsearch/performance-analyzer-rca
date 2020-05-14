@@ -103,7 +103,7 @@ public class MasterMetricsEventProcessor implements EventProcessor {
   // MasterTaskQueueTime:11$
   private void emitStartMasterEventMetric(Event entry, String insertOrder, String threadId) {
 
-    Map<String, String> keyValueMap = MetricsParser.extractEntryData(entry.value);
+    Map<String, String> keyValueMap = ReaderMetricsProcessor.extractEntryData(entry.value);
     String priority =
         keyValueMap.get(AllMetrics.MasterMetricDimensions.MASTER_TASK_PRIORITY.toString());
     long st = Long.parseLong(keyValueMap.get(AllMetrics.CommonMetric.START_TIME.toString()));
@@ -123,7 +123,7 @@ public class MasterMetricsEventProcessor implements EventProcessor {
   // current_time:1566413959491
   // FinishTime:1566413958991
   private void emitEndMasterEventMetric(Event entry, String insertOrder, String threadId) {
-    Map<String, String> keyValueMap = MetricsParser.extractEntryData(entry.value);
+    Map<String, String> keyValueMap = ReaderMetricsProcessor.extractEntryData(entry.value);
     long finishTime =
         Long.parseLong(keyValueMap.get(AllMetrics.CommonMetric.FINISH_TIME.toString()));
     handle.bind(threadId, insertOrder, null, null, null, null, null, finishTime);

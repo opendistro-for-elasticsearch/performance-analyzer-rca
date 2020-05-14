@@ -19,15 +19,24 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMess
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTemperatureMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary.SQL_SCHEMA_CONSTANTS;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector.NormalizedValue;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.jooq.Record;
+import org.jooq.Result;
+import org.jooq.exception.DataTypeException;
 import org.jooq.impl.DSL;
 
 /**
@@ -37,6 +46,8 @@ import org.jooq.impl.DSL;
  * information. So, this summary is kept generic so that both can use it.
  */
 public class CompactNodeSummary extends GenericSummary {
+
+    private static final Logger LOG = LogManager.getLogger(CompactNodeSummary.class);
     /**
      * This will determine the name of the SQLite when this summary is persisted.
      */
@@ -66,6 +77,88 @@ public class CompactNodeSummary extends GenericSummary {
         this.temperatureVector = new TemperatureVector();
         this.totalConsumedByDimension = new double[TemperatureVector.Dimension.values().length];
         this.numOfShards = new int[TemperatureVector.Dimension.values().length];
+    }
+
+    public static CompactNodeSummary buildSummaryFromDatabase(Result<Record> records,
+        DSLContext context) {
+        if (records.size() != 1) {
+            LOG.error("Expected 1 compact node summary, got {}. Summaries: {}", records.size(),
+                records);
+            throw new IllegalArgumentException(
+                "Only 1 CompactNodeSummary expected. Found: " + records.size());
+        }
+
+        Record record = records.get(0);
+        final String nodeId =
+            record.get(DSL.field(DSL.name(HotNodeSummary.SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME),
+                String.class));
+        final String hostAddress =
+            record.get(DSL.field(DSL.name(SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME)), String.class);
+
+        CompactNodeSummary summary = new CompactNodeSummary(nodeId, hostAddress);
+
+        readAndSetTotalConsumedPerDimension(record, summary);
+        readAndSetNumShardsPerDimension(record, summary);
+        readAndSetTemperatureVector(record, summary);
+
+        return summary;
+    }
+
+    private static void readAndSetTemperatureVector(Record record, CompactNodeSummary summary) {
+        try {
+            for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+                String normalizedMeanUsageForDimension = record
+                    .get((DSL.field(DSL.name(dimension.NAME + MEAN_SUFFIX_KEY),
+                        String.class)));
+                short value = 0;
+                if (normalizedMeanUsageForDimension != null && !normalizedMeanUsageForDimension
+                    .isEmpty()) {
+                    value = Short.parseShort(normalizedMeanUsageForDimension);
+                }
+                summary.setTemperatureForDimension(dimension,
+                    new NormalizedValue(value));
+            }
+        } catch (final DataTypeException dte) {
+            LOG.error("Couldn't convert to the right data type while reading temperature vector "
+                + "from the DB. {}", dte.getMessage(), dte);
+        }
+    }
+
+    private static void readAndSetNumShardsPerDimension(Record record, CompactNodeSummary summary) {
+        try {
+            for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+                String numShardsForDimension = record
+                    .get((DSL.field(DSL.name(dimension.NAME + NUM_SHARDS_SUFFIX_KEY),
+                        String.class)));
+                int value = 0;
+                if (numShardsForDimension != null && !numShardsForDimension.isEmpty()) {
+                    value = Integer.parseInt(numShardsForDimension);
+                }
+                summary.setNumOfShards(dimension, value);
+            }
+        } catch (final DataTypeException dte) {
+            LOG.error("Couldn't convert to the right data type while reading num shards per"
+                + " dimension from the DB. {}", dte.getMessage(), dte);
+        }
+    }
+
+    private static void readAndSetTotalConsumedPerDimension(Record record,
+        CompactNodeSummary summary) {
+        try {
+            for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+                String totalConsumedForDimension =
+                    record.get(
+                        (DSL.field(DSL.name(dimension.NAME + TOTAL_SUFFIX_KEY), String.class)));
+                double value = 0;
+                if (totalConsumedForDimension != null && !totalConsumedForDimension.isEmpty()) {
+                    value = Double.parseDouble(totalConsumedForDimension);
+                }
+                summary.setTotalConsumedByDimension(dimension, value);
+            }
+        } catch (final DataTypeException dte) {
+            LOG.error("Couldn't convert to the right data type while reading total consumed per"
+                + " dimension from the DB. {}", dte.getMessage(), dte);
+        }
     }
 
     public void fillFromNodeProfile(final FullNodeTemperatureSummary nodeProfile) {

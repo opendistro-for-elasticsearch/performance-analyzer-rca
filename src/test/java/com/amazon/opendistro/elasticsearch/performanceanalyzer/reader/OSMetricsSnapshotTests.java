@@ -37,7 +37,7 @@ public class OSMetricsSnapshotTests {
     System.setProperty("java.io.tmpdir", "/tmp");
   }
 
-  // @Test
+  @Test
   public void perfTest() throws Exception {
     System.out.println("Batch Insert");
     System.out.println("100: " + runBatchTest(100, 1));
@@ -93,13 +93,13 @@ public class OSMetricsSnapshotTests {
     conn.commit();
   }
 
-  // @Test
+  @Test
   public void perfTestDifferentConnections() throws Exception {
     System.out.println("Batch Insert");
     System.out.println("100: " + runBatchTest(100, 1));
     System.out.println("1000: " + runBatchTest(1000, 1));
     System.out.println("10000: " + runBatchTest(10000, 1));
-    // System.out.println("100000: "+runBatchTest(100000));
+    System.out.println("100000: " + runBatchTest(100000,1));
     Thread t1 =
         new Thread(
             new Runnable() {
@@ -147,44 +147,27 @@ public class OSMetricsSnapshotTests {
   private Long runBatchTest(int iterations, OSMetricsSnapshot osMetricsSnap) throws Exception {
     Map<String, String> dimensions = new HashMap<>();
     AllMetrics.OSMetrics[] metrics = AllMetrics.OSMetrics.values();
+    Map<String, Double> osMetrics = new HashMap<>();
     int numMetrics = metrics.length + 2;
     Object[] metricVals = new Object[numMetrics];
     metricVals[0] = "1";
     metricVals[1] = "GC";
 
-    Map<String, Double> metricsMap =
-        new HashMap<String, Double>() {
-          {
-            this.put("avgReadSyscallRate", 100d);
-            this.put("cpu", 13223.323243d);
-            this.put("runtime", 22222d);
-            this.put("heap_usage", 444d);
-            this.put("waittime", 2132134d);
-            this.put("ctxrate", 3243.21321d);
-            this.put("avgTotalSyscallRate", 32432.324d);
-            this.put("rss", 23432d);
-            this.put("paging_majflt", 32432432d);
-            this.put("avgWriteThroughputBps", 32423d);
-            this.put("avgWriteSyscallRate", 234324.3432d);
-            this.put("avgTotalThroughputBps", 324323432d);
-            this.put("avgReadThroughputBps", 2342343223d);
-            this.put("paging_minflt", 23432.32432d);
-          }
-        };
+    Map<String, Double> metricsMap = getMetricsMap();
     for (int i = 2; i < numMetrics; i++) {
-      Double val = metricsMap.get(metrics[i - 2].name());
+      Double val = metricsMap.get(metrics[i - 2].toString());
       metricVals[i] = val;
+      osMetrics.put(metrics[i - 2].toString(), val);
     }
 
     long mCurrT = System.currentTimeMillis();
     BatchBindStep handle = osMetricsSnap.startBatchPut();
     for (int i = 0; i < iterations; i++) {
       handle.bind(metricVals);
-      // osMetricsSnap.putMetric(metrics, dimensions);
+      osMetricsSnap.putMetric(osMetrics, dimensions,1);
 
     }
     handle.execute();
-    // System.out.println(osMetricsSnap.fetchAll());
     long mFinalT = System.currentTimeMillis();
     return mFinalT - mCurrT;
   }
@@ -193,34 +176,18 @@ public class OSMetricsSnapshotTests {
     Connection conn = DriverManager.getConnection(DB_URL);
     OSMetricsSnapshot osMetricsSnap = new OSMetricsSnapshot(conn, timestamp);
     Map<String, String> dimensions = new HashMap<>();
+    Map<String, Double> osMetrics = new HashMap<>();
     AllMetrics.OSMetrics[] metrics = AllMetrics.OSMetrics.values();
     int numMetrics = metrics.length + 2;
     Object[] metricVals = new Object[numMetrics];
     metricVals[0] = "1";
     metricVals[1] = "GC";
 
-    Map<String, Double> metricsMap =
-        new HashMap<String, Double>() {
-          {
-            this.put("avgReadSyscallRate", 100d);
-            this.put("cpu", 13223.323243d);
-            this.put("runtime", 22222d);
-            this.put("heap_usage", 444d);
-            this.put("waittime", 2132134d);
-            this.put("ctxrate", 3243.21321d);
-            this.put("avgTotalSyscallRate", 32432.324d);
-            this.put("rss", 23432d);
-            this.put("paging_majflt", 32432432d);
-            this.put("avgWriteThroughputBps", 32423d);
-            this.put("avgWriteSyscallRate", 234324.3432d);
-            this.put("avgTotalThroughputBps", 324323432d);
-            this.put("avgReadThroughputBps", 2342343223d);
-            this.put("paging_minflt", 23432.32432d);
-          }
-        };
+    Map<String, Double> metricsMap = getMetricsMap();
     for (int i = 2; i < numMetrics; i++) {
-      Double val = metricsMap.get(metrics[i - 2].name());
+      Double val = metricsMap.get(metrics[i - 2].toString());
       metricVals[i] = val;
+      osMetrics.put(metrics[i - 2].toString(), val);
     }
 
     long mCurrT = System.currentTimeMillis();
@@ -228,13 +195,36 @@ public class OSMetricsSnapshotTests {
     BatchBindStep handle = osMetricsSnap.startBatchPut();
     for (int i = 0; i < iterations; i++) {
       handle.bind(metricVals);
-      // osMetricsSnap.putMetric(metrics, dimensions);
+      osMetricsSnap.putMetric(osMetrics, dimensions, 1);
 
     }
     handle.execute();
     conn.commit();
     long mFinalT = System.currentTimeMillis();
     return mFinalT - mCurrT;
+  }
+
+  private HashMap<String, Double> getMetricsMap() {
+    return new HashMap<String, Double>() {
+      {
+        this.put(OSMetrics.Constants.CPU_VALUE, 100d);
+        this.put(OSMetrics.Constants.PAGING_MAJFLT_VALUE, 100d);
+        this.put(OSMetrics.Constants.PAGING_MINFLT_VALUE, 13223.323243d);
+        this.put(OSMetrics.Constants.RUNTIME_VALUE, 22222d);
+        this.put(OSMetrics.Constants.RSS_VALUE, 444d);
+        this.put(OSMetrics.Constants.WAITTIME_VALUE, 2132134d);
+        this.put(OSMetrics.Constants.CTXRATE_VALUE, 3243.21321d);
+        this.put(OSMetrics.Constants.HEAP_ALLOC_VALUE, 32432.324d);
+        this.put(OSMetrics.Constants.READ_THROUGHPUT_VALUE, 23432d);
+        this.put(OSMetrics.Constants.WRITE_THROUGHPUT_VALUE, 32432432d);
+        this.put(OSMetrics.Constants.TOTAL_THROUGHPUT_VALUE, 32423d);
+        this.put(OSMetrics.Constants.READ_SYSCALL_RATE_VALUE, 234324.3432d);
+        this.put(OSMetrics.Constants.WRITE_SYSCALL_RATE_VALUE, 324323432d);
+        this.put(OSMetrics.Constants.TOTAL_SYSCALL_RATE_VALUE, 2342343223d);
+        this.put(OSMetrics.Constants.BLOCKED_TIME_VALUE, 23432.32432d);
+        this.put(OSMetrics.Constants.BLOCKED_COUNT_VALUE, 23432.32432d);
+      }
+    };
   }
 
   @Test

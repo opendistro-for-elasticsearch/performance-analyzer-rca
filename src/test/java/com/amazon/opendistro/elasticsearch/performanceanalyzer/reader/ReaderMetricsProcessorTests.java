@@ -18,10 +18,8 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MasterPendingValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MetricName;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.OSMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -35,48 +33,66 @@ import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.Result;
 import org.jooq.impl.DSL;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 public class ReaderMetricsProcessorTests extends AbstractReaderTests {
+  public String rootLocation;
 
   public ReaderMetricsProcessorTests() throws SQLException, ClassNotFoundException {
     super();
   }
 
-  // Disabled on purpose
-  // @Test
-  public void testReaderMetricsProcessor() throws Exception {
-    String rootLocation = "build/private/test_resources/dev/shm";
+  @Before
+  public void before() throws Exception {
+    rootLocation = "build/resources/test/reader/";
+  }
+
+  @Test
+  public void testReaderMetricsProcessorFrequently() throws Exception {
     deleteAll();
-    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation);
-    mp.processMetrics(rootLocation, 1535065139000L);
-    mp.processMetrics(rootLocation, 1535065169000L);
-    mp.processMetrics(rootLocation, 1535065199000L);
-    mp.processMetrics(rootLocation, 1535065229000L);
-    mp.processMetrics(rootLocation, 1535065259000L);
-    mp.processMetrics(rootLocation, 1535065289000L);
-    mp.processMetrics(rootLocation, 1535065319000L);
-    mp.processMetrics(rootLocation, 1535065349000L);
+    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true);
+
+    mp.processMetrics(rootLocation, 1566413975000L);
+    mp.processMetrics(rootLocation, 1566413980000L);
+
     Result<Record> res =
-        mp.getMetricsDB()
-            .getValue()
-            .queryMetric(
-                Arrays.asList(OSMetrics.CPU_UTILIZATION.toString()),
-                Arrays.asList("sum"),
-                Arrays.asList(
-                    CommonDimension.SHARD_ID.toString(),
-                    CommonDimension.INDEX_NAME.toString(),
-                    CommonDimension.OPERATION.toString()));
-    Double shardFetchCpu = 0d;
+            mp.getMetricsDB()
+                    .getValue()
+                    .queryMetric(
+                            Arrays.asList("Cache_FieldData_Size"),
+                            Arrays.asList("sum"),
+                            Arrays.asList("ShardID", "IndexName"));
+
     for (Record record : res) {
-      if (record.get(CommonDimension.OPERATION.toString()).equals("shardfetch")) {
-        shardFetchCpu =
-            Double.parseDouble(record.get(OSMetrics.CPU_UTILIZATION.toString()).toString());
-        break;
-      }
+      assertEquals(record.get("IndexName"), "nyc_taxis");
     }
-    assertEquals(0.0016D, shardFetchCpu.doubleValue(), 0.0001);
+
+    mp.trimOldSnapshots();
+    mp.deleteDBs();
+  }
+
+  @Test
+  public void testReaderMetricsProcessorFrequentlyWithDelay() throws Exception {
+    deleteAll();
+    int delay = 2000;
+    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation);
+
+    mp.processMetrics(rootLocation, 1566413975000L + delay);
+    mp.processMetrics(rootLocation, 1566413980000L + delay);
+
+    Result<Record> res =
+            mp.getMetricsDB()
+                    .getValue()
+                    .queryMetric(
+                            Arrays.asList("Cache_FieldData_Size"),
+                            Arrays.asList("sum"),
+                            Arrays.asList("ShardID", "IndexName"));
+
+    for (Record record : res) {
+      assertEquals(record.get("IndexName"),"nyc_taxis");
+    }
 
     mp.trimOldSnapshots();
     mp.deleteDBs();

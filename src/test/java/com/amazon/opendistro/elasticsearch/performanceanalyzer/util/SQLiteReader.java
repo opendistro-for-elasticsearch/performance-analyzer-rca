@@ -48,7 +48,7 @@ public class SQLiteReader implements Queryable, Removable {
 
     @Override
     public MetricsDB getMetricsDB() throws Exception {
-        return new MetricsDBTest(System.currentTimeMillis());
+        return new MetricsDBX(System.currentTimeMillis(), getContext());
     }
 
     @Override
@@ -66,10 +66,12 @@ public class SQLiteReader implements Queryable, Removable {
         return 0;
     }
 
-    public class MetricsDBTest extends MetricsDB {
+    private static class MetricsDBX extends MetricsDB {
+        private final DSLContext dslContext;
 
-        public MetricsDBTest(long windowStartTime) throws Exception {
+        public MetricsDBX(long windowStartTime, final DSLContext dslContext) throws Exception {
             super(windowStartTime);
+            this.dslContext = dslContext;
         }
 
         @Override

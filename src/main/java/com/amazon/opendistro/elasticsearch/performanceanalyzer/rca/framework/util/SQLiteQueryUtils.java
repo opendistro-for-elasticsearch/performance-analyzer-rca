@@ -15,11 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary.HOT_NODE_SUMMARY_TABLE;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary.HOT_RESOURCE_SUMMARY_TABLE;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.TopConsumerSummary.TOP_CONSUMER_SUMMARY_TABLE;
-
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.ResourceFlowUnitFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
@@ -30,11 +25,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.NodeLevelDimensionalSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ShardProfileSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
 import com.google.common.collect.ImmutableList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -52,10 +49,18 @@ import org.jooq.impl.DSL;
  */
 public class SQLiteQueryUtils {
   private static final Map<Class<? extends GenericSummary>, List<Class<? extends GenericSummary>>> nestedTableMap;
+  private static final Map<String, String> temperatureProfileNestedSummaryMap;
   private static final Set<String> clusterLevelRCA;
+  private static final Set<String> temperatureProfileRCASet;
 
-  // to map table => its nested table
-  // e.g. HotClusterSummary => HotNodeSummary
+  /**
+   * mapping between table => its nested table
+   * RCA API query
+   *     |
+   * RcaResponse -- HotClusterSummary -- HotNodeSummary -- HotResourceSummary -- TopConsumerSummary
+   *                                                   |
+   *                                                    -- HotShardSummary
+   */
   static {
     Map<Class<? extends GenericSummary>, List<Class<? extends GenericSummary>>> tableMap = new HashMap<>();
     tableMap.put(RcaResponse.class, Collections.unmodifiableList(Collections.singletonList(
@@ -66,9 +71,25 @@ public class SQLiteQueryUtils {
         HotResourceSummary.class)));
     tableMap.put(HotResourceSummary.class, Collections.unmodifiableList(Collections.singletonList(
         TopConsumerSummary.class)));
+
+    //temperature profiling mapping
+    tableMap.put(ClusterTemperatureSummary.class, Collections.unmodifiableList(Collections.singletonList(
+        ClusterDimensionalSummary.class)));
     nestedTableMap = Collections.unmodifiableMap(tableMap);
   }
 
+
+  static {
+    Map<String, String> temperatureSummaryMap = new HashMap<>();
+    temperatureSummaryMap.put(ResourceFlowUnit.RCA_TABLE_NAME,
+        NodeLevelDimensionalSummary.SUMMARY_TABLE_NAME);
+    temperatureSummaryMap.put(NodeLevelDimensionalSummary.SUMMARY_TABLE_NAME,
+        NodeLevelDimensionalSummary.ZONE_SUMMARY_TABLE_NAME);
+    temperatureSummaryMap.put(NodeLevelDimensionalSummary.ZONE_SUMMARY_TABLE_NAME,
+        ShardProfileSummary.SUMMARY_TABLE_NAME);
+
+    temperatureProfileNestedSummaryMap = Collections.unmodifiableMap(temperatureSummaryMap);
+  }
 
   // RCAs that can be queried by RCA API
   // currently we can only query from the cluster level RCAs
@@ -79,6 +100,15 @@ public class SQLiteQueryUtils {
     rcaSet.add(HighHeapUsageClusterRca.RCA_TABLE_NAME);
     rcaSet.add(HotNodeClusterRca.RCA_TABLE_NAME);
     clusterLevelRCA = Collections.unmodifiableSet(rcaSet);
+  }
+
+  // Temperature profile RCAs that can be queried by the RCA API.
+  static {
+    Set<String> tempProfileRcaSet = new HashSet<>();
+
+    tempProfileRcaSet.add(NodeTemperatureRca.TABLE_NAME);
+    tempProfileRcaSet.add(ClusterTemperatureRca.TABLE_NAME);
+    temperatureProfileRCASet = Collections.unmodifiableSet(tempProfileRcaSet);
   }
 
   /**
@@ -151,6 +181,18 @@ public class SQLiteQueryUtils {
    */
   public static String getPrimaryKeyColumnName(String tableName) {
     return tableName + "_ID";
+  }
+
+  public static List<String> getTemperatureProfileRcas() {
+    return ImmutableList.copyOf(temperatureProfileRCASet);
+  }
+
+  public static boolean isTemperatureProfileRca(String rca) {
+    if (rca == null) {
+      return false;
+    }
+
+    return temperatureProfileRCASet.contains(rca);
   }
 }
 

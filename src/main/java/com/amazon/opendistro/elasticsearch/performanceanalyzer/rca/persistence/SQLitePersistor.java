@@ -19,10 +19,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.ResourceFlowUnitFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.CompactNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -176,6 +178,10 @@ class SQLitePersistor extends PersistorBase {
   // to support range query based on timestamp.
   @Override
   public synchronized RcaResponse readRca(String rca) {
+    // TODO: Need to generalize the persistence logic further.
+    if (SQLiteQueryUtils.isTemperatureProfileRca(rca)) {
+      return readTemperatureProfileRca(rca);
+    }
     RcaResponse response = null;
     Field<Integer> primaryKeyField = DSL.field(
         SQLiteQueryUtils.getPrimaryKeyColumnName(ResourceFlowUnit.RCA_TABLE_NAME), Integer.class);
@@ -188,28 +194,55 @@ class SQLitePersistor extends PersistorBase {
         if (response.getState().equals(State.UNHEALTHY.toString())) {
           readSummary(response, mostRecentRecord.get(primaryKeyField));
         }
-
-        if (rca.equals(ClusterTemperatureRca.TABLE_NAME)) {
-          Field<Integer> foreignKeyField = DSL.field(
-                  SQLiteQueryUtils.getPrimaryKeyColumnName(ResourceFlowUnit.RCA_TABLE_NAME), Integer.class);
-          SelectJoinStep<Record> query = SQLiteQueryUtils
-                  .buildSummaryQuery(create, ClusterTemperatureSummary.TABLE_NAME,
-                          mostRecentRecord.get(primaryKeyField),
-                          foreignKeyField);
-          try {
-            Result<Record> temperaureSummary = query.fetch();
-            GenericSummary summary =
-                    ClusterTemperatureSummary.buildSummaryFromDatabase(temperaureSummary, create);
-            response.addNestedSummaryList(summary);
-          } catch (DataAccessException dex) {
-            dex.printStackTrace();
-          }
-        }
       }
     } catch (DataAccessException de) {
       // it is totally fine if we fail to read some certain tables.
       LOG.warn("Fail to read RCA : {}, query = {},  exceptions : {}", rca, rcaQuery.toString(), de.getStackTrace());
     }
+    return response;
+  }
+
+  private RcaResponse readTemperatureProfileRca(String rca) {
+    RcaResponse response = null;
+    Field<Integer> primaryKeyField = DSL.field(
+        SQLiteQueryUtils.getPrimaryKeyColumnName(ResourceFlowUnit.RCA_TABLE_NAME), Integer.class);
+    SelectJoinStep<Record> rcaQuery = SQLiteQueryUtils.buildRcaQuery(create, rca);
+    try {
+      List<Record> recordList = rcaQuery.fetch();
+      if (recordList == null || recordList.isEmpty()) {
+        return null;
+      }
+      Record mostRecentRecord = recordList.get(0);
+      response = RcaResponse.buildResponse(mostRecentRecord);
+
+      // ClusterTemperatureRca can only be retrieved from the elected master. If the request is
+      // made from a data node, it returns a 400 saying it can only be queried from the elected
+      // master.
+      if (rca.equals(ClusterTemperatureRca.TABLE_NAME)) {
+        Field<Integer> foreignKeyField = DSL.field(
+            SQLiteQueryUtils.getPrimaryKeyColumnName(ResourceFlowUnit.RCA_TABLE_NAME),
+            Integer.class);
+        SelectJoinStep<Record> query = SQLiteQueryUtils
+            .buildSummaryQuery(create, ClusterTemperatureSummary.TABLE_NAME,
+                mostRecentRecord.get(primaryKeyField),
+                foreignKeyField);
+        Result<Record> temperatureSummary = query.fetch();
+        GenericSummary summary =
+            ClusterTemperatureSummary.buildSummaryFromDatabase(temperatureSummary, create);
+        response.addNestedSummaryList(summary);
+      } else if (rca.equalsIgnoreCase(NodeTemperatureRca.TABLE_NAME)) {
+        SelectJoinStep<Record> query = SQLiteQueryUtils.buildSummaryQuery(create,
+            "CompactNodeSummary", mostRecentRecord.get(primaryKeyField), primaryKeyField);
+        Result<Record> nodeTemperatureCompactSummary = query.fetch();
+        GenericSummary summary =
+            CompactNodeSummary.buildSummaryFromDatabase(nodeTemperatureCompactSummary, create);
+        response.addNestedSummaryList(summary);
+      }
+    } catch (DataAccessException dex) {
+      LOG.error("Failed to read temperature profile RCA for {}", rca, dex);
+      dex.printStackTrace();
+    }
+
     return response;
   }
 
