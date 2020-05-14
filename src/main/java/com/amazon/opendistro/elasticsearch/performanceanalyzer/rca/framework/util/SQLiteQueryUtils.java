@@ -23,10 +23,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.TopConsumerSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterDimensionalSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.NodeLevelDimensionalSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ShardProfileSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
@@ -53,14 +53,13 @@ public class SQLiteQueryUtils {
   private static final Set<String> clusterLevelRCA;
   private static final Set<String> temperatureProfileRCASet;
 
-  /**
-   * mapping between table => its nested table
-   * RCA API query
-   *     |
-   * RcaResponse -- HotClusterSummary -- HotNodeSummary -- HotResourceSummary -- TopConsumerSummary
-   *                                                   |
-   *                                                    -- HotShardSummary
-   */
+
+  // mapping between table => its nested table
+  // RCA API query
+  // |
+  // RcaResponse -- HotClusterSummary -- HotNodeSummary -- HotResourceSummary -- TopConsumerSummary
+  //                                                   |
+  //                                                    -- HotShardSummary
   static {
     Map<Class<? extends GenericSummary>, List<Class<? extends GenericSummary>>> tableMap = new HashMap<>();
     tableMap.put(RcaResponse.class, Collections.unmodifiableList(Collections.singletonList(
