@@ -69,7 +69,7 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
   }
 
   @VisibleForTesting
-  Map<String, AtomicInteger> getCounters() {
+  public Map<String, AtomicInteger> getCounters() {
     return counters;
   }
 
