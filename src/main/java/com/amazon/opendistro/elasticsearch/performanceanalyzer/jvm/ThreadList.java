@@ -20,6 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatEx
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
+import com.google.common.annotations.VisibleForTesting;
 import com.sun.tools.attach.VirtualMachine;
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -172,10 +173,7 @@ public class ThreadList {
     }
   }
 
-  // ThreadMXBean-based info for tid, name and allocs
-  private static void runMXDump() {
-    long[] ids = threadBean.getAllThreadIds();
-    ThreadInfo[] infos = threadBean.getThreadInfo(ids);
+  public static void parseAllThreadInfos(ThreadInfo[] infos) {
     for (ThreadInfo info : infos) {
       try {
         parseThreadInfo(info);
@@ -186,6 +184,17 @@ public class ThreadList {
                 .logException(StatExceptionCode.JVM_THREAD_ID_NO_LONGER_EXISTS);
       }
     }
+  }
+
+  public static ThreadInfo[] getAllThreadInfos() {
+    long[] ids = threadBean.getAllThreadIds();
+    return threadBean.getThreadInfo(ids);
+  }
+
+  // ThreadMXBean-based info for tid, name and allocs
+  private static void runMXDump() {
+    ThreadInfo[] infos = getAllThreadInfos();
+    parseAllThreadInfos(infos);
     ThreadHistory.cleanup();
   }
 
