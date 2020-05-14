@@ -17,16 +17,8 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ut
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.ResourceFlowUnitFieldValue;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.TopConsumerSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterDimensionalSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.NodeLevelDimensionalSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ShardProfileSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
@@ -48,35 +40,9 @@ import org.jooq.impl.DSL;
  * A utility class to query cluster, node and resource level summary for a rca
  */
 public class SQLiteQueryUtils {
-  private static final Map<Class<? extends GenericSummary>, List<Class<? extends GenericSummary>>> nestedTableMap;
   private static final Map<String, String> temperatureProfileNestedSummaryMap;
   private static final Set<String> clusterLevelRCA;
   private static final Set<String> temperatureProfileRCASet;
-
-
-  // mapping between table => its nested table
-  // RCA API query
-  // |
-  // RcaResponse -- HotClusterSummary -- HotNodeSummary -- HotResourceSummary -- TopConsumerSummary
-  //                                                   |
-  //                                                    -- HotShardSummary
-  static {
-    Map<Class<? extends GenericSummary>, List<Class<? extends GenericSummary>>> tableMap = new HashMap<>();
-    tableMap.put(RcaResponse.class, Collections.unmodifiableList(Collections.singletonList(
-        HotClusterSummary.class)));
-    tableMap.put(HotClusterSummary.class, Collections.unmodifiableList(Collections.singletonList(
-        HotNodeSummary.class)));
-    tableMap.put(HotNodeSummary.class, Collections.unmodifiableList(Collections.singletonList(
-        HotResourceSummary.class)));
-    tableMap.put(HotResourceSummary.class, Collections.unmodifiableList(Collections.singletonList(
-        TopConsumerSummary.class)));
-
-    //temperature profiling mapping
-    tableMap.put(ClusterTemperatureSummary.class, Collections.unmodifiableList(Collections.singletonList(
-        ClusterDimensionalSummary.class)));
-    nestedTableMap = Collections.unmodifiableMap(tableMap);
-  }
-
 
   static {
     Map<String, String> temperatureSummaryMap = new HashMap<>();
@@ -108,15 +74,6 @@ public class SQLiteQueryUtils {
     tempProfileRcaSet.add(NodeTemperatureRca.TABLE_NAME);
     tempProfileRcaSet.add(ClusterTemperatureRca.TABLE_NAME);
     temperatureProfileRCASet = Collections.unmodifiableSet(tempProfileRcaSet);
-  }
-
-  /**
-   * get a mapping between table => its nested table
-   * e.g. HotClusterSummary => HotNodeSummary
-   * @return map table => its nested table
-   */
-  public static Map<Class<? extends GenericSummary>, List<Class<? extends GenericSummary>>>  getNestedTableMap() {
-    return nestedTableMap;
   }
 
   /**

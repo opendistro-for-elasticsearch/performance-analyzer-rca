@@ -22,6 +22,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.protobuf.GeneratedMessageV3;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
@@ -86,6 +87,12 @@ public class HotClusterSummary extends GenericSummary {
   @Override
   public String getTableName() {
     return HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE;
+  }
+
+  @Override
+  public List<Class<? extends GenericSummary>> getNestedSummaryClassType() {
+    return Collections.unmodifiableList(Collections.singletonList(
+        HotNodeSummary.class));
   }
 
   @Override

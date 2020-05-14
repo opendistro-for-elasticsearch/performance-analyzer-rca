@@ -248,7 +248,7 @@ class SQLitePersistor extends PersistorBase {
 
   private void readSummary(GenericSummary upperLevelSummary, int upperLevelPrimaryKey) {
     String upperLevelTable = upperLevelSummary.getTableName();
-    List<Class<? extends GenericSummary>> clazzList = SQLiteQueryUtils.getNestedTableMap().getOrDefault(upperLevelSummary.getClass(), null);
+    List<Class<? extends GenericSummary>> clazzList = upperLevelSummary.getNestedSummaryClassType();
 
     // stop the recursion here if the table does not have any nested summary.
     if (clazzList == null) {

@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
@@ -24,6 +25,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.protobuf.GeneratedMessageV3;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.jooq.DSLContext;
@@ -113,6 +115,12 @@ public class ClusterTemperatureSummary extends GenericSummary {
     @Override
     public String getTableName() {
         return TABLE_NAME;
+    }
+
+    @Override
+    public List<Class<? extends GenericSummary>> getNestedSummaryClassType() {
+        return Collections.unmodifiableList(Collections.singletonList(
+            ClusterDimensionalSummary.class));
     }
 
     private static List<Field<?>> getColumns() {

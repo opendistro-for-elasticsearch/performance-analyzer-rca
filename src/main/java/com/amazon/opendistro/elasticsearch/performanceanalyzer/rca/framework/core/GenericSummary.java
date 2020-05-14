@@ -37,6 +37,15 @@ public abstract class GenericSummary {
     return nestedSummaryList;
   }
 
+  /**
+   * get the list of Summary Class object for the nested summary list
+   * this is to de-serialize summary object from the SQL tables
+   * @return list of Summary Class object
+   */
+  public List<Class<? extends GenericSummary>> getNestedSummaryClassType() {
+    return null;
+  }
+
   public void addNestedSummaryList(Collection<GenericSummary> nestedSummaryList) {
     this.nestedSummaryList.addAll(nestedSummaryList);
   }
