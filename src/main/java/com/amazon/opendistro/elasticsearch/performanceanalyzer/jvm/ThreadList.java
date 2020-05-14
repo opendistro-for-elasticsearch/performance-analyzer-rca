@@ -20,7 +20,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatEx
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
-import com.google.common.annotations.VisibleForTesting;
 import com.sun.tools.attach.VirtualMachine;
 import java.io.BufferedReader;
 import java.io.InputStream;

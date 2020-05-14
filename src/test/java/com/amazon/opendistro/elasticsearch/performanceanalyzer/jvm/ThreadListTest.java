@@ -16,13 +16,11 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.jvm;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.OSMetricsGeneratorFactory;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
-
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import java.lang.management.ThreadInfo;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Map;
-
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,9 +35,9 @@ public class ThreadListTest {
 
     @Test
     public void testNullThreadInfo() {
-	String propertyName = "clk.tck";
-	String old_clk_tck = System.getProperty(propertyName);
-	System.setProperty(propertyName, "100");
+        String propertyName = "clk.tck";
+        String old_clk_tck = System.getProperty(propertyName);
+        System.setProperty(propertyName, "100");
         ThreadInfo[] infos = ThreadList.getAllThreadInfos();
         // Artificially injecting a null to simulate that the thread id does not exist
         // any more and therefore the corresponding threadInfo is null.
@@ -47,14 +45,12 @@ public class ThreadListTest {
 
         ThreadList.parseAllThreadInfos(infos);
 
-	Map<String, AtomicInteger> counters = StatsCollector.instance().getCounters();
+        Map<String, AtomicInteger> counters = StatsCollector.instance().getCounters();
 
         Assert.assertEquals(counters.get(StatExceptionCode.JVM_THREAD_ID_NO_LONGER_EXISTS.toString()).get(), 1);
-        Assert.assertEquals(counters.get(StatExceptionCode.TOTAL_ERROR.toString()).get(), 1);
 
-	if (old_clk_tck != null) {
-	    System.setProperty(propertyName, old_clk_tck);
-	}
+        if (old_clk_tck != null) {
+            System.setProperty(propertyName, old_clk_tck);
+        }
     }
-
 }
