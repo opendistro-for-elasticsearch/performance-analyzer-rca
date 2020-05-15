@@ -356,7 +356,7 @@ task buildDocker(type: Exec) {
 }
 
 task printComposeLocation() {
-    dependsOn(copyAllArtifacts)
+    dependsOn(buildDocker)
     def output = new ByteArrayOutputStream()
     exec {
         workingDir(dockerArtifactsDir)
