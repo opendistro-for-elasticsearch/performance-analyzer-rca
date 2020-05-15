@@ -308,6 +308,9 @@ public class MetricsModel {
     allMetricsInitializer.put(
         ShardStatsValue.BITSET_MEMORY.toString(),
         new MetricAttributes(MetricUnits.BYTE.toString(), ShardStatsDerivedDimension.values()));
+    allMetricsInitializer.put(
+        ShardStatsValue.SHARD_SIZE_IN_BYTES.toString(),
+        new MetricAttributes(MetricUnits.BYTE.toString(), ShardStatsDerivedDimension.values()));
 
     // Master Metrics
     allMetricsInitializer.put(
