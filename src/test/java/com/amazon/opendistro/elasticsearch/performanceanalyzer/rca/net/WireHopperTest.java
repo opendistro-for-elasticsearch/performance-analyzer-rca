@@ -21,6 +21,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDet
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.WaitFor;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import java.util.Collections;
@@ -197,9 +198,10 @@ public class WireHopperTest {
         List<FlowUnitMessage> actualMsgList = uut.readFromWire(node);
         Assert.assertEquals(msgList, actualMsgList);
         // Verify expected interactions with the subscription manager
-        WaitFor.waitFor(() -> subscriptionManager.getSubscribersFor(node.name()).size() == 1, 1,
-                TimeUnit.SECONDS);
-        Assert.assertEquals(LOCALHOST, subscriptionManager.getSubscribersFor(node.name()).asList().get(0));
+        WaitFor.waitFor(() -> {
+                ImmutableSet<String> subscribers = subscriptionManager.getSubscribersFor(node.name());
+                return subscribers.size() == 1 && subscribers.asList().get(0).equals(LOCALHOST);
+            }, 1, TimeUnit.SECONDS);
         // Verify resilience to RejectedExecutionException
         clientExecutor.set(rejectingExecutor);
         uut.readFromWire(node);
