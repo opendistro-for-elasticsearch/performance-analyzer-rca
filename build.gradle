@@ -355,15 +355,38 @@ task buildDocker(type: Exec) {
     commandLine 'docker', 'build', '-t', 'odfe-es/pa-rca:1.0', '.'
 }
 
+task printComposeLocation() {
+    dependsOn(copyAllArtifacts)
+    def output = new ByteArrayOutputStream()
+    exec {
+        workingDir(dockerArtifactsDir)
+        standardOutput = output
+        commandLine 'which', 'docker-compose'
+    }
+    println "Docker compose location is: \n$output"
+    output.reset()
+    exec {
+        workingDir(dockerArtifactsDir)
+        standardOutput = output
+        commandLine 'docker-compose', '-v'
+    }
+    println "Docker compose version is: $output"
+}
+
 task runDocker(type: Exec) {
-    dependsOn(buildDocker)
+    dependsOn(buildDocker, printComposeLocation)
 
     workingDir(dockerArtifactsDir)
+
+    def docker_compose_location = "docker-compose"
+    if (System.getenv("DOCKER_COMPOSE_LOCATION") != null) {
+        docker_compose_location = System.getenv("DOCKER_COMPOSE_LOCATION")
+    }
 
     environment 'DATA_VOLUME1', 'esdata1'
     environment 'DATA_VOLUME2', 'esdata2'
 
-    commandLine('docker-compose',
+    commandLine(docker_compose_location,
             '-f', 'docker-compose.yml',
             '-f', 'docker-compose.hostports.yml',
             '-f', 'docker-compose.cluster.yml',
@@ -411,7 +434,9 @@ def runInProcess(commandArr) {
 }
 
 def runDockerCompose = { executionPath ->
-    String[] commandArray = ['docker-compose',
+    String dockerCompose = System.getenv("DOCKER_COMPOSE_LOCATION") == null ? "docker-compose" : System.getenv("DOCKER_COMPOSE_LOCATION")
+    println "Docker Compose LOC is $dockerCompose"
+    String[] commandArray = [dockerCompose,
                              '-f', 'docker-compose.yml',
                              '-f', 'docker-compose.hostports.yml',
                              '-f', 'docker-compose.cluster.yml',
@@ -455,7 +480,7 @@ Boolean esIsUp
 
 def esUpChecker = {
     String server = "http://localhost:9200"
-    int timeoutSeconds = 5 * 60
+    int timeoutSeconds = 2 * 60
     getHttpResponse(server, timeoutSeconds)
     esIsUp = true
 }
