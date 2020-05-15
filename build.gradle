@@ -355,6 +355,7 @@ task buildDocker(type: Exec) {
     commandLine 'docker', 'build', '-t', 'odfe-es/pa-rca:1.0', '.'
 }
 
+/*
 task printComposeLocation() {
     dependsOn(buildDocker)
     def output = new ByteArrayOutputStream()
@@ -372,9 +373,10 @@ task printComposeLocation() {
     }
     println "Docker compose version is: $output"
 }
+*/
 
 task runDocker(type: Exec) {
-    dependsOn(buildDocker, printComposeLocation)
+    dependsOn(buildDocker)
 
     workingDir(dockerArtifactsDir)
 
