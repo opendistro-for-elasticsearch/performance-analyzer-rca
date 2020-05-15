@@ -479,7 +479,7 @@ public class AllMetrics {
     INDEX_WRITER_MEMORY(Constants.INDEX_WRITER_MEMORY_VALUE),
     VERSION_MAP_MEMORY(Constants.VERSION_MAP_MEMORY_VALUE),
     BITSET_MEMORY(Constants.BITSET_MEMORY_VALUE),
-    SHARD_SIZE_IN_BYTES(Constants.SHARD_SIZE_IN_BYTES);
+    SHARD_SIZE_IN_BYTES(Constants.SHARD_SIZE_IN_BYTES_VALUE);
 
     private final String value;
 
@@ -551,7 +551,7 @@ public class AllMetrics {
 
       public static final String BITSET_MEMORY_VALUE = "Bitset_Memory";
 
-      public static final String SHARD_SIZE_IN_BYTES = "Shard_Size_In_Bytes";
+      public static final String SHARD_SIZE_IN_BYTES_VALUE = "Shard_Size_In_Bytes";
     }
   }
 
