@@ -28,7 +28,9 @@ import org.jooq.Field;
 import org.jooq.impl.DSL;
 
 public class ShardProfileSummary extends GenericSummary {
-    private final String indexName;
+
+  public static final String SUMMARY_TABLE_NAME = "ShardProfileSummary";
+  private final String indexName;
     private final int shardId;
 
     private final TemperatureVector temperatureVector;
