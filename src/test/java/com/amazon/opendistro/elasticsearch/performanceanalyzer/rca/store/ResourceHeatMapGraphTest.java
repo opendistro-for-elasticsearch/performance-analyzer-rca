@@ -20,6 +20,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.LOCUS_MASTER_NODE;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_AGGREGATE_UPSTREAM;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_LOCUS;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils.ALL_TEMPERATURE_DIMENSIONS;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.ClientServers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
@@ -30,7 +31,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaTestHelper
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.exceptions.MalformedConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.CPU_Utilization;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.IO_TotThroughput;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.IO_TotalSyscallRate;
@@ -38,9 +38,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterDimensionalSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.CompactClusterLevelNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.NodeLevelDimensionalSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
@@ -65,6 +68,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -150,8 +154,7 @@ public class ResourceHeatMapGraphTest {
         }
     }
 
-    @Test
-    public void constructResourceHeatMapGraph() {
+    private List<ConnectedComponent> createAndExecuteRcaGraph() {
         AnalysisGraph analysisGraph = new AnalysisGraphX();
         List<ConnectedComponent> connectedComponents =
                 RcaUtil.getAnalysisGraphComponents(analysisGraph);
@@ -165,23 +168,93 @@ public class ResourceHeatMapGraphTest {
         subscriptionManager.setCurrentLocus(rcaConf.getTagMap().get("locus"));
 
         WireHopper wireHopper = new WireHopper(new NodeStateManager(), clientServers.getNetClient(),
-            subscriptionManager,
-            networkThreadPoolReference,
-            new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()));
+                subscriptionManager,
+                networkThreadPoolReference,
+                new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()));
 
         RCASchedulerTask rcaSchedulerTaskData =
                 new RCASchedulerTask(
-                    1000,
-                    Executors.newFixedThreadPool(THREADS),
-                    connectedComponents,
-                    reader,
-                    persistable,
-                    rcaConf,
-                    wireHopper);
+                        1000,
+                        Executors.newFixedThreadPool(THREADS),
+                        connectedComponents,
+                        reader,
+                        persistable,
+                        rcaConf,
+                        wireHopper);
         AllMetrics.NodeRole nodeRole = AllMetrics.NodeRole.DATA;
         RcaTestHelper.setMyIp("192.168.0.1", nodeRole);
         rcaSchedulerTaskData.run();
+        return connectedComponents;
+    }
 
+    private String makeRestRequest(final String[] params) {
+        // The params are key/value pairs and therefore there should be even numbers of them.
+        Assert.assertEquals(0, params.length % 2);
+        StringBuilder queryString = new StringBuilder();
+
+        String appender = "";
+        for (int i = 0; i < params.length; i += 2) {
+            queryString.append(appender).append(params[i]).append("=").append(params[i + 1]);
+            appender = "&";
+        }
+        StringBuilder uri = new StringBuilder("http://localhost:9600" + Util.RCA_QUERY_URL);
+        uri.append("?").append(queryString);
+
+
+        URL url = null;
+        try {
+            url = new URL(uri.toString());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            Assert.fail();
+        }
+
+        String response = "";
+        HttpURLConnection connection = null;
+
+        try {
+            connection = (HttpURLConnection) url.openConnection();
+        } catch (IOException e) {
+            e.printStackTrace();
+            Assert.fail();
+        }
+
+        try {
+            connection.setRequestMethod("GET");
+        } catch (ProtocolException e) {
+            e.printStackTrace();
+            connection.disconnect();
+            Assert.fail();
+        }
+
+        try {
+            int status = connection.getResponseCode();
+            Assert.assertEquals(200, status);
+        } catch (IOException e) {
+            e.printStackTrace();
+            connection.disconnect();
+            Assert.fail();
+        }
+
+        try (BufferedReader in = new BufferedReader(
+                new InputStreamReader(connection.getInputStream()))) {
+            String inputLine;
+            StringBuffer content = new StringBuffer();
+            while ((inputLine = in.readLine()) != null) {
+                content.append(inputLine);
+            }
+            response = content.toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+            connection.disconnect();
+            Assert.fail();
+        }
+        return response;
+    }
+
+    @Test
+    public void clusterTemperatureProfile() {
+        List<ConnectedComponent> connectedComponents = createAndExecuteRcaGraph();
         System.out.println("Now for the MAster RCA.");
         String masterNodeRcaConf =
                 Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_elected_master.conf").toString();
@@ -191,53 +264,264 @@ public class ResourceHeatMapGraphTest {
         subscriptionManager2.setCurrentLocus(rcaConf2.getTagMap().get("locus"));
 
         WireHopper wireHopper2 = new WireHopper(new NodeStateManager(), clientServers.getNetClient(),
-            subscriptionManager2,
-            networkThreadPoolReference,
-            new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()));
+                subscriptionManager2,
+                networkThreadPoolReference,
+                new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()));
 
         RCASchedulerTask rcaSchedulerTaskMaster =
-            new RCASchedulerTask(
-                1000,
-                Executors.newFixedThreadPool(THREADS),
-                connectedComponents,
-                reader,
-                persistable,
-                rcaConf2,
-                wireHopper2);
+                new RCASchedulerTask(
+                        1000,
+                        Executors.newFixedThreadPool(THREADS),
+                        connectedComponents,
+                        reader,
+                        persistable,
+                        rcaConf2,
+                        wireHopper2);
         AllMetrics.NodeRole nodeRole2 = AllMetrics.NodeRole.ELECTED_MASTER;
         RcaTestHelper.setMyIp("192.168.0.2", nodeRole2);
         rcaSchedulerTaskMaster.run();
 
-        URL url = null;
-        try {
-            url = new URL("http://localhost:9600" + Util.RCA_QUERY_URL);
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-            Assert.fail();
-        }
+        testJsonResponse(makeRestRequest(
+                new String[]{"name", ClusterTemperatureRca.TABLE_NAME}));
+    }
 
-        try {
-            HttpURLConnection con = (HttpURLConnection) url.openConnection();
-            con.addRequestProperty("name", ClusterTemperatureRca.TABLE_NAME);
-            con.setRequestMethod("GET");
+    @Test
+    public void fullNodeTemperatureProfile() {
+        createAndExecuteRcaGraph();
+        verifyFullNodeTemperatureProfile(makeRestRequest(
+                new String[]{
+                        "name", ALL_TEMPERATURE_DIMENSIONS,
+                        "local", "true"
+                }));
+    }
 
-            int status = con.getResponseCode();
-            System.out.println("Response status: " + status);
-            try (BufferedReader in = new BufferedReader(
-                    new InputStreamReader(con.getInputStream()))) {
-                String inputLine;
-                StringBuffer content = new StringBuffer();
-                while ((inputLine = in.readLine()) != null) {
-                    content.append(inputLine);
-                }
+    // If the Temperature profile rca is muted, we expect it to return something like:
+    // {"AllTemperatureDimensions":[]}
+    // @Test
+    public void mutedTemperatureProfile() {
+        Assert.assertTrue(Paths.get(rcaConf.getDatastore().get(RcaConsts.DATASTORE_LOC_KEY),
+                RcaConsts.DATASTORE_FILENAME).toFile().delete());
 
-                testJsonResponse(content.toString());
+        String response = makeRestRequest(
+                new String[]{
+                        "name", ALL_TEMPERATURE_DIMENSIONS,
+                        "local", "true"
+                });
+        System.out.println(response);
+        JsonParser parser = new JsonParser();
+        Assert.assertEquals(0,
+                parser.parse(response).getAsJsonObject().getAsJsonArray(ALL_TEMPERATURE_DIMENSIONS).size());
+    }
+
+    /**
+     * {
+     * "AllTemperatureDimensions":[
+     * {
+     * "NodeLevelDimensionalSummary":[
+     * {
+     * "dimension":"CPU_Utilization",
+     * "mean":1,
+     * "total":1.20827386264977,
+     * "numShards":3,
+     * "NodeLevelZoneSummary":[
+     * {
+     * "zone":"HOT",
+     * "all_shards":[
+     * ]
+     * },
+     * {
+     * "zone":"WARM",
+     * "all_shards":[
+     * {
+     * "index_name":"geonames",
+     * "shard_id":0,
+     * "temperature":[
+     * {
+     * "dimension":"CPU_Utilization",
+     * "value":"2"
+     * },
+     * {
+     * "dimension":"Heap_AllocRate",
+     * "value":"5"
+     * }
+     * ]
+     * }
+     * ]
+     * },
+     * {
+     * "zone":"LUKE_WARM",
+     * "all_shards":[
+     * {
+     * "index_name":"geonames",
+     * "shard_id":2,
+     * "temperature":[
+     * {
+     * "dimension":"CPU_Utilization",
+     * "value":"0"
+     * },
+     * {
+     * "dimension":"Heap_AllocRate",
+     * "value":"0"
+     * }
+     * ]
+     * },
+     * {
+     * "index_name":"geonames",
+     * "shard_id":4,
+     * "temperature":[
+     * {
+     * "dimension":"CPU_Utilization",
+     * "value":"0"
+     * },
+     * {
+     * "dimension":"Heap_AllocRate",
+     * "value":"0"
+     * }
+     * ]
+     * }
+     * ]
+     * },
+     * {
+     * "zone":"COLD",
+     * "all_shards":[
+     * ]
+     * }
+     * ],
+     * "timestamp":1590627598558
+     * },
+     * {
+     * "dimension":"Heap_AllocRate",
+     * "mean":2,
+     * "total":2.39855498699146E8,
+     * "numShards":3,
+     * "NodeLevelZoneSummary":[
+     * {
+     * "zone":"HOT",
+     * "all_shards":[
+     * {
+     * "index_name":"geonames",
+     * "shard_id":0,
+     * "temperature":[
+     * {
+     * "dimension":"CPU_Utilization",
+     * "value":"2"
+     * },
+     * {
+     * "dimension":"Heap_AllocRate",
+     * "value":"5"
+     * }
+     * ]
+     * }
+     * ]
+     * },
+     * {
+     * "zone":"WARM",
+     * "all_shards":[
+     * ]
+     * },
+     * {
+     * "zone":"LUKE_WARM",
+     * "all_shards":[
+     * {
+     * "index_name":"geonames",
+     * "shard_id":2,
+     * "temperature":[
+     * {
+     * "dimension":"CPU_Utilization",
+     * "value":"0"
+     * },
+     * {
+     * "dimension":"Heap_AllocRate",
+     * "value":"0"
+     * }
+     * ]
+     * },
+     * {
+     * "index_name":"geonames",
+     * "shard_id":4,
+     * "temperature":[
+     * {
+     * "dimension":"CPU_Utilization",
+     * "value":"0"
+     * },
+     * {
+     * "dimension":"Heap_AllocRate",
+     * "value":"0"
+     * }
+     * ]
+     * }
+     * ]
+     * },
+     * {
+     * "zone":"COLD",
+     * "all_shards":[
+     * ]
+     * }
+     * ],
+     * "timestamp":1590627598558
+     * }
+     * ]
+     * }
+     * ]
+     * }
+     */
+    private void verifyFullNodeTemperatureProfile(String resp) {
+        JsonParser parser = new JsonParser();
+        JsonArray json = parser
+                .parse(resp)
+                .getAsJsonObject()
+                .getAsJsonArray(ALL_TEMPERATURE_DIMENSIONS)
+                .get(0)
+                .getAsJsonObject()
+                .getAsJsonArray(NodeLevelDimensionalSummary.SUMMARY_TABLE_NAME);
+
+        for (JsonElement elem : json) {
+            JsonObject object = elem.getAsJsonObject();
+            switch (TemperatureVector.Dimension.valueOf(object.get("dimension").getAsString())) {
+                case CPU_Utilization:
+                    verifyCpuDimension(object);
+                    break;
+                case Heap_AllocRate:
+                    break;
+                case IO_WriteSyscallRate:
+                    break;
+                case IO_READ_SYSCALL_RATE:
+                    break;
             }
+        }
+    }
 
-            con.disconnect();
-        } catch (IOException e) {
-            e.printStackTrace();
-            Assert.fail();
+    private void verifyCpuDimension(JsonObject cpuObject) {
+        Assert.assertEquals(1, cpuObject.get("mean").getAsInt());
+        Assert.assertEquals(1.208273862649, cpuObject.get("total").getAsDouble(), 0.01);
+        Assert.assertEquals(3, cpuObject.get("numShards").getAsInt());
+
+        for (JsonElement elem : cpuObject.getAsJsonArray("NodeLevelZoneSummary")) {
+            JsonObject o = elem.getAsJsonObject();
+            switch (HeatZoneAssigner.Zone.valueOf(o.get("zone").getAsString())) {
+                case HOT:
+                    Assert.assertEquals(0, o.getAsJsonArray("all_shards").size());
+                    break;
+                case WARM: {
+                    for (JsonElement e : o.getAsJsonArray("all_shards")) {
+                        Assert.assertEquals("geonames",
+                                e.getAsJsonObject().get("index_name").getAsString());
+                        Assert.assertEquals(0, e.getAsJsonObject().get("shard_id").getAsInt());
+                    }
+                    break;
+                }
+                case LUKE_WARM:
+                    Assert.assertEquals(2, o.getAsJsonArray("all_shards").size());
+                    for (JsonElement e : o.getAsJsonArray("all_shards")) {
+                        Assert.assertEquals("geonames",
+                                e.getAsJsonObject().get("index_name").getAsString());
+                        int shardId = e.getAsJsonObject().get("shard_id").getAsInt();
+                        Assert.assertTrue(shardId == 2 || shardId == 4);
+                    }
+                    break;
+                case COLD:
+                    Assert.assertEquals(0, o.getAsJsonArray("all_shards").size());
+            }
         }
     }
 
@@ -424,7 +708,6 @@ public class ResourceHeatMapGraphTest {
      * ],
      * "HighHeapUsageClusterRca": []
      * }
-     *
      */
     private void testJsonResponse(String jsonResponse) {
         final String clusterTempRca = ClusterTemperatureRca.TABLE_NAME;

@@ -51,7 +51,7 @@ public class CompactNodeSummary extends GenericSummary {
     /**
      * This will determine the name of the SQLite when this summary is persisted.
      */
-    public final String TABLE_NAME = CompactNodeSummary.class.getSimpleName();
+    public static final String TABLE_NAME = CompactNodeSummary.class.getSimpleName();
 
     protected final String nodeId;
     protected final String hostAddress;

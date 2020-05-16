@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.google.gson.JsonElement;
@@ -24,10 +25,16 @@ import com.google.protobuf.GeneratedMessageV3;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
 
 public class FullNodeTemperatureSummary extends GenericSummary {
+    private static final Logger LOG = LogManager.getLogger(FullNodeTemperatureSummary.class);
+
+    public static final String TABLE_NAME = FullNodeTemperatureSummary.class.getSimpleName();
+
     /**
      * A node has a temperature profile of its own. The temperature profile of a node is the mean
      * temperature along each dimension.
@@ -76,29 +83,37 @@ public class FullNodeTemperatureSummary extends GenericSummary {
     public List<GenericSummary> getNestedSummaryList() {
         List<GenericSummary> dimensionalSummaries = new ArrayList<>();
         for (NodeLevelDimensionalSummary dimSummary : nodeDimensionProfiles) {
-            dimensionalSummaries.add(dimSummary);
+            if (dimSummary != null) {
+                dimensionalSummaries.add(dimSummary);
+            }
         }
         return dimensionalSummaries;
     }
 
     @Override
     public <T extends GeneratedMessageV3> T buildSummaryMessage() {
-        throw new IllegalArgumentException();
+        throw new IllegalStateException("FullNodeTemperatureSummary should not be transported "
+                + "over the wire.");
     }
 
     @Override
     public void buildSummaryMessageAndAddToFlowUnit(FlowUnitMessage.Builder messageBuilder) {
-        throw new IllegalArgumentException();
+        throw new IllegalStateException("FullNodeTemperatureSummary should not be received over "
+                + "the wire.");
     }
 
     @Override
     public String getTableName() {
-        return this.getClass().getSimpleName();
+        return TABLE_NAME;
     }
 
     @Override
     public List<Field<?>> getSqlSchema() {
         List<Field<?>> schema = new ArrayList<>();
+
+        schema.add(DSL.field(DSL.name(HotNodeSummary.SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME), String.class));
+        schema.add(DSL.field(DSL.name(HotNodeSummary.SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME), String.class));
+
         for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
             schema.add(DSL.field(DSL.name(dimension.NAME), Short.class));
         }
@@ -108,6 +123,10 @@ public class FullNodeTemperatureSummary extends GenericSummary {
     @Override
     public List<Object> getSqlValue() {
         List<Object> values = new ArrayList<>();
+
+        values.add(getNodeId());
+        values.add(getHostAddress());
+
         for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
             values.add(temperatureVector.getTemperatureFor(dimension));
         }
