@@ -34,11 +34,8 @@ import org.junit.experimental.categories.Category;
 @Category(GradleTaskForRca.class)
 public class RcaConfTests {
 
-  List<String> mutedRcas = Arrays.asList("CPU_Utilization", "Heap_AllocRate");
-
   @Test
   public void testRcaConfRead() throws Exception {
-    updateConfFileForMutedRcas(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_master.conf").toString(), mutedRcas);
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_master.conf").toString());
 
     assertEquals("s3://sifi-store/rcas/", rcaConf.getRcaStoreLoc());
@@ -56,25 +53,6 @@ public class RcaConfTests {
       String expectedValue = tagMap.get(tag.getKey());
       assertEquals(expectedValue, tag.getValue());
     }
-    assertEquals(Arrays.asList("CPU_Utilization", "Heap_AllocRate"), rcaConf.getMutedRcaList());
-  }
-
-  @Test
-  public void testMutedRcasValue() throws Exception {
-    String rcaConfPath = Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_master.conf").toString();
-    List<String> mutedRcas1 = Arrays.asList("CPU_Utilization");
-
-    updateConfFileForMutedRcas(rcaConfPath, mutedRcas);
-    RcaConf rcaConf = new RcaConf(rcaConfPath);
-    assertEquals(mutedRcas, rcaConf.getMutedRcaList());
-
-    updateConfFileForMutedRcas(rcaConfPath, mutedRcas1);
-    rcaConf = new RcaConf(rcaConfPath);
-    assertEquals(mutedRcas1, rcaConf.getMutedRcaList());
-
-    updateConfFileForMutedRcas(rcaConfPath, Collections.EMPTY_LIST);
-    rcaConf = new RcaConf(rcaConfPath);
-    assertTrue(rcaConf.getMutedRcaList().isEmpty());
-
+    assertEquals(Collections.EMPTY_LIST, rcaConf.getMutedRcaList());
   }
 }

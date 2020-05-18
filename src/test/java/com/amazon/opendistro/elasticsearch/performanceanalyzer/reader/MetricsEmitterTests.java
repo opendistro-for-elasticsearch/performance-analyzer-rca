@@ -123,7 +123,7 @@ public class MetricsEmitterTests extends AbstractReaderTests {
     assertEquals(0.164465243055556d, cpu.doubleValue(), 0);
   }
 
-  // @Test(expected = Exception.class)
+  @Test(expected = Exception.class)
   public void testMetricsEmitterInvalidData() throws Exception {
     //
     PowerMockito.mockStatic(TroubleshootingConfig.class);
