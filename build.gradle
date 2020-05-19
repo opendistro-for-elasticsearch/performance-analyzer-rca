@@ -355,31 +355,15 @@ task buildDocker(type: Exec) {
     commandLine 'docker', 'build', '-t', 'odfe-es/pa-rca:1.0', '.'
 }
 
-/*
-task printComposeLocation() {
-    dependsOn(buildDocker)
-    def output = new ByteArrayOutputStream()
-    exec {
-        workingDir(dockerArtifactsDir)
-        standardOutput = output
-        commandLine 'which', 'docker-compose'
-    }
-    println "Docker compose location is: \n$output"
-    output.reset()
-    exec {
-        workingDir(dockerArtifactsDir)
-        standardOutput = output
-        commandLine 'docker-compose', '-v'
-    }
-    println "Docker compose version is: $output"
-}
-*/
-
 task runDocker(type: Exec) {
     dependsOn(buildDocker)
 
     workingDir(dockerArtifactsDir)
 
+    // This block is included to make the runDocker task work with Github Actions
+    // It sets the path to the docker-compose program from an environment variable
+    // The DOCKER_COMPOSE_LOCATION environment variable is set in the gradle.yml file inside the
+    // performance-analyzer repository.
     def docker_compose_location = "docker-compose"
     if (System.getenv("DOCKER_COMPOSE_LOCATION") != null) {
         docker_compose_location = System.getenv("DOCKER_COMPOSE_LOCATION")
@@ -436,8 +420,12 @@ def runInProcess(commandArr) {
 }
 
 def runDockerCompose = { executionPath ->
-    String dockerCompose = System.getenv("DOCKER_COMPOSE_LOCATION") == null ? "docker-compose" : System.getenv("DOCKER_COMPOSE_LOCATION")
-    println "Docker Compose LOC is $dockerCompose"
+    // This block is included to make the runDocker task work with Github Actions
+    // It sets the path to the docker-compose program from an environment variable
+    // The DOCKER_COMPOSE_LOCATION environment variable is set in the gradle.yml file inside the
+    // performance-analyzer repository.
+    String dockerCompose = System.getenv("DOCKER_COMPOSE_LOCATION") == null ?
+            "docker-compose" : System.getenv("DOCKER_COMPOSE_LOCATION")
     String[] commandArray = [dockerCompose,
                              '-f', 'docker-compose.yml',
                              '-f', 'docker-compose.hostports.yml',
@@ -555,16 +543,6 @@ task enablePaAndRca(type: Exec) {
         sleep(5000)
     }
 }
-
-/*
-task enablePaAndRca(type: Exec) {
-    dependsOn(waitForES)
-    commandLine('curl', 'localhost:9200/_opendistro/_performanceanalyzer/cluster/config', '-H',
-            'Content-Type: application/json', '-d', '{"enabled": true}')
-    commandLine('curl', 'localhost:9200/_opendistro/_performanceanalyzer/rca/cluster/config',
-            '-H', 'Content-Type: application/json', '-d', '{"enabled": true}')
-}
- */
 
 task runPerftop {
     dependsOn(enablePaAndRca, unzipPerfTop)
