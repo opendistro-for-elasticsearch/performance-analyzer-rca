@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import sun.tools.attach.HotSpotVirtualMachine;
@@ -197,7 +196,7 @@ public class ThreadList {
     ThreadHistory.cleanup();
   }
 
-  private static void parseThreadInfo(@Nullable  final ThreadInfo info) {
+  private static void parseThreadInfo(final ThreadInfo info) {
     long id = info.getThreadId();
     String name = info.getThreadName();
     Thread.State state = info.getThreadState();
