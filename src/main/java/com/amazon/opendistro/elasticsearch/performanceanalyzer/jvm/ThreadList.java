@@ -197,7 +197,7 @@ public class ThreadList {
     ThreadHistory.cleanup();
   }
 
-  private static void parseThreadInfo(@Nullable  final ThreadInfo info) {
+  private static void parseThreadInfo(final ThreadInfo info) {
     long id = info.getThreadId();
     String name = info.getThreadName();
     Thread.State state = info.getThreadState();
