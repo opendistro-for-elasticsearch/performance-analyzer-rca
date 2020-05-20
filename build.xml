@@ -55,21 +55,16 @@
     </target>
 
     <target name="copy-test-files">
-        <mkdir dir="${basedir}/build/private/test_resources"/>
-        <if>
-            <available file="${basedir}/build/private/test_resources/dev" type="dir"/>
-            <then>
-            </then>
-            <else>
-                <exec executable="tar">
-                    <arg value="-xf"/>
-                    <arg value="${basedir}/test_files/shm.tar.gz"/>
-                    <arg value="-C"/>
-                    <arg value="${basedir}/build/private/test_resources"/>
-                </exec>
-
-            </else>
-        </if>
+        <mkdir dir="${basedir}/build/resources/test/reader"/>
+        <exec executable="tar">
+            <arg value="-xf"/>
+            <arg value="${basedir}/test_files/shm.tar.gz"/>
+            <arg value="-C"/>
+            <arg value="${basedir}/build/private/test_resources"/>
+        </exec>
+        <copy todir="${basedir}/build/resources/test/reader">
+            <fileset dir="${basedir}/src/test/resources/reader"/>
+        </copy>
     </target>
 
     <target name="copy-artifacts">

@@ -62,7 +62,6 @@ public class ReaderMetricsProcessor implements Runnable {
   private static final int RQ_SNAPSHOTS = 4;
   private static final int HTTP_RQ_SNAPSHOTS = 4;
   private static final int MASTER_EVENT_SNAPSHOTS = 4;
-  private final MetricsParser metricsParser;
   private final String rootLocation;
   private static final Map<String, Double> TIMING_STATS = new HashMap<>();
   private static final Map<String, String> STATS_DATA = new HashMap<>();
@@ -95,7 +94,6 @@ public class ReaderMetricsProcessor implements Runnable {
     shardRqMetricsMap = new TreeMap<>();
     httpRqMetricsMap = new TreeMap<>();
     masterEventMetricsMap = new TreeMap<>();
-    metricsParser = new MetricsParser();
     this.rootLocation = rootLocation;
 
     AllMetrics.MetricName[] names = AllMetrics.MetricName.values();
@@ -737,6 +735,29 @@ public class ReaderMetricsProcessor implements Runnable {
       mFinalT = System.currentTimeMillis();
       LOG.debug("Total time taken for emitting node metrics: {}", mFinalT - mCurrT);
     }
+  }
+
+  /**
+   * An example value is this: current_time:1566413987194 StartTime:1566413987194 ItemCount:359
+   * IndexName:nyc_taxis ShardID:25 Primary:true Each pair is separated by new line and the key and
+   * value within each pair is separated by ":" This function just parses the string and generates
+   * the map as such.
+   *
+   * @param eventValue The value input to the helper function.
+   * @return Returns a map of key value pairs
+   */
+  static Map<String, String> extractEntryData(String eventValue) {
+    String[] lines = eventValue.split(System.lineSeparator());
+    Map<String, String> keyValueMap = new HashMap<>();
+    for (String line : lines) {
+      String[] pair = line.split(PerformanceAnalyzerMetrics.sKeyValueDelimitor);
+      if (pair.length == 1) {
+        keyValueMap.put(pair[0], "");
+      } else {
+        keyValueMap.put(pair[0], pair[1]);
+      }
+    }
+    return keyValueMap;
   }
 
   @VisibleForTesting

@@ -106,7 +106,7 @@ public class HttpRequestEventProcessor implements EventProcessor {
   // Indices:
   // HTTP_RequestDocs:10000$
   private void emitStartHttpMetric(Event entry, String[] keyItems) {
-    Map<String, String> keyValueMap = MetricsParser.extractEntryData(entry.value);
+    Map<String, String> keyValueMap = ReaderMetricsProcessor.extractEntryData(entry.value);
 
     String startTimeVal = keyValueMap.get(HttpMetric.START_TIME.toString());
     String itemCountVal = keyValueMap.get(HttpMetric.HTTP_REQUEST_DOCS.toString());
@@ -139,7 +139,7 @@ public class HttpRequestEventProcessor implements EventProcessor {
   // HTTPRespCode:200
   // Exception:
   private void emitFinishHttpMetric(Event entry, String[] keyItems) {
-    Map<String, String> keyValueMap = MetricsParser.extractEntryData(entry.value);
+    Map<String, String> keyValueMap = ReaderMetricsProcessor.extractEntryData(entry.value);
 
     String finishTimeVal = keyValueMap.get(HttpMetric.FINISH_TIME.toString());
     String status = keyValueMap.get(HttpDimension.HTTP_RESP_CODE.toString());

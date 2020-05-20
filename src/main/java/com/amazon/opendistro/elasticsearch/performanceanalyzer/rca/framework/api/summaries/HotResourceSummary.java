@@ -24,6 +24,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
@@ -198,6 +199,13 @@ public class HotResourceSummary extends GenericSummary {
   @Override
   public String getTableName() {
     return HotResourceSummary.HOT_RESOURCE_SUMMARY_TABLE;
+  }
+
+  @Override
+  public List<SummaryBuilder<? extends GenericSummary>> getNestedSummaryBuilder() {
+    return Collections.unmodifiableList(Collections.singletonList(
+        new SummaryBuilder<>(TopConsumerSummary.TOP_CONSUMER_SUMMARY_TABLE,
+            TopConsumerSummary::buildSummary)));
   }
 
   @Override
