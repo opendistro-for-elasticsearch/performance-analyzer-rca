@@ -530,22 +530,22 @@ task enablePa(type: Exec) {
     }
     commandLine('curl', 'localhost:9200/_opendistro/_performanceanalyzer/cluster/config', '-H',
             'Content-Type: application/json', '-d', '{"enabled": true}')
-    doLast {
+    doLast { // This sleep ensures that PA has time to become enabled before subsequent tasks rely on it
         sleep(5000)
     }
 }
 
-task enablePaAndRca(type: Exec) {
+task enableRca(type: Exec) {
     dependsOn(enablePa)
     commandLine('curl', 'localhost:9200/_opendistro/_performanceanalyzer/rca/cluster/config',
             '-H', 'Content-Type: application/json', '-d', '{"enabled": true}')
-    doLast {
+    doLast { // This sleep ensures that RCA has time to become enabled before subsequent tasks rely on it
         sleep(5000)
     }
 }
 
 task runPerftop {
-    dependsOn(enablePaAndRca, unzipPerfTop)
+    dependsOn(enableRca, unzipPerfTop)
     doLast {
         println '============================================================================'
         println 'invoke perftop as: '
@@ -555,7 +555,7 @@ task runPerftop {
 }
 
 task generateLoad {
-    dependsOn(enablePaAndRca, runPerftop)
+    dependsOn(enableRca, runPerftop)
 
     doLast {
         String[] deleteIndex = ['curl', '-X', 'DELETE', 'localhost:9200/accounts?pretty']
@@ -584,7 +584,7 @@ task generateLoad {
 }
 
 task runRally {
-    dependsOn(enablePaAndRca, runPerftop)
+    dependsOn(enableRca, runPerftop)
 
     doLast {
         String rallyTrack='pmc'
