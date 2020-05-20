@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.SummaryBuilder;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -42,7 +43,7 @@ public abstract class GenericSummary {
    * this is to de-serialize summary object from the SQL tables
    * @return list of Summary Class object
    */
-  public List<Class<? extends GenericSummary>> getNestedSummaryClassType() {
+  public List<SummaryBuilder<? extends GenericSummary>> getNestedSummaryBuilder() {
     return null;
   }
 

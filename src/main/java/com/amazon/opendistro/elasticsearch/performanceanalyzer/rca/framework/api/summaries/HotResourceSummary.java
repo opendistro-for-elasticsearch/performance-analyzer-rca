@@ -202,9 +202,10 @@ public class HotResourceSummary extends GenericSummary {
   }
 
   @Override
-  public List<Class<? extends GenericSummary>> getNestedSummaryClassType() {
+  public List<SummaryBuilder<? extends GenericSummary>> getNestedSummaryBuilder() {
     return Collections.unmodifiableList(Collections.singletonList(
-        TopConsumerSummary.class));
+        new SummaryBuilder<>(TopConsumerSummary.TOP_CONSUMER_SUMMARY_TABLE,
+            TopConsumerSummary::buildSummary)));
   }
 
   @Override

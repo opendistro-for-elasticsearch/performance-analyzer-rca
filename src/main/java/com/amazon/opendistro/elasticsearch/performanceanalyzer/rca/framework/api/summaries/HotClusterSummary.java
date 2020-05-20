@@ -90,9 +90,10 @@ public class HotClusterSummary extends GenericSummary {
   }
 
   @Override
-  public List<Class<? extends GenericSummary>> getNestedSummaryClassType() {
+  public List<SummaryBuilder<? extends GenericSummary>> getNestedSummaryBuilder() {
     return Collections.unmodifiableList(Collections.singletonList(
-        HotNodeSummary.class));
+        new SummaryBuilder<>(HotNodeSummary.HOT_NODE_SUMMARY_TABLE,
+            HotNodeSummary::buildSummary)));
   }
 
   @Override

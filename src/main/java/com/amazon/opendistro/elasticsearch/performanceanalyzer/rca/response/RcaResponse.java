@@ -20,7 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.ResourceFlowUnitFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.SQL_SCHEMA_CONSTANTS;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.SummaryBuilder;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -102,9 +102,10 @@ public class RcaResponse extends GenericSummary {
   }
 
   @Override
-  public List<Class<? extends GenericSummary>> getNestedSummaryClassType() {
+  public List<SummaryBuilder<? extends GenericSummary>> getNestedSummaryBuilder() {
     return Collections.unmodifiableList(Collections.singletonList(
-        HotClusterSummary.class));
+        new SummaryBuilder<>(HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE,
+            HotClusterSummary::buildSummary)));
   }
 
   @Override
