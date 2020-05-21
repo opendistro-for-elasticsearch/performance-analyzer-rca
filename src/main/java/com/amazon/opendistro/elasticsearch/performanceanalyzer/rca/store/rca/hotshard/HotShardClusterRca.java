@@ -35,8 +35,10 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -59,6 +61,7 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
     private final Rca<ResourceFlowUnit> hotShardRca;
     private int rcaPeriod;
     private int counter;
+    private Set<String> unhealthyNodes;
 
     // Guava Table with Row: 'Index_Name', Column: 'NodeShardKey', Cell Value: 'Value'
     private Table<String, NodeShardKey, Double> cpuUtilizationInfoTable;
@@ -70,6 +73,7 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
         this.hotShardRca = hotShardRca;
         this.rcaPeriod = rcaPeriod;
         this.counter = 0;
+        this.unhealthyNodes = new HashSet<>();
         this.cpuUtilizationInfoTable = HashBasedTable.create();
         this.IOThroughputInfoTable = HashBasedTable.create();
         this.IOSysCallRateInfoTable = HashBasedTable.create();
@@ -91,17 +95,21 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
     private void consumeFlowUnit(ResourceFlowUnit resourceFlowUnit) {
         String nodeId = ((HotNodeSummary) resourceFlowUnit.getResourceSummary()).getNodeID();
         HotNodeSummary hotNodeSummary = ((HotNodeSummary) resourceFlowUnit.getResourceSummary());
-        for (HotShardSummary hotShardSummary : hotNodeSummary.getHotShardSummaryList()) {
-            String indexName = hotShardSummary.getIndexName();
-            NodeShardKey nodeShardKey = new NodeShardKey(nodeId, hotShardSummary.getShardId());
-            // 1. Populate CPU Table
-            populateResourceInfoTable(indexName, nodeShardKey, hotShardSummary.getCpuUtilization(), cpuUtilizationInfoTable);
+        for (GenericSummary summary : hotNodeSummary.getNestedSummaryList()) {
+            if (summary instanceof HotShardSummary) {
+                HotShardSummary hotShardSummary = (HotShardSummary) summary;
+                String indexName = hotShardSummary.getIndexName();
+                NodeShardKey nodeShardKey = new NodeShardKey(nodeId, hotShardSummary.getShardId());
+                // 1. Populate CPU Table
+                populateResourceInfoTable(indexName, nodeShardKey, hotShardSummary.getCpuUtilization(), cpuUtilizationInfoTable);
 
-            // 2. Populate ioTotThroughput Table
-            populateResourceInfoTable(indexName, nodeShardKey, hotShardSummary.getIOThroughput(), IOThroughputInfoTable);
+                // 2. Populate ioTotThroughput Table
+                populateResourceInfoTable(indexName, nodeShardKey, hotShardSummary.getIOThroughput(), IOThroughputInfoTable);
 
-            // 3. Populate ioTotSysCallrate Table
-            populateResourceInfoTable(indexName,nodeShardKey, hotShardSummary.getIOSysCallrate(), IOSysCallRateInfoTable);
+                // 3. Populate ioTotSysCallrate Table
+                populateResourceInfoTable(indexName, nodeShardKey, hotShardSummary.getIOSysCallrate(), IOSysCallRateInfoTable);
+
+            }
         }
     }
 
@@ -166,26 +174,22 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
 
         // Populate the Table, compiling the information per index
         final List<ResourceFlowUnit> resourceFlowUnits = hotShardRca.getFlowUnits();
-        LOG.info("MOMO, resourceFlowUnits: {}", resourceFlowUnits);
         for (final ResourceFlowUnit resourceFlowUnit : resourceFlowUnits) {
-            LOG.info("MOMO, resourceFlowUnit: {}", resourceFlowUnit);
             if (resourceFlowUnit.isEmpty()) {
                 continue;
             }
 
             if (resourceFlowUnit.getResourceContext().isUnhealthy()) {
+                unhealthyNodes.add(((HotNodeSummary) resourceFlowUnit.getResourceSummary()).getNodeID());
                 consumeFlowUnit(resourceFlowUnit);
             }
         }
 
-        LOG.info("MOMO, consumeFlowUnit() completed. cpuUtilizationInfoTable: {}", cpuUtilizationInfoTable);
-        LOG.info("MOMO, consumeFlowUnit() completed. IOThroughputInfoTable: {}", IOThroughputInfoTable);
-        LOG.info("MOMO, consumeFlowUnit() completed. IOSysCallRateInfoTable: {}", IOSysCallRateInfoTable);
         if (counter >= rcaPeriod) {
             List<GenericSummary> hotShardSummaryList = new ArrayList<>();
             ResourceContext context;
             HotClusterSummary summary = new HotClusterSummary(
-                    ClusterDetailsEventProcessor.getNodesDetails().size(), 0);
+                    ClusterDetailsEventProcessor.getNodesDetails().size(), unhealthyNodes.size());
 
             // We evaluate hot shards individually on all the 3 dimensions
             findHotShardAndCreateSummary(
@@ -200,7 +204,6 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
                     IOSysCallRateInfoTable, ioTotSysCallRateClusterThreshold, hotShardSummaryList,
                     ResourceType.newBuilder().setHardwareResourceTypeValue(HardwareEnum.IO_TOTAL_SYS_CALLRATE_VALUE).build());
 
-            LOG.info("MOMO, inside rcaPeriod. hotShardSummaryList: {}", hotShardSummaryList);
             if (hotShardSummaryList.isEmpty()) {
                 context = new ResourceContext(Resources.State.HEALTHY);
             } else {
@@ -211,11 +214,12 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
 
             // reset the variables
             counter = 0;
+            this.unhealthyNodes.clear();
             this.cpuUtilizationInfoTable.clear();
             this.IOThroughputInfoTable.clear();
             this.IOSysCallRateInfoTable.clear();
             LOG.debug("Hot Shard Cluster RCA Context :  " + context.toString());
-            return new ResourceFlowUnit(System.currentTimeMillis(), context, summary);
+            return new ResourceFlowUnit(System.currentTimeMillis(), context, summary, true);
         } else {
             LOG.debug("Empty FlowUnit returned for Hot Shard CLuster RCA");
             return new ResourceFlowUnit(System.currentTimeMillis());
@@ -234,19 +238,13 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
         ioTotSysCallRateClusterThreshold = configObj.getIoTotSysCallRateClusterThreshold();
     }
 
-    /**
-     * This is a local node RCA which by definition can not be serialize/de-serialized
-     * over gRPC.
-     */
-    @Override
-    public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-        final List<FlowUnitMessage> flowUnitMessages =
-                args.getWireHopper().readFromWire(args.getNode());
-        List<ResourceFlowUnit> flowUnitList = new ArrayList<>();
-        LOG.debug("rca: Executing fromWire: {}", this.getClass().getSimpleName());
-        for (FlowUnitMessage flowUnitMessage : flowUnitMessages) {
-            flowUnitList.add(ResourceFlowUnit.buildFlowUnitFromWrapper(flowUnitMessage));
-        }
-        setFlowUnits(flowUnitList);
-    }
+  /**
+   * This is a cluster level RCA vertex which by definition can not be serialize/de-serialized
+   * over gRPC.
+   */
+  @Override
+  public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
+    throw new IllegalArgumentException(name() + "'s generateFlowUnitListFromWire() should not "
+        + "be required.");
+  }
 }

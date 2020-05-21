@@ -167,13 +167,6 @@ public class HotShardSummary extends GenericSummary {
   }
 
   @Override
-  public List<SummaryBuilder<? extends GenericSummary>> getNestedSummaryBuilder() {
-    return Collections.unmodifiableList(Collections.singletonList(
-            new SummaryBuilder<>(HotShardSummary.HOT_SHARD_SUMMARY_TABLE,
-                    HotNodeSummary::buildSummary)));
-  }
-
-  @Override
   public List<Field<?>> getSqlSchema() {
     List<Field<?>> schema = new ArrayList<>();
     schema.add(HotShardSummaryField.INDEX_NAME_FIELD.getField());
