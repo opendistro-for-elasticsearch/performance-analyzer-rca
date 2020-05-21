@@ -44,7 +44,8 @@ public class HotNodeSummaryTest {
         hotShardSummary.setIoThroughputThreshold(250000);
         hotShardSummary.setIoSysCallrate(0.232);
         hotShardSummary.setIoSysCallrateThreshold(0.10);
-        uut = new HotNodeSummary(NODE_ID, HOST_ADDRESS, Arrays.asList(hotShardSummary));
+        uut = new HotNodeSummary(NODE_ID, HOST_ADDRESS);
+        uut.addNestedSummaryList(Arrays.asList(hotShardSummary));
     }
 
     @Test
@@ -53,7 +54,7 @@ public class HotNodeSummaryTest {
         Assert.assertNotNull(msg);
         Assert.assertEquals(NODE_ID, msg.getNodeID());
         Assert.assertEquals(HOST_ADDRESS, msg.getHostAddress());
-        Assert.assertEquals(1, uut.getHotShardSummaryList().size());
+        Assert.assertEquals(1, uut.getNestedSummaryList().size());
     }
 
     @Test
@@ -66,7 +67,7 @@ public class HotNodeSummaryTest {
 
     @Test
     public void testToString() {
-        Assert.assertEquals(NODE_ID + " " + HOST_ADDRESS + " " + uut.getNestedSummaryList() + " " +  uut.getHotShardSummaryList(),
+        Assert.assertEquals(NODE_ID + " " + HOST_ADDRESS + " " + uut.getNestedSummaryList(),
                 uut.toString());
     }
 
