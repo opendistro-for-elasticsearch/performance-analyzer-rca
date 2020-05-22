@@ -39,8 +39,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-//TODO
-@Ignore
 public class FileGCTest {
   private static Path testLocation = null;
   private final String baseFilename = "rca.test.file";

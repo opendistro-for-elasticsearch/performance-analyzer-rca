@@ -47,8 +47,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.powermock.reflect.Whitebox;
 
-//TODO
-@Ignore
 @Category(GradleTaskForRca.class)
 public class RcaControllerTest {
 

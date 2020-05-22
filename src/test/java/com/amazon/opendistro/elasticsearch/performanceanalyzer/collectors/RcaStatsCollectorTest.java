@@ -44,8 +44,6 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
-//TODO
-@Ignore
 public class RcaStatsCollectorTest {
   class FaultyAnalysisGraph extends AnalysisGraph {
     @Override

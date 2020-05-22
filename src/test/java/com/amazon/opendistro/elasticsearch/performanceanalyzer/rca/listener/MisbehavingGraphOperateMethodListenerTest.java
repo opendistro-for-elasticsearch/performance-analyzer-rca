@@ -45,8 +45,6 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
-//TODO
-@Ignore
 public class MisbehavingGraphOperateMethodListenerTest {
   class FaultyAnalysisGraph extends AnalysisGraph {
     @Override
