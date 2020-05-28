@@ -23,7 +23,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyz
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageYoungGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
@@ -33,14 +32,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.resource.HotResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaVerticesMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.time.Clock;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -53,7 +50,7 @@ import org.apache.logging.log4j.Logger;
  * gen during the last time interval and then use it to calculate its moving average. If both the
  * promotion rate and young gen GC time reach the threshold, this node is marked as unhealthy.
  */
-public class HighHeapUsageYoungGenRca extends Rca<HotResourceFlowUnit> {
+public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSummary>> {
 
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageYoungGenRca.class);
   private static final int PROMOTION_RATE_SLIDING_WINDOW_IN_MINS = 10;
@@ -125,7 +122,7 @@ public class HighHeapUsageYoungGenRca extends Rca<HotResourceFlowUnit> {
   }
 
   @Override
-  public HotResourceFlowUnit operate() {
+  public ResourceFlowUnit<HotResourceSummary> operate() {
     long currTimeStamp = this.clock.millis();
     counter += 1;
 
@@ -189,11 +186,11 @@ public class HighHeapUsageYoungGenRca extends Rca<HotResourceFlowUnit> {
       }
 
       LOG.debug("@@: Young Gen RCA Context = " + context.toString());
-      return new HotResourceFlowUnit(this.clock.millis(), context, summary, true);
+      return new ResourceFlowUnit<>(this.clock.millis(), context, summary);
     } else {
       // we return an empty FlowUnit RCA for now. Can change to healthy (or previous known RCA state)
       LOG.debug("RCA: Empty FlowUnit returned for Young Gen RCA");
-      return new HotResourceFlowUnit(this.clock.millis());
+      return new ResourceFlowUnit<>(this.clock.millis());
     }
   }
 

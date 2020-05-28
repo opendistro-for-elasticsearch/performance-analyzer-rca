@@ -23,6 +23,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskFor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.MetricTestHelper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hot_node.HighCpuRca;
 import java.time.Clock;
 import java.time.Duration;
@@ -46,7 +47,7 @@ public class GenericResourceRcaTest {
     highTotalCpuRcaX.setThreshold(0.7);
     highTotalCpuRcaX.setLowerBoundThreshold(0.35);
 
-    ResourceFlowUnit flowUnit;
+    ResourceFlowUnit<HotResourceSummary> flowUnit;
     Clock constantClock = Clock.fixed(ofEpochMilli(0), ZoneId.systemDefault());
 
     // ts = 0, cpu = [0.2]
@@ -61,7 +62,7 @@ public class GenericResourceRcaTest {
     highTotalCpuRcaX.setClock(Clock.offset(constantClock, Duration.ofMinutes(3)));
     flowUnit = highTotalCpuRcaX.operate();
     Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
-    Assert.assertTrue(flowUnit.hasResourceSummary());
+    Assert.assertTrue(flowUnit.hasSummary());
 
     // ts = 11, cpu = [0.6, 0.8]
     // above lower bound, start to send summary
@@ -69,7 +70,7 @@ public class GenericResourceRcaTest {
     highTotalCpuRcaX.setClock(Clock.offset(constantClock, Duration.ofMinutes(11)));
     flowUnit = highTotalCpuRcaX.operate();
     Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
-    Assert.assertTrue(flowUnit.hasResourceSummary());
+    Assert.assertTrue(flowUnit.hasSummary());
 
     // ts = 15, cpu = [0.8, 0.2]
     // above lower bound, start to send summary
@@ -77,7 +78,7 @@ public class GenericResourceRcaTest {
     highTotalCpuRcaX.setClock(Clock.offset(constantClock, Duration.ofMinutes(11)));
     flowUnit = highTotalCpuRcaX.operate();
     Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
-    Assert.assertTrue(flowUnit.hasResourceSummary());
+    Assert.assertTrue(flowUnit.hasSummary());
   }
 
   private static class HighCpuRcaX extends HighCpuRca {

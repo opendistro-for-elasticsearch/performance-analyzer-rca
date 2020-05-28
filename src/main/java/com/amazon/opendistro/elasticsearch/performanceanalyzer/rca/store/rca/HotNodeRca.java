@@ -121,7 +121,7 @@ public class HotNodeRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
             && message.hasHotNodeSummary()) {
           newSummary = HotNodeSummary.buildHotNodeSummaryFromMessage(message.getHotNodeSummary());
         }
-        flowUnit = new ResourceFlowUnit<>(message.getTimeStamp(), newContext, newSummary, true);
+        flowUnit = new ResourceFlowUnit<>(message.getTimeStamp(), newContext, newSummary);
       } else {
         //empty flowunit;
         //TODO: we might not want to send empty flowunit across network.

@@ -30,7 +30,7 @@ public abstract class GenericSummary {
 
   public List<GenericSummary> getNestedSummaryList() {
     return new ArrayList<>();
-  };
+  }
 
   /**
    * get the list of Summary Class object for the nested summary list

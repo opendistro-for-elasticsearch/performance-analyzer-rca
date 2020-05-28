@@ -42,7 +42,7 @@ public class DimensionalTemperatureFlowUnit extends ResourceFlowUnit {
 
     // A dimension flow unit never leaves a node. So, we don't need to generate protobuf messages.
     @Override
-    public FlowUnitMessage.Builder buildFlowUnitMessage(String graphNode, String esNode) {
+    public FlowUnitMessage buildFlowUnitMessage(String graphNode, String esNode) {
         throw new IllegalStateException(this.getClass().getSimpleName() + " should not be passed "
                 + "over the wire.");
     }

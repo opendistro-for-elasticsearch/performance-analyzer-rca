@@ -17,7 +17,9 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary.SQL_SCHEMA_CONSTANTS;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -33,18 +35,15 @@ import org.mockito.Mockito;
 public class HotNodeSummaryTest {
     private static final String NODE_ID = "ABC123";
     private static final String HOST_ADDRESS = "127.0.0.0";
+    private static final ResourceType RESOURCE_TYPE = ResourceType.newBuilder().setJVM(JvmEnum.YOUNG_GEN).build();
+    private static final double THRESHOLD = 3.14;
+    private static final double VALUE = 2.71;
     private static HotNodeSummary uut;
 
     @BeforeClass
     public static void setup() {
-        HotShardSummary hotShardSummary =  new HotShardSummary("index_1", "shard_1", NODE_ID, 2020);
-        hotShardSummary.setcpuUtilization(0.45);
-        hotShardSummary.setCpuUtilizationThreshold(0.10);
-        hotShardSummary.setIoThroughput(500000);
-        hotShardSummary.setIoThroughputThreshold(250000);
-        hotShardSummary.setIoSysCallrate(0.232);
-        hotShardSummary.setIoSysCallrateThreshold(0.10);
-        uut = new HotNodeSummary(NODE_ID, HOST_ADDRESS, Arrays.asList(hotShardSummary));
+        uut = new HotNodeSummary(NODE_ID, HOST_ADDRESS);
+        uut.appendNestedSummary(new HotResourceSummary(RESOURCE_TYPE, THRESHOLD, VALUE, 0));
     }
 
     @Test
@@ -53,20 +52,12 @@ public class HotNodeSummaryTest {
         Assert.assertNotNull(msg);
         Assert.assertEquals(NODE_ID, msg.getNodeID());
         Assert.assertEquals(HOST_ADDRESS, msg.getHostAddress());
-        Assert.assertEquals(1, uut.getHotShardSummaryList().size());
-    }
-
-    @Test
-    public void testBuildSummaryMessageAndAddToFlowUnit() {
-        // No assertions need to be made here, this function is a noop in the uut
-        FlowUnitMessage.Builder msgBuilder = FlowUnitMessage.newBuilder();
-        uut.buildSummaryMessageAndAddToFlowUnit(msgBuilder);
-        Assert.assertEquals(uut.buildSummaryMessage(), msgBuilder.getHotNodeSummary());
+        Assert.assertEquals(1, uut.getHotResourceSummaryList().size());
     }
 
     @Test
     public void testToString() {
-        Assert.assertEquals(NODE_ID + " " + HOST_ADDRESS + " " + uut.getNestedSummaryList() + " " +  uut.getHotShardSummaryList(),
+        Assert.assertEquals(NODE_ID + " " + HOST_ADDRESS + " " + uut.getHotResourceSummaryList() + " " +  uut.getHotShardSummaryList(),
                 uut.toString());
     }
 
@@ -93,14 +84,15 @@ public class HotNodeSummaryTest {
 
     @Test
     public void testToJson() {
-        uut.addNestedSummaryList(new HotNodeSummary(NODE_ID, HOST_ADDRESS));
-        uut.addNestedSummaryList(new HotResourceSummary(ResourceType.newBuilder().build(), 3.14, 2.71, 0));
         JsonElement elem = uut.toJson();
         Assert.assertTrue(elem.isJsonObject());
         JsonObject json = ((JsonObject) elem);
         Assert.assertEquals(NODE_ID, json.get(HotNodeSummary.SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME).getAsString());
         Assert.assertEquals(HOST_ADDRESS, json.get(HotNodeSummary.SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME).getAsString());
-        Assert.assertEquals(uut.nestedSummaryListToJson(), json.get(uut.getNestedSummaryList().get(0).getTableName()).getAsJsonArray());
+        String tableName = uut.getHotResourceSummaryList().get(0).getTableName();
+        JsonObject resourceJson = json.get(tableName).getAsJsonArray().get(0).getAsJsonObject();
+        Assert.assertEquals(THRESHOLD, resourceJson.get(SQL_SCHEMA_CONSTANTS.THRESHOLD_COL_NAME).getAsDouble(), 0.01);
+        Assert.assertEquals(VALUE, resourceJson.get(SQL_SCHEMA_CONSTANTS.VALUE_COL_NAME).getAsDouble(), 0.01);
     }
 
     @Test

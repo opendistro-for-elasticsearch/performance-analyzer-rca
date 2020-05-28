@@ -20,6 +20,8 @@ import static org.mockito.ArgumentMatchers.isA;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary.SQL_SCHEMA_CONSTANTS;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -37,8 +39,8 @@ public class RcaResponseTest {
     private static final String RCA_NAME = "NAME";
     private static final String STATE = "STATE";
     private static final Long TIMESTAMP = 0L;
-    private static final String NODE = "NODE";
-    private static final String HOST = "HOST";
+    private static final int NUM_OF_NODE = 2;
+    private static final int NUM_OF_UNHEALTHY_NODE = 1;
 
 
     private RcaResponse uut;
@@ -108,8 +110,8 @@ public class RcaResponseTest {
                 .get(ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.STATE_COL_NAME).getAsString());
         Assert.assertEquals(TIMESTAMP, (Long) obj
                 .get(ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME).getAsLong());
-        HotNodeSummary summary = new HotNodeSummary(NODE, HOST);
-        uut.addNestedSummaryList(summary);
+        HotClusterSummary summary = new HotClusterSummary(NUM_OF_NODE, NUM_OF_UNHEALTHY_NODE);
+        uut.appendNestedSummary(summary);
         jsonElement = uut.toJson();
         obj = jsonElement.getAsJsonObject();
         Assert.assertEquals(RCA_NAME, obj
@@ -118,7 +120,9 @@ public class RcaResponseTest {
                 .get(ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.STATE_COL_NAME).getAsString());
         Assert.assertEquals(TIMESTAMP, (Long) obj
                 .get(ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME).getAsLong());
-        Assert.assertEquals(uut.nestedSummaryListToJson(),
-                obj.get(uut.getNestedSummaryList().get(0).getTableName()).getAsJsonArray());
+        String tableName = uut.getHotClusterSummaryList().get(0).getTableName();
+        JsonObject ClusterJson = obj.get(tableName).getAsJsonArray().get(0).getAsJsonObject();
+        Assert.assertEquals(NUM_OF_NODE, ClusterJson.get(SQL_SCHEMA_CONSTANTS.NUM_OF_NODES_COL_NAME).getAsInt());
+        Assert.assertEquals(NUM_OF_UNHEALTHY_NODE, ClusterJson.get(SQL_SCHEMA_CONSTANTS.NUM_OF_UNHEALTHY_NODES_COL_NAME).getAsInt());
     }
 }

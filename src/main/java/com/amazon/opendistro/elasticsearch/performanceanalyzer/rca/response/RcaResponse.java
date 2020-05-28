@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary.HOT_NODE_SUMMARY_TABLE;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.ResourceFlowUnitFieldValue;
@@ -71,6 +73,10 @@ public class RcaResponse extends GenericSummary {
     return timeStamp;
   }
 
+  public List<HotClusterSummary> getHotClusterSummaryList() {
+    return hotClusterSummaryList;
+  }
+
   public void appendNestedSummary(HotClusterSummary summary) {
     hotClusterSummaryList.add(summary);
   }
@@ -81,6 +87,19 @@ public class RcaResponse extends GenericSummary {
 
   public void appendNestedSummary(CompactNodeSummary summary) {
     compactNodeSummaryList.add(summary);
+  }
+
+  @Override
+  public GenericSummary appendNestedSummary(String summaryTable, Record record) {
+    GenericSummary ret = null;
+    if (summaryTable.equals(HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE)) {
+      HotClusterSummary summary = HotClusterSummary.buildSummary(record);
+      if (summary != null) {
+        hotClusterSummaryList.add(summary);
+        ret = summary;
+      }
+    }
+    return ret;
   }
 
   public static RcaResponse buildResponse(Record record) {

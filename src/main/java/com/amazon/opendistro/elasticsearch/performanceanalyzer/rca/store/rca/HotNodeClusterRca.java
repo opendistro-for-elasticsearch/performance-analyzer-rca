@@ -20,8 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNo
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.resource.HotClusterFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.resource.HotNodeFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
@@ -29,6 +28,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Table;
@@ -45,13 +45,13 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class HotNodeClusterRca extends Rca<HotClusterFlowUnit> {
+public class HotNodeClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
 
   public static final String RCA_TABLE_NAME = HotNodeClusterRca.class.getSimpleName();
   private static final Logger LOG = LogManager.getLogger(HotNodeClusterRca.class);
   private static final double NODE_COUNT_THRESHOLD = 0.8;
   private static final long TIMESTAMP_EXPIRATION_IN_MINS = 5;
-  private final Rca<HotNodeFlowUnit> hotNodeRca;
+  private final Rca<ResourceFlowUnit<HotNodeSummary>> hotNodeRca;
   private final Table<String, ResourceType, NodeResourceUsage> nodeTable;
   private final int rcaPeriod;
   private int counter;
@@ -60,7 +60,7 @@ public class HotNodeClusterRca extends Rca<HotClusterFlowUnit> {
   private double resourceUsageLowerBoundThreshold;
   protected Clock clock;
 
-  public <R extends Rca<HotNodeFlowUnit>> HotNodeClusterRca(final int rcaPeriod,
+  public <R extends Rca<ResourceFlowUnit<HotNodeSummary>>> HotNodeClusterRca(final int rcaPeriod,
       final R hotNodeRca) {
     super(5);
     this.rcaPeriod = rcaPeriod;
@@ -73,12 +73,12 @@ public class HotNodeClusterRca extends Rca<HotClusterFlowUnit> {
   }
 
   //add Resource Summary to the corresponding cell in NodeTable
-  private void addSummaryToNodeMap(List<HotNodeFlowUnit> hotNodeRcaFlowUnits) {
-    for (HotNodeFlowUnit hotNodeRcaFlowUnit : hotNodeRcaFlowUnits) {
-      if (hotNodeRcaFlowUnit.isEmpty() || hotNodeRcaFlowUnit.getHotNodeSummary() == null) {
+  private void addSummaryToNodeMap(List<ResourceFlowUnit<HotNodeSummary>> hotNodeRcaFlowUnits) {
+    for (ResourceFlowUnit<HotNodeSummary> hotNodeRcaFlowUnit : hotNodeRcaFlowUnits) {
+      if (hotNodeRcaFlowUnit.isEmpty() || !hotNodeRcaFlowUnit.hasSummary()) {
         continue;
       }
-      HotNodeSummary nodeSummary = hotNodeRcaFlowUnit.getHotNodeSummary();
+      HotNodeSummary nodeSummary = hotNodeRcaFlowUnit.getSummary();
       if (nodeSummary.getNestedSummaryList() == null || nodeSummary.getNestedSummaryList().isEmpty()) {
         continue;
       }
@@ -104,7 +104,7 @@ public class HotNodeClusterRca extends Rca<HotClusterFlowUnit> {
    * most recent resource summary from this nodeId indexed by resourceType
    </p>
    */
-  private HotClusterFlowUnit checkUnbalancedNode() {
+  private ResourceFlowUnit<HotClusterSummary> checkUnbalancedNode() {
     // NodeID -> HotNodeSummary, store the HotNodeSummary that is generated for each node
     Map<String, HotNodeSummary> nodeSummaryMap = new HashMap<>();
 
@@ -180,7 +180,7 @@ public class HotNodeClusterRca extends Rca<HotClusterFlowUnit> {
         summary.appendNestedSummary(entry.getValue());
       }
     }
-    return new HotClusterFlowUnit(System.currentTimeMillis(), context, summary, true);
+    return new ResourceFlowUnit<>(System.currentTimeMillis(), context, summary, true);
   }
 
   //TODO : we might need to change this function later to use EventListener
@@ -199,11 +199,11 @@ public class HotNodeClusterRca extends Rca<HotClusterFlowUnit> {
   }
 
   @Override
-  public HotClusterFlowUnit operate() {
+  public ResourceFlowUnit<HotClusterSummary> operate() {
     dataNodesDetails = ClusterDetailsEventProcessor.getDataNodesDetails();
     //skip this RCA if the cluster has only single data node
     if (dataNodesDetails.size() <= 1) {
-      return new HotClusterFlowUnit(System.currentTimeMillis());
+      return new ResourceFlowUnit<>(System.currentTimeMillis());
     }
 
     counter += 1;
@@ -214,7 +214,7 @@ public class HotNodeClusterRca extends Rca<HotClusterFlowUnit> {
       removeInactiveNodeFromTable();
       return checkUnbalancedNode();
     } else {
-      return new HotClusterFlowUnit(System.currentTimeMillis());
+      return new ResourceFlowUnit<>(System.currentTimeMillis());
     }
   }
 
@@ -237,6 +237,11 @@ public class HotNodeClusterRca extends Rca<HotClusterFlowUnit> {
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
     throw new IllegalArgumentException(name() + "'s generateFlowUnitListFromWire() should not "
         + "be required.");
+  }
+
+  @VisibleForTesting
+  public void setClock(Clock testClock) {
+    this.clock = testClock;
   }
 
   /**

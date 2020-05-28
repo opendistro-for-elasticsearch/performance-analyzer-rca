@@ -60,14 +60,6 @@ public class HotNodeSummary extends GenericSummary {
     this.hotShardSummaryList = new ArrayList<>();
   }
 
-  public HotNodeSummary(String nodeID, String hostAddress, final List<HotShardSummary> hotShardSummaryList) {
-    super();
-    this.nodeID = nodeID;
-    this.hostAddress = hostAddress;
-    this.hotResourceSummaryList = new ArrayList<>();
-    this.hotShardSummaryList = hotShardSummaryList;
-  }
-
   public String getNodeID() {
     return this.nodeID;
   }
@@ -86,6 +78,19 @@ public class HotNodeSummary extends GenericSummary {
 
   public void appendNestedSummary(HotResourceSummary summary) {
     hotResourceSummaryList.add(summary);
+  }
+
+  @Override
+  public GenericSummary appendNestedSummary(String summaryTable, Record record) {
+    GenericSummary ret = null;
+    if (summaryTable.equals(HotResourceSummary.HOT_RESOURCE_SUMMARY_TABLE)) {
+      HotResourceSummary summary = HotResourceSummary.buildSummary(record);
+      if (summary != null) {
+        hotResourceSummaryList.add(summary);
+        ret = summary;
+      }
+    }
+    return ret;
   }
 
   @Override
@@ -220,19 +225,6 @@ public class HotNodeSummary extends GenericSummary {
     public String getName() {
       return this.name;
     }
-  }
-
-  @Override
-  public GenericSummary appendNestedSummary(String summaryTable, Record record) {
-    GenericSummary ret = null;
-    if (summaryTable.equals(HotResourceSummary.HOT_RESOURCE_SUMMARY_TABLE)) {
-      HotResourceSummary summary = HotResourceSummary.buildSummary(record);
-      if (summary != null) {
-        hotResourceSummaryList.add(summary);
-        ret = summary;
-      }
-    }
-    return ret;
   }
 
   /**

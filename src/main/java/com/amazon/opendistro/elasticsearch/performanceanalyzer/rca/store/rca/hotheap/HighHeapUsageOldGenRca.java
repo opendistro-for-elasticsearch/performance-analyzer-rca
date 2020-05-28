@@ -32,13 +32,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.resource.HotResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.TopConsumerSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaVerticesMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import com.google.common.annotations.VisibleForTesting;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,7 +68,7 @@ import org.apache.logging.log4j.Logger;
  * Points_Memory / DocValues_Memory / IndexWriter_Memory / Bitset_Memory / VersionMap_Memory
  </p>
  */
-public class HighHeapUsageOldGenRca extends Rca<HotResourceFlowUnit> {
+public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit<HotResourceSummary>> {
 
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageOldGenRca.class);
   private int counter;
@@ -128,7 +128,7 @@ public class HighHeapUsageOldGenRca extends Rca<HotResourceFlowUnit> {
   }
 
   @Override
-  public HotResourceFlowUnit operate() {
+  public ResourceFlowUnit<HotResourceSummary> operate() {
     List<MetricFlowUnit> heapUsedMetrics = heap_Used.getFlowUnits();
     List<MetricFlowUnit> gcEventMetrics = gc_event.getFlowUnits();
     List<MetricFlowUnit> heapMaxMetrics = heap_Max.getFlowUnits();
@@ -221,12 +221,12 @@ public class HighHeapUsageOldGenRca extends Rca<HotResourceFlowUnit> {
       }
 
       LOG.debug("High Heap Usage RCA Context = " + context.toString());
-      return new HotResourceFlowUnit(this.clock.millis(), context, summary, true);
+      return new ResourceFlowUnit<>(this.clock.millis(), context, summary);
     } else {
       // we return an empty FlowUnit RCA for now. Can change to healthy (or previous known RCA
       // state)
       LOG.debug("Empty FlowUnit returned for High Heap Usage RCA");
-      return new HotResourceFlowUnit(this.clock.millis());
+      return new ResourceFlowUnit<>(this.clock.millis());
     }
   }
 
@@ -296,5 +296,10 @@ public class HighHeapUsageOldGenRca extends Rca<HotResourceFlowUnit> {
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
     throw new IllegalArgumentException(name() + "'s generateFlowUnitListFromWire() should not "
         + "be required.");
+  }
+
+  @VisibleForTesting
+  public void setClock(Clock testClock) {
+    this.clock = testClock;
   }
 }

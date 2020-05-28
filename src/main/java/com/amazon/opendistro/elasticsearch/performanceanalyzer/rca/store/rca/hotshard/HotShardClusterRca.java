@@ -15,7 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardClusterRcaConfig;
@@ -23,11 +22,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.resource.HotClusterFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.resource.HotResourceFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.resource.HotShardFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotShardSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
@@ -49,7 +44,7 @@ import org.apache.logging.log4j.Logger;
  * higher than the mean resource utilization for the index, we declare the shard hot.
  *
  */
-public class HotShardClusterRca extends Rca<HotClusterFlowUnit> {
+public class HotShardClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
 
     private static final Logger LOG = LogManager.getLogger(HotShardClusterRca.class);
     private static final int SLIDING_WINDOW_IN_SECONDS = 60;
@@ -58,7 +53,7 @@ public class HotShardClusterRca extends Rca<HotClusterFlowUnit> {
     private double ioTotThroughputClusterThreshold;
     private double ioTotSysCallRateClusterThreshold;
 
-    private final Rca<HotShardFlowUnit> hotShardRca;
+    private final Rca<ResourceFlowUnit<HotShardSummary>> hotShardRca;
     private int rcaPeriod;
     private int counter;
 
@@ -67,7 +62,7 @@ public class HotShardClusterRca extends Rca<HotClusterFlowUnit> {
     private Table<String, NodeShardKey, Double> IOThroughputInfoTable;
     private Table<String, NodeShardKey, Double> IOSysCallRateInfoTable;
 
-    public <R extends Rca<HotShardFlowUnit>> HotShardClusterRca(final int rcaPeriod, final R hotShardRca) {
+    public <R extends Rca<ResourceFlowUnit<HotShardSummary>>> HotShardClusterRca(final int rcaPeriod, final R hotShardRca) {
         super(5);
         this.hotShardRca = hotShardRca;
         this.rcaPeriod = rcaPeriod;
@@ -90,8 +85,8 @@ public class HotShardClusterRca extends Rca<HotClusterFlowUnit> {
         }
     }
 
-    private void consumeFlowUnit(HotShardFlowUnit resourceFlowUnit) {
-        HotShardSummary hotShardSummary = resourceFlowUnit.getHotShardSummary();
+    private void consumeFlowUnit(ResourceFlowUnit<HotShardSummary> resourceFlowUnit) {
+        HotShardSummary hotShardSummary = resourceFlowUnit.getSummary();
         if (hotShardSummary != null) {
             String nodeId = hotShardSummary.getNodeId();
             String indexName = hotShardSummary.getIndexName();
@@ -163,12 +158,12 @@ public class HotShardClusterRca extends Rca<HotClusterFlowUnit> {
      * the 3 dimension, we declare it hot.
      */
     @Override
-    public HotClusterFlowUnit operate() {
+    public ResourceFlowUnit<HotClusterSummary> operate() {
         counter++;
 
         // Populate the Table, compiling the information per index
-        final List<HotShardFlowUnit> resourceFlowUnits = hotShardRca.getFlowUnits();
-        for (final HotShardFlowUnit resourceFlowUnit : resourceFlowUnits) {
+        final List<ResourceFlowUnit<HotShardSummary>> resourceFlowUnits = hotShardRca.getFlowUnits();
+        for (final ResourceFlowUnit<HotShardSummary> resourceFlowUnit : resourceFlowUnits) {
             if (resourceFlowUnit.isEmpty()) {
                 continue;
             }
@@ -211,10 +206,10 @@ public class HotShardClusterRca extends Rca<HotClusterFlowUnit> {
             this.IOThroughputInfoTable.clear();
             this.IOSysCallRateInfoTable.clear();
             LOG.debug("Hot Shard Cluster RCA Context :  " + context.toString());
-            return new HotClusterFlowUnit(System.currentTimeMillis(), context, summary, true);
+            return new ResourceFlowUnit<>(System.currentTimeMillis(), context, summary);
         } else {
             LOG.debug("Empty FlowUnit returned for Hot Shard CLuster RCA");
-            return new HotClusterFlowUnit(System.currentTimeMillis());
+            return new ResourceFlowUnit<>(System.currentTimeMillis());
         }
     }
 

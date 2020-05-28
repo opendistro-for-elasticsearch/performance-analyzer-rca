@@ -91,7 +91,7 @@ public class ResourceFlowUnit<S extends GenericSummary> extends GenericFlowUnit 
   }
 
   @Override
-  public FlowUnitMessage.Builder buildFlowUnitMessage(final String graphNode, final String esNode) {
+  public FlowUnitMessage buildFlowUnitMessage(final String graphNode, final String esNode) {
     final FlowUnitMessage.Builder messageBuilder = FlowUnitMessage.newBuilder();
     messageBuilder.setGraphNode(graphNode);
     messageBuilder.setEsNode(esNode);
@@ -102,7 +102,7 @@ public class ResourceFlowUnit<S extends GenericSummary> extends GenericFlowUnit 
     if (hasSummary()) {
       summary.buildSummaryMessageAndAddToFlowUnit(messageBuilder);
     }
-    return messageBuilder;
+    return messageBuilder.build();
   }
 
   /**

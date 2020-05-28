@@ -54,14 +54,14 @@ public class SymptomFlowUnit extends GenericFlowUnit {
     return new SymptomFlowUnit(System.currentTimeMillis());
   }
 
-  public FlowUnitMessage.Builder buildFlowUnitMessage(final String graphNode, final String esNode) {
+  public FlowUnitMessage buildFlowUnitMessage(final String graphNode, final String esNode) {
     final FlowUnitMessage.Builder messageBuilder = FlowUnitMessage.newBuilder();
     messageBuilder.setGraphNode(graphNode);
     messageBuilder.setEsNode(esNode);
 
     messageBuilder.setTimeStamp(System.currentTimeMillis());
 
-    return messageBuilder;
+    return messageBuilder.build();
   }
 
   @Override

@@ -117,8 +117,25 @@ public class HotResourceSummary extends GenericSummary {
     return this.metaData;
   }
 
+  public List<TopConsumerSummary> getTopConsumerSummaryList() {
+    return topConsumerSummaryList;
+  }
+
   public void appendNestedSummary(TopConsumerSummary summary) {
     topConsumerSummaryList.add(summary);
+  }
+
+  @Override
+  public GenericSummary appendNestedSummary(String summaryTable, Record record) {
+    GenericSummary ret = null;
+    if (summaryTable.equals(TopConsumerSummary.TOP_CONSUMER_SUMMARY_TABLE)) {
+      TopConsumerSummary summary = TopConsumerSummary.buildSummary(record);
+      if (summary != null) {
+        topConsumerSummaryList.add(summary);
+        ret = summary;
+      }
+    }
+    return ret;
   }
 
   @Override
@@ -291,19 +308,6 @@ public class HotResourceSummary extends GenericSummary {
     public String getName() {
       return this.name;
     }
-  }
-
-  @Override
-  public GenericSummary appendNestedSummary(String summaryTable, Record record) {
-    GenericSummary ret = null;
-    if (summaryTable.equals(TopConsumerSummary.TOP_CONSUMER_SUMMARY_TABLE)) {
-      TopConsumerSummary summary = TopConsumerSummary.buildSummary(record);
-      if (summary != null) {
-        topConsumerSummaryList.add(summary);
-        ret = summary;
-      }
-    }
-    return ret;
   }
 
   /**

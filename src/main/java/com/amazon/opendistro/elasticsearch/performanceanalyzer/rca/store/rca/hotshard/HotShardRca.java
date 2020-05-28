@@ -62,7 +62,7 @@ import org.jooq.Record;
  * 2. Paging_RSS
  *
  */
-public class HotShardRca extends Rca<ResourceFlowUnit> {
+public class HotShardRca extends Rca<ResourceFlowUnit<HotShardSummary>> {
 
     private static final Logger LOG = LogManager.getLogger(HotShardRca.class);
     private static final int SLIDING_WINDOW_IN_SECONDS =  60;
@@ -148,7 +148,7 @@ public class HotShardRca extends Rca<ResourceFlowUnit> {
      *
      */
     @Override
-    public ResourceFlowUnit operate() {
+    public ResourceFlowUnit<HotShardSummary> operate() {
         counter += 1;
 
         // Populate the Resource HashMaps
@@ -191,14 +191,14 @@ public class HotShardRca extends Rca<ResourceFlowUnit> {
             // reset the variables
             counter = 0;
 
-            HotNodeSummary summary = new HotNodeSummary(
-                    currentNode.getId(), currentNode.getHostAddress(), HotShardSummaryList);
+            //HotNodeSummary summary = new HotNodeSummary(
+            //        currentNode.getId(), currentNode.getHostAddress(), HotShardSummaryList);
 
             LOG.debug("High CPU Utilization Shard RCA Context :  " + context.toString());
-            return new ResourceFlowUnit(this.clock.millis(), context, summary);
+            return new ResourceFlowUnit<>(this.clock.millis(), context, null);
         } else {
             LOG.debug("Empty FlowUnit returned for High CPU Utilization Shard RCA");
-            return new ResourceFlowUnit(this.clock.millis());
+            return new ResourceFlowUnit<>(this.clock.millis());
         }
     }
 

@@ -28,6 +28,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Used;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
@@ -58,18 +60,18 @@ import org.junit.experimental.categories.Category;
 public class PersistFlowUnitAndSummaryTest {
   Queryable queryable;
 
-  static class DummyYoungGenRca extends Rca<ResourceFlowUnit> {
+  static class DummyYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSummary>> {
     public <M extends Metric> DummyYoungGenRca(M metric) {
       super(1);
     }
 
     @Override
-    public ResourceFlowUnit operate() {
+    public ResourceFlowUnit<HotResourceSummary> operate() {
       ResourceContext context = new ResourceContext(Resources.State.UNHEALTHY);
       HotResourceSummary summary = new HotResourceSummary(
           ResourceType.newBuilder().setJVM(JvmEnum.YOUNG_GEN).build(),
           400, 100, 60);
-      return new ResourceFlowUnit(System.currentTimeMillis(), context, summary);
+      return new ResourceFlowUnit<>(System.currentTimeMillis(), context, summary);
     }
 
     @Override
@@ -78,14 +80,14 @@ public class PersistFlowUnitAndSummaryTest {
   }
 
   static class HotNodeRcaX extends HotNodeRca {
-    public <R extends Rca> HotNodeRcaX(final int rcaPeriod, R... hotResourceRcas) {
+    public <R extends Rca<ResourceFlowUnit<HotResourceSummary>>> HotNodeRcaX(final int rcaPeriod, R... hotResourceRcas) {
       super(rcaPeriod, hotResourceRcas);
       this.evaluationIntervalSeconds = 1;
     }
   }
 
   static class HighHeapUsageClusterRcaX extends HighHeapUsageClusterRca {
-    public <R extends Rca> HighHeapUsageClusterRcaX(final int rcaPeriod, final R hotNodeRca) {
+    public <R extends Rca<ResourceFlowUnit<HotNodeSummary>>> HighHeapUsageClusterRcaX(final int rcaPeriod, final R hotNodeRca) {
       super(rcaPeriod, hotNodeRca);
       this.evaluationIntervalSeconds = 1;
     }
@@ -97,11 +99,11 @@ public class PersistFlowUnitAndSummaryTest {
     public void construct() {
       Metric heapUsed = new Heap_Used(5);
       addLeaf(heapUsed);
-      Rca<ResourceFlowUnit> dummyYoungGenRca = new DummyYoungGenRca(heapUsed);
+      Rca<ResourceFlowUnit<HotResourceSummary>> dummyYoungGenRca = new DummyYoungGenRca(heapUsed);
       dummyYoungGenRca.addAllUpstreams(Collections.singletonList(heapUsed));
       dummyYoungGenRca.addTag(RcaTagConstants.TAG_LOCUS, RcaTagConstants.LOCUS_DATA_NODE);
 
-      Rca<ResourceFlowUnit> nodeRca = new HotNodeRcaX(1, dummyYoungGenRca);
+      Rca<ResourceFlowUnit<HotNodeSummary>> nodeRca = new HotNodeRcaX(1, dummyYoungGenRca);
       nodeRca.addTag(RcaTagConstants.TAG_LOCUS, RcaTagConstants.LOCUS_DATA_NODE);
       nodeRca.addAllUpstreams(Collections.singletonList(dummyYoungGenRca));
     }
@@ -114,15 +116,15 @@ public class PersistFlowUnitAndSummaryTest {
       Metric heapUsed = new Heap_Used(5);
       heapUsed.addTag(RcaTagConstants.TAG_LOCUS, RcaTagConstants.LOCUS_MASTER_NODE);
       addLeaf(heapUsed);
-      Rca<ResourceFlowUnit> dummyYoungGenRca = new DummyYoungGenRca(heapUsed);
+      Rca<ResourceFlowUnit<HotResourceSummary>> dummyYoungGenRca = new DummyYoungGenRca(heapUsed);
       dummyYoungGenRca.addAllUpstreams(Collections.singletonList(heapUsed));
       dummyYoungGenRca.addTag(RcaTagConstants.TAG_LOCUS, RcaTagConstants.LOCUS_MASTER_NODE);
 
-      Rca<ResourceFlowUnit> nodeRca = new HotNodeRcaX(1, dummyYoungGenRca);
+      Rca<ResourceFlowUnit<HotNodeSummary>> nodeRca = new HotNodeRcaX(1, dummyYoungGenRca);
       nodeRca.addTag(RcaTagConstants.TAG_LOCUS, RcaTagConstants.LOCUS_MASTER_NODE);
       nodeRca.addAllUpstreams(Collections.singletonList(dummyYoungGenRca));
 
-      Rca<ResourceFlowUnit> highHeapUsageClusterRca =
+      Rca<ResourceFlowUnit<HotClusterSummary>> highHeapUsageClusterRca =
           new HighHeapUsageClusterRcaX(1, nodeRca);
       highHeapUsageClusterRca.addTag(RcaTagConstants.TAG_LOCUS, RcaTagConstants.LOCUS_MASTER_NODE);
       highHeapUsageClusterRca.addAllUpstreams(Collections.singletonList(nodeRca));

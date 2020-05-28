@@ -84,8 +84,25 @@ public class HotClusterSummary extends GenericSummary {
     return numOfUnhealthyNodes;
   }
 
+  public List<HotNodeSummary> getNodeSummaryList() {
+    return nodeSummaryList;
+  }
+
   public void appendNestedSummary(HotNodeSummary summary) {
     nodeSummaryList.add(summary);
+  }
+
+  @Override
+  public GenericSummary appendNestedSummary(String summaryTable, Record record) {
+    GenericSummary ret = null;
+    if (summaryTable.equals(HOT_NODE_SUMMARY_TABLE)) {
+      HotNodeSummary summary = HotNodeSummary.buildSummary(record);
+      if (summary != null) {
+        nodeSummaryList.add(summary);
+        ret = summary;
+      }
+    }
+    return ret;
   }
 
   @Override
@@ -172,19 +189,6 @@ public class HotClusterSummary extends GenericSummary {
     public String getName() {
       return this.name;
     }
-  }
-
-  @Override
-  public GenericSummary appendNestedSummary(String summaryTable, Record record) {
-    GenericSummary ret = null;
-    if (summaryTable.equals(HOT_NODE_SUMMARY_TABLE)) {
-      HotNodeSummary summary = HotNodeSummary.buildSummary(record);
-      if (summary != null) {
-        nodeSummaryList.add(summary);
-        ret = summary;
-      }
-    }
-    return ret;
   }
 
   /**

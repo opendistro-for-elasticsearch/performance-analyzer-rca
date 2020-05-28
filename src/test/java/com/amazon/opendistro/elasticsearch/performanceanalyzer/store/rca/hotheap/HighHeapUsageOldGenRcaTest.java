@@ -26,6 +26,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskFor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.MetricTestHelper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.TopConsumerSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
@@ -49,7 +50,7 @@ public class HighHeapUsageOldGenRcaTest {
   private MetricTestHelper gc_event;
   private MetricTestHelper heap_Max;
   private List<Metric> node_stats;
-  private HighHeapUsageOldGenRcaX oldGenRcaX;
+  private HighHeapUsageOldGenRca oldGenRcaX;
   private List<String> columnName;
 
   /**
@@ -84,7 +85,7 @@ public class HighHeapUsageOldGenRcaTest {
       add(nodeStat4);
     }};
 
-    oldGenRcaX = new HighHeapUsageOldGenRcaX(1, heap_Used, gc_event, heap_Max, node_stats);
+    oldGenRcaX = new HighHeapUsageOldGenRca(1, heap_Used, gc_event, heap_Max, node_stats);
     columnName = Arrays.asList(MEM_TYPE.toString(), MetricsDB.MAX);
     // set max heap size to 100MB
     heap_Max.createTestFlowUnits(columnName, Arrays.asList(OLD_GEN.toString(), String.valueOf(100 * CONVERT_MEGABYTES_TO_BYTES)));
@@ -92,7 +93,7 @@ public class HighHeapUsageOldGenRcaTest {
 
   @Test
   public void testHighHeapOldGenRca() {
-    ResourceFlowUnit flowUnit;
+    ResourceFlowUnit<HotResourceSummary> flowUnit;
     Clock constantClock = Clock.fixed(ofEpochMilli(0), ZoneId.systemDefault());
 
 
@@ -133,9 +134,8 @@ public class HighHeapUsageOldGenRcaTest {
     flowUnit = oldGenRcaX.operate();
     Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
 
-    Assert.assertTrue(flowUnit.hasResourceSummary());
-    Assert.assertTrue(flowUnit.getResourceSummary() instanceof HotResourceSummary);
-    HotResourceSummary resourceSummary = (HotResourceSummary) flowUnit.getResourceSummary();
+    Assert.assertTrue(flowUnit.hasSummary());
+    HotResourceSummary resourceSummary = flowUnit.getSummary();
     Assert.assertEquals(3, resourceSummary.getNestedSummaryList().size());
     for (int i = 0; i < 3; i++) {
       Assert.assertTrue(resourceSummary.getNestedSummaryList().get(i) instanceof TopConsumerSummary);
@@ -149,17 +149,6 @@ public class HighHeapUsageOldGenRcaTest {
       if (i == 2) {
         Assert.assertEquals("node_stat_2", consumerSummary.getName());
       }
-    }
-  }
-
-  private static class HighHeapUsageOldGenRcaX extends HighHeapUsageOldGenRca {
-    public <M extends Metric> HighHeapUsageOldGenRcaX(final int rcaPeriod,
-        final M heap_Used, final M gc_event, final M heap_Max, final List<Metric> node_stats) {
-      super(rcaPeriod, heap_Used, gc_event, heap_Max, node_stats);
-    }
-
-    public void setClock(Clock testClock) {
-      this.clock = testClock;
     }
   }
 }

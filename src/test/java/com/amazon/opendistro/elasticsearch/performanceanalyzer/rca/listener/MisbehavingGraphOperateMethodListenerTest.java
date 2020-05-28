@@ -129,6 +129,6 @@ public class MisbehavingGraphOperateMethodListenerTest {
 
   @After
   public void cleanup() {
-    // RcaTestHelper.cleanUpLogs();
+    // DummyTestHelperRca.cleanUpLogs();
   }
 }

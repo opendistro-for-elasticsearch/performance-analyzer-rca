@@ -20,15 +20,14 @@ import static java.time.Instant.ofEpochMilli;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.DummyTestHelperRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.RcaTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
 import java.sql.SQLException;
@@ -55,8 +54,8 @@ public class HotNodeClusterRcaTest {
 
   @Test
   public void testNodeCntThresholdAndTimestampExpiration() {
-    RcaTestHelper nodeRca = new RcaTestHelper();
-    HotNodeClusterRcaX clusterRca = new HotNodeClusterRcaX(1, nodeRca);
+    DummyTestHelperRca<HotNodeSummary> nodeRca = new DummyTestHelperRca<>();
+    HotNodeClusterRca clusterRca = new HotNodeClusterRca(1, nodeRca);
 
     Clock constantClock = Clock.fixed(ofEpochMilli(0), ZoneId.systemDefault());
     clusterRca.setClock(constantClock);
@@ -76,9 +75,9 @@ public class HotNodeClusterRcaTest {
 
   @Test
   public void testCaptureHotNode() {
-    ResourceFlowUnit fu;
-    RcaTestHelper nodeRca = new RcaTestHelper();
-    HotNodeClusterRcaX clusterRca = new HotNodeClusterRcaX(1, nodeRca);
+    ResourceFlowUnit<HotClusterSummary> fu;
+    DummyTestHelperRca<HotNodeSummary> nodeRca = new DummyTestHelperRca();
+    HotNodeClusterRca clusterRca = new HotNodeClusterRca(1, nodeRca);
 
     //medium = 5, below the 30% threshold
     nodeRca.mockFlowUnit(generateFlowUnit(buildResourceType(JvmEnum.OLD_GEN), 4, "node1"));
@@ -92,16 +91,16 @@ public class HotNodeClusterRcaTest {
     nodeRca.mockFlowUnit(generateFlowUnit(buildResourceType(JvmEnum.OLD_GEN), 10, "node1"));
     fu = clusterRca.operate();
     Assert.assertTrue(fu.getResourceContext().isUnhealthy());
-    Assert.assertTrue(fu.hasResourceSummary());
-    HotClusterSummary clusterSummary = (HotClusterSummary) fu.getResourceSummary();
+    Assert.assertTrue(fu.hasSummary());
+    HotClusterSummary clusterSummary = fu.getSummary();
     Assert.assertTrue(clusterSummary.getNumOfUnhealthyNodes() == 1);
     Assert.assertTrue(clusterSummary.getNestedSummaryList().size() > 0);
 
-    HotNodeSummary nodeSummary = (HotNodeSummary) clusterSummary.getNestedSummaryList().get(0);
+    HotNodeSummary nodeSummary = clusterSummary.getNodeSummaryList().get(0);
     Assert.assertTrue(nodeSummary.getNodeID().equals("node1"));
     Assert.assertTrue(nodeSummary.getNestedSummaryList().size() > 0);
 
-    HotResourceSummary resourceSummary = (HotResourceSummary) nodeSummary.getNestedSummaryList().get(0);
+    HotResourceSummary resourceSummary =  nodeSummary.getHotResourceSummaryList().get(0);
     Assert.assertTrue(resourceSummary.getResourceType().equals(buildResourceType(JvmEnum.OLD_GEN)));
     Assert.assertEquals(resourceSummary.getValue(), 10, 0.1);
   }
@@ -109,8 +108,8 @@ public class HotNodeClusterRcaTest {
   @Test
   //check whether can filter out noise data if the resource usage is very small
   public void testFilterNoiseData() {
-    RcaTestHelper nodeRca = new RcaTestHelper();
-    HotNodeClusterRcaX clusterRca = new HotNodeClusterRcaX(1, nodeRca);
+    DummyTestHelperRca<HotNodeSummary> nodeRca = new DummyTestHelperRca<>();
+    HotNodeClusterRca clusterRca = new HotNodeClusterRca(1, nodeRca);
 
     //medium = 0.2, 0.8 is above the 30% threshold. but since the data is too small, we will drop it
     nodeRca.mockFlowUnit(generateFlowUnit(buildResourceType(JvmEnum.OLD_GEN), 0.1, "node1"));
@@ -121,23 +120,12 @@ public class HotNodeClusterRcaTest {
     Assert.assertFalse(clusterRca.operate().getResourceContext().isUnhealthy());
   }
 
-  private static class HotNodeClusterRcaX extends HotNodeClusterRca {
-    public <R extends Rca> HotNodeClusterRcaX(final int rcaPeriod,
-        final R hotNodeRca) {
-      super(rcaPeriod, hotNodeRca);
-    }
-
-    public void setClock(Clock testClock) {
-      this.clock = testClock;
-    }
-  }
-
-  private ResourceFlowUnit generateFlowUnit(ResourceType type, double val, String nodeId) {
+  private ResourceFlowUnit<HotNodeSummary> generateFlowUnit(ResourceType type, double val, String nodeId) {
     HotResourceSummary resourceSummary = new HotResourceSummary(type,
         10, val, 60);
     HotNodeSummary nodeSummary = new HotNodeSummary(nodeId, "127.0.0.0");
-    nodeSummary.addNestedSummaryList(resourceSummary);
-    return new ResourceFlowUnit(System.currentTimeMillis(), new ResourceContext(Resources.State.HEALTHY), nodeSummary);
+    nodeSummary.appendNestedSummary(resourceSummary);
+    return new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(Resources.State.HEALTHY), nodeSummary);
   }
 
   private ResourceType buildResourceType(JvmEnum jvmEnum) {

@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMess
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary.SQL_SCHEMA_CONSTANTS;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -48,12 +49,11 @@ public class HotResourceSummaryTest {
     public void setup() {
         uut = new HotResourceSummary(RESOURCE_TYPE, THRESHOLD, VALUE, TIME_PERIOD, META_DATA);
         uut.setValueDistribution(MIN_VALUE, MAX_VALUE, AVG_VALUE);
-        uut.addNestedSummaryList(new TopConsumerSummary(CONSUMER_NAME, CONSUMER_VALUE));
+        uut.appendNestedSummary(new TopConsumerSummary(CONSUMER_NAME, CONSUMER_VALUE));
     }
 
     @Test
     public void testBuildSummaryMessage() {
-        uut.addNestedSummaryList(new HotNodeSummary("A", "127.0.0.1"));
         Assert.assertEquals(1, uut.getNestedSummaryList().size());
         HotResourceSummaryMessage msg = uut.buildSummaryMessage();
         Assert.assertEquals(RESOURCE_TYPE, msg.getResourceType());
@@ -158,8 +158,12 @@ public class HotResourceSummaryTest {
                 json.get(HotResourceSummary.SQL_SCHEMA_CONSTANTS.TIME_PERIOD_COL_NAME).getAsDouble(), 0);
         Assert.assertEquals(META_DATA,
                 json.get(HotResourceSummary.SQL_SCHEMA_CONSTANTS.META_DATA_COL_NAME).getAsString());
-        Assert.assertEquals(uut.nestedSummaryListToJson(),
-                json.get(uut.getNestedSummaryList().get(0).getTableName()).getAsJsonArray());
+        String tableName = uut.getTopConsumerSummaryList().get(0).getTableName();
+        JsonObject consumerJson = json.get(tableName).getAsJsonArray().get(0).getAsJsonObject();
+        Assert.assertEquals(CONSUMER_NAME,
+            consumerJson.get(TopConsumerSummary.SQL_SCHEMA_CONSTANTS.CONSUMER_NAME_COL_NAME).getAsString());
+        Assert.assertEquals(CONSUMER_VALUE,
+            consumerJson.get(TopConsumerSummary.SQL_SCHEMA_CONSTANTS.CONSUMER_VALUE_COL_NAME).getAsDouble(), 0.01);
     }
 
     @Test
