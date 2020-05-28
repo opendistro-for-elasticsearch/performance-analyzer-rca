@@ -27,6 +27,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.HeapAllocRateTemperatureRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.ShardSizeDimensionTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,12 +40,15 @@ public class NodeTemperatureRca extends Rca<CompactNodeTemperatureFlowUnit> {
   private static final Logger LOG = LogManager.getLogger(NodeTemperatureRca.class);
   private final CpuUtilDimensionTemperatureRca cpuUtilDimensionTemperatureRca;
   private final HeapAllocRateTemperatureRca heapAllocRateTemperatureRca;
+  private final ShardSizeDimensionTemperatureRca shardSizeDimensionTemperatureRca;
 
   public NodeTemperatureRca(CpuUtilDimensionTemperatureRca cpuUtilDimensionTemperatureRca,
-      HeapAllocRateTemperatureRca heapAllocRateTemperatureRca) {
+                            HeapAllocRateTemperatureRca heapAllocRateTemperatureRca,
+                            ShardSizeDimensionTemperatureRca shardSizeDimensionTemperatureRca) {
     super(5);
     this.cpuUtilDimensionTemperatureRca = cpuUtilDimensionTemperatureRca;
     this.heapAllocRateTemperatureRca = heapAllocRateTemperatureRca;
+    this.shardSizeDimensionTemperatureRca = shardSizeDimensionTemperatureRca;
   }
 
   @Override
@@ -76,6 +80,8 @@ public class NodeTemperatureRca extends Rca<CompactNodeTemperatureFlowUnit> {
         .getFlowUnits();
     List<DimensionalTemperatureFlowUnit> heapAllocRateFlowUnits = heapAllocRateTemperatureRca
         .getFlowUnits();
+    List<DimensionalTemperatureFlowUnit> shardSizeFlowUnits = shardSizeDimensionTemperatureRca
+        .getFlowUnits();
     // EachResourceLevelHeat RCA should generate a one @{code DimensionalFlowUnit}.
     if (cpuFlowUnits.size() != 1) {
       throw new IllegalArgumentException("One flow unit expected. Found: " + cpuFlowUnits);
@@ -85,8 +91,13 @@ public class NodeTemperatureRca extends Rca<CompactNodeTemperatureFlowUnit> {
       throw new IllegalStateException("One flow unit expected. Found: " + heapAllocRateFlowUnits);
     }
 
+    if (shardSizeFlowUnits.size() != 1) {
+      throw new IllegalArgumentException("One flow unit expected. Found: " + shardSizeFlowUnits);
+    }
+
     // This means that the input RCA didn't calculate anything. We can move on as well.
-    if (cpuFlowUnits.get(0).isEmpty() && heapAllocRateFlowUnits.get(0).isEmpty()) {
+    if (cpuFlowUnits.get(0).isEmpty() && heapAllocRateFlowUnits.get(0).isEmpty()
+            && shardSizeFlowUnits.get(0).isEmpty()) {
       return new CompactNodeTemperatureFlowUnit(System.currentTimeMillis());
     }
 
@@ -97,6 +108,10 @@ public class NodeTemperatureRca extends Rca<CompactNodeTemperatureFlowUnit> {
 
     if (!heapAllocRateFlowUnits.get(0).isEmpty()) {
       nodeDimensionProfiles.add(heapAllocRateFlowUnits.get(0).getNodeDimensionProfile());
+    }
+
+    if (!shardSizeFlowUnits.get(0).isEmpty()) {
+      nodeDimensionProfiles.add(shardSizeFlowUnits.get(0).getNodeDimensionProfile());
     }
     FullNodeTemperatureSummary nodeProfile = buildNodeProfile(nodeDimensionProfiles);
 

@@ -142,6 +142,7 @@ public class ResourceHeatMapGraphTest {
 
         String dataNodeRcaConf = Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString();
 
+        System.out.println("DataNodeRcaConfig RCAs: "+ dataNodeRcaConf);
         RcaConf rcaConf = new RcaConf(dataNodeRcaConf);
         SubscriptionManager subscriptionManager =
                 new SubscriptionManager(new GRPCConnectionManager(false));
@@ -168,6 +169,7 @@ public class ResourceHeatMapGraphTest {
         System.out.println("Now for the MAster RCA.");
         String masterNodeRcaConf =
                 Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_elected_master.conf").toString();
+        System.out.println("MasterNodeRcaConfig RCAs: "+ masterNodeRcaConf);
         RcaConf rcaConf2 = new RcaConf(masterNodeRcaConf);
         SubscriptionManager subscriptionManager2 =
                 new SubscriptionManager(new GRPCConnectionManager(false));
@@ -210,9 +212,11 @@ public class ResourceHeatMapGraphTest {
                     new InputStreamReader(con.getInputStream()))) {
                 String inputLine;
                 StringBuffer content = new StringBuffer();
+                System.out.println("Content Here it is:" + content.toString());
                 while ((inputLine = in.readLine()) != null) {
                     content.append(inputLine);
                 }
+                System.out.println("Content Here it is: 2" + content.toString());
 
                 testJsonResponse(content.toString());
             }

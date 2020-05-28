@@ -55,6 +55,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.CpuUtilByShardsMetricBasedTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.HeapAllocRateByShardAvgTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.HeapAllocRateByShardTemperatureCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.ShardSizeAvgTemperatureCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.ShardSizeByShardTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.HeapAllocRateTotalTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.TotalCpuUtilForTotalNodeMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.HeapAllocRateShardIndependentTemperatureCalculator;
@@ -70,12 +72,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hot
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
-
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.HeapAllocRateTemperatureRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.ShardSizeDimensionTemperatureRca;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -158,7 +161,8 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     addLeaf(ioTotSyscallRate);
 
     // High CPU Utilization RCA
-    HotShardRca hotShardRca = new HotShardRca(5, 12, cpuUtilization, ioTotThroughput, ioTotSyscallRate);
+    HotShardRca hotShardRca = new HotShardRca(5, 12, cpuUtilization,
+            ioTotThroughput, ioTotSyscallRate);
     hotShardRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     hotShardRca.addAllUpstreams(Arrays.asList(cpuUtilization, ioTotThroughput, ioTotSyscallRate));
 
@@ -213,6 +217,11 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
             new ShardIndependentTemperatureCalculatorCpuUtilMetric();
     TotalCpuUtilForTotalNodeMetric cpuUtilPeakUsage = new TotalCpuUtilForTotalNodeMetric();
 
+    ShardSizeByShardTemperatureCalculator shardSizeByShard =
+            new ShardSizeByShardTemperatureCalculator();
+    ShardSizeAvgTemperatureCalculator shardSizeAvg =
+            new ShardSizeAvgTemperatureCalculator();
+
     // heat map is developed only for data nodes.
     cpuUtilByShard.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
     avgCpuUtilByShards.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
@@ -224,6 +233,9 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     shardIndependentHeapAllocRate.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
     heapAllocRateTotal.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
 
+    shardSizeByShard.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
+    shardSizeAvg.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
+
     addLeaf(cpuUtilByShard);
     addLeaf(avgCpuUtilByShards);
     addLeaf(shardIndependentCpuUtilMetric);
@@ -233,6 +245,9 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     addLeaf(heapAllocRateByShardAvg);
     addLeaf(shardIndependentHeapAllocRate);
     addLeaf(heapAllocRateTotal);
+
+    addLeaf(shardSizeByShard);
+    addLeaf(shardSizeAvg);
 
     CpuUtilDimensionTemperatureRca cpuUtilHeat = new CpuUtilDimensionTemperatureRca(shardStore,
             cpuUtilByShard,
@@ -250,9 +265,14 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     heapAllocRateHeat.addAllUpstreams(Arrays.asList(heapAllocByShard, heapAllocRateByShardAvg,
             shardIndependentHeapAllocRate, heapAllocRateTotal));
 
-    NodeTemperatureRca nodeTemperatureRca = new NodeTemperatureRca(cpuUtilHeat, heapAllocRateHeat);
+    ShardSizeDimensionTemperatureRca shardSizeHeat = new ShardSizeDimensionTemperatureRca(shardStore,
+            shardSizeByShard, shardSizeAvg);
+    shardSizeHeat.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
+    shardSizeHeat.addAllUpstreams(Arrays.asList(shardSizeByShard, shardSizeAvg));
+
+    NodeTemperatureRca nodeTemperatureRca = new NodeTemperatureRca(cpuUtilHeat, heapAllocRateHeat, shardSizeHeat);
     nodeTemperatureRca.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-    nodeTemperatureRca.addAllUpstreams(Arrays.asList(cpuUtilHeat, heapAllocRateHeat));
+    nodeTemperatureRca.addAllUpstreams(Arrays.asList(cpuUtilHeat, heapAllocRateHeat, shardSizeHeat));
 
     ClusterTemperatureRca clusterTemperatureRca = new ClusterTemperatureRca(nodeTemperatureRca);
     clusterTemperatureRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);

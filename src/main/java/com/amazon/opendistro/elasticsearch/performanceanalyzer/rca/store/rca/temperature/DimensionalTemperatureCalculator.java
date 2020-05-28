@@ -177,4 +177,18 @@ public class DimensionalTemperatureCalculator {
         }
         return new DimensionalTemperatureFlowUnit(System.currentTimeMillis(), nodeDimensionProfile);
     }
+
+    public static DimensionalTemperatureFlowUnit getTemperatureForDimension(
+            ShardStore shardStore, TemperatureVector.Dimension metricType,
+            ShardBasedTemperatureCalculator resourceByShardId,
+            AvgShardBasedTemperatureCalculator avgResUsageByAllShards,
+            TemperatureVector.NormalizedValue threshold) {
+        ShardIndependentTemperatureCalculator resourceShardIndependent =
+                new ShardIndependentTemperatureCalculator(TemperatureVector.Dimension.Shard_Size);
+        TotalNodeTemperatureCalculator resourcePeakUsage =
+                new TotalNodeTemperatureCalculator(TemperatureVector.Dimension.Shard_Size);
+
+        return getTemperatureForDimension(shardStore, metricType, resourceByShardId, avgResUsageByAllShards,
+                resourceShardIndependent, resourcePeakUsage, threshold);
+    }
 }
