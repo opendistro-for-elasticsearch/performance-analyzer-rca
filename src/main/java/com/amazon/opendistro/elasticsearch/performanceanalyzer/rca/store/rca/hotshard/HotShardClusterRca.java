@@ -100,13 +100,9 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit> {
                 HotShardSummary hotShardSummary = (HotShardSummary) summary;
                 String indexName = hotShardSummary.getIndexName();
                 NodeShardKey nodeShardKey = new NodeShardKey(nodeId, hotShardSummary.getShardId());
-                // 1. Populate CPU Table
+
                 populateResourceInfoTable(indexName, nodeShardKey, hotShardSummary.getCpuUtilization(), cpuUtilizationInfoTable);
-
-                // 2. Populate ioTotThroughput Table
                 populateResourceInfoTable(indexName, nodeShardKey, hotShardSummary.getIOThroughput(), IOThroughputInfoTable);
-
-                // 3. Populate ioTotSysCallrate Table
                 populateResourceInfoTable(indexName, nodeShardKey, hotShardSummary.getIOSysCallrate(), IOSysCallRateInfoTable);
 
             }
