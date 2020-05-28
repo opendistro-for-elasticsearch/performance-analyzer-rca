@@ -53,7 +53,7 @@ public class MetricFlowUnit extends GenericFlowUnit {
    * never be called. so return null in case we run into it.
    */
   @Override
-  public FlowUnitMessage buildFlowUnitMessage(final String graphNode, final String esNode) {
+  public FlowUnitMessage.Builder buildFlowUnitMessage(final String graphNode, final String esNode) {
     return null;
   }
 

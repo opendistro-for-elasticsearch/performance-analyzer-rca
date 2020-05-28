@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary.HOT_NODE_SUMMARY_TABLE;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.JooqFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
@@ -24,6 +26,7 @@ import com.google.protobuf.GeneratedMessageV3;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,11 +53,13 @@ public class HotClusterSummary extends GenericSummary {
   private static final Logger LOG = LogManager.getLogger(HotClusterSummary.class);
   private int numOfNodes;
   private int numOfUnhealthyNodes;
+  private List<HotNodeSummary> nodeSummaryList;
 
   public HotClusterSummary(int numOfNodes, int numOfUnhealthyNodes) {
     super();
     this.numOfNodes = numOfNodes;
     this.numOfUnhealthyNodes = numOfUnhealthyNodes;
+    this.nodeSummaryList = new ArrayList<>();
   }
 
   /**
@@ -79,9 +84,18 @@ public class HotClusterSummary extends GenericSummary {
     return numOfUnhealthyNodes;
   }
 
+  public void appendNestedSummary(HotNodeSummary summary) {
+    nodeSummaryList.add(summary);
+  }
+
   @Override
   public String toString() {
     return this.numOfNodes + " " + this.numOfUnhealthyNodes + " " + getNestedSummaryList();
+  }
+
+  @Override
+  public List<GenericSummary> getNestedSummaryList() {
+    return new ArrayList<>(nodeSummaryList);
   }
 
   @Override
@@ -90,10 +104,9 @@ public class HotClusterSummary extends GenericSummary {
   }
 
   @Override
-  public List<SummaryBuilder<? extends GenericSummary>> getNestedSummaryBuilder() {
+  public List<String> getNestedSummaryTables() {
     return Collections.unmodifiableList(Collections.singletonList(
-        new SummaryBuilder<>(HotNodeSummary.HOT_NODE_SUMMARY_TABLE,
-            HotNodeSummary::buildSummary)));
+        HOT_NODE_SUMMARY_TABLE));
   }
 
   @Override
@@ -121,9 +134,9 @@ public class HotClusterSummary extends GenericSummary {
     JsonObject summaryObj = new JsonObject();
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NUM_OF_NODES_COL_NAME, this.numOfNodes);
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NUM_OF_UNHEALTHY_NODES_COL_NAME, this.numOfUnhealthyNodes);
-    if (!getNestedSummaryList().isEmpty()) {
-      String tableName = getNestedSummaryList().get(0).getTableName();
-      summaryObj.add(tableName, this.nestedSummaryListToJson());
+    if (!nodeSummaryList.isEmpty()) {
+      String tableName = nodeSummaryList.get(0).getTableName();
+      summaryObj.add(tableName, nestedSummaryListToJson(nodeSummaryList));
     }
     return summaryObj;
   }
@@ -161,14 +174,27 @@ public class HotClusterSummary extends GenericSummary {
     }
   }
 
+  @Override
+  public GenericSummary appendNestedSummary(String summaryTable, Record record) {
+    GenericSummary ret = null;
+    if (summaryTable.equals(HOT_NODE_SUMMARY_TABLE)) {
+      HotNodeSummary summary = HotNodeSummary.buildSummary(record);
+      if (summary != null) {
+        nodeSummaryList.add(summary);
+        ret = summary;
+      }
+    }
+    return ret;
+  }
+
   /**
    * parse SQL query result and fill the result into summary obj.
    * @param record SQLite record
    * @return whether parsing is successful or not
    */
   @Nullable
-  public static GenericSummary buildSummary(Record record) {
-    GenericSummary summary = null;
+  public static HotClusterSummary buildSummary(Record record) {
+    HotClusterSummary summary = null;
     try {
       Integer numOfNodes = record.get(ClusterSummaryField.NUM_OF_NODES_FIELD.getField(), Integer.class);
       Integer numOfUnhealthyNodes = record.get(ClusterSummaryField.NUM_OF_UNHEALTHY_NODES_FIELD.getField(), Integer.class);

@@ -43,7 +43,7 @@ public class CompactNodeTemperatureFlowUnit extends ResourceFlowUnit {
     }
 
     @Override
-    public FlowUnitMessage buildFlowUnitMessage(String graphNode, String esNode) {
+    public FlowUnitMessage.Builder buildFlowUnitMessage(String graphNode, String esNode) {
         FlowUnitMessage.Builder builder = FlowUnitMessage.newBuilder();
         builder.setGraphNode(graphNode);
         builder.setEsNode(esNode);
@@ -51,7 +51,7 @@ public class CompactNodeTemperatureFlowUnit extends ResourceFlowUnit {
         if (compactNodeTemperatureSummary != null) {
             compactNodeTemperatureSummary.buildSummaryMessageAndAddToFlowUnit(builder);
         }
-        return builder.build();
+        return builder;
     }
 
     public static CompactNodeTemperatureFlowUnit buildFlowUnitFromWrapper(final FlowUnitMessage message) {

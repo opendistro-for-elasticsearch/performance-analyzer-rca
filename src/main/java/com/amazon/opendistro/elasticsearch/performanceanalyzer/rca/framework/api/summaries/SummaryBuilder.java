@@ -19,19 +19,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import org.jooq.Record;
 
 public class SummaryBuilder<T extends GenericSummary> {
-  private final String tableName;
   SummaryBuilderFunction<T> builder;
 
-  public SummaryBuilder(final String tableName, SummaryBuilderFunction<T> builder) {
-    this.tableName = tableName;
+  public SummaryBuilder(SummaryBuilderFunction<T> builder) {
     this.builder = builder;
   }
 
-  public GenericSummary buildSummary(Record record) {
+  public T buildSummary(Record record) {
     return builder.buildSummary(record);
-  }
-
-  public String getTableName() {
-    return tableName;
   }
 }

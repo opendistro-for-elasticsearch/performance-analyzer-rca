@@ -24,6 +24,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.resource.HotResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.TopConsumerSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
@@ -40,7 +41,7 @@ import org.jooq.exception.DataTypeException;
  * Generic resource type RCA. ideally this RCA can be extended to any resource type
  * and calculate the total resource usage & top consumers.
  */
-public class GenericResourceRca extends Rca<ResourceFlowUnit> {
+public class GenericResourceRca extends Rca<HotResourceFlowUnit> {
 
   private static final Logger LOG = LogManager.getLogger(GenericResourceRca.class);
   private static final int SLIDING_WINDOW_IN_MIN = 10;
@@ -108,7 +109,7 @@ public class GenericResourceRca extends Rca<ResourceFlowUnit> {
   }
 
   @Override
-  public ResourceFlowUnit operate() {
+  public HotResourceFlowUnit operate() {
     counter += 1;
 
     for (MetricFlowUnit flowunit : resourceUsageGroupByConsumer.getFlowUnits()) {
@@ -162,10 +163,10 @@ public class GenericResourceRca extends Rca<ResourceFlowUnit> {
             avgCpuUsage, SLIDING_WINDOW_IN_MIN * 60);
         addTopConsumerSummary(summary);
       }
-      return new ResourceFlowUnit(clock.millis(), context, summary);
+      return new HotResourceFlowUnit(clock.millis(), context, summary, true);
     } else {
       // we return an empty FlowUnit RCA for now. Can change to healthy (or previous known RCA state)
-      return new ResourceFlowUnit(clock.millis());
+      return new HotResourceFlowUnit(clock.millis());
     }
   }
 
@@ -183,7 +184,7 @@ public class GenericResourceRca extends Rca<ResourceFlowUnit> {
         try {
           double num = record.getValue(fieldSize - 1, Double.class);
           String name = record.getValue(0, String.class);
-          summary.addNestedSummaryList(new TopConsumerSummary(name, num));
+          summary.appendNestedSummary(new TopConsumerSummary(name, num));
         }
         catch (DataTypeException de) {
           LOG.error("Fail to read some field from SQL record, trace : {}", de.getStackTrace());

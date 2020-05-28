@@ -20,11 +20,14 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.ResourceFlowUnitFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.SQL_SCHEMA_CONSTANTS;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.SummaryBuilder;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.CompactNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.protobuf.GeneratedMessageV3;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -42,11 +45,17 @@ public class RcaResponse extends GenericSummary {
   private String rcaName;
   private String state;
   private long timeStamp;
+  private List<HotClusterSummary> hotClusterSummaryList;
+  private List<ClusterTemperatureSummary> clusterTemperatureSummaryList;
+  private List<CompactNodeSummary> compactNodeSummaryList;
 
   public RcaResponse(String rcaName, String state, long timeStamp) {
     this.rcaName = rcaName;
     this.state = state;
     this.timeStamp = timeStamp;
+    this.hotClusterSummaryList = new ArrayList<>();
+    this.clusterTemperatureSummaryList = new ArrayList<>();
+    this.compactNodeSummaryList = new ArrayList<>();
   }
 
 
@@ -60,6 +69,18 @@ public class RcaResponse extends GenericSummary {
 
   public long getTimeStamp() {
     return timeStamp;
+  }
+
+  public void appendNestedSummary(HotClusterSummary summary) {
+    hotClusterSummaryList.add(summary);
+  }
+
+  public void appendNestedSummary(ClusterTemperatureSummary summary) {
+    clusterTemperatureSummaryList.add(summary);
+  }
+
+  public void appendNestedSummary(CompactNodeSummary summary) {
+    compactNodeSummaryList.add(summary);
   }
 
   public static RcaResponse buildResponse(Record record) {
@@ -102,10 +123,9 @@ public class RcaResponse extends GenericSummary {
   }
 
   @Override
-  public List<SummaryBuilder<? extends GenericSummary>> getNestedSummaryBuilder() {
+  public List<String> getNestedSummaryTables() {
     return Collections.unmodifiableList(Collections.singletonList(
-        new SummaryBuilder<>(HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE,
-            HotClusterSummary::buildSummary)));
+        HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE));
   }
 
   @Override
@@ -124,9 +144,9 @@ public class RcaResponse extends GenericSummary {
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.RCA_COL_NAME, this.rcaName);
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, this.timeStamp);
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.STATE_COL_NAME, this.state);
-    if (!getNestedSummaryList().isEmpty()) {
-      String tableName = getNestedSummaryList().get(0).getTableName();
-      summaryObj.add(tableName, this.nestedSummaryListToJson());
+    if (!hotClusterSummaryList.isEmpty()) {
+      String tableName = hotClusterSummaryList.get(0).getTableName();
+      summaryObj.add(tableName, nestedSummaryListToJson(hotClusterSummaryList));
     }
     return summaryObj;
   }

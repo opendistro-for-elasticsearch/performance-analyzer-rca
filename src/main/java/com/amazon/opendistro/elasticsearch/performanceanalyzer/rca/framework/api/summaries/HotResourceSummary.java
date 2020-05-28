@@ -59,6 +59,7 @@ public class HotResourceSummary extends GenericSummary {
   private double maxValue;
   private int timePeriod;
   private String metaData;
+  private final List<TopConsumerSummary> topConsumerSummaryList;
 
   public HotResourceSummary(ResourceType resourceType, double threshold,
       double value, int timePeriod) {
@@ -72,6 +73,7 @@ public class HotResourceSummary extends GenericSummary {
     this.maxValue = Double.NaN;
     this.timePeriod = timePeriod;
     this.metaData = "";
+    this.topConsumerSummaryList = new ArrayList<>();
   }
 
   public HotResourceSummary(ResourceType resourceType, double threshold,
@@ -86,40 +88,13 @@ public class HotResourceSummary extends GenericSummary {
     this.maxValue = Double.NaN;
     this.timePeriod = timePeriod;
     this.metaData = metaData;
+    this.topConsumerSummaryList = new ArrayList<>();
   }
 
   public void setValueDistribution(double minValue, double maxValue, double avgValue) {
     this.minValue = minValue;
     this.maxValue = maxValue;
     this.avgValue = avgValue;
-  }
-
-  /**
-   * buildHotResourceSummaryFromMessage() requires each nestedSummaryList element to be of the
-   * {@link com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.TopConsumerSummaryMessage} class, otherwise the
-   * method will throw a {@link ClassCastException} upon invocation. We override addNestedSummaryList() s.t. user
-   * error cannot cause an Exception.
-   */
-  @Override
-  public void addNestedSummaryList(Collection<GenericSummary> nestedSummaryList) {
-    for (GenericSummary summary: nestedSummaryList) {
-      if (!(summary instanceof TopConsumerSummary)) {
-        LOG.error("Attempted to add nested summary of unsupported type {} to HotResourceSummary",
-                summary.getClass().getSimpleName());
-        return;
-      }
-    }
-    this.nestedSummaryList.addAll(nestedSummaryList);
-  }
-
-  @Override
-  public void addNestedSummaryList(GenericSummary nestedSummary) {
-    if (!(nestedSummary instanceof TopConsumerSummary)) {
-      LOG.error("Attempted to add nested summary of unsupported type {} to HotResourceSummary",
-              nestedSummary.getClass().getSimpleName());
-      return;
-    }
-    this.nestedSummaryList.add(nestedSummary);
   }
 
   public ResourceType getResourceType() {
@@ -142,6 +117,10 @@ public class HotResourceSummary extends GenericSummary {
     return this.metaData;
   }
 
+  public void appendNestedSummary(TopConsumerSummary summary) {
+    topConsumerSummaryList.add(summary);
+  }
+
   @Override
   public HotResourceSummaryMessage buildSummaryMessage() {
     final HotResourceSummaryMessage.Builder summaryMessageBuilder = HotResourceSummaryMessage
@@ -154,7 +133,7 @@ public class HotResourceSummary extends GenericSummary {
     summaryMessageBuilder.setMaxValue(this.maxValue);
     summaryMessageBuilder.setTimePeriod(this.timePeriod);
     summaryMessageBuilder.setMetaData(this.metaData);
-    for (GenericSummary nestedSummary : this.nestedSummaryList) {
+    for (TopConsumerSummary nestedSummary : topConsumerSummaryList) {
       summaryMessageBuilder.getConsumersBuilder()
           .addConsumer(nestedSummary.buildSummaryMessage());
     }
@@ -172,7 +151,7 @@ public class HotResourceSummary extends GenericSummary {
     newSummary.setValueDistribution(message.getMinValue(), message.getMaxValue(), message.getAvgValue());
     if (message.hasConsumers()) {
       for (int i = 0; i < message.getConsumers().getConsumerCount(); i++) {
-        newSummary.addNestedSummaryList(TopConsumerSummary.buildTopConsumerSummaryFromMessage(
+        newSummary.appendNestedSummary(TopConsumerSummary.buildTopConsumerSummaryFromMessage(
             message.getConsumers().getConsumer(i)));
       }
     }
@@ -190,10 +169,15 @@ public class HotResourceSummary extends GenericSummary {
         .append(" ")
         .append(ResourceTypeUtil.getResourceTypeUnit(this.resourceType))
         .append(" ")
-        .append(this.nestedSummaryList)
+        .append(this.topConsumerSummaryList)
         .append(" ")
         .append(this.metaData)
         .toString();
+  }
+
+  @Override
+  public List<GenericSummary> getNestedSummaryList() {
+    return new ArrayList<>(topConsumerSummaryList);
   }
 
   @Override
@@ -202,10 +186,9 @@ public class HotResourceSummary extends GenericSummary {
   }
 
   @Override
-  public List<SummaryBuilder<? extends GenericSummary>> getNestedSummaryBuilder() {
+  public List<String> getNestedSummaryTables() {
     return Collections.unmodifiableList(Collections.singletonList(
-        new SummaryBuilder<>(TopConsumerSummary.TOP_CONSUMER_SUMMARY_TABLE,
-            TopConsumerSummary::buildSummary)));
+        TopConsumerSummary.TOP_CONSUMER_SUMMARY_TABLE));
   }
 
   @Override
@@ -256,9 +239,9 @@ public class HotResourceSummary extends GenericSummary {
         ResourceTypeUtil.getResourceTypeUnit(this.resourceType));
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.TIME_PERIOD_COL_NAME, this.timePeriod);
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.META_DATA_COL_NAME, this.metaData);
-    if (!this.nestedSummaryList.isEmpty()) {
-      String tableName = this.nestedSummaryList.get(0).getTableName();
-      summaryObj.add(tableName, this.nestedSummaryListToJson());
+    if (!topConsumerSummaryList.isEmpty()) {
+      String tableName = topConsumerSummaryList.get(0).getTableName();
+      summaryObj.add(tableName, nestedSummaryListToJson(topConsumerSummaryList));
     }
     return summaryObj;
   }
@@ -308,6 +291,19 @@ public class HotResourceSummary extends GenericSummary {
     public String getName() {
       return this.name;
     }
+  }
+
+  @Override
+  public GenericSummary appendNestedSummary(String summaryTable, Record record) {
+    GenericSummary ret = null;
+    if (summaryTable.equals(TopConsumerSummary.TOP_CONSUMER_SUMMARY_TABLE)) {
+      TopConsumerSummary summary = TopConsumerSummary.buildSummary(record);
+      if (summary != null) {
+        topConsumerSummaryList.add(summary);
+        ret = summary;
+      }
+    }
+    return ret;
   }
 
   /**

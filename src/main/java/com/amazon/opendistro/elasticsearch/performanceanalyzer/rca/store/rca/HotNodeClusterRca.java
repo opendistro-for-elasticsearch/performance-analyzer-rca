@@ -20,11 +20,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNo
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.resource.HotClusterFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.resource.HotNodeFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
@@ -45,13 +45,13 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class HotNodeClusterRca extends Rca<ResourceFlowUnit> {
+public class HotNodeClusterRca extends Rca<HotClusterFlowUnit> {
 
   public static final String RCA_TABLE_NAME = HotNodeClusterRca.class.getSimpleName();
   private static final Logger LOG = LogManager.getLogger(HotNodeClusterRca.class);
   private static final double NODE_COUNT_THRESHOLD = 0.8;
   private static final long TIMESTAMP_EXPIRATION_IN_MINS = 5;
-  private final Rca hotNodeRca;
+  private final Rca<HotNodeFlowUnit> hotNodeRca;
   private final Table<String, ResourceType, NodeResourceUsage> nodeTable;
   private final int rcaPeriod;
   private int counter;
@@ -60,7 +60,7 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit> {
   private double resourceUsageLowerBoundThreshold;
   protected Clock clock;
 
-  public <R extends Rca> HotNodeClusterRca(final int rcaPeriod,
+  public <R extends Rca<HotNodeFlowUnit>> HotNodeClusterRca(final int rcaPeriod,
       final R hotNodeRca) {
     super(5);
     this.rcaPeriod = rcaPeriod;
@@ -73,30 +73,21 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit> {
   }
 
   //add Resource Summary to the corresponding cell in NodeTable
-  private void addSummaryToNodeMap(List<ResourceFlowUnit> hotNodeRcaFlowUnits) {
-    for (ResourceFlowUnit hotNodeRcaFlowUnit : hotNodeRcaFlowUnits) {
-      if (hotNodeRcaFlowUnit.isEmpty()) {
+  private void addSummaryToNodeMap(List<HotNodeFlowUnit> hotNodeRcaFlowUnits) {
+    for (HotNodeFlowUnit hotNodeRcaFlowUnit : hotNodeRcaFlowUnits) {
+      if (hotNodeRcaFlowUnit.isEmpty() || hotNodeRcaFlowUnit.getHotNodeSummary() == null) {
         continue;
       }
-      if (!(hotNodeRcaFlowUnit.getResourceSummary() instanceof HotNodeSummary)) {
-        LOG.error("RCA : Receive flowunit from unexpected rca node");
-        continue;
-      }
-      HotNodeSummary nodeSummary = (HotNodeSummary) hotNodeRcaFlowUnit.getResourceSummary();
+      HotNodeSummary nodeSummary = hotNodeRcaFlowUnit.getHotNodeSummary();
       if (nodeSummary.getNestedSummaryList() == null || nodeSummary.getNestedSummaryList().isEmpty()) {
         continue;
       }
       long timestamp = clock.millis();
-      for (GenericSummary summary : nodeSummary.getNestedSummaryList()) {
-        if (summary instanceof HotResourceSummary) {
-          HotResourceSummary resourceSummary = (HotResourceSummary) summary;
-          NodeResourceUsage oldUsage = nodeTable.get(nodeSummary.getNodeID(), ((HotResourceSummary) summary).getResourceType());
-          if (oldUsage == null || oldUsage.timestamp < timestamp) {
-            nodeTable.put(nodeSummary.getNodeID(), resourceSummary.getResourceType(),
-                new NodeResourceUsage(timestamp, resourceSummary));
-          }
-        } else {
-          LOG.error("RCA : unexpected summary type !");
+      for (HotResourceSummary resourceSummary : nodeSummary.getHotResourceSummaryList()) {
+        NodeResourceUsage oldUsage = nodeTable.get(nodeSummary.getNodeID(), resourceSummary.getResourceType());
+        if (oldUsage == null || oldUsage.timestamp < timestamp) {
+          nodeTable.put(nodeSummary.getNodeID(), resourceSummary.getResourceType(),
+              new NodeResourceUsage(timestamp, resourceSummary));
         }
       }
     }
@@ -113,7 +104,7 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit> {
    * most recent resource summary from this nodeId indexed by resourceType
    </p>
    */
-  private ResourceFlowUnit checkUnbalancedNode() {
+  private HotClusterFlowUnit checkUnbalancedNode() {
     // NodeID -> HotNodeSummary, store the HotNodeSummary that is generated for each node
     Map<String, HotNodeSummary> nodeSummaryMap = new HashMap<>();
 
@@ -172,7 +163,7 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit> {
             nodeSummaryMap.put(nodeDetail.getId(),
                 new HotNodeSummary(nodeDetail.getId(), nodeDetail.getHostAddress()));
           }
-          nodeSummaryMap.get(nodeDetail.getId()).addNestedSummaryList(currentUsage.resourceSummary);
+          nodeSummaryMap.get(nodeDetail.getId()).appendNestedSummary(currentUsage.resourceSummary);
         }
       }
     }
@@ -186,10 +177,10 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit> {
       context = new ResourceContext(Resources.State.UNHEALTHY);
       summary = new HotClusterSummary(dataNodesDetails.size(), nodeSummaryMap.size());
       for (Map.Entry<String, HotNodeSummary> entry : nodeSummaryMap.entrySet()) {
-        summary.addNestedSummaryList(entry.getValue());
+        summary.appendNestedSummary(entry.getValue());
       }
     }
-    return new ResourceFlowUnit(System.currentTimeMillis(), context, summary, true);
+    return new HotClusterFlowUnit(System.currentTimeMillis(), context, summary, true);
   }
 
   //TODO : we might need to change this function later to use EventListener
@@ -208,11 +199,11 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit> {
   }
 
   @Override
-  public ResourceFlowUnit operate() {
+  public HotClusterFlowUnit operate() {
     dataNodesDetails = ClusterDetailsEventProcessor.getDataNodesDetails();
     //skip this RCA if the cluster has only single data node
     if (dataNodesDetails.size() <= 1) {
-      return new ResourceFlowUnit(System.currentTimeMillis());
+      return new HotClusterFlowUnit(System.currentTimeMillis());
     }
 
     counter += 1;
@@ -223,7 +214,7 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit> {
       removeInactiveNodeFromTable();
       return checkUnbalancedNode();
     } else {
-      return new ResourceFlowUnit(System.currentTimeMillis());
+      return new HotClusterFlowUnit(System.currentTimeMillis());
     }
   }
 

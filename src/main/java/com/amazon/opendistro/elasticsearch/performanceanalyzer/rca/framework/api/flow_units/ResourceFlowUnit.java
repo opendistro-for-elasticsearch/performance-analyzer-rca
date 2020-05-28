@@ -39,11 +39,11 @@ import org.jooq.impl.DSL;
  * | ID(primary key) | Timestamp |      RCA_Name        | state
  * |      1          |  151000   |  HighHeapYoungGenRca | healthy
  */
-public class ResourceFlowUnit extends GenericFlowUnit {
+public class ResourceFlowUnit<S extends GenericSummary> extends GenericFlowUnit {
 
   public static final String RCA_TABLE_NAME = "RCA";
   private ResourceContext resourceContext = null;
-  private GenericSummary resourceSummary = null;
+  private S summary = null;
   // whether summary needs to be persisted as well when persisting this flowunit
   private boolean persistSummary = false;
 
@@ -51,16 +51,16 @@ public class ResourceFlowUnit extends GenericFlowUnit {
     super(timeStamp);
   }
 
-  public <S extends GenericSummary> ResourceFlowUnit(long timeStamp, ResourceContext context,
-      S resourceSummary, boolean persistSummary) {
+  public ResourceFlowUnit(long timeStamp, ResourceContext context,
+      S summary, boolean persistSummary) {
     super(timeStamp);
     this.resourceContext = context;
-    this.resourceSummary = resourceSummary;
+    this.summary = summary;
     this.empty = false;
     this.persistSummary = persistSummary;
   }
 
-  public <S extends GenericSummary> ResourceFlowUnit(long timeStamp, ResourceContext context,
+  public ResourceFlowUnit(long timeStamp, ResourceContext context,
       S resourceSummary) {
     this(timeStamp, context, resourceSummary, false);
   }
@@ -74,16 +74,12 @@ public class ResourceFlowUnit extends GenericFlowUnit {
     return this.resourceContext;
   }
 
-  public boolean hasResourceSummary() {
-    return this.resourceSummary != null;
+  public boolean hasSummary() {
+    return this.summary != null;
   }
 
-  public GenericSummary getResourceSummary() {
-    return this.resourceSummary;
-  }
-
-  public <S extends GenericSummary> void setResourceSummary(S summary) {
-    this.resourceSummary = summary;
+  public S getSummary() {
+    return summary;
   }
 
   public void setPersistSummary(boolean persistSummary) {
@@ -95,7 +91,7 @@ public class ResourceFlowUnit extends GenericFlowUnit {
   }
 
   @Override
-  public FlowUnitMessage buildFlowUnitMessage(final String graphNode, final String esNode) {
+  public FlowUnitMessage.Builder buildFlowUnitMessage(final String graphNode, final String esNode) {
     final FlowUnitMessage.Builder messageBuilder = FlowUnitMessage.newBuilder();
     messageBuilder.setGraphNode(graphNode);
     messageBuilder.setEsNode(esNode);
@@ -103,11 +99,10 @@ public class ResourceFlowUnit extends GenericFlowUnit {
     if (resourceContext != null) {
           messageBuilder.setResourceContext(resourceContext.buildContextMessage());
     }
-
-    if (resourceSummary != null) {
-      resourceSummary.buildSummaryMessageAndAddToFlowUnit(messageBuilder);
+    if (hasSummary()) {
+      summary.buildSummaryMessageAndAddToFlowUnit(messageBuilder);
     }
-    return messageBuilder.build();
+    return messageBuilder;
   }
 
   /**
@@ -173,7 +168,7 @@ public class ResourceFlowUnit extends GenericFlowUnit {
 
   @Override
   public String toString() {
-    return this.getTimeStamp() + ": " + resourceContext + " :: " + resourceSummary;
+    return this.getTimeStamp() + ": " + resourceContext + " :: " + summary;
   }
 
   public enum ResourceFlowUnitFieldValue implements JooqFieldValue {

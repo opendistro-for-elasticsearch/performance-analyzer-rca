@@ -249,7 +249,7 @@ public abstract class PersistorBase implements Persistable {
       String referenceTable,
       String referenceTablePrimaryKeyFieldName,
       int referenceTablePrimaryKeyFieldValue) throws SQLException {
-    String tableName = summary.getClass().getSimpleName();
+    String tableName = summary.getTableName();
     if (!tableNames.contains(tableName)) {
       LOG.info(
           "RCA: Table '{}' does not exist. Creating one with columns: {}",

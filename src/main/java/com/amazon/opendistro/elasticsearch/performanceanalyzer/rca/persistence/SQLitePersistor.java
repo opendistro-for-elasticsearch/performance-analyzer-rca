@@ -18,7 +18,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources.State;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.ResourceFlowUnitFieldValue;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.SummaryBuilder;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.CompactNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
@@ -227,16 +226,16 @@ class SQLitePersistor extends PersistorBase {
                 mostRecentRecord.get(primaryKeyField),
                 foreignKeyField);
         Result<Record> temperatureSummary = query.fetch();
-        GenericSummary summary =
+        ClusterTemperatureSummary summary =
             ClusterTemperatureSummary.buildSummaryFromDatabase(temperatureSummary, create);
-        response.addNestedSummaryList(summary);
+        response.appendNestedSummary(summary);
       } else if (rca.equalsIgnoreCase(NodeTemperatureRca.TABLE_NAME)) {
         SelectJoinStep<Record> query = SQLiteQueryUtils.buildSummaryQuery(create,
             "CompactNodeSummary", mostRecentRecord.get(primaryKeyField), primaryKeyField);
         Result<Record> nodeTemperatureCompactSummary = query.fetch();
-        GenericSummary summary =
+        CompactNodeSummary summary =
             CompactNodeSummary.buildSummaryFromDatabase(nodeTemperatureCompactSummary, create);
-        response.addNestedSummaryList(summary);
+        response.appendNestedSummary(summary);
       }
     } catch (DataAccessException dex) {
       LOG.error("Failed to read temperature profile RCA for {}", rca, dex);
@@ -248,33 +247,32 @@ class SQLitePersistor extends PersistorBase {
 
   private void readSummary(GenericSummary upperLevelSummary, int upperLevelPrimaryKey) {
     String upperLevelTable = upperLevelSummary.getTableName();
-    List<SummaryBuilder<? extends GenericSummary>> builders = upperLevelSummary.getNestedSummaryBuilder();
+    List<String> tables = upperLevelSummary.getNestedSummaryTables();
 
     // stop the recursion here if the table does not have any nested summary.
-    if (builders == null) {
+    if (tables == null) {
       return;
     }
-    for (SummaryBuilder builder : builders) {
+    for (String table : tables) {
       Field<Integer> foreignKeyField = DSL.field(
           SQLiteQueryUtils.getPrimaryKeyColumnName(upperLevelTable), Integer.class);
       SelectJoinStep<Record> rcaQuery = SQLiteQueryUtils
-          .buildSummaryQuery(create, builder.getTableName(), upperLevelPrimaryKey, foreignKeyField);
+          .buildSummaryQuery(create, table, upperLevelPrimaryKey, foreignKeyField);
       try {
         Result<Record> recordList = rcaQuery.fetch();
         for (Record record : recordList) {
-          GenericSummary summary = builder.buildSummary(record);
+          GenericSummary summary = upperLevelSummary.appendNestedSummary(table, record);
           if (summary != null) {
             Field<Integer> primaryKeyField = DSL.field(
                 SQLiteQueryUtils.getPrimaryKeyColumnName(summary.getTableName()), Integer.class);
             readSummary(summary, record.get(primaryKeyField));
-            upperLevelSummary.addNestedSummaryList(summary);
           }
         }
       }
       catch (DataAccessException de) {
         // it is totally fine if we fail to read some certain tables as some types of summaries might be missing
         LOG.warn("Fail to read Summary table : {}, query = {},  exceptions : {}",
-            builder.getTableName(), rcaQuery.toString(), de.getStackTrace());
+            table, rcaQuery.toString(), de.getStackTrace());
       }
     }
   }

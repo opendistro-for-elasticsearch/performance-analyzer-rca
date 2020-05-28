@@ -32,6 +32,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.resource.HotResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.TopConsumerSummary;
@@ -67,7 +68,7 @@ import org.apache.logging.log4j.Logger;
  * Points_Memory / DocValues_Memory / IndexWriter_Memory / Bitset_Memory / VersionMap_Memory
  </p>
  */
-public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
+public class HighHeapUsageOldGenRca extends Rca<HotResourceFlowUnit> {
 
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageOldGenRca.class);
   private int counter;
@@ -127,7 +128,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
   }
 
   @Override
-  public ResourceFlowUnit operate() {
+  public HotResourceFlowUnit operate() {
     List<MetricFlowUnit> heapUsedMetrics = heap_Used.getFlowUnits();
     List<MetricFlowUnit> gcEventMetrics = gc_event.getFlowUnits();
     List<MetricFlowUnit> heapMaxMetrics = heap_Max.getFlowUnits();
@@ -220,12 +221,12 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
       }
 
       LOG.debug("High Heap Usage RCA Context = " + context.toString());
-      return new ResourceFlowUnit(this.clock.millis(), context, summary);
+      return new HotResourceFlowUnit(this.clock.millis(), context, summary, true);
     } else {
       // we return an empty FlowUnit RCA for now. Can change to healthy (or previous known RCA
       // state)
       LOG.debug("Empty FlowUnit returned for High Heap Usage RCA");
-      return new ResourceFlowUnit(this.clock.millis());
+      return new HotResourceFlowUnit(this.clock.millis());
     }
   }
 
@@ -241,7 +242,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
       if (summary.getNestedSummaryList().size() >= topK) {
         break;
       }
-      summary.addNestedSummaryList(new TopConsumerSummary(aggregator.getName(), aggregator.getSum()));
+      summary.appendNestedSummary(new TopConsumerSummary(aggregator.getName(), aggregator.getSum()));
     }
   }
 

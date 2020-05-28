@@ -37,5 +37,5 @@ public abstract class GenericFlowUnit {
     return this.empty;
   }
 
-  public abstract FlowUnitMessage buildFlowUnitMessage(final String graphNode, final String esNode);
+  public abstract FlowUnitMessage.Builder buildFlowUnitMessage(final String graphNode, final String esNode);
 }

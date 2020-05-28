@@ -21,7 +21,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.util.ArrayList;
@@ -31,16 +31,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 
-public class HotNodeRca extends Rca<ResourceFlowUnit> {
+public class HotNodeRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
 
   private static final Logger LOG = LogManager.getLogger(HotNodeRca.class);
-  private Rca[] hotResourceRcas;
+  private Rca<ResourceFlowUnit<HotResourceSummary>>[] hotResourceRcas;
   private boolean hasUnhealthyFlowUnit;
   // the amount of RCA period this RCA needs to run before sending out a flowunit
   private final int rcaPeriod;
   private int counter;
 
-  public <R extends Rca> HotNodeRca(final int rcaPeriod, R... hotResourceRcas) {
+  public <R extends Rca<ResourceFlowUnit<HotResourceSummary>>> HotNodeRca(final int rcaPeriod, R... hotResourceRcas) {
     super(5);
     this.hotResourceRcas = hotResourceRcas.clone();
     this.rcaPeriod = rcaPeriod;
@@ -48,7 +48,7 @@ public class HotNodeRca extends Rca<ResourceFlowUnit> {
     hasUnhealthyFlowUnit = false;
   }
 
-  public <R extends Rca> HotNodeRca(final int rcaPeriod, Collection<R> hotResourceRcas) {
+  public <R extends Rca<ResourceFlowUnit<HotResourceSummary>>> HotNodeRca(final int rcaPeriod, Collection<R> hotResourceRcas) {
     super(5);
     this.hotResourceRcas = hotResourceRcas.toArray(new Rca[hotResourceRcas.size()]);
     this.rcaPeriod = rcaPeriod;
@@ -57,17 +57,17 @@ public class HotNodeRca extends Rca<ResourceFlowUnit> {
   }
 
   @Override
-  public ResourceFlowUnit operate() {
+  public ResourceFlowUnit<HotNodeSummary> operate() {
     counter++;
-    List<GenericSummary> hotResourceSummaryList = new ArrayList<>();
+    List<HotResourceSummary> hotResourceSummaryList = new ArrayList<>();
     for (int i = 0; i < hotResourceRcas.length; i++) {
-      final List<ResourceFlowUnit> hotResourceFlowUnits = hotResourceRcas[i].getFlowUnits();
-      for (final ResourceFlowUnit hotResourceFlowUnit : hotResourceFlowUnits) {
+      final List<ResourceFlowUnit<HotResourceSummary>> hotResourceFlowUnits = hotResourceRcas[i].getFlowUnits();
+      for (final ResourceFlowUnit<HotResourceSummary> hotResourceFlowUnit : hotResourceFlowUnits) {
         if (hotResourceFlowUnit.isEmpty()) {
           continue;
         }
-        if (hotResourceFlowUnit.hasResourceSummary()) {
-          hotResourceSummaryList.add(hotResourceFlowUnit.getResourceSummary());
+        if (hotResourceFlowUnit.hasSummary()) {
+          hotResourceSummaryList.add(hotResourceFlowUnit.getSummary());
         }
         if (hotResourceFlowUnit.getResourceContext().isUnhealthy()) {
           hasUnhealthyFlowUnit = true;
@@ -81,8 +81,8 @@ public class HotNodeRca extends Rca<ResourceFlowUnit> {
           .getCurrentNodeDetails();
       HotNodeSummary summary = new HotNodeSummary(currentNode.getId(), currentNode.getHostAddress());
 
-      if (!hotResourceSummaryList.isEmpty()) {
-        summary.addNestedSummaryList(hotResourceSummaryList);
+      for (HotResourceSummary resourceSummary : hotResourceSummaryList) {
+        summary.appendNestedSummary(resourceSummary);
       }
 
       if (hasUnhealthyFlowUnit) {
@@ -97,9 +97,9 @@ public class HotNodeRca extends Rca<ResourceFlowUnit> {
       //check if the current node is data node. If it is the data node
       //then HotNodeRca is the top level RCA on this node and we want to persist summaries in flowunit.
       boolean isDataNode = !currentNode.getIsMasterNode();
-      return new ResourceFlowUnit(System.currentTimeMillis(), context, summary, isDataNode);
+      return new ResourceFlowUnit<>(System.currentTimeMillis(), context, summary, isDataNode);
     } else {
-      return new ResourceFlowUnit(System.currentTimeMillis());
+      return new ResourceFlowUnit<>(System.currentTimeMillis());
     }
   }
 
@@ -107,10 +107,27 @@ public class HotNodeRca extends Rca<ResourceFlowUnit> {
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
     final List<FlowUnitMessage> flowUnitMessages =
         args.getWireHopper().readFromWire(args.getNode());
-    List<ResourceFlowUnit> flowUnitList = new ArrayList<>();
+    List<ResourceFlowUnit<HotNodeSummary>> flowUnitList = new ArrayList<>();
     LOG.debug("rca: Executing fromWire: {}", this.getClass().getSimpleName());
-    for (FlowUnitMessage flowUnitMessage : flowUnitMessages) {
-      flowUnitList.add(ResourceFlowUnit.buildFlowUnitFromWrapper(flowUnitMessage));
+    for (FlowUnitMessage message : flowUnitMessages) {
+      ResourceFlowUnit<HotNodeSummary> flowUnit = null;
+      //if the flowunit is empty. empty flowunit does not have context
+      if (message.hasResourceContext()) {
+        ResourceContext newContext = ResourceContext
+            .buildResourceContextFromMessage(message.getResourceContext());
+        HotNodeSummary newSummary = null;
+        if (message.getSummaryOneofCase().getNumber()
+            == FlowUnitMessage.SummaryOneofCase.HOTNODESUMMARY.getNumber()
+            && message.hasHotNodeSummary()) {
+          newSummary = HotNodeSummary.buildHotNodeSummaryFromMessage(message.getHotNodeSummary());
+        }
+        flowUnit = new ResourceFlowUnit<>(message.getTimeStamp(), newContext, newSummary, true);
+      } else {
+        //empty flowunit;
+        //TODO: we might not want to send empty flowunit across network.
+        flowUnit = new ResourceFlowUnit<>(message.getTimeStamp());
+      }
+      flowUnitList.add(flowUnit);
     }
     setFlowUnits(flowUnitList);
   }

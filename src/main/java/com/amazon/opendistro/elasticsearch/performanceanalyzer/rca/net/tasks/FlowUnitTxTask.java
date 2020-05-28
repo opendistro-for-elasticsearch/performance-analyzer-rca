@@ -80,7 +80,7 @@ public class FlowUnitTxTask implements Runnable {
           LOG.debug("rca: [pub-tx]: {} -> {}", sourceNode, downstreamHostAddress);
           client.publish(
               downstreamHostAddress,
-              flowUnit.buildFlowUnitMessage(sourceNode, esNode),
+              flowUnit.buildFlowUnitMessage(sourceNode, esNode).build(),
               new StreamObserver<PublishResponse>() {
                 @Override
                 public void onNext(final PublishResponse value) {
