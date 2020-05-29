@@ -27,7 +27,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.protobuf.GeneratedMessageV3;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -169,7 +168,8 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
      * +------------------------------+---------------+----+----------------+---------+------+
      * |                             1|CPU_Utilization|   1|1.20827386264977|        3|     1|
      * +------------------------------+---------------+----+----------------+---------+------+
-     * @param record A db row containing the values for a temperature dimension.
+     *
+     * @param record  A db row containing the values for a temperature dimension.
      * @param context the database context. It is used to query the nested summary tables.
      * @return Creates a new instance of the NodeLevelDimensionalSummary.
      */
@@ -206,8 +206,9 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
                         foreignKeyForDimensionalTable);
 
         Result<Record> recordList = rcaQuery.fetch();
+        ShardStore shardStore = new ShardStore();
         for (Record zoneSummary : recordList) {
-            summary.buildZoneProfile(zoneSummary);
+            summary.buildZoneProfile(zoneSummary, shardStore);
         }
         return summary;
     }
@@ -221,7 +222,8 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
      *
      * @param record A database row containing the values for one of the 4 zones.
      */
-    private void buildZoneProfile(final Record record) {
+    private void buildZoneProfile(final Record record, ShardStore shardStore
+    ) {
         String zoneName = record.get(NodeLevelZoneSummary.ZONE_KEY, String.class);
         HeatZoneAssigner.Zone zone = HeatZoneAssigner.Zone.valueOf(zoneName);
 
@@ -229,7 +231,6 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
         String jsonString = record.get(NodeLevelZoneSummary.ALL_KEY, String.class);
         JsonArray jsonArray = new JsonParser().parse(jsonString).getAsJsonArray();
 
-        ShardStore shardStore = new ShardStore();
         for (Iterator<JsonElement> it = jsonArray.iterator(); it.hasNext(); ) {
             JsonElement element = it.next();
             String indexName =
@@ -240,7 +241,7 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
             JsonArray temperatureProfiles =
                     element.getAsJsonObject().get(ShardProfileSummary.TEMPERATURE_KEY).getAsJsonArray();
 
-            for (JsonElement temperature: temperatureProfiles) {
+            for (JsonElement temperature : temperatureProfiles) {
                 JsonObject obj = temperature.getAsJsonObject();
                 TemperatureVector.Dimension dimension =
                         TemperatureVector.Dimension.valueOf(obj.get(TemperatureVector.DIMENSION_KEY).getAsString());
@@ -349,7 +350,7 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
             values.add(minShard == null ? "" : minShard.toJson());
             values.add(maxShard == null ? "" : maxShard.toJson());
             JsonArray array = new JsonArray();
-            for (ShardProfileSummary shard: shardProfileSummaries) {
+            for (ShardProfileSummary shard : shardProfileSummaries) {
                 if (shard != null) {
                     array.add(shard.toJson());
                 }

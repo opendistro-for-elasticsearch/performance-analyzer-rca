@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rest;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsRestUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.Version;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
@@ -211,8 +212,23 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
       return;
     }
 
-    String response = getTemperatureProfileRca(persistable, rcaRequested).toString();
-    sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
+    try {
+      if (Stats.getInstance().getMutedGraphNodes().contains(rcaRequested)) {
+        JsonObject errorResponse = new JsonObject();
+        StringBuilder builder = new StringBuilder();
+        builder.append("The Rca '").append(rcaRequested).append("' is muted. Consider removing it "
+                + "from the rca.conf's 'muted-rcas' list");
+        errorResponse.addProperty("error", builder.toString());
+        sendResponse(exchange, errorResponse.toString(), HttpURLConnection.HTTP_BAD_REQUEST);
+      } else {
+        String response = getTemperatureProfileRca(persistable, rcaRequested).toString();
+        sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
+      }
+    } catch (Exception ex) {
+      JsonObject errorResponse = new JsonObject();
+      errorResponse.addProperty("error", ex.getMessage());
+      sendResponse(exchange, errorResponse.toString(), HttpURLConnection.HTTP_BAD_REQUEST);
+    }
   }
 
   // check whether RCAs are cluster level RCAs

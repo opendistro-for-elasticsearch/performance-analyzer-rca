@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
 
+// TODO: This is just a placeholder. The methods are not implemented.
+
 /**
  * Although Pyrometer exists on all the nodes - data and master but the APIs are only accessible
  * from the master nodes. Pyrometer is able answer queries such as:
@@ -86,7 +88,7 @@ public class Api {
 
 
     /**
-     * To get the list of all the nodes in the cluster order.
+     * To get the list of all the nodes in the cluster.
      *
      * @param dimension Temperature along this dimension will be considered to sort the nodes
      * @param zone      Only the nodes in this zone will be reported.
@@ -145,8 +147,6 @@ public class Api {
             final Count count,
             final SortOrder sortOrder) {
         List<ShardProfileSummary> shards = new ArrayList<>();
-
-
         return shards;
     }
 }
