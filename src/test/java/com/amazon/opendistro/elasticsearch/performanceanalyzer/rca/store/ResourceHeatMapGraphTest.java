@@ -15,6 +15,12 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.LOCUS_DATA_MASTER_NODE;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.LOCUS_DATA_NODE;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.LOCUS_MASTER_NODE;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_AGGREGATE_UPSTREAM;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_LOCUS;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.ClientServers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
@@ -23,6 +29,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectio
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.exceptions.MalformedConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.CPU_Utilization;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.IO_TotThroughput;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.IO_TotalSyscallRate;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterDimensionalSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.CompactClusterLevelNodeSummary;
@@ -38,6 +50,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHoppe
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.PersistenceFactory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCASchedulerTask;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryRcaRequestHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.SQLiteReader;
@@ -55,34 +69,37 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
+
 
 public class ResourceHeatMapGraphTest {
     private final int THREADS = 3;
-    private final String cwd = System.getProperty("user.dir");
-    private final Path sqliteFile =
+    private static final String cwd = System.getProperty("user.dir");
+    private static final Path sqliteFile =
             Paths.get(cwd, "src", "test", "resources", "metricsdbs", "metricsdb_1582865425000");
 
-    private final RcaConf rcaConf =
+    private static final RcaConf rcaConf =
             new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
 
-    private Queryable reader;
-    private Persistable persistable;
-    private GRPCConnectionManager connectionManager;
-    private ClientServers clientServers;
+    private static Queryable reader;
+    private static Persistable persistable;
+    private static GRPCConnectionManager connectionManager;
+    private static ClientServers clientServers;
 
-    private SubscriptionManager subscriptionManager;
-    private AtomicReference<ExecutorService> networkThreadPoolReference;
+    private static SubscriptionManager subscriptionManager;
+    private static AtomicReference<ExecutorService> networkThreadPoolReference;
 
-    @Before
-    public void init() {
+    @BeforeClass
+    public static void init() {
         try {
             persistable = PersistenceFactory.create(rcaConf);
         } catch (MalformedConfig malformedConfig) {
@@ -118,8 +135,8 @@ public class ResourceHeatMapGraphTest {
         networkThreadPoolReference = new AtomicReference<>();
     }
 
-    @After
-    public void shutdown() {
+    @AfterClass
+    public static void shutdown() {
         connectionManager.shutdown();
         clientServers.getHttpServer().stop(0);
         clientServers.getNetServer().stop();
@@ -501,6 +518,133 @@ public class ResourceHeatMapGraphTest {
             Assert.assertEquals(0, node.get("IO_WriteSyscallRate_mean").getAsInt());
             Assert.assertEquals(0, node.get("IO_WriteSyscallRate_total").getAsInt());
             Assert.assertEquals(0, node.get("IO_WriteSyscallRate_num_shards").getAsInt());
+        }
+    }
+
+    private static class AnalysisGraphHotShard extends ElasticSearchAnalysisGraph {
+        @Override
+        public void construct() {
+            Metric cpuUtilization = new CPU_Utilization(1);
+            Metric ioTotThroughput = new IO_TotThroughput(1);
+            Metric ioTotSyscallRate = new IO_TotalSyscallRate(1);
+
+            cpuUtilization.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+            ioTotThroughput.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+            ioTotSyscallRate.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+            addLeaf(cpuUtilization);
+            addLeaf(ioTotThroughput);
+            addLeaf(ioTotSyscallRate);
+
+            // High CPU Utilization RCA
+            HotShardRca hotShardRca = new HotShardRca(1, 1, cpuUtilization, ioTotThroughput, ioTotSyscallRate);
+            hotShardRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+            hotShardRca.addAllUpstreams(Arrays.asList(cpuUtilization, ioTotThroughput, ioTotSyscallRate));
+
+            // Hot Shard Cluster RCA which consumes the above
+            HotShardClusterRca hotShardClusterRca = new HotShardClusterRca(1, hotShardRca);
+            hotShardClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+            hotShardClusterRca.addAllUpstreams(Collections.singletonList(hotShardRca));
+            hotShardClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
+        }
+    }
+
+    @Test
+    public void testHotShardClusterApiResponse() {
+        AnalysisGraph analysisGraph = new AnalysisGraphHotShard();
+        List<ConnectedComponent> connectedComponents =
+                RcaUtil.getAnalysisGraphComponents(analysisGraph);
+        RcaTestHelper.setEvaluationTimeForAllNodes(connectedComponents, 1);
+
+        String dataNodeRcaConf = Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString();
+
+        RcaConf rcaConf = new RcaConf(dataNodeRcaConf);
+        SubscriptionManager subscriptionManager =
+                new SubscriptionManager(new GRPCConnectionManager(false));
+        subscriptionManager.setCurrentLocus(rcaConf.getTagMap().get("locus"));
+
+        WireHopper wireHopper = new WireHopper(new NodeStateManager(), clientServers.getNetClient(),
+                subscriptionManager,
+                networkThreadPoolReference,
+                new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()));
+
+        RCASchedulerTask rcaSchedulerTaskData =
+                new RCASchedulerTask(
+                        1000,
+                        Executors.newFixedThreadPool(THREADS),
+                        connectedComponents,
+                        reader,
+                        persistable,
+                        rcaConf,
+                        wireHopper);
+        AllMetrics.NodeRole nodeRole = AllMetrics.NodeRole.DATA;
+        RcaTestHelper.setMyIp("192.168.0.1", nodeRole);
+        rcaSchedulerTaskData.run();
+
+        String masterNodeRcaConf =
+                Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_elected_master.conf").toString();
+        RcaConf rcaConf2 = new RcaConf(masterNodeRcaConf);
+        SubscriptionManager subscriptionManager2 =
+                new SubscriptionManager(new GRPCConnectionManager(false));
+        subscriptionManager2.setCurrentLocus(rcaConf2.getTagMap().get("locus"));
+
+        WireHopper wireHopper2 = new WireHopper(new NodeStateManager(), clientServers.getNetClient(),
+                subscriptionManager2,
+                networkThreadPoolReference,
+                new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()));
+
+        RCASchedulerTask rcaSchedulerTaskMaster =
+                new RCASchedulerTask(
+                        1000,
+                        Executors.newFixedThreadPool(THREADS),
+                        connectedComponents,
+                        reader,
+                        persistable,
+                        rcaConf2,
+                        wireHopper2);
+        AllMetrics.NodeRole nodeRole2 = AllMetrics.NodeRole.ELECTED_MASTER;
+        RcaTestHelper.setMyIp("1c", nodeRole2);
+        rcaSchedulerTaskMaster.run();
+
+        URL url = null;
+        try {
+            url = new URL("http://localhost:9600" + Util.RCA_QUERY_URL + "?name=" + HotShardClusterRca.RCA_TABLE_NAME);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            Assert.fail();
+        }
+
+        try {
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setRequestMethod("GET");
+
+            int status = con.getResponseCode();
+            System.out.println("Response status: " + status);
+            try (BufferedReader in = new BufferedReader(
+                    new InputStreamReader(con.getInputStream()))) {
+                String inputLine;
+                StringBuffer content = new StringBuffer();
+                while ((inputLine = in.readLine()) != null) {
+                    content.append(inputLine);
+                }
+                final String hotShardClusterRcaName = HotShardClusterRca.RCA_TABLE_NAME;
+                final String hotClusterSummaryName = HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE;
+
+                JsonParser parser = new JsonParser();
+                JsonElement jsonElement = parser.parse(content.toString());
+                JsonObject hotShardClusterRca =
+                        jsonElement.getAsJsonObject().get(hotShardClusterRcaName).getAsJsonArray().get(0).getAsJsonObject();
+
+                Assert.assertEquals(hotShardClusterRcaName, hotShardClusterRca.get("rca_name").getAsString());
+                Assert.assertEquals("unhealthy", hotShardClusterRca.get("state").getAsString());
+
+                JsonObject hotClusterSummary =
+                        hotShardClusterRca.get(hotClusterSummaryName).getAsJsonArray().get(0).getAsJsonObject();
+                Assert.assertEquals(1, hotClusterSummary.get("number_of_unhealthy_nodes").getAsInt());
+            }
+            con.disconnect();
+        } catch (IOException e) {
+            e.printStackTrace();
+            Assert.fail();
         }
     }
 }
