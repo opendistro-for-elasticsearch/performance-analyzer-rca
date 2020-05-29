@@ -38,11 +38,8 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-//TODO
-@Ignore
 public class SQLitePersistorTest {
   private Path testLocation = null;
   private final String baseFilename = "rca.test.file";

@@ -41,11 +41,8 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
-//TODO
-@Ignore
 public class RcaStatsCollectorTest {
   class FaultyAnalysisGraph extends AnalysisGraph {
     @Override
