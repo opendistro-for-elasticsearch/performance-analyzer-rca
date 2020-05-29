@@ -60,6 +60,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+// Nightly test
 public class PerformanceAnalyzerApp {
 
   private static final int EXCEPTION_QUEUE_LENGTH = 1;
