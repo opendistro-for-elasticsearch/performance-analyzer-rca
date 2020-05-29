@@ -66,7 +66,8 @@ public class RcaTestHelper extends Rca<ResourceFlowUnit> {
     hotShardSummary.setIoThroughputThreshold(500000);
     hotShardSummary.setIoSysCallrate(io_sys_callrate);
     hotShardSummary.setIoSysCallrateThreshold(0.50);
-    HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, "127.0.0.0", Arrays.asList(hotShardSummary));
+    HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, "127.0.0.0");
+    nodeSummary.addNestedSummaryList(Arrays.asList(hotShardSummary));
     return new ResourceFlowUnit(System.currentTimeMillis(), new ResourceContext(health), nodeSummary);
   }
 }

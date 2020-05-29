@@ -15,20 +15,13 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary.HOT_NODE_SUMMARY_TABLE;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary.HOT_RESOURCE_SUMMARY_TABLE;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.TopConsumerSummary.TOP_CONSUMER_SUMMARY_TABLE;
-
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.ResourceFlowUnitFieldValue;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterDimensionalSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterDimensionalSummary.ZoneSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.NodeLevelDimensionalSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ShardProfileSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
 import com.google.common.collect.ImmutableList;
@@ -48,23 +41,9 @@ import org.jooq.impl.DSL;
  * A utility class to query cluster, node and resource level summary for a rca
  */
 public class SQLiteQueryUtils {
-  private static final Map<String, String> nestedTableMap;
   private static final Map<String, String> temperatureProfileNestedSummaryMap;
   private static final Set<String> clusterLevelRCA;
   private static final Set<String> temperatureProfileRCASet;
-
-  // to map table => its nested table
-  // e.g. HotClusterSummary => HotNodeSummary
-  static {
-    Map<String, String> tableMap = new HashMap<>();
-    tableMap.put(ClusterTemperatureSummary.TABLE_NAME, ClusterDimensionalSummary.TABLE_NAME);
-
-    tableMap.put(ResourceFlowUnit.RCA_TABLE_NAME, HOT_CLUSTER_SUMMARY_TABLE);
-    tableMap.put(HOT_CLUSTER_SUMMARY_TABLE, HOT_NODE_SUMMARY_TABLE);
-    tableMap.put(HOT_NODE_SUMMARY_TABLE, HOT_RESOURCE_SUMMARY_TABLE);
-    tableMap.put(HOT_RESOURCE_SUMMARY_TABLE, TOP_CONSUMER_SUMMARY_TABLE);
-    nestedTableMap = Collections.unmodifiableMap(tableMap);
-  }
 
   static {
     Map<String, String> temperatureSummaryMap = new HashMap<>();
@@ -86,6 +65,7 @@ public class SQLiteQueryUtils {
     rcaSet.add(ClusterTemperatureRca.TABLE_NAME);
     rcaSet.add(HighHeapUsageClusterRca.RCA_TABLE_NAME);
     rcaSet.add(HotNodeClusterRca.RCA_TABLE_NAME);
+    rcaSet.add(HotShardClusterRca.RCA_TABLE_NAME);
     clusterLevelRCA = Collections.unmodifiableSet(rcaSet);
   }
 
@@ -96,15 +76,6 @@ public class SQLiteQueryUtils {
     tempProfileRcaSet.add(NodeTemperatureRca.TABLE_NAME);
     tempProfileRcaSet.add(ClusterTemperatureRca.TABLE_NAME);
     temperatureProfileRCASet = Collections.unmodifiableSet(tempProfileRcaSet);
-  }
-
-  /**
-   * get a mapping between table => its nested table
-   * e.g. HotClusterSummary => HotNodeSummary
-   * @return map table => its nested table
-   */
-  public static Map<String, String> getNestedTableMap() {
-    return nestedTableMap;
   }
 
   /**

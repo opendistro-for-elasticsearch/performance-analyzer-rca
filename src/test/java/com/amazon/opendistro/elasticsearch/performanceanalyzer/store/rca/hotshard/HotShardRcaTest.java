@@ -11,6 +11,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.MetricTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotShardSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
 
@@ -126,13 +127,15 @@ public class HotShardRcaTest {
         hotShardRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(2)));
         flowUnit = hotShardRcaX.operate();
         HotNodeSummary summary1 = (HotNodeSummary) flowUnit.getResourceSummary();
-        List<HotShardSummary> hotShardSummaryList1 = summary1.getHotShardSummaryList();
+        List<GenericSummary> hotShardSummaryList1 = summary1.getNestedSummaryList();
 
         Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
         Assert.assertEquals(1, hotShardSummaryList1.size());
-        Assert.assertEquals("1", hotShardSummaryList1.get(0).getShardId());
-        Assert.assertEquals(index.index_1.toString(), hotShardSummaryList1.get(0).getIndexName());
-        Assert.assertEquals("node1", hotShardSummaryList1.get(0).getNodeId());
+
+        HotShardSummary hotShardSummary1 = (HotShardSummary) hotShardSummaryList1.get(0);
+        Assert.assertEquals("1", hotShardSummary1.getShardId());
+        Assert.assertEquals(index.index_1.toString(), hotShardSummary1.getIndexName());
+        Assert.assertEquals("node1", hotShardSummary1.getNodeId());
 
         // ts = 3
         // index = index_1, shard = shard_2, cpuUtilization = 0.75, ioTotThroughput = 400000, ioTotSyscallRate = 0.10
@@ -160,17 +163,19 @@ public class HotShardRcaTest {
         hotShardRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(4)));
         flowUnit = hotShardRcaX.operate();
         HotNodeSummary summary2 = (HotNodeSummary) flowUnit.getResourceSummary();
-        List<HotShardSummary> hotShardSummaryList2 = summary2.getHotShardSummaryList();
+        List<GenericSummary> hotShardSummaryList2 = summary2.getNestedSummaryList();
 
         Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
         Assert.assertEquals(2, hotShardSummaryList2.size());
-        Assert.assertEquals(index.index_1.toString(), hotShardSummaryList2.get(0).getIndexName());
-        Assert.assertEquals("1", hotShardSummaryList2.get(0).getShardId());
-        Assert.assertEquals("node1", hotShardSummaryList2.get(0).getNodeId());
-        Assert.assertEquals("2", hotShardSummaryList2.get(1).getShardId());
-        Assert.assertEquals(index.index_1.toString(), hotShardSummaryList2.get(1).getIndexName());
-        Assert.assertEquals("node1", hotShardSummaryList2.get(1).getNodeId());
 
+        HotShardSummary hotShardSummary2 = (HotShardSummary) hotShardSummaryList2.get(0);
+        HotShardSummary hotShardSummary3 = (HotShardSummary) hotShardSummaryList2.get(1);
+        Assert.assertEquals(index.index_1.toString(), hotShardSummary2.getIndexName());
+        Assert.assertEquals("1", hotShardSummary2.getShardId());
+        Assert.assertEquals("node1", hotShardSummary2.getNodeId());
+        Assert.assertEquals("2", hotShardSummary3.getShardId());
+        Assert.assertEquals(index.index_1.toString(), hotShardSummary3.getIndexName());
+        Assert.assertEquals("node1", hotShardSummary3.getNodeId());
     }
 
     private static class HotShardRcaX extends HotShardRca {

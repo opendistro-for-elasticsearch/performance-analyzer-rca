@@ -56,7 +56,10 @@ public class SQLiteReader implements Queryable, Removable {
 
     @Override
     public Result<Record> queryMetrics(MetricsDB db, String metricName) {
-        throw new IllegalArgumentException("Should not call");
+        Result<Record> result = getContext().select()
+                .from(DSL.table(metricName))
+                .fetch();
+        return result;
     }
 
     @Override
