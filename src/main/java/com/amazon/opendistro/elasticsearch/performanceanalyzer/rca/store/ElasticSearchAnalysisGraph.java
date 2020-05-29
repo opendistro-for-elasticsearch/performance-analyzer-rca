@@ -162,12 +162,12 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     addLeaf(ioTotSyscallRate);
 
     // High CPU Utilization RCA
-    Rca<ResourceFlowUnit<HotShardSummary>> hotShardRca = new HotShardRca(5, 12, cpuUtilization, ioTotThroughput, ioTotSyscallRate);
+    Rca<ResourceFlowUnit<HotNodeSummary>> hotShardRca = new HotShardRca(5, 12, cpuUtilization, ioTotThroughput, ioTotSyscallRate);
     hotShardRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     hotShardRca.addAllUpstreams(Arrays.asList(cpuUtilization, ioTotThroughput, ioTotSyscallRate));
 
     // Hot Shard Cluster RCA which consumes the above
-    HotShardClusterRca hotShardClusterRca = new HotShardClusterRca(12, hotShardRca);
+    Rca<ResourceFlowUnit<HotClusterSummary>> hotShardClusterRca = new HotShardClusterRca(12, hotShardRca);
     hotShardClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     hotShardClusterRca.addAllUpstreams(Collections.singletonList(hotShardRca));
     hotShardClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);

@@ -55,7 +55,7 @@ import org.junit.Ignore;
 // import
 // com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.NodeStatsMetricsCollector;
 
-//@Ignore
+@Ignore
 public class AbstractReaderTests extends AbstractTests {
   protected final String DB_URL;
 

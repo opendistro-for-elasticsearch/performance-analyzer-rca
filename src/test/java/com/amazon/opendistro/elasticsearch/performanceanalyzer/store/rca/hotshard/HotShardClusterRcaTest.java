@@ -22,7 +22,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotShardSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceTypeUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
@@ -41,7 +41,7 @@ import org.junit.experimental.categories.Category;
 @Category(GradleTaskForRca.class)
 public class HotShardClusterRcaTest {
 
-    private DummyTestHelperRca<HotShardSummary> hotShardRca;
+    private DummyTestHelperRca<HotNodeSummary> hotShardRca;
 
     private HotShardClusterRca hotShardClusterRca;
 
@@ -149,9 +149,9 @@ public class HotShardClusterRcaTest {
                         index.index_1.name(), shard.shard_1.name(), node.node_2.name(), 0.40,
                         400000, 0.30, Resources.State.UNHEALTHY)));
 
-        ResourceFlowUnit flowUnit1 = hotShardClusterRca.operate();
+        ResourceFlowUnit<HotClusterSummary> flowUnit1 = hotShardClusterRca.operate();
         Assert.assertFalse(flowUnit1.getResourceContext().isUnhealthy());
-        Assert.assertTrue(flowUnit1.getSummary().getNestedSummaryList().isEmpty());
+        Assert.assertTrue(flowUnit1.getSummary().getNodeSummaryList().isEmpty());
 
         // 4.2  hot shards across an index as per CPU Utilization, ie. : CPU_UTILIZATION >= CPU_UTILIZATION_threshold
         hotShardRca.mockFlowUnits(Arrays.asList(

@@ -48,7 +48,11 @@ import org.jooq.tools.json.JSONObject;
 public class RcaTestHelper {
   public static List<String> getAllLinesFromStatsLog() {
     try {
-      return Files.readAllLines(Paths.get(getLogFilePath(LogType.StatsLog)));
+      String statsLog = getLogFilePath(LogType.StatsLog);
+      if (statsLog == null) {
+        return Collections.emptyList();
+      }
+      return Files.readAllLines(Paths.get(statsLog));
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -67,7 +71,11 @@ public class RcaTestHelper {
 
   public static List<String> getAllLinesFromLog(LogType logType) {
     try {
-      return Files.readAllLines(Paths.get(getLogFilePath(logType)));
+      String logFilePath = getLogFilePath(logType);
+      if (logFilePath == null) {
+        return Collections.emptyList();
+      }
+      return Files.readAllLines(Paths.get(logFilePath));
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -98,12 +106,18 @@ public class RcaTestHelper {
       logger = LoggerContext.getContext().getRootLogger();
     }
     FileAppender fileAppender = (FileAppender) logger.getAppenders().get(logType.name());
-    return fileAppender.getFileName();
+    return fileAppender == null ? null : fileAppender.getFileName();
   }
 
   public static void cleanUpLogs() {
-    truncate(Paths.get(getLogFilePath(LogType.PerformanceAnalyzerLog)).toFile());
-    truncate(Paths.get(getLogFilePath(LogType.StatsLog)).toFile());
+    String paLog = getLogFilePath(LogType.PerformanceAnalyzerLog);
+    if (paLog != null) {
+      truncate(Paths.get(paLog).toFile());
+    }
+    String statsLog = getLogFilePath(LogType.StatsLog);
+    if (statsLog != null) {
+      truncate(Paths.get(statsLog).toFile());
+    }
   }
 
   public static void setEvaluationTimeForAllNodes(List<ConnectedComponent> connectedComponents,

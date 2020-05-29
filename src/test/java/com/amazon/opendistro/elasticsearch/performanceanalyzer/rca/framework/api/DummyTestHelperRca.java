@@ -57,7 +57,7 @@ public class DummyTestHelperRca<S extends GenericSummary> extends Rca<ResourceFl
     return new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(healthy), nodeSummary);
   }
 
-  public static ResourceFlowUnit<HotShardSummary> generateFlowUnitForHotShard(String indexName,
+  public static ResourceFlowUnit<HotNodeSummary> generateFlowUnitForHotShard(String indexName,
       String shardId, String nodeID, double cpu_utilization,
       double io_throughput, double io_sys_callrate, Resources.State health) {
     HotShardSummary hotShardSummary = new HotShardSummary(indexName, shardId, nodeID, 60);
@@ -67,6 +67,8 @@ public class DummyTestHelperRca<S extends GenericSummary> extends Rca<ResourceFl
     hotShardSummary.setIoThroughputThreshold(500000);
     hotShardSummary.setIoSysCallrate(io_sys_callrate);
     hotShardSummary.setIoSysCallrateThreshold(0.50);
-    return new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(health), hotShardSummary);
+    HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, "127.0.0.0");
+    nodeSummary.appendNestedSummary(hotShardSummary);
+    return new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(health), nodeSummary);
   }
 }

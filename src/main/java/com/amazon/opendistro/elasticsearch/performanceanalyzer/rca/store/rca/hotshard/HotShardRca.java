@@ -15,9 +15,12 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension.INDEX_NAME;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension.SHARD_ID;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.HOT_SHARD_RCA_ERROR_METRIC;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -35,6 +38,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.google.common.annotations.VisibleForTesting;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -62,7 +66,7 @@ import org.jooq.Record;
  * 2. Paging_RSS
  *
  */
-public class HotShardRca extends Rca<ResourceFlowUnit<HotShardSummary>> {
+public class HotShardRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
 
     private static final Logger LOG = LogManager.getLogger(HotShardRca.class);
     private static final int SLIDING_WINDOW_IN_SECONDS =  60;
@@ -106,14 +110,18 @@ public class HotShardRca extends Rca<ResourceFlowUnit<HotShardSummary>> {
                                  final HashMap<IndexShardKey, SlidingWindow<SlidingWindowData>> metricMap) {
         for (Record record : metricFlowUnit.getData()) {
             try {
-                IndexShardKey indexShardKey = IndexShardKey.buildIndexShardKey(record);
-                double usage = record.getValue(MetricsDB.SUM, Double.class);
-                SlidingWindow<SlidingWindowData> usageDeque = metricMap.get(indexShardKey);
-                if (null == usageDeque) {
-                    usageDeque = new SlidingWindow<>(SLIDING_WINDOW_IN_SECONDS, TimeUnit.SECONDS);
-                    metricMap.put(indexShardKey, usageDeque);
+                String indexName = record.getValue(INDEX_NAME.toString(), String.class);
+                Integer shardId = record.getValue(SHARD_ID.toString(), Integer.class);
+                if (indexName != null &&  shardId != null) {
+                    IndexShardKey indexShardKey = IndexShardKey.buildIndexShardKey(record);
+                    double usage = record.getValue(MetricsDB.SUM, Double.class);
+                    SlidingWindow<SlidingWindowData> usageDeque = metricMap.get(indexShardKey);
+                    if (null == usageDeque) {
+                        usageDeque = new SlidingWindow<>(SLIDING_WINDOW_IN_SECONDS, TimeUnit.SECONDS);
+                        metricMap.put(indexShardKey, usageDeque);
+                    }
+                    usageDeque.next(new SlidingWindowData(this.clock.millis(), usage));
                 }
-                usageDeque.next(new SlidingWindowData(this.clock.millis(), usage));
             } catch (Exception e) {
                 StatsCollector.instance().logMetric(HOT_SHARD_RCA_ERROR_METRIC);
                 LOG.error("Failed to parse metric in FlowUnit: {} from {}", record, metricType);
@@ -148,7 +156,7 @@ public class HotShardRca extends Rca<ResourceFlowUnit<HotShardSummary>> {
      *
      */
     @Override
-    public ResourceFlowUnit<HotShardSummary> operate() {
+    public ResourceFlowUnit<HotNodeSummary> operate() {
         counter += 1;
 
         // Populate the Resource HashMaps
@@ -158,13 +166,13 @@ public class HotShardRca extends Rca<ResourceFlowUnit<HotShardSummary>> {
 
         if (counter == rcaPeriod) {
             ResourceContext context = new ResourceContext(Resources.State.HEALTHY);
-            List<HotShardSummary> HotShardSummaryList = new ArrayList<>();
             ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor.getCurrentNodeDetails();
 
             Set<IndexShardKey> indexShardKeySet = new HashSet<>(cpuUtilizationMap.keySet());
             indexShardKeySet.addAll(ioTotThroughputMap.keySet());
             indexShardKeySet.addAll(ioTotSyscallRateMap.keySet());
 
+            HotNodeSummary nodeSummary = new HotNodeSummary(currentNode.getId(), currentNode.getHostAddress());
             for (IndexShardKey indexShardKey : indexShardKeySet) {
                 double avgCpuUtilization = fetchUsageValueFromMap(cpuUtilizationMap, indexShardKey);
                 double avgIoTotThroughput = fetchUsageValueFromMap(ioTotThroughputMap, indexShardKey);
@@ -181,7 +189,7 @@ public class HotShardRca extends Rca<ResourceFlowUnit<HotShardSummary>> {
                     summary.setIoThroughputThreshold(ioTotThroughputThreshold);
                     summary.setIoSysCallrate(avgIoTotSyscallRate);
                     summary.setIoSysCallrateThreshold(ioTotSysCallRateThreshold);
-                    HotShardSummaryList.add(summary);
+                    nodeSummary.appendNestedSummary(summary);
                     context = new ResourceContext(Resources.State.UNHEALTHY);
                     LOG.debug("Hot Shard Identified, Shard : {} , avgCpuUtilization = {} , avgIoTotThroughput = {}, "
                             + "avgIoTotSyscallRate = {}", indexShardKey, avgCpuUtilization, avgIoTotThroughput, avgIoTotSyscallRate);
@@ -191,13 +199,12 @@ public class HotShardRca extends Rca<ResourceFlowUnit<HotShardSummary>> {
             // reset the variables
             counter = 0;
 
-            //HotNodeSummary summary = new HotNodeSummary(
-            //        currentNode.getId(), currentNode.getHostAddress(), HotShardSummaryList);
-
-            LOG.debug("High CPU Utilization Shard RCA Context :  " + context.toString());
-            return new ResourceFlowUnit<>(this.clock.millis(), context, null);
+            //check if the current node is data node. If it is the data node
+            //then HotNodeRca is the top level RCA on this node and we want to persist summaries in flowunit.
+            boolean isDataNode = !currentNode.getIsMasterNode();
+            return new ResourceFlowUnit<>(this.clock.millis(), context, nodeSummary, isDataNode);
         } else {
-            LOG.debug("Empty FlowUnit returned for High CPU Utilization Shard RCA");
+            LOG.debug("Empty FlowUnit returned for Hot Shard RCA");
             return new ResourceFlowUnit<>(this.clock.millis());
         }
     }
@@ -214,13 +221,37 @@ public class HotShardRca extends Rca<ResourceFlowUnit<HotShardSummary>> {
         ioTotSysCallRateThreshold = configObj.getIoTotSysCallRateThreshold();
     }
 
-    /**
-     * This is a local node RCA which by definition can not be serialize/de-serialized
-     * over gRPC.
-     */
     @Override
     public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-        throw new IllegalStateException(this.getClass().getSimpleName() + " should not be passed "
-                + "over the wire.");
+        final List<FlowUnitMessage> flowUnitMessages =
+            args.getWireHopper().readFromWire(args.getNode());
+        List<ResourceFlowUnit<HotNodeSummary>> flowUnitList = new ArrayList<>();
+        LOG.debug("rca: Executing fromWire: {}", this.getClass().getSimpleName());
+        for (FlowUnitMessage message : flowUnitMessages) {
+            ResourceFlowUnit<HotNodeSummary> flowUnit = null;
+            //if the flowunit is empty. empty flowunit does not have context
+            if (message.hasResourceContext()) {
+                ResourceContext newContext = ResourceContext
+                    .buildResourceContextFromMessage(message.getResourceContext());
+                HotNodeSummary newSummary = null;
+                if (message.getSummaryOneofCase().getNumber()
+                    == FlowUnitMessage.SummaryOneofCase.HOTNODESUMMARY.getNumber()
+                    && message.hasHotNodeSummary()) {
+                    newSummary = HotNodeSummary.buildHotNodeSummaryFromMessage(message.getHotNodeSummary());
+                }
+                flowUnit = new ResourceFlowUnit<>(message.getTimeStamp(), newContext, newSummary);
+            } else {
+                //empty flowunit;
+                //TODO: we might not want to send empty flowunit across network.
+                flowUnit = new ResourceFlowUnit<>(message.getTimeStamp());
+            }
+            flowUnitList.add(flowUnit);
+        }
+        setFlowUnits(flowUnitList);
+    }
+
+    @VisibleForTesting
+    public void setClock(Clock clock) {
+        this.clock = clock;
     }
 }

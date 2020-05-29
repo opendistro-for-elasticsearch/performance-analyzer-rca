@@ -80,6 +80,10 @@ public class HotNodeSummary extends GenericSummary {
     hotResourceSummaryList.add(summary);
   }
 
+  public void appendNestedSummary(HotShardSummary summary) {
+    hotShardSummaryList.add(summary);
+  }
+
   @Override
   public GenericSummary appendNestedSummary(String summaryTable, Record record) {
     GenericSummary ret = null;
@@ -99,13 +103,14 @@ public class HotNodeSummary extends GenericSummary {
     summaryMessageBuilder.setNodeID(this.nodeID);
     summaryMessageBuilder.setHostAddress(this.hostAddress);
     for (GenericSummary nestedSummary : getNestedSummaryList()) {
-      summaryMessageBuilder.getHotResourceSummaryListBuilder()
-          .addHotResourceSummary(nestedSummary.buildSummaryMessage());
+      if (nestedSummary instanceof HotResourceSummary) {
+        summaryMessageBuilder.getHotResourceSummaryListBuilder()
+                .addHotResourceSummary(nestedSummary.buildSummaryMessage());
+      } else if (nestedSummary instanceof HotShardSummary) {
+        summaryMessageBuilder.getHotShardSummaryListBuilder()
+                .addHotShardSummary(nestedSummary.buildSummaryMessage());
+      }
     }
-
-    this.hotShardSummaryList.stream()
-            .forEach(nestedHotShardSummary -> summaryMessageBuilder.getHotShardSummaryListBuilder()
-                    .addHotShardSummary(nestedHotShardSummary.buildSummaryMessage()));
     return summaryMessageBuilder.build();
   }
 

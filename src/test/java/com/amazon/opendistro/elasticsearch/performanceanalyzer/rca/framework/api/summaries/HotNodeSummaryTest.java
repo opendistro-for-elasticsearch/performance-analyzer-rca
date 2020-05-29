@@ -22,8 +22,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary.SQL_SCHEMA_CONSTANTS;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-
-import java.util.Arrays;
 import java.util.List;
 import org.jooq.Field;
 import org.jooq.Record;
@@ -53,6 +51,14 @@ public class HotNodeSummaryTest {
         Assert.assertEquals(NODE_ID, msg.getNodeID());
         Assert.assertEquals(HOST_ADDRESS, msg.getHostAddress());
         Assert.assertEquals(1, uut.getHotResourceSummaryList().size());
+    }
+
+    @Test
+    public void testBuildSummaryMessageAndAddToFlowUnit() {
+        // No assertions need to be made here, this function is a noop in the uut
+        FlowUnitMessage.Builder msgBuilder = FlowUnitMessage.newBuilder();
+        uut.buildSummaryMessageAndAddToFlowUnit(msgBuilder);
+        Assert.assertEquals(uut.buildSummaryMessage(), msgBuilder.getHotNodeSummary());
     }
 
     @Test
