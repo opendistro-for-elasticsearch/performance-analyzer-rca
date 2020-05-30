@@ -69,7 +69,6 @@ public class CpuUtilDimensionTemperatureRca extends Rca<DimensionalTemperatureFl
                 CPU_UTIL_BY_SHARD,
                 AVG_CPU_UTIL_BY_SHARD, CPU_UTIL_SHARD_INDEPENDENT, CPU_UTIL_PEAK_USAGE,
                 THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT);
-        LOG.error("Dimensional temperature calculated: {}", flowUnit.getNodeDimensionProfile());
         return flowUnit;
     }
 }

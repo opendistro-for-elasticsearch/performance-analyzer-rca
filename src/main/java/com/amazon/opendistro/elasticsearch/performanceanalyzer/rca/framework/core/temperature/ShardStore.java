@@ -49,7 +49,7 @@ public class ShardStore {
     }
 
     @Nonnull
-    public ShardProfileSummary getOrCreateIfAbsent(String indexName, int shardId) {
+    public synchronized ShardProfileSummary getOrCreateIfAbsent(String indexName, int shardId) {
         Map<Integer, ShardProfileSummary> innerMap = list.get(indexName);
         if (innerMap == null) {
             // No element with the index name exists; create one.

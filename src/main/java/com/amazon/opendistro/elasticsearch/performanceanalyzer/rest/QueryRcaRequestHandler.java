@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rest;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsRestUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.Version;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
@@ -48,6 +49,42 @@ import org.apache.logging.log4j.util.Supplier;
  *
  *  <p>To get response for a specific RCA, use:
  *  curl --url "localhost:9650/_opendistro/_performanceanalyzer/rca?name=HighHeapUsageClusterRca" -XGET
+ *
+ *  <p>For temperature profiles, one can get the local node temperature using a request url as:
+ *  curl "localhost:9600/_opendistro/_performanceanalyzer/rca?name=NodeTemperatureRca&local=true"
+ *
+ * <p>The cluster level RCA can only be queried from the elected master using this rest API:
+ * curl "localhost:9600/_opendistro/_performanceanalyzer/rca?name=ClusterTemperatureRca"
+ *
+ *
+ * <p>curl "localhost:9600/_opendistro/_performanceanalyzer/rca?name=NodeTemperatureRca&local=true"|jq
+ * {
+ *   "NodeTemperatureRca": [
+ *     {
+ *       "rca_name": "NodeTemperatureRca",
+ *       "timestamp": 1589592178829,
+ *       "state": "unknown",
+ *       "CompactNodeSummary": [
+ *         {
+ *           "node_id": "v9_TNhEeSP2Q3DJO8fd6BA",
+ *           "host_address": "172.17.0.2",
+ *           "CPU_Utilization_mean": 0,
+ *           "CPU_Utilization_total": 0.0310837676896351,
+ *           "CPU_Utilization_num_shards": 2,
+ *           "Heap_AllocRate_mean": 0,
+ *           "Heap_AllocRate_total": 4021355.87442904,
+ *           "Heap_AllocRate_num_shards": 2,
+ *           "IO_READ_SYSCALL_RATE_mean": 0,
+ *           "IO_READ_SYSCALL_RATE_total": 0,
+ *           "IO_READ_SYSCALL_RATE_num_shards": 0,
+ *           "IO_WriteSyscallRate_mean": 0,
+ *           "IO_WriteSyscallRate_total": 0,
+ *           "IO_WriteSyscallRate_num_shards": 0
+ *         }
+ *       ]
+ *     }
+ *   ]
+ * }
  */
 public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandler {
 
@@ -175,8 +212,23 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
       return;
     }
 
-    String response = getTemperatureProfileRca(persistable, rcaRequested).toString();
-    sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
+    try {
+      if (Stats.getInstance().getMutedGraphNodes().contains(rcaRequested)) {
+        JsonObject errorResponse = new JsonObject();
+        StringBuilder builder = new StringBuilder();
+        builder.append("The Rca '").append(rcaRequested).append("' is muted. Consider removing it "
+                + "from the rca.conf's 'muted-rcas' list");
+        errorResponse.addProperty("error", builder.toString());
+        sendResponse(exchange, errorResponse.toString(), HttpURLConnection.HTTP_BAD_REQUEST);
+      } else {
+        String response = getTemperatureProfileRca(persistable, rcaRequested).toString();
+        sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
+      }
+    } catch (Exception ex) {
+      JsonObject errorResponse = new JsonObject();
+      errorResponse.addProperty("error", ex.getMessage());
+      sendResponse(exchange, errorResponse.toString(), HttpURLConnection.HTTP_BAD_REQUEST);
+    }
   }
 
   // check whether RCAs are cluster level RCAs

@@ -109,7 +109,7 @@ public abstract class PersistorBase implements Persistable {
 
   abstract String readTables();
 
-  abstract RcaResponse readRca(String rca);
+  abstract JsonElement readRca(String rca);
 
   abstract void createNewDSLContext();
 
@@ -132,9 +132,9 @@ public abstract class PersistorBase implements Persistable {
   @Override
   public synchronized JsonElement read(String rca) {
     JsonArray rcaJson = new JsonArray();
-    RcaResponse response = readRca(rca);
+    JsonElement response = readRca(rca);
     if (response != null) {
-      rcaJson.add(response.toJson());
+      rcaJson.add(response);
     }
     return rcaJson;
   }

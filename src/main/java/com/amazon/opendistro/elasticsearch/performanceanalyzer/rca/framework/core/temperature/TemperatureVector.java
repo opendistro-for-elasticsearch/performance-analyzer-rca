@@ -15,11 +15,15 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.util.Comparator;
 import javax.annotation.Nullable;
 
 public class TemperatureVector {
+    public static final String DIMENSION_KEY = "dimension";
+    public static final String VALUE_KEY = "value";
+
     public enum Dimension {
         CPU_Utilization(com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.CPU_Utilization.NAME),
         Heap_AllocRate(com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_AllocRate.NAME),
@@ -91,31 +95,21 @@ public class TemperatureVector {
 
     @Override
     public String toString() {
-        StringBuilder stringBuilder = new StringBuilder();
-
-        String delimiter = "";
-        for (Dimension dim : Dimension.values()) {
-            String key = dim.NAME;
-            NormalizedValue value = normalizedValues[dim.ordinal()];
-            stringBuilder.append(delimiter).append(key).append(":").append(value);
-            delimiter = ",";
-        }
-
-        return "TemperatureVector{"
-                + stringBuilder.toString()
-                + '}';
+        return toJson().toString();
     }
 
-    public JsonObject toJson() {
-        JsonObject jsonObject = new JsonObject();
+    public JsonArray toJson() {
+        JsonArray array = new JsonArray();
         for (Dimension dim : Dimension.values()) {
-            jsonObject.addProperty("dimension", dim.NAME);
-
             NormalizedValue val = normalizedValues[dim.ordinal()];
-            jsonObject.addProperty("value",
-                    val != null ? val.getPOINTS() : null);
+            if (val != null) {
+                JsonObject jsonObject = new JsonObject();
+                jsonObject.addProperty(DIMENSION_KEY, dim.NAME);
+                jsonObject.addProperty(VALUE_KEY, val.toString());
+                array.add(jsonObject);
+            }
         }
-        return jsonObject;
+        return array;
     }
 
     /**
