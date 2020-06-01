@@ -506,10 +506,6 @@ public class ResourceHeatMapGraphTest {
           break;
         case Heap_AllocRate:
           break;
-        case IO_WriteSyscallRate:
-          break;
-        case IO_READ_SYSCALL_RATE:
-          break;
       }
     }
   }
@@ -539,7 +535,6 @@ public class ResourceHeatMapGraphTest {
             Assert.assertEquals("pmc",
                 e.getAsJsonObject().get("index_name").getAsString());
             int shardId = e.getAsJsonObject().get("shard_id").getAsInt();
-            System.out.println("ShardID " + shardId);
             Assert.assertTrue(shardId == 2 || shardId == 4 || shardId == 0);
           }
           break;
@@ -859,13 +854,6 @@ public class ResourceHeatMapGraphTest {
       Assert.assertEquals(7429635, node.get("Heap_AllocRate_total").getAsInt());
       Assert.assertEquals(3, node.get("Heap_AllocRate_num_shards").getAsInt());
 
-      Assert.assertEquals(0, node.get("IO_READ_SYSCALL_RATE_mean").getAsInt());
-      Assert.assertEquals(0, node.get("IO_READ_SYSCALL_RATE_total").getAsInt());
-      Assert.assertEquals(0, node.get("IO_READ_SYSCALL_RATE_num_shards").getAsInt());
-
-      Assert.assertEquals(0, node.get("IO_WriteSyscallRate_mean").getAsInt());
-      Assert.assertEquals(0, node.get("IO_WriteSyscallRate_total").getAsInt());
-      Assert.assertEquals(0, node.get("IO_WriteSyscallRate_num_shards").getAsInt());
     }
   }
 

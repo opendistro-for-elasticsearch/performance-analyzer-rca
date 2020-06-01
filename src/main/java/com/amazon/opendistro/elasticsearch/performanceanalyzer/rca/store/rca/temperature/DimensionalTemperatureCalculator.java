@@ -25,7 +25,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.TemperatureMetricsBase;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.calculators.AvgShardBasedTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.calculators.ShardBasedTemperatureCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.ShardSizePeakUsageTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.calculators.TotalNodeTemperatureCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.DiskUsageShardIndependentTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.calculators.ShardIndependentTemperatureCalculator;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -104,7 +106,11 @@ public class DimensionalTemperatureCalculator {
             }
         }
 
-        if (shardIdIndependentFlowUnits.size() != 1) {
+        /*
+        For ShardIndependent flow units and Peak Resource flow units we dont have data for the shard
+        Size dimension. Therefore handling it here so as to avoid it from the final calculation.
+        */
+        if (shardIdIndependentFlowUnits.size() > 1) {
             if (shardIdIndependentFlowUnits.get(0).isEmpty()) {
                 LOG.info("Empty shardIdIndependentFlowUnits");
                 return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
@@ -116,9 +122,9 @@ public class DimensionalTemperatureCalculator {
             }
         }
 
-        if (resourcePeakFlowUnits.size() != 1) {
+        if (resourcePeakFlowUnits.size() > 1) {
             if (resourcePeakFlowUnits.get(0).isEmpty()) {
-                LOG.info("Empty shardIdIndependentFlowUnits");
+                LOG.info("Empty resourcePeakFlowUnits");
                 return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
             }
             if (resourcePeakFlowUnits.get(0).getData().intoArrays().length != 1) {
@@ -140,8 +146,12 @@ public class DimensionalTemperatureCalculator {
 
         double totalConsumedInNode = -1;
         try {
-            totalConsumedInNode = resourcePeakFlowUnits.get(0).getData().getValues(
-                    TemperatureMetricsBase.AGGR_OVER_AGGR_NAME, Double.class).get(0);
+            if (resourcePeakFlowUnits.size() == 0) {
+                totalConsumedInNode = shardIdBasedFlowUnits.size() * avgValOverShards;
+            } else {
+                totalConsumedInNode = resourcePeakFlowUnits.get(0).getData().getValues(
+                        TemperatureMetricsBase.AGGR_OVER_AGGR_NAME, Double.class).get(0);
+            }
         } catch (Exception ex) {
             LOG.error("Error getting shard average: {}.",
                     resourcePeakFlowUnits.get(0).getData(), ex);
@@ -176,5 +186,18 @@ public class DimensionalTemperatureCalculator {
             nodeDimensionProfile.addShardToZone(shardProfileSummary, heatZoneForShard);
         }
         return new DimensionalTemperatureFlowUnit(System.currentTimeMillis(), nodeDimensionProfile);
+    }
+
+    public static DimensionalTemperatureFlowUnit getTemperatureForDimension(
+            ShardStore shardStore, TemperatureVector.Dimension metricType,
+            ShardBasedTemperatureCalculator resourceByShardId,
+            AvgShardBasedTemperatureCalculator avgResUsageByAllShards,
+            TemperatureVector.NormalizedValue threshold) {
+        DiskUsageShardIndependentTemperatureCalculator diskUsageShardIndependent =
+                new DiskUsageShardIndependentTemperatureCalculator();
+        ShardSizePeakUsageTemperatureCalculator shardSizePeakUsage =
+                new ShardSizePeakUsageTemperatureCalculator();
+        return getTemperatureForDimension(shardStore,
+                metricType, resourceByShardId, avgResUsageByAllShards,diskUsageShardIndependent, shardSizePeakUsage, threshold);
     }
 }

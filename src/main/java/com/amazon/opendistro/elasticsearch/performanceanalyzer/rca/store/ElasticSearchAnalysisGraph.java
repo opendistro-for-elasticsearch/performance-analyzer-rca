@@ -163,8 +163,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     addLeaf(ioTotSyscallRate);
 
     // High CPU Utilization RCA
-    HotShardRca hotShardRca = new HotShardRca(5, 12, cpuUtilization,
-            ioTotThroughput, ioTotSyscallRate);
+    HotShardRca hotShardRca = new HotShardRca(5, 12, cpuUtilization, ioTotThroughput, ioTotSyscallRate);
     hotShardRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     hotShardRca.addAllUpstreams(Arrays.asList(cpuUtilization, ioTotThroughput, ioTotSyscallRate));
 
@@ -223,10 +222,6 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
             new ShardSizeByShardTemperatureCalculator();
     ShardSizeAvgTemperatureCalculator shardSizeAvg =
             new ShardSizeAvgTemperatureCalculator();
-    DiskUsageShardIndependentTemperatureCalculator diskUsageShardIndependent =
-            new DiskUsageShardIndependentTemperatureCalculator();
-    ShardSizePeakUsageTemperatureCalculator shardSizePeakUsage =
-            new ShardSizePeakUsageTemperatureCalculator();
 
     // heat map is developed only for data nodes.
     cpuUtilByShard.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
@@ -241,8 +236,6 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
     shardSizeByShard.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
     shardSizeAvg.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-    diskUsageShardIndependent.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-    shardSizePeakUsage.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
 
     addLeaf(cpuUtilByShard);
     addLeaf(avgCpuUtilByShards);
@@ -256,8 +249,6 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
     addLeaf(shardSizeByShard);
     addLeaf(shardSizeAvg);
-    addLeaf(diskUsageShardIndependent);
-    addLeaf(shardSizePeakUsage);
 
     CpuUtilDimensionTemperatureRca cpuUtilHeat = new CpuUtilDimensionTemperatureRca(shardStore,
             cpuUtilByShard,
@@ -276,9 +267,9 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
             shardIndependentHeapAllocRate, heapAllocRateTotal));
 
     ShardSizeDimensionTemperatureRca shardSizeHeat = new ShardSizeDimensionTemperatureRca(shardStore,
-            shardSizeByShard, shardSizeAvg, diskUsageShardIndependent, shardSizePeakUsage);
+            shardSizeByShard, shardSizeAvg);
     shardSizeHeat.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-    shardSizeHeat.addAllUpstreams(Arrays.asList(shardSizeByShard, shardSizeAvg, diskUsageShardIndependent, shardSizePeakUsage));
+    shardSizeHeat.addAllUpstreams(Arrays.asList(shardSizeByShard, shardSizeAvg));
 
     NodeTemperatureRca nodeTemperatureRca = new NodeTemperatureRca(cpuUtilHeat, heapAllocRateHeat, shardSizeHeat);
     nodeTemperatureRca.addTag(TAG_LOCUS, LOCUS_DATA_NODE);

@@ -18,10 +18,10 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
-public class Shard_Size_In_Bytes extends Metric {
+public class ShardSizeInBytes extends Metric {
     public static final String NAME = AllMetrics.ShardStatsValue.SHARD_SIZE_IN_BYTES.toString();
 
-    public Shard_Size_In_Bytes(long evaluationIntervalSeconds) {
+    public ShardSizeInBytes(long evaluationIntervalSeconds) {
         super(AllMetrics.ShardStatsValue.SHARD_SIZE_IN_BYTES.name(), evaluationIntervalSeconds);
     }
 }
