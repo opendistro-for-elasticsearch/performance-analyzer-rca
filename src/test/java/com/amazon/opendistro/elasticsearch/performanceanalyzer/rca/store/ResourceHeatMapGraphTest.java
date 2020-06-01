@@ -947,14 +947,9 @@ public class ResourceHeatMapGraphTest {
           Assert.assertEquals(3, o.getAsJsonArray("all_shards").size());
           for (JsonElement e : o.getAsJsonArray("all_shards")) {
             Assert.assertEquals("pmc",
-<<<<<<< HEAD
-                    e.getAsJsonObject().get("index_name").getAsString());
-            int shardId = e.getAsJsonObject().get("shard_id").getAsInt();
-=======
                 e.getAsJsonObject().get("index_name").getAsString());
             int shardId = e.getAsJsonObject().get("shard_id").getAsInt();
             System.out.println("ShardID " + shardId);
->>>>>>> Adding the Shard Size in the Temperature Profile RCA
             Assert.assertTrue(shardId == 2 || shardId == 4 || shardId == 0);
           }
           break;
