@@ -6,6 +6,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_AllocRate;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Paging_MajfltRate;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Sched_Waittime;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Shard_Size_In_Bytes;
+
 
 public class AnalysisGraphTest extends AnalysisGraph {
 
@@ -15,11 +17,13 @@ public class AnalysisGraphTest extends AnalysisGraph {
     Metric heapUsed = new Sched_Waittime(5);
     Metric pageMaj = new Paging_MajfltRate(5);
     Metric heapAlloc = new Heap_AllocRate(5);
+    Metric shardSize = new Shard_Size_In_Bytes(5);
 
     addLeaf(cpuUtilization);
     addLeaf(heapUsed);
     addLeaf(pageMaj);
     addLeaf(heapAlloc);
+    addLeaf(shardSize);
 
     System.out.println(this.getClass().getName() + " graph constructed..");
   }

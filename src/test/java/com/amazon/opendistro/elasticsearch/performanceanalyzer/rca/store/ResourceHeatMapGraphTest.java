@@ -338,6 +338,7 @@ public class ResourceHeatMapGraphTest {
   }
 
   /**
+<<<<<<< HEAD
    [
    {
    "NodeLevelZoneSummary":[
@@ -689,6 +690,158 @@ public class ResourceHeatMapGraphTest {
    }
    ]
 
+=======
+   * {
+   * "AllTemperatureDimensions":[
+   * {
+   * "NodeLevelDimensionalSummary":[
+   * {
+   * "dimension":"CPU_Utilization",
+   * "mean":1,
+   * "total":0.113345915412554,
+   * "numShards":3,
+   * "NodeLevelZoneSummary":[
+   * {
+   * "zone":"HOT",
+   * "all_shards":[
+   * ]
+   * },
+   * {
+   * "zone":"WARM",
+   * "all_shards":[
+   * {
+   * "index_name":"pmc",
+   * "shard_id":0,
+   * "temperature":[
+   * {
+   * "dimension":"CPU_Utilization",
+   * "value":"2"
+   * },
+   * {
+   * "dimension":"Heap_AllocRate",
+   * "value":"5"
+   * }
+   * ]
+   * }
+   * ]
+   * },
+   * {
+   * "zone":"LUKE_WARM",
+   * "all_shards":[
+   * {
+   * "index_name":"pmc",
+   * "shard_id":2,
+   * "temperature":[
+   * {
+   * "dimension":"CPU_Utilization",
+   * "value":"0"
+   * },
+   * {
+   * "dimension":"Heap_AllocRate",
+   * "value":"0"
+   * }
+   * ]
+   * },
+   * {
+   * "index_name":"pmc",
+   * "shard_id":4,
+   * "temperature":[
+   * {
+   * "dimension":"CPU_Utilization",
+   * "value":"0"
+   * },
+   * {
+   * "dimension":"Heap_AllocRate",
+   * "value":"0"
+   * }
+   * ]
+   * }
+   * ]
+   * },
+   * {
+   * "zone":"COLD",
+   * "all_shards":[
+   * ]
+   * }
+   * ],
+   * "timestamp":1590627598558
+   * },
+   * {
+   * "dimension":"Heap_AllocRate",
+   * "mean":2,
+   * "total":2.39855498699146E8,
+   * "numShards":3,
+   * "NodeLevelZoneSummary":[
+   * {
+   * "zone":"HOT",
+   * "all_shards":[
+   * {
+   * "index_name":"pmc",
+   * "shard_id":0,
+   * "temperature":[
+   * {
+   * "dimension":"CPU_Utilization",
+   * "value":"2"
+   * },
+   * {
+   * "dimension":"Heap_AllocRate",
+   * "value":"5"
+   * }
+   * ]
+   * }
+   * ]
+   * },
+   * {
+   * "zone":"WARM",
+   * "all_shards":[
+   * ]
+   * },
+   * {
+   * "zone":"LUKE_WARM",
+   * "all_shards":[
+   * {
+   * "index_name":"pmc",
+   * "shard_id":2,
+   * "temperature":[
+   * {
+   * "dimension":"CPU_Utilization",
+   * "value":"0"
+   * },
+   * {
+   * "dimension":"Heap_AllocRate",
+   * "value":"0"
+   * }
+   * ]
+   * },
+   * {
+   * "index_name":"pmc",
+   * "shard_id":4,
+   * "temperature":[
+   * {
+   * "dimension":"CPU_Utilization",
+   * "value":"0"
+   * },
+   * {
+   * "dimension":"Heap_AllocRate",
+   * "value":"0"
+   * }
+   * ]
+   * }
+   * ]
+   * },
+   * {
+   * "zone":"COLD",
+   * "all_shards":[
+   * ]
+   * }
+   * ],
+   * "timestamp":1590627598558
+   * }
+   * ]
+   * }
+   * ]
+   * }
+>>>>>>> Adding the Shard Size in the Temperature Profile RCA
    */
   private void verifyFullNodeTemperatureProfile(String resp) {
     JsonParser parser = new JsonParser();
@@ -795,8 +948,14 @@ public class ResourceHeatMapGraphTest {
           Assert.assertEquals(3, o.getAsJsonArray("all_shards").size());
           for (JsonElement e : o.getAsJsonArray("all_shards")) {
             Assert.assertEquals("pmc",
+<<<<<<< HEAD
                     e.getAsJsonObject().get("index_name").getAsString());
             int shardId = e.getAsJsonObject().get("shard_id").getAsInt();
+=======
+                e.getAsJsonObject().get("index_name").getAsString());
+            int shardId = e.getAsJsonObject().get("shard_id").getAsInt();
+            System.out.println("ShardID " + shardId);
+>>>>>>> Adding the Shard Size in the Temperature Profile RCA
             Assert.assertTrue(shardId == 2 || shardId == 4 || shardId == 0);
           }
           break;
