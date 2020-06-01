@@ -53,6 +53,7 @@ public class NodeLevelDimensionalSummaryTest {
 
   private List<ShardProfileSummary> getShards(TemperatureDimension dimension, int count) {
     List<ShardProfileSummary> shards = new ArrayList<>();
+
     for (int i = 0; i < count; i++) {
       ShardProfileSummary shard = new ShardProfileSummary("test-index", i);
       shard.addTemperatureForDimension(dimension,
