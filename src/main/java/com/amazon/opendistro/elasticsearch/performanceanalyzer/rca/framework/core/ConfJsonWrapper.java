@@ -21,10 +21,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 // TODO: There should be a validation for the expected fields.
 @JsonIgnoreProperties(ignoreUnknown = true)
 class ConfJsonWrapper {
+
+  private static final Logger LOG = LogManager.getLogger(ConfJsonWrapper.class);
   private final String rcaStoreLoc;
   private final String thresholdStoreLoc;
   private final long newRcaCheckPeriocicityMins;
@@ -36,6 +40,8 @@ class ConfJsonWrapper {
   private final String analysisGraphEntryPoint;
   private final int networkQueueLength;
   private final int perVertexBufferLength;
+  private final Map<String, Object> rcaConfigSettings;
+  private final List<String> mutedRcaList;
 
   String getRcaStoreLoc() {
     return rcaStoreLoc;
@@ -77,8 +83,16 @@ class ConfJsonWrapper {
     return perVertexBufferLength;
   }
 
+  List<String> getMutedRcaList() {
+    return mutedRcaList;
+  }
+
   public void setDatastoreRcaLogDirectory(String rcaLogLocation) {
     this.datastore.put(RcaConsts.DATASTORE_LOC_KEY, rcaLogLocation);
+  }
+
+  Map<String, Object> getRcaConfigSettings() {
+    return rcaConfigSettings;
   }
 
   ConfJsonWrapper(
@@ -91,7 +105,9 @@ class ConfJsonWrapper {
       @JsonProperty("datastore") Map<String, String> datastore,
       @JsonProperty("analysis-graph-implementor") String analysisGraphEntryPoint,
       @JsonProperty("network-queue-length") int networkQueueLength,
-      @JsonProperty("max-flow-units-per-vertex-buffer") int perVertexBufferLength) {
+      @JsonProperty("max-flow-units-per-vertex-buffer") int perVertexBufferLength,
+      @JsonProperty("rca-config-settings") Map<String, Object> rcaConfigSettings,
+      @JsonProperty("muted-rcas") List<String> mutedRcas) {
     this.creationTime = System.currentTimeMillis();
     this.rcaStoreLoc = rcaStoreLoc;
     this.thresholdStoreLoc = thresholdStoreLoc;
@@ -103,5 +119,7 @@ class ConfJsonWrapper {
     this.analysisGraphEntryPoint = analysisGraphEntryPoint;
     this.networkQueueLength = networkQueueLength;
     this.perVertexBufferLength = perVertexBufferLength;
+    this.rcaConfigSettings = rcaConfigSettings;
+    this.mutedRcaList = mutedRcas;
   }
 }

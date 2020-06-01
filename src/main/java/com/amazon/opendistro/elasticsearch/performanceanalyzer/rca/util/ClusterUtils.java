@@ -2,6 +2,8 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.util;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
+import com.google.common.annotations.VisibleForTesting;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -10,7 +12,9 @@ import java.util.stream.Collectors;
  */
 public class ClusterUtils {
 
-  private static final String EMPTY_STRING = "";
+  @VisibleForTesting
+  static final String EMPTY_STRING = "";
+
 
   /**
    * Get the current host's ip address.

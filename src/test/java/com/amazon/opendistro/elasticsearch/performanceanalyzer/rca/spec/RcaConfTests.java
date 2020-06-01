@@ -15,7 +15,9 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaTestHelper.updateConfFileForMutedRcas;
 import static com.google.common.collect.Maps.newHashMap;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
@@ -23,15 +25,18 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 @Category(GradleTaskForRca.class)
 public class RcaConfTests {
+
   @Test
-  public void testRcaConfRead() {
-    RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
+  public void testRcaConfRead() throws Exception {
+    RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_master.conf").toString());
 
     assertEquals("s3://sifi-store/rcas/", rcaConf.getRcaStoreLoc());
     assertEquals("s3://sifi-store/thresholds/", rcaConf.getThresholdStoreLoc());
@@ -48,5 +53,6 @@ public class RcaConfTests {
       String expectedValue = tagMap.get(tag.getKey());
       assertEquals(expectedValue, tag.getValue());
     }
+    assertEquals(Collections.EMPTY_LIST, rcaConf.getMutedRcaList());
   }
 }

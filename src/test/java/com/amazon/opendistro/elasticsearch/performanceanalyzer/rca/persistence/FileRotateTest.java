@@ -22,7 +22,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -32,8 +31,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class FileRotateTest {
-  private Path testLocation = null;
   private Path fileToRotate = null;
+  private static Path testLocation = null;
   private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd-kk-mm-ss");
 
   @BeforeClass
@@ -44,9 +43,9 @@ public class FileRotateTest {
   @AfterClass
   public static void cleanup() throws IOException {
     cleanupLogs();
-    String cwd = System.getProperty("user.dir");
-    Path tmpPath = Paths.get(cwd, "src", "test", "resources", "tmp");
-    FileUtils.cleanDirectory(tmpPath.toFile());
+    if (testLocation != null) {
+      FileUtils.cleanDirectory(testLocation.toFile());
+    }
   }
 
   @Before
@@ -108,14 +107,13 @@ public class FileRotateTest {
           String.format("expected prefix: '%s', found: '%s'", prefix, f), f.startsWith(prefix));
     }
 
+    long lastRotatedMillis = fileRotate.lastRotatedMillis;
     Assert.assertFalse(fileToRotate.toFile().exists());
     Files.createFile(fileToRotate);
     Assert.assertTrue(fileToRotate.toFile().exists());
     fileRotate.rotate(currentMillis);
-    List<String> lines =
-        RcaTestHelper.getAllLogLinesWithMatchingString(
-            "PerformanceAnalyzerLog", "FileAlreadyExistsException");
-    Assert.assertEquals(1, lines.size());
+    Assert.assertEquals("File should not rotate if the rotation target already exists",
+            lastRotatedMillis, fileRotate.lastRotatedMillis);
   }
 
   @Test

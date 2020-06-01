@@ -15,30 +15,45 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
+import java.util.Scanner;
+
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.FileAppender;
+import org.jooq.tools.json.JSONObject;
 
 public class RcaTestHelper {
   public static List<String> getAllLinesFromStatsLog() {
     try {
-      return Files.readAllLines(Paths.get(getLogFilePath("StatsLog")));
-    } catch (IOException | ParserConfigurationException | SAXException | XPathExpressionException e) {
+      String statsLog = getLogFilePath(LogType.StatsLog);
+      if (statsLog == null) {
+        return Collections.emptyList();
+      }
+      return Files.readAllLines(Paths.get(statsLog));
+    } catch (IOException e) {
       e.printStackTrace();
     }
     return Collections.EMPTY_LIST;
@@ -54,18 +69,22 @@ public class RcaTestHelper {
     return matches;
   }
 
-  public static List<String> getAllLinesFromLog(String logName) {
+  public static List<String> getAllLinesFromLog(LogType logType) {
     try {
-      return Files.readAllLines(Paths.get(getLogFilePath(logName)));
-    } catch (IOException | ParserConfigurationException | SAXException | XPathExpressionException e) {
+      String logFilePath = getLogFilePath(logType);
+      if (logFilePath == null) {
+        return Collections.emptyList();
+      }
+      return Files.readAllLines(Paths.get(logFilePath));
+    } catch (IOException e) {
       e.printStackTrace();
     }
     return Collections.EMPTY_LIST;
   }
 
-  public static List<String> getAllLogLinesWithMatchingString(String logName, String pattern) {
+  public static List<String> getAllLogLinesWithMatchingString(LogType logType, String pattern) {
     List<String> matches = new ArrayList<>();
-    for (String line: getAllLinesFromLog(logName)) {
+    for (String line: getAllLinesFromLog(logType)) {
       if (line.contains(pattern)) {
         matches.add(line);
       }
@@ -73,28 +92,57 @@ public class RcaTestHelper {
     return matches;
   }
 
-  public static String getLogFilePath(String filename)
-      throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {
-    String cwd = System.getProperty("user.dir");
-    String testResourcesPath =
-        Paths.get(Paths.get(cwd, "src", "test", "resources").toString(), "log4j2.xml").toString();
+  public enum LogType {
+    PerformanceAnalyzerLog,
+    StatsLog
+  }
 
-    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-    DocumentBuilder builder = factory.newDocumentBuilder();
-    Document doc = builder.parse(testResourcesPath);
-    XPathFactory xPathfactory = XPathFactory.newInstance();
-    XPath xpath = xPathfactory.newXPath();
-    return xpath.evaluate(
-        String.format("Configuration/Appenders/File[@name='%s']/@fileName", filename), doc);
+  public static String getLogFilePath(LogType logType) {
+    System.out.println(LoggerContext.getContext().getRootLogger().getAppenders());
+    org.apache.logging.log4j.core.Logger logger = null;
+    if (logType == LogType.StatsLog) {
+      logger = LoggerContext.getContext().getLogger("stats_log");
+    } else {
+      logger = LoggerContext.getContext().getRootLogger();
+    }
+    FileAppender fileAppender = (FileAppender) logger.getAppenders().get(logType.name());
+    return fileAppender == null ? null : fileAppender.getFileName();
   }
 
   public static void cleanUpLogs() {
-    try {
-      truncate(Paths.get(getLogFilePath("PerformanceAnalyzerLog")).toFile());
-      truncate(Paths.get(getLogFilePath("StatsLog")).toFile());
-    } catch (ParserConfigurationException | SAXException | XPathExpressionException | IOException e) {
-      e.printStackTrace();
+    String paLog = getLogFilePath(LogType.PerformanceAnalyzerLog);
+    if (paLog != null) {
+      truncate(Paths.get(paLog).toFile());
     }
+    String statsLog = getLogFilePath(LogType.StatsLog);
+    if (statsLog != null) {
+      truncate(Paths.get(statsLog).toFile());
+    }
+  }
+
+  public static void setEvaluationTimeForAllNodes(List<ConnectedComponent> connectedComponents,
+                                                  long val) {
+    for (ConnectedComponent connectedComponent: connectedComponents) {
+      for (Node node: connectedComponent.getAllNodes()) {
+        node.setEvaluationIntervalSeconds(val);
+      }
+    }
+  }
+
+  public static void setMyIp(String ip, AllMetrics.NodeRole nodeRole) {
+    JSONObject jtime = new JSONObject();
+    jtime.put("current_time", 1566414001749L);
+
+    JSONObject jNode = new JSONObject();
+    jNode.put(AllMetrics.NodeDetailColumns.ID.toString(), "4sqG_APMQuaQwEW17_6zwg");
+    jNode.put(AllMetrics.NodeDetailColumns.HOST_ADDRESS.toString(), ip);
+    jNode.put(AllMetrics.NodeDetailColumns.ROLE.toString(), nodeRole);
+    jNode.put(AllMetrics.NodeDetailColumns.IS_MASTER_NODE,
+            nodeRole == AllMetrics.NodeRole.ELECTED_MASTER ? true : false);
+
+    ClusterDetailsEventProcessor eventProcessor = new ClusterDetailsEventProcessor();
+    eventProcessor.processEvent(
+            new Event("", jtime.toString() + System.lineSeparator() + jNode.toString(), 0));
   }
 
   public static void truncate(File file) {
@@ -106,4 +154,21 @@ public class RcaTestHelper {
       e.printStackTrace();
     }
   }
+
+  public static void updateConfFileForMutedRcas(String rcaConfPath, List<String> mutedRcas) throws Exception {
+
+    // create the config json Object from rca config file
+    Scanner scanner = new Scanner(new FileInputStream(rcaConfPath), StandardCharsets.UTF_8.name());
+    String jsonText = scanner.useDelimiter("\\A").next();
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
+    mapper.enable(SerializationFeature.INDENT_OUTPUT);
+    JsonNode configObject = mapper.readTree(jsonText);
+
+    // update the `MUTED_RCAS_CONFIG` value in config Object
+    ArrayNode array = mapper.valueToTree(mutedRcas);
+    ((ObjectNode) configObject).putArray("muted-rcas").addAll(array);
+    mapper.writeValue(new FileOutputStream(rcaConfPath), configObject);
+  }
+
 }

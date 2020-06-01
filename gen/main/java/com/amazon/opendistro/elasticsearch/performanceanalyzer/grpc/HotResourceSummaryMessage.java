@@ -16,6 +16,7 @@ private static final long serialVersionUID = 0L;
     super(builder);
   }
   private HotResourceSummaryMessage() {
+    metaData_ = "";
   }
 
   @java.lang.Override
@@ -96,6 +97,12 @@ private static final long serialVersionUID = 0L;
           case 64: {
 
             timePeriod_ = input.readInt32();
+            break;
+          }
+          case 74: {
+            java.lang.String s = input.readStringRequireUtf8();
+
+            metaData_ = s;
             break;
           }
           default: {
@@ -226,6 +233,40 @@ private static final long serialVersionUID = 0L;
     return timePeriod_;
   }
 
+  public static final int METADATA_FIELD_NUMBER = 9;
+  private volatile java.lang.Object metaData_;
+  /**
+   * <code>string metaData = 9;</code>
+   */
+  public java.lang.String getMetaData() {
+    java.lang.Object ref = metaData_;
+    if (ref instanceof java.lang.String) {
+      return (java.lang.String) ref;
+    } else {
+      com.google.protobuf.ByteString bs = 
+          (com.google.protobuf.ByteString) ref;
+      java.lang.String s = bs.toStringUtf8();
+      metaData_ = s;
+      return s;
+    }
+  }
+  /**
+   * <code>string metaData = 9;</code>
+   */
+  public com.google.protobuf.ByteString
+      getMetaDataBytes() {
+    java.lang.Object ref = metaData_;
+    if (ref instanceof java.lang.String) {
+      com.google.protobuf.ByteString b = 
+          com.google.protobuf.ByteString.copyFromUtf8(
+              (java.lang.String) ref);
+      metaData_ = b;
+      return b;
+    } else {
+      return (com.google.protobuf.ByteString) ref;
+    }
+  }
+
   private byte memoizedIsInitialized = -1;
   @java.lang.Override
   public final boolean isInitialized() {
@@ -263,6 +304,9 @@ private static final long serialVersionUID = 0L;
     }
     if (timePeriod_ != 0) {
       output.writeInt32(8, timePeriod_);
+    }
+    if (!getMetaDataBytes().isEmpty()) {
+      com.google.protobuf.GeneratedMessageV3.writeString(output, 9, metaData_);
     }
     unknownFields.writeTo(output);
   }
@@ -304,6 +348,9 @@ private static final long serialVersionUID = 0L;
     if (timePeriod_ != 0) {
       size += com.google.protobuf.CodedOutputStream
         .computeInt32Size(8, timePeriod_);
+    }
+    if (!getMetaDataBytes().isEmpty()) {
+      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(9, metaData_);
     }
     size += unknownFields.getSerializedSize();
     memoizedSize = size;
@@ -347,6 +394,8 @@ private static final long serialVersionUID = 0L;
             other.getMaxValue())) return false;
     if (getTimePeriod()
         != other.getTimePeriod()) return false;
+    if (!getMetaData()
+        .equals(other.getMetaData())) return false;
     if (!unknownFields.equals(other.unknownFields)) return false;
     return true;
   }
@@ -383,6 +432,8 @@ private static final long serialVersionUID = 0L;
         java.lang.Double.doubleToLongBits(getMaxValue()));
     hash = (37 * hash) + TIMEPERIOD_FIELD_NUMBER;
     hash = (53 * hash) + getTimePeriod();
+    hash = (37 * hash) + METADATA_FIELD_NUMBER;
+    hash = (53 * hash) + getMetaData().hashCode();
     hash = (29 * hash) + unknownFields.hashCode();
     memoizedHashCode = hash;
     return hash;
@@ -540,6 +591,8 @@ private static final long serialVersionUID = 0L;
 
       timePeriod_ = 0;
 
+      metaData_ = "";
+
       return this;
     }
 
@@ -582,6 +635,7 @@ private static final long serialVersionUID = 0L;
       result.minValue_ = minValue_;
       result.maxValue_ = maxValue_;
       result.timePeriod_ = timePeriod_;
+      result.metaData_ = metaData_;
       onBuilt();
       return result;
     }
@@ -653,6 +707,10 @@ private static final long serialVersionUID = 0L;
       }
       if (other.getTimePeriod() != 0) {
         setTimePeriod(other.getTimePeriod());
+      }
+      if (!other.getMetaData().isEmpty()) {
+        metaData_ = other.metaData_;
+        onChanged();
       }
       this.mergeUnknownFields(other.unknownFields);
       onChanged();
@@ -1069,6 +1127,75 @@ private static final long serialVersionUID = 0L;
     public Builder clearTimePeriod() {
       
       timePeriod_ = 0;
+      onChanged();
+      return this;
+    }
+
+    private java.lang.Object metaData_ = "";
+    /**
+     * <code>string metaData = 9;</code>
+     */
+    public java.lang.String getMetaData() {
+      java.lang.Object ref = metaData_;
+      if (!(ref instanceof java.lang.String)) {
+        com.google.protobuf.ByteString bs =
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        metaData_ = s;
+        return s;
+      } else {
+        return (java.lang.String) ref;
+      }
+    }
+    /**
+     * <code>string metaData = 9;</code>
+     */
+    public com.google.protobuf.ByteString
+        getMetaDataBytes() {
+      java.lang.Object ref = metaData_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        metaData_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+    /**
+     * <code>string metaData = 9;</code>
+     */
+    public Builder setMetaData(
+        java.lang.String value) {
+      if (value == null) {
+    throw new NullPointerException();
+  }
+  
+      metaData_ = value;
+      onChanged();
+      return this;
+    }
+    /**
+     * <code>string metaData = 9;</code>
+     */
+    public Builder clearMetaData() {
+      
+      metaData_ = getDefaultInstance().getMetaData();
+      onChanged();
+      return this;
+    }
+    /**
+     * <code>string metaData = 9;</code>
+     */
+    public Builder setMetaDataBytes(
+        com.google.protobuf.ByteString value) {
+      if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+      
+      metaData_ = value;
       onChanged();
       return this;
     }

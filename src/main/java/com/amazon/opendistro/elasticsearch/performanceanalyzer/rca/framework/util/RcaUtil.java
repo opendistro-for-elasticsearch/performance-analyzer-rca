@@ -80,7 +80,8 @@ public class RcaUtil {
       final String hostLocus = confTagMap.get(RcaTagConstants.TAG_LOCUS);
       final String nodeLoci = nodeTagMap.get(RcaTagConstants.TAG_LOCUS);
       if (nodeLoci != null && !nodeLoci.isEmpty()) {
-        return Arrays.asList(nodeLoci.split(RcaTagConstants.SEPARATOR)).contains(hostLocus);
+        List<String> nodeLociStrings = Arrays.asList(nodeLoci.split(RcaTagConstants.SEPARATOR));
+        return nodeLociStrings.contains(hostLocus);
       }
     }
 

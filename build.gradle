@@ -28,7 +28,7 @@ plugins {
     id 'com.google.protobuf' version '0.8.8'
     id 'jacoco'
     id 'idea'
-    id 'com.github.spotbugs' version '3.0.0'
+    id 'com.github.spotbugs' version '4.0.0'
     id "de.undercouch.download" version "4.0.4"
 }
 
@@ -123,10 +123,13 @@ jacocoTestReport {
         classDirectories.from = files(classDirectories.files.collect {
             fileTree(dir: it,
                     include: [
-                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/rca/**'
+                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/**'
                     ],
                     exclude: [
-                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/grpc/**'])
+                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/grpc/**',
+                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/rca/framework/api/metrics/**',
+                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/rca/net/requests**'
+                    ])
         })
     }
 }
@@ -136,7 +139,8 @@ jacocoTestCoverageVerification {
         classDirectories.from = files(classDirectories.files.collect {
             fileTree(dir: it,
                     include: [
-                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/rca/**'
+                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/rca/**',
+                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/reader/**'
                     ],
                     exclude: [
                             '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/grpc/**'])
@@ -145,7 +149,7 @@ jacocoTestCoverageVerification {
     violationRules {
         rule {
             limit {
-                minimum = 0.6
+                minimum = 0.8
             }
         }
     }
@@ -338,6 +342,15 @@ task copyAllArtifacts(type: Copy) {
     into(dockerArtifactsDir)
 }
 
+task copyReaderMetricsFiles(type: Copy) {
+    dependsOn(buildPa)
+    copy{
+        from ('src/test/resources/reader'){
+        }
+        into 'build/private/test_resources'
+    }
+}
+
 task buildDocker(type: Exec) {
     dependsOn(copyAllArtifacts)
 
@@ -350,10 +363,19 @@ task runDocker(type: Exec) {
 
     workingDir(dockerArtifactsDir)
 
+    // This block is included to make the runDocker task work with Github Actions
+    // It sets the path to the docker-compose program from an environment variable
+    // The DOCKER_COMPOSE_LOCATION environment variable is set in the gradle.yml file inside the
+    // performance-analyzer repository.
+    def docker_compose_location = "docker-compose"
+    if (System.getenv("DOCKER_COMPOSE_LOCATION") != null) {
+        docker_compose_location = System.getenv("DOCKER_COMPOSE_LOCATION")
+    }
+
     environment 'DATA_VOLUME1', 'esdata1'
     environment 'DATA_VOLUME2', 'esdata2'
 
-    commandLine('docker-compose',
+    commandLine(docker_compose_location,
             '-f', 'docker-compose.yml',
             '-f', 'docker-compose.hostports.yml',
             '-f', 'docker-compose.cluster.yml',
@@ -401,7 +423,13 @@ def runInProcess(commandArr) {
 }
 
 def runDockerCompose = { executionPath ->
-    String[] commandArray = ['docker-compose',
+    // This block is included to make the runDocker task work with Github Actions
+    // It sets the path to the docker-compose program from an environment variable
+    // The DOCKER_COMPOSE_LOCATION environment variable is set in the gradle.yml file inside the
+    // performance-analyzer repository.
+    String dockerCompose = System.getenv("DOCKER_COMPOSE_LOCATION") == null ?
+            "docker-compose" : System.getenv("DOCKER_COMPOSE_LOCATION")
+    String[] commandArray = [dockerCompose,
                              '-f', 'docker-compose.yml',
                              '-f', 'docker-compose.hostports.yml',
                              '-f', 'docker-compose.cluster.yml',
@@ -445,7 +473,7 @@ Boolean esIsUp
 
 def esUpChecker = {
     String server = "http://localhost:9200"
-    int timeoutSeconds = 5 * 60
+    int timeoutSeconds = 2 * 60
     getHttpResponse(server, timeoutSeconds)
     esIsUp = true
 }
@@ -498,16 +526,29 @@ task unzipPerfTop(type: Copy) {
     enabled = !file(perfTopBin).exists()
 }
 
-task enablePaAndRca(type: Exec) {
+task enablePa(type: Exec) {
     dependsOn(waitForES)
+    doFirst { // Ensures we don't get a Connection refused error on port 9200 from Elasticsearch
+        sleep(5000)
+    }
     commandLine('curl', 'localhost:9200/_opendistro/_performanceanalyzer/cluster/config', '-H',
             'Content-Type: application/json', '-d', '{"enabled": true}')
+    doLast { // Ensures PA is enabled before subsequent tasks rely on it
+        sleep(5000)
+    }
+}
+
+task enableRca(type: Exec) {
+    dependsOn(enablePa)
     commandLine('curl', 'localhost:9200/_opendistro/_performanceanalyzer/rca/cluster/config',
             '-H', 'Content-Type: application/json', '-d', '{"enabled": true}')
+    doLast { // Ensures RCA is enabled before subsequent tasks rely on it
+        sleep(5000)
+    }
 }
 
 task runPerftop {
-    dependsOn(enablePaAndRca, unzipPerfTop)
+    dependsOn(enableRca, unzipPerfTop)
     doLast {
         println '============================================================================'
         println 'invoke perftop as: '
@@ -517,7 +558,7 @@ task runPerftop {
 }
 
 task generateLoad {
-    dependsOn(enablePaAndRca, runPerftop)
+    dependsOn(enableRca, runPerftop)
 
     doLast {
         String[] deleteIndex = ['curl', '-X', 'DELETE', 'localhost:9200/accounts?pretty']
@@ -534,15 +575,34 @@ task generateLoad {
             //println("starting indexing: " + System.currentTimeMillis())
             runCommand(bulk, null, wdir, false)
             //println("completed indexing: " + System.currentTimeMillis())
-            Thread.sleep(5000)
+            Thread.sleep(1000)
             //println("starting search" + System.currentTimeMillis())
             runCommand(search, null, wdir, false)
-            Thread.sleep(5000)
+            Thread.sleep(300)
             //println("completed search" + System.currentTimeMillis())
             runCommand(deleteIndex, null, wdir, false)
-            Thread.sleep(5000)
+            Thread.sleep(1000)
         }
     }
 }
 
+task runRally {
+    dependsOn(enableRca, runPerftop)
 
+    doLast {
+        String rallyTrack='pmc'
+
+        String[] esrally = ['docker', 'run', '--network=host', 'elastic/rally',
+                                '--track=' + rallyTrack, '--test-mode', '--pipeline=benchmark-only',
+                '--target-hosts=localhost:9200']
+
+        String wdir = Paths.get(getProjectDir().getAbsolutePath(), 'src', 'test', 'resources')
+                .toString()
+        while (true) {
+            runCommand(esrally, null, wdir, true)
+            println('Get all RCAs using:')
+            println('curl localhost:9600/_opendistro/_performanceanalyzer/rca?all | python -m json.tool')
+            Thread.sleep(1000)
+        }
+    }
+}

@@ -93,8 +93,22 @@ private static final long serialVersionUID = 0L;
             break;
           }
           case 50: {
-            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage.Builder subBuilder = null;
+            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage.Builder subBuilder = null;
             if (summaryOneofCase_ == 6) {
+              subBuilder = ((com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage) summaryOneof_).toBuilder();
+            }
+            summaryOneof_ =
+                input.readMessage(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage.parser(), extensionRegistry);
+            if (subBuilder != null) {
+              subBuilder.mergeFrom((com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage) summaryOneof_);
+              summaryOneof_ = subBuilder.buildPartial();
+            }
+            summaryOneofCase_ = 6;
+            break;
+          }
+          case 58: {
+            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage.Builder subBuilder = null;
+            if (summaryOneofCase_ == 7) {
               subBuilder = ((com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage) summaryOneof_).toBuilder();
             }
             summaryOneof_ =
@@ -103,12 +117,26 @@ private static final long serialVersionUID = 0L;
               subBuilder.mergeFrom((com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage) summaryOneof_);
               summaryOneof_ = subBuilder.buildPartial();
             }
-            summaryOneofCase_ = 6;
+            summaryOneofCase_ = 7;
             break;
           }
-          case 58: {
+          case 66: {
+            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage.Builder subBuilder = null;
+            if (summaryOneofCase_ == 8) {
+              subBuilder = ((com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage) summaryOneof_).toBuilder();
+            }
+            summaryOneof_ =
+                input.readMessage(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage.parser(), extensionRegistry);
+            if (subBuilder != null) {
+              subBuilder.mergeFrom((com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage) summaryOneof_);
+              summaryOneof_ = subBuilder.buildPartial();
+            }
+            summaryOneofCase_ = 8;
+            break;
+          }
+          case 74: {
             com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage.Builder subBuilder = null;
-            if (summaryOneofCase_ == 7) {
+            if (summaryOneofCase_ == 9) {
               subBuilder = ((com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage) summaryOneof_).toBuilder();
             }
             summaryOneof_ =
@@ -117,7 +145,7 @@ private static final long serialVersionUID = 0L;
               subBuilder.mergeFrom((com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage) summaryOneof_);
               summaryOneof_ = subBuilder.buildPartial();
             }
-            summaryOneofCase_ = 7;
+            summaryOneofCase_ = 9;
             break;
           }
           default: {
@@ -157,8 +185,10 @@ private static final long serialVersionUID = 0L;
   public enum SummaryOneofCase
       implements com.google.protobuf.Internal.EnumLite {
     HOTRESOURCESUMMARY(5),
-    HOTNODESUMMARY(6),
-    HOTCLUSTERSUMMARY(7),
+    HOTSHARDSUMMARY(6),
+    HOTNODESUMMARY(7),
+    NODETEMPERATURESUMMARY(8),
+    HOTCLUSTERSUMMARY(9),
     SUMMARYONEOF_NOT_SET(0);
     private final int value;
     private SummaryOneofCase(int value) {
@@ -175,8 +205,10 @@ private static final long serialVersionUID = 0L;
     public static SummaryOneofCase forNumber(int value) {
       switch (value) {
         case 5: return HOTRESOURCESUMMARY;
-        case 6: return HOTNODESUMMARY;
-        case 7: return HOTCLUSTERSUMMARY;
+        case 6: return HOTSHARDSUMMARY;
+        case 7: return HOTNODESUMMARY;
+        case 8: return NODETEMPERATURESUMMARY;
+        case 9: return HOTCLUSTERSUMMARY;
         case 0: return SUMMARYONEOF_NOT_SET;
         default: return null;
       }
@@ -316,53 +348,105 @@ private static final long serialVersionUID = 0L;
     return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryMessage.getDefaultInstance();
   }
 
-  public static final int HOTNODESUMMARY_FIELD_NUMBER = 6;
+  public static final int HOTSHARDSUMMARY_FIELD_NUMBER = 6;
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 6;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage hotShardSummary = 6;</code>
    */
-  public boolean hasHotNodeSummary() {
+  public boolean hasHotShardSummary() {
     return summaryOneofCase_ == 6;
   }
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 6;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage hotShardSummary = 6;</code>
+   */
+  public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage getHotShardSummary() {
+    if (summaryOneofCase_ == 6) {
+       return (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage) summaryOneof_;
+    }
+    return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage.getDefaultInstance();
+  }
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage hotShardSummary = 6;</code>
+   */
+  public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessageOrBuilder getHotShardSummaryOrBuilder() {
+    if (summaryOneofCase_ == 6) {
+       return (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage) summaryOneof_;
+    }
+    return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage.getDefaultInstance();
+  }
+
+  public static final int HOTNODESUMMARY_FIELD_NUMBER = 7;
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 7;</code>
+   */
+  public boolean hasHotNodeSummary() {
+    return summaryOneofCase_ == 7;
+  }
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 7;</code>
    */
   public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage getHotNodeSummary() {
-    if (summaryOneofCase_ == 6) {
+    if (summaryOneofCase_ == 7) {
        return (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage) summaryOneof_;
     }
     return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage.getDefaultInstance();
   }
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 6;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 7;</code>
    */
   public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessageOrBuilder getHotNodeSummaryOrBuilder() {
-    if (summaryOneofCase_ == 6) {
+    if (summaryOneofCase_ == 7) {
        return (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage) summaryOneof_;
     }
     return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage.getDefaultInstance();
   }
 
-  public static final int HOTCLUSTERSUMMARY_FIELD_NUMBER = 7;
+  public static final int NODETEMPERATURESUMMARY_FIELD_NUMBER = 8;
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 7;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage nodeTemperatureSummary = 8;</code>
    */
-  public boolean hasHotClusterSummary() {
-    return summaryOneofCase_ == 7;
+  public boolean hasNodeTemperatureSummary() {
+    return summaryOneofCase_ == 8;
   }
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 7;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage nodeTemperatureSummary = 8;</code>
+   */
+  public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage getNodeTemperatureSummary() {
+    if (summaryOneofCase_ == 8) {
+       return (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage) summaryOneof_;
+    }
+    return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage.getDefaultInstance();
+  }
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage nodeTemperatureSummary = 8;</code>
+   */
+  public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessageOrBuilder getNodeTemperatureSummaryOrBuilder() {
+    if (summaryOneofCase_ == 8) {
+       return (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage) summaryOneof_;
+    }
+    return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage.getDefaultInstance();
+  }
+
+  public static final int HOTCLUSTERSUMMARY_FIELD_NUMBER = 9;
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 9;</code>
+   */
+  public boolean hasHotClusterSummary() {
+    return summaryOneofCase_ == 9;
+  }
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 9;</code>
    */
   public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage getHotClusterSummary() {
-    if (summaryOneofCase_ == 7) {
+    if (summaryOneofCase_ == 9) {
        return (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage) summaryOneof_;
     }
     return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage.getDefaultInstance();
   }
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 7;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 9;</code>
    */
   public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessageOrBuilder getHotClusterSummaryOrBuilder() {
-    if (summaryOneofCase_ == 7) {
+    if (summaryOneofCase_ == 9) {
        return (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage) summaryOneof_;
     }
     return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage.getDefaultInstance();
@@ -398,10 +482,16 @@ private static final long serialVersionUID = 0L;
       output.writeMessage(5, (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryMessage) summaryOneof_);
     }
     if (summaryOneofCase_ == 6) {
-      output.writeMessage(6, (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage) summaryOneof_);
+      output.writeMessage(6, (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage) summaryOneof_);
     }
     if (summaryOneofCase_ == 7) {
-      output.writeMessage(7, (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage) summaryOneof_);
+      output.writeMessage(7, (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage) summaryOneof_);
+    }
+    if (summaryOneofCase_ == 8) {
+      output.writeMessage(8, (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage) summaryOneof_);
+    }
+    if (summaryOneofCase_ == 9) {
+      output.writeMessage(9, (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage) summaryOneof_);
     }
     unknownFields.writeTo(output);
   }
@@ -432,11 +522,19 @@ private static final long serialVersionUID = 0L;
     }
     if (summaryOneofCase_ == 6) {
       size += com.google.protobuf.CodedOutputStream
-        .computeMessageSize(6, (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage) summaryOneof_);
+        .computeMessageSize(6, (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage) summaryOneof_);
     }
     if (summaryOneofCase_ == 7) {
       size += com.google.protobuf.CodedOutputStream
-        .computeMessageSize(7, (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage) summaryOneof_);
+        .computeMessageSize(7, (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage) summaryOneof_);
+    }
+    if (summaryOneofCase_ == 8) {
+      size += com.google.protobuf.CodedOutputStream
+        .computeMessageSize(8, (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage) summaryOneof_);
+    }
+    if (summaryOneofCase_ == 9) {
+      size += com.google.protobuf.CodedOutputStream
+        .computeMessageSize(9, (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage) summaryOneof_);
     }
     size += unknownFields.getSerializedSize();
     memoizedSize = size;
@@ -471,10 +569,18 @@ private static final long serialVersionUID = 0L;
             .equals(other.getHotResourceSummary())) return false;
         break;
       case 6:
+        if (!getHotShardSummary()
+            .equals(other.getHotShardSummary())) return false;
+        break;
+      case 7:
         if (!getHotNodeSummary()
             .equals(other.getHotNodeSummary())) return false;
         break;
-      case 7:
+      case 8:
+        if (!getNodeTemperatureSummary()
+            .equals(other.getNodeTemperatureSummary())) return false;
+        break;
+      case 9:
         if (!getHotClusterSummary()
             .equals(other.getHotClusterSummary())) return false;
         break;
@@ -509,10 +615,18 @@ private static final long serialVersionUID = 0L;
         hash = (53 * hash) + getHotResourceSummary().hashCode();
         break;
       case 6:
+        hash = (37 * hash) + HOTSHARDSUMMARY_FIELD_NUMBER;
+        hash = (53 * hash) + getHotShardSummary().hashCode();
+        break;
+      case 7:
         hash = (37 * hash) + HOTNODESUMMARY_FIELD_NUMBER;
         hash = (53 * hash) + getHotNodeSummary().hashCode();
         break;
-      case 7:
+      case 8:
+        hash = (37 * hash) + NODETEMPERATURESUMMARY_FIELD_NUMBER;
+        hash = (53 * hash) + getNodeTemperatureSummary().hashCode();
+        break;
+      case 9:
         hash = (37 * hash) + HOTCLUSTERSUMMARY_FIELD_NUMBER;
         hash = (53 * hash) + getHotClusterSummary().hashCode();
         break;
@@ -712,13 +826,27 @@ private static final long serialVersionUID = 0L;
         }
       }
       if (summaryOneofCase_ == 6) {
+        if (hotShardSummaryBuilder_ == null) {
+          result.summaryOneof_ = summaryOneof_;
+        } else {
+          result.summaryOneof_ = hotShardSummaryBuilder_.build();
+        }
+      }
+      if (summaryOneofCase_ == 7) {
         if (hotNodeSummaryBuilder_ == null) {
           result.summaryOneof_ = summaryOneof_;
         } else {
           result.summaryOneof_ = hotNodeSummaryBuilder_.build();
         }
       }
-      if (summaryOneofCase_ == 7) {
+      if (summaryOneofCase_ == 8) {
+        if (nodeTemperatureSummaryBuilder_ == null) {
+          result.summaryOneof_ = summaryOneof_;
+        } else {
+          result.summaryOneof_ = nodeTemperatureSummaryBuilder_.build();
+        }
+      }
+      if (summaryOneofCase_ == 9) {
         if (hotClusterSummaryBuilder_ == null) {
           result.summaryOneof_ = summaryOneof_;
         } else {
@@ -793,8 +921,16 @@ private static final long serialVersionUID = 0L;
           mergeHotResourceSummary(other.getHotResourceSummary());
           break;
         }
+        case HOTSHARDSUMMARY: {
+          mergeHotShardSummary(other.getHotShardSummary());
+          break;
+        }
         case HOTNODESUMMARY: {
           mergeHotNodeSummary(other.getHotNodeSummary());
+          break;
+        }
+        case NODETEMPERATURESUMMARY: {
+          mergeNodeTemperatureSummary(other.getNodeTemperatureSummary());
           break;
         }
         case HOTCLUSTERSUMMARY: {
@@ -1267,31 +1403,167 @@ private static final long serialVersionUID = 0L;
     }
 
     private com.google.protobuf.SingleFieldBuilderV3<
-        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessageOrBuilder> hotNodeSummaryBuilder_;
+        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessageOrBuilder> hotShardSummaryBuilder_;
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 6;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage hotShardSummary = 6;</code>
      */
-    public boolean hasHotNodeSummary() {
+    public boolean hasHotShardSummary() {
       return summaryOneofCase_ == 6;
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 6;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage hotShardSummary = 6;</code>
+     */
+    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage getHotShardSummary() {
+      if (hotShardSummaryBuilder_ == null) {
+        if (summaryOneofCase_ == 6) {
+          return (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage) summaryOneof_;
+        }
+        return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage.getDefaultInstance();
+      } else {
+        if (summaryOneofCase_ == 6) {
+          return hotShardSummaryBuilder_.getMessage();
+        }
+        return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage.getDefaultInstance();
+      }
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage hotShardSummary = 6;</code>
+     */
+    public Builder setHotShardSummary(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage value) {
+      if (hotShardSummaryBuilder_ == null) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        summaryOneof_ = value;
+        onChanged();
+      } else {
+        hotShardSummaryBuilder_.setMessage(value);
+      }
+      summaryOneofCase_ = 6;
+      return this;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage hotShardSummary = 6;</code>
+     */
+    public Builder setHotShardSummary(
+        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage.Builder builderForValue) {
+      if (hotShardSummaryBuilder_ == null) {
+        summaryOneof_ = builderForValue.build();
+        onChanged();
+      } else {
+        hotShardSummaryBuilder_.setMessage(builderForValue.build());
+      }
+      summaryOneofCase_ = 6;
+      return this;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage hotShardSummary = 6;</code>
+     */
+    public Builder mergeHotShardSummary(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage value) {
+      if (hotShardSummaryBuilder_ == null) {
+        if (summaryOneofCase_ == 6 &&
+            summaryOneof_ != com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage.getDefaultInstance()) {
+          summaryOneof_ = com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage.newBuilder((com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage) summaryOneof_)
+              .mergeFrom(value).buildPartial();
+        } else {
+          summaryOneof_ = value;
+        }
+        onChanged();
+      } else {
+        if (summaryOneofCase_ == 6) {
+          hotShardSummaryBuilder_.mergeFrom(value);
+        }
+        hotShardSummaryBuilder_.setMessage(value);
+      }
+      summaryOneofCase_ = 6;
+      return this;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage hotShardSummary = 6;</code>
+     */
+    public Builder clearHotShardSummary() {
+      if (hotShardSummaryBuilder_ == null) {
+        if (summaryOneofCase_ == 6) {
+          summaryOneofCase_ = 0;
+          summaryOneof_ = null;
+          onChanged();
+        }
+      } else {
+        if (summaryOneofCase_ == 6) {
+          summaryOneofCase_ = 0;
+          summaryOneof_ = null;
+        }
+        hotShardSummaryBuilder_.clear();
+      }
+      return this;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage hotShardSummary = 6;</code>
+     */
+    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage.Builder getHotShardSummaryBuilder() {
+      return getHotShardSummaryFieldBuilder().getBuilder();
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage hotShardSummary = 6;</code>
+     */
+    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessageOrBuilder getHotShardSummaryOrBuilder() {
+      if ((summaryOneofCase_ == 6) && (hotShardSummaryBuilder_ != null)) {
+        return hotShardSummaryBuilder_.getMessageOrBuilder();
+      } else {
+        if (summaryOneofCase_ == 6) {
+          return (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage) summaryOneof_;
+        }
+        return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage.getDefaultInstance();
+      }
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage hotShardSummary = 6;</code>
+     */
+    private com.google.protobuf.SingleFieldBuilderV3<
+        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessageOrBuilder> 
+        getHotShardSummaryFieldBuilder() {
+      if (hotShardSummaryBuilder_ == null) {
+        if (!(summaryOneofCase_ == 6)) {
+          summaryOneof_ = com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage.getDefaultInstance();
+        }
+        hotShardSummaryBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
+            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessageOrBuilder>(
+                (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage) summaryOneof_,
+                getParentForChildren(),
+                isClean());
+        summaryOneof_ = null;
+      }
+      summaryOneofCase_ = 6;
+      onChanged();;
+      return hotShardSummaryBuilder_;
+    }
+
+    private com.google.protobuf.SingleFieldBuilderV3<
+        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessageOrBuilder> hotNodeSummaryBuilder_;
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 7;</code>
+     */
+    public boolean hasHotNodeSummary() {
+      return summaryOneofCase_ == 7;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 7;</code>
      */
     public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage getHotNodeSummary() {
       if (hotNodeSummaryBuilder_ == null) {
-        if (summaryOneofCase_ == 6) {
+        if (summaryOneofCase_ == 7) {
           return (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage) summaryOneof_;
         }
         return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage.getDefaultInstance();
       } else {
-        if (summaryOneofCase_ == 6) {
+        if (summaryOneofCase_ == 7) {
           return hotNodeSummaryBuilder_.getMessage();
         }
         return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage.getDefaultInstance();
       }
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 6;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 7;</code>
      */
     public Builder setHotNodeSummary(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage value) {
       if (hotNodeSummaryBuilder_ == null) {
@@ -1303,11 +1575,11 @@ private static final long serialVersionUID = 0L;
       } else {
         hotNodeSummaryBuilder_.setMessage(value);
       }
-      summaryOneofCase_ = 6;
+      summaryOneofCase_ = 7;
       return this;
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 6;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 7;</code>
      */
     public Builder setHotNodeSummary(
         com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage.Builder builderForValue) {
@@ -1317,15 +1589,15 @@ private static final long serialVersionUID = 0L;
       } else {
         hotNodeSummaryBuilder_.setMessage(builderForValue.build());
       }
-      summaryOneofCase_ = 6;
+      summaryOneofCase_ = 7;
       return this;
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 6;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 7;</code>
      */
     public Builder mergeHotNodeSummary(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage value) {
       if (hotNodeSummaryBuilder_ == null) {
-        if (summaryOneofCase_ == 6 &&
+        if (summaryOneofCase_ == 7 &&
             summaryOneof_ != com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage.getDefaultInstance()) {
           summaryOneof_ = com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage.newBuilder((com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage) summaryOneof_)
               .mergeFrom(value).buildPartial();
@@ -1334,26 +1606,26 @@ private static final long serialVersionUID = 0L;
         }
         onChanged();
       } else {
-        if (summaryOneofCase_ == 6) {
+        if (summaryOneofCase_ == 7) {
           hotNodeSummaryBuilder_.mergeFrom(value);
         }
         hotNodeSummaryBuilder_.setMessage(value);
       }
-      summaryOneofCase_ = 6;
+      summaryOneofCase_ = 7;
       return this;
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 6;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 7;</code>
      */
     public Builder clearHotNodeSummary() {
       if (hotNodeSummaryBuilder_ == null) {
-        if (summaryOneofCase_ == 6) {
+        if (summaryOneofCase_ == 7) {
           summaryOneofCase_ = 0;
           summaryOneof_ = null;
           onChanged();
         }
       } else {
-        if (summaryOneofCase_ == 6) {
+        if (summaryOneofCase_ == 7) {
           summaryOneofCase_ = 0;
           summaryOneof_ = null;
         }
@@ -1362,32 +1634,32 @@ private static final long serialVersionUID = 0L;
       return this;
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 6;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 7;</code>
      */
     public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage.Builder getHotNodeSummaryBuilder() {
       return getHotNodeSummaryFieldBuilder().getBuilder();
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 6;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 7;</code>
      */
     public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessageOrBuilder getHotNodeSummaryOrBuilder() {
-      if ((summaryOneofCase_ == 6) && (hotNodeSummaryBuilder_ != null)) {
+      if ((summaryOneofCase_ == 7) && (hotNodeSummaryBuilder_ != null)) {
         return hotNodeSummaryBuilder_.getMessageOrBuilder();
       } else {
-        if (summaryOneofCase_ == 6) {
+        if (summaryOneofCase_ == 7) {
           return (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage) summaryOneof_;
         }
         return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage.getDefaultInstance();
       }
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 6;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 7;</code>
      */
     private com.google.protobuf.SingleFieldBuilderV3<
         com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessageOrBuilder> 
         getHotNodeSummaryFieldBuilder() {
       if (hotNodeSummaryBuilder_ == null) {
-        if (!(summaryOneofCase_ == 6)) {
+        if (!(summaryOneofCase_ == 7)) {
           summaryOneof_ = com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage.getDefaultInstance();
         }
         hotNodeSummaryBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
@@ -1397,37 +1669,173 @@ private static final long serialVersionUID = 0L;
                 isClean());
         summaryOneof_ = null;
       }
-      summaryOneofCase_ = 6;
+      summaryOneofCase_ = 7;
       onChanged();;
       return hotNodeSummaryBuilder_;
     }
 
     private com.google.protobuf.SingleFieldBuilderV3<
-        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessageOrBuilder> hotClusterSummaryBuilder_;
+        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessageOrBuilder> nodeTemperatureSummaryBuilder_;
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 7;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage nodeTemperatureSummary = 8;</code>
      */
-    public boolean hasHotClusterSummary() {
-      return summaryOneofCase_ == 7;
+    public boolean hasNodeTemperatureSummary() {
+      return summaryOneofCase_ == 8;
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 7;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage nodeTemperatureSummary = 8;</code>
+     */
+    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage getNodeTemperatureSummary() {
+      if (nodeTemperatureSummaryBuilder_ == null) {
+        if (summaryOneofCase_ == 8) {
+          return (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage) summaryOneof_;
+        }
+        return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage.getDefaultInstance();
+      } else {
+        if (summaryOneofCase_ == 8) {
+          return nodeTemperatureSummaryBuilder_.getMessage();
+        }
+        return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage.getDefaultInstance();
+      }
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage nodeTemperatureSummary = 8;</code>
+     */
+    public Builder setNodeTemperatureSummary(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage value) {
+      if (nodeTemperatureSummaryBuilder_ == null) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        summaryOneof_ = value;
+        onChanged();
+      } else {
+        nodeTemperatureSummaryBuilder_.setMessage(value);
+      }
+      summaryOneofCase_ = 8;
+      return this;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage nodeTemperatureSummary = 8;</code>
+     */
+    public Builder setNodeTemperatureSummary(
+        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage.Builder builderForValue) {
+      if (nodeTemperatureSummaryBuilder_ == null) {
+        summaryOneof_ = builderForValue.build();
+        onChanged();
+      } else {
+        nodeTemperatureSummaryBuilder_.setMessage(builderForValue.build());
+      }
+      summaryOneofCase_ = 8;
+      return this;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage nodeTemperatureSummary = 8;</code>
+     */
+    public Builder mergeNodeTemperatureSummary(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage value) {
+      if (nodeTemperatureSummaryBuilder_ == null) {
+        if (summaryOneofCase_ == 8 &&
+            summaryOneof_ != com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage.getDefaultInstance()) {
+          summaryOneof_ = com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage.newBuilder((com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage) summaryOneof_)
+              .mergeFrom(value).buildPartial();
+        } else {
+          summaryOneof_ = value;
+        }
+        onChanged();
+      } else {
+        if (summaryOneofCase_ == 8) {
+          nodeTemperatureSummaryBuilder_.mergeFrom(value);
+        }
+        nodeTemperatureSummaryBuilder_.setMessage(value);
+      }
+      summaryOneofCase_ = 8;
+      return this;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage nodeTemperatureSummary = 8;</code>
+     */
+    public Builder clearNodeTemperatureSummary() {
+      if (nodeTemperatureSummaryBuilder_ == null) {
+        if (summaryOneofCase_ == 8) {
+          summaryOneofCase_ = 0;
+          summaryOneof_ = null;
+          onChanged();
+        }
+      } else {
+        if (summaryOneofCase_ == 8) {
+          summaryOneofCase_ = 0;
+          summaryOneof_ = null;
+        }
+        nodeTemperatureSummaryBuilder_.clear();
+      }
+      return this;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage nodeTemperatureSummary = 8;</code>
+     */
+    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage.Builder getNodeTemperatureSummaryBuilder() {
+      return getNodeTemperatureSummaryFieldBuilder().getBuilder();
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage nodeTemperatureSummary = 8;</code>
+     */
+    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessageOrBuilder getNodeTemperatureSummaryOrBuilder() {
+      if ((summaryOneofCase_ == 8) && (nodeTemperatureSummaryBuilder_ != null)) {
+        return nodeTemperatureSummaryBuilder_.getMessageOrBuilder();
+      } else {
+        if (summaryOneofCase_ == 8) {
+          return (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage) summaryOneof_;
+        }
+        return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage.getDefaultInstance();
+      }
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage nodeTemperatureSummary = 8;</code>
+     */
+    private com.google.protobuf.SingleFieldBuilderV3<
+        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessageOrBuilder> 
+        getNodeTemperatureSummaryFieldBuilder() {
+      if (nodeTemperatureSummaryBuilder_ == null) {
+        if (!(summaryOneofCase_ == 8)) {
+          summaryOneof_ = com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage.getDefaultInstance();
+        }
+        nodeTemperatureSummaryBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
+            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessageOrBuilder>(
+                (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage) summaryOneof_,
+                getParentForChildren(),
+                isClean());
+        summaryOneof_ = null;
+      }
+      summaryOneofCase_ = 8;
+      onChanged();;
+      return nodeTemperatureSummaryBuilder_;
+    }
+
+    private com.google.protobuf.SingleFieldBuilderV3<
+        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessageOrBuilder> hotClusterSummaryBuilder_;
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 9;</code>
+     */
+    public boolean hasHotClusterSummary() {
+      return summaryOneofCase_ == 9;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 9;</code>
      */
     public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage getHotClusterSummary() {
       if (hotClusterSummaryBuilder_ == null) {
-        if (summaryOneofCase_ == 7) {
+        if (summaryOneofCase_ == 9) {
           return (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage) summaryOneof_;
         }
         return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage.getDefaultInstance();
       } else {
-        if (summaryOneofCase_ == 7) {
+        if (summaryOneofCase_ == 9) {
           return hotClusterSummaryBuilder_.getMessage();
         }
         return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage.getDefaultInstance();
       }
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 7;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 9;</code>
      */
     public Builder setHotClusterSummary(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage value) {
       if (hotClusterSummaryBuilder_ == null) {
@@ -1439,11 +1847,11 @@ private static final long serialVersionUID = 0L;
       } else {
         hotClusterSummaryBuilder_.setMessage(value);
       }
-      summaryOneofCase_ = 7;
+      summaryOneofCase_ = 9;
       return this;
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 7;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 9;</code>
      */
     public Builder setHotClusterSummary(
         com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage.Builder builderForValue) {
@@ -1453,15 +1861,15 @@ private static final long serialVersionUID = 0L;
       } else {
         hotClusterSummaryBuilder_.setMessage(builderForValue.build());
       }
-      summaryOneofCase_ = 7;
+      summaryOneofCase_ = 9;
       return this;
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 7;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 9;</code>
      */
     public Builder mergeHotClusterSummary(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage value) {
       if (hotClusterSummaryBuilder_ == null) {
-        if (summaryOneofCase_ == 7 &&
+        if (summaryOneofCase_ == 9 &&
             summaryOneof_ != com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage.getDefaultInstance()) {
           summaryOneof_ = com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage.newBuilder((com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage) summaryOneof_)
               .mergeFrom(value).buildPartial();
@@ -1470,26 +1878,26 @@ private static final long serialVersionUID = 0L;
         }
         onChanged();
       } else {
-        if (summaryOneofCase_ == 7) {
+        if (summaryOneofCase_ == 9) {
           hotClusterSummaryBuilder_.mergeFrom(value);
         }
         hotClusterSummaryBuilder_.setMessage(value);
       }
-      summaryOneofCase_ = 7;
+      summaryOneofCase_ = 9;
       return this;
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 7;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 9;</code>
      */
     public Builder clearHotClusterSummary() {
       if (hotClusterSummaryBuilder_ == null) {
-        if (summaryOneofCase_ == 7) {
+        if (summaryOneofCase_ == 9) {
           summaryOneofCase_ = 0;
           summaryOneof_ = null;
           onChanged();
         }
       } else {
-        if (summaryOneofCase_ == 7) {
+        if (summaryOneofCase_ == 9) {
           summaryOneofCase_ = 0;
           summaryOneof_ = null;
         }
@@ -1498,32 +1906,32 @@ private static final long serialVersionUID = 0L;
       return this;
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 7;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 9;</code>
      */
     public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage.Builder getHotClusterSummaryBuilder() {
       return getHotClusterSummaryFieldBuilder().getBuilder();
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 7;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 9;</code>
      */
     public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessageOrBuilder getHotClusterSummaryOrBuilder() {
-      if ((summaryOneofCase_ == 7) && (hotClusterSummaryBuilder_ != null)) {
+      if ((summaryOneofCase_ == 9) && (hotClusterSummaryBuilder_ != null)) {
         return hotClusterSummaryBuilder_.getMessageOrBuilder();
       } else {
-        if (summaryOneofCase_ == 7) {
+        if (summaryOneofCase_ == 9) {
           return (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage) summaryOneof_;
         }
         return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage.getDefaultInstance();
       }
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 7;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 9;</code>
      */
     private com.google.protobuf.SingleFieldBuilderV3<
         com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessageOrBuilder> 
         getHotClusterSummaryFieldBuilder() {
       if (hotClusterSummaryBuilder_ == null) {
-        if (!(summaryOneofCase_ == 7)) {
+        if (!(summaryOneofCase_ == 9)) {
           summaryOneof_ = com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage.getDefaultInstance();
         }
         hotClusterSummaryBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
@@ -1533,7 +1941,7 @@ private static final long serialVersionUID = 0L;
                 isClean());
         summaryOneof_ = null;
       }
-      summaryOneofCase_ = 7;
+      summaryOneofCase_ = 9;
       onChanged();;
       return hotClusterSummaryBuilder_;
     }

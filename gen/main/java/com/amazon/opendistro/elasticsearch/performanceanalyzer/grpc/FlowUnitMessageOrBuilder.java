@@ -59,28 +59,54 @@ public interface FlowUnitMessageOrBuilder extends
   com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryMessageOrBuilder getHotResourceSummaryOrBuilder();
 
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 6;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage hotShardSummary = 6;</code>
+   */
+  boolean hasHotShardSummary();
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage hotShardSummary = 6;</code>
+   */
+  com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage getHotShardSummary();
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessage hotShardSummary = 6;</code>
+   */
+  com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotShardSummaryMessageOrBuilder getHotShardSummaryOrBuilder();
+
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 7;</code>
    */
   boolean hasHotNodeSummary();
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 6;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 7;</code>
    */
   com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage getHotNodeSummary();
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 6;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage hotNodeSummary = 7;</code>
    */
   com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessageOrBuilder getHotNodeSummaryOrBuilder();
 
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 7;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage nodeTemperatureSummary = 8;</code>
+   */
+  boolean hasNodeTemperatureSummary();
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage nodeTemperatureSummary = 8;</code>
+   */
+  com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage getNodeTemperatureSummary();
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessage nodeTemperatureSummary = 8;</code>
+   */
+  com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeTemperatureSummaryMessageOrBuilder getNodeTemperatureSummaryOrBuilder();
+
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 9;</code>
    */
   boolean hasHotClusterSummary();
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 7;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 9;</code>
    */
   com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage getHotClusterSummary();
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 7;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessage hotClusterSummary = 9;</code>
    */
   com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotClusterSummaryMessageOrBuilder getHotClusterSummaryOrBuilder();
 

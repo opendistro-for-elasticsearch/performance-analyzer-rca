@@ -12,6 +12,14 @@ public enum HardwareEnum
    * <code>CPU = 0 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.resourceTypeOptions) = { ... }</code>
    */
   CPU(0),
+  /**
+   * <code>IO_TOTAL_THROUGHPUT = 1 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.resourceTypeOptions) = { ... }</code>
+   */
+  IO_TOTAL_THROUGHPUT(1),
+  /**
+   * <code>IO_TOTAL_SYS_CALLRATE = 2 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.resourceTypeOptions) = { ... }</code>
+   */
+  IO_TOTAL_SYS_CALLRATE(2),
   UNRECOGNIZED(-1),
   ;
 
@@ -19,6 +27,14 @@ public enum HardwareEnum
    * <code>CPU = 0 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.resourceTypeOptions) = { ... }</code>
    */
   public static final int CPU_VALUE = 0;
+  /**
+   * <code>IO_TOTAL_THROUGHPUT = 1 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.resourceTypeOptions) = { ... }</code>
+   */
+  public static final int IO_TOTAL_THROUGHPUT_VALUE = 1;
+  /**
+   * <code>IO_TOTAL_SYS_CALLRATE = 2 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.resourceTypeOptions) = { ... }</code>
+   */
+  public static final int IO_TOTAL_SYS_CALLRATE_VALUE = 2;
 
 
   public final int getNumber() {
@@ -40,6 +56,8 @@ public enum HardwareEnum
   public static HardwareEnum forNumber(int value) {
     switch (value) {
       case 0: return CPU;
+      case 1: return IO_TOTAL_THROUGHPUT;
+      case 2: return IO_TOTAL_SYS_CALLRATE;
       default: return null;
     }
   }

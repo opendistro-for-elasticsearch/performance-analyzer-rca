@@ -93,12 +93,23 @@ public class Stats {
     return new ArrayList<>(graphs.values());
   }
 
+  public void updateMutedGraphNodes(Set<String> nodeNames) {
+    // Currently, we update mutedGraphNodes only via rca.conf,
+    // thus, it is safe to clear out the older value and add all new muted RCAs
+    mutedGraphNodes.clear();
+    mutedGraphNodes.addAll(nodeNames);
+  }
+
   public boolean addToMutedGraphNodes(String nodeName) {
     return mutedGraphNodes.add(nodeName);
   }
 
   public boolean isNodeMuted(String nodeName) {
     return mutedGraphNodes.contains(nodeName);
+  }
+
+  public Set<String> getMutedGraphNodes() {
+    return mutedGraphNodes;
   }
 
   public int getMutedGraphNodesCount() {

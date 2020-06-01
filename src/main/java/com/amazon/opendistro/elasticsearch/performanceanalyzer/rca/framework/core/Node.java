@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -96,6 +97,11 @@ public abstract class Node<T extends GenericFlowUnit> {
     return evaluationIntervalSeconds;
   }
 
+  @VisibleForTesting
+  public void setEvaluationIntervalSeconds(long value) {
+    evaluationIntervalSeconds = value;
+  }
+
   int getUpStreamNodesCount() {
     if (upStreams == null) {
       return 0;
@@ -170,5 +176,15 @@ public abstract class Node<T extends GenericFlowUnit> {
 
   public void setLocalFlowUnit(T localFlowUnit) {
     this.localFlowUnit = localFlowUnit;
+  }
+
+  /**
+   * callback function to parse local rca.conf file and set RCA thresholds accordingly
+   * The default callback function does nothing because we assume most of the RCA vertices
+   * does not read threshold settings from external config
+   * @param conf RcaConf object
+   */
+  public void readRcaConf(RcaConf conf) {
+    return;
   }
 }

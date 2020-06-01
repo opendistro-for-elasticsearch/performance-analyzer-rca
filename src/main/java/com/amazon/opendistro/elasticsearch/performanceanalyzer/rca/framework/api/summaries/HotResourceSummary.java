@@ -23,12 +23,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.Field;
-import org.jooq.Log;
 import org.jooq.Record;
 import org.jooq.exception.DataTypeException;
 import org.jooq.impl.DSL;
@@ -57,6 +58,7 @@ public class HotResourceSummary extends GenericSummary {
   private double minValue;
   private double maxValue;
   private int timePeriod;
+  private String metaData;
 
   public HotResourceSummary(ResourceType resourceType, double threshold,
       double value, int timePeriod) {
@@ -69,12 +71,55 @@ public class HotResourceSummary extends GenericSummary {
     this.minValue = Double.NaN;
     this.maxValue = Double.NaN;
     this.timePeriod = timePeriod;
+    this.metaData = "";
+  }
+
+  public HotResourceSummary(ResourceType resourceType, double threshold,
+                            double value, int timePeriod, String metaData) {
+    super();
+    this.resourceType = resourceType;
+    this.threshold = threshold;
+    this.value = value;
+
+    this.avgValue = Double.NaN;
+    this.minValue = Double.NaN;
+    this.maxValue = Double.NaN;
+    this.timePeriod = timePeriod;
+    this.metaData = metaData;
   }
 
   public void setValueDistribution(double minValue, double maxValue, double avgValue) {
     this.minValue = minValue;
     this.maxValue = maxValue;
     this.avgValue = avgValue;
+  }
+
+  /**
+   * buildHotResourceSummaryFromMessage() requires each nestedSummaryList element to be of the
+   * {@link com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.TopConsumerSummaryMessage} class, otherwise the
+   * method will throw a {@link ClassCastException} upon invocation. We override addNestedSummaryList() s.t. user
+   * error cannot cause an Exception.
+   */
+  @Override
+  public void addNestedSummaryList(Collection<GenericSummary> nestedSummaryList) {
+    for (GenericSummary summary: nestedSummaryList) {
+      if (!(summary instanceof TopConsumerSummary)) {
+        LOG.error("Attempted to add nested summary of unsupported type {} to HotResourceSummary",
+                summary.getClass().getSimpleName());
+        return;
+      }
+    }
+    this.nestedSummaryList.addAll(nestedSummaryList);
+  }
+
+  @Override
+  public void addNestedSummaryList(GenericSummary nestedSummary) {
+    if (!(nestedSummary instanceof TopConsumerSummary)) {
+      LOG.error("Attempted to add nested summary of unsupported type {} to HotResourceSummary",
+              nestedSummary.getClass().getSimpleName());
+      return;
+    }
+    this.nestedSummaryList.add(nestedSummary);
   }
 
   public ResourceType getResourceType() {
@@ -85,8 +130,16 @@ public class HotResourceSummary extends GenericSummary {
     return this.value;
   }
 
+  public double getThreshold() {
+    return this.threshold;
+  }
+
   public int getTimePeriod() {
     return this.timePeriod;
+  }
+
+  public String getMetaData() {
+    return this.metaData;
   }
 
   @Override
@@ -100,6 +153,7 @@ public class HotResourceSummary extends GenericSummary {
     summaryMessageBuilder.setMinValue(this.minValue);
     summaryMessageBuilder.setMaxValue(this.maxValue);
     summaryMessageBuilder.setTimePeriod(this.timePeriod);
+    summaryMessageBuilder.setMetaData(this.metaData);
     for (GenericSummary nestedSummary : this.nestedSummaryList) {
       summaryMessageBuilder.getConsumersBuilder()
           .addConsumer(nestedSummary.buildSummaryMessage());
@@ -112,12 +166,10 @@ public class HotResourceSummary extends GenericSummary {
     messageBuilder.setHotResourceSummary(this.buildSummaryMessage());
   }
 
-  public static HotResourceSummary buildHotResourceSummaryFromMessage(
-      HotResourceSummaryMessage message) {
+  public static HotResourceSummary buildHotResourceSummaryFromMessage(HotResourceSummaryMessage message) {
     HotResourceSummary newSummary = new HotResourceSummary(message.getResourceType(), message.getThreshold(),
         message.getValue(), message.getTimePeriod());
-    newSummary
-        .setValueDistribution(message.getMinValue(), message.getMaxValue(), message.getAvgValue());
+    newSummary.setValueDistribution(message.getMinValue(), message.getMaxValue(), message.getAvgValue());
     if (message.hasConsumers()) {
       for (int i = 0; i < message.getConsumers().getConsumerCount(); i++) {
         newSummary.addNestedSummaryList(TopConsumerSummary.buildTopConsumerSummaryFromMessage(
@@ -139,6 +191,8 @@ public class HotResourceSummary extends GenericSummary {
         .append(ResourceTypeUtil.getResourceTypeUnit(this.resourceType))
         .append(" ")
         .append(this.nestedSummaryList)
+        .append(" ")
+        .append(this.metaData)
         .toString();
   }
 
@@ -148,16 +202,24 @@ public class HotResourceSummary extends GenericSummary {
   }
 
   @Override
+  public List<SummaryBuilder<? extends GenericSummary>> getNestedSummaryBuilder() {
+    return Collections.unmodifiableList(Collections.singletonList(
+        new SummaryBuilder<>(TopConsumerSummary.TOP_CONSUMER_SUMMARY_TABLE,
+            TopConsumerSummary::buildSummary)));
+  }
+
+  @Override
   public List<Field<?>> getSqlSchema() {
     List<Field<?>> schema = new ArrayList<>();
     schema.add(ResourceSummaryField.RESOURCE_TYPE_FIELD.getField());
-    schema.add(ResourceSummaryField.THRESHOLD_FILELD.getField());
-    schema.add(ResourceSummaryField.VALUE_FILELD.getField());
-    schema.add(ResourceSummaryField.AVG_VALUE_FILELD.getField());
-    schema.add(ResourceSummaryField.MIN_VALUE_FILELD.getField());
-    schema.add(ResourceSummaryField.MAX_VALUE_FILELD.getField());
-    schema.add(ResourceSummaryField.UNIT_TYPE_FILELD.getField());
-    schema.add(ResourceSummaryField.TIME_PERIOD_FILELD.getField());
+    schema.add(ResourceSummaryField.THRESHOLD_FIELD.getField());
+    schema.add(ResourceSummaryField.VALUE_FIELD.getField());
+    schema.add(ResourceSummaryField.AVG_VALUE_FIELD.getField());
+    schema.add(ResourceSummaryField.MIN_VALUE_FIELD.getField());
+    schema.add(ResourceSummaryField.MAX_VALUE_FIELD.getField());
+    schema.add(ResourceSummaryField.UNIT_TYPE_FIELD.getField());
+    schema.add(ResourceSummaryField.TIME_PERIOD_FIELD.getField());
+    schema.add(ResourceSummaryField.METADATA_FIELD.getField());
     return schema;
   }
 
@@ -172,6 +234,7 @@ public class HotResourceSummary extends GenericSummary {
     value.add(Double.valueOf(this.maxValue));
     value.add(ResourceTypeUtil.getResourceTypeUnit(this.resourceType));
     value.add(Integer.valueOf(this.timePeriod));
+    value.add(metaData);
     return value;
   }
 
@@ -192,6 +255,7 @@ public class HotResourceSummary extends GenericSummary {
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.UNIT_TYPE_COL_NAME,
         ResourceTypeUtil.getResourceTypeUnit(this.resourceType));
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.TIME_PERIOD_COL_NAME, this.timePeriod);
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.META_DATA_COL_NAME, this.metaData);
     if (!this.nestedSummaryList.isEmpty()) {
       String tableName = this.nestedSummaryList.get(0).getTableName();
       summaryObj.add(tableName, this.nestedSummaryListToJson());
@@ -209,6 +273,7 @@ public class HotResourceSummary extends GenericSummary {
     public static final String MAX_VALUE_COL_NAME = "max";
     public static final String UNIT_TYPE_COL_NAME = "unit_type";
     public static final String TIME_PERIOD_COL_NAME = "time_period_seconds";
+    public static final String META_DATA_COL_NAME = "meta_data";
   }
 
   /**
@@ -216,13 +281,14 @@ public class HotResourceSummary extends GenericSummary {
    */
   public enum ResourceSummaryField implements JooqFieldValue {
     RESOURCE_TYPE_FIELD(SQL_SCHEMA_CONSTANTS.RESOURCE_TYPE_COL_NAME, String.class),
-    THRESHOLD_FILELD(SQL_SCHEMA_CONSTANTS.THRESHOLD_COL_NAME, Double.class),
-    VALUE_FILELD(SQL_SCHEMA_CONSTANTS.VALUE_COL_NAME, Double.class),
-    AVG_VALUE_FILELD(SQL_SCHEMA_CONSTANTS.AVG_VALUE_COL_NAME, Double.class),
-    MIN_VALUE_FILELD(SQL_SCHEMA_CONSTANTS.MIN_VALUE_COL_NAME, Double.class),
-    MAX_VALUE_FILELD(SQL_SCHEMA_CONSTANTS.MAX_VALUE_COL_NAME, Double.class),
-    UNIT_TYPE_FILELD(SQL_SCHEMA_CONSTANTS.UNIT_TYPE_COL_NAME, String.class),
-    TIME_PERIOD_FILELD(SQL_SCHEMA_CONSTANTS.TIME_PERIOD_COL_NAME, Integer.class);
+    THRESHOLD_FIELD(SQL_SCHEMA_CONSTANTS.THRESHOLD_COL_NAME, Double.class),
+    VALUE_FIELD(SQL_SCHEMA_CONSTANTS.VALUE_COL_NAME, Double.class),
+    AVG_VALUE_FIELD(SQL_SCHEMA_CONSTANTS.AVG_VALUE_COL_NAME, Double.class),
+    MIN_VALUE_FIELD(SQL_SCHEMA_CONSTANTS.MIN_VALUE_COL_NAME, Double.class),
+    MAX_VALUE_FIELD(SQL_SCHEMA_CONSTANTS.MAX_VALUE_COL_NAME, Double.class),
+    UNIT_TYPE_FIELD(SQL_SCHEMA_CONSTANTS.UNIT_TYPE_COL_NAME, String.class),
+    TIME_PERIOD_FIELD(SQL_SCHEMA_CONSTANTS.TIME_PERIOD_COL_NAME, Integer.class),
+    METADATA_FIELD(SQL_SCHEMA_CONSTANTS.META_DATA_COL_NAME, String.class);
 
 
     private String name;
@@ -254,14 +320,15 @@ public class HotResourceSummary extends GenericSummary {
     HotResourceSummary summary = null;
     try {
       String resourceTypeName = record.get(ResourceSummaryField.RESOURCE_TYPE_FIELD.getField(), String.class);
-      Double threshold = record.get(ResourceSummaryField.THRESHOLD_FILELD.getField(), Double.class);
-      Double value = record.get(ResourceSummaryField.VALUE_FILELD.getField(), Double.class);
-      Double avgValue = record.get(ResourceSummaryField.AVG_VALUE_FILELD.getField(), Double.class);
-      Double minValue = record.get(ResourceSummaryField.MIN_VALUE_FILELD.getField(), Double.class);
-      Double maxValue = record.get(ResourceSummaryField.MAX_VALUE_FILELD.getField(), Double.class);
-      Integer timePeriod = record.get(ResourceSummaryField.TIME_PERIOD_FILELD.getField(), Integer.class);
+      Double threshold = record.get(ResourceSummaryField.THRESHOLD_FIELD.getField(), Double.class);
+      Double value = record.get(ResourceSummaryField.VALUE_FIELD.getField(), Double.class);
+      Double avgValue = record.get(ResourceSummaryField.AVG_VALUE_FIELD.getField(), Double.class);
+      Double minValue = record.get(ResourceSummaryField.MIN_VALUE_FIELD.getField(), Double.class);
+      Double maxValue = record.get(ResourceSummaryField.MAX_VALUE_FIELD.getField(), Double.class);
+      Integer timePeriod = record.get(ResourceSummaryField.TIME_PERIOD_FIELD.getField(), Integer.class);
+      String metaData = record.get(ResourceSummaryField.METADATA_FIELD.getField(), String.class);
       summary = new HotResourceSummary(ResourceTypeUtil.buildResourceType(resourceTypeName),
-          threshold, value, timePeriod);
+          threshold, value, timePeriod, metaData);
       // those three fields are optional. check before setting to the obj
       if (avgValue != null
           && minValue != null

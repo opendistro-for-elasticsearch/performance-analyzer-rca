@@ -59,29 +59,53 @@ curl --url "localhost:9650/_opendistro/_performanceanalyzer/rca?name=HighHeapUsa
 ```
 The sample RCA response from above api
 ```
-[
-  {
-    "Name": "HighHeapUsageClusterRca",
-    "State": "unhealthy",
-    "NumOfNodes": 6,
-    "NumOfUnhealthyNodes": 1,
-    "TimeStamp": "1579809393944",
-    "Summary": [
-      {
-        "NodeId": "lpgNv3VlSQGfuqMz8CmzUg",
-        "IpAddress": "10.212.48.118",
-        "ResourceContext": [
-          {
-            "ResourceName": "garbage collector",
-            "UnitType": "heap usage in percentage",
-            "Threshold": 0.65,
-            "Actual": 0.0710642990279853
-          }
-        ]
-      }
+{
+    "HighHeapUsageClusterRca": [
+        {
+            "rca_name": "HighHeapUsageClusterRca",
+            "state": "unhealthy",
+            "timestamp": 1587426650942,
+            "HotClusterSummary": [
+                {
+                    "number_of_nodes": 2,
+                    "number_of_unhealthy_nodes": 1,
+                    "HotNodeSummary": [
+                        {
+                            "host_address": "192.168.144.2",
+                            "node_id": "JtlEoRowSI6iNpzpjlbp_Q",
+                            "HotResourceSummary": [
+                                {
+                                    "resource_type": "old gen",
+                                    "threshold": 0.65,
+                                    "value": 0.81827232588145373,
+                                    "avg": NaN,
+                                    "max": NaN,
+                                    "min": NaN,
+                                    "unit_type": "heap usage in percentage",
+                                    "time_period_seconds": 600,
+                                    "TopConsumerSummary": [
+                                        {
+                                            "name": "CACHE_FIELDDATA_SIZE",
+                                            "value": 590702564
+                                        },
+                                        {
+                                            "name": "CACHE_REQUEST_SIZE",
+                                            "value": 28375
+                                        },
+                                        {
+                                            "name": "CACHE_QUERY_SIZE",
+                                            "value": 12687
+                                        }
+                                    ],
+                                }
+                            ]
+                        }
+                    ] 
+                }
+            ]
+        }
     ]
-  }
-]
+}
 ```
 
 ## Building, Deploying, and Running the RCA Framework

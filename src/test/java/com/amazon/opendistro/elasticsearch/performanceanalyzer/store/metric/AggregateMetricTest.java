@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.CPU_Utilization;
@@ -40,7 +41,7 @@ public class AggregateMetricTest {
         .addNewData(
             TABLE_NAME, Arrays.asList("shard2", "index3", "other", "primary"), 3);
     Metric testMetric = new AggregateMetric(1, TABLE_NAME, AggregateFunction.SUM,
-        CommonDimension.OPERATION.toString());
+            MetricsDB.AVG, CommonDimension.OPERATION.toString());
     MetricFlowUnit flowUnit = testMetric.gather(queryable);
     assertFalse(flowUnit.getData() == null || flowUnit.getData().isEmpty());
     assertEquals("other", flowUnit.getData().get(0).getValue(0, String.class));
@@ -72,6 +73,7 @@ public class AggregateMetricTest {
         .addNewData(
             TABLE_NAME, Arrays.asList("shard3", "index3", "other", "primary"), 10);
     Metric testMetric = new AggregateMetric(1, TABLE_NAME, AggregateFunction.SUM,
+        MetricsDB.AVG,
         CommonDimension.SHARD_ID.toString(), CommonDimension.OPERATION.toString());
     MetricFlowUnit flowUnit = testMetric.gather(queryable);
     assertFalse(flowUnit.getData() == null || flowUnit.getData().isEmpty());
@@ -106,6 +108,7 @@ public class AggregateMetricTest {
         .addNewData(
             TABLE_NAME, Arrays.asList("shard2", "index3", "other", "primary"), 5);
     Metric testMetric = new AggregateMetric(1, TABLE_NAME, AggregateFunction.MAX,
+        MetricsDB.AVG,
         CommonDimension.OPERATION.toString());
     MetricFlowUnit flowUnit = testMetric.gather(queryable);
     assertFalse(flowUnit.getData() == null || flowUnit.getData().isEmpty());

@@ -23,6 +23,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyz
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageYoungGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
@@ -33,6 +35,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaVerticesMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.time.Clock;
@@ -53,10 +56,6 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
 
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageYoungGenRca.class);
   private static final int PROMOTION_RATE_SLIDING_WINDOW_IN_MINS = 10;
-  //promotion rate threshold is 500 Mb/s
-  private static final double PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC = 500;
-  //young gc time threshold is 400 ms per second
-  private static final double YOUNG_GC_TIME_THRESHOLD_IN_MS_PER_SEC = 400;
   private static final double CONVERT_BYTES_TO_MEGABYTES = Math.pow(1024, 2);
   private final Metric heap_Used;
   private final Metric gc_Collection_Time;
@@ -69,6 +68,10 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
   private int counter;
   private final SlidingWindow<SlidingWindowData> gcTimeDeque;
   private final SlidingWindow<SlidingWindowData> promotionRateDeque;
+  //promotion rate in mb/s
+  private int promotionRateThreshold;
+  //young gc time in ms per second
+  private int youngGenGcTimeThreshold;
   protected Clock clock;
 
   public <M extends Metric> HighHeapUsageYoungGenRca(final int rcaPeriod, final double lowerBoundThreshold,
@@ -83,6 +86,8 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
     this.counter = 0;
     this.resourceType = ResourceType.newBuilder().setJVM(JvmEnum.YOUNG_GEN).build();
     this.gcTimeDeque = new SlidingWindow<>(PROMOTION_RATE_SLIDING_WINDOW_IN_MINS, TimeUnit.MINUTES);
+    this.promotionRateThreshold = HighHeapUsageYoungGenRcaConfig.DEFAULT_PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC;
+    this.youngGenGcTimeThreshold = HighHeapUsageYoungGenRcaConfig.DEFAULT_YOUNG_GEN_GC_TIME_THRESHOLD_IN_MS_PER_SEC;
 
     this.promotionRateDeque = new SlidingWindow<SlidingWindowData>(PROMOTION_RATE_SLIDING_WINDOW_IN_MINS, TimeUnit.MINUTES) {
       /**
@@ -163,9 +168,9 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
       double avgYoungGCTime = gcTimeDeque.readAvg(TimeUnit.SECONDS);
 
       if (!Double.isNaN(avgPromotionRate)
-          && avgPromotionRate > PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC
+          && avgPromotionRate > promotionRateThreshold
           && !Double.isNaN(avgYoungGCTime)
-          && avgYoungGCTime > YOUNG_GC_TIME_THRESHOLD_IN_MS_PER_SEC) {
+          && avgYoungGCTime > youngGenGcTimeThreshold) {
         LOG.debug("avgPromotionRate = {} , avgGCTime = {}", avgPromotionRate, avgYoungGCTime);
         context = new ResourceContext(Resources.State.UNHEALTHY);
         PerformanceAnalyzerApp.RCA_VERTICES_METRICS_AGGREGATOR.updateStat(
@@ -176,9 +181,9 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
 
       //check to see if the value is above lower bound thres
       if (!Double.isNaN(avgPromotionRate)
-          && avgPromotionRate > PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC * this.lowerBoundThreshold) {
+          && avgPromotionRate > promotionRateThreshold * this.lowerBoundThreshold) {
         summary = new HotResourceSummary(this.resourceType,
-            PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC, avgPromotionRate,
+            promotionRateThreshold, avgPromotionRate,
             PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
       }
 
@@ -192,11 +197,23 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
   }
 
   /**
+   * read threshold values from rca.conf
+   * @param conf RcaConf object
+   */
+  @Override
+  public void readRcaConf(RcaConf conf) {
+    HighHeapUsageYoungGenRcaConfig configObj = conf.getHighHeapUsageYoungGenRcaConfig();
+    promotionRateThreshold = configObj.getPromotionRateThreshold();
+    youngGenGcTimeThreshold = configObj.getYoungGenGcTimeThreshold();
+  }
+
+  /**
    * This is a local node RCA which by definition can not be serialize/de-serialized
    * over gRPC.
    */
   @Override
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-    LOG.error("RCA: {} should not be send over from network", this.getClass().getSimpleName());
+    throw new IllegalArgumentException(name() + "'s generateFlowUnitListFromWire() should not "
+        + "be required.");
   }
 }

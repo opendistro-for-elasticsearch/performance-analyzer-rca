@@ -20,8 +20,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotShardSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 public class RcaTestHelper extends Rca<ResourceFlowUnit> {
   public RcaTestHelper() {
@@ -30,6 +34,10 @@ public class RcaTestHelper extends Rca<ResourceFlowUnit> {
 
   public void mockFlowUnit(ResourceFlowUnit flowUnit) {
     this.flowUnits = Collections.singletonList(flowUnit);
+  }
+
+  public void mockFlowUnits(List<ResourceFlowUnit> flowUnitList) {
+    this.flowUnits = flowUnitList;
   }
 
   @Override
@@ -47,5 +55,19 @@ public class RcaTestHelper extends Rca<ResourceFlowUnit> {
     HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, "127.0.0.0");
     nodeSummary.addNestedSummaryList(resourceSummary);
     return new ResourceFlowUnit(System.currentTimeMillis(), new ResourceContext(healthy), nodeSummary);
+  }
+
+  public static ResourceFlowUnit generateFlowUnitForHotShard(String indexName, String shardId, String nodeID, double cpu_utilization,
+                                                             double io_throughput, double io_sys_callrate, Resources.State health) {
+    HotShardSummary hotShardSummary = new HotShardSummary(indexName, shardId, nodeID, 60);
+    hotShardSummary.setcpuUtilization(cpu_utilization);
+    hotShardSummary.setCpuUtilizationThreshold(0.50);
+    hotShardSummary.setIoThroughput(io_throughput);
+    hotShardSummary.setIoThroughputThreshold(500000);
+    hotShardSummary.setIoSysCallrate(io_sys_callrate);
+    hotShardSummary.setIoSysCallrateThreshold(0.50);
+    HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, "127.0.0.0");
+    nodeSummary.addNestedSummaryList(Arrays.asList(hotShardSummary));
+    return new ResourceFlowUnit(System.currentTimeMillis(), new ResourceContext(health), nodeSummary);
   }
 }
