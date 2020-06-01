@@ -21,12 +21,15 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.protobuf.GeneratedMessageV3;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -97,6 +100,11 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
 
     public double getTotalUsage() {
         return totalUsage;
+    }
+
+    @VisibleForTesting
+    public List<ShardProfileSummary> getShardsForZoneInReverseTemperatureOrder(HeatZoneAssigner.Zone zone) {
+        return zoneProfiles[zone.ordinal()].getShardsInReverseTemperatureOrder();
     }
 
     @Override
@@ -255,14 +263,9 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
 
     public class NodeLevelZoneSummary extends GenericSummary {
         public static final String ZONE_KEY = "zone";
-        public static final String MIN_KEY = "min";
-        public static final String MAX_KEY = "max";
         public static final String ALL_KEY = "all_shards";
 
         List<ShardProfileSummary> shardProfileSummaries;
-        ShardProfileSummary minShard;
-        ShardProfileSummary maxShard;
-
         private final HeatZoneAssigner.Zone myZone;
 
         NodeLevelZoneSummary(HeatZoneAssigner.Zone myZone) {
@@ -272,37 +275,11 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
 
         void addShard(ShardProfileSummary shard) {
             shardProfileSummaries.add(shard);
-            if (minShard == null) {
-                minShard = shard;
-            } else {
-                if (getMinTemperature().isGreaterThan(shard.getHeatInDimension(profileForDimension))) {
-                    minShard = shard;
-                }
-            }
-
-            if (maxShard == null) {
-                maxShard = shard;
-            } else {
-                if (shard.getHeatInDimension(profileForDimension).isGreaterThan(getMaxTemperature())) {
-                    maxShard = shard;
-                }
-            }
         }
 
-        @Nullable
-        TemperatureVector.NormalizedValue getMinTemperature() {
-            if (minShard != null) {
-                return minShard.getHeatInDimension(profileForDimension);
-            }
-            return null;
-        }
-
-        @Nullable
-        TemperatureVector.NormalizedValue getMaxTemperature() {
-            if (maxShard != null) {
-                return maxShard.getHeatInDimension(profileForDimension);
-            }
-            return null;
+        public List<ShardProfileSummary> getShardsInReverseTemperatureOrder() {
+            shardProfileSummaries.sort(new ShardProfileComparator());
+            return Collections.unmodifiableList(shardProfileSummaries);
         }
 
         @Override
@@ -329,15 +306,13 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
         public List<Field<?>> getSqlSchema() {
             List<Field<?>> schema = new ArrayList<>();
             schema.add(DSL.field(DSL.name(ZONE_KEY), String.class));
-            schema.add(DSL.field(DSL.name(MIN_KEY), String.class));
-            schema.add(DSL.field(DSL.name(MAX_KEY), String.class));
             schema.add(DSL.field(DSL.name(ALL_KEY), String.class));
             return schema;
         }
 
         public List<GenericSummary> getNestedSummaryList() {
             List<GenericSummary> shardSummaries = new ArrayList<>();
-            for (ShardProfileSummary shardProfileSummary : shardProfileSummaries) {
+            for (ShardProfileSummary shardProfileSummary : getShardsInReverseTemperatureOrder()) {
                 shardSummaries.add(shardProfileSummary);
             }
             return shardSummaries;
@@ -347,9 +322,11 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
         public List<Object> getSqlValue() {
             List<Object> values = new ArrayList<>();
             values.add(myZone.name());
-            values.add(minShard == null ? "" : minShard.toJson());
-            values.add(maxShard == null ? "" : maxShard.toJson());
             JsonArray array = new JsonArray();
+
+            // The reason we are not getting shards ordered by temperature as
+            // we don't want to pay the cost of sorting while writes. We do writes
+            // more often than reads and therefore, we would rather sort on reads.
             for (ShardProfileSummary shard : shardProfileSummaries) {
                 if (shard != null) {
                     array.add(shard.toJson());
@@ -364,13 +341,6 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
             JsonObject summaryObj = new JsonObject();
             summaryObj.addProperty(ZONE_KEY, myZone.name());
 
-            // Min and the max makes sense only if there are more than 2, or else they don't
-            //carry meaningful information.
-            if (shardProfileSummaries.size() > 2) {
-                summaryObj.add(MIN_KEY, minShard == null ? new JsonObject() : minShard.toJson());
-                summaryObj.add(MAX_KEY, maxShard == null ? new JsonObject() : maxShard.toJson());
-            }
-
             JsonArray array = new JsonArray();
             getNestedSummaryList().forEach(
                     summary -> {
@@ -379,6 +349,17 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
             );
             summaryObj.add(ALL_KEY, array);
             return summaryObj;
+        }
+    }
+
+    private class ShardProfileComparator implements Comparator<ShardProfileSummary> {
+        @Override
+        public int compare(ShardProfileSummary o1, ShardProfileSummary o2) {
+            return reverseSort(o1, o2);
+        }
+
+        private int reverseSort(ShardProfileSummary o1, ShardProfileSummary o2) {
+            return o2.getHeatInDimension(profileForDimension).getPOINTS() - o1.getHeatInDimension(profileForDimension).getPOINTS();
         }
     }
 }
