@@ -355,6 +355,10 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
     private class ShardProfileComparator implements Comparator<ShardProfileSummary> {
         @Override
         public int compare(ShardProfileSummary o1, ShardProfileSummary o2) {
+            return reverseSort(o1, o2);
+        }
+
+        private int reverseSort(ShardProfileSummary o1, ShardProfileSummary o2) {
             return o2.getHeatInDimension(profileForDimension).getPOINTS() - o1.getHeatInDimension(profileForDimension).getPOINTS();
         }
     }
