@@ -28,7 +28,8 @@ public class TemperatureVector {
         CPU_Utilization(com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.CPU_Utilization.NAME),
         Heap_AllocRate(com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_AllocRate.NAME),
         IO_READ_SYSCALL_RATE(com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.IO_ReadSyscallRate.NAME),
-        IO_WriteSyscallRate(com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.IO_WriteSyscallRate.NAME);
+        IO_WriteSyscallRate(com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.IO_WriteSyscallRate.NAME),
+        Shard_Size_In_Bytes(com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Shard_Size_In_Bytes.NAME);
 
         public final String NAME;
 
