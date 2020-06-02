@@ -47,7 +47,7 @@ public class ShardSizeDimensionTemperatureRca extends Rca<DimensionalTemperature
         DimensionalTemperatureFlowUnit shardSizeTemperatureFlowUnit =
                 DimensionalTemperatureCalculator.getTemperatureForDimension(SHARD_STORE,
                         TemperatureVector.Dimension.Shard_Size_In_Bytes, SHARD_SIZE_BY_SHARD, SHARD_SIZE_AVG, THRESHOLD);
-        LOG.info("Shard Size temperature calculated: {}",
+        LOG.debug("Shard Size temperature calculated: {}",
                 shardSizeTemperatureFlowUnit.getNodeDimensionProfile());
         return shardSizeTemperatureFlowUnit;
     }

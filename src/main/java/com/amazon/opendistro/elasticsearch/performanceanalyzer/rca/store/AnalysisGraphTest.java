@@ -17,13 +17,11 @@ public class AnalysisGraphTest extends AnalysisGraph {
     Metric heapUsed = new Sched_Waittime(5);
     Metric pageMaj = new Paging_MajfltRate(5);
     Metric heapAlloc = new Heap_AllocRate(5);
-    Metric shardSize = new ShardSizeInBytes(5);
 
     addLeaf(cpuUtilization);
     addLeaf(heapUsed);
     addLeaf(pageMaj);
     addLeaf(heapAlloc);
-    addLeaf(shardSize);
 
     System.out.println(this.getClass().getName() + " graph constructed..");
   }

@@ -26,6 +26,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.tem
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.HeapAllocRateTemperatureRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.ShardSizeDimensionTemperatureRca;
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -67,6 +68,7 @@ public class SQLiteQueryUtils {
     Set<String> temperatureDimensions = new HashSet<>();
     temperatureDimensions.add(CpuUtilDimensionTemperatureRca.class.getSimpleName());
     temperatureDimensions.add(HeapAllocRateTemperatureRca.class.getSimpleName());
+    temperatureDimensions.add(ShardSizeDimensionTemperatureRca.class.getSimpleName());
 
     temperatureProfileDimensionRCASet = Collections.unmodifiableSet(temperatureDimensions);
 

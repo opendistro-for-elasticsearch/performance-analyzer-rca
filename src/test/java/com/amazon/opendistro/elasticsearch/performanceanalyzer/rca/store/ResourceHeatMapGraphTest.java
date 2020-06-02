@@ -337,156 +337,357 @@ public class ResourceHeatMapGraphTest {
   }
 
   /**
-   * {
-   * "AllTemperatureDimensions":[
-   * {
-   * "NodeLevelDimensionalSummary":[
-   * {
-   * "dimension":"CPU_Utilization",
-   * "mean":1,
-   * "total":0.113345915412554,
-   * "numShards":3,
-   * "NodeLevelZoneSummary":[
-   * {
-   * "zone":"HOT",
-   * "all_shards":[
-   * ]
-   * },
-   * {
-   * "zone":"WARM",
-   * "all_shards":[
-   * {
-   * "index_name":"pmc",
-   * "shard_id":0,
-   * "temperature":[
-   * {
-   * "dimension":"CPU_Utilization",
-   * "value":"2"
-   * },
-   * {
-   * "dimension":"Heap_AllocRate",
-   * "value":"5"
-   * }
-   * ]
-   * }
-   * ]
-   * },
-   * {
-   * "zone":"LUKE_WARM",
-   * "all_shards":[
-   * {
-   * "index_name":"pmc",
-   * "shard_id":2,
-   * "temperature":[
-   * {
-   * "dimension":"CPU_Utilization",
-   * "value":"0"
-   * },
-   * {
-   * "dimension":"Heap_AllocRate",
-   * "value":"0"
-   * }
-   * ]
-   * },
-   * {
-   * "index_name":"pmc",
-   * "shard_id":4,
-   * "temperature":[
-   * {
-   * "dimension":"CPU_Utilization",
-   * "value":"0"
-   * },
-   * {
-   * "dimension":"Heap_AllocRate",
-   * "value":"0"
-   * }
-   * ]
-   * }
-   * ]
-   * },
-   * {
-   * "zone":"COLD",
-   * "all_shards":[
-   * ]
-   * }
-   * ],
-   * "timestamp":1590627598558
-   * },
-   * {
-   * "dimension":"Heap_AllocRate",
-   * "mean":2,
-   * "total":2.39855498699146E8,
-   * "numShards":3,
-   * "NodeLevelZoneSummary":[
-   * {
-   * "zone":"HOT",
-   * "all_shards":[
-   * {
-   * "index_name":"pmc",
-   * "shard_id":0,
-   * "temperature":[
-   * {
-   * "dimension":"CPU_Utilization",
-   * "value":"2"
-   * },
-   * {
-   * "dimension":"Heap_AllocRate",
-   * "value":"5"
-   * }
-   * ]
-   * }
-   * ]
-   * },
-   * {
-   * "zone":"WARM",
-   * "all_shards":[
-   * ]
-   * },
-   * {
-   * "zone":"LUKE_WARM",
-   * "all_shards":[
-   * {
-   * "index_name":"pmc",
-   * "shard_id":2,
-   * "temperature":[
-   * {
-   * "dimension":"CPU_Utilization",
-   * "value":"0"
-   * },
-   * {
-   * "dimension":"Heap_AllocRate",
-   * "value":"0"
-   * }
-   * ]
-   * },
-   * {
-   * "index_name":"pmc",
-   * "shard_id":4,
-   * "temperature":[
-   * {
-   * "dimension":"CPU_Utilization",
-   * "value":"0"
-   * },
-   * {
-   * "dimension":"Heap_AllocRate",
-   * "value":"0"
-   * }
-   * ]
-   * }
-   * ]
-   * },
-   * {
-   * "zone":"COLD",
-   * "all_shards":[
-   * ]
-   * }
-   * ],
-   * "timestamp":1590627598558
-   * }
-   * ]
-   * }
-   * ]
-   * }
+   [
+   {
+   "NodeLevelZoneSummary":[
+   {
+   "all_shards":[],
+   "zone":"HOT"
+   },
+   {
+   "all_shards":[],
+   "zone":"WARM"
+   },
+   {
+   "all_shards":[
+   {
+   "index_name":"pmc",
+   "shard_id":4,
+   "temperature":[
+   {
+   "dimension":"CPU_Utilization",
+   "value":"1"
+   },
+   {
+   "dimension":"Heap_AllocRate",
+   "value":"1"
+   },
+   {
+   "dimension":"Shard_Size_In_Bytes",
+   "value":"10"
+   }
+   ]
+   },
+   {
+   "index_name":"pmc",
+   "shard_id":0,
+   "temperature":[
+   {
+   "dimension":"CPU_Utilization",
+   "value":"1"
+   },
+   {
+   "dimension":"Heap_AllocRate",
+   "value":"1"
+   },
+   {
+   "dimension":"Shard_Size_In_Bytes",
+   "value":"9"
+   }
+   ]
+   },
+   {
+   "index_name":"pmc",
+   "shard_id":2,
+   "temperature":[
+   {
+   "dimension":"CPU_Utilization",
+   "value":"0"
+   },
+   {
+   "dimension":"Heap_AllocRate",
+   "value":"0"
+   },
+   {
+   "dimension":"Shard_Size_In_Bytes",
+   "value":"9"
+   }
+   ]
+   }
+   ],
+   "max":{
+   "index_name":"pmc",
+   "shard_id":4,
+   "temperature":[
+   {
+   "dimension":"CPU_Utilization",
+   "value":"1"
+   },
+   {
+   "dimension":"Heap_AllocRate",
+   "value":"1"
+   },
+   {
+   "dimension":"Shard_Size_In_Bytes",
+   "value":"10"
+   }
+   ]
+   },
+   "min":{
+   "index_name":"pmc",
+   "shard_id":2,
+   "temperature":[
+   {
+   "dimension":"CPU_Utilization",
+   "value":"0"
+   },
+   {
+   "dimension":"Heap_AllocRate",
+   "value":"0"
+   },
+   {
+   "dimension":"Shard_Size_In_Bytes",
+   "value":"9"
+   }
+   ]
+   },
+   "zone":"LUKE_WARM"
+   },
+   {
+   "all_shards":[],
+   "zone":"COLD"
+   }
+   ],
+   "dimension":"CPU_Utilization",
+   "mean":1,
+   "numShards":3,
+   "timestamp":1591056310990,
+   "total":0.113345915412554
+   },
+   {
+   "NodeLevelZoneSummary":[
+   {
+   "all_shards":[],
+   "zone":"HOT"
+   },
+   {
+   "all_shards":[],
+   "zone":"WARM"
+   },
+   {
+   "all_shards":[
+   {
+   "index_name":"pmc",
+   "shard_id":4,
+   "temperature":[
+   {
+   "dimension":"CPU_Utilization",
+   "value":"1"
+   },
+   {
+   "dimension":"Heap_AllocRate",
+   "value":"1"
+   },
+   {
+   "dimension":"Shard_Size_In_Bytes",
+   "value":"10"
+   }
+   ]
+   },
+   {
+   "index_name":"pmc",
+   "shard_id":0,
+   "temperature":[
+   {
+   "dimension":"CPU_Utilization",
+   "value":"1"
+   },
+   {
+   "dimension":"Heap_AllocRate",
+   "value":"1"
+   },
+   {
+   "dimension":"Shard_Size_In_Bytes",
+   "value":"9"
+   }
+   ]
+   },
+   {
+   "index_name":"pmc",
+   "shard_id":2,
+   "temperature":[
+   {
+   "dimension":"CPU_Utilization",
+   "value":"0"
+   },
+   {
+   "dimension":"Heap_AllocRate",
+   "value":"0"
+   },
+   {
+   "dimension":"Shard_Size_In_Bytes",
+   "value":"9"
+   }
+   ]
+   }
+   ],
+   "max":{
+   "index_name":"pmc",
+   "shard_id":4,
+   "temperature":[
+   {
+   "dimension":"CPU_Utilization",
+   "value":"1"
+   },
+   {
+   "dimension":"Heap_AllocRate",
+   "value":"1"
+   },
+   {
+   "dimension":"Shard_Size_In_Bytes",
+   "value":"10"
+   }
+   ]
+   },
+   "min":{
+   "index_name":"pmc",
+   "shard_id":0,
+   "temperature":[
+   {
+   "dimension":"CPU_Utilization",
+   "value":"1"
+   },
+   {
+   "dimension":"Heap_AllocRate",
+   "value":"1"
+   },
+   {
+   "dimension":"Shard_Size_In_Bytes",
+   "value":"9"
+   }
+   ]
+   },
+   "zone":"LUKE_WARM"
+   },
+   {
+   "all_shards":[],
+   "zone":"COLD"
+   }
+   ],
+   "dimension":"Shard_Size_In_Bytes",
+   "mean":10,
+   "numShards":3,
+   "timestamp":1591056310990,
+   "total":7631604.33333333
+   },
+   {
+   "NodeLevelZoneSummary":[
+   {
+   "all_shards":[],
+   "zone":"HOT"
+   },
+   {
+   "all_shards":[],
+   "zone":"WARM"
+   },
+   {
+   "all_shards":[
+   {
+   "index_name":"pmc",
+   "shard_id":0,
+   "temperature":[
+   {
+   "dimension":"CPU_Utilization",
+   "value":"1"
+   },
+   {
+   "dimension":"Heap_AllocRate",
+   "value":"1"
+   },
+   {
+   "dimension":"Shard_Size_In_Bytes",
+   "value":"9"
+   }
+   ]
+   },
+   {
+   "index_name":"pmc",
+   "shard_id":4,
+   "temperature":[
+   {
+   "dimension":"CPU_Utilization",
+   "value":"1"
+   },
+   {
+   "dimension":"Heap_AllocRate",
+   "value":"1"
+   },
+   {
+   "dimension":"Shard_Size_In_Bytes",
+   "value":"10"
+   }
+   ]
+   },
+   {
+   "index_name":"pmc",
+   "shard_id":2,
+   "temperature":[
+   {
+   "dimension":"CPU_Utilization",
+   "value":"0"
+   },
+   {
+   "dimension":"Heap_AllocRate",
+   "value":"0"
+   },
+   {
+   "dimension":"Shard_Size_In_Bytes",
+   "value":"9"
+   }
+   ]
+   }
+   ],
+   "max":{
+   "index_name":"pmc",
+   "shard_id":0,
+   "temperature":[
+   {
+   "dimension":"CPU_Utilization",
+   "value":"1"
+   },
+   {
+   "dimension":"Heap_AllocRate",
+   "value":"1"
+   },
+   {
+   "dimension":"Shard_Size_In_Bytes",
+   "value":"9"
+   }
+   ]
+   },
+   "min":{
+   "index_name":"pmc",
+   "shard_id":2,
+   "temperature":[
+   {
+   "dimension":"CPU_Utilization",
+   "value":"0"
+   },
+   {
+   "dimension":"Heap_AllocRate",
+   "value":"0"
+   },
+   {
+   "dimension":"Shard_Size_In_Bytes",
+   "value":"9"
+   }
+   ]
+   },
+   "zone":"LUKE_WARM"
+   },
+   {
+   "all_shards":[],
+   "zone":"COLD"
+   }
+   ],
+   "dimension":"Heap_AllocRate",
+   "mean":1,
+   "numShards":3,
+   "timestamp":1591056310990,
+   "total":7429635.38060667
+   }
+   ]
+
    */
   private void verifyFullNodeTemperatureProfile(String resp) {
     JsonParser parser = new JsonParser();
@@ -505,6 +706,10 @@ public class ResourceHeatMapGraphTest {
           verifyCpuDimension(object);
           break;
         case Heap_AllocRate:
+          verifyHeapAllocDimension(object);
+          break;
+        case Shard_Size_In_Bytes:
+          verifyShardSizeDimension(object);
           break;
       }
     }
@@ -522,11 +727,7 @@ public class ResourceHeatMapGraphTest {
           Assert.assertEquals(0, o.getAsJsonArray("all_shards").size());
           break;
         case WARM: {
-          for (JsonElement e : o.getAsJsonArray("all_shards")) {
-            Assert.assertEquals("pmc",
-                e.getAsJsonObject().get("index_name").getAsString());
-            Assert.assertEquals(0, e.getAsJsonObject().get("shard_id").getAsInt());
-          }
+          Assert.assertEquals(0, o.getAsJsonArray("all_shards").size());
           break;
         }
         case LUKE_WARM:
@@ -534,6 +735,66 @@ public class ResourceHeatMapGraphTest {
           for (JsonElement e : o.getAsJsonArray("all_shards")) {
             Assert.assertEquals("pmc",
                 e.getAsJsonObject().get("index_name").getAsString());
+            int shardId = e.getAsJsonObject().get("shard_id").getAsInt();
+            Assert.assertTrue(shardId == 2 || shardId == 4 || shardId == 0);
+          }
+          break;
+        case COLD:
+          Assert.assertEquals(0, o.getAsJsonArray("all_shards").size());
+      }
+    }
+  }
+
+  private void verifyHeapAllocDimension(JsonObject cpuObject) {
+    Assert.assertEquals(1, cpuObject.get("mean").getAsInt());
+    Assert.assertEquals(7429635.38060667, cpuObject.get("total").getAsDouble(), 0.01);
+    Assert.assertEquals(3, cpuObject.get("numShards").getAsInt());
+
+    for (JsonElement elem : cpuObject.getAsJsonArray("NodeLevelZoneSummary")) {
+      JsonObject o = elem.getAsJsonObject();
+      switch (HeatZoneAssigner.Zone.valueOf(o.get("zone").getAsString())) {
+        case HOT:
+          Assert.assertEquals(0, o.getAsJsonArray("all_shards").size());
+          break;
+        case WARM: {
+          Assert.assertEquals(0, o.getAsJsonArray("all_shards").size());
+          break;
+        }
+        case LUKE_WARM:
+          Assert.assertEquals(3, o.getAsJsonArray("all_shards").size());
+          for (JsonElement e : o.getAsJsonArray("all_shards")) {
+            Assert.assertEquals("pmc",
+                    e.getAsJsonObject().get("index_name").getAsString());
+            int shardId = e.getAsJsonObject().get("shard_id").getAsInt();
+            Assert.assertTrue(shardId == 2 || shardId == 4 || shardId == 0);
+          }
+          break;
+        case COLD:
+          Assert.assertEquals(0, o.getAsJsonArray("all_shards").size());
+      }
+    }
+  }
+
+  private void verifyShardSizeDimension(JsonObject shardSizeObj) {
+    Assert.assertEquals(10, shardSizeObj.get("mean").getAsInt());
+    Assert.assertEquals(7631604.33333333, shardSizeObj.get("total").getAsDouble(), 0.01);
+    Assert.assertEquals(3, shardSizeObj.get("numShards").getAsInt());
+
+    for (JsonElement elem : shardSizeObj.getAsJsonArray("NodeLevelZoneSummary")) {
+      JsonObject o = elem.getAsJsonObject();
+      switch (HeatZoneAssigner.Zone.valueOf(o.get("zone").getAsString())) {
+        case HOT:
+          Assert.assertEquals(0, o.getAsJsonArray("all_shards").size());
+          break;
+        case WARM: {
+          Assert.assertEquals(0, o.getAsJsonArray("all_shards").size());
+          break;
+        }
+        case LUKE_WARM:
+          Assert.assertEquals(3, o.getAsJsonArray("all_shards").size());
+          for (JsonElement e : o.getAsJsonArray("all_shards")) {
+            Assert.assertEquals("pmc",
+                    e.getAsJsonObject().get("index_name").getAsString());
             int shardId = e.getAsJsonObject().get("shard_id").getAsInt();
             Assert.assertTrue(shardId == 2 || shardId == 4 || shardId == 0);
           }
