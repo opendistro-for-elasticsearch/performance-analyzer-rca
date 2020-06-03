@@ -15,7 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.Constants;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.JooqFieldValue;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
