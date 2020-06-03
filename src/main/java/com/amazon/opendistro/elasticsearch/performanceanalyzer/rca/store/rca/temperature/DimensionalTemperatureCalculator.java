@@ -198,6 +198,7 @@ public class DimensionalTemperatureCalculator {
             shardProfileSummary.addTemperatureForDimension(metricType, normalizedConsumptionByShard);
             nodeDimensionProfile.addShardToZone(shardProfileSummary, heatZoneForShard);
         }
+        
         return new DimensionalTemperatureFlowUnit(System.currentTimeMillis(), nodeDimensionProfile);
     }
 
