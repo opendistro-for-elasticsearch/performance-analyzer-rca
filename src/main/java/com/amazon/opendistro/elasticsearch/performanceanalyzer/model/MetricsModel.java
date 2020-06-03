@@ -215,6 +215,9 @@ public class MetricsModel {
     allMetricsInitializer.put(
         ThreadPoolValue.THREADPOOL_ACTIVE_THREADS.toString(),
         new MetricAttributes(MetricUnits.COUNT.toString(), ThreadPoolDimension.values()));
+    allMetricsInitializer.put(
+        ThreadPoolValue.THREADPOOL_QUEUE_LATENCY.toString(),
+        new MetricAttributes(MetricUnits.COUNT.toString(), ThreadPoolDimension.values()));
 
     // Shard Stats Metrics
     allMetricsInitializer.put(
