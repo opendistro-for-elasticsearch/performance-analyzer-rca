@@ -776,8 +776,8 @@ public class ResourceHeatMapGraphTest {
   }
 
   private void verifyShardSizeDimension(JsonObject shardSizeObj) {
-    Assert.assertEquals(10, shardSizeObj.get("mean").getAsInt());
-    Assert.assertEquals(7631604.33333333, shardSizeObj.get("total").getAsDouble(), 0.01);
+    Assert.assertEquals(3, shardSizeObj.get("mean").getAsInt());
+    Assert.assertEquals(2.2894812999999993E7, shardSizeObj.get("total").getAsDouble(), 0.01);
     Assert.assertEquals(3, shardSizeObj.get("numShards").getAsInt());
 
     for (JsonElement elem : shardSizeObj.getAsJsonArray("NodeLevelZoneSummary")) {
