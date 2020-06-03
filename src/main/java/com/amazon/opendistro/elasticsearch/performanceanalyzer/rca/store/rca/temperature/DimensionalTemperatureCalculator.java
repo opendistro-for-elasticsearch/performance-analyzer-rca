@@ -147,7 +147,7 @@ public class DimensionalTemperatureCalculator {
         double totalConsumedInNode = -1;
         try {
             if (resourcePeakFlowUnits.size() == 0) {
-                totalConsumedInNode = shardIdBasedFlowUnits.size() * avgValOverShards;
+                totalConsumedInNode = (shardIdBasedFlowUnits.get(0).getData().size() * avgValOverShards);
             } else {
                 totalConsumedInNode = resourcePeakFlowUnits.get(0).getData().getValues(
                         TemperatureMetricsBase.AGGR_OVER_AGGR_NAME, Double.class).get(0);
