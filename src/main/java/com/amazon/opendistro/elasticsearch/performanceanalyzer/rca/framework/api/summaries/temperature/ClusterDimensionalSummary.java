@@ -161,6 +161,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
     /**
      * Should not be called as its not passed across network boundaries.
      */
+    
     @Override
     public void buildSummaryMessageAndAddToFlowUnit(FlowUnitMessage.Builder messageBuilder) {
         throw new IllegalArgumentException("This should not be called.");
