@@ -21,6 +21,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ShardProfileSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.TemperatureMetricsBase;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.calculators.AvgShardBasedTemperatureCalculator;
@@ -63,7 +64,7 @@ public class DimensionalTemperatureCalculator {
      * @return The return is a composition of three things:
      */
     public static DimensionalTemperatureFlowUnit getTemperatureForDimension(
-            ShardStore shardStore, TemperatureVector.Dimension metricType,
+            ShardStore shardStore, TemperatureDimension metricType,
             ShardBasedTemperatureCalculator resourceByShardId,
             AvgShardBasedTemperatureCalculator avgResUsageByAllShards,
             ShardIndependentTemperatureCalculator resourceShardIndependent,
@@ -164,7 +165,7 @@ public class DimensionalTemperatureCalculator {
         Result<Record> rowsPerShard = shardIdBasedFlowUnits.get(0).getData();
 
         NodeLevelDimensionalSummary nodeDimensionProfile =
-                new NodeLevelDimensionalSummary(metricType, avgUsageAcrossShards, totalConsumedInNode);
+                new NodeLevelDimensionalSummary(metricType, avgUsageAcrossShards, avgValOverShards, totalConsumedInNode);
 
         // The shardIdBasedFlowUnits is supposed to contain one row per shard.
         nodeDimensionProfile.setNumberOfShards(rowsPerShard.size());
@@ -183,13 +184,14 @@ public class DimensionalTemperatureCalculator {
 
             ShardProfileSummary shardProfileSummary = shardStore.getOrCreateIfAbsent(indexName, shardId);
             shardProfileSummary.addTemperatureForDimension(metricType, normalizedConsumptionByShard);
+            shardProfileSummary.addRawMetricForDimension(metricType, usage);
             nodeDimensionProfile.addShardToZone(shardProfileSummary, heatZoneForShard);
         }
         return new DimensionalTemperatureFlowUnit(System.currentTimeMillis(), nodeDimensionProfile);
     }
 
     public static DimensionalTemperatureFlowUnit getTemperatureForDimension(
-            ShardStore shardStore, TemperatureVector.Dimension metricType,
+            ShardStore shardStore, TemperatureDimension metricType,
             ShardBasedTemperatureCalculator resourceByShardId,
             AvgShardBasedTemperatureCalculator avgResUsageByAllShards,
             TemperatureVector.NormalizedValue threshold) {

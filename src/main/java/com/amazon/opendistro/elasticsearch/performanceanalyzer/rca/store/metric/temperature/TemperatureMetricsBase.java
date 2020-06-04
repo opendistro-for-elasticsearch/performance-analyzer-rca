@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric;
 import java.util.Arrays;
@@ -51,7 +52,7 @@ public abstract class TemperatureMetricsBase extends AggregateMetric {
     public static final String AGGR_OVER_AGGR_NAME =
             AGGR_TYPE_OVER_METRICS_DB_COLUMN + "_of_" + METRICS_DB_AGG_COLUMN_USED;
 
-    public TemperatureMetricsBase(TemperatureVector.Dimension metricType,
+    public TemperatureMetricsBase(TemperatureDimension metricType,
                                   String[] groupByDimensions) {
         // The temperature intendeds to spread the temperature around the cluster by re-allocating shards
         // from the hottest of nodes to the nodes that are relatively cold (with some randomness

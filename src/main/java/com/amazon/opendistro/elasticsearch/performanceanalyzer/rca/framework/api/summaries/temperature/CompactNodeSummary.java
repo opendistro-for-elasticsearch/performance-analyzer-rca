@@ -21,14 +21,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTemp
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary.SQL_SCHEMA_CONSTANTS;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector.NormalizedValue;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,8 +74,8 @@ public class CompactNodeSummary extends GenericSummary {
         this.nodeId = nodeId;
         this.hostAddress = hostAddress;
         this.temperatureVector = new TemperatureVector();
-        this.totalConsumedByDimension = new double[TemperatureVector.Dimension.values().length];
-        this.numOfShards = new int[TemperatureVector.Dimension.values().length];
+        this.totalConsumedByDimension = new double[TemperatureDimension.values().length];
+        this.numOfShards = new int[TemperatureDimension.values().length];
     }
 
     public static CompactNodeSummary buildSummaryFromDatabase(Result<Record> records,
@@ -106,7 +105,7 @@ public class CompactNodeSummary extends GenericSummary {
 
     private static void readAndSetTemperatureVector(Record record, CompactNodeSummary summary) {
         try {
-            for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+            for (TemperatureDimension dimension : TemperatureDimension.values()) {
                 String normalizedMeanUsageForDimension = record
                     .get((DSL.field(DSL.name(dimension.NAME + MEAN_SUFFIX_KEY),
                         String.class)));
@@ -126,7 +125,7 @@ public class CompactNodeSummary extends GenericSummary {
 
     private static void readAndSetNumShardsPerDimension(Record record, CompactNodeSummary summary) {
         try {
-            for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+            for (TemperatureDimension dimension : TemperatureDimension.values()) {
                 String numShardsForDimension = record
                     .get((DSL.field(DSL.name(dimension.NAME + NUM_SHARDS_SUFFIX_KEY),
                         String.class)));
@@ -145,7 +144,7 @@ public class CompactNodeSummary extends GenericSummary {
     private static void readAndSetTotalConsumedPerDimension(Record record,
         CompactNodeSummary summary) {
         try {
-            for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+            for (TemperatureDimension dimension : TemperatureDimension.values()) {
                 String totalConsumedForDimension =
                     record.get(
                         (DSL.field(DSL.name(dimension.NAME + TOTAL_SUFFIX_KEY), String.class)));
@@ -163,18 +162,18 @@ public class CompactNodeSummary extends GenericSummary {
 
     public void fillFromNodeProfile(final FullNodeTemperatureSummary nodeProfile) {
         this.temperatureVector = nodeProfile.getTemperatureVector();
-        this.totalConsumedByDimension = new double[TemperatureVector.Dimension.values().length];
-        this.numOfShards = new int[TemperatureVector.Dimension.values().length];
+        this.totalConsumedByDimension = new double[TemperatureDimension.values().length];
+        this.numOfShards = new int[TemperatureDimension.values().length];
         for (NodeLevelDimensionalSummary nodeDimensionProfile : nodeProfile.getNodeDimensionProfiles()) {
             if (nodeDimensionProfile != null) {
                 int index = nodeDimensionProfile.getProfileForDimension().ordinal();
-                totalConsumedByDimension[index] = nodeDimensionProfile.getTotalUsage();
+                totalConsumedByDimension[index] = nodeDimensionProfile.getTotalMetricValueUsed();
                 numOfShards[index] = nodeDimensionProfile.getNumberOfShards();
             }
         }
     }
 
-    public double getTotalConsumedByDimension(TemperatureVector.Dimension dimension) {
+    public double getTotalConsumedByDimension(TemperatureDimension dimension) {
         return totalConsumedByDimension[dimension.ordinal()];
     }
 
@@ -182,20 +181,20 @@ public class CompactNodeSummary extends GenericSummary {
         return hostAddress;
     }
 
-    public void setTotalConsumedByDimension(TemperatureVector.Dimension dimension,
+    public void setTotalConsumedByDimension(TemperatureDimension dimension,
                                             double totalConsumedByDimension) {
         this.totalConsumedByDimension[dimension.ordinal()] = totalConsumedByDimension;
     }
 
-    public void setNumOfShards(TemperatureVector.Dimension dimension, int numOfShards) {
+    public void setNumOfShards(TemperatureDimension dimension, int numOfShards) {
         this.numOfShards[dimension.ordinal()] = numOfShards;
     }
 
-    public int getNumberOfShardsByDimension(TemperatureVector.Dimension dimension) {
+    public int getNumberOfShardsByDimension(TemperatureDimension dimension) {
         return numOfShards[dimension.ordinal()];
     }
 
-    public void setTemperatureForDimension(TemperatureVector.Dimension dimension,
+    public void setTemperatureForDimension(TemperatureDimension dimension,
                                            TemperatureVector.NormalizedValue value) {
         temperatureVector.updateTemperatureForDimension(dimension, value);
     }
@@ -205,7 +204,7 @@ public class CompactNodeSummary extends GenericSummary {
     }
 
     public @Nullable
-    TemperatureVector.NormalizedValue getTemperatureForDimension(TemperatureVector.Dimension dimension) {
+    TemperatureVector.NormalizedValue getTemperatureForDimension(TemperatureDimension dimension) {
         return temperatureVector.getTemperatureFor(dimension);
     }
 
@@ -221,7 +220,7 @@ public class CompactNodeSummary extends GenericSummary {
         summaryBuilder.setHostAddress(hostAddress);
 
 
-        for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+        for (TemperatureDimension dimension : TemperatureDimension.values()) {
             int index = dimension.ordinal();
             ResourceTemperatureMessage.Builder builder = ResourceTemperatureMessage.newBuilder();
             builder.setResourceName(dimension.NAME);
@@ -252,11 +251,11 @@ public class CompactNodeSummary extends GenericSummary {
         CompactNodeSummary compactNodeTemperatureSummary =
                 new CompactNodeSummary(message.getNodeID(), message.getHostAddress());
 
-        compactNodeTemperatureSummary.totalConsumedByDimension = new double[TemperatureVector.Dimension.values().length];
-        compactNodeTemperatureSummary.numOfShards = new int[TemperatureVector.Dimension.values().length];
+        compactNodeTemperatureSummary.totalConsumedByDimension = new double[TemperatureDimension.values().length];
+        compactNodeTemperatureSummary.numOfShards = new int[TemperatureDimension.values().length];
         for (ResourceTemperatureMessage resourceMessage : message.getCpuTemperatureList()) {
-            TemperatureVector.Dimension dimension =
-                    TemperatureVector.Dimension.valueOf(resourceMessage.getResourceName());
+            TemperatureDimension dimension =
+                    TemperatureDimension.valueOf(resourceMessage.getResourceName());
             compactNodeTemperatureSummary.temperatureVector.updateTemperatureForDimension(dimension,
                     new TemperatureVector.NormalizedValue((short) resourceMessage.getMeanUsage()));
             compactNodeTemperatureSummary.totalConsumedByDimension[dimension.ordinal()] =
@@ -276,7 +275,7 @@ public class CompactNodeSummary extends GenericSummary {
         schema.add(DSL.field(DSL.name(HotNodeSummary.SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME), String.class));
         schema.add(DSL.field(DSL.name(HotNodeSummary.SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME), String.class));
 
-        for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+        for (TemperatureDimension dimension : TemperatureDimension.values()) {
             schema.add(DSL.field(DSL.name(dimension.NAME + MEAN_SUFFIX_KEY), String.class));
             schema.add(DSL.field(DSL.name(dimension.NAME + TOTAL_SUFFIX_KEY), String.class));
             schema.add(DSL.field(DSL.name(dimension.NAME + NUM_SHARDS_SUFFIX_KEY), String.class));
@@ -290,7 +289,7 @@ public class CompactNodeSummary extends GenericSummary {
         value.add(nodeId);
         value.add(hostAddress);
 
-        for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+        for (TemperatureDimension dimension : TemperatureDimension.values()) {
             value.add(temperatureVector.getTemperatureFor(dimension));
             value.add(totalConsumedByDimension[dimension.ordinal()]);
             value.add(numOfShards[dimension.ordinal()]);
@@ -304,7 +303,7 @@ public class CompactNodeSummary extends GenericSummary {
         jsonObject.addProperty(HotNodeSummary.SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME, nodeId);
         jsonObject.addProperty(HotNodeSummary.SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME, hostAddress);
 
-        for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+        for (TemperatureDimension dimension : TemperatureDimension.values()) {
             TemperatureVector.NormalizedValue ret = temperatureVector.getTemperatureFor(dimension);
             if (ret == null) {
                 ret = new TemperatureVector.NormalizedValue((short) 0);

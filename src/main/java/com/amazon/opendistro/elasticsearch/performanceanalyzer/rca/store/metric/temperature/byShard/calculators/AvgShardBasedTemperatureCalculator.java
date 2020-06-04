@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.calculators;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import java.util.List;
 import org.jooq.DSLContext;
@@ -29,7 +30,7 @@ import org.jooq.impl.DSL;
  * It calculates the average over all index,shard groups.
  */
 public class AvgShardBasedTemperatureCalculator extends ShardBasedTemperatureCalculator {
-    public AvgShardBasedTemperatureCalculator(TemperatureVector.Dimension metricType) {
+    public AvgShardBasedTemperatureCalculator(TemperatureDimension metricType) {
         super(metricType);
     }
 

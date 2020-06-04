@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
 import com.google.gson.JsonArray;
@@ -53,16 +54,18 @@ public class ClusterTemperatureSummary extends GenericSummary {
     public ClusterTemperatureSummary(int numberOfNodes) {
         this.numberOfNodes = numberOfNodes;
         this.nodeDimensionalTemperatureSummaries =
-                new ClusterDimensionalSummary[TemperatureVector.Dimension.values().length];
+                new ClusterDimensionalSummary[TemperatureDimension.values().length];
         this.nodes = new CompactClusterLevelNodeSummary[this.numberOfNodes];
     }
 
-    public void createClusterDimensionalTemperature(TemperatureVector.Dimension dimension,
+    public void createClusterDimensionalTemperature(TemperatureDimension dimension,
                                                     TemperatureVector.NormalizedValue mean,
-                                                    double totalUsage) {
+                                                    double avgMetricValueUsedOverShards,
+                                                    double totalMetricValueUsedOverCluster) {
         ClusterDimensionalSummary summary = new ClusterDimensionalSummary(dimension);
         summary.setMeanTemperature(mean);
-        summary.setTotalUsage(totalUsage);
+        summary.setAvgMetricValueOverShards(avgMetricValueUsedOverShards);
+        summary.setTotalMetricsValueUsed(totalMetricValueUsedOverCluster);
         nodeDimensionalTemperatureSummaries[dimension.ordinal()] = summary;
     }
 
@@ -71,7 +74,7 @@ public class ClusterTemperatureSummary extends GenericSummary {
         int i = 0;
         for (CompactClusterLevelNodeSummary nodeTemperatureSummaryVal :
                 nodeTemperatureSummaries.values()) {
-            for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+            for (TemperatureDimension dimension : TemperatureDimension.values()) {
                 nodeDimensionalTemperatureSummaries[dimension.ordinal()].addNodeToZone(nodeTemperatureSummaryVal);
             }
             nodes[i] = nodeTemperatureSummaryVal;

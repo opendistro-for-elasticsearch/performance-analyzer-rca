@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,13 +27,12 @@ public class NodeLevelDimensionalSummaryTest {
   @Test
   public void getShardsInReverseTemperatureOrder() {
     final HeatZoneAssigner.Zone ZONE = HeatZoneAssigner.Zone.HOT;
-    final TemperatureVector.Dimension DIMENSION = TemperatureVector.Dimension.CPU_Utilization;
+    final TemperatureDimension DIMENSION = TemperatureDimension.CPU_Utilization;
     final int SHARD_COUNT = 10;
 
     NodeLevelDimensionalSummary nodeSummary =
-        new NodeLevelDimensionalSummary(DIMENSION,
-            new TemperatureVector.NormalizedValue((short) 2),
-            12.0);
+        new NodeLevelDimensionalSummary(DIMENSION, new TemperatureVector.NormalizedValue((short) 2),
+                12.0,20);
 
     // The list of shards so obtained is shards ordered in ascending order of temperature
     // along the Dimension = DIMENSION.
@@ -51,7 +51,7 @@ public class NodeLevelDimensionalSummaryTest {
     }
   }
 
-  private List<ShardProfileSummary> getShards(TemperatureVector.Dimension dimension, int count) {
+  private List<ShardProfileSummary> getShards(TemperatureDimension dimension, int count) {
     List<ShardProfileSummary> shards = new ArrayList<>();
     for (int i = 0; i < count; i++) {
       ShardProfileSummary shard = new ShardProfileSummary("test-index", i);

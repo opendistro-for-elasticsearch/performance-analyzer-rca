@@ -15,12 +15,13 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.calculators.ShardIndependentTemperatureCalculator;
 
 public class ShardIndependentTemperatureCalculatorCpuUtilMetric extends ShardIndependentTemperatureCalculator {
 
     public ShardIndependentTemperatureCalculatorCpuUtilMetric() {
-        super(TemperatureVector.Dimension.CPU_Utilization);
+        super(TemperatureDimension.CPU_Utilization);
     }
 }

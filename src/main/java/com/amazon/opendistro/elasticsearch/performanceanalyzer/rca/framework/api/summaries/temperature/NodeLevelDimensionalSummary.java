@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMess
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
 import com.google.common.annotations.VisibleForTesting;
@@ -32,7 +33,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import javax.annotation.Nullable;
+
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
@@ -50,22 +51,26 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
 
     private static final String DIMENSION_KEY = "dimension";
     private static final String MEAN_KEY = "mean";
+    private static final String AVG_SHARDS_KEY = "avg";
     private static final String TOTAL_KEY = "total";
     private static final String NUM_SHARDS_KEY = "numShards";
 
-    private final TemperatureVector.Dimension profileForDimension;
+    private final TemperatureDimension profileForDimension;
     private final TemperatureVector.NormalizedValue meanTemperature;
-    private final double totalUsage;
+    private final double avgMetricValueOverShards;
+    private final double totalMetricValueUsed;
 
     private final NodeLevelZoneSummary[] zoneProfiles;
     private int numberOfShards;
 
-    public NodeLevelDimensionalSummary(final TemperatureVector.Dimension profileForDimension,
+    public NodeLevelDimensionalSummary(final TemperatureDimension profileForDimension,
                                        final TemperatureVector.NormalizedValue meanTemperature,
-                                       double totalUsage) {
+                                       double avgMetricValueOverShards,
+                                       double totalMetricValueUsed) {
         this.profileForDimension = profileForDimension;
         this.meanTemperature = meanTemperature;
-        this.totalUsage = totalUsage;
+        this.avgMetricValueOverShards = avgMetricValueOverShards;
+        this.totalMetricValueUsed = totalMetricValueUsed;
         this.zoneProfiles = new NodeLevelZoneSummary[HeatZoneAssigner.Zone.values().length];
         for (int i = 0; i < this.zoneProfiles.length; i++) {
             this.zoneProfiles[i] = new NodeLevelZoneSummary(HeatZoneAssigner.Zone.values()[i]);
@@ -94,12 +99,16 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
         return meanTemperature;
     }
 
-    public TemperatureVector.Dimension getProfileForDimension() {
+    public TemperatureDimension getProfileForDimension() {
         return profileForDimension;
     }
 
-    public double getTotalUsage() {
-        return totalUsage;
+    public double getTotalMetricValueUsed() {
+        return totalMetricValueUsed;
+    }
+
+    public double getAvgMetricValueOverShards() {
+        return avgMetricValueOverShards;
     }
 
     @VisibleForTesting
@@ -135,6 +144,7 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
         List<Field<?>> schema = new ArrayList<>();
         schema.add(DSL.field(DSL.name(DIMENSION_KEY), String.class));
         schema.add(DSL.field(DSL.name(MEAN_KEY), Short.class));
+        schema.add(DSL.field(DSL.name(AVG_SHARDS_KEY), Short.class));
         schema.add(DSL.field(DSL.name(TOTAL_KEY), Double.class));
         schema.add(DSL.field(DSL.name(NUM_SHARDS_KEY), Integer.class));
 
@@ -146,7 +156,8 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
         List<Object> row = new ArrayList<>();
         row.add(getProfileForDimension().NAME);
         row.add(getMeanTemperature().getPOINTS());
-        row.add(getTotalUsage());
+        row.add(getAvgMetricValueOverShards());
+        row.add(getTotalMetricValueUsed());
         row.add(getNumberOfShards());
         return row;
     }
@@ -156,7 +167,8 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
         JsonObject summaryObj = new JsonObject();
         summaryObj.addProperty(DIMENSION_KEY, getProfileForDimension().NAME);
         summaryObj.addProperty(MEAN_KEY, getMeanTemperature().getPOINTS());
-        summaryObj.addProperty(TOTAL_KEY, getTotalUsage());
+        summaryObj.addProperty(AVG_SHARDS_KEY, getMeanTemperature().getPOINTS());
+        summaryObj.addProperty(TOTAL_KEY, getTotalMetricValueUsed());
         summaryObj.addProperty(NUM_SHARDS_KEY, getNumberOfShards());
 
         JsonArray array = new JsonArray();
@@ -171,11 +183,11 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
     }
 
     /**
-     * +------------------------------+---------------+----+----------------+---------+------+
-     * |NodeLevelDimensionalSummary_ID|dimension      |mean|           total|numShards|RCA_ID|
-     * +------------------------------+---------------+----+----------------+---------+------+
-     * |                             1|CPU_Utilization|   1|1.20827386264977|        3|     1|
-     * +------------------------------+---------------+----+----------------+---------+------+
+     * +------------------------------+---------------+----+----------------+---------+------+------+------+
+     * |NodeLevelDimensionalSummary_ID|dimension      |mean| avg         |total           |numShards|RCA_ID|
+     * +------------------------------+---------------+----+----------------+---------+------+------+------+
+     * |                             1|CPU_Utilization|   1|0.4027579542|1.20827386264977|        3|     1|
+     * +------------------------------+---------------+----+----------------+---------+------+------+------+
      *
      * @param record  A db row containing the values for a temperature dimension.
      * @param context the database context. It is used to query the nested summary tables.
@@ -183,7 +195,7 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
      */
     public static NodeLevelDimensionalSummary buildFromDb(final Record record, DSLContext context) {
         String dimensionName = record.get(DIMENSION_KEY, String.class);
-        TemperatureVector.Dimension dimension = TemperatureVector.Dimension.valueOf(dimensionName);
+        TemperatureDimension dimension = TemperatureDimension.valueOf(dimensionName);
         Short mean = record.get(MEAN_KEY, Short.class);
         TemperatureVector.NormalizedValue value = new TemperatureVector.NormalizedValue(mean);
 
@@ -191,7 +203,7 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
         int shards = record.get(NUM_SHARDS_KEY, Integer.class);
 
         NodeLevelDimensionalSummary summary =
-                new NodeLevelDimensionalSummary(dimension, value, total);
+                new NodeLevelDimensionalSummary(dimension, value, (total / shards), total);
         summary.setNumberOfShards(shards);
 
         // At this point we have filled in the NodeSummary with the data in the tuple. To
@@ -251,8 +263,8 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
 
             for (JsonElement temperature : temperatureProfiles) {
                 JsonObject obj = temperature.getAsJsonObject();
-                TemperatureVector.Dimension dimension =
-                        TemperatureVector.Dimension.valueOf(obj.get(TemperatureVector.DIMENSION_KEY).getAsString());
+                TemperatureDimension dimension =
+                        TemperatureDimension.valueOf(obj.get(TemperatureVector.DIMENSION_KEY).getAsString());
                 TemperatureVector.NormalizedValue value =
                         new TemperatureVector.NormalizedValue((short) obj.get(TemperatureVector.VALUE_KEY).getAsInt());
                 shard.addTemperatureForDimension(dimension, value);

@@ -198,7 +198,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
   }
 
   protected void constructResourceHeatMapGraph() {
-    LOG.info("Constructing temperature profile RCA components");
+    LOG.error("Constructing temperature profile RCA components");
     ShardStore shardStore = new ShardStore();
 
     HeapAllocRateByShardTemperatureCalculator heapAllocByShard =
@@ -223,6 +223,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     ShardSizeAvgTemperatureCalculator shardSizeAvg =
             new ShardSizeAvgTemperatureCalculator();
 
+    LOG.error("Metrics Gathered");
     // heat map is developed only for data nodes.
     cpuUtilByShard.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
     avgCpuUtilByShards.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
@@ -236,6 +237,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
     shardSizeByShard.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
     shardSizeAvg.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
+    LOG.error("Locus Added");
 
     addLeaf(cpuUtilByShard);
     addLeaf(avgCpuUtilByShards);
@@ -249,6 +251,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
     addLeaf(shardSizeByShard);
     addLeaf(shardSizeAvg);
+    LOG.error("Leafs Added");
 
     CpuUtilDimensionTemperatureRca cpuUtilHeat = new CpuUtilDimensionTemperatureRca(shardStore,
             cpuUtilByShard,
@@ -270,13 +273,16 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
             shardSizeByShard, shardSizeAvg);
     shardSizeHeat.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
     shardSizeHeat.addAllUpstreams(Arrays.asList(shardSizeByShard, shardSizeAvg));
+    LOG.error("Added All Upstreams Added");
 
     NodeTemperatureRca nodeTemperatureRca = new NodeTemperatureRca(cpuUtilHeat, heapAllocRateHeat, shardSizeHeat);
     nodeTemperatureRca.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
     nodeTemperatureRca.addAllUpstreams(Arrays.asList(cpuUtilHeat, heapAllocRateHeat, shardSizeHeat));
+    LOG.error("Node RCA Added");
 
     ClusterTemperatureRca clusterTemperatureRca = new ClusterTemperatureRca(nodeTemperatureRca);
     clusterTemperatureRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     clusterTemperatureRca.addAllUpstreams(Collections.singletonList(nodeTemperatureRca));
+    LOG.error("Cluster RCA Added");
   }
 }

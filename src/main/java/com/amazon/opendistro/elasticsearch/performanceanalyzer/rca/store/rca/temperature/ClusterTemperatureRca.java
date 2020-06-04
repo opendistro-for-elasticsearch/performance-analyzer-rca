@@ -23,6 +23,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.CompactClusterLevelNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.CompactNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.util.HashMap;
@@ -63,7 +64,7 @@ public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
         // level. Note that temperature is a normalized value, normalized by total usage. At node
         // level, the total usage is at the node level (over all shards and shard-independent
         // factors), at the master the total usage is the sum over all nodes.
-        for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+        for (TemperatureDimension dimension : TemperatureDimension.values()) {
             double totalForDimension = 0.0;
             for (CompactNodeTemperatureFlowUnit nodeFlowUnit : flowUnits) {
                 CompactNodeSummary summary = nodeFlowUnit.getCompactNodeTemperatureSummary();
@@ -74,7 +75,7 @@ public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
                     TemperatureVector.NormalizedValue.calculate(nodeAverageForDimension, totalForDimension);
 
             clusterTemperatureSummary.createClusterDimensionalTemperature(dimension,
-                    normalizedAvgForDimension, totalForDimension);
+                    normalizedAvgForDimension, nodeAverageForDimension, totalForDimension);
 
             recalibrateNodeTemperaturesAtClusterLevelUsage(flowUnits, nodeTemperatureSummaryMap,
                     dimension, totalForDimension, nodeAverageForDimension);
@@ -87,7 +88,7 @@ public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
     private void recalibrateNodeTemperaturesAtClusterLevelUsage(List<CompactNodeTemperatureFlowUnit> flowUnits,
                                                                 Map<String,
                                                                         CompactClusterLevelNodeSummary> nodeTemperatureSummaryMap,
-                                                                TemperatureVector.Dimension dimension,
+                                                                TemperatureDimension dimension,
                                                                 double totalForDimension,
                                                                 double avgForTheDimension) {
         for (CompactNodeTemperatureFlowUnit nodeFlowUnit : flowUnits) {

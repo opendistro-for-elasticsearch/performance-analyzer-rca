@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMess
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
@@ -58,13 +59,14 @@ public class ClusterDimensionalSummary extends GenericSummary {
 
     private static final String DIM_KEY = "dimension";
     private static final String MEAN_KEY = "mean";
+    private static final String AVG_NODE_KEY = "avg";
     private static final String TOTAL_KEY = "total";
     private static final String NUM_NODES_KEY = "numNodes";
 
     /**
      * This determines which dimension for which this profile is.
      */
-    private final TemperatureVector.Dimension profileForDimension;
+    private final TemperatureDimension profileForDimension;
 
     /**
      * This is the mean temperature for this dimension over all the nodes in the cluster.
@@ -72,10 +74,15 @@ public class ClusterDimensionalSummary extends GenericSummary {
     private TemperatureVector.NormalizedValue meanTemperature;
 
     /**
+     * This is the average value used over shards.
+     */
+    private double avgMetricValueOverNodes;
+
+    /**
      * meanTemperature is a normalized value. The total tells us if this is something that one
      * should be concerned about.
      */
-    private double totalUsage;
+    private double totalMetricValueUsedOverCluster;
 
     /**
      * The number of nodes in the cluster.
@@ -88,7 +95,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
      */
     private final ZoneSummary[] zoneProfiles;
 
-    public ClusterDimensionalSummary(TemperatureVector.Dimension profileForDimension) {
+    public ClusterDimensionalSummary(TemperatureDimension profileForDimension) {
         this.profileForDimension = profileForDimension;
 
         this.zoneProfiles = new ZoneSummary[HeatZoneAssigner.Zone.values().length];
@@ -101,8 +108,12 @@ public class ClusterDimensionalSummary extends GenericSummary {
         this.meanTemperature = meanTemperature;
     }
 
-    public void setTotalUsage(double totalUsage) {
-        this.totalUsage = totalUsage;
+    public void setAvgMetricValueOverShards(double avgMetricValueOverNodes) {
+        this.avgMetricValueOverNodes = avgMetricValueOverNodes;
+    }
+
+    public void setTotalMetricsValueUsed(double totalMetricValueUsedOverCluster) {
+        this.totalMetricValueUsedOverCluster = totalMetricValueUsedOverCluster;
     }
 
     public int getNumberOfNodes() {
@@ -127,12 +138,16 @@ public class ClusterDimensionalSummary extends GenericSummary {
         return meanTemperature;
     }
 
-    public TemperatureVector.Dimension getProfileForDimension() {
+    public TemperatureDimension getProfileForDimension() {
         return profileForDimension;
     }
 
-    public double getTotalUsage() {
-        return totalUsage;
+    public double getAvgMetricValueOverNodes() {
+        return avgMetricValueOverNodes;
+    }
+
+    public double getTotalMetricsValueUsedOverCluster() {
+        return totalMetricValueUsedOverCluster;
     }
 
     /**
@@ -172,6 +187,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
         List<Field<?>> schema = new ArrayList<>();
         schema.add(DSL.field(DSL.name(DIM_KEY), String.class));
         schema.add(DSL.field(DSL.name(MEAN_KEY), Short.class));
+        schema.add(DSL.field(DSL.name(AVG_NODE_KEY), Short.class));
         schema.add(DSL.field(DSL.name(TOTAL_KEY), Double.class));
         schema.add(DSL.field(DSL.name(NUM_NODES_KEY), Integer.class));
 
@@ -192,7 +208,8 @@ public class ClusterDimensionalSummary extends GenericSummary {
         List<Object> row = new ArrayList<>();
         row.add(getProfileForDimension().NAME);
         row.add(getMeanTemperature().getPOINTS());
-        row.add(getTotalUsage());
+        row.add(getAvgMetricValueOverNodes());
+        row.add(getTotalMetricsValueUsedOverCluster());
         row.add(getNumberOfNodes());
         return row;
     }
@@ -207,7 +224,8 @@ public class ClusterDimensionalSummary extends GenericSummary {
         JsonObject summaryObj = new JsonObject();
         summaryObj.addProperty(DIM_KEY, getProfileForDimension().NAME);
         summaryObj.addProperty(MEAN_KEY, getMeanTemperature().getPOINTS());
-        summaryObj.addProperty(TOTAL_KEY, getTotalUsage());
+        summaryObj.addProperty(AVG_NODE_KEY, getAvgMetricValueOverNodes());
+        summaryObj.addProperty(TOTAL_KEY, getTotalMetricsValueUsedOverCluster());
         summaryObj.addProperty(NUM_NODES_KEY, getNumberOfNodes());
 
         JsonArray arr = new JsonArray();
@@ -241,8 +259,9 @@ public class ClusterDimensionalSummary extends GenericSummary {
                 Integer.class);
 
         ClusterDimensionalSummary summary =
-                new ClusterDimensionalSummary(TemperatureVector.Dimension.valueOf(dimensionName));
-        summary.setTotalUsage(total);
+                new ClusterDimensionalSummary(TemperatureDimension.valueOf(dimensionName));
+        summary.setAvgMetricValueOverShards(total / numNodes);
+        summary.setTotalMetricsValueUsed(total);
         summary.setMeanTemperature(meanTemp);
         summary.setNumberOfNodes(numNodes);
 
