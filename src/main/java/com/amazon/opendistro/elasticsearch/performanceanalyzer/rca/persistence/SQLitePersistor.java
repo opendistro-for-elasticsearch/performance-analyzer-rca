@@ -190,20 +190,24 @@ class SQLitePersistor extends PersistorBase {
     // for each subsequent dimension, we extend the json Array we have from the first dimension.
     for (String dimension : SQLiteQueryUtils.temperatureProfileDimensionRCASet) {
       if (rcaResponseJson == null) {
-        RcaResponse rcaResponse = readTemperatureProfileRca(dimension);
-        if (rcaResponse != null) {
-          rcaResponseJson = rcaResponse.toJson().getAsJsonObject();
-          nodeDimensionalSummary =
-              rcaResponseJson.get(summaryName).getAsJsonArray();
-          nodeDimensionalSummary.get(0).getAsJsonObject().addProperty(
-              ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, rcaResponse.getTimeStamp());
+        rcaResponseJson = readTemperatureProfileRca(dimension).getAsJsonObject();
+        JsonElement elem = rcaResponseJson.get(summaryName);
+        if (elem == null) {
+          rcaResponseJson = null;
+          continue;
         }
+        nodeDimensionalSummary = rcaResponseJson.get(summaryName).getAsJsonArray();
+        nodeDimensionalSummary.get(0).getAsJsonObject().addProperty(
+            ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME,
+            rcaResponseJson.get(ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME).getAsString());
+
       } else {
-        RcaResponse resp = readTemperatureProfileRca(dimension);
-        if (resp != null) {
+        JsonObject resp = readTemperatureProfileRca(dimension).getAsJsonObject();
+        if (resp != null && resp.getAsJsonObject().get(summaryName) != null) {
           JsonObject obj =
-              resp.toJson().getAsJsonObject().get(summaryName).getAsJsonArray().get(0).getAsJsonObject();
-          obj.addProperty(ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, resp.getTimeStamp());
+              resp.getAsJsonObject().get(summaryName).getAsJsonArray().get(0).getAsJsonObject();
+          obj.addProperty(ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME,
+              resp.get(ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME).getAsString());
           nodeDimensionalSummary.add(obj);
         }
       }
@@ -262,7 +266,7 @@ class SQLitePersistor extends PersistorBase {
         temperatureRcaJson = constructFullTemperatureProfile();
         break;
       default:
-        temperatureRcaJson = readTemperatureProfileRca(rca).toJson();
+        temperatureRcaJson = readTemperatureProfileRca(rca);
     }
     return temperatureRcaJson;
   }
@@ -305,7 +309,7 @@ class SQLitePersistor extends PersistorBase {
     return json;
   }
 
-  private RcaResponse readTemperatureProfileRca(String rca) {
+  private JsonElement readTemperatureProfileRca(String rca) {
     RcaResponse response = null;
     Field<Integer> primaryKeyField = DSL.field(
         SQLiteQueryUtils.getPrimaryKeyColumnName(ResourceFlowUnit.RCA_TABLE_NAME), Integer.class);
@@ -313,7 +317,7 @@ class SQLitePersistor extends PersistorBase {
     try {
       List<Record> recordList = rcaQuery.fetch();
       if (recordList == null || recordList.isEmpty()) {
-        return null;
+        return new JsonObject();
       }
       Record mostRecentRecord = recordList.get(0);
       response = RcaResponse.buildResponse(mostRecentRecord);
@@ -358,8 +362,12 @@ class SQLitePersistor extends PersistorBase {
       }
     } catch (DataAccessException dex) {
       LOG.error("Failed to read temperature profile RCA for {}", rca, dex);
-      dex.printStackTrace();
+      if (dex.getMessage().contains("no such table")) {
+        JsonObject json = new JsonObject();
+        json.addProperty("error", "RCAs are not created yet.");
+        return json;
+      }
     }
-    return response;
+    return response.toJson();
   }
 }

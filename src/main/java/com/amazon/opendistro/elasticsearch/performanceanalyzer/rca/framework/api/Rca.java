@@ -77,7 +77,8 @@ public abstract class Rca<T extends ResourceFlowUnit> extends NonLeafNode<T> {
       try {
         args.getPersistable().write(this, flowUnit);
       } catch (Exception ex) {
-        ex.printStackTrace();
+        LOG.error("Caught exception while persisting node: {}, summary: {}",
+            args.getNode().name(), flowUnit.getResourceSummary(), ex);
         PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
             ExceptionsAndErrors.EXCEPTION_IN_PERSIST, name(), 1);
       }

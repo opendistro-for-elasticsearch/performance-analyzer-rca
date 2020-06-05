@@ -177,7 +177,6 @@ public abstract class PersistorBase implements Persistable {
     } catch (SQLException e) {
       LOG.error(
           "RCA: Multiple attempts to write the data for table '{}' failed", node.name(), e);
-
       // We rethrow this exception so that framework can take appropriate action.
       throw e;
     }
