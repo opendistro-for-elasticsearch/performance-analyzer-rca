@@ -217,15 +217,15 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     TotalCpuUtilForTotalNodeMetric cpuUtilPeakUsage = new TotalCpuUtilForTotalNodeMetric();
 
     // heat map is developed only for data nodes.
-    cpuUtilByShard.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-    avgCpuUtilByShards.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-    shardIndependentCpuUtilMetric.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-    cpuUtilPeakUsage.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
+    cpuUtilByShard.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    avgCpuUtilByShards.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    shardIndependentCpuUtilMetric.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    cpuUtilPeakUsage.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
 
-    heapAllocByShard.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-    heapAllocRateByShardAvg.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-    shardIndependentHeapAllocRate.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-    heapAllocRateTotal.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
+    heapAllocByShard.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    heapAllocRateByShardAvg.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    shardIndependentHeapAllocRate.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    heapAllocRateTotal.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
 
     addLeaf(cpuUtilByShard);
     addLeaf(avgCpuUtilByShards);
@@ -241,7 +241,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
             cpuUtilByShard,
             avgCpuUtilByShards,
             shardIndependentCpuUtilMetric, cpuUtilPeakUsage);
-    cpuUtilHeat.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
+    cpuUtilHeat.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     cpuUtilHeat.addAllUpstreams(Arrays.asList(cpuUtilByShard, avgCpuUtilByShards,
             shardIndependentCpuUtilMetric, cpuUtilPeakUsage));
 
@@ -249,16 +249,17 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
             heapAllocByShard, heapAllocRateByShardAvg, shardIndependentHeapAllocRate,
             heapAllocRateTotal);
 
-    heapAllocRateHeat.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
+    heapAllocRateHeat.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     heapAllocRateHeat.addAllUpstreams(Arrays.asList(heapAllocByShard, heapAllocRateByShardAvg,
             shardIndependentHeapAllocRate, heapAllocRateTotal));
 
     NodeTemperatureRca nodeTemperatureRca = new NodeTemperatureRca(cpuUtilHeat, heapAllocRateHeat);
-    nodeTemperatureRca.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
+    nodeTemperatureRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     nodeTemperatureRca.addAllUpstreams(Arrays.asList(cpuUtilHeat, heapAllocRateHeat));
 
     ClusterTemperatureRca clusterTemperatureRca = new ClusterTemperatureRca(nodeTemperatureRca);
     clusterTemperatureRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    clusterTemperatureRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
     clusterTemperatureRca.addAllUpstreams(Collections.singletonList(nodeTemperatureRca));
   }
 }
