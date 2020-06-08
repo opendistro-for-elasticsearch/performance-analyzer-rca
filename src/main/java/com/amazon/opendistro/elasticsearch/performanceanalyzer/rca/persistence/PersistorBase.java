@@ -18,7 +18,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import java.io.File;
@@ -177,7 +176,6 @@ public abstract class PersistorBase implements Persistable {
     } catch (SQLException e) {
       LOG.error(
           "RCA: Multiple attempts to write the data for table '{}' failed", node.name(), e);
-
       // We rethrow this exception so that framework can take appropriate action.
       throw e;
     }
@@ -236,7 +234,7 @@ public abstract class PersistorBase implements Persistable {
 
     if (flowUnit.hasResourceSummary() && flowUnit.isSummaryPersistable()) {
       writeSummary(
-              flowUnit.getResourceSummary(),
+              flowUnit.getPersistableSummary(),
               tableName,
               getPrimaryKeyColumnName(tableName),
               lastPrimaryKey);

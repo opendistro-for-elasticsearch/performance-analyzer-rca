@@ -47,6 +47,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.TermVectors_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Terms_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.VersionMap_Memory;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric;
@@ -111,35 +114,35 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     //add node stats metrics
     List<Metric> nodeStatsMetrics = constructNodeStatsMetrics();
 
-    Rca<ResourceFlowUnit> highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(12, heapUsed, gcEvent,
+    Rca<ResourceFlowUnit<HotResourceSummary>> highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(12, heapUsed, gcEvent,
             heapMax, nodeStatsMetrics);
     highHeapUsageOldGenRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     List<Node<?>> upstream = new ArrayList<>(Arrays.asList(heapUsed, gcEvent, heapMax));
     upstream.addAll(nodeStatsMetrics);
     highHeapUsageOldGenRca.addAllUpstreams(upstream);
 
-    Rca<ResourceFlowUnit> highHeapUsageYoungGenRca = new HighHeapUsageYoungGenRca(12, heapUsed,
+    Rca<ResourceFlowUnit<HotResourceSummary>> highHeapUsageYoungGenRca = new HighHeapUsageYoungGenRca(12, heapUsed,
             gc_Collection_Time);
     highHeapUsageYoungGenRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     highHeapUsageYoungGenRca.addAllUpstreams(Arrays.asList(heapUsed, gc_Collection_Time));
 
-    Rca<ResourceFlowUnit> highCpuRca = new HighCpuRca(12, cpuUtilizationGroupByOperation);
+    Rca<ResourceFlowUnit<HotResourceSummary>> highCpuRca = new HighCpuRca(12, cpuUtilizationGroupByOperation);
     highCpuRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     highCpuRca.addAllUpstreams(Collections.singletonList(cpuUtilizationGroupByOperation));
 
-    Rca<ResourceFlowUnit> hotJVMNodeRca = new HotNodeRca(12, highHeapUsageOldGenRca,
+    Rca<ResourceFlowUnit<HotNodeSummary>> hotJVMNodeRca = new HotNodeRca(12, highHeapUsageOldGenRca,
             highHeapUsageYoungGenRca, highCpuRca);
     hotJVMNodeRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     hotJVMNodeRca.addAllUpstreams(
             Arrays.asList(highHeapUsageOldGenRca, highHeapUsageYoungGenRca, highCpuRca));
 
-    Rca<ResourceFlowUnit> highHeapUsageClusterRca =
+    Rca<ResourceFlowUnit<HotClusterSummary>> highHeapUsageClusterRca =
             new HighHeapUsageClusterRca(12, hotJVMNodeRca);
     highHeapUsageClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     highHeapUsageClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
     highHeapUsageClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
-    Rca<ResourceFlowUnit> hotNodeClusterRca =
+    Rca<ResourceFlowUnit<HotClusterSummary>> hotNodeClusterRca =
             new HotNodeClusterRca(12, hotJVMNodeRca);
     hotNodeClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     hotNodeClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
@@ -224,15 +227,15 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
             new ShardTotalDiskUsageTemperatureCalculator();
 
     // heat map is developed only for data nodes.
-    cpuUtilByShard.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-    avgCpuUtilByShards.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-    shardIndependentCpuUtilMetric.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-    cpuUtilPeakUsage.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
+    cpuUtilByShard.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    avgCpuUtilByShards.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    shardIndependentCpuUtilMetric.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    cpuUtilPeakUsage.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
 
-    heapAllocByShard.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-    heapAllocRateByShardAvg.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-    shardIndependentHeapAllocRate.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-    heapAllocRateTotal.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
+    heapAllocByShard.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    heapAllocRateByShardAvg.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    shardIndependentHeapAllocRate.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    heapAllocRateTotal.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
 
     shardSizeByShard.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
     shardSizeAvg.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
@@ -256,7 +259,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
             cpuUtilByShard,
             avgCpuUtilByShards,
             shardIndependentCpuUtilMetric, cpuUtilPeakUsage);
-    cpuUtilHeat.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
+    cpuUtilHeat.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     cpuUtilHeat.addAllUpstreams(Arrays.asList(cpuUtilByShard, avgCpuUtilByShards,
             shardIndependentCpuUtilMetric, cpuUtilPeakUsage));
 
@@ -264,7 +267,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
             heapAllocByShard, heapAllocRateByShardAvg, shardIndependentHeapAllocRate,
             heapAllocRateTotal);
 
-    heapAllocRateHeat.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
+    heapAllocRateHeat.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     heapAllocRateHeat.addAllUpstreams(Arrays.asList(heapAllocByShard, heapAllocRateByShardAvg,
             shardIndependentHeapAllocRate, heapAllocRateTotal));
 
@@ -279,6 +282,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
     ClusterTemperatureRca clusterTemperatureRca = new ClusterTemperatureRca(nodeTemperatureRca);
     clusterTemperatureRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    clusterTemperatureRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
     clusterTemperatureRca.addAllUpstreams(Collections.singletonList(nodeTemperatureRca));
   }
 }

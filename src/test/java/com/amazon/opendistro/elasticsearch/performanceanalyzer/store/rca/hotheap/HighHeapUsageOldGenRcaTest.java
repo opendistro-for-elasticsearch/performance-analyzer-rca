@@ -28,8 +28,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.MetricTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.TopConsumerSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageOldGenRca;
 import java.time.Clock;
 import java.time.Duration;
@@ -134,8 +132,8 @@ public class HighHeapUsageOldGenRcaTest {
     Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
 
     Assert.assertTrue(flowUnit.hasResourceSummary());
-    Assert.assertTrue(flowUnit.getResourceSummary() instanceof HotResourceSummary);
-    HotResourceSummary resourceSummary = (HotResourceSummary) flowUnit.getResourceSummary();
+    Assert.assertTrue(flowUnit.getSummary() instanceof HotResourceSummary);
+    HotResourceSummary resourceSummary = (HotResourceSummary) flowUnit.getSummary();
     Assert.assertEquals(3, resourceSummary.getNestedSummaryList().size());
     for (int i = 0; i < 3; i++) {
       Assert.assertTrue(resourceSummary.getNestedSummaryList().get(i) instanceof TopConsumerSummary);

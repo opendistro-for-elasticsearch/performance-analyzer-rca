@@ -27,7 +27,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
  * temperatures at the granularity of shards. As, some of our largest instances can have multiple
  * shards, it would be sending too many bytes over the wire.
  */
-public class CompactNodeTemperatureFlowUnit extends ResourceFlowUnit {
+public class CompactNodeTemperatureFlowUnit extends ResourceFlowUnit<CompactNodeSummary> {
     private final CompactNodeSummary compactNodeTemperatureSummary;
 
     public CompactNodeTemperatureFlowUnit(long timeStamp, ResourceContext context,
