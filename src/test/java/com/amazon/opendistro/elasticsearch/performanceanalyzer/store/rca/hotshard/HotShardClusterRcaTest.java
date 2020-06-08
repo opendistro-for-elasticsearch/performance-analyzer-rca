@@ -21,6 +21,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskFor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.RcaTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceTypeUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
@@ -70,7 +71,7 @@ public class HotShardClusterRcaTest {
     public void setup() {
         //setup cluster details
         try {
-            hotShardRca = new RcaTestHelper();
+            hotShardRca = new RcaTestHelper<HotNodeSummary>();
             hotShardClusterRca = new HotShardClusterRca(1, hotShardRca);
             clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
             clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.0", false);
@@ -116,7 +117,7 @@ public class HotShardClusterRcaTest {
 
         ResourceFlowUnit flowUnit = hotShardClusterRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
-        Assert.assertTrue(flowUnit.getResourceSummary().getNestedSummaryList().isEmpty());
+        Assert.assertTrue(flowUnit.getSummary().getNestedSummaryList().isEmpty());
 
 
         // 3.2 FlowUnits received from both nodes
@@ -147,7 +148,7 @@ public class HotShardClusterRcaTest {
 
         ResourceFlowUnit flowUnit1 = hotShardClusterRca.operate();
         Assert.assertFalse(flowUnit1.getResourceContext().isUnhealthy());
-        Assert.assertTrue(flowUnit1.getResourceSummary().getNestedSummaryList().isEmpty());
+        Assert.assertTrue(flowUnit1.getSummary().getNestedSummaryList().isEmpty());
 
         // 4.2  hot shards across an index as per CPU Utilization, ie. : CPU_UTILIZATION >= CPU_UTILIZATION_threshold
         hotShardRca.mockFlowUnits(Arrays.asList(
@@ -170,9 +171,9 @@ public class HotShardClusterRcaTest {
         ResourceFlowUnit flowUnit2 = hotShardClusterRca.operate();
         Assert.assertTrue(flowUnit2.getResourceContext().isUnhealthy());
 
-        Assert.assertEquals(2, flowUnit2.getResourceSummary().getNestedSummaryList().size());
-        List<Object> hotShard1 = flowUnit2.getResourceSummary().getNestedSummaryList().get(0).getSqlValue();
-        List<Object> hotShard2 = flowUnit2.getResourceSummary().getNestedSummaryList().get(1).getSqlValue();
+        Assert.assertEquals(2, flowUnit2.getSummary().getNestedSummaryList().size());
+        List<Object> hotShard1 = flowUnit2.getSummary().getNestedSummaryList().get(0).getSqlValue();
+        List<Object> hotShard2 = flowUnit2.getSummary().getNestedSummaryList().get(1).getSqlValue();
 
         // verify the resource type, cpu utilization value, node ID, Index Name, shard ID
         Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(cpuResourceType), hotShard1.get(0));
@@ -215,9 +216,9 @@ public class HotShardClusterRcaTest {
         ResourceFlowUnit flowUnit3 = hotShardClusterRca.operate();
         Assert.assertTrue(flowUnit3.getResourceContext().isUnhealthy());
 
-        Assert.assertEquals(2, flowUnit3.getResourceSummary().getNestedSummaryList().size());
-        List<Object> hotShard3 = flowUnit3.getResourceSummary().getNestedSummaryList().get(0).getSqlValue();
-        List<Object> hotShard4 = flowUnit3.getResourceSummary().getNestedSummaryList().get(1).getSqlValue();
+        Assert.assertEquals(2, flowUnit3.getSummary().getNestedSummaryList().size());
+        List<Object> hotShard3 = flowUnit3.getSummary().getNestedSummaryList().get(0).getSqlValue();
+        List<Object> hotShard4 = flowUnit3.getSummary().getNestedSummaryList().get(1).getSqlValue();
 
         // verify the resource type, IO total throughput, node ID, Index Name, shard ID
         Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(ioTotalThroughputResourceType), hotShard3.get(0));
@@ -257,9 +258,9 @@ public class HotShardClusterRcaTest {
         ResourceFlowUnit flowUnit4 = hotShardClusterRca.operate();
         Assert.assertTrue(flowUnit4.getResourceContext().isUnhealthy());
 
-        Assert.assertEquals(2, flowUnit4.getResourceSummary().getNestedSummaryList().size());
-        List<Object> hotShard5 = flowUnit4.getResourceSummary().getNestedSummaryList().get(0).getSqlValue();
-        List<Object> hotShard6 = flowUnit4.getResourceSummary().getNestedSummaryList().get(1).getSqlValue();
+        Assert.assertEquals(2, flowUnit4.getSummary().getNestedSummaryList().size());
+        List<Object> hotShard5 = flowUnit4.getSummary().getNestedSummaryList().get(0).getSqlValue();
+        List<Object> hotShard6 = flowUnit4.getSummary().getNestedSummaryList().get(1).getSqlValue();
 
         // verify the resource type, IO total sys callrate, node ID, Index Name, shard ID
         Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(ioTotalSysCallRateResourceType), hotShard5.get(0));
@@ -303,10 +304,10 @@ public class HotShardClusterRcaTest {
         ResourceFlowUnit flowUnit2 = hotShardClusterRca.operate();
         Assert.assertTrue(flowUnit2.getResourceContext().isUnhealthy());
 
-        Assert.assertEquals(3, flowUnit2.getResourceSummary().getNestedSummaryList().size());
-        List<Object> hotShard1 = flowUnit2.getResourceSummary().getNestedSummaryList().get(0).getSqlValue();
-        List<Object> hotShard2 = flowUnit2.getResourceSummary().getNestedSummaryList().get(1).getSqlValue();
-        List<Object> hotShard3 = flowUnit2.getResourceSummary().getNestedSummaryList().get(2).getSqlValue();
+        Assert.assertEquals(3, flowUnit2.getSummary().getNestedSummaryList().size());
+        List<Object> hotShard1 = flowUnit2.getSummary().getNestedSummaryList().get(0).getSqlValue();
+        List<Object> hotShard2 = flowUnit2.getSummary().getNestedSummaryList().get(1).getSqlValue();
+        List<Object> hotShard3 = flowUnit2.getSummary().getNestedSummaryList().get(2).getSqlValue();
 
         Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(cpuResourceType), hotShard1.get(0));
         Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(ioTotalThroughputResourceType), hotShard2.get(0));
