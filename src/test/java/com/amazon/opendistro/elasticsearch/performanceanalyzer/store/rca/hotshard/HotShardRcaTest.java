@@ -126,7 +126,7 @@ public class HotShardRcaTest {
 
         hotShardRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(2)));
         flowUnit = hotShardRcaX.operate();
-        HotNodeSummary summary1 = (HotNodeSummary) flowUnit.getResourceSummary();
+        HotNodeSummary summary1 = (HotNodeSummary) flowUnit.getSummary();
         List<GenericSummary> hotShardSummaryList1 = summary1.getNestedSummaryList();
 
         Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
@@ -162,7 +162,7 @@ public class HotShardRcaTest {
 
         hotShardRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(4)));
         flowUnit = hotShardRcaX.operate();
-        HotNodeSummary summary2 = (HotNodeSummary) flowUnit.getResourceSummary();
+        HotNodeSummary summary2 = (HotNodeSummary) flowUnit.getSummary();
         List<GenericSummary> hotShardSummaryList2 = summary2.getNestedSummaryList();
 
         Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
