@@ -63,7 +63,6 @@ public class CpuUtilDimensionTemperatureRca extends Rca<DimensionalTemperatureFl
 
     @Override
     public DimensionalTemperatureFlowUnit operate() {
-        LOG.error("executing: {}", name());
         DimensionalTemperatureFlowUnit flowUnit = DimensionalTemperatureCalculator.getTemperatureForDimension(
                 shardStore,
                 TemperatureDimension.CPU_Utilization,

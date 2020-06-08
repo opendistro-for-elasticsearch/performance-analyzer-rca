@@ -134,29 +134,42 @@ public class DimensionalTemperatureCalculator {
             }
         }
 
-        double avgValOverShards = -1;
+        double avgValOverShards = -1.0;
         try {
-            avgValOverShards =
-                    avgResUsageFlowUnits.get(0).getData().getValues(AvgShardBasedTemperatureCalculator.SHARD_AVG,
-                            Double.class).get(0);
+            Result<Record> flowUnitData = avgResUsageFlowUnits.get(0).getData();
+            if (flowUnitData == null) {
+                return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
+            }
+            List<Double> values = flowUnitData.getValues(
+                AvgShardBasedTemperatureCalculator.SHARD_AVG, Double.class);
+            if (values != null && values.get(0) != null) {
+                avgValOverShards = values.get(0);
+            } else {
+                // This means that there are no shards on this node. So we will return an empty FlowUnit.
+                return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
+            }
         } catch (Exception ex) {
-            LOG.error("Error getting shard average: {}.",
-                    avgResUsageFlowUnits.get(0).getData());
+            LOG.error("DBError getting shard average: {}.", ex);
             return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
         }
 
-        double totalConsumedInNode = -1;
+        double totalConsumedInNode = -1.0;
         try {
-            if (resourcePeakFlowUnits.size() == 0) {
-                totalConsumedInNode = (shardIdBasedFlowUnits.get(0).getData().size() * avgValOverShards);
+            Result<Record> flowUnitData = resourcePeakFlowUnits.get(0).getData();
+            if (flowUnitData == null) {
+                return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
+            }
+            List<Double> values = flowUnitData.getValues(
+                    TemperatureMetricsBase.AGGR_OVER_AGGR_NAME, Double.class);
+            if (values != null && values.get(0) != null) {
+                totalConsumedInNode = values.get(0);
             } else {
-                totalConsumedInNode = resourcePeakFlowUnits.get(0).getData().getValues(
-                        TemperatureMetricsBase.AGGR_OVER_AGGR_NAME, Double.class).get(0);
+                // This means that there are no shards on this node. So we will return an empty FlowUnit.
+                return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
             }
         } catch (Exception ex) {
-            LOG.error("Error getting shard average: {}.",
-                    resourcePeakFlowUnits.get(0).getData(), ex);
-            return (DimensionalTemperatureFlowUnit) DimensionalTemperatureFlowUnit.generic();
+            LOG.error("DBError getting shard average: {}.", ex);
+            return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
         }
 
         TemperatureVector.NormalizedValue avgUsageAcrossShards =

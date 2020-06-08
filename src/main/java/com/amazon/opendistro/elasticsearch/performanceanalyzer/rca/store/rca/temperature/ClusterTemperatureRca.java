@@ -66,10 +66,18 @@ public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
         // factors), at the master the total usage is the sum over all nodes.
         for (TemperatureDimension dimension : TemperatureDimension.values()) {
             double totalForDimension = 0.0;
+            boolean allFlowUnitSummariesNull = true;
             for (CompactNodeTemperatureFlowUnit nodeFlowUnit : flowUnits) {
                 CompactNodeSummary summary = nodeFlowUnit.getCompactNodeTemperatureSummary();
-                totalForDimension += summary.getTotalConsumedByDimension(dimension);
+                if (summary != null) {
+                    totalForDimension += summary.getTotalConsumedByDimension(dimension);
+                    allFlowUnitSummariesNull = false;
+                }
             }
+            if (allFlowUnitSummariesNull) {
+                continue;
+            }
+
             double nodeAverageForDimension = totalForDimension / NUM_NODES;
             TemperatureVector.NormalizedValue normalizedAvgForDimension =
                     TemperatureVector.NormalizedValue.calculate(nodeAverageForDimension, totalForDimension);
@@ -94,6 +102,9 @@ public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
         for (CompactNodeTemperatureFlowUnit nodeFlowUnit : flowUnits) {
             CompactNodeSummary obtainedNodeTempSummary =
                     nodeFlowUnit.getCompactNodeTemperatureSummary();
+            if (obtainedNodeTempSummary == null) {
+                continue;
+            }
             String key = obtainedNodeTempSummary.getNodeId();
 
             nodeTemperatureSummaryMap.putIfAbsent(key,
