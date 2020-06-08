@@ -56,11 +56,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.HeapAllocRateByShardAvgTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.HeapAllocRateByShardTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.ShardSizeAvgTemperatureCalculator;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.ShardSizeByShardTemperatureCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.ShardSizeMetricBasedTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.HeapAllocRateTotalTemperatureCalculator;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.ShardSizePeakUsageTemperatureCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.ShardTotalDiskUsageTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.TotalCpuUtilForTotalNodeMetric;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.DiskUsageShardIndependentTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.HeapAllocRateShardIndependentTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.ShardIndependentTemperatureCalculatorCpuUtilMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
@@ -80,7 +79,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -218,10 +216,12 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
             new ShardIndependentTemperatureCalculatorCpuUtilMetric();
     TotalCpuUtilForTotalNodeMetric cpuUtilPeakUsage = new TotalCpuUtilForTotalNodeMetric();
 
-    ShardSizeByShardTemperatureCalculator shardSizeByShard =
-            new ShardSizeByShardTemperatureCalculator();
+    ShardSizeMetricBasedTemperatureCalculator shardSizeByShard =
+            new ShardSizeMetricBasedTemperatureCalculator();
     ShardSizeAvgTemperatureCalculator shardSizeAvg =
             new ShardSizeAvgTemperatureCalculator();
+    ShardTotalDiskUsageTemperatureCalculator shardTotalDiskUsage =
+            new ShardTotalDiskUsageTemperatureCalculator();
 
     // heat map is developed only for data nodes.
     cpuUtilByShard.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
@@ -236,6 +236,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
     shardSizeByShard.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
     shardSizeAvg.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
+    shardTotalDiskUsage.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
 
     addLeaf(cpuUtilByShard);
     addLeaf(avgCpuUtilByShards);
@@ -249,6 +250,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
     addLeaf(shardSizeByShard);
     addLeaf(shardSizeAvg);
+    addLeaf(shardTotalDiskUsage);
 
     CpuUtilDimensionTemperatureRca cpuUtilHeat = new CpuUtilDimensionTemperatureRca(shardStore,
             cpuUtilByShard,
@@ -267,9 +269,9 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
             shardIndependentHeapAllocRate, heapAllocRateTotal));
 
     ShardSizeDimensionTemperatureRca shardSizeHeat = new ShardSizeDimensionTemperatureRca(shardStore,
-            shardSizeByShard, shardSizeAvg);
+            shardSizeByShard, shardSizeAvg, shardTotalDiskUsage);
     shardSizeHeat.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-    shardSizeHeat.addAllUpstreams(Arrays.asList(shardSizeByShard, shardSizeAvg));
+    shardSizeHeat.addAllUpstreams(Arrays.asList(shardSizeByShard, shardSizeAvg, shardTotalDiskUsage));
 
     NodeTemperatureRca nodeTemperatureRca = new NodeTemperatureRca(cpuUtilHeat, heapAllocRateHeat, shardSizeHeat);
     nodeTemperatureRca.addTag(TAG_LOCUS, LOCUS_DATA_NODE);

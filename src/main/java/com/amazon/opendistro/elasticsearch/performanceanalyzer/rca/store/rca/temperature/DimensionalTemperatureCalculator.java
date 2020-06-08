@@ -25,7 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.TemperatureMetricsBase;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.calculators.AvgShardBasedTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.calculators.ShardBasedTemperatureCalculator;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.ShardSizePeakUsageTemperatureCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.ShardTotalDiskUsageTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.calculators.TotalNodeTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.DiskUsageShardIndependentTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.calculators.ShardIndependentTemperatureCalculator;
@@ -146,12 +146,8 @@ public class DimensionalTemperatureCalculator {
 
         double totalConsumedInNode = -1;
         try {
-            if (resourcePeakFlowUnits.size() == 0) {
-                totalConsumedInNode = (shardIdBasedFlowUnits.get(0).getData().size() * avgValOverShards);
-            } else {
                 totalConsumedInNode = resourcePeakFlowUnits.get(0).getData().getValues(
                         TemperatureMetricsBase.AGGR_OVER_AGGR_NAME, Double.class).get(0);
-            }
         } catch (Exception ex) {
             LOG.error("Error getting shard average: {}.",
                     resourcePeakFlowUnits.get(0).getData(), ex);
@@ -192,12 +188,11 @@ public class DimensionalTemperatureCalculator {
             ShardStore shardStore, TemperatureVector.Dimension metricType,
             ShardBasedTemperatureCalculator resourceByShardId,
             AvgShardBasedTemperatureCalculator avgResUsageByAllShards,
+            ShardTotalDiskUsageTemperatureCalculator shardSizePeakUsage,
             TemperatureVector.NormalizedValue threshold) {
         DiskUsageShardIndependentTemperatureCalculator diskUsageShardIndependent =
                 new DiskUsageShardIndependentTemperatureCalculator();
-        ShardSizePeakUsageTemperatureCalculator shardSizePeakUsage =
-                new ShardSizePeakUsageTemperatureCalculator();
         return getTemperatureForDimension(shardStore,
-                metricType, resourceByShardId, avgResUsageByAllShards,diskUsageShardIndependent, shardSizePeakUsage, threshold);
+                metricType, resourceByShardId, avgResUsageByAllShards, diskUsageShardIndependent, shardSizePeakUsage, threshold);
     }
 }
