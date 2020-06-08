@@ -18,7 +18,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import java.io.File;
@@ -236,7 +235,7 @@ public abstract class PersistorBase implements Persistable {
 
     if (flowUnit.hasResourceSummary() && flowUnit.isSummaryPersistable()) {
       writeSummary(
-              flowUnit.getResourceSummary(),
+              flowUnit.getPersistableSummary(),
               tableName,
               getPrimaryKeyColumnName(tableName),
               lastPrimaryKey);

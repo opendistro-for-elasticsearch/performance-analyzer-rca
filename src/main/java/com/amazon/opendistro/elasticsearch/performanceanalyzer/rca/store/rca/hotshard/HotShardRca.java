@@ -66,7 +66,7 @@ import org.jooq.Record;
  * 2. Paging_RSS
  *
  */
-public class HotShardRca extends Rca<ResourceFlowUnit> {
+public class HotShardRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
 
     private static final Logger LOG = LogManager.getLogger(HotShardRca.class);
     private static final int SLIDING_WINDOW_IN_SECONDS =  60;
@@ -156,7 +156,7 @@ public class HotShardRca extends Rca<ResourceFlowUnit> {
      *
      */
     @Override
-    public ResourceFlowUnit operate() {
+    public ResourceFlowUnit<HotNodeSummary> operate() {
         counter += 1;
 
         // Populate the Resource HashMaps
@@ -205,10 +205,10 @@ public class HotShardRca extends Rca<ResourceFlowUnit> {
             //check if the current node is data node. If it is the data node
             //then HotNodeRca is the top level RCA on this node and we want to persist summaries in flowunit.
             boolean isDataNode = !currentNode.getIsMasterNode();
-            return new ResourceFlowUnit(this.clock.millis(), context, summary, isDataNode);
+            return new ResourceFlowUnit<>(this.clock.millis(), context, summary, isDataNode);
         } else {
             LOG.debug("Empty FlowUnit returned for Hot Shard RCA");
-            return new ResourceFlowUnit(this.clock.millis());
+            return new ResourceFlowUnit<>(this.clock.millis());
         }
     }
 
@@ -228,7 +228,7 @@ public class HotShardRca extends Rca<ResourceFlowUnit> {
     public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
         final List<FlowUnitMessage> flowUnitMessages =
                 args.getWireHopper().readFromWire(args.getNode());
-        List<ResourceFlowUnit> flowUnitList = new ArrayList<>();
+        List<ResourceFlowUnit<HotNodeSummary>> flowUnitList = new ArrayList<>();
         LOG.debug("rca: Executing fromWire: {}", this.getClass().getSimpleName());
         for (FlowUnitMessage flowUnitMessage : flowUnitMessages) {
             flowUnitList.add(ResourceFlowUnit.buildFlowUnitFromWrapper(flowUnitMessage));

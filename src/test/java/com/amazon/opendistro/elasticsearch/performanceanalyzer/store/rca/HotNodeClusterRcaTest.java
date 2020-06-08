@@ -28,7 +28,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
 import java.sql.SQLException;
@@ -93,7 +92,7 @@ public class HotNodeClusterRcaTest {
     fu = clusterRca.operate();
     Assert.assertTrue(fu.getResourceContext().isUnhealthy());
     Assert.assertTrue(fu.hasResourceSummary());
-    HotClusterSummary clusterSummary = (HotClusterSummary) fu.getResourceSummary();
+    HotClusterSummary clusterSummary = (HotClusterSummary) fu.getSummary();
     Assert.assertTrue(clusterSummary.getNumOfUnhealthyNodes() == 1);
     Assert.assertTrue(clusterSummary.getNestedSummaryList().size() > 0);
 
