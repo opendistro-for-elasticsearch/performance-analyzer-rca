@@ -26,6 +26,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
 
@@ -39,11 +41,12 @@ import org.jooq.impl.DSL;
  * | ID(primary key) | Timestamp |      RCA_Name        | state
  * |      1          |  151000   |  HighHeapYoungGenRca | healthy
  */
-public class ResourceFlowUnit extends GenericFlowUnit {
+public class ResourceFlowUnit<T extends GenericSummary> extends GenericFlowUnit {
 
+  private static final Logger LOG = LogManager.getLogger(ResourceFlowUnit.class);
   public static final String RCA_TABLE_NAME = "RCA";
   private ResourceContext resourceContext = null;
-  private GenericSummary resourceSummary = null;
+  private T summary = null;
   // whether summary needs to be persisted as well when persisting this flowunit
   private boolean persistSummary = false;
 
@@ -51,23 +54,23 @@ public class ResourceFlowUnit extends GenericFlowUnit {
     super(timeStamp);
   }
 
-  public <S extends GenericSummary> ResourceFlowUnit(long timeStamp, ResourceContext context,
-      S resourceSummary, boolean persistSummary) {
+  public ResourceFlowUnit(long timeStamp, ResourceContext context,
+      T summary, boolean persistSummary) {
     super(timeStamp);
     this.resourceContext = context;
-    this.resourceSummary = resourceSummary;
+    this.summary = summary;
     this.empty = false;
     this.persistSummary = persistSummary;
   }
 
-  public <S extends GenericSummary> ResourceFlowUnit(long timeStamp, ResourceContext context,
-      S resourceSummary) {
-    this(timeStamp, context, resourceSummary, false);
+  public ResourceFlowUnit(long timeStamp, ResourceContext context,
+      T summary) {
+    this(timeStamp, context, summary, false);
   }
 
   //Call generic() only if you want to generate a empty flowunit
-  public static ResourceFlowUnit generic() {
-    return new ResourceFlowUnit(System.currentTimeMillis());
+  public static ResourceFlowUnit<? extends GenericSummary> generic() {
+    return new ResourceFlowUnit<>(System.currentTimeMillis());
   }
 
   public ResourceContext getResourceContext() {
@@ -75,15 +78,19 @@ public class ResourceFlowUnit extends GenericFlowUnit {
   }
 
   public boolean hasResourceSummary() {
-    return this.resourceSummary != null;
+    return this.summary != null;
   }
 
-  public GenericSummary getResourceSummary() {
-    return this.resourceSummary;
+  public GenericSummary getPersistableSummary() {
+    return this.summary;
   }
 
-  public <S extends GenericSummary> void setResourceSummary(S summary) {
-    this.resourceSummary = summary;
+  public T getSummary() {
+    return summary;
+  }
+
+  public void setSummary(T summary) {
+    this.summary = summary;
   }
 
   public void setPersistSummary(boolean persistSummary) {
@@ -104,8 +111,8 @@ public class ResourceFlowUnit extends GenericFlowUnit {
           messageBuilder.setResourceContext(resourceContext.buildContextMessage());
     }
 
-    if (resourceSummary != null) {
-      resourceSummary.buildSummaryMessageAndAddToFlowUnit(messageBuilder);
+    if (summary != null) {
+      summary.buildSummaryMessageAndAddToFlowUnit(messageBuilder);
     }
     return messageBuilder.build();
   }
@@ -114,31 +121,37 @@ public class ResourceFlowUnit extends GenericFlowUnit {
    * parse the "oneof" section in protocol buffer call the corresponding object build function for
    * each summary type
    */
-  public static ResourceFlowUnit buildFlowUnitFromWrapper(final FlowUnitMessage message) {
+  @SuppressWarnings("unchecked")
+  public static <T extends GenericSummary> ResourceFlowUnit<T> buildFlowUnitFromWrapper(final FlowUnitMessage message) {
     //if the flowunit is empty. empty flowunit does not have context
     if (message.hasResourceContext()) {
       ResourceContext newContext = ResourceContext
           .buildResourceContextFromMessage(message.getResourceContext());
-      GenericSummary newSummary = null;
-      if (message.getSummaryOneofCase().getNumber()
-          == FlowUnitMessage.SummaryOneofCase.HOTRESOURCESUMMARY.getNumber()
-          && message.hasHotResourceSummary()) {
-        newSummary = HotResourceSummary
-            .buildHotResourceSummaryFromMessage(message.getHotResourceSummary());
-      } else if (message.getSummaryOneofCase().getNumber()
-          == FlowUnitMessage.SummaryOneofCase.HOTNODESUMMARY.getNumber()
-          && message.hasHotNodeSummary()) {
-        newSummary = HotNodeSummary.buildHotNodeSummaryFromMessage(message.getHotNodeSummary());
-      } else if (message.getSummaryOneofCase().getNumber()
-              == FlowUnitMessage.SummaryOneofCase.NODETEMPERATURESUMMARY.getNumber()
-              && message.hasNodeTemperatureSummary()) {
-        return CompactNodeTemperatureFlowUnit.buildFlowUnitFromWrapper(message);
+      T newSummary = null;
+      try {
+        switch (message.getSummaryOneofCase()) {
+          case HOTRESOURCESUMMARY: {
+            newSummary = (T) HotResourceSummary
+                .buildHotResourceSummaryFromMessage(message.getHotResourceSummary());
+            break;
+          }
+          case HOTNODESUMMARY: {
+            newSummary = (T) HotNodeSummary
+                .buildHotNodeSummaryFromMessage(message.getHotNodeSummary());
+            break;
+          }
+        }
+      } catch (Exception e) {
+        // we are not supposed to run into this unless we specified wrong summary template
+        // for this function. Make sure the summary type passed in as template are consistent
+        // between serialization and de-serializing.
+        LOG.error("RCA: casting to wrong summary type when de-serializing this flowunit");
       }
-      return new ResourceFlowUnit(message.getTimeStamp(), newContext, newSummary);
+      return new ResourceFlowUnit<>(message.getTimeStamp(), newContext, newSummary);
     } else {
       //empty flowunit;
       //TODO: we might not want to send empty flowunit across network.
-      return new ResourceFlowUnit(message.getTimeStamp());
+      return new ResourceFlowUnit<>(message.getTimeStamp());
     }
   }
 
@@ -173,7 +186,7 @@ public class ResourceFlowUnit extends GenericFlowUnit {
 
   @Override
   public String toString() {
-    return this.getTimeStamp() + ": " + resourceContext + " :: " + resourceSummary;
+    return this.getTimeStamp() + ": " + resourceContext + " :: " + summary;
   }
 
   public enum ResourceFlowUnitFieldValue implements JooqFieldValue {

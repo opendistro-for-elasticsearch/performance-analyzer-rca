@@ -20,7 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
 
-public class ClusterTemperatureFlowUnit extends ResourceFlowUnit {
+public class ClusterTemperatureFlowUnit extends ResourceFlowUnit<ClusterTemperatureSummary> {
     private final ClusterTemperatureSummary clusterTemperatureSummary;
 
     public ClusterTemperatureFlowUnit(long timeStamp, ResourceContext context,

@@ -21,6 +21,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
@@ -31,16 +32,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 
-public class HotNodeRca extends Rca<ResourceFlowUnit> {
+public class HotNodeRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
 
   private static final Logger LOG = LogManager.getLogger(HotNodeRca.class);
-  private Rca[] hotResourceRcas;
+  private Rca<ResourceFlowUnit<HotResourceSummary>>[] hotResourceRcas;
   private boolean hasUnhealthyFlowUnit;
   // the amount of RCA period this RCA needs to run before sending out a flowunit
   private final int rcaPeriod;
   private int counter;
 
-  public <R extends Rca> HotNodeRca(final int rcaPeriod, R... hotResourceRcas) {
+  public <R extends Rca<ResourceFlowUnit<HotResourceSummary>>> HotNodeRca(final int rcaPeriod, R... hotResourceRcas) {
     super(5);
     this.hotResourceRcas = hotResourceRcas.clone();
     this.rcaPeriod = rcaPeriod;
@@ -48,7 +49,7 @@ public class HotNodeRca extends Rca<ResourceFlowUnit> {
     hasUnhealthyFlowUnit = false;
   }
 
-  public <R extends Rca> HotNodeRca(final int rcaPeriod, Collection<R> hotResourceRcas) {
+  public <R extends Rca<ResourceFlowUnit<HotResourceSummary>>> HotNodeRca(final int rcaPeriod, Collection<R> hotResourceRcas) {
     super(5);
     this.hotResourceRcas = hotResourceRcas.toArray(new Rca[hotResourceRcas.size()]);
     this.rcaPeriod = rcaPeriod;
@@ -57,17 +58,17 @@ public class HotNodeRca extends Rca<ResourceFlowUnit> {
   }
 
   @Override
-  public ResourceFlowUnit operate() {
+  public ResourceFlowUnit<HotNodeSummary> operate() {
     counter++;
     List<GenericSummary> hotResourceSummaryList = new ArrayList<>();
     for (int i = 0; i < hotResourceRcas.length; i++) {
-      final List<ResourceFlowUnit> hotResourceFlowUnits = hotResourceRcas[i].getFlowUnits();
-      for (final ResourceFlowUnit hotResourceFlowUnit : hotResourceFlowUnits) {
+      final List<ResourceFlowUnit<HotResourceSummary>> hotResourceFlowUnits = hotResourceRcas[i].getFlowUnits();
+      for (final ResourceFlowUnit<HotResourceSummary> hotResourceFlowUnit : hotResourceFlowUnits) {
         if (hotResourceFlowUnit.isEmpty()) {
           continue;
         }
         if (hotResourceFlowUnit.hasResourceSummary()) {
-          hotResourceSummaryList.add(hotResourceFlowUnit.getResourceSummary());
+          hotResourceSummaryList.add(hotResourceFlowUnit.getSummary());
         }
         if (hotResourceFlowUnit.getResourceContext().isUnhealthy()) {
           hasUnhealthyFlowUnit = true;
@@ -97,9 +98,9 @@ public class HotNodeRca extends Rca<ResourceFlowUnit> {
       //check if the current node is data node. If it is the data node
       //then HotNodeRca is the top level RCA on this node and we want to persist summaries in flowunit.
       boolean isDataNode = !currentNode.getIsMasterNode();
-      return new ResourceFlowUnit(System.currentTimeMillis(), context, summary, isDataNode);
+      return new ResourceFlowUnit<>(System.currentTimeMillis(), context, summary, isDataNode);
     } else {
-      return new ResourceFlowUnit(System.currentTimeMillis());
+      return new ResourceFlowUnit<>(System.currentTimeMillis());
     }
   }
 
@@ -107,7 +108,7 @@ public class HotNodeRca extends Rca<ResourceFlowUnit> {
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
     final List<FlowUnitMessage> flowUnitMessages =
         args.getWireHopper().readFromWire(args.getNode());
-    List<ResourceFlowUnit> flowUnitList = new ArrayList<>();
+    List<ResourceFlowUnit<HotNodeSummary>> flowUnitList = new ArrayList<>();
     LOG.debug("rca: Executing fromWire: {}", this.getClass().getSimpleName());
     for (FlowUnitMessage flowUnitMessage : flowUnitMessages) {
       flowUnitList.add(ResourceFlowUnit.buildFlowUnitFromWrapper(flowUnitMessage));

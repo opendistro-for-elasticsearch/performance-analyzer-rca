@@ -67,7 +67,7 @@ import org.apache.logging.log4j.Logger;
  * Points_Memory / DocValues_Memory / IndexWriter_Memory / Bitset_Memory / VersionMap_Memory
  </p>
  */
-public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
+public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit<HotResourceSummary>> {
 
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageOldGenRca.class);
   private int counter;
@@ -127,7 +127,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
   }
 
   @Override
-  public ResourceFlowUnit operate() {
+  public ResourceFlowUnit<HotResourceSummary> operate() {
     List<MetricFlowUnit> heapUsedMetrics = heap_Used.getFlowUnits();
     List<MetricFlowUnit> gcEventMetrics = gc_event.getFlowUnits();
     List<MetricFlowUnit> heapMaxMetrics = heap_Max.getFlowUnits();
@@ -220,12 +220,12 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit> {
       }
 
       LOG.debug("High Heap Usage RCA Context = " + context.toString());
-      return new ResourceFlowUnit(this.clock.millis(), context, summary);
+      return new ResourceFlowUnit<>(this.clock.millis(), context, summary);
     } else {
       // we return an empty FlowUnit RCA for now. Can change to healthy (or previous known RCA
       // state)
       LOG.debug("Empty FlowUnit returned for High Heap Usage RCA");
-      return new ResourceFlowUnit(this.clock.millis());
+      return new ResourceFlowUnit<>(this.clock.millis());
     }
   }
 

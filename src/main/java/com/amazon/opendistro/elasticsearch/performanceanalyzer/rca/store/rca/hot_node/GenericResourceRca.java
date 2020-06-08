@@ -40,7 +40,7 @@ import org.jooq.exception.DataTypeException;
  * Generic resource type RCA. ideally this RCA can be extended to any resource type
  * and calculate the total resource usage & top consumers.
  */
-public class GenericResourceRca extends Rca<ResourceFlowUnit> {
+public class GenericResourceRca extends Rca<ResourceFlowUnit<HotResourceSummary>> {
 
   private static final Logger LOG = LogManager.getLogger(GenericResourceRca.class);
   private static final int SLIDING_WINDOW_IN_MIN = 10;
@@ -108,7 +108,7 @@ public class GenericResourceRca extends Rca<ResourceFlowUnit> {
   }
 
   @Override
-  public ResourceFlowUnit operate() {
+  public ResourceFlowUnit<HotResourceSummary> operate() {
     counter += 1;
 
     for (MetricFlowUnit flowunit : resourceUsageGroupByConsumer.getFlowUnits()) {
@@ -162,10 +162,10 @@ public class GenericResourceRca extends Rca<ResourceFlowUnit> {
             avgCpuUsage, SLIDING_WINDOW_IN_MIN * 60);
         addTopConsumerSummary(summary);
       }
-      return new ResourceFlowUnit(clock.millis(), context, summary);
+      return new ResourceFlowUnit<>(clock.millis(), context, summary);
     } else {
       // we return an empty FlowUnit RCA for now. Can change to healthy (or previous known RCA state)
-      return new ResourceFlowUnit(clock.millis());
+      return new ResourceFlowUnit<>(clock.millis());
     }
   }
 

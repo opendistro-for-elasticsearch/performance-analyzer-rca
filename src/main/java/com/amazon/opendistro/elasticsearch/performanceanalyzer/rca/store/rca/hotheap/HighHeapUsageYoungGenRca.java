@@ -52,7 +52,7 @@ import org.apache.logging.log4j.Logger;
  * gen during the last time interval and then use it to calculate its moving average. If both the
  * promotion rate and young gen GC time reach the threshold, this node is marked as unhealthy.
  */
-public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
+public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSummary>> {
 
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageYoungGenRca.class);
   private static final int PROMOTION_RATE_SLIDING_WINDOW_IN_MINS = 10;
@@ -124,7 +124,7 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
   }
 
   @Override
-  public ResourceFlowUnit operate() {
+  public ResourceFlowUnit<HotResourceSummary> operate() {
     long currTimeStamp = this.clock.millis();
     counter += 1;
 
@@ -188,11 +188,11 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit> {
       }
 
       LOG.debug("@@: Young Gen RCA Context = " + context.toString());
-      return new ResourceFlowUnit(this.clock.millis(), context, summary);
+      return new ResourceFlowUnit<>(this.clock.millis(), context, summary);
     } else {
       // we return an empty FlowUnit RCA for now. Can change to healthy (or previous known RCA state)
       LOG.debug("RCA: Empty FlowUnit returned for Young Gen RCA");
-      return new ResourceFlowUnit(this.clock.millis());
+      return new ResourceFlowUnit<>(this.clock.millis());
     }
   }
 
