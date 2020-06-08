@@ -8,7 +8,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Sched_Waittime;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ShardSizeInBytes;
 
-
 public class AnalysisGraphTest extends AnalysisGraph {
 
   @Override
