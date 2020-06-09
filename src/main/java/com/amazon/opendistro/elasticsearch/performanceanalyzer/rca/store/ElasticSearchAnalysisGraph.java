@@ -198,7 +198,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
   }
 
   protected void constructResourceHeatMapGraph() {
-    LOG.error("Constructing temperature profile RCA components");
+    LOG.info("Constructing temperature profile RCA components");
     ShardStore shardStore = new ShardStore();
 
     HeapAllocRateByShardTemperatureCalculator heapAllocByShard =

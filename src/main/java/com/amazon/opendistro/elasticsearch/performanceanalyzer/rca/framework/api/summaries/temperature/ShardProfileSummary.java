@@ -23,8 +23,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.google.gson.JsonObject;
 import com.google.protobuf.GeneratedMessageV3;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.jooq.Field;
@@ -83,8 +81,6 @@ public class ShardProfileSummary extends GenericSummary {
         schema.add(DSL.field(DSL.name(SHARD_ID_KEY), Integer.class));
         for (TemperatureDimension dimension : TemperatureDimension.values()) {
             schema.add(DSL.field(DSL.name(TEMPERATURE_KEY + dimension.NAME), Short.class));
-        }
-        for (TemperatureDimension dimension : TemperatureDimension.values()) {
             schema.add(DSL.field(DSL.name(RAW_METRIC_KEY + dimension.NAME), Short.class));
         }
         return schema;
@@ -97,8 +93,6 @@ public class ShardProfileSummary extends GenericSummary {
         values.add(shardId);
         for (TemperatureDimension dimension : TemperatureDimension.values()) {
             values.add(temperatureVector.getTemperatureFor(dimension));
-        }
-        for (TemperatureDimension dimension : TemperatureDimension.values()) {
             values.add(perShardMetricsVector.getMetricsFor(dimension));
         }
         return values;

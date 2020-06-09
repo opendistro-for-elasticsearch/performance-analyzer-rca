@@ -60,11 +60,11 @@ public class ClusterTemperatureSummary extends GenericSummary {
 
     public void createClusterDimensionalTemperature(TemperatureDimension dimension,
                                                     TemperatureVector.NormalizedValue mean,
-                                                    double avgMetricValueUsedOverShards,
+                                                    double avgMetricValueUsedOverNodes,
                                                     double totalMetricValueUsedOverCluster) {
         ClusterDimensionalSummary summary = new ClusterDimensionalSummary(dimension);
         summary.setMeanTemperature(mean);
-        summary.setAvgMetricValueOverShards(avgMetricValueUsedOverShards);
+        summary.setAvgMetricValueOverNodes(avgMetricValueUsedOverNodes);
         summary.setTotalMetricsValueUsed(totalMetricValueUsedOverCluster);
         nodeDimensionalTemperatureSummaries[dimension.ordinal()] = summary;
     }

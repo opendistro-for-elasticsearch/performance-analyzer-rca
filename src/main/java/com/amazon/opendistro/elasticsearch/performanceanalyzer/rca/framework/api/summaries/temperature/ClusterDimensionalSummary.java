@@ -108,7 +108,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
         this.meanTemperature = meanTemperature;
     }
 
-    public void setAvgMetricValueOverShards(double avgMetricValueOverNodes) {
+    public void setAvgMetricValueOverNodes(double avgMetricValueOverNodes) {
         this.avgMetricValueOverNodes = avgMetricValueOverNodes;
     }
 
@@ -260,7 +260,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
 
         ClusterDimensionalSummary summary =
                 new ClusterDimensionalSummary(TemperatureDimension.valueOf(dimensionName));
-        summary.setAvgMetricValueOverShards(total / numNodes);
+        summary.setAvgMetricValueOverNodes(total / numNodes);
         summary.setTotalMetricsValueUsed(total);
         summary.setMeanTemperature(meanTemp);
         summary.setNumberOfNodes(numNodes);

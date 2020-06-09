@@ -1,9 +1,30 @@
+/*
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ *  A copy of the License is located at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  or in the "license" file accompanying this file. This file is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ *  express or implied. See the License for the specific language governing
+ *  permissions and limitations under the License.
+ */
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import javax.annotation.Nullable;
+
+/**
+ * This class contains the vector details which contains the raw metrics values.
+ * We have added this vector to compare against the calculated normalized values of the
+ * metrics so as to catch any anomalies whatsoever.
+ */
 
 public class RawMetricsVector {
     public static final String DIMENSION_KEY = "metrics_dimension";
