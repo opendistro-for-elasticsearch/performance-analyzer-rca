@@ -76,7 +76,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
     /**
      * This is the average value used over shards.
      */
-    private double avgMetricValueOverNodes;
+    private double avgMetricValueUsedOverNodes;
 
     /**
      * meanTemperature is a normalized value. The total tells us if this is something that one
@@ -108,8 +108,8 @@ public class ClusterDimensionalSummary extends GenericSummary {
         this.meanTemperature = meanTemperature;
     }
 
-    public void setAvgMetricValueOverNodes(double avgMetricValueOverNodes) {
-        this.avgMetricValueOverNodes = avgMetricValueOverNodes;
+    public void setAvgMetricValueUsedOverNodes(double avgMetricValueUsedOverNodes) {
+        this.avgMetricValueUsedOverNodes = avgMetricValueUsedOverNodes;
     }
 
     public void setTotalMetricsValueUsed(double totalMetricValueUsedOverCluster) {
@@ -260,7 +260,10 @@ public class ClusterDimensionalSummary extends GenericSummary {
 
         ClusterDimensionalSummary summary =
                 new ClusterDimensionalSummary(TemperatureDimension.valueOf(dimensionName));
-        summary.setAvgMetricValueOverNodes(total / numNodes);
+        if (numNodes <=0) {
+            throw new IllegalArgumentException("Number of elasticsearch nodes stored are zero.");
+        }
+        summary.setAvgMetricValueUsedOverNodes(total / numNodes);
         summary.setTotalMetricsValueUsed(total);
         summary.setMeanTemperature(meanTemp);
         summary.setNumberOfNodes(numNodes);

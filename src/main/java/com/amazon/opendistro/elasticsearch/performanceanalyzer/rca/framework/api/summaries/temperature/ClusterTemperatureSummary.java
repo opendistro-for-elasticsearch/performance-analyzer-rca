@@ -64,7 +64,7 @@ public class ClusterTemperatureSummary extends GenericSummary {
                                                     double totalMetricValueUsedOverCluster) {
         ClusterDimensionalSummary summary = new ClusterDimensionalSummary(dimension);
         summary.setMeanTemperature(mean);
-        summary.setAvgMetricValueOverNodes(avgMetricValueUsedOverNodes);
+        summary.setAvgMetricValueUsedOverNodes(avgMetricValueUsedOverNodes);
         summary.setTotalMetricsValueUsed(totalMetricValueUsedOverCluster);
         nodeDimensionalTemperatureSummaries[dimension.ordinal()] = summary;
     }
