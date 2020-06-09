@@ -237,9 +237,9 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     shardIndependentHeapAllocRate.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     heapAllocRateTotal.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
 
-    shardSizeByShard.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-    shardSizeAvg.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
-    shardTotalDiskUsage.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
+    shardSizeByShard.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    shardSizeAvg.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    shardTotalDiskUsage.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
 
     addLeaf(cpuUtilByShard);
     addLeaf(avgCpuUtilByShards);
@@ -273,11 +273,11 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
     ShardSizeDimensionTemperatureRca shardSizeHeat = new ShardSizeDimensionTemperatureRca(shardStore,
             shardSizeByShard, shardSizeAvg, shardTotalDiskUsage);
-    shardSizeHeat.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
+    shardSizeHeat.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     shardSizeHeat.addAllUpstreams(Arrays.asList(shardSizeByShard, shardSizeAvg, shardTotalDiskUsage));
 
     NodeTemperatureRca nodeTemperatureRca = new NodeTemperatureRca(cpuUtilHeat, heapAllocRateHeat, shardSizeHeat);
-    nodeTemperatureRca.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
+    nodeTemperatureRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     nodeTemperatureRca.addAllUpstreams(Arrays.asList(cpuUtilHeat, heapAllocRateHeat, shardSizeHeat));
 
     ClusterTemperatureRca clusterTemperatureRca = new ClusterTemperatureRca(nodeTemperatureRca);
