@@ -143,7 +143,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
     }
 
     public double getAvgMetricValueOverNodes() {
-        return avgMetricValueOverNodes;
+        return avgMetricValueUsedOverNodes;
     }
 
     public double getTotalMetricsValueUsedOverCluster() {
