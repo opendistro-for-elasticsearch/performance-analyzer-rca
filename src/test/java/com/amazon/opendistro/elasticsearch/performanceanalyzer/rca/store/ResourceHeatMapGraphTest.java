@@ -586,7 +586,6 @@ public class ResourceHeatMapGraphTest {
    * }
    * ]
    * }
-   * @param resp
    */
   private void verifyFullNodeTemperatureProfile(String resp) {
     JsonParser parser = new JsonParser();
