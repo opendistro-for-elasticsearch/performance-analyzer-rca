@@ -21,6 +21,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ShardProfileSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.TemperatureMetricsBase;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.calculators.AvgShardBasedTemperatureCalculator;
@@ -63,7 +64,7 @@ public class DimensionalTemperatureCalculator {
      * @return The return is a composition of three things:
      */
     public static DimensionalTemperatureFlowUnit getTemperatureForDimension(
-            ShardStore shardStore, TemperatureVector.Dimension metricType,
+            ShardStore shardStore, TemperatureDimension metricType,
             ShardBasedTemperatureCalculator resourceByShardId,
             AvgShardBasedTemperatureCalculator avgResUsageByAllShards,
             ShardIndependentTemperatureCalculator resourceShardIndependent,
@@ -203,7 +204,7 @@ public class DimensionalTemperatureCalculator {
     }
 
     public static DimensionalTemperatureFlowUnit getTemperatureForDimension(
-            ShardStore shardStore, TemperatureVector.Dimension metricType,
+            ShardStore shardStore, TemperatureDimension metricType,
             ShardBasedTemperatureCalculator resourceByShardId,
             AvgShardBasedTemperatureCalculator avgResUsageByAllShards,
             ShardTotalDiskUsageTemperatureCalculator shardSizePeakUsage,

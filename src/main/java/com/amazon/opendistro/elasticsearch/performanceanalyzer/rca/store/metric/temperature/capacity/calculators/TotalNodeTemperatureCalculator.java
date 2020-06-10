@@ -15,7 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.calculators;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.TemperatureMetricsBase;
 import java.util.List;
 import org.jooq.DSLContext;
@@ -32,7 +32,7 @@ public class TotalNodeTemperatureCalculator extends TemperatureMetricsBase {
     // For peak usage there is no group by clause used, therefore this is empty.
     private static final String[] dimensions = {};
 
-    public TotalNodeTemperatureCalculator(TemperatureVector.Dimension metricType) {
+    public TotalNodeTemperatureCalculator(TemperatureDimension metricType) {
         super(metricType, dimensions);
     }
 

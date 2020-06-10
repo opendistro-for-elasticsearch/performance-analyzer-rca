@@ -24,18 +24,6 @@ public class TemperatureVector {
     public static final String DIMENSION_KEY = "dimension";
     public static final String VALUE_KEY = "value";
 
-    public enum Dimension {
-        CPU_Utilization(com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.CPU_Utilization.NAME),
-        Heap_AllocRate(com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_AllocRate.NAME),
-        Shard_Size_In_Bytes(com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ShardSize.NAME);
-
-        public final String NAME;
-
-        Dimension(String name) {
-            this.NAME = name;
-        }
-    }
-
     public static class NormalizedValue {
         public static final int MIN = 0;
         public static final int MAX = 10;
@@ -89,7 +77,7 @@ public class TemperatureVector {
     private NormalizedValue[] normalizedValues;
 
     public TemperatureVector() {
-        normalizedValues = new NormalizedValue[Dimension.values().length];
+        normalizedValues = new NormalizedValue[TemperatureDimension.values().length];
     }
 
     @Override
@@ -99,7 +87,7 @@ public class TemperatureVector {
 
     public JsonArray toJson() {
         JsonArray array = new JsonArray();
-        for (Dimension dim : Dimension.values()) {
+        for (TemperatureDimension dim : TemperatureDimension.values()) {
             NormalizedValue val = normalizedValues[dim.ordinal()];
             if (val != null) {
                 JsonObject jsonObject = new JsonObject();
@@ -118,11 +106,11 @@ public class TemperatureVector {
      * @return The normalized temperature value along that dimension.
      */
     @Nullable
-    public NormalizedValue getTemperatureFor(Dimension dimension) {
+    public NormalizedValue getTemperatureFor(TemperatureDimension dimension) {
         return normalizedValues[dimension.ordinal()];
     }
 
-    public void updateTemperatureForDimension(Dimension dimension,
+    public void updateTemperatureForDimension(TemperatureDimension dimension,
                                               NormalizedValue normalizedValue) {
         normalizedValues[dimension.ordinal()] = normalizedValue;
     }

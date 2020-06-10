@@ -3,6 +3,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.te
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.DimensionalTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.ShardSizeAvgTemperatureCalculator;
@@ -50,7 +51,7 @@ public class ShardSizeDimensionTemperatureRca extends Rca<DimensionalTemperature
         LOG.debug("executing : {}", name());
         DimensionalTemperatureFlowUnit shardSizeTemperatureFlowUnit =
                 DimensionalTemperatureCalculator.getTemperatureForDimension(SHARD_STORE,
-                        TemperatureVector.Dimension.Shard_Size_In_Bytes, SHARD_SIZE_BY_SHARD, SHARD_SIZE_AVG, SHARD_TOTAL_USAGE, THRESHOLD);
+                        TemperatureDimension.Shard_Size_In_Bytes, SHARD_SIZE_BY_SHARD, SHARD_SIZE_AVG, SHARD_TOTAL_USAGE, THRESHOLD);
         LOG.debug("Shard Size temperature calculated: {}",
                 shardSizeTemperatureFlowUnit.getNodeDimensionProfile());
         return shardSizeTemperatureFlowUnit;

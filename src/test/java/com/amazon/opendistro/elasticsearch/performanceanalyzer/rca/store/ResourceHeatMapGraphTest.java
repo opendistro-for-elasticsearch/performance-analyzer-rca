@@ -44,7 +44,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
@@ -611,7 +611,7 @@ public class ResourceHeatMapGraphTest {
 
     for (JsonElement elem : json) {
       JsonObject object = elem.getAsJsonObject();
-      switch (TemperatureVector.Dimension.valueOf(object.get("dimension").getAsString())) {
+      switch (TemperatureDimension.valueOf(object.get("dimension").getAsString())) {
         case CPU_Utilization:
           verifyCpuDimension(object);
           break;
