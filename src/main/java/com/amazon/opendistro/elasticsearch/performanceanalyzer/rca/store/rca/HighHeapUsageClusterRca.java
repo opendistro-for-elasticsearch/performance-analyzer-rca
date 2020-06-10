@@ -77,8 +77,8 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit<HotClusterSumm
                         });
   }
 
-  private List<GenericSummary> getUnhealthyNodeList() {
-    List<GenericSummary> unhealthyNodeList = new ArrayList<>();
+  private List<HotNodeSummary> getUnhealthyNodeList() {
+    List<HotNodeSummary> unhealthyNodeList = new ArrayList<>();
     ConcurrentMap<String, ImmutableList<ResourceFlowUnit<HotNodeSummary>>> currentMap =
         this.nodeStateCache.asMap();
     for (ClusterDetailsEventProcessor.NodeDetails nodeDetails : ClusterDetailsEventProcessor
@@ -90,18 +90,12 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit<HotClusterSumm
         for (ResourceFlowUnit<HotNodeSummary> flowUnit : nodeStateList) {
           if (flowUnit.getResourceContext().getState() == Resources.State.UNHEALTHY) {
             HotNodeSummary currentNodSummary = flowUnit.getSummary();
-            for (GenericSummary genericSummary : currentNodSummary.getNestedSummaryList()) {
-              if (genericSummary instanceof HotResourceSummary) {
-                HotResourceSummary resourceSummary = (HotResourceSummary) genericSummary;
-                if (resourceSummary.getResourceType().getJVM() == JvmEnum.YOUNG_GEN) {
-                  youngGenSummaries.add(resourceSummary);
-                }
-                else if (resourceSummary.getResourceType().getJVM() == JvmEnum.OLD_GEN) {
-                  oldGenSummaries.add(resourceSummary);
-                }
+            for (HotResourceSummary resourceSummary : currentNodSummary.getHotResourceSummaryList()) {
+              if (resourceSummary.getResourceType().getJVM() == JvmEnum.YOUNG_GEN) {
+                youngGenSummaries.add(resourceSummary);
               }
-              else {
-                LOG.error("RCA : The summary that hot node RCA carries is not resource type summary. ");
+              else if (resourceSummary.getResourceType().getJVM() == JvmEnum.OLD_GEN) {
+                oldGenSummaries.add(resourceSummary);
               }
             }
           }
@@ -111,10 +105,10 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit<HotClusterSumm
         if (youngGenSummaries.size() >= UNHEALTHY_FLOWUNIT_THRESHOLD || oldGenSummaries.size() >= UNHEALTHY_FLOWUNIT_THRESHOLD) {
           HotNodeSummary nodeSummary = new HotNodeSummary(nodeDetails.getId(), nodeDetails.getHostAddress());
           if (youngGenSummaries.size() >= UNHEALTHY_FLOWUNIT_THRESHOLD) {
-            nodeSummary.addNestedSummaryList(youngGenSummaries.get(0));
+            nodeSummary.appendNestedSummary(youngGenSummaries.get(0));
           }
           if (oldGenSummaries.size() >= UNHEALTHY_FLOWUNIT_THRESHOLD) {
-            nodeSummary.addNestedSummaryList(oldGenSummaries.get(0));
+            nodeSummary.appendNestedSummary(oldGenSummaries.get(0));
           }
           unhealthyNodeList.add(nodeSummary);
         }
@@ -150,7 +144,7 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit<HotClusterSumm
       }
     }
     if (counter == rcaPeriod) {
-      List<GenericSummary> unhealthyNodeList = getUnhealthyNodeList();
+      List<HotNodeSummary> unhealthyNodeList = getUnhealthyNodeList();
       counter = 0;
       ResourceContext context = null;
       HotClusterSummary summary = null;
@@ -159,7 +153,9 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit<HotClusterSumm
         context = new ResourceContext(Resources.State.UNHEALTHY);
         summary = new HotClusterSummary(ClusterDetailsEventProcessor.getNodesDetails().size(),
             unhealthyNodeList.size());
-        summary.addNestedSummaryList(unhealthyNodeList);
+        for (HotNodeSummary unhealthyNodeSummary : unhealthyNodeList) {
+          summary.appendNestedSummary(unhealthyNodeSummary);
+        }
         PerformanceAnalyzerApp.RCA_VERTICES_METRICS_AGGREGATOR.updateStat(
             RcaVerticesMetrics.NUM_HIGH_HEAP_CLUSTER_RCA_TRIGGERED, "", 1);
       } else {

@@ -148,7 +148,8 @@ public class RcaResponse extends GenericSummary {
 
   @Override
   public List<String> getNestedSummaryTables() {
-    return Collections.unmodifiableList(Collections.singletonList(rcaName));
+    return Collections.unmodifiableList(Collections.singletonList(
+        HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE));
   }
 
   public void addNestedSummaryList(GenericSummary summary) {

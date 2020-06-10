@@ -81,6 +81,14 @@ public class HotClusterSummary extends GenericSummary {
     return numOfUnhealthyNodes;
   }
 
+  public List<HotNodeSummary> getHotNodeSummaryList() {
+    return hotNodeSummaryList;
+  }
+
+  public void appendNestedSummary(HotNodeSummary summary) {
+    hotNodeSummaryList.add(summary);
+  }
+
   @Override
   public String toString() {
     return this.numOfNodes + " " + this.numOfUnhealthyNodes + " " + getNestedSummaryList();

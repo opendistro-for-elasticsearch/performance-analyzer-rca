@@ -51,7 +51,7 @@ public abstract class GenericSummary {
    * @return list of Genericsummary
    */
   public List<GenericSummary> getNestedSummaryList() {
-    return null;
+    return new ArrayList<>();
   }
 
   /**
