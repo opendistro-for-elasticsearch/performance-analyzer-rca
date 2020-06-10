@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMess
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.CompactNodeTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.DimensionalTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.CompactNodeSummary;
@@ -83,16 +84,16 @@ public class NodeTemperatureRca extends Rca<CompactNodeTemperatureFlowUnit> {
     List<DimensionalTemperatureFlowUnit> shardSizeFlowUnits = shardSizeDimensionTemperatureRca
         .getFlowUnits();
     // EachResourceLevelHeat RCA should generate a one @{code DimensionalFlowUnit}.
-    if (cpuFlowUnits.size() != 1) {
-      throw new IllegalArgumentException("One flow unit expected. Found: " + cpuFlowUnits);
+    if (cpuFlowUnits.size() < 1) {
+      cpuFlowUnits.add(new DimensionalTemperatureFlowUnit(System.currentTimeMillis()));
     }
 
-    if (heapAllocRateFlowUnits.size() != 1) {
-      throw new IllegalStateException("One flow unit expected. Found: " + heapAllocRateFlowUnits);
+    if (heapAllocRateFlowUnits.size() < 1) {
+      heapAllocRateFlowUnits.add(new DimensionalTemperatureFlowUnit(System.currentTimeMillis()));
     }
 
-    if (shardSizeFlowUnits.size() != 1) {
-      throw new IllegalArgumentException("One flow unit expected. Found: " + shardSizeFlowUnits);
+    if (shardSizeFlowUnits.size() < 1) {
+      shardSizeFlowUnits.add(new DimensionalTemperatureFlowUnit(System.currentTimeMillis()));
     }
 
     // This means that the input RCA didn't calculate anything. We can move on as well.

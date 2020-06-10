@@ -337,510 +337,256 @@ public class ResourceHeatMapGraphTest {
   }
 
   /**
-<<<<<<< HEAD
-   [
-   {
-   "NodeLevelZoneSummary":[
-   {
-   "all_shards":[],
-   "zone":"HOT"
-   },
-   {
-   "all_shards":[],
-   "zone":"WARM"
-   },
-   {
-   "all_shards":[
-   {
-   "index_name":"pmc",
-   "shard_id":4,
-   "temperature":[
-   {
-   "dimension":"CPU_Utilization",
-   "value":"1"
-   },
-   {
-   "dimension":"Heap_AllocRate",
-   "value":"1"
-   },
-   {
-   "dimension":"Shard_Size_In_Bytes",
-   "value":"10"
-   }
-   ]
-   },
-   {
-   "index_name":"pmc",
-   "shard_id":0,
-   "temperature":[
-   {
-   "dimension":"CPU_Utilization",
-   "value":"1"
-   },
-   {
-   "dimension":"Heap_AllocRate",
-   "value":"1"
-   },
-   {
-   "dimension":"Shard_Size_In_Bytes",
-   "value":"9"
-   }
-   ]
-   },
-   {
-   "index_name":"pmc",
-   "shard_id":2,
-   "temperature":[
-   {
-   "dimension":"CPU_Utilization",
-   "value":"0"
-   },
-   {
-   "dimension":"Heap_AllocRate",
-   "value":"0"
-   },
-   {
-   "dimension":"Shard_Size_In_Bytes",
-   "value":"9"
-   }
-   ]
-   }
-   ],
-   "max":{
-   "index_name":"pmc",
-   "shard_id":4,
-   "temperature":[
-   {
-   "dimension":"CPU_Utilization",
-   "value":"1"
-   },
-   {
-   "dimension":"Heap_AllocRate",
-   "value":"1"
-   },
-   {
-   "dimension":"Shard_Size_In_Bytes",
-   "value":"10"
-   }
-   ]
-   },
-   "min":{
-   "index_name":"pmc",
-   "shard_id":2,
-   "temperature":[
-   {
-   "dimension":"CPU_Utilization",
-   "value":"0"
-   },
-   {
-   "dimension":"Heap_AllocRate",
-   "value":"0"
-   },
-   {
-   "dimension":"Shard_Size_In_Bytes",
-   "value":"9"
-   }
-   ]
-   },
-   "zone":"LUKE_WARM"
-   },
-   {
-   "all_shards":[],
-   "zone":"COLD"
-   }
-   ],
-   "dimension":"CPU_Utilization",
-   "mean":1,
-   "numShards":3,
-   "timestamp":1591056310990,
-   "total":0.113345915412554
-   },
-   {
-   "NodeLevelZoneSummary":[
-   {
-   "all_shards":[],
-   "zone":"HOT"
-   },
-   {
-   "all_shards":[],
-   "zone":"WARM"
-   },
-   {
-   "all_shards":[
-   {
-   "index_name":"pmc",
-   "shard_id":4,
-   "temperature":[
-   {
-   "dimension":"CPU_Utilization",
-   "value":"1"
-   },
-   {
-   "dimension":"Heap_AllocRate",
-   "value":"1"
-   },
-   {
-   "dimension":"Shard_Size_In_Bytes",
-   "value":"10"
-   }
-   ]
-   },
-   {
-   "index_name":"pmc",
-   "shard_id":0,
-   "temperature":[
-   {
-   "dimension":"CPU_Utilization",
-   "value":"1"
-   },
-   {
-   "dimension":"Heap_AllocRate",
-   "value":"1"
-   },
-   {
-   "dimension":"Shard_Size_In_Bytes",
-   "value":"9"
-   }
-   ]
-   },
-   {
-   "index_name":"pmc",
-   "shard_id":2,
-   "temperature":[
-   {
-   "dimension":"CPU_Utilization",
-   "value":"0"
-   },
-   {
-   "dimension":"Heap_AllocRate",
-   "value":"0"
-   },
-   {
-   "dimension":"Shard_Size_In_Bytes",
-   "value":"9"
-   }
-   ]
-   }
-   ],
-   "max":{
-   "index_name":"pmc",
-   "shard_id":4,
-   "temperature":[
-   {
-   "dimension":"CPU_Utilization",
-   "value":"1"
-   },
-   {
-   "dimension":"Heap_AllocRate",
-   "value":"1"
-   },
-   {
-   "dimension":"Shard_Size_In_Bytes",
-   "value":"10"
-   }
-   ]
-   },
-   "min":{
-   "index_name":"pmc",
-   "shard_id":0,
-   "temperature":[
-   {
-   "dimension":"CPU_Utilization",
-   "value":"1"
-   },
-   {
-   "dimension":"Heap_AllocRate",
-   "value":"1"
-   },
-   {
-   "dimension":"Shard_Size_In_Bytes",
-   "value":"9"
-   }
-   ]
-   },
-   "zone":"LUKE_WARM"
-   },
-   {
-   "all_shards":[],
-   "zone":"COLD"
-   }
-   ],
-   "dimension":"Shard_Size_In_Bytes",
-   "mean":10,
-   "numShards":3,
-   "timestamp":1591056310990,
-   "total":7631604.33333333
-   },
-   {
-   "NodeLevelZoneSummary":[
-   {
-   "all_shards":[],
-   "zone":"HOT"
-   },
-   {
-   "all_shards":[],
-   "zone":"WARM"
-   },
-   {
-   "all_shards":[
-   {
-   "index_name":"pmc",
-   "shard_id":0,
-   "temperature":[
-   {
-   "dimension":"CPU_Utilization",
-   "value":"1"
-   },
-   {
-   "dimension":"Heap_AllocRate",
-   "value":"1"
-   },
-   {
-   "dimension":"Shard_Size_In_Bytes",
-   "value":"9"
-   }
-   ]
-   },
-   {
-   "index_name":"pmc",
-   "shard_id":4,
-   "temperature":[
-   {
-   "dimension":"CPU_Utilization",
-   "value":"1"
-   },
-   {
-   "dimension":"Heap_AllocRate",
-   "value":"1"
-   },
-   {
-   "dimension":"Shard_Size_In_Bytes",
-   "value":"10"
-   }
-   ]
-   },
-   {
-   "index_name":"pmc",
-   "shard_id":2,
-   "temperature":[
-   {
-   "dimension":"CPU_Utilization",
-   "value":"0"
-   },
-   {
-   "dimension":"Heap_AllocRate",
-   "value":"0"
-   },
-   {
-   "dimension":"Shard_Size_In_Bytes",
-   "value":"9"
-   }
-   ]
-   }
-   ],
-   "max":{
-   "index_name":"pmc",
-   "shard_id":0,
-   "temperature":[
-   {
-   "dimension":"CPU_Utilization",
-   "value":"1"
-   },
-   {
-   "dimension":"Heap_AllocRate",
-   "value":"1"
-   },
-   {
-   "dimension":"Shard_Size_In_Bytes",
-   "value":"9"
-   }
-   ]
-   },
-   "min":{
-   "index_name":"pmc",
-   "shard_id":2,
-   "temperature":[
-   {
-   "dimension":"CPU_Utilization",
-   "value":"0"
-   },
-   {
-   "dimension":"Heap_AllocRate",
-   "value":"0"
-   },
-   {
-   "dimension":"Shard_Size_In_Bytes",
-   "value":"9"
-   }
-   ]
-   },
-   "zone":"LUKE_WARM"
-   },
-   {
-   "all_shards":[],
-   "zone":"COLD"
-   }
-   ],
-   "dimension":"Heap_AllocRate",
-   "mean":1,
-   "numShards":3,
-   "timestamp":1591056310990,
-   "total":7429635.38060667
-   }
-   ]
-
-=======
-   * {
+   *{
    * "AllTemperatureDimensions":[
    * {
    * "NodeLevelDimensionalSummary":[
    * {
+   * "NodeLevelZoneSummary":[
+   * {
+   * "all_shards":[],
+   * "zone":"HOT"
+   * },
+   * {
+   * "all_shards":[
+   * {
+   * "index_name":"pmc",
+   * "shard_id":4,
+   * "temperature":[
+   * {
    * "dimension":"CPU_Utilization",
+   * "value":"1"
+   * },
+   * {
+   * "dimension":"Heap_AllocRate",
+   * "value":"1"
+   * },
+   * {
+   * "dimension":"Shard_Size_In_Bytes",
+   * "value":"10"
+   * }
+   * ]
+   * }
+   * ],
+   * "zone":"WARM"
+   * },
+   * {
+   * "all_shards":[
+   * {
+   * "index_name":"pmc",
+   * "shard_id":0,
+   * "temperature":[
+   * {
+   * "dimension":"CPU_Utilization",
+   * "value":"0"
+   * },
+   * {
+   * "dimension":"Heap_AllocRate",
+   * "value":"0"
+   * },
+   * {
+   * "dimension":"Shard_Size_In_Bytes",
+   * "value":"10"
+   * }
+   * ]
+   * },
+   * {
+   * "index_name":"pmc",
+   * "shard_id":2,
+   * "temperature":[
+   * {
+   * "dimension":"CPU_Utilization",
+   * "value":"0"
+   * },
+   * {
+   * "dimension":"Heap_AllocRate",
+   * "value":"1"
+   * },
+   * {
+   * "dimension":"Shard_Size_In_Bytes",
+   * "value":"10"
+   * }
+   * ]
+   * }
+   * ],
+   * "zone":"LUKE_WARM"
+   * },
+   * {
+   * "all_shards":[],
+   * "zone":"COLD"
+   * }
+   * ],
+   * "dimension":"CPU_Utilization",
+   * "mean":0,
+   * "numShards":3,
+   * "timestamp":"1591757320624",
+   * "total":0.383474080686612
+   * },
+   * {
+   * "NodeLevelZoneSummary":[
+   * {
+   * "all_shards":[],
+   * "zone":"HOT"
+   * },
+   * {
+   * "all_shards":[],
+   * "zone":"WARM"
+   * },
+   * {
+   * "all_shards":[
+   * {
+   * "index_name":"pmc",
+   * "shard_id":2,
+   * "temperature":[
+   * {
+   * "dimension":"CPU_Utilization",
+   * "value":"0"
+   * },
+   * {
+   * "dimension":"Heap_AllocRate",
+   * "value":"1"
+   * },
+   * {
+   * "dimension":"Shard_Size_In_Bytes",
+   * "value":"3"
+   * }
+   * ]
+   * },
+   * {
+   * "index_name":"pmc",
+   * "shard_id":4,
+   * "temperature":[
+   * {
+   * "dimension":"CPU_Utilization",
+   * "value":"1"
+   * },
+   * {
+   * "dimension":"Heap_AllocRate",
+   * "value":"1"
+   * },
+   * {
+   * "dimension":"Shard_Size_In_Bytes",
+   * "value":"3"
+   * }
+   * ]
+   * },
+   * {
+   * "index_name":"pmc",
+   * "shard_id":0,
+   * "temperature":[
+   * {
+   * "dimension":"CPU_Utilization",
+   * "value":"0"
+   * },
+   * {
+   * "dimension":"Heap_AllocRate",
+   * "value":"0"
+   * },
+   * {
+   * "dimension":"Shard_Size_In_Bytes",
+   * "value":"3"
+   * }
+   * ]
+   * }
+   * ],
+   * "zone":"LUKE_WARM"
+   * },
+   * {
+   * "all_shards":[],
+   * "zone":"COLD"
+   * }
+   * ],
+   * "dimension":"Shard_Size_In_Bytes",
+   * "mean":3,
+   * "numShards":3,
+   * "timestamp":"1591757345439",
+   * "total":24206839.0
+   * },
+   * {
+   * "NodeLevelZoneSummary":[
+   * {
+   * "all_shards":[],
+   * "zone":"HOT"
+   * },
+   * {
+   * "all_shards":[],
+   * "zone":"WARM"
+   * },
+   * {
+   * "all_shards":[
+   * {
+   * "index_name":"pmc",
+   * "shard_id":4,
+   * "temperature":[
+   * {
+   * "dimension":"CPU_Utilization",
+   * "value":"1"
+   * },
+   * {
+   * "dimension":"Heap_AllocRate",
+   * "value":"1"
+   * },
+   * {
+   * "dimension":"Shard_Size_In_Bytes",
+   * "value":"10"
+   * }
+   * ]
+   * },
+   * {
+   * "index_name":"pmc",
+   * "shard_id":2,
+   * "temperature":[
+   * {
+   * "dimension":"CPU_Utilization",
+   * "value":"0"
+   * },
+   * {
+   * "dimension":"Heap_AllocRate",
+   * "value":"1"
+   * },
+   * {
+   * "dimension":"Shard_Size_In_Bytes",
+   * "value":"10"
+   * }
+   * ]
+   * },
+   * {
+   * "index_name":"pmc",
+   * "shard_id":0,
+   * "temperature":[
+   * {
+   * "dimension":"CPU_Utilization",
+   * "value":"0"
+   * },
+   * {
+   * "dimension":"Heap_AllocRate",
+   * "value":"0"
+   * },
+   * {
+   * "dimension":"Shard_Size_In_Bytes",
+   * "value":"10"
+   * }
+   * ]
+   * }
+   * ],
+   * "zone":"LUKE_WARM"
+   * },
+   * {
+   * "all_shards":[],
+   * "zone":"COLD"
+   * }
+   * ],
+   * "dimension":"Heap_AllocRate",
    * "mean":1,
-   * "total":0.113345915412554,
    * "numShards":3,
-   * "NodeLevelZoneSummary":[
-   * {
-   * "zone":"HOT",
-   * "all_shards":[
-   * ]
-   * },
-   * {
-   * "zone":"WARM",
-   * "all_shards":[
-   * {
-   * "index_name":"pmc",
-   * "shard_id":0,
-   * "temperature":[
-   * {
-   * "dimension":"CPU_Utilization",
-   * "value":"2"
-   * },
-   * {
-   * "dimension":"Heap_AllocRate",
-   * "value":"5"
-   * }
-   * ]
-   * }
-   * ]
-   * },
-   * {
-   * "zone":"LUKE_WARM",
-   * "all_shards":[
-   * {
-   * "index_name":"pmc",
-   * "shard_id":2,
-   * "temperature":[
-   * {
-   * "dimension":"CPU_Utilization",
-   * "value":"0"
-   * },
-   * {
-   * "dimension":"Heap_AllocRate",
-   * "value":"0"
-   * }
-   * ]
-   * },
-   * {
-   * "index_name":"pmc",
-   * "shard_id":4,
-   * "temperature":[
-   * {
-   * "dimension":"CPU_Utilization",
-   * "value":"0"
-   * },
-   * {
-   * "dimension":"Heap_AllocRate",
-   * "value":"0"
-   * }
-   * ]
-   * }
-   * ]
-   * },
-   * {
-   * "zone":"COLD",
-   * "all_shards":[
-   * ]
-   * }
-   * ],
-   * "timestamp":1590627598558
-   * },
-   * {
-   * "dimension":"Heap_AllocRate",
-   * "mean":2,
-   * "total":2.39855498699146E8,
-   * "numShards":3,
-   * "NodeLevelZoneSummary":[
-   * {
-   * "zone":"HOT",
-   * "all_shards":[
-   * {
-   * "index_name":"pmc",
-   * "shard_id":0,
-   * "temperature":[
-   * {
-   * "dimension":"CPU_Utilization",
-   * "value":"2"
-   * },
-   * {
-   * "dimension":"Heap_AllocRate",
-   * "value":"5"
-   * }
-   * ]
-   * }
-   * ]
-   * },
-   * {
-   * "zone":"WARM",
-   * "all_shards":[
-   * ]
-   * },
-   * {
-   * "zone":"LUKE_WARM",
-   * "all_shards":[
-   * {
-   * "index_name":"pmc",
-   * "shard_id":2,
-   * "temperature":[
-   * {
-   * "dimension":"CPU_Utilization",
-   * "value":"0"
-   * },
-   * {
-   * "dimension":"Heap_AllocRate",
-   * "value":"0"
-   * }
-   * ]
-   * },
-   * {
-   * "index_name":"pmc",
-   * "shard_id":4,
-   * "temperature":[
-   * {
-   * "dimension":"CPU_Utilization",
-   * "value":"0"
-   * },
-   * {
-   * "dimension":"Heap_AllocRate",
-   * "value":"0"
-   * }
-   * ]
-   * }
-   * ]
-   * },
-   * {
-   * "zone":"COLD",
-   * "all_shards":[
-   * ]
-   * }
-   * ],
-   * "timestamp":1590627598558
+   * "timestamp":"1591757317017",
+   * "total":3557053.99136461
    * }
    * ]
    * }
    * ]
    * }
->>>>>>> Adding the Shard Size in the Temperature Profile RCA
+   * @param resp
    */
   private void verifyFullNodeTemperatureProfile(String resp) {
     JsonParser parser = new JsonParser();
