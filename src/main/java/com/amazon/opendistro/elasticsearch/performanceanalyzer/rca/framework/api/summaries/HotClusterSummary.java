@@ -50,11 +50,13 @@ public class HotClusterSummary extends GenericSummary {
   private static final Logger LOG = LogManager.getLogger(HotClusterSummary.class);
   private int numOfNodes;
   private int numOfUnhealthyNodes;
+  private List<HotNodeSummary> hotNodeSummaryList;
 
   public HotClusterSummary(int numOfNodes, int numOfUnhealthyNodes) {
     super();
     this.numOfNodes = numOfNodes;
     this.numOfUnhealthyNodes = numOfUnhealthyNodes;
+    this.hotNodeSummaryList = new ArrayList<>();
   }
 
   /**
@@ -90,13 +92,6 @@ public class HotClusterSummary extends GenericSummary {
   }
 
   @Override
-  public List<SummaryBuilder<? extends GenericSummary>> getNestedSummaryBuilder() {
-    return Collections.unmodifiableList(Collections.singletonList(
-        new SummaryBuilder<>(HotNodeSummary.HOT_NODE_SUMMARY_TABLE,
-            HotNodeSummary::buildSummary)));
-  }
-
-  @Override
   public List<Field<?>> getSqlSchema() {
     List<Field<?>> schema = new ArrayList<>();
     schema.add(ClusterSummaryField.NUM_OF_NODES_FIELD.getField());
@@ -126,6 +121,30 @@ public class HotClusterSummary extends GenericSummary {
       summaryObj.add(tableName, this.nestedSummaryListToJson());
     }
     return summaryObj;
+  }
+
+  @Override
+  public List<GenericSummary> getNestedSummaryList() {
+    return new ArrayList<>(hotNodeSummaryList);
+  }
+
+  @Override
+  public GenericSummary buildNestedSummary(String summaryTable, Record record) {
+    GenericSummary ret = null;
+    if (summaryTable.equals(HotNodeSummary.HOT_NODE_SUMMARY_TABLE)) {
+      HotNodeSummary hotNodeSummary = HotNodeSummary.buildSummary(record);
+      if (hotNodeSummary != null) {
+        hotNodeSummaryList.add(hotNodeSummary);
+        ret = hotNodeSummary;
+      }
+    }
+    return ret;
+  }
+
+  @Override
+  public List<String> getNestedSummaryTables() {
+    return Collections.unmodifiableList(Collections.singletonList(
+        HotNodeSummary.HOT_NODE_SUMMARY_TABLE));
   }
 
   public static class SQL_SCHEMA_CONSTANTS {
@@ -167,8 +186,8 @@ public class HotClusterSummary extends GenericSummary {
    * @return whether parsing is successful or not
    */
   @Nullable
-  public static GenericSummary buildSummary(Record record) {
-    GenericSummary summary = null;
+  public static HotClusterSummary buildSummary(Record record) {
+    HotClusterSummary summary = null;
     try {
       Integer numOfNodes = record.get(ClusterSummaryField.NUM_OF_NODES_FIELD.getField(), Integer.class);
       Integer numOfUnhealthyNodes = record.get(ClusterSummaryField.NUM_OF_UNHEALTHY_NODES_FIELD.getField(), Integer.class);

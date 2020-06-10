@@ -229,32 +229,27 @@ class SQLitePersistor extends PersistorBase {
 
   private void readSummary(GenericSummary upperLevelSummary, int upperLevelPrimaryKey) {
     String upperLevelTable = upperLevelSummary.getTableName();
-    List<SummaryBuilder<? extends GenericSummary>> builders = upperLevelSummary.getNestedSummaryBuilder();
 
-    // stop the recursion here if the table does not have any nested summary.
-    if (builders == null) {
-      return;
-    }
-    for (SummaryBuilder builder : builders) {
+    // stop the recursion here if the summary does not have any nested summary table.
+    for (String nestedTableName : upperLevelSummary.getNestedSummaryTables()) {
       Field<Integer> foreignKeyField = DSL.field(
           SQLiteQueryUtils.getPrimaryKeyColumnName(upperLevelTable), Integer.class);
       SelectJoinStep<Record> rcaQuery = SQLiteQueryUtils
-          .buildSummaryQuery(create, builder.getTableName(), upperLevelPrimaryKey, foreignKeyField);
+          .buildSummaryQuery(create, nestedTableName, upperLevelPrimaryKey, foreignKeyField);
       try {
         Result<Record> recordList = rcaQuery.fetch();
         for (Record record : recordList) {
-          GenericSummary summary = builder.buildSummary(record);
+          GenericSummary summary = upperLevelSummary.buildNestedSummary(nestedTableName, record);
           if (summary != null) {
             Field<Integer> primaryKeyField = DSL.field(
                 SQLiteQueryUtils.getPrimaryKeyColumnName(summary.getTableName()), Integer.class);
             readSummary(summary, record.get(primaryKeyField));
-            upperLevelSummary.addNestedSummaryList(summary);
           }
         }
       } catch (DataAccessException de) {
         // it is totally fine if we fail to read some certain tables as some types of summaries might be missing
         LOG.warn("Fail to read Summary table : {}, query = {},  exceptions : {}",
-            builder.getTableName(), rcaQuery.toString(), de.getStackTrace());
+            nestedTableName, rcaQuery.toString(), de.getStackTrace());
       }
     }
   }
