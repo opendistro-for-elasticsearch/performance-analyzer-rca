@@ -88,16 +88,16 @@ import org.apache.logging.log4j.Logger;
 public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
   private static final Logger LOG = LogManager.getLogger(ElasticSearchAnalysisGraph.class);
-  private static final int rcaPeriod = 12;
-  private static final int evaluationIntervalSeconds = 5;
+  private static final int RCA_PERIOD = 12;
+  private static final int EVALUATION_INTERVAL_SECONDS = 5;
 
 
   @Override
   public void construct() {
-    Metric heapUsed = new Heap_Used(evaluationIntervalSeconds);
-    Metric gcEvent = new GC_Collection_Event(evaluationIntervalSeconds);
-    Metric heapMax = new Heap_Max(evaluationIntervalSeconds);
-    Metric gc_Collection_Time = new GC_Collection_Time(evaluationIntervalSeconds);
+    Metric heapUsed = new Heap_Used(EVALUATION_INTERVAL_SECONDS);
+    Metric gcEvent = new GC_Collection_Event(EVALUATION_INTERVAL_SECONDS);
+    Metric heapMax = new Heap_Max(EVALUATION_INTERVAL_SECONDS);
+    Metric gc_Collection_Time = new GC_Collection_Time(EVALUATION_INTERVAL_SECONDS);
     Metric cpuUtilizationGroupByOperation = new AggregateMetric(1, CPU_Utilization.NAME,
             AggregateFunction.SUM,
             MetricsDB.AVG, CommonDimension.OPERATION.toString());
@@ -117,36 +117,36 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     //add node stats metrics
     List<Metric> nodeStatsMetrics = constructNodeStatsMetrics();
 
-    Rca<ResourceFlowUnit<HotResourceSummary>> highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(rcaPeriod, heapUsed, gcEvent,
+    Rca<ResourceFlowUnit<HotResourceSummary>> highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(RCA_PERIOD, heapUsed, gcEvent,
             heapMax, nodeStatsMetrics);
     highHeapUsageOldGenRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     List<Node<?>> upstream = new ArrayList<>(Arrays.asList(heapUsed, gcEvent, heapMax));
     upstream.addAll(nodeStatsMetrics);
     highHeapUsageOldGenRca.addAllUpstreams(upstream);
 
-    Rca<ResourceFlowUnit<HotResourceSummary>> highHeapUsageYoungGenRca = new HighHeapUsageYoungGenRca(rcaPeriod, heapUsed,
+    Rca<ResourceFlowUnit<HotResourceSummary>> highHeapUsageYoungGenRca = new HighHeapUsageYoungGenRca(RCA_PERIOD, heapUsed,
             gc_Collection_Time);
     highHeapUsageYoungGenRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     highHeapUsageYoungGenRca.addAllUpstreams(Arrays.asList(heapUsed, gc_Collection_Time));
 
-    Rca<ResourceFlowUnit<HotResourceSummary>> highCpuRca = new HighCpuRca(rcaPeriod, cpuUtilizationGroupByOperation);
+    Rca<ResourceFlowUnit<HotResourceSummary>> highCpuRca = new HighCpuRca(RCA_PERIOD, cpuUtilizationGroupByOperation);
     highCpuRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     highCpuRca.addAllUpstreams(Collections.singletonList(cpuUtilizationGroupByOperation));
 
-    Rca<ResourceFlowUnit<HotNodeSummary>> hotJVMNodeRca = new HotNodeRca(rcaPeriod, highHeapUsageOldGenRca,
+    Rca<ResourceFlowUnit<HotNodeSummary>> hotJVMNodeRca = new HotNodeRca(RCA_PERIOD, highHeapUsageOldGenRca,
             highHeapUsageYoungGenRca, highCpuRca);
     hotJVMNodeRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     hotJVMNodeRca.addAllUpstreams(
             Arrays.asList(highHeapUsageOldGenRca, highHeapUsageYoungGenRca, highCpuRca));
 
     Rca<ResourceFlowUnit<HotClusterSummary>> highHeapUsageClusterRca =
-            new HighHeapUsageClusterRca(rcaPeriod, hotJVMNodeRca);
+            new HighHeapUsageClusterRca(RCA_PERIOD, hotJVMNodeRca);
     highHeapUsageClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     highHeapUsageClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
     highHeapUsageClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
     Rca<ResourceFlowUnit<HotClusterSummary>> hotNodeClusterRca =
-            new HotNodeClusterRca(rcaPeriod, hotJVMNodeRca);
+            new HotNodeClusterRca(RCA_PERIOD, hotJVMNodeRca);
     hotNodeClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     hotNodeClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
 
@@ -155,9 +155,9 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
   }
 
   private void constructShardResourceUsageGraph() {
-    Metric cpuUtilization = new CPU_Utilization(evaluationIntervalSeconds);
-    Metric ioTotThroughput = new IO_TotThroughput(evaluationIntervalSeconds);
-    Metric ioTotSyscallRate = new IO_TotalSyscallRate(evaluationIntervalSeconds);
+    Metric cpuUtilization = new CPU_Utilization(EVALUATION_INTERVAL_SECONDS);
+    Metric ioTotThroughput = new IO_TotThroughput(EVALUATION_INTERVAL_SECONDS);
+    Metric ioTotSyscallRate = new IO_TotalSyscallRate(EVALUATION_INTERVAL_SECONDS);
 
     cpuUtilization.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     ioTotThroughput.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
@@ -167,12 +167,12 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     addLeaf(ioTotSyscallRate);
 
     // High CPU Utilization RCA
-    HotShardRca hotShardRca = new HotShardRca(evaluationIntervalSeconds, rcaPeriod, cpuUtilization, ioTotThroughput, ioTotSyscallRate);
+    HotShardRca hotShardRca = new HotShardRca(EVALUATION_INTERVAL_SECONDS, RCA_PERIOD, cpuUtilization, ioTotThroughput, ioTotSyscallRate);
     hotShardRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     hotShardRca.addAllUpstreams(Arrays.asList(cpuUtilization, ioTotThroughput, ioTotSyscallRate));
 
     // Hot Shard Cluster RCA which consumes the above
-    HotShardClusterRca hotShardClusterRca = new HotShardClusterRca(rcaPeriod, hotShardRca);
+    HotShardClusterRca hotShardClusterRca = new HotShardClusterRca(RCA_PERIOD, hotShardRca);
     hotShardClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     hotShardClusterRca.addAllUpstreams(Collections.singletonList(hotShardRca));
     hotShardClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
@@ -180,19 +180,19 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
   private List<Metric> constructNodeStatsMetrics() {
     List<Metric> nodeStatsMetrics = new ArrayList<Metric>() {{
-      add(new Cache_FieldData_Size(evaluationIntervalSeconds));
-      add(new Cache_Request_Size(evaluationIntervalSeconds));
-      add(new Cache_Query_Size(evaluationIntervalSeconds));
-      add(new Segments_Memory(evaluationIntervalSeconds));
-      add(new Terms_Memory(evaluationIntervalSeconds));
-      add(new StoredFields_Memory(evaluationIntervalSeconds));
-      add(new TermVectors_Memory(evaluationIntervalSeconds));
-      add(new Norms_Memory(evaluationIntervalSeconds));
-      add(new Points_Memory(evaluationIntervalSeconds));
-      add(new DocValues_Memory(evaluationIntervalSeconds));
-      add(new IndexWriter_Memory(evaluationIntervalSeconds));
-      add(new Bitset_Memory(evaluationIntervalSeconds));
-      add(new VersionMap_Memory(evaluationIntervalSeconds));
+      add(new Cache_FieldData_Size(EVALUATION_INTERVAL_SECONDS));
+      add(new Cache_Request_Size(EVALUATION_INTERVAL_SECONDS));
+      add(new Cache_Query_Size(EVALUATION_INTERVAL_SECONDS));
+      add(new Segments_Memory(EVALUATION_INTERVAL_SECONDS));
+      add(new Terms_Memory(EVALUATION_INTERVAL_SECONDS));
+      add(new StoredFields_Memory(EVALUATION_INTERVAL_SECONDS));
+      add(new TermVectors_Memory(EVALUATION_INTERVAL_SECONDS));
+      add(new Norms_Memory(EVALUATION_INTERVAL_SECONDS));
+      add(new Points_Memory(EVALUATION_INTERVAL_SECONDS));
+      add(new DocValues_Memory(EVALUATION_INTERVAL_SECONDS));
+      add(new IndexWriter_Memory(EVALUATION_INTERVAL_SECONDS));
+      add(new Bitset_Memory(EVALUATION_INTERVAL_SECONDS));
+      add(new VersionMap_Memory(EVALUATION_INTERVAL_SECONDS));
     }};
     for (Metric metric : nodeStatsMetrics) {
       metric.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
@@ -259,14 +259,14 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     addLeaf(shardTotalDiskUsage);
 
     CpuUtilDimensionTemperatureRca cpuUtilHeat = new
-            CpuUtilDimensionTemperatureRca(evaluationIntervalSeconds,
+            CpuUtilDimensionTemperatureRca(EVALUATION_INTERVAL_SECONDS,
             shardStore,
             cpuUtilByShard, avgCpuUtilByShards, shardIndependentCpuUtilMetric, cpuUtilPeakUsage);
     cpuUtilHeat.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     cpuUtilHeat.addAllUpstreams(Arrays.asList(cpuUtilByShard, avgCpuUtilByShards,
             shardIndependentCpuUtilMetric, cpuUtilPeakUsage));
 
-    HeapAllocRateTemperatureRca heapAllocRateHeat = new HeapAllocRateTemperatureRca(evaluationIntervalSeconds,
+    HeapAllocRateTemperatureRca heapAllocRateHeat = new HeapAllocRateTemperatureRca(EVALUATION_INTERVAL_SECONDS,
             shardStore,
             heapAllocByShard, heapAllocRateByShardAvg, shardIndependentHeapAllocRate, heapAllocRateTotal);
 
@@ -274,7 +274,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     heapAllocRateHeat.addAllUpstreams(Arrays.asList(heapAllocByShard, heapAllocRateByShardAvg,
             shardIndependentHeapAllocRate, heapAllocRateTotal));
 
-    ShardSizeDimensionTemperatureRca shardSizeHeat = new ShardSizeDimensionTemperatureRca(evaluationIntervalSeconds,
+    ShardSizeDimensionTemperatureRca shardSizeHeat = new ShardSizeDimensionTemperatureRca(EVALUATION_INTERVAL_SECONDS,
             shardStore,
             shardSizeByShard, shardSizeAvg, shardTotalDiskUsage);
     shardSizeHeat.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
