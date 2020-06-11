@@ -231,6 +231,10 @@ class SQLitePersistor extends PersistorBase {
     String upperLevelTable = upperLevelSummary.getTableName();
 
     // stop the recursion here if the summary does not have any nested summary table.
+    if (upperLevelSummary.getNestedSummaryTables() == null) {
+      return;
+    }
+
     for (String nestedTableName : upperLevelSummary.getNestedSummaryTables()) {
       Field<Integer> foreignKeyField = DSL.field(
           SQLiteQueryUtils.getPrimaryKeyColumnName(upperLevelTable), Integer.class);
