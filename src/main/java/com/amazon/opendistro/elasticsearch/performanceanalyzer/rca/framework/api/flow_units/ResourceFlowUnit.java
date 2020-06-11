@@ -77,6 +77,10 @@ public class ResourceFlowUnit<T extends GenericSummary> extends GenericFlowUnit 
     return this.resourceContext;
   }
 
+  public void setResourceContext(ResourceContext context) {
+    this.resourceContext = context;
+  }
+
   public boolean hasResourceSummary() {
     return this.summary != null;
   }
