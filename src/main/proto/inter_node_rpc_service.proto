@@ -68,6 +68,11 @@ enum HardwareEnum {
   IO_TOTAL_SYS_CALLRATE = 2 [(resourceTypeOptions).resourceTypeName = "IO total sys callrate", (resourceTypeOptions).resourceTypeUnit = "read and write system calls per second"];
 }
 
+enum ThreadPoolEnum {
+  WRITE_QUEUE = 0 [(resourceTypeOptions).resourceTypeName = "write queue", (resourceTypeOptions).resourceTypeUnit = "rejection count"];
+  SEARCH_QUEUE = 1 [(resourceTypeOptions).resourceTypeName = "write queue", (resourceTypeOptions).resourceTypeUnit = "rejection count"];
+}
+
 /*
   message for resource type Enum
 */
@@ -75,6 +80,7 @@ message ResourceType {
     oneof resource_type_oneof {
       JvmEnum JVM = 1;
       HardwareEnum hardware_resource_type = 2;
+      ThreadPoolEnum thread_pool = 3;
     }
 }
 
