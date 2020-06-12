@@ -437,7 +437,7 @@ public class AllMetrics {
     }
   }
 
-  //content of thread pool metrics
+  //list of threadpools
   public enum ThreadPoolType {
     ANALYZE(Constants.ANALYZE_NAME),
     FETCH_SHARD_STARTED(Constants.FETCH_SHARD_STARTED_NAME),

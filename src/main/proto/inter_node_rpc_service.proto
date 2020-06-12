@@ -69,8 +69,8 @@ enum HardwareEnum {
 }
 
 enum ThreadPoolEnum {
-  WRITE_QUEUE = 0 [(resourceTypeOptions).resourceTypeName = "write queue", (resourceTypeOptions).resourceTypeUnit = "rejection count"];
-  SEARCH_QUEUE = 1 [(resourceTypeOptions).resourceTypeName = "write queue", (resourceTypeOptions).resourceTypeUnit = "rejection count"];
+  WRITE_QUEUE = 0 [(resourceTypeOptions).resourceTypeName = "write queue", (resourceTypeOptions).resourceTypeUnit = "rejection period in second"];
+  SEARCH_QUEUE = 1 [(resourceTypeOptions).resourceTypeName = "search queue", (resourceTypeOptions).resourceTypeUnit = "rejection period in second"];
 }
 
 /*
