@@ -58,12 +58,6 @@ class GRPCClient {
 
         @Override
         public void onNext(PublishResponse value) {
-            System.out.println("CLIENT ONNEXT!");
-            if (value == null) {
-                System.out.println("WTF");
-                return;
-            }
-            System.out.println("PUBLISH RESP IS LEGIT " + value.toString());
             this.response = value;
             LOG.info("Received PublishResponse: {}", value);
         }
@@ -71,13 +65,11 @@ class GRPCClient {
         @Override
         public void onError(Throwable t) {
             LOG.error("Encountered error during subscribe calL.", t);
-            System.out.println("DEAD!");
             finishLatch.countDown();
         }
 
         @Override
         public void onCompleted() {
-            System.out.println("CLIENT OBSERVER COMPLETED!");
             LOG.info("subscribe request completed successfully");
             finishLatch.countDown();
         }
