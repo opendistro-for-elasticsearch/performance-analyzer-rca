@@ -38,9 +38,7 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -80,13 +78,16 @@ public class QueueRejectionRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
   public ResourceFlowUnit<HotNodeSummary> operate() {
     counter += 1;
     long currTimestamp = clock.millis();
+    //collect rejection metrics
+    for (QueueRejectionCollector collector : queueRejectionCollectors) {
+      collector.collect(currTimestamp);
+    }
     if (counter == rcaPeriod) {
       counter = 0;
       ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor
           .getCurrentNodeDetails();
       HotNodeSummary nodeSummary = null;
       for (QueueRejectionCollector collector : queueRejectionCollectors) {
-        collector.collect(currTimestamp);
         // if we've see thread pool rejection in the last 5 mins, the thread pool is considered as contended
         if (collector.isUnhealthy(currTimestamp)) {
           if (nodeSummary == null) {
