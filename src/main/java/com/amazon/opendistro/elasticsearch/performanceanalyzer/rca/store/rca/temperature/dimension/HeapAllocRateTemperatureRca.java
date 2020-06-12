@@ -55,7 +55,7 @@ public class HeapAllocRateTemperatureRca extends Rca<DimensionalTemperatureFlowU
       LOG.debug("executing : {}", name());
       DimensionalTemperatureFlowUnit heapAllocRateTemperatureFlowUnit = DimensionalTemperatureCalculator.getTemperatureForDimension(
               SHARD_STORE,
-              Dimension.Heap_AllocRate,
+              TemperatureDimension.Heap_AllocRate,
               HEAP_ALLOC_RATE_BY_SHARD,
               HEAP_ALLOC_RATE_BY_SHARD_AVG,
               HEAP_ALLOC_RATE_SHARD_INDEPENDENT,
