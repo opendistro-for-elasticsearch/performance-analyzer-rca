@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -54,7 +55,7 @@ public class FullNodeTemperatureSummary extends GenericSummary {
         this.nodeId = nodeId;
         this.hostAddress = hostAddress;
         this.nodeDimensionProfiles =
-                new NodeLevelDimensionalSummary[TemperatureVector.Dimension.values().length];
+                new NodeLevelDimensionalSummary[TemperatureDimension.values().length];
         this.temperatureVector = new TemperatureVector();
     }
 
@@ -75,7 +76,7 @@ public class FullNodeTemperatureSummary extends GenericSummary {
     }
 
     public void updateNodeDimensionProfile(NodeLevelDimensionalSummary nodeDimensionProfile) {
-        TemperatureVector.Dimension dimension = nodeDimensionProfile.getProfileForDimension();
+        TemperatureDimension dimension = nodeDimensionProfile.getProfileForDimension();
         this.nodeDimensionProfiles[dimension.ordinal()] = nodeDimensionProfile;
         temperatureVector.updateTemperatureForDimension(dimension, nodeDimensionProfile.getMeanTemperature());
     }
@@ -114,7 +115,7 @@ public class FullNodeTemperatureSummary extends GenericSummary {
         schema.add(DSL.field(DSL.name(HotNodeSummary.SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME), String.class));
         schema.add(DSL.field(DSL.name(HotNodeSummary.SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME), String.class));
 
-        for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+        for (TemperatureDimension dimension : TemperatureDimension.values()) {
             schema.add(DSL.field(DSL.name(dimension.NAME), Short.class));
         }
         return schema;
@@ -127,7 +128,7 @@ public class FullNodeTemperatureSummary extends GenericSummary {
         values.add(getNodeId());
         values.add(getHostAddress());
 
-        for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+        for (TemperatureDimension dimension : TemperatureDimension.values()) {
             values.add(temperatureVector.getTemperatureFor(dimension));
         }
         return values;
@@ -136,7 +137,7 @@ public class FullNodeTemperatureSummary extends GenericSummary {
     @Override
     public JsonElement toJson() {
         JsonObject summaryObj = new JsonObject();
-        for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+        for (TemperatureDimension dimension : TemperatureDimension.values()) {
             TemperatureVector.NormalizedValue value =
                     temperatureVector.getTemperatureFor(dimension);
             summaryObj.addProperty(dimension.NAME,

@@ -5,8 +5,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.DimensionalTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector.Dimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector.NormalizedValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.HeapAllocRateByShardAvgTemperatureCalculator;
@@ -55,7 +55,7 @@ public class HeapAllocRateTemperatureRca extends Rca<DimensionalTemperatureFlowU
       LOG.debug("executing : {}", name());
       DimensionalTemperatureFlowUnit heapAllocRateTemperatureFlowUnit = DimensionalTemperatureCalculator.getTemperatureForDimension(
               SHARD_STORE,
-              Dimension.Heap_AllocRate,
+              TemperatureDimension.Heap_AllocRate,
               HEAP_ALLOC_RATE_BY_SHARD,
               HEAP_ALLOC_RATE_BY_SHARD_AVG,
               HEAP_ALLOC_RATE_SHARD_INDEPENDENT,

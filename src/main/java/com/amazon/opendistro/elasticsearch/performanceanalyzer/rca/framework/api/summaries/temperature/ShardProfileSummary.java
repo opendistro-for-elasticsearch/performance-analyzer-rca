@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.google.gson.JsonObject;
 import com.google.protobuf.GeneratedMessageV3;
@@ -74,7 +75,7 @@ public class ShardProfileSummary extends GenericSummary {
         List<Field<?>> schema = new ArrayList<>();
         schema.add(DSL.field(DSL.name(INDEX_NAME_KEY), String.class));
         schema.add(DSL.field(DSL.name(SHARD_ID_KEY), Integer.class));
-        for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+        for (TemperatureDimension dimension : TemperatureDimension.values()) {
             schema.add(DSL.field(DSL.name(dimension.NAME), Short.class));
         }
         return schema;
@@ -85,7 +86,7 @@ public class ShardProfileSummary extends GenericSummary {
         List<Object> values = new ArrayList<>();
         values.add(indexName);
         values.add(shardId);
-        for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+        for (TemperatureDimension dimension : TemperatureDimension.values()) {
             values.add(temperatureVector.getTemperatureFor(dimension));
         }
         return values;
@@ -100,11 +101,11 @@ public class ShardProfileSummary extends GenericSummary {
     }
 
     @Nullable
-    public TemperatureVector.NormalizedValue getHeatInDimension(TemperatureVector.Dimension dimension) {
+    public TemperatureVector.NormalizedValue getHeatInDimension(TemperatureDimension dimension) {
         return temperatureVector.getTemperatureFor(dimension);
     }
 
-    public void addTemperatureForDimension(TemperatureVector.Dimension dimension,
+    public void addTemperatureForDimension(TemperatureDimension dimension,
                                            TemperatureVector.NormalizedValue value) {
         // TODO: Need to handle rcas updating heat profile of a shard along a dimension multiple
         //  times per tick.
