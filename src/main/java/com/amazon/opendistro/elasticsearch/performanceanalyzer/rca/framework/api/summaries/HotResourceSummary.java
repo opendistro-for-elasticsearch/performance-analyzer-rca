@@ -60,7 +60,7 @@ public class HotResourceSummary extends GenericSummary {
   private double maxValue;
   private int timePeriod;
   private String metaData;
-  private final List<TopConsumerSummary> topConsumerSummaryList;
+  private List<TopConsumerSummary> topConsumerSummaryList;
 
   public HotResourceSummary(ResourceType resourceType, double threshold,
       double value, int timePeriod) {
@@ -246,16 +246,17 @@ public class HotResourceSummary extends GenericSummary {
   }
 
   @Override
-  public GenericSummary buildNestedSummary(String summaryTable, Record record) {
-    GenericSummary ret = null;
+  public GenericSummary buildNestedSummary(String summaryTable, Record record) throws IllegalArgumentException {
     if (summaryTable.equals(TopConsumerSummary.TOP_CONSUMER_SUMMARY_TABLE)) {
       TopConsumerSummary topConsumerSummary = TopConsumerSummary.buildSummary(record);
       if (topConsumerSummary != null) {
         topConsumerSummaryList.add(topConsumerSummary);
-        ret = topConsumerSummary;
       }
+      return topConsumerSummary;
     }
-    return ret;
+    else {
+      throw new IllegalArgumentException(summaryTable + " does not belong to the nested summaries of " + getTableName());
+    }
   }
 
   @Override

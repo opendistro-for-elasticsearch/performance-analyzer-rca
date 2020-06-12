@@ -72,7 +72,7 @@ public abstract class GenericSummary {
    * @param record the SQL record of nested summary
    * @return the nested summary of generic type
    */
-  public GenericSummary buildNestedSummary(String summaryTable, Record record) {
+  public GenericSummary buildNestedSummary(String summaryTable, Record record) throws IllegalArgumentException {
     return null;
   }
 

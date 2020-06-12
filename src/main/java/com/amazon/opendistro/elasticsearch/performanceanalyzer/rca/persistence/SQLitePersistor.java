@@ -254,6 +254,8 @@ class SQLitePersistor extends PersistorBase {
         // it is totally fine if we fail to read some certain tables as some types of summaries might be missing
         LOG.warn("Fail to read Summary table : {}, query = {},  exceptions : {}",
             nestedTableName, rcaQuery.toString(), de.getStackTrace());
+      } catch (IllegalArgumentException ie) {
+        LOG.error("Reading nested summary from wrong table, message : {}", ie.getMessage());
       }
     }
   }

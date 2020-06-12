@@ -166,6 +166,12 @@ public class HotNodeSummary extends GenericSummary {
     return summaryObj;
   }
 
+  /**
+   * return HotResourceSummary and HotShardSummary as a single
+   * GenericSummary list. Note that is method is intended to be called by
+   * persistor and Json serializer only.
+   * @return HotResourceSummary and HotShardSummary as a single GenericSummary list
+   */
   @Override
   public List<GenericSummary> getNestedSummaryList() {
     List<GenericSummary> summaries = new ArrayList<>();
@@ -175,23 +181,24 @@ public class HotNodeSummary extends GenericSummary {
   }
 
   @Override
-  public GenericSummary buildNestedSummary(String summaryTable, Record record) {
-    GenericSummary ret = null;
+  public GenericSummary buildNestedSummary(String summaryTable, Record record) throws IllegalArgumentException {
     if (summaryTable.equals(HotResourceSummary.HOT_RESOURCE_SUMMARY_TABLE)) {
       HotResourceSummary summary = HotResourceSummary.buildSummary(record);
       if (summary != null) {
         hotResourceSummaryList.add(summary);
-        ret = summary;
       }
+      return summary;
     }
-    if (summaryTable.equals(HotShardSummary.HOT_SHARD_SUMMARY_TABLE)) {
+    else if (summaryTable.equals(HotShardSummary.HOT_SHARD_SUMMARY_TABLE)) {
       HotShardSummary summary = HotShardSummary.buildSummary(record);
       if (summary != null) {
         hotShardSummaryList.add(summary);
-        ret = summary;
       }
+      return summary;
     }
-    return ret;
+    else {
+      throw new IllegalArgumentException(summaryTable + " does not belong to the nested summaries of " + getTableName());
+    }
   }
 
   @Override

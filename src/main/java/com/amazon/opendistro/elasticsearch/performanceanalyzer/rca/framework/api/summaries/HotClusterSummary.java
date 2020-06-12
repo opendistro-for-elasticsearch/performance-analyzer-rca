@@ -137,16 +137,17 @@ public class HotClusterSummary extends GenericSummary {
   }
 
   @Override
-  public GenericSummary buildNestedSummary(String summaryTable, Record record) {
-    GenericSummary ret = null;
+  public GenericSummary buildNestedSummary(String summaryTable, Record record) throws IllegalArgumentException {
     if (summaryTable.equals(HotNodeSummary.HOT_NODE_SUMMARY_TABLE)) {
       HotNodeSummary hotNodeSummary = HotNodeSummary.buildSummary(record);
       if (hotNodeSummary != null) {
         hotNodeSummaryList.add(hotNodeSummary);
-        ret = hotNodeSummary;
       }
+      return hotNodeSummary;
     }
-    return ret;
+    else {
+      throw new IllegalArgumentException(summaryTable + " does not belong to the nested summaries of " + getTableName());
+    }
   }
 
   @Override
