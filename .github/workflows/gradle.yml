@@ -37,7 +37,6 @@ jobs:
       working-directory: ./tmp/rca
       run: ./gradlew jacocoTestReport
     - name: Upload coverage report
-      working-directory: ./tmp/rca
       uses: codecov/codecov-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
