@@ -15,7 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.ResourceFlowUnitFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.SQL_SCHEMA_CONSTANTS;

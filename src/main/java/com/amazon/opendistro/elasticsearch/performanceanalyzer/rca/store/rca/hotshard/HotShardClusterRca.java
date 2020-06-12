@@ -15,8 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.HardwareEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardClusterRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;

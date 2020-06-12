@@ -1,15 +1,12 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.SubscribeResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
 import com.google.common.collect.Sets;
 import java.util.Collections;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 
 public class SubscriptionManagerTest {

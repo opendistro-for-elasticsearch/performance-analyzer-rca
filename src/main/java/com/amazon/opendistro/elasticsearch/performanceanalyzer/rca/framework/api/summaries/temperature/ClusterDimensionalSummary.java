@@ -15,7 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;

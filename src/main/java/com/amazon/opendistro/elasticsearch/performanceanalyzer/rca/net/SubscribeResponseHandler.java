@@ -15,8 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.SubscribeResponse;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.SubscribeResponse.SubscriptionStatus;
 import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;

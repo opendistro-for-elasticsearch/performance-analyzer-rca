@@ -2,7 +2,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetServer;

@@ -1,8 +1,8 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.HardwareEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.JvmEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.ResourceType;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;

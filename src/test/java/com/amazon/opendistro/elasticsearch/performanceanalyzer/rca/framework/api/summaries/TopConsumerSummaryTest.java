@@ -15,8 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.TopConsumerSummaryMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.TopConsumerSummaryMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.TopConsumerSummary.SQL_SCHEMA_CONSTANTS;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;

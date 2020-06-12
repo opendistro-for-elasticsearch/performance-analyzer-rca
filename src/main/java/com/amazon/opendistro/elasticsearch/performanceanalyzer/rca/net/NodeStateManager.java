@@ -15,7 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.SubscribeResponse.SubscriptionStatus;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.util.ClusterUtils;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;

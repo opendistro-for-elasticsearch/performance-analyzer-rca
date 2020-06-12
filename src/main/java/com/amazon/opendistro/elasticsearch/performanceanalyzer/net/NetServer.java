@@ -16,13 +16,13 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.net;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.CertificateUtils;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpcServiceGrpc;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsRequest;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsResponse;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PublishResponse;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.InterNodeRpcServiceGrpc;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.MetricsRequest;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.MetricsResponse;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.PublishResponse;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.SubscribeMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.SubscribeResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.handler.MetricsServerHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.handler.PublishRequestHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.handler.SubscribeServerHandler;

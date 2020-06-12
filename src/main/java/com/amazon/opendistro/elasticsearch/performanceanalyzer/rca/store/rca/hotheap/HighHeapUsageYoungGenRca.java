@@ -20,10 +20,9 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.Al
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.JvmEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageYoungGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
@@ -39,7 +38,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaVerticesMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.time.Clock;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

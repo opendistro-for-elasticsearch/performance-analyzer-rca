@@ -15,10 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericFlowUnit;
-import java.util.List;
-import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.Result;
 

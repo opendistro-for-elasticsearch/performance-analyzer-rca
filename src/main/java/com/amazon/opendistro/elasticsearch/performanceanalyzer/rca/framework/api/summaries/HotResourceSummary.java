@@ -15,9 +15,9 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.HotResourceSummaryMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.JooqFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.google.gson.JsonElement;
@@ -96,7 +96,7 @@ public class HotResourceSummary extends GenericSummary {
 
   /**
    * buildHotResourceSummaryFromMessage() requires each nestedSummaryList element to be of the
-   * {@link com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.TopConsumerSummaryMessage} class, otherwise the
+   * {@link com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.TopConsumerSummaryMessage} class, otherwise the
    * method will throw a {@link ClassCastException} upon invocation. We override addNestedSummaryList() s.t. user
    * error cannot cause an Exception.
    */

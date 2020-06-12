@@ -15,12 +15,12 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PANetworking;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType.ResourceTypeOneofCase;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.HardwareEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.JvmEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.PANetworking;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.ResourceType.ResourceTypeOneofCase;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.ResourceTypeOptions;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ProtocolMessageEnum;
 import javax.annotation.Nullable;

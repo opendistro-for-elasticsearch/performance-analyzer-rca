@@ -15,7 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceContextMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.ResourceContextMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericContext;
 import java.util.ArrayList;

@@ -20,9 +20,9 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.Al
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.HOT_SHARD_RCA_ERROR_METRIC;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.HardwareEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;

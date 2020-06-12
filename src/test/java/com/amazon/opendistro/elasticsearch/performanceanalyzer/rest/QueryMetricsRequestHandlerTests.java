@@ -17,7 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rest;
 
 import static org.junit.Assert.assertEquals;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsResponse;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.MetricsResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.OSMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsRestUtil;

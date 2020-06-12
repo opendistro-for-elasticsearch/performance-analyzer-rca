@@ -16,8 +16,8 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.net;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpcServiceGrpc;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpcServiceGrpc.InterNodeRpcServiceStub;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.InterNodeRpcServiceGrpc;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.InterNodeRpcServiceGrpc.InterNodeRpcServiceStub;
 import com.google.common.annotations.VisibleForTesting;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;

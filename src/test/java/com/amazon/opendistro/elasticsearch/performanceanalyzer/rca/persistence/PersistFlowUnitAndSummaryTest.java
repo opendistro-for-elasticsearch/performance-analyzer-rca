@@ -16,8 +16,8 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerThreads;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.JvmEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;

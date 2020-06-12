@@ -68,7 +68,7 @@
     </Match>
     <!--Exclude gRPC generated classes-->
     <Match>
-        <Package name="com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc"/>
+        <Package name="com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc"/>
         <Or>
             <Bug pattern="SE_BAD_FIELD"/>
             <Bug pattern="UCF_USELESS_CONTROL_FLOW"/>

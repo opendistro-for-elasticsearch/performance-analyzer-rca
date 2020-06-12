@@ -16,9 +16,9 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.SubscribeMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.SubscribeResponse;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.SubscribeResponse.SubscriptionStatus;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.requests.CompositeSubscribeRequest;

@@ -15,8 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.handler;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsRequest;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsResponse;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.MetricsRequest;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.MetricsResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
 import io.grpc.stub.StreamObserver;

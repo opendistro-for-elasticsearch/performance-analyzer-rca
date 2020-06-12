@@ -5,9 +5,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.SubscribeMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.SubscribeResponse;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc.SubscribeResponse.SubscriptionStatus;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.requests.CompositeSubscribeRequest;
