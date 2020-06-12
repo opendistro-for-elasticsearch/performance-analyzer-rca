@@ -60,7 +60,7 @@ public class HotNodeRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
   @Override
   public ResourceFlowUnit<HotNodeSummary> operate() {
     counter++;
-    List<GenericSummary> hotResourceSummaryList = new ArrayList<>();
+    List<HotResourceSummary> hotResourceSummaryList = new ArrayList<>();
     for (int i = 0; i < hotResourceRcas.length; i++) {
       final List<ResourceFlowUnit<HotResourceSummary>> hotResourceFlowUnits = hotResourceRcas[i].getFlowUnits();
       for (final ResourceFlowUnit<HotResourceSummary> hotResourceFlowUnit : hotResourceFlowUnits) {
@@ -82,8 +82,8 @@ public class HotNodeRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
           .getCurrentNodeDetails();
       HotNodeSummary summary = new HotNodeSummary(currentNode.getId(), currentNode.getHostAddress());
 
-      if (!hotResourceSummaryList.isEmpty()) {
-        summary.addNestedSummaryList(hotResourceSummaryList);
+      for (HotResourceSummary hotResourceSummary : hotResourceSummaryList) {
+        summary.appendNestedSummary(hotResourceSummary);
       }
 
       if (hasUnhealthyFlowUnit) {

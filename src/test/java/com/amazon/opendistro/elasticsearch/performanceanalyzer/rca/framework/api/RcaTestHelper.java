@@ -54,7 +54,7 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
     HotResourceSummary resourceSummary = new HotResourceSummary(type,
         10, 5, 60);
     HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, "127.0.0.0");
-    nodeSummary.addNestedSummaryList(resourceSummary);
+    nodeSummary.appendNestedSummary(resourceSummary);
     return new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(healthy), nodeSummary);
   }
 
@@ -68,7 +68,7 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
     hotShardSummary.setIoSysCallrate(io_sys_callrate);
     hotShardSummary.setIoSysCallrateThreshold(0.50);
     HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, "127.0.0.0");
-    nodeSummary.addNestedSummaryList(Arrays.asList(hotShardSummary));
+    nodeSummary.appendNestedSummary(hotShardSummary);
     return new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(health), nodeSummary);
   }
 }

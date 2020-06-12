@@ -138,7 +138,7 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>>
      *
      */
     private void findHotShardAndCreateSummary(Table<String, NodeShardKey, Double> resourceInfoTable, double thresholdInPercentage,
-                                              List<GenericSummary> hotResourceSummaryList, ResourceType resourceType) {
+                                              List<HotResourceSummary> hotResourceSummaryList, ResourceType resourceType) {
         for (String indexName : resourceInfoTable.rowKeySet()) {
             Map<NodeShardKey, Double> perIndexShardInfo = resourceInfoTable.row(indexName);
             double thresholdValue = getThresholdValue(perIndexShardInfo, thresholdInPercentage);
@@ -181,7 +181,7 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>>
         }
 
         if (counter >= rcaPeriod) {
-            List<GenericSummary> hotShardSummaryList = new ArrayList<>();
+            List<HotResourceSummary> hotShardSummaryList = new ArrayList<>();
             ResourceContext context;
             HotClusterSummary summary = new HotClusterSummary(
                     ClusterDetailsEventProcessor.getNodesDetails().size(), unhealthyNodes.size());
@@ -203,7 +203,12 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>>
                 context = new ResourceContext(Resources.State.HEALTHY);
             } else {
                 context = new ResourceContext(Resources.State.UNHEALTHY);
-                summary.addNestedSummaryList(hotShardSummaryList);
+                ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor.getCurrentNodeDetails();
+                HotNodeSummary nodeSummary = new HotNodeSummary(currentNode.getId(), currentNode.getHostAddress());
+                for (HotResourceSummary hotResourceSummary : hotShardSummaryList) {
+                    nodeSummary.appendNestedSummary(hotResourceSummary);
+                }
+                summary.appendNestedSummary(nodeSummary);
                 LOG.debug("rca: Hot Shards Identified: {}", hotShardSummaryList);
             }
 
