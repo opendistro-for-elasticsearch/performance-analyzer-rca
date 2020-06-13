@@ -108,6 +108,18 @@ The sample RCA response from above api
 }
 ```
 
+### Temperature profiles
+------------------------
+There are ways to get the temperature profile of a cluster and of individual nodes.
+
+The cluster level RCA can only be queried from the elected master using the following rest API.
+
+`curl "localhost:9600/_opendistro/_performanceanalyzer/rca?name=ClusterTemperatureRca"`
+
+In order to get the temperature of a particular node, we can use:
+
+`curl "localhost:9600/_opendistro/_performanceanalyzer/rca?name=AllTemperatureDimensions&local=true"`
+
 ## Building, Deploying, and Running the RCA Framework
 Please refer to the [Install Guide](./INSTALL.md) for detailed information on building, installing and running the RCA framework.
 

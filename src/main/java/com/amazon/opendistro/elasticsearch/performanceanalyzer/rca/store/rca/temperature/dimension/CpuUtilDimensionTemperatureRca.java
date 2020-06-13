@@ -15,10 +15,12 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.DimensionalTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.AvgCpuUtilByShardsMetricBasedTemperatureCalculator;
@@ -42,12 +44,13 @@ public class CpuUtilDimensionTemperatureRca extends Rca<DimensionalTemperatureFl
     public static final TemperatureVector.NormalizedValue THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT =
             new TemperatureVector.NormalizedValue((short) 2);
 
-    public CpuUtilDimensionTemperatureRca(ShardStore shardStore,
+    public CpuUtilDimensionTemperatureRca(final long evaluationIntervalSeconds,
+                                          ShardStore shardStore,
                                           CpuUtilByShardsMetricBasedTemperatureCalculator cpuUtilByShard,
                                           AvgCpuUtilByShardsMetricBasedTemperatureCalculator avgCpuUtilByShards,
                                           ShardIndependentTemperatureCalculatorCpuUtilMetric shardIndependentCpuUtilMetric,
                                           TotalCpuUtilForTotalNodeMetric cpuUtilPeakUsage) {
-        super(5);
+        super(evaluationIntervalSeconds);
         this.CPU_UTIL_PEAK_USAGE = cpuUtilPeakUsage;
         this.CPU_UTIL_BY_SHARD = cpuUtilByShard;
         this.CPU_UTIL_SHARD_INDEPENDENT = shardIndependentCpuUtilMetric;
@@ -62,14 +65,18 @@ public class CpuUtilDimensionTemperatureRca extends Rca<DimensionalTemperatureFl
 
     @Override
     public DimensionalTemperatureFlowUnit operate() {
-        LOG.error("executing: {}", name());
-        DimensionalTemperatureFlowUnit flowUnit = DimensionalTemperatureCalculator.getTemperatureForDimension(
+        DimensionalTemperatureFlowUnit cpuUtilTemperatureFlowUnit = DimensionalTemperatureCalculator.getTemperatureForDimension(
                 shardStore,
-                TemperatureVector.Dimension.CPU_Utilization,
+                TemperatureDimension.CPU_Utilization,
                 CPU_UTIL_BY_SHARD,
                 AVG_CPU_UTIL_BY_SHARD, CPU_UTIL_SHARD_INDEPENDENT, CPU_UTIL_PEAK_USAGE,
                 THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT);
-        LOG.error("Dimensional temperature calculated: {}", flowUnit.getNodeDimensionProfile());
-        return flowUnit;
+        LOG.info("CPU Utilization temperature calculated: {}",
+                cpuUtilTemperatureFlowUnit.getNodeDimensionProfile());
+        ResourceContext context = (cpuUtilTemperatureFlowUnit.getNodeDimensionProfile().getMeanTemperature()
+                .isGreaterThan(THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT)) ? new ResourceContext(Resources.State.UNHEALTHY) :
+                new ResourceContext(Resources.State.HEALTHY);
+        cpuUtilTemperatureFlowUnit.setResourceContext(context);
+        return cpuUtilTemperatureFlowUnit;
     }
 }

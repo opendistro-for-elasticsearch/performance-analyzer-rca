@@ -21,11 +21,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.SummaryBuilder;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.CompactNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.NodeLevelDimensionalSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -93,7 +95,7 @@ class SQLitePersistor extends PersistorBase {
    */
   @Override
   synchronized void createTable(String tableName, List<Field<?>> columns, String referenceTableName,
-      String referenceTablePrimaryKeyFieldName) throws SQLException {
+                                String referenceTablePrimaryKeyFieldName) throws SQLException {
     Field foreignKeyField = DSL.field(referenceTablePrimaryKeyFieldName, Integer.class);
     columns.add(foreignKeyField);
     Table referenceTable = DSL.table(referenceTableName);
@@ -139,14 +141,13 @@ class SQLitePersistor extends PersistorBase {
     JsonObject tablesObject = new JsonObject();
     super.tableNames.forEach(
         table -> {
-            String tableStr = readTable(table);
-            try {
-              JsonElement tableElement = jsonParser.parse(tableStr);
-              tablesObject.add(table, tableElement);
-            }
-            catch (JsonSyntaxException se) {
-              LOG.error("RCA: Json parsing fails when reading from table {}", table);
-            }
+          String tableStr = readTable(table);
+          try {
+            JsonElement tableElement = jsonParser.parse(tableStr);
+            tablesObject.add(table, tableElement);
+          } catch (JsonSyntaxException se) {
+            LOG.error("RCA: Json parsing fails when reading from table {}", table);
+          }
         }
     );
     return tablesObject.toString();
@@ -162,8 +163,7 @@ class SQLitePersistor extends PersistorBase {
             .from(tableName)
             .orderBy(ResourceFlowUnitFieldValue.RCA_NAME_FILELD.getField())
             .fetch();
-      }
-      else {
+      } else {
         result = create.select().from(tableName).fetch();
       }
       tableStr = result.formatJSON(new JSONFormat().header(false));
@@ -174,14 +174,105 @@ class SQLitePersistor extends PersistorBase {
     return tableStr;
   }
 
-  // TODO: we only query the most recent RCA entry in this API. might need to extend this
-  // to support range query based on timestamp.
-  @Override
-  public synchronized RcaResponse readRca(String rca) {
-    // TODO: Need to generalize the persistence logic further.
-    if (SQLiteQueryUtils.isTemperatureProfileRca(rca)) {
-      return readTemperatureProfileRca(rca);
+  /**
+   * FullTemperatureSummary is not one single Rca, instead it is a conglomeration of
+   * temperature across all dimensions. Therefore, it iterates over all the dimensional tables
+   * to arrive at that result.
+   *
+   * @return Returns a JsonObject with full temperature profile.
+   */
+  private JsonElement constructFullTemperatureProfile() {
+    JsonObject rcaResponseJson = null;
+    JsonArray nodeDimensionalSummary = null;
+    String summaryName = NodeLevelDimensionalSummary.SUMMARY_TABLE_NAME;
+
+    // We use the JsonObject returned as part of the first dimension as the template and then
+    // for each subsequent dimension, we extend the json Array we have from the first dimension.
+    for (String dimension : SQLiteQueryUtils.temperatureProfileDimensionRCASet) {
+      if (rcaResponseJson == null) {
+        rcaResponseJson = readTemperatureProfileRca(dimension).getAsJsonObject();
+        JsonElement elem = rcaResponseJson.get(summaryName);
+        if (elem == null) {
+          rcaResponseJson = null;
+          continue;
+        }
+        nodeDimensionalSummary = rcaResponseJson.get(summaryName).getAsJsonArray();
+        nodeDimensionalSummary.get(0).getAsJsonObject().addProperty(
+            ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME,
+            rcaResponseJson.get(ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME).getAsString());
+
+      } else {
+        JsonObject resp = readTemperatureProfileRca(dimension).getAsJsonObject();
+        if (resp != null && resp.getAsJsonObject().get(summaryName) != null) {
+          JsonObject obj =
+              resp.getAsJsonObject().get(summaryName).getAsJsonArray().get(0).getAsJsonObject();
+          obj.addProperty(ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME,
+              resp.get(ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME).getAsString());
+          nodeDimensionalSummary.add(obj);
+        }
+      }
     }
+
+    if (rcaResponseJson != null) {
+      // This is the name of the first dimension ans hence confusing. This element is redundant
+      // anyways as the top level object is the name of the RCA queried for.
+      rcaResponseJson.remove(ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.RCA_COL_NAME);
+
+      // State of a temperature profile RCA has no meaning. SO we remove this.
+      rcaResponseJson.remove(ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.STATE_COL_NAME);
+
+      // Timestamp field exists for each dimension. A top level timestamp is not required.
+      rcaResponseJson.remove(ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME);
+    }
+    return rcaResponseJson;
+  }
+
+  private void readSummary(GenericSummary upperLevelSummary, int upperLevelPrimaryKey) {
+    String upperLevelTable = upperLevelSummary.getTableName();
+
+    // stop the recursion here if the summary does not have any nested summary table.
+    if (upperLevelSummary.getNestedSummaryTables() == null) {
+      return;
+    }
+
+    for (String nestedTableName : upperLevelSummary.getNestedSummaryTables()) {
+      Field<Integer> foreignKeyField = DSL.field(
+          SQLiteQueryUtils.getPrimaryKeyColumnName(upperLevelTable), Integer.class);
+      SelectJoinStep<Record> rcaQuery = SQLiteQueryUtils
+          .buildSummaryQuery(create, nestedTableName, upperLevelPrimaryKey, foreignKeyField);
+      try {
+        Result<Record> recordList = rcaQuery.fetch();
+        for (Record record : recordList) {
+          GenericSummary summary = upperLevelSummary.buildNestedSummary(nestedTableName, record);
+          if (summary != null) {
+            Field<Integer> primaryKeyField = DSL.field(
+                SQLiteQueryUtils.getPrimaryKeyColumnName(summary.getTableName()), Integer.class);
+            readSummary(summary, record.get(primaryKeyField));
+          }
+        }
+      } catch (DataAccessException de) {
+        // it is totally fine if we fail to read some certain tables as some types of summaries might be missing
+        LOG.warn("Fail to read Summary table : {}, query = {},  exceptions : {}",
+            nestedTableName, rcaQuery.toString(), de.getStackTrace());
+      } catch (IllegalArgumentException ie) {
+        LOG.error("Reading nested summary from wrong table, message : {}", ie.getMessage());
+      }
+    }
+  }
+
+  private JsonElement getTemperatureRca(String rca) {
+    JsonElement temperatureRcaJson;
+    switch (rca) {
+      case SQLiteQueryUtils.ALL_TEMPERATURE_DIMENSIONS:
+        temperatureRcaJson = constructFullTemperatureProfile();
+        break;
+      default:
+        temperatureRcaJson = readTemperatureProfileRca(rca);
+    }
+    return temperatureRcaJson;
+  }
+
+  private JsonElement getNonTemperatureRcas(String rca) {
     RcaResponse response = null;
     Field<Integer> primaryKeyField = DSL.field(
         SQLiteQueryUtils.getPrimaryKeyColumnName(ResourceFlowUnit.RCA_TABLE_NAME), Integer.class);
@@ -199,10 +290,27 @@ class SQLitePersistor extends PersistorBase {
       // it is totally fine if we fail to read some certain tables.
       LOG.warn("Fail to read RCA : {}, query = {},  exceptions : {}", rca, rcaQuery.toString(), de.getStackTrace());
     }
-    return response;
+    JsonElement ret = null;
+    if (response != null) {
+      ret = response.toJson();
+    }
+    return ret;
   }
 
-  private RcaResponse readTemperatureProfileRca(String rca) {
+  // TODO: we only query the most recent RCA entry in this API. might need to extend this
+  // to support range query based on timestamp.
+  @Override
+  public synchronized JsonElement readRca(String rca) {
+    JsonElement json;
+    if (SQLiteQueryUtils.isTemperatureProfileRca(rca)) {
+      json = getTemperatureRca(rca);
+    } else {
+      json = getNonTemperatureRcas(rca);
+    }
+    return json;
+  }
+
+  private JsonElement readTemperatureProfileRca(String rca) {
     RcaResponse response = null;
     Field<Integer> primaryKeyField = DSL.field(
         SQLiteQueryUtils.getPrimaryKeyColumnName(ResourceFlowUnit.RCA_TABLE_NAME), Integer.class);
@@ -210,7 +318,7 @@ class SQLitePersistor extends PersistorBase {
     try {
       List<Record> recordList = rcaQuery.fetch();
       if (recordList == null || recordList.isEmpty()) {
-        return null;
+        return new JsonObject();
       }
       Record mostRecentRecord = recordList.get(0);
       response = RcaResponse.buildResponse(mostRecentRecord);
@@ -231,51 +339,36 @@ class SQLitePersistor extends PersistorBase {
             ClusterTemperatureSummary.buildSummaryFromDatabase(temperatureSummary, create);
         response.addNestedSummaryList(summary);
       } else if (rca.equalsIgnoreCase(NodeTemperatureRca.TABLE_NAME)) {
-        SelectJoinStep<Record> query = SQLiteQueryUtils.buildSummaryQuery(create,
-            "CompactNodeSummary", mostRecentRecord.get(primaryKeyField), primaryKeyField);
+        SelectJoinStep<Record> query = SQLiteQueryUtils.buildSummaryQuery(
+            create,
+            CompactNodeSummary.TABLE_NAME,
+            mostRecentRecord.get(primaryKeyField),
+            primaryKeyField);
         Result<Record> nodeTemperatureCompactSummary = query.fetch();
         GenericSummary summary =
-            CompactNodeSummary.buildSummaryFromDatabase(nodeTemperatureCompactSummary, create);
+            CompactNodeSummary.buildSummaryFromDatabase(
+                nodeTemperatureCompactSummary, create);
         response.addNestedSummaryList(summary);
+      } else {
+        // This gives you the full temperature profile for this node.
+        SelectJoinStep<Record> query = SQLiteQueryUtils.buildSummaryQuery(
+            create,
+            NodeLevelDimensionalSummary.SUMMARY_TABLE_NAME,
+            mostRecentRecord.get(primaryKeyField),
+            primaryKeyField);
+        Result<Record> result = query.fetch();
+        GenericSummary nodeLevelDimSummary =
+            NodeLevelDimensionalSummary.buildFromDb(result.get(0), create);
+        response.addNestedSummaryList(nodeLevelDimSummary);
       }
     } catch (DataAccessException dex) {
       LOG.error("Failed to read temperature profile RCA for {}", rca, dex);
-      dex.printStackTrace();
-    }
-
-    return response;
-  }
-
-  private void readSummary(GenericSummary upperLevelSummary, int upperLevelPrimaryKey) {
-    String upperLevelTable = upperLevelSummary.getTableName();
-    List<SummaryBuilder<? extends GenericSummary>> builders = upperLevelSummary.getNestedSummaryBuilder();
-
-    // stop the recursion here if the table does not have any nested summary.
-    if (builders == null) {
-      return;
-    }
-    for (SummaryBuilder builder : builders) {
-      Field<Integer> foreignKeyField = DSL.field(
-          SQLiteQueryUtils.getPrimaryKeyColumnName(upperLevelTable), Integer.class);
-      SelectJoinStep<Record> rcaQuery = SQLiteQueryUtils
-          .buildSummaryQuery(create, builder.getTableName(), upperLevelPrimaryKey, foreignKeyField);
-      try {
-        Result<Record> recordList = rcaQuery.fetch();
-        for (Record record : recordList) {
-          GenericSummary summary = builder.buildSummary(record);
-          if (summary != null) {
-            Field<Integer> primaryKeyField = DSL.field(
-                SQLiteQueryUtils.getPrimaryKeyColumnName(summary.getTableName()), Integer.class);
-            readSummary(summary, record.get(primaryKeyField));
-            upperLevelSummary.addNestedSummaryList(summary);
-          }
-        }
-      }
-      catch (DataAccessException de) {
-        // it is totally fine if we fail to read some certain tables as some types of summaries might be missing
-        LOG.warn("Fail to read Summary table : {}, query = {},  exceptions : {}",
-            builder.getTableName(), rcaQuery.toString(), de.getStackTrace());
+      if (dex.getMessage().contains("no such table")) {
+        JsonObject json = new JsonObject();
+        json.addProperty("error", "RCAs are not created yet.");
+        return json;
       }
     }
+    return response.toJson();
   }
 }

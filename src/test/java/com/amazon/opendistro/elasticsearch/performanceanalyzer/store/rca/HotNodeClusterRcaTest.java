@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
@@ -28,7 +29,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
 import java.sql.SQLException;
@@ -93,7 +93,7 @@ public class HotNodeClusterRcaTest {
     fu = clusterRca.operate();
     Assert.assertTrue(fu.getResourceContext().isUnhealthy());
     Assert.assertTrue(fu.hasResourceSummary());
-    HotClusterSummary clusterSummary = (HotClusterSummary) fu.getResourceSummary();
+    HotClusterSummary clusterSummary = (HotClusterSummary) fu.getSummary();
     Assert.assertTrue(clusterSummary.getNumOfUnhealthyNodes() == 1);
     Assert.assertTrue(clusterSummary.getNestedSummaryList().size() > 0);
 
@@ -136,7 +136,7 @@ public class HotNodeClusterRcaTest {
     HotResourceSummary resourceSummary = new HotResourceSummary(type,
         10, val, 60);
     HotNodeSummary nodeSummary = new HotNodeSummary(nodeId, "127.0.0.0");
-    nodeSummary.addNestedSummaryList(resourceSummary);
+    nodeSummary.appendNestedSummary(resourceSummary);
     return new ResourceFlowUnit(System.currentTimeMillis(), new ResourceContext(Resources.State.HEALTHY), nodeSummary);
   }
 

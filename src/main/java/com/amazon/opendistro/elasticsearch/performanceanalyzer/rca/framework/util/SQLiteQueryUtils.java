@@ -17,13 +17,16 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ut
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.ResourceFlowUnitFieldValue;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.NodeLevelDimensionalSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ShardProfileSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterDimensionalSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.HeapAllocRateTemperatureRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.ShardSizeDimensionTemperatureRca;
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,21 +44,12 @@ import org.jooq.impl.DSL;
  * A utility class to query cluster, node and resource level summary for a rca
  */
 public class SQLiteQueryUtils {
-  private static final Map<String, String> temperatureProfileNestedSummaryMap;
   private static final Set<String> clusterLevelRCA;
   private static final Set<String> temperatureProfileRCASet;
 
-  static {
-    Map<String, String> temperatureSummaryMap = new HashMap<>();
-    temperatureSummaryMap.put(ResourceFlowUnit.RCA_TABLE_NAME,
-        NodeLevelDimensionalSummary.SUMMARY_TABLE_NAME);
-    temperatureSummaryMap.put(NodeLevelDimensionalSummary.SUMMARY_TABLE_NAME,
-        NodeLevelDimensionalSummary.ZONE_SUMMARY_TABLE_NAME);
-    temperatureSummaryMap.put(NodeLevelDimensionalSummary.ZONE_SUMMARY_TABLE_NAME,
-        ShardProfileSummary.SUMMARY_TABLE_NAME);
+  public static final Set<String> temperatureProfileDimensionRCASet;
 
-    temperatureProfileNestedSummaryMap = Collections.unmodifiableMap(temperatureSummaryMap);
-  }
+  public static final String ALL_TEMPERATURE_DIMENSIONS = "AllTemperatureDimensions";
 
   // RCAs that can be queried by RCA API
   // currently we can only query from the cluster level RCAs
@@ -71,8 +65,18 @@ public class SQLiteQueryUtils {
 
   // Temperature profile RCAs that can be queried by the RCA API.
   static {
+    Set<String> temperatureDimensions = new HashSet<>();
+    temperatureDimensions.add(CpuUtilDimensionTemperatureRca.class.getSimpleName());
+    temperatureDimensions.add(HeapAllocRateTemperatureRca.class.getSimpleName());
+    temperatureDimensions.add(ShardSizeDimensionTemperatureRca.class.getSimpleName());
+
+    temperatureProfileDimensionRCASet = Collections.unmodifiableSet(temperatureDimensions);
+
     Set<String> tempProfileRcaSet = new HashSet<>();
 
+    tempProfileRcaSet.addAll(temperatureProfileDimensionRCASet);
+
+    tempProfileRcaSet.add(ALL_TEMPERATURE_DIMENSIONS);
     tempProfileRcaSet.add(NodeTemperatureRca.TABLE_NAME);
     tempProfileRcaSet.add(ClusterTemperatureRca.TABLE_NAME);
     temperatureProfileRCASet = Collections.unmodifiableSet(tempProfileRcaSet);

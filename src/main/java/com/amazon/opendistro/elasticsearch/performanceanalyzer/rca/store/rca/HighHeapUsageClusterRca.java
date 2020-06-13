@@ -16,7 +16,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
@@ -50,14 +49,14 @@ import org.apache.logging.log4j.Logger;
  * consecutive flowunits are unhealthy. And if any node is unthleath, the entire cluster will be
  * considered as unhealthy and send out corresponding flowunits to downstream nodes.
  */
-public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
+public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
 
   public static final String RCA_TABLE_NAME = HighHeapUsageClusterRca.class.getSimpleName();
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageClusterRca.class);
   private static final int UNHEALTHY_FLOWUNIT_THRESHOLD = 3;
   private static final int CACHE_EXPIRATION_TIMEOUT = 10;
-  private final Rca<ResourceFlowUnit> hotNodeRca;
-  private final LoadingCache<String, ImmutableList<ResourceFlowUnit>> nodeStateCache;
+  private final Rca<ResourceFlowUnit<HotNodeSummary>> hotNodeRca;
+  private final LoadingCache<String, ImmutableList<ResourceFlowUnit<HotNodeSummary>>> nodeStateCache;
   private final int rcaPeriod;
   private int counter;
 
@@ -71,38 +70,32 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
                     .maximumSize(1000)
                     .expireAfterWrite(CACHE_EXPIRATION_TIMEOUT, TimeUnit.MINUTES)
                     .build(
-                        new CacheLoader<String, ImmutableList<ResourceFlowUnit>>() {
-                          public ImmutableList<ResourceFlowUnit> load(String key) {
+                        new CacheLoader<String, ImmutableList<ResourceFlowUnit<HotNodeSummary>>>() {
+                          public ImmutableList<ResourceFlowUnit<HotNodeSummary>> load(String key) {
                             return ImmutableList.copyOf(new ArrayList<>());
                           }
                         });
   }
 
-  private List<GenericSummary> getUnhealthyNodeList() {
-    List<GenericSummary> unhealthyNodeList = new ArrayList<>();
-    ConcurrentMap<String, ImmutableList<ResourceFlowUnit>> currentMap =
+  private List<HotNodeSummary> getUnhealthyNodeList() {
+    List<HotNodeSummary> unhealthyNodeList = new ArrayList<>();
+    ConcurrentMap<String, ImmutableList<ResourceFlowUnit<HotNodeSummary>>> currentMap =
         this.nodeStateCache.asMap();
     for (ClusterDetailsEventProcessor.NodeDetails nodeDetails : ClusterDetailsEventProcessor
         .getDataNodesDetails()) {
-      ImmutableList<ResourceFlowUnit> nodeStateList = currentMap.get(nodeDetails.getId());
+      ImmutableList<ResourceFlowUnit<HotNodeSummary>> nodeStateList = currentMap.get(nodeDetails.getId());
       if (nodeStateList != null) {
         List<HotResourceSummary> oldGenSummaries = new ArrayList<>();
         List<HotResourceSummary> youngGenSummaries = new ArrayList<>();
-        for (ResourceFlowUnit flowUnit : nodeStateList) {
+        for (ResourceFlowUnit<HotNodeSummary> flowUnit : nodeStateList) {
           if (flowUnit.getResourceContext().getState() == Resources.State.UNHEALTHY) {
-            HotNodeSummary currentNodSummary = (HotNodeSummary) flowUnit.getResourceSummary();
-            for (GenericSummary genericSummary : currentNodSummary.getNestedSummaryList()) {
-              if (genericSummary instanceof HotResourceSummary) {
-                HotResourceSummary resourceSummary = (HotResourceSummary) genericSummary;
-                if (resourceSummary.getResourceType().getJVM() == JvmEnum.YOUNG_GEN) {
-                  youngGenSummaries.add(resourceSummary);
-                }
-                else if (resourceSummary.getResourceType().getJVM() == JvmEnum.OLD_GEN) {
-                  oldGenSummaries.add(resourceSummary);
-                }
+            HotNodeSummary currentNodSummary = flowUnit.getSummary();
+            for (HotResourceSummary resourceSummary : currentNodSummary.getHotResourceSummaryList()) {
+              if (resourceSummary.getResourceType().getJVM() == JvmEnum.YOUNG_GEN) {
+                youngGenSummaries.add(resourceSummary);
               }
-              else {
-                LOG.error("RCA : The summary that hot node RCA carries is not resource type summary. ");
+              else if (resourceSummary.getResourceType().getJVM() == JvmEnum.OLD_GEN) {
+                oldGenSummaries.add(resourceSummary);
               }
             }
           }
@@ -112,10 +105,10 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
         if (youngGenSummaries.size() >= UNHEALTHY_FLOWUNIT_THRESHOLD || oldGenSummaries.size() >= UNHEALTHY_FLOWUNIT_THRESHOLD) {
           HotNodeSummary nodeSummary = new HotNodeSummary(nodeDetails.getId(), nodeDetails.getHostAddress());
           if (youngGenSummaries.size() >= UNHEALTHY_FLOWUNIT_THRESHOLD) {
-            nodeSummary.addNestedSummaryList(youngGenSummaries.get(0));
+            nodeSummary.appendNestedSummary(youngGenSummaries.get(0));
           }
           if (oldGenSummaries.size() >= UNHEALTHY_FLOWUNIT_THRESHOLD) {
-            nodeSummary.addNestedSummaryList(oldGenSummaries.get(0));
+            nodeSummary.appendNestedSummary(oldGenSummaries.get(0));
           }
           unhealthyNodeList.add(nodeSummary);
         }
@@ -124,9 +117,9 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
     return unhealthyNodeList;
   }
 
-  private void readComputeWrite(String nodeId, ResourceFlowUnit flowUnit)
+  private void readComputeWrite(String nodeId, ResourceFlowUnit<HotNodeSummary> flowUnit)
       throws ExecutionException {
-    ArrayDeque<ResourceFlowUnit> nodeStateDeque =
+    ArrayDeque<ResourceFlowUnit<HotNodeSummary>> nodeStateDeque =
         new ArrayDeque<>(this.nodeStateCache.get(nodeId));
     nodeStateDeque.addFirst(flowUnit);
     if (nodeStateDeque.size() > UNHEALTHY_FLOWUNIT_THRESHOLD) {
@@ -136,26 +129,22 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
   }
 
   @Override
-  public ResourceFlowUnit operate() {
-    List<ResourceFlowUnit> hotNodeRcaFlowUnits = hotNodeRca.getFlowUnits();
+  public ResourceFlowUnit<HotClusterSummary> operate() {
+    List<ResourceFlowUnit<HotNodeSummary>> hotNodeRcaFlowUnits = hotNodeRca.getFlowUnits();
     counter += 1;
-    for (ResourceFlowUnit hotNodeRcaFlowUnit : hotNodeRcaFlowUnits) {
+    for (ResourceFlowUnit<HotNodeSummary> hotNodeRcaFlowUnit : hotNodeRcaFlowUnits) {
       if (hotNodeRcaFlowUnit.isEmpty()) {
         continue;
       }
-      if (hotNodeRcaFlowUnit.getResourceSummary() instanceof HotNodeSummary) {
-        String nodeId = ((HotNodeSummary) hotNodeRcaFlowUnit.getResourceSummary()).getNodeID();
-        try {
-          readComputeWrite(nodeId, hotNodeRcaFlowUnit);
-        } catch (ExecutionException e) {
-          LOG.debug("ExecutionException occurs when retrieving key {}", nodeId);
-        }
-      } else {
-        LOG.error("Receive flowunit from unexpected rca node");
+      String nodeId = hotNodeRcaFlowUnit.getSummary().getNodeID();
+      try {
+        readComputeWrite(nodeId, hotNodeRcaFlowUnit);
+      } catch (ExecutionException e) {
+        LOG.debug("ExecutionException occurs when retrieving key {}", nodeId);
       }
     }
     if (counter == rcaPeriod) {
-      List<GenericSummary> unhealthyNodeList = getUnhealthyNodeList();
+      List<HotNodeSummary> unhealthyNodeList = getUnhealthyNodeList();
       counter = 0;
       ResourceContext context = null;
       HotClusterSummary summary = null;
@@ -164,17 +153,19 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit> {
         context = new ResourceContext(Resources.State.UNHEALTHY);
         summary = new HotClusterSummary(ClusterDetailsEventProcessor.getNodesDetails().size(),
             unhealthyNodeList.size());
-        summary.addNestedSummaryList(unhealthyNodeList);
+        for (HotNodeSummary unhealthyNodeSummary : unhealthyNodeList) {
+          summary.appendNestedSummary(unhealthyNodeSummary);
+        }
         PerformanceAnalyzerApp.RCA_VERTICES_METRICS_AGGREGATOR.updateStat(
             RcaVerticesMetrics.NUM_HIGH_HEAP_CLUSTER_RCA_TRIGGERED, "", 1);
       } else {
         context = new ResourceContext(Resources.State.HEALTHY);
       }
-      return new ResourceFlowUnit(System.currentTimeMillis(), context, summary, true);
+      return new ResourceFlowUnit<>(System.currentTimeMillis(), context, summary, true);
     } else {
       // we return an empty FlowUnit RCA for now. Can change to healthy (or previous known RCA state)
       LOG.debug("Empty FlowUnit returned for {}", this.getClass().getName());
-      return new ResourceFlowUnit(System.currentTimeMillis());
+      return new ResourceFlowUnit<>(System.currentTimeMillis());
     }
   }
 

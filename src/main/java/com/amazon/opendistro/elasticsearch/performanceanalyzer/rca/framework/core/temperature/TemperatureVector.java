@@ -15,23 +15,14 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.util.Comparator;
 import javax.annotation.Nullable;
 
 public class TemperatureVector {
-    public enum Dimension {
-        CPU_Utilization(com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.CPU_Utilization.NAME),
-        Heap_AllocRate(com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_AllocRate.NAME),
-        IO_READ_SYSCALL_RATE(com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.IO_ReadSyscallRate.NAME),
-        IO_WriteSyscallRate(com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.IO_WriteSyscallRate.NAME);
-
-        public final String NAME;
-
-        Dimension(String name) {
-            this.NAME = name;
-        }
-    }
+    public static final String DIMENSION_KEY = "dimension";
+    public static final String VALUE_KEY = "value";
 
     public static class NormalizedValue {
         public static final int MIN = 0;
@@ -86,36 +77,26 @@ public class TemperatureVector {
     private NormalizedValue[] normalizedValues;
 
     public TemperatureVector() {
-        normalizedValues = new NormalizedValue[Dimension.values().length];
+        normalizedValues = new NormalizedValue[TemperatureDimension.values().length];
     }
 
     @Override
     public String toString() {
-        StringBuilder stringBuilder = new StringBuilder();
-
-        String delimiter = "";
-        for (Dimension dim : Dimension.values()) {
-            String key = dim.NAME;
-            NormalizedValue value = normalizedValues[dim.ordinal()];
-            stringBuilder.append(delimiter).append(key).append(":").append(value);
-            delimiter = ",";
-        }
-
-        return "TemperatureVector{"
-                + stringBuilder.toString()
-                + '}';
+        return toJson().toString();
     }
 
-    public JsonObject toJson() {
-        JsonObject jsonObject = new JsonObject();
-        for (Dimension dim : Dimension.values()) {
-            jsonObject.addProperty("dimension", dim.NAME);
-
+    public JsonArray toJson() {
+        JsonArray array = new JsonArray();
+        for (TemperatureDimension dim : TemperatureDimension.values()) {
             NormalizedValue val = normalizedValues[dim.ordinal()];
-            jsonObject.addProperty("value",
-                    val != null ? val.getPOINTS() : null);
+            if (val != null) {
+                JsonObject jsonObject = new JsonObject();
+                jsonObject.addProperty(DIMENSION_KEY, dim.NAME);
+                jsonObject.addProperty(VALUE_KEY, val.toString());
+                array.add(jsonObject);
+            }
         }
-        return jsonObject;
+        return array;
     }
 
     /**
@@ -125,11 +106,11 @@ public class TemperatureVector {
      * @return The normalized temperature value along that dimension.
      */
     @Nullable
-    public NormalizedValue getTemperatureFor(Dimension dimension) {
+    public NormalizedValue getTemperatureFor(TemperatureDimension dimension) {
         return normalizedValues[dimension.ordinal()];
     }
 
-    public void updateTemperatureForDimension(Dimension dimension,
+    public void updateTemperatureForDimension(TemperatureDimension dimension,
                                               NormalizedValue normalizedValue) {
         normalizedValues[dimension.ordinal()] = normalizedValue;
     }

@@ -21,27 +21,28 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotShardSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public class RcaTestHelper extends Rca<ResourceFlowUnit> {
+public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUnit<T>> {
   public RcaTestHelper() {
     super(5);
   }
 
-  public void mockFlowUnit(ResourceFlowUnit flowUnit) {
+  public void mockFlowUnit(ResourceFlowUnit<T> flowUnit) {
     this.flowUnits = Collections.singletonList(flowUnit);
   }
 
-  public void mockFlowUnits(List<ResourceFlowUnit> flowUnitList) {
+  public void mockFlowUnits(List<ResourceFlowUnit<T>> flowUnitList) {
     this.flowUnits = flowUnitList;
   }
 
   @Override
-  public ResourceFlowUnit operate() {
+  public ResourceFlowUnit<T> operate() {
     return null;
   }
 
@@ -49,16 +50,16 @@ public class RcaTestHelper extends Rca<ResourceFlowUnit> {
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
   }
 
-  public static ResourceFlowUnit generateFlowUnit(ResourceType type, String nodeID, Resources.State healthy) {
+  public static ResourceFlowUnit<HotNodeSummary> generateFlowUnit(ResourceType type, String nodeID, Resources.State healthy) {
     HotResourceSummary resourceSummary = new HotResourceSummary(type,
         10, 5, 60);
     HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, "127.0.0.0");
-    nodeSummary.addNestedSummaryList(resourceSummary);
-    return new ResourceFlowUnit(System.currentTimeMillis(), new ResourceContext(healthy), nodeSummary);
+    nodeSummary.appendNestedSummary(resourceSummary);
+    return new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(healthy), nodeSummary);
   }
 
-  public static ResourceFlowUnit generateFlowUnitForHotShard(String indexName, String shardId, String nodeID, double cpu_utilization,
-                                                             double io_throughput, double io_sys_callrate, Resources.State health) {
+  public static ResourceFlowUnit<HotNodeSummary> generateFlowUnitForHotShard(String indexName, String shardId, String nodeID,
+      double cpu_utilization, double io_throughput, double io_sys_callrate, Resources.State health) {
     HotShardSummary hotShardSummary = new HotShardSummary(indexName, shardId, nodeID, 60);
     hotShardSummary.setcpuUtilization(cpu_utilization);
     hotShardSummary.setCpuUtilizationThreshold(0.50);
@@ -67,7 +68,7 @@ public class RcaTestHelper extends Rca<ResourceFlowUnit> {
     hotShardSummary.setIoSysCallrate(io_sys_callrate);
     hotShardSummary.setIoSysCallrateThreshold(0.50);
     HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, "127.0.0.0");
-    nodeSummary.addNestedSummaryList(Arrays.asList(hotShardSummary));
-    return new ResourceFlowUnit(System.currentTimeMillis(), new ResourceContext(health), nodeSummary);
+    nodeSummary.appendNestedSummary(hotShardSummary);
+    return new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(health), nodeSummary);
   }
 }

@@ -114,7 +114,7 @@ jacoco {
 
 jacocoTestReport {
     reports {
-        xml.enabled false
+        xml.enabled true
         html.enabled true
         csv.enabled false
     }
@@ -296,6 +296,8 @@ task cloneGitRepo(type: GitClone) {
     dockerBuildDir = Paths.get(getProject().getBuildDir().toString(), "docker-build").toString()
     mkdir dockerBuildDir
     if (localPaDir != null && !localPaDir.empty) {
+        // If you already have the performance Analyzer sources checked out then update the
+        // localPaDir in gradle.properties with the path.
         paDir = localPaDir
     } else {
         paDir = Paths.get(dockerBuildDir, "pa").toString()
@@ -575,10 +577,10 @@ task generateLoad {
             //println("starting indexing: " + System.currentTimeMillis())
             runCommand(bulk, null, wdir, false)
             //println("completed indexing: " + System.currentTimeMillis())
-            Thread.sleep(1000)
+            Thread.sleep(3000)
             //println("starting search" + System.currentTimeMillis())
             runCommand(search, null, wdir, false)
-            Thread.sleep(300)
+            Thread.sleep(1000)
             //println("completed search" + System.currentTimeMillis())
             runCommand(deleteIndex, null, wdir, false)
             Thread.sleep(1000)

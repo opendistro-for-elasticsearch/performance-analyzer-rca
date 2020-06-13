@@ -50,11 +50,13 @@ public class HotClusterSummary extends GenericSummary {
   private static final Logger LOG = LogManager.getLogger(HotClusterSummary.class);
   private int numOfNodes;
   private int numOfUnhealthyNodes;
+  private List<HotNodeSummary> hotNodeSummaryList;
 
   public HotClusterSummary(int numOfNodes, int numOfUnhealthyNodes) {
     super();
     this.numOfNodes = numOfNodes;
     this.numOfUnhealthyNodes = numOfUnhealthyNodes;
+    this.hotNodeSummaryList = new ArrayList<>();
   }
 
   /**
@@ -79,6 +81,14 @@ public class HotClusterSummary extends GenericSummary {
     return numOfUnhealthyNodes;
   }
 
+  public List<HotNodeSummary> getHotNodeSummaryList() {
+    return hotNodeSummaryList;
+  }
+
+  public void appendNestedSummary(HotNodeSummary summary) {
+    hotNodeSummaryList.add(summary);
+  }
+
   @Override
   public String toString() {
     return this.numOfNodes + " " + this.numOfUnhealthyNodes + " " + getNestedSummaryList();
@@ -87,13 +97,6 @@ public class HotClusterSummary extends GenericSummary {
   @Override
   public String getTableName() {
     return HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE;
-  }
-
-  @Override
-  public List<SummaryBuilder<? extends GenericSummary>> getNestedSummaryBuilder() {
-    return Collections.unmodifiableList(Collections.singletonList(
-        new SummaryBuilder<>(HotNodeSummary.HOT_NODE_SUMMARY_TABLE,
-            HotNodeSummary::buildSummary)));
   }
 
   @Override
@@ -126,6 +129,31 @@ public class HotClusterSummary extends GenericSummary {
       summaryObj.add(tableName, this.nestedSummaryListToJson());
     }
     return summaryObj;
+  }
+
+  @Override
+  public List<GenericSummary> getNestedSummaryList() {
+    return new ArrayList<>(hotNodeSummaryList);
+  }
+
+  @Override
+  public GenericSummary buildNestedSummary(String summaryTable, Record record) throws IllegalArgumentException {
+    if (summaryTable.equals(HotNodeSummary.HOT_NODE_SUMMARY_TABLE)) {
+      HotNodeSummary hotNodeSummary = HotNodeSummary.buildSummary(record);
+      if (hotNodeSummary != null) {
+        hotNodeSummaryList.add(hotNodeSummary);
+      }
+      return hotNodeSummary;
+    }
+    else {
+      throw new IllegalArgumentException(summaryTable + " does not belong to the nested summaries of " + getTableName());
+    }
+  }
+
+  @Override
+  public List<String> getNestedSummaryTables() {
+    return Collections.unmodifiableList(Collections.singletonList(
+        HotNodeSummary.HOT_NODE_SUMMARY_TABLE));
   }
 
   public static class SQL_SCHEMA_CONSTANTS {
@@ -167,8 +195,8 @@ public class HotClusterSummary extends GenericSummary {
    * @return whether parsing is successful or not
    */
   @Nullable
-  public static GenericSummary buildSummary(Record record) {
-    GenericSummary summary = null;
+  public static HotClusterSummary buildSummary(Record record) {
+    HotClusterSummary summary = null;
     try {
       Integer numOfNodes = record.get(ClusterSummaryField.NUM_OF_NODES_FIELD.getField(), Integer.class);
       Integer numOfUnhealthyNodes = record.get(ClusterSummaryField.NUM_OF_UNHEALTHY_NODES_FIELD.getField(), Integer.class);

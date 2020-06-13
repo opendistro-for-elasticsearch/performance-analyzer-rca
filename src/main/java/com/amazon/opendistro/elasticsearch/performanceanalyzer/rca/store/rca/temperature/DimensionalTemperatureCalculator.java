@@ -21,11 +21,14 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ShardProfileSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.TemperatureMetricsBase;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.calculators.AvgShardBasedTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.calculators.ShardBasedTemperatureCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.ShardTotalDiskUsageTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.calculators.TotalNodeTemperatureCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.DiskUsageShardIndependentTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.calculators.ShardIndependentTemperatureCalculator;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -61,7 +64,7 @@ public class DimensionalTemperatureCalculator {
      * @return The return is a composition of three things:
      */
     public static DimensionalTemperatureFlowUnit getTemperatureForDimension(
-            ShardStore shardStore, TemperatureVector.Dimension metricType,
+            ShardStore shardStore, TemperatureDimension metricType,
             ShardBasedTemperatureCalculator resourceByShardId,
             AvgShardBasedTemperatureCalculator avgResUsageByAllShards,
             ShardIndependentTemperatureCalculator resourceShardIndependent,
@@ -104,7 +107,11 @@ public class DimensionalTemperatureCalculator {
             }
         }
 
-        if (shardIdIndependentFlowUnits.size() != 1) {
+        /*
+        For ShardIndependent flow units and Peak Resource flow units we dont have data for the shard
+        Size dimension. Therefore handling it here so as to avoid it from the final calculation.
+        */
+        if (shardIdIndependentFlowUnits.size() > 1) {
             if (shardIdIndependentFlowUnits.get(0).isEmpty()) {
                 LOG.info("Empty shardIdIndependentFlowUnits");
                 return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
@@ -116,9 +123,9 @@ public class DimensionalTemperatureCalculator {
             }
         }
 
-        if (resourcePeakFlowUnits.size() != 1) {
+        if (resourcePeakFlowUnits.size() > 1) {
             if (resourcePeakFlowUnits.get(0).isEmpty()) {
-                LOG.info("Empty shardIdIndependentFlowUnits");
+                LOG.info("Empty resourcePeakFlowUnits");
                 return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
             }
             if (resourcePeakFlowUnits.get(0).getData().intoArrays().length != 1) {
@@ -127,25 +134,42 @@ public class DimensionalTemperatureCalculator {
             }
         }
 
-        double avgValOverShards = -1;
+        double avgValOverShards = -1.0;
         try {
-            avgValOverShards =
-                    avgResUsageFlowUnits.get(0).getData().getValues(AvgShardBasedTemperatureCalculator.SHARD_AVG,
-                            Double.class).get(0);
+            Result<Record> flowUnitData = avgResUsageFlowUnits.get(0).getData();
+            if (flowUnitData == null) {
+                return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
+            }
+            List<Double> values = flowUnitData.getValues(
+                AvgShardBasedTemperatureCalculator.SHARD_AVG, Double.class);
+            if (values != null && values.get(0) != null) {
+                avgValOverShards = values.get(0);
+            } else {
+                // This means that there are no shards on this node. So we will return an empty FlowUnit.
+                return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
+            }
         } catch (Exception ex) {
-            LOG.error("Error getting shard average: {}.",
-                    avgResUsageFlowUnits.get(0).getData());
+            LOG.error("DBError getting shard average: {}.", ex);
             return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
         }
 
-        double totalConsumedInNode = -1;
+        double totalConsumedInNode = -1.0;
         try {
-            totalConsumedInNode = resourcePeakFlowUnits.get(0).getData().getValues(
-                    TemperatureMetricsBase.AGGR_OVER_AGGR_NAME, Double.class).get(0);
+            Result<Record> flowUnitData = resourcePeakFlowUnits.get(0).getData();
+            if (flowUnitData == null) {
+                return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
+            }
+            List<Double> values = flowUnitData.getValues(
+                    TemperatureMetricsBase.AGGR_OVER_AGGR_NAME, Double.class);
+            if (values != null && values.get(0) != null) {
+                totalConsumedInNode = values.get(0);
+            } else {
+                // This means that there are no shards on this node. So we will return an empty FlowUnit.
+                return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
+            }
         } catch (Exception ex) {
-            LOG.error("Error getting shard average: {}.",
-                    resourcePeakFlowUnits.get(0).getData(), ex);
-            return (DimensionalTemperatureFlowUnit) DimensionalTemperatureFlowUnit.generic();
+            LOG.error("DBError getting shard average: {}.", ex);
+            return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
         }
 
         TemperatureVector.NormalizedValue avgUsageAcrossShards =
@@ -175,6 +199,19 @@ public class DimensionalTemperatureCalculator {
             shardProfileSummary.addTemperatureForDimension(metricType, normalizedConsumptionByShard);
             nodeDimensionProfile.addShardToZone(shardProfileSummary, heatZoneForShard);
         }
+        
         return new DimensionalTemperatureFlowUnit(System.currentTimeMillis(), nodeDimensionProfile);
+    }
+
+    public static DimensionalTemperatureFlowUnit getTemperatureForDimension(
+            ShardStore shardStore, TemperatureDimension metricType,
+            ShardBasedTemperatureCalculator resourceByShardId,
+            AvgShardBasedTemperatureCalculator avgResUsageByAllShards,
+            ShardTotalDiskUsageTemperatureCalculator shardSizePeakUsage,
+            TemperatureVector.NormalizedValue threshold) {
+        DiskUsageShardIndependentTemperatureCalculator diskUsageShardIndependent =
+                new DiskUsageShardIndependentTemperatureCalculator();
+        return getTemperatureForDimension(shardStore,
+                metricType, resourceByShardId, avgResUsageByAllShards, diskUsageShardIndependent, shardSizePeakUsage, threshold);
     }
 }

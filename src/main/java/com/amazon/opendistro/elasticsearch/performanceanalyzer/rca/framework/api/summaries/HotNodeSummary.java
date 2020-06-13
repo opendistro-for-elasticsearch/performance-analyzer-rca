@@ -50,11 +50,15 @@ public class HotNodeSummary extends GenericSummary {
   private static final Logger LOG = LogManager.getLogger(HotNodeSummary.class);
   private final String nodeID;
   private final String hostAddress;
+  private List<HotResourceSummary> hotResourceSummaryList;
+  private List<HotShardSummary> hotShardSummaryList;
 
   public HotNodeSummary(String nodeID, String hostAddress) {
     super();
     this.nodeID = nodeID;
     this.hostAddress = hostAddress;
+    this.hotResourceSummaryList = new ArrayList<>();
+    this.hotShardSummaryList = new ArrayList<>();
   }
 
   public String getNodeID() {
@@ -65,20 +69,34 @@ public class HotNodeSummary extends GenericSummary {
     return this.hostAddress;
   }
 
+  public List<HotResourceSummary> getHotResourceSummaryList() {
+    return hotResourceSummaryList;
+  }
+
+  public List<HotShardSummary> getHotShardSummaryList() {
+    return hotShardSummaryList;
+  }
+
+  public void appendNestedSummary(HotResourceSummary summary) {
+    hotResourceSummaryList.add(summary);
+  }
+
+  public void appendNestedSummary(HotShardSummary summary) {
+    hotShardSummaryList.add(summary);
+  }
 
   @Override
   public HotNodeSummaryMessage buildSummaryMessage() {
     final HotNodeSummaryMessage.Builder summaryMessageBuilder = HotNodeSummaryMessage.newBuilder();
     summaryMessageBuilder.setNodeID(this.nodeID);
     summaryMessageBuilder.setHostAddress(this.hostAddress);
-    for (GenericSummary nestedSummary : getNestedSummaryList()) {
-      if (nestedSummary instanceof HotResourceSummary) {
-        summaryMessageBuilder.getHotResourceSummaryListBuilder()
-                .addHotResourceSummary(nestedSummary.buildSummaryMessage());
-      } else if (nestedSummary instanceof HotShardSummary) {
-        summaryMessageBuilder.getHotShardSummaryListBuilder()
-                .addHotShardSummary(nestedSummary.buildSummaryMessage());
-      }
+    for (HotResourceSummary hotResourceSummary : hotResourceSummaryList) {
+      summaryMessageBuilder.getHotResourceSummaryListBuilder()
+          .addHotResourceSummary(hotResourceSummary.buildSummaryMessage());
+    }
+    for (HotShardSummary hotShardSummary : hotShardSummaryList) {
+      summaryMessageBuilder.getHotShardSummaryListBuilder()
+          .addHotShardSummary(hotShardSummary.buildSummaryMessage());
     }
     return summaryMessageBuilder.build();
   }
@@ -90,18 +108,16 @@ public class HotNodeSummary extends GenericSummary {
 
   public static HotNodeSummary buildHotNodeSummaryFromMessage(HotNodeSummaryMessage message) {
     HotNodeSummary newSummary = new HotNodeSummary(message.getNodeID(), message.getHostAddress());
-    if (message.hasHotResourceSummaryList()
-        && message.getHotResourceSummaryList().getHotResourceSummaryCount() > 0) {
+    if (message.hasHotResourceSummaryList()) {
       for (int i = 0; i < message.getHotResourceSummaryList().getHotResourceSummaryCount(); i++) {
-        newSummary.addNestedSummaryList(HotResourceSummary.buildHotResourceSummaryFromMessage(
+        newSummary.appendNestedSummary(HotResourceSummary.buildHotResourceSummaryFromMessage(
             message.getHotResourceSummaryList().getHotResourceSummary(i)));
       }
     }
 
-    if (message.hasHotShardSummaryList()
-            && message.getHotShardSummaryList().getHotShardSummaryCount() > 0) {
+    if (message.hasHotShardSummaryList()) {
       for (int i = 0; i < message.getHotShardSummaryList().getHotShardSummaryCount(); i++) {
-        newSummary.addNestedSummaryList(HotShardSummary.buildHotShardSummaryFromMessage(
+        newSummary.appendNestedSummary(HotShardSummary.buildHotShardSummaryFromMessage(
                 message.getHotShardSummaryList().getHotShardSummary(i)));
       }
     }
@@ -110,19 +126,12 @@ public class HotNodeSummary extends GenericSummary {
 
   @Override
   public String toString() {
-    return this.nodeID + " " + this.hostAddress + " " + this.nestedSummaryList;
+    return this.nodeID + " " + this.hostAddress + " " + this.hotResourceSummaryList + " " + this.hotShardSummaryList;
   }
 
   @Override
   public String getTableName() {
     return HotNodeSummary.HOT_NODE_SUMMARY_TABLE;
-  }
-
-  @Override
-  public List<SummaryBuilder<? extends GenericSummary>> getNestedSummaryBuilder() {
-    return Collections.unmodifiableList(Arrays.asList(
-            new SummaryBuilder<>(HotResourceSummary.HOT_RESOURCE_SUMMARY_TABLE, HotResourceSummary::buildSummary),
-            new SummaryBuilder<>(HotShardSummary.HOT_SHARD_SUMMARY_TABLE, HotShardSummary::buildSummary)));
   }
 
   @Override
@@ -155,6 +164,48 @@ public class HotNodeSummary extends GenericSummary {
       summaryObj.add(tableName, this.nestedSummaryListToJson());
     }
     return summaryObj;
+  }
+
+  /**
+   * return HotResourceSummary and HotShardSummary as a single
+   * GenericSummary list. Note that is method is intended to be called by
+   * persistor and Json serializer only.
+   * @return HotResourceSummary and HotShardSummary as a single GenericSummary list
+   */
+  @Override
+  public List<GenericSummary> getNestedSummaryList() {
+    List<GenericSummary> summaries = new ArrayList<>();
+    summaries.addAll(hotResourceSummaryList);
+    summaries.addAll(hotShardSummaryList);
+    return summaries;
+  }
+
+  @Override
+  public GenericSummary buildNestedSummary(String summaryTable, Record record) throws IllegalArgumentException {
+    if (summaryTable.equals(HotResourceSummary.HOT_RESOURCE_SUMMARY_TABLE)) {
+      HotResourceSummary summary = HotResourceSummary.buildSummary(record);
+      if (summary != null) {
+        hotResourceSummaryList.add(summary);
+      }
+      return summary;
+    }
+    else if (summaryTable.equals(HotShardSummary.HOT_SHARD_SUMMARY_TABLE)) {
+      HotShardSummary summary = HotShardSummary.buildSummary(record);
+      if (summary != null) {
+        hotShardSummaryList.add(summary);
+      }
+      return summary;
+    }
+    else {
+      throw new IllegalArgumentException(summaryTable + " does not belong to the nested summaries of " + getTableName());
+    }
+  }
+
+  @Override
+  public List<String> getNestedSummaryTables() {
+    return Collections.unmodifiableList(Arrays.asList(
+        HotResourceSummary.HOT_RESOURCE_SUMMARY_TABLE,
+        HotShardSummary.HOT_SHARD_SUMMARY_TABLE));
   }
 
   public static class SQL_SCHEMA_CONSTANTS {

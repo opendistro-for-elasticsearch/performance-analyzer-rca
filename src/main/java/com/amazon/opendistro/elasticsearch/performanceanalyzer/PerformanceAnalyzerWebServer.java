@@ -78,9 +78,9 @@ public class PerformanceAnalyzerWebServer {
               INCOMING_QUEUE_LENGTH);
     } else {
       LOG.info(
-          "Value Not Configured for: {} Using default value: binding to all interfaces",
+          "Value Not Configured for: {} Using default value: binding only to local interface",
           WEBSERVICE_BIND_HOST_NAME);
-      server = HttpsServer.create(new InetSocketAddress(readerPort), INCOMING_QUEUE_LENGTH);
+      server = HttpsServer.create(new InetSocketAddress(InetAddress.getLocalHost(), readerPort), INCOMING_QUEUE_LENGTH);
     }
 
     TrustManager[] trustAllCerts =
@@ -129,9 +129,9 @@ public class PerformanceAnalyzerWebServer {
               INCOMING_QUEUE_LENGTH);
     } else {
       LOG.info(
-          "Value Not Configured for: {} Using default value: binding to all interfaces",
+          "Value Not Configured for: {} Using default value: binding only to local interface",
           WEBSERVICE_BIND_HOST_NAME);
-      server = HttpServer.create(new InetSocketAddress(readerPort), INCOMING_QUEUE_LENGTH);
+      server = HttpServer.create(new InetSocketAddress(InetAddress.getLocalHost(), readerPort), INCOMING_QUEUE_LENGTH);
     }
 
     return server;

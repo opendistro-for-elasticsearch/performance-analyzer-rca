@@ -18,15 +18,26 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.protobuf.GeneratedMessageV3;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
-import javax.annotation.Nullable;
+import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.jooq.Record;
+import org.jooq.Result;
+import org.jooq.SelectJoinStep;
 import org.jooq.impl.DSL;
 
 /**
@@ -34,17 +45,22 @@ import org.jooq.impl.DSL;
  */
 public class NodeLevelDimensionalSummary extends GenericSummary {
 
-  public static final String SUMMARY_TABLE_NAME = "NodeLevelDimensionalSummary";
-  public static final String ZONE_SUMMARY_TABLE_NAME = "NodeLevelZoneSummary";
+    public static final String SUMMARY_TABLE_NAME = "NodeLevelDimensionalSummary";
+    public static final String ZONE_SUMMARY_TABLE_NAME = "NodeLevelZoneSummary";
 
-  private final TemperatureVector.Dimension profileForDimension;
+    private static final String DIMENSION_KEY = "dimension";
+    private static final String MEAN_KEY = "mean";
+    private static final String TOTAL_KEY = "total";
+    private static final String NUM_SHARDS_KEY = "numShards";
+
+    private final TemperatureDimension profileForDimension;
     private final TemperatureVector.NormalizedValue meanTemperature;
     private final double totalUsage;
 
     private final NodeLevelZoneSummary[] zoneProfiles;
     private int numberOfShards;
 
-    public NodeLevelDimensionalSummary(final TemperatureVector.Dimension profileForDimension,
+    public NodeLevelDimensionalSummary(final TemperatureDimension profileForDimension,
                                        final TemperatureVector.NormalizedValue meanTemperature,
                                        double totalUsage) {
         this.profileForDimension = profileForDimension;
@@ -71,25 +87,24 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
 
     @Override
     public String toString() {
-        return "NodeLevelDimensionalSummary{"
-                + "profileForDimension=" + profileForDimension
-                + ", meanTemperature=" + meanTemperature
-                + ", totalUsage=" + totalUsage
-                + ", zoneProfiles=" + Arrays.toString(zoneProfiles)
-                + ", numberOfShards=" + numberOfShards
-                + '}';
+        return toJson().toString();
     }
 
     public TemperatureVector.NormalizedValue getMeanTemperature() {
         return meanTemperature;
     }
 
-    public TemperatureVector.Dimension getProfileForDimension() {
+    public TemperatureDimension getProfileForDimension() {
         return profileForDimension;
     }
 
     public double getTotalUsage() {
         return totalUsage;
+    }
+
+    @VisibleForTesting
+    public List<ShardProfileSummary> getShardsForZoneInReverseTemperatureOrder(HeatZoneAssigner.Zone zone) {
+        return zoneProfiles[zone.ordinal()].getShardsInReverseTemperatureOrder();
     }
 
     @Override
@@ -104,7 +119,7 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
 
     @Override
     public String getTableName() {
-        return this.getClass().getSimpleName();
+        return SUMMARY_TABLE_NAME;
     }
 
     public List<GenericSummary> getNestedSummaryList() {
@@ -118,10 +133,10 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
     @Override
     public List<Field<?>> getSqlSchema() {
         List<Field<?>> schema = new ArrayList<>();
-        schema.add(DSL.field(DSL.name("dimension"), String.class));
-        schema.add(DSL.field(DSL.name("mean"), Short.class));
-        schema.add(DSL.field(DSL.name("total"), Double.class));
-        schema.add(DSL.field(DSL.name("numShards"), Integer.class));
+        schema.add(DSL.field(DSL.name(DIMENSION_KEY), String.class));
+        schema.add(DSL.field(DSL.name(MEAN_KEY), Short.class));
+        schema.add(DSL.field(DSL.name(TOTAL_KEY), Double.class));
+        schema.add(DSL.field(DSL.name(NUM_SHARDS_KEY), Integer.class));
 
         return schema;
     }
@@ -139,24 +154,118 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
     @Override
     public JsonElement toJson() {
         JsonObject summaryObj = new JsonObject();
-        summaryObj.addProperty("dimension", getProfileForDimension().NAME);
-        summaryObj.addProperty("mean", getMeanTemperature().getPOINTS());
-        summaryObj.addProperty("total", getTotalUsage());
-        summaryObj.addProperty("numShards", getNumberOfShards());
+        summaryObj.addProperty(DIMENSION_KEY, getProfileForDimension().NAME);
+        summaryObj.addProperty(MEAN_KEY, getMeanTemperature().getPOINTS());
+        summaryObj.addProperty(TOTAL_KEY, getTotalUsage());
+        summaryObj.addProperty(NUM_SHARDS_KEY, getNumberOfShards());
+
+        JsonArray array = new JsonArray();
         getNestedSummaryList().forEach(
                 summary -> {
-                    summaryObj.add(summary.getTableName(), summary.toJson());
+                    array.add(summary.toJson());
                 }
         );
+
+        summaryObj.add(ZONE_SUMMARY_TABLE_NAME, array);
         return summaryObj;
     }
 
-    class NodeLevelZoneSummary extends GenericSummary {
-        List<ShardProfileSummary> shardProfileSummaries;
-        ShardProfileSummary minShard;
-        //ShardProfileSummary maxShard;
-        ShardProfileSummary maxShard;
+    /**
+     * +------------------------------+---------------+----+----------------+---------+------+
+     * |NodeLevelDimensionalSummary_ID|dimension      |mean|           total|numShards|RCA_ID|
+     * +------------------------------+---------------+----+----------------+---------+------+
+     * |                             1|CPU_Utilization|   1|1.20827386264977|        3|     1|
+     * +------------------------------+---------------+----+----------------+---------+------+
+     *
+     * @param record  A db row containing the values for a temperature dimension.
+     * @param context the database context. It is used to query the nested summary tables.
+     * @return Creates a new instance of the NodeLevelDimensionalSummary.
+     */
+    public static NodeLevelDimensionalSummary buildFromDb(final Record record, DSLContext context) {
+        String dimensionName = record.get(DIMENSION_KEY, String.class);
+        TemperatureDimension dimension = TemperatureDimension.valueOf(dimensionName);
+        Short mean = record.get(MEAN_KEY, Short.class);
+        TemperatureVector.NormalizedValue value = new TemperatureVector.NormalizedValue(mean);
 
+        double total = record.get(TOTAL_KEY, Double.class);
+        int shards = record.get(NUM_SHARDS_KEY, Integer.class);
+
+        NodeLevelDimensionalSummary summary =
+                new NodeLevelDimensionalSummary(dimension, value, total);
+        summary.setNumberOfShards(shards);
+
+        // At this point we have filled in the NodeSummary with the data in the tuple. To
+        // populate the nested objects, we need to query the nested summary table.
+        // Of all the given rows in the nested summary table, we are only interested in the rows
+        // that correspond to this tuple provided as argument to this method. The linking is done
+        // using the ID column of this table that is a foreign key to the nested summary table.
+
+        // Get the primary key value for this tuple.
+        int dimensionId = record.get(
+                SQLiteQueryUtils.getPrimaryKeyColumnName(SUMMARY_TABLE_NAME),
+                Integer.class);
+
+        // Find out the foreign key column name for the nested summary table.
+        Field<Integer> foreignKeyForDimensionalTable = DSL.field(
+                SQLiteQueryUtils.getPrimaryKeyColumnName(SUMMARY_TABLE_NAME), Integer.class);
+
+        SelectJoinStep<Record> rcaQuery = SQLiteQueryUtils
+                .buildSummaryQuery(context, ZONE_SUMMARY_TABLE_NAME, dimensionId,
+                        foreignKeyForDimensionalTable);
+
+        Result<Record> recordList = rcaQuery.fetch();
+        ShardStore shardStore = new ShardStore();
+        for (Record zoneSummary : recordList) {
+            summary.buildZoneProfile(zoneSummary, shardStore);
+        }
+        return summary;
+    }
+
+    /**
+     * +-----------------------+----+----+----+----------+------------------------------+
+     * |NodeLevelZoneSummary_ID|zone|min |max |all_shards|NodeLevelDimensionalSummary_ID|
+     * +-----------------------+----+----+----+----------+------------------------------+
+     * |                      1|HOT |    |    |[]        |                             1|
+     * +-----------------------+----+----+----+----------+------------------------------+
+     *
+     * @param record A database row containing the values for one of the 4 zones.
+     */
+    private void buildZoneProfile(final Record record, ShardStore shardStore
+    ) {
+        String zoneName = record.get(NodeLevelZoneSummary.ZONE_KEY, String.class);
+        HeatZoneAssigner.Zone zone = HeatZoneAssigner.Zone.valueOf(zoneName);
+
+        NodeLevelZoneSummary zoneSummary = zoneProfiles[zone.ordinal()];
+        String jsonString = record.get(NodeLevelZoneSummary.ALL_KEY, String.class);
+        JsonArray jsonArray = new JsonParser().parse(jsonString).getAsJsonArray();
+
+        for (Iterator<JsonElement> it = jsonArray.iterator(); it.hasNext(); ) {
+            JsonElement element = it.next();
+            String indexName =
+                    element.getAsJsonObject().get(ShardProfileSummary.INDEX_NAME_KEY).getAsString();
+            int shardId =
+                    element.getAsJsonObject().get(ShardProfileSummary.SHARD_ID_KEY).getAsInt();
+            ShardProfileSummary shard = shardStore.getOrCreateIfAbsent(indexName, shardId);
+            JsonArray temperatureProfiles =
+                    element.getAsJsonObject().get(ShardProfileSummary.TEMPERATURE_KEY).getAsJsonArray();
+
+            for (JsonElement temperature : temperatureProfiles) {
+                JsonObject obj = temperature.getAsJsonObject();
+                TemperatureDimension dimension =
+                        TemperatureDimension.valueOf(obj.get(TemperatureVector.DIMENSION_KEY).getAsString());
+                TemperatureVector.NormalizedValue value =
+                        new TemperatureVector.NormalizedValue((short) obj.get(TemperatureVector.VALUE_KEY).getAsInt());
+                shard.addTemperatureForDimension(dimension, value);
+            }
+            zoneSummary.addShard(shard);
+        }
+    }
+
+    public class NodeLevelZoneSummary extends GenericSummary {
+        public static final String ZONE_KEY = "zone";
+        public static final String ALL_KEY = "all_shards";
+
+        List<ShardProfileSummary> shardProfileSummaries;
         private final HeatZoneAssigner.Zone myZone;
 
         NodeLevelZoneSummary(HeatZoneAssigner.Zone myZone) {
@@ -166,47 +275,16 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
 
         void addShard(ShardProfileSummary shard) {
             shardProfileSummaries.add(shard);
-            if (minShard == null) {
-                minShard = shard;
-            } else {
-                if (getMinTemperature().isGreaterThan(shard.getHeatInDimension(profileForDimension))) {
-                    minShard = shard;
-                }
-            }
-
-            if (maxShard == null) {
-                maxShard = shard;
-            } else {
-                if (shard.getHeatInDimension(profileForDimension).isGreaterThan(getMaxTemperature())) {
-                    maxShard = shard;
-                }
-            }
         }
 
-        @Nullable
-        TemperatureVector.NormalizedValue getMinTemperature() {
-            if (minShard != null) {
-                return minShard.getHeatInDimension(profileForDimension);
-            }
-            return null;
-        }
-
-        @Nullable
-        TemperatureVector.NormalizedValue getMaxTemperature() {
-            if (maxShard != null) {
-                return maxShard.getHeatInDimension(profileForDimension);
-            }
-            return null;
+        public List<ShardProfileSummary> getShardsInReverseTemperatureOrder() {
+            shardProfileSummaries.sort(new ShardProfileComparator());
+            return Collections.unmodifiableList(shardProfileSummaries);
         }
 
         @Override
         public String toString() {
-            return "{"
-                    + "myZone=" + myZone
-                    + ", shardProfiles=" + shardProfileSummaries
-                    + ", minShard=" + minShard
-                    + ", maxShard=" + maxShard
-                    + '}';
+            return toJson().toString();
         }
 
         @Override
@@ -221,21 +299,20 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
 
         @Override
         public String getTableName() {
-            return this.getClass().getSimpleName();
+            return ZONE_SUMMARY_TABLE_NAME;
         }
 
         @Override
         public List<Field<?>> getSqlSchema() {
             List<Field<?>> schema = new ArrayList<>();
-            schema.add(DSL.field(DSL.name("zone"), String.class));
-            schema.add(DSL.field(DSL.name("min"), String.class));
-            schema.add(DSL.field(DSL.name("max"), String.class));
+            schema.add(DSL.field(DSL.name(ZONE_KEY), String.class));
+            schema.add(DSL.field(DSL.name(ALL_KEY), String.class));
             return schema;
         }
 
         public List<GenericSummary> getNestedSummaryList() {
             List<GenericSummary> shardSummaries = new ArrayList<>();
-            for (ShardProfileSummary shardProfileSummary : shardProfileSummaries) {
+            for (ShardProfileSummary shardProfileSummary : getShardsInReverseTemperatureOrder()) {
                 shardSummaries.add(shardProfileSummary);
             }
             return shardSummaries;
@@ -245,23 +322,44 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
         public List<Object> getSqlValue() {
             List<Object> values = new ArrayList<>();
             values.add(myZone.name());
-            values.add(minShard == null ? "" : minShard.toString());
-            values.add(maxShard == null ? "" : maxShard.toString());
+            JsonArray array = new JsonArray();
+
+            // The reason we are not getting shards ordered by temperature as
+            // we don't want to pay the cost of sorting while writes. We do writes
+            // more often than reads and therefore, we would rather sort on reads.
+            for (ShardProfileSummary shard : shardProfileSummaries) {
+                if (shard != null) {
+                    array.add(shard.toJson());
+                }
+            }
+            values.add(array);
             return values;
         }
 
         @Override
         public JsonElement toJson() {
             JsonObject summaryObj = new JsonObject();
-            summaryObj.addProperty("zone_name", myZone.name());
-            summaryObj.add("min_shard", minShard.toJson());
-            summaryObj.add("max_shard", maxShard.toJson());
+            summaryObj.addProperty(ZONE_KEY, myZone.name());
+
+            JsonArray array = new JsonArray();
             getNestedSummaryList().forEach(
                     summary -> {
-                        summaryObj.add(summary.getTableName(), summary.toJson());
+                        array.add(summary.toJson());
                     }
             );
+            summaryObj.add(ALL_KEY, array);
             return summaryObj;
+        }
+    }
+
+    private class ShardProfileComparator implements Comparator<ShardProfileSummary> {
+        @Override
+        public int compare(ShardProfileSummary o1, ShardProfileSummary o2) {
+            return reverseSort(o1, o2);
+        }
+
+        private int reverseSort(ShardProfileSummary o1, ShardProfileSummary o2) {
+            return o2.getHeatInDimension(profileForDimension).getPOINTS() - o1.getHeatInDimension(profileForDimension).getPOINTS();
         }
     }
 }

@@ -16,8 +16,8 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.google.gson.JsonObject;
 import com.google.protobuf.GeneratedMessageV3;
@@ -29,8 +29,12 @@ import org.jooq.impl.DSL;
 
 public class ShardProfileSummary extends GenericSummary {
 
-  public static final String SUMMARY_TABLE_NAME = "ShardProfileSummary";
-  private final String indexName;
+    public static final String SUMMARY_TABLE_NAME = "ShardProfileSummary";
+    public static final String INDEX_NAME_KEY = "index_name";
+    public static final String SHARD_ID_KEY = "shard_id";
+    public static final String TEMPERATURE_KEY = "temperature";
+
+    private final String indexName;
     private final int shardId;
 
     private final TemperatureVector temperatureVector;
@@ -42,13 +46,13 @@ public class ShardProfileSummary extends GenericSummary {
         this.temperatureVector = new TemperatureVector();
     }
 
+    public String identity() {
+        return indexName + "::" + shardId;
+    }
+
     @Override
     public String toString() {
-        return "Shard{"
-                + "indexName='" + indexName
-                + ", shardId=" + shardId
-                + ", temp=" + temperatureVector
-                + '}';
+        return toJson().toString();
     }
 
     @Override
@@ -69,9 +73,9 @@ public class ShardProfileSummary extends GenericSummary {
     @Override
     public List<Field<?>> getSqlSchema() {
         List<Field<?>> schema = new ArrayList<>();
-        schema.add(DSL.field(DSL.name("index_name"), String.class));
-        schema.add(DSL.field(DSL.name("shard_id"), Integer.class));
-        for (TemperatureVector.Dimension dimension: TemperatureVector.Dimension.values()) {
+        schema.add(DSL.field(DSL.name(INDEX_NAME_KEY), String.class));
+        schema.add(DSL.field(DSL.name(SHARD_ID_KEY), Integer.class));
+        for (TemperatureDimension dimension : TemperatureDimension.values()) {
             schema.add(DSL.field(DSL.name(dimension.NAME), Short.class));
         }
         return schema;
@@ -82,7 +86,7 @@ public class ShardProfileSummary extends GenericSummary {
         List<Object> values = new ArrayList<>();
         values.add(indexName);
         values.add(shardId);
-        for (TemperatureVector.Dimension dimension: TemperatureVector.Dimension.values()) {
+        for (TemperatureDimension dimension : TemperatureDimension.values()) {
             values.add(temperatureVector.getTemperatureFor(dimension));
         }
         return values;
@@ -90,18 +94,18 @@ public class ShardProfileSummary extends GenericSummary {
 
     public JsonObject toJson() {
         JsonObject summaryObj = new JsonObject();
-        summaryObj.addProperty("index_name", indexName);
-        summaryObj.addProperty("shard_id", shardId);
-        summaryObj.add("temperature", temperatureVector.toJson());
+        summaryObj.addProperty(INDEX_NAME_KEY, indexName);
+        summaryObj.addProperty(SHARD_ID_KEY, shardId);
+        summaryObj.add(TEMPERATURE_KEY, temperatureVector.toJson());
         return summaryObj;
     }
 
     @Nullable
-    public TemperatureVector.NormalizedValue getHeatInDimension(TemperatureVector.Dimension dimension) {
+    public TemperatureVector.NormalizedValue getHeatInDimension(TemperatureDimension dimension) {
         return temperatureVector.getTemperatureFor(dimension);
     }
 
-    public void addTemperatureForDimension(TemperatureVector.Dimension dimension,
+    public void addTemperatureForDimension(TemperatureDimension dimension,
                                            TemperatureVector.NormalizedValue value) {
         // TODO: Need to handle rcas updating heat profile of a shard along a dimension multiple
         //  times per tick.

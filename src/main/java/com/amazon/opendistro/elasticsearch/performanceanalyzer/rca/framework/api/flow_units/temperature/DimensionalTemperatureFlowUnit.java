@@ -26,7 +26,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
  * Elasticsearch node (or in other words, are not transferred over the wire). Therefore, the
  * protobuf message generation is not really required.
  */
-public class DimensionalTemperatureFlowUnit extends ResourceFlowUnit {
+public class DimensionalTemperatureFlowUnit extends ResourceFlowUnit<NodeLevelDimensionalSummary> {
     private final NodeLevelDimensionalSummary nodeDimensionProfile;
 
     public DimensionalTemperatureFlowUnit(long timeStamp,
