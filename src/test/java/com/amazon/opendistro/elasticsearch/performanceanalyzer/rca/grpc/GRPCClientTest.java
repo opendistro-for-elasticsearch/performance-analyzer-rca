@@ -17,16 +17,16 @@ public class GRPCClientTest {
     @Before
     public void setup() throws SSLException {
         // TODO replace these with your endpoint
-        client = new GRPCClient("ec2-3-133-161-143.us-east-2.compute.amazonaws.com", 9650,
-                "/Users/sidnaray/work/keys/master_cert.pem",null, null);
+        //client = new GRPCClient("ec2-3-133-161-143.us-east-2.compute.amazonaws.com", 9650,
+       //         "/Users/sidnaray/work/keys/master_cert.pem",null, null);
         // Use this client only if you haven't set up TLS on your receiving client
-        noTLSClient = new GRPCClient("ec2-3-133-161-143.us-east-2.compute.amazonaws.com", 9650);
+         noTLSClient = new GRPCClient("ec2-3-133-141-73.us-east-2.compute.amazonaws.com", 9650);
     }
 
     /**
      * testClient is an method demonstrating the use of our GRPC client
      */
-    @Test
+    //@Test
     public void testClient() throws Exception {
         // Example getMetrics call
         MetricsRequest request = MetricsRequest.newBuilder().addMetricList("CPU_Utilization").addAggList("avg")
@@ -46,7 +46,7 @@ public class GRPCClientTest {
         PublishResponse publishResponse = client.publish(messages);
     }
 
-    //@Test
+    @Test
     public void testClientNoTLS() throws Exception {
         // Example getMetrics call
         MetricsRequest request = MetricsRequest.newBuilder().addMetricList("CPU_Utilization").addAggList("avg")
