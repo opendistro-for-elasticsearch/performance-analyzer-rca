@@ -178,7 +178,7 @@ public class DimensionalTemperatureCalculator {
         Result<Record> rowsPerShard = shardIdBasedFlowUnits.get(0).getData();
 
         NodeLevelDimensionalSummary nodeDimensionProfile =
-                new NodeLevelDimensionalSummary(metricType, avgUsageAcrossShards, totalConsumedInNode);
+                new NodeLevelDimensionalSummary(metricType, avgUsageAcrossShards, avgValOverShards, totalConsumedInNode);
 
         // The shardIdBasedFlowUnits is supposed to contain one row per shard.
         nodeDimensionProfile.setNumberOfShards(rowsPerShard.size());
@@ -197,6 +197,7 @@ public class DimensionalTemperatureCalculator {
 
             ShardProfileSummary shardProfileSummary = shardStore.getOrCreateIfAbsent(indexName, shardId);
             shardProfileSummary.addTemperatureForDimension(metricType, normalizedConsumptionByShard);
+            shardProfileSummary.addRawMetricForDimension(metricType, usage);
             nodeDimensionProfile.addShardToZone(shardProfileSummary, heatZoneForShard);
         }
         

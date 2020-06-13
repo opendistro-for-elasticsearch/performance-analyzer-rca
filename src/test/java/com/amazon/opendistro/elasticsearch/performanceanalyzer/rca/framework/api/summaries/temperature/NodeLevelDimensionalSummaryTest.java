@@ -33,7 +33,7 @@ public class NodeLevelDimensionalSummaryTest {
     NodeLevelDimensionalSummary nodeSummary =
         new NodeLevelDimensionalSummary(DIMENSION,
             new TemperatureVector.NormalizedValue((short) 2),
-            12.0);
+            12.0, 20);
 
     // The list of shards so obtained is shards ordered in ascending order of temperature
     // along the Dimension = DIMENSION.

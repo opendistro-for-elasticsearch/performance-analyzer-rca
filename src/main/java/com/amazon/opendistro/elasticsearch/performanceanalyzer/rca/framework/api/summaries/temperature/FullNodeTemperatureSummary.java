@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.RawMetricsVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.google.gson.JsonElement;
@@ -41,6 +42,9 @@ public class FullNodeTemperatureSummary extends GenericSummary {
      * temperature along each dimension.
      */
     private final TemperatureVector temperatureVector;
+    private final RawMetricsVector avgMetricsVector;
+    private final RawMetricsVector totalMetricsVector;
+
 
     /**
      * A node also has the complete list of shards in each dimension, broken down by the
@@ -57,6 +61,8 @@ public class FullNodeTemperatureSummary extends GenericSummary {
         this.nodeDimensionProfiles =
                 new NodeLevelDimensionalSummary[TemperatureDimension.values().length];
         this.temperatureVector = new TemperatureVector();
+        this.avgMetricsVector = new RawMetricsVector();
+        this.totalMetricsVector = new RawMetricsVector();
     }
 
     public TemperatureVector getTemperatureVector() {
@@ -79,6 +85,8 @@ public class FullNodeTemperatureSummary extends GenericSummary {
         TemperatureDimension dimension = nodeDimensionProfile.getProfileForDimension();
         this.nodeDimensionProfiles[dimension.ordinal()] = nodeDimensionProfile;
         temperatureVector.updateTemperatureForDimension(dimension, nodeDimensionProfile.getMeanTemperature());
+        avgMetricsVector.updateRawMetricsForDimension(dimension, nodeDimensionProfile.getAvgMetricValueOverShards());
+        totalMetricsVector.updateRawMetricsForDimension(dimension, nodeDimensionProfile.getTotalMetricValueUsed());
     }
 
     public List<GenericSummary> getNestedSummaryList() {

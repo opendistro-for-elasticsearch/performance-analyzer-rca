@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.RawMetricsVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
@@ -50,22 +51,26 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
 
     private static final String DIMENSION_KEY = "dimension";
     private static final String MEAN_KEY = "mean";
+    private static final String AVG_SHARDS_KEY = "avg";
     private static final String TOTAL_KEY = "total";
     private static final String NUM_SHARDS_KEY = "numShards";
 
     private final TemperatureDimension profileForDimension;
     private final TemperatureVector.NormalizedValue meanTemperature;
-    private final double totalUsage;
+    private final double avgMetricValueOverShards;
+    private final double totalMetricValueUsed;
 
     private final NodeLevelZoneSummary[] zoneProfiles;
     private int numberOfShards;
 
     public NodeLevelDimensionalSummary(final TemperatureDimension profileForDimension,
                                        final TemperatureVector.NormalizedValue meanTemperature,
-                                       double totalUsage) {
+                                       double avgMetricValueOverShards,
+                                       double totalMetricValueUsed) {
         this.profileForDimension = profileForDimension;
         this.meanTemperature = meanTemperature;
-        this.totalUsage = totalUsage;
+        this.avgMetricValueOverShards = avgMetricValueOverShards;
+        this.totalMetricValueUsed = totalMetricValueUsed;
         this.zoneProfiles = new NodeLevelZoneSummary[HeatZoneAssigner.Zone.values().length];
         for (int i = 0; i < this.zoneProfiles.length; i++) {
             this.zoneProfiles[i] = new NodeLevelZoneSummary(HeatZoneAssigner.Zone.values()[i]);
@@ -98,8 +103,12 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
         return profileForDimension;
     }
 
-    public double getTotalUsage() {
-        return totalUsage;
+    public double getTotalMetricValueUsed() {
+        return totalMetricValueUsed;
+    }
+
+    public double getAvgMetricValueOverShards() {
+        return avgMetricValueOverShards;
     }
 
     @VisibleForTesting
@@ -135,6 +144,7 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
         List<Field<?>> schema = new ArrayList<>();
         schema.add(DSL.field(DSL.name(DIMENSION_KEY), String.class));
         schema.add(DSL.field(DSL.name(MEAN_KEY), Short.class));
+        schema.add(DSL.field(DSL.name(AVG_SHARDS_KEY), Short.class));
         schema.add(DSL.field(DSL.name(TOTAL_KEY), Double.class));
         schema.add(DSL.field(DSL.name(NUM_SHARDS_KEY), Integer.class));
 
@@ -146,7 +156,8 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
         List<Object> row = new ArrayList<>();
         row.add(getProfileForDimension().NAME);
         row.add(getMeanTemperature().getPOINTS());
-        row.add(getTotalUsage());
+        row.add(getAvgMetricValueOverShards());
+        row.add(getTotalMetricValueUsed());
         row.add(getNumberOfShards());
         return row;
     }
@@ -156,7 +167,8 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
         JsonObject summaryObj = new JsonObject();
         summaryObj.addProperty(DIMENSION_KEY, getProfileForDimension().NAME);
         summaryObj.addProperty(MEAN_KEY, getMeanTemperature().getPOINTS());
-        summaryObj.addProperty(TOTAL_KEY, getTotalUsage());
+        summaryObj.addProperty(AVG_SHARDS_KEY, getMeanTemperature().getPOINTS());
+        summaryObj.addProperty(TOTAL_KEY, getTotalMetricValueUsed());
         summaryObj.addProperty(NUM_SHARDS_KEY, getNumberOfShards());
 
         JsonArray array = new JsonArray();
@@ -171,11 +183,11 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
     }
 
     /**
-     * +------------------------------+---------------+----+----------------+---------+------+
-     * |NodeLevelDimensionalSummary_ID|dimension      |mean|           total|numShards|RCA_ID|
-     * +------------------------------+---------------+----+----------------+---------+------+
-     * |                             1|CPU_Utilization|   1|1.20827386264977|        3|     1|
-     * +------------------------------+---------------+----+----------------+---------+------+
+     * +------------------------------+---------------+----+----------------+-----------------+----------------+
+     * |NodeLevelDimensionalSummary_ID|dimension      |mean|             avg|           total |numShards|RCA_ID|
+     * +------------------------------+---------------+----+----------------+-----------------+----------------+
+     * |                             1|CPU_Utilization|   1|    0.4027579542| 1.20827386264977|        3|    1|
+     * +------------------------------+---------------+----+----------------+-----------------+----------------+
      *
      * @param record  A db row containing the values for a temperature dimension.
      * @param context the database context. It is used to query the nested summary tables.
@@ -190,8 +202,12 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
         double total = record.get(TOTAL_KEY, Double.class);
         int shards = record.get(NUM_SHARDS_KEY, Integer.class);
 
-        NodeLevelDimensionalSummary summary =
-                new NodeLevelDimensionalSummary(dimension, value, total);
+        NodeLevelDimensionalSummary summary;
+        if (shards > 0) {
+            summary = new NodeLevelDimensionalSummary(dimension, value, (total / shards), total);
+        } else {
+            summary = new NodeLevelDimensionalSummary(dimension, value, total, total);
+        }
         summary.setNumberOfShards(shards);
 
         // At this point we have filled in the NodeSummary with the data in the tuple. To
@@ -248,14 +264,22 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
             ShardProfileSummary shard = shardStore.getOrCreateIfAbsent(indexName, shardId);
             JsonArray temperatureProfiles =
                     element.getAsJsonObject().get(ShardProfileSummary.TEMPERATURE_KEY).getAsJsonArray();
+            JsonArray rawMetrics =
+                    element.getAsJsonObject().get(ShardProfileSummary.RAW_METRIC_KEY).getAsJsonArray();
 
-            for (JsonElement temperature : temperatureProfiles) {
-                JsonObject obj = temperature.getAsJsonObject();
-                TemperatureDimension dimension =
-                        TemperatureDimension.valueOf(obj.get(TemperatureVector.DIMENSION_KEY).getAsString());
-                TemperatureVector.NormalizedValue value =
-                        new TemperatureVector.NormalizedValue((short) obj.get(TemperatureVector.VALUE_KEY).getAsInt());
-                shard.addTemperatureForDimension(dimension, value);
+            Iterator<JsonElement> temperatureProfileIterator = temperatureProfiles.iterator();
+            Iterator<JsonElement> rawMetricsIterator = rawMetrics.iterator();
+
+            while (temperatureProfileIterator.hasNext() && rawMetricsIterator.hasNext()) {
+                JsonObject temperatureObj = temperatureProfileIterator.next().getAsJsonObject();
+                JsonObject rawMetricsObj = rawMetricsIterator.next().getAsJsonObject();
+                TemperatureDimension temperatureDimension =
+                        TemperatureDimension.valueOf(temperatureObj.get(TemperatureVector.DIMENSION_KEY).getAsString());
+                TemperatureVector.NormalizedValue temperatureValue =
+                        new TemperatureVector.NormalizedValue((short) temperatureObj.get(TemperatureVector.VALUE_KEY).getAsInt());
+                double rawMetricsValue = rawMetricsObj.get(RawMetricsVector.VALUE_KEY).getAsDouble();
+                shard.addTemperatureForDimension(temperatureDimension, temperatureValue);
+                shard.addRawMetricForDimension(temperatureDimension, rawMetricsValue);
             }
             zoneSummary.addShard(shard);
         }

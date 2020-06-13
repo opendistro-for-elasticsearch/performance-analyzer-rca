@@ -83,7 +83,7 @@ public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
                     TemperatureVector.NormalizedValue.calculate(nodeAverageForDimension, totalForDimension);
 
             clusterTemperatureSummary.createClusterDimensionalTemperature(dimension,
-                    normalizedAvgForDimension, totalForDimension);
+                    normalizedAvgForDimension, nodeAverageForDimension, totalForDimension);
 
             recalibrateNodeTemperaturesAtClusterLevelUsage(flowUnits, nodeTemperatureSummaryMap,
                     dimension, totalForDimension, nodeAverageForDimension);

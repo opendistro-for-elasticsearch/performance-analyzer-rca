@@ -59,6 +59,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
 
     private static final String DIM_KEY = "dimension";
     private static final String MEAN_KEY = "mean";
+    private static final String AVG_NODE_KEY = "avg";
     private static final String TOTAL_KEY = "total";
     private static final String NUM_NODES_KEY = "numNodes";
 
@@ -73,10 +74,16 @@ public class ClusterDimensionalSummary extends GenericSummary {
     private TemperatureVector.NormalizedValue meanTemperature;
 
     /**
+     * This is the average value used over shards.
+     */
+
+    private double avgMetricValueUsedOverNodes;
+
+    /**
      * meanTemperature is a normalized value. The total tells us if this is something that one
      * should be concerned about.
      */
-    private double totalUsage;
+    private double totalMetricValueUsedOverCluster;
 
     /**
      * The number of nodes in the cluster.
@@ -102,8 +109,12 @@ public class ClusterDimensionalSummary extends GenericSummary {
         this.meanTemperature = meanTemperature;
     }
 
-    public void setTotalUsage(double totalUsage) {
-        this.totalUsage = totalUsage;
+    public void setAvgMetricValueUsedOverNodes(double avgMetricValueUsedOverNodes) {
+        this.avgMetricValueUsedOverNodes = avgMetricValueUsedOverNodes;
+    }
+
+    public void setTotalMetricsValueUsed(double totalMetricValueUsedOverCluster) {
+        this.totalMetricValueUsedOverCluster = totalMetricValueUsedOverCluster;
     }
 
     public int getNumberOfNodes() {
@@ -132,8 +143,12 @@ public class ClusterDimensionalSummary extends GenericSummary {
         return profileForDimension;
     }
 
-    public double getTotalUsage() {
-        return totalUsage;
+    public double getAvgMetricValueOverNodes() {
+        return avgMetricValueUsedOverNodes;
+    }
+
+    public double getTotalMetricsValueUsedOverCluster() {
+        return totalMetricValueUsedOverCluster;
     }
 
     /**
@@ -173,6 +188,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
         List<Field<?>> schema = new ArrayList<>();
         schema.add(DSL.field(DSL.name(DIM_KEY), String.class));
         schema.add(DSL.field(DSL.name(MEAN_KEY), Short.class));
+        schema.add(DSL.field(DSL.name(AVG_NODE_KEY), Short.class));
         schema.add(DSL.field(DSL.name(TOTAL_KEY), Double.class));
         schema.add(DSL.field(DSL.name(NUM_NODES_KEY), Integer.class));
 
@@ -193,7 +209,8 @@ public class ClusterDimensionalSummary extends GenericSummary {
         List<Object> row = new ArrayList<>();
         row.add(getProfileForDimension().NAME);
         row.add(getMeanTemperature().getPOINTS());
-        row.add(getTotalUsage());
+        row.add(getAvgMetricValueOverNodes());
+        row.add(getTotalMetricsValueUsedOverCluster());
         row.add(getNumberOfNodes());
         return row;
     }
@@ -208,7 +225,8 @@ public class ClusterDimensionalSummary extends GenericSummary {
         JsonObject summaryObj = new JsonObject();
         summaryObj.addProperty(DIM_KEY, getProfileForDimension().NAME);
         summaryObj.addProperty(MEAN_KEY, getMeanTemperature().getPOINTS());
-        summaryObj.addProperty(TOTAL_KEY, getTotalUsage());
+        summaryObj.addProperty(AVG_NODE_KEY, getAvgMetricValueOverNodes());
+        summaryObj.addProperty(TOTAL_KEY, getTotalMetricsValueUsedOverCluster());
         summaryObj.addProperty(NUM_NODES_KEY, getNumberOfNodes());
 
         JsonArray arr = new JsonArray();
@@ -243,7 +261,11 @@ public class ClusterDimensionalSummary extends GenericSummary {
 
         ClusterDimensionalSummary summary =
                 new ClusterDimensionalSummary(TemperatureDimension.valueOf(dimensionName));
-        summary.setTotalUsage(total);
+        if (numNodes <= 0) {
+            throw new IllegalArgumentException("Number of elasticsearch nodes stored are zero.");
+        }
+        summary.setAvgMetricValueUsedOverNodes(total / numNodes);
+        summary.setTotalMetricsValueUsed(total);
         summary.setMeanTemperature(meanTemp);
         summary.setNumberOfNodes(numNodes);
 

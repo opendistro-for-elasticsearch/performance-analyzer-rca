@@ -63,9 +63,15 @@ public class HeapAllocRateTemperatureRca extends Rca<DimensionalTemperatureFlowU
               THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT);
       LOG.info("Heap allocation rate temperature calculated: {}",
               heapAllocRateTemperatureFlowUnit.getNodeDimensionProfile());
-      ResourceContext context = (heapAllocRateTemperatureFlowUnit.getNodeDimensionProfile().getMeanTemperature()
-              .isGreaterThan(THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT)) ? new ResourceContext(Resources.State.UNHEALTHY) :
-              new ResourceContext(Resources.State.HEALTHY);
+      ResourceContext context;
+      try {
+          context = (heapAllocRateTemperatureFlowUnit.getNodeDimensionProfile().getMeanTemperature()
+                  .isGreaterThan(THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT)) ? new ResourceContext(Resources.State.UNHEALTHY) :
+                  new ResourceContext(Resources.State.HEALTHY);
+      } catch (Exception e) {
+          // Null Pointer Exception
+          context =  new ResourceContext(Resources.State.UNKNOWN);
+      }
       heapAllocRateTemperatureFlowUnit.setResourceContext(context);
       return heapAllocRateTemperatureFlowUnit;
   }

@@ -167,7 +167,7 @@ public class CompactNodeSummary extends GenericSummary {
         for (NodeLevelDimensionalSummary nodeDimensionProfile : nodeProfile.getNodeDimensionProfiles()) {
             if (nodeDimensionProfile != null) {
                 int index = nodeDimensionProfile.getProfileForDimension().ordinal();
-                totalConsumedByDimension[index] = nodeDimensionProfile.getTotalUsage();
+                totalConsumedByDimension[index] = nodeDimensionProfile.getTotalMetricValueUsed();
                 numOfShards[index] = nodeDimensionProfile.getNumberOfShards();
             }
         }

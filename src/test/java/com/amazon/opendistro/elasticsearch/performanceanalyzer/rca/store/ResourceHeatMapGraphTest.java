@@ -39,12 +39,15 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.CompactClusterLevelNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.NodeLevelDimensionalSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ShardProfileSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.RawMetricsVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
@@ -81,6 +84,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -646,11 +650,48 @@ public class ResourceHeatMapGraphTest {
             Assert.assertEquals("pmc",
                 e.getAsJsonObject().get("index_name").getAsString());
             int shardId = e.getAsJsonObject().get("shard_id").getAsInt();
-            Assert.assertTrue(shardId == 2 || shardId == 4 || shardId == 0);
+            switch (shardId) {
+              case 0:
+              case 4:
+                verifyDimensionalValues(e,0.00601607305191053, 484558.702871655,
+                        7389877.0, 1, 1, 3);
+                break;
+              case 2:
+                verifyDimensionalValues(e,0.00601607305191053, 484558.702871655,
+                        7389877.0, 0, 0, 3);
+                break;
+            }
           }
           break;
         case COLD:
           Assert.assertEquals(0, o.getAsJsonArray("all_shards").size());
+      }
+    }
+  }
+
+  private void verifyDimensionalValues(JsonElement element, double cpuUtilizationActualValue, double heapAllocationActualValue,
+                                       double shardSizeActualValue, int cpuUtilizationHeat, int heapAllocationHeat, int shardSizeHeat) {
+    JsonArray rawMetrics = element.getAsJsonObject().get(ShardProfileSummary.RAW_METRIC_KEY).getAsJsonArray();
+    JsonArray temperatureProfiles = element.getAsJsonObject().get(ShardProfileSummary.TEMPERATURE_KEY).getAsJsonArray();
+    Iterator<JsonElement> temperatureProfileIterator = temperatureProfiles.iterator();
+    Iterator<JsonElement> rawMetricsIterator = rawMetrics.iterator();
+    while (temperatureProfileIterator.hasNext() && rawMetricsIterator.hasNext()) {
+      JsonObject temperatureObj = temperatureProfileIterator.next().getAsJsonObject();
+      JsonObject rawMetricsObj = rawMetricsIterator.next().getAsJsonObject();
+      TemperatureDimension temperatureDimension =
+              TemperatureDimension.valueOf(temperatureObj.get(TemperatureVector.DIMENSION_KEY).getAsString());
+      TemperatureVector.NormalizedValue temperatureValue =
+              new TemperatureVector.NormalizedValue((short) temperatureObj.get(TemperatureVector.VALUE_KEY).getAsInt());
+      double rawMetricsValue = rawMetricsObj.get(RawMetricsVector.VALUE_KEY).getAsDouble();
+      if (temperatureDimension == TemperatureDimension.CPU_Utilization) {
+        Assert.assertEquals(rawMetricsValue,cpuUtilizationActualValue, 0.001);
+        Assert.assertEquals((int)temperatureValue.getPOINTS(),cpuUtilizationHeat);
+      } else if (temperatureDimension == TemperatureDimension.Heap_AllocRate) {
+        Assert.assertEquals(rawMetricsValue,heapAllocationActualValue, 0.001);
+        Assert.assertEquals((int)temperatureValue.getPOINTS(),heapAllocationHeat);
+      } else if (temperatureDimension == TemperatureDimension.Shard_Size_In_Bytes) {
+        Assert.assertEquals(rawMetricsValue,shardSizeActualValue, 0.001);
+        Assert.assertEquals((int)temperatureValue.getPOINTS(),shardSizeHeat);
       }
     }
   }
