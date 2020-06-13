@@ -2,10 +2,16 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.grpc;
 
 import io.grpc.Channel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
+import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
+import io.grpc.netty.shaded.io.netty.handler.ssl.SslContext;
+import io.grpc.netty.shaded.io.netty.handler.ssl.SslContextBuilder;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.net.ssl.SSLException;
+import java.io.File;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -20,10 +26,27 @@ class GRPCClient {
         this(ManagedChannelBuilder.forAddress(host, port).usePlaintext());
     }
 
+    public GRPCClient(String host, int port, String rootCa, String cert, String privateKey) throws SSLException  {
+        this(NettyChannelBuilder.forAddress(host, port).sslContext(buildSslContext(rootCa, cert, privateKey)));
+    }
+
     public GRPCClient(ManagedChannelBuilder<?> channelBuilder) {
         channel = channelBuilder.build();
         client = InterNodeRpcServiceGrpc.newBlockingStub(channel);
         asyncClient = InterNodeRpcServiceGrpc.newStub(channel);
+    }
+
+    private static SslContext buildSslContext(String trustCertCollectionFilePath,
+                                              String clientCertChainFilePath,
+                                              String clientPrivateKeyFilePath) throws SSLException {
+        SslContextBuilder builder = GrpcSslContexts.forClient();
+        if (trustCertCollectionFilePath != null) {
+            builder.trustManager(new File(trustCertCollectionFilePath));
+        }
+        if (clientCertChainFilePath != null && clientPrivateKeyFilePath != null) {
+            builder.keyManager(new File(clientCertChainFilePath), new File(clientPrivateKeyFilePath));
+        }
+        return builder.build();
     }
 
     // Get Metrics https://opendistro.github.io/for-elasticsearch-docs/docs/pa/reference/
