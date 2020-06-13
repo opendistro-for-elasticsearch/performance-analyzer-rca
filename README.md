@@ -1,4 +1,7 @@
-![](https://github.com/opendistro-for-elasticsearch/performance-analyzer-rca/workflows/Java%20CI/badge.svg)
+[![Java CI](https://github.com/opendistro-for-elasticsearch/performance-analyzer-rca/workflows/Java%20CI/badge.svg)](https://github.com/opendistro-for-elasticsearch/performance-analyzer-rca/actions?query=workflow%3A%22Java+CI%22)
+[![codecov](https://codecov.io/gh/opendistro-for-elasticsearch/performance-analyzer-rca/branch/master/graph/badge.svg)](https://codecov.io/gh/opendistro-for-elasticsearch/performance-analyzer-rca)
+[![Documentation](https://img.shields.io/badge/api-reference-blue.svg)](https://opendistro.github.io/for-elasticsearch-docs/docs/rca/)
+![PRs welcome!](https://img.shields.io/badge/PRs-welcome!-success)
 
 ## Performance Analyzer RCA
 
