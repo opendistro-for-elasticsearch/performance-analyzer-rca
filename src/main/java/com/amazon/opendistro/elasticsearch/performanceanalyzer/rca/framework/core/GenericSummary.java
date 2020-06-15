@@ -25,35 +25,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.jooq.Field;
+import org.jooq.Record;
 
 public abstract class GenericSummary {
-
-  public GenericSummary() {
-    nestedSummaryList = new ArrayList<>();
-  }
-
-  protected final List<GenericSummary> nestedSummaryList;
-
-  public List<GenericSummary> getNestedSummaryList() {
-    return nestedSummaryList;
-  }
-
-  /**
-   * get the list of Summary Class object for the nested summary list
-   * this is to de-serialize summary object from the SQL tables
-   * @return list of Summary Class object
-   */
-  public List<SummaryBuilder<? extends GenericSummary>> getNestedSummaryBuilder() {
-    return null;
-  }
-
-  public void addNestedSummaryList(Collection<GenericSummary> nestedSummaryList) {
-    this.nestedSummaryList.addAll(nestedSummaryList);
-  }
-
-  public void addNestedSummaryList(GenericSummary nestedSummary) {
-    this.nestedSummaryList.add(nestedSummary);
-  }
 
   public abstract <T extends GeneratedMessageV3> T buildSummaryMessage();
 
@@ -72,14 +46,45 @@ public abstract class GenericSummary {
   public abstract JsonElement toJson();
 
   /**
+   * get the list of nested summary in generic type.
+   * Used by persistor only
+   * @return list of Genericsummary
+   */
+  public List<GenericSummary> getNestedSummaryList() {
+    return new ArrayList<>();
+  }
+
+  /**
+   * get the list of SQL tables that store the nested summaries this summary contains
+   * each summary can be attached with one or many types of nested summary. So we use this to
+   * recursively query nested summary table in SQL.
+   * Used by persistor only
+   * @return list of SQL tables
+   */
+  public List<String> getNestedSummaryTables() {
+    return null;
+  }
+
+  /**
+   * build nested summary from SQL record and append it to the corresponding nested summary list
+   * Used by persistor only
+   * @param summaryTable the SQL table of the nested summary
+   * @param record the SQL record of nested summary
+   * @return the nested summary of generic type
+   */
+  public GenericSummary buildNestedSummary(String summaryTable, Record record) throws IllegalArgumentException {
+    return null;
+  }
+
+  /**
    * convert summary list into a json array
    * @return JsonArray object
    */
   @VisibleForTesting
   public JsonArray nestedSummaryListToJson() {
     JsonArray nestedSummaryArray = new JsonArray();
-    if (!this.nestedSummaryList.isEmpty()) {
-      this.nestedSummaryList.forEach(
+    if (getNestedSummaryList() != null) {
+      getNestedSummaryList().forEach(
           summary -> {
             nestedSummaryArray.add(summary.toJson());
           }

@@ -16,8 +16,8 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.calculators;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.TemperatureMetricsBase;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -58,7 +58,7 @@ public class ShardIndependentTemperatureCalculator extends TemperatureMetricsBas
             AllMetrics.CommonDimension.OPERATION.toString()
     };
 
-    public ShardIndependentTemperatureCalculator(TemperatureVector.Dimension metricType) {
+    public ShardIndependentTemperatureCalculator(TemperatureDimension metricType) {
         super(metricType, dimensions);
     }
 

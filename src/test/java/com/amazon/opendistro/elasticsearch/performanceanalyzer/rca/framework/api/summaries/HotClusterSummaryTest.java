@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary.SQL_SCHEMA_CONSTANTS;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -34,6 +35,8 @@ import org.mockito.MockitoAnnotations;
 public class HotClusterSummaryTest {
     private static final int NUM_OF_NODES = 9;
     private static final int NUM_UNHEALTHY = 1;
+    private static final String NODE_ID = "abc";
+    private static final String NODE_ADDRESS = "127.0.0.1";
     private static HotClusterSummary uut;
 
     @Mock
@@ -85,14 +88,17 @@ public class HotClusterSummaryTest {
 
     @Test
     public void testToJson() {
-        uut.addNestedSummaryList(new HotClusterSummary(NUM_OF_NODES, NUM_UNHEALTHY));
-        uut.addNestedSummaryList(new HotResourceSummary(ResourceType.newBuilder().build(), 3.14, 2.71, 0));
+        HotNodeSummary nodeSummary = new HotNodeSummary(NODE_ID, NODE_ADDRESS);
+        uut.appendNestedSummary(nodeSummary);
         JsonElement elem = uut.toJson();
         Assert.assertTrue(elem.isJsonObject());
         JsonObject json = ((JsonObject) elem);
         Assert.assertEquals(NUM_OF_NODES, json.get(HotClusterSummary.SQL_SCHEMA_CONSTANTS.NUM_OF_NODES_COL_NAME).getAsInt());
         Assert.assertEquals(NUM_UNHEALTHY, json.get(HotClusterSummary.SQL_SCHEMA_CONSTANTS.NUM_OF_UNHEALTHY_NODES_COL_NAME).getAsInt());
-        Assert.assertEquals(uut.nestedSummaryListToJson(), json.get(uut.getNestedSummaryList().get(0).getTableName()).getAsJsonArray());
+        String tableName = uut.getHotNodeSummaryList().get(0).getTableName();
+        JsonObject nodeJson = json.get(tableName).getAsJsonArray().get(0).getAsJsonObject();
+        Assert.assertEquals(NODE_ID, nodeJson.get(SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME).getAsString());
+        Assert.assertEquals(NODE_ADDRESS, nodeJson.get(SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME).getAsString());
     }
 
     @Test

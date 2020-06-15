@@ -83,16 +83,11 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> 
         continue;
       }
       long timestamp = clock.millis();
-      for (GenericSummary summary : nodeSummary.getNestedSummaryList()) {
-        if (summary instanceof HotResourceSummary) {
-          HotResourceSummary resourceSummary = (HotResourceSummary) summary;
-          NodeResourceUsage oldUsage = nodeTable.get(nodeSummary.getNodeID(), ((HotResourceSummary) summary).getResourceType());
-          if (oldUsage == null || oldUsage.timestamp < timestamp) {
-            nodeTable.put(nodeSummary.getNodeID(), resourceSummary.getResourceType(),
-                new NodeResourceUsage(timestamp, resourceSummary));
-          }
-        } else {
-          LOG.error("RCA : unexpected summary type !");
+      for (HotResourceSummary resourceSummary : nodeSummary.getHotResourceSummaryList()) {
+        NodeResourceUsage oldUsage = nodeTable.get(nodeSummary.getNodeID(), resourceSummary.getResourceType());
+        if (oldUsage == null || oldUsage.timestamp < timestamp) {
+          nodeTable.put(nodeSummary.getNodeID(), resourceSummary.getResourceType(),
+              new NodeResourceUsage(timestamp, resourceSummary));
         }
       }
     }
@@ -168,7 +163,7 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> 
             nodeSummaryMap.put(nodeDetail.getId(),
                 new HotNodeSummary(nodeDetail.getId(), nodeDetail.getHostAddress()));
           }
-          nodeSummaryMap.get(nodeDetail.getId()).addNestedSummaryList(currentUsage.resourceSummary);
+          nodeSummaryMap.get(nodeDetail.getId()).appendNestedSummary(currentUsage.resourceSummary);
         }
       }
     }
@@ -182,7 +177,7 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> 
       context = new ResourceContext(Resources.State.UNHEALTHY);
       summary = new HotClusterSummary(dataNodesDetails.size(), nodeSummaryMap.size());
       for (Map.Entry<String, HotNodeSummary> entry : nodeSummaryMap.entrySet()) {
-        summary.addNestedSummaryList(entry.getValue());
+        summary.appendNestedSummary(entry.getValue());
       }
     }
     return new ResourceFlowUnit<>(System.currentTimeMillis(), context, summary, true);

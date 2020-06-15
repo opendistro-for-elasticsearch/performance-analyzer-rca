@@ -20,11 +20,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.ResourceFlowUnitFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.SQL_SCHEMA_CONSTANTS;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.SummaryBuilder;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.protobuf.GeneratedMessageV3;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -42,11 +44,13 @@ public class RcaResponse extends GenericSummary {
   private String rcaName;
   private String state;
   private long timeStamp;
+  List<GenericSummary> summaryList;
 
   public RcaResponse(String rcaName, String state, long timeStamp) {
     this.rcaName = rcaName;
     this.state = state;
     this.timeStamp = timeStamp;
+    this.summaryList = new ArrayList<>();
   }
 
 
@@ -102,13 +106,6 @@ public class RcaResponse extends GenericSummary {
   }
 
   @Override
-  public List<SummaryBuilder<? extends GenericSummary>> getNestedSummaryBuilder() {
-    return Collections.unmodifiableList(Collections.singletonList(
-        new SummaryBuilder<>(HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE,
-            HotClusterSummary::buildSummary)));
-  }
-
-  @Override
   public List<Field<?>> getSqlSchema() {
     return null;
   }
@@ -129,5 +126,33 @@ public class RcaResponse extends GenericSummary {
       summaryObj.add(tableName, this.nestedSummaryListToJson());
     }
     return summaryObj;
+  }
+
+  @Override
+  public List<GenericSummary> getNestedSummaryList() {
+    return summaryList;
+  }
+
+  @Override
+  public GenericSummary buildNestedSummary(String summaryTable, Record record) {
+    GenericSummary ret = null;
+    if (summaryTable.equals(HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE)) {
+      HotClusterSummary hotClusterSummary = HotClusterSummary.buildSummary(record);
+      if (hotClusterSummary != null) {
+        summaryList.add(hotClusterSummary);
+        ret = hotClusterSummary;
+      }
+    }
+    return ret;
+  }
+
+  @Override
+  public List<String> getNestedSummaryTables() {
+    return Collections.unmodifiableList(Collections.singletonList(
+        HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE));
+  }
+
+  public void addNestedSummaryList(GenericSummary summary) {
+    summaryList.add(summary);
   }
 }

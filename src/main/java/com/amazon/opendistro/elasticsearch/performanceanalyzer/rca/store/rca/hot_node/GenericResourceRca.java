@@ -183,7 +183,7 @@ public class GenericResourceRca extends Rca<ResourceFlowUnit<HotResourceSummary>
         try {
           double num = record.getValue(fieldSize - 1, Double.class);
           String name = record.getValue(0, String.class);
-          summary.addNestedSummaryList(new TopConsumerSummary(name, num));
+          summary.appendNestedSummary(new TopConsumerSummary(name, num));
         }
         catch (DataTypeException de) {
           LOG.error("Fail to read some field from SQL record, trace : {}", de.getStackTrace());

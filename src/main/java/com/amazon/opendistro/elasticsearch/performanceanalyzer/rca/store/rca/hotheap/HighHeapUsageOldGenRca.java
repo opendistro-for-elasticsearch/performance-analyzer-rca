@@ -241,7 +241,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit<HotResourceSumm
       if (summary.getNestedSummaryList().size() >= topK) {
         break;
       }
-      summary.addNestedSummaryList(new TopConsumerSummary(aggregator.getName(), aggregator.getSum()));
+      summary.appendNestedSummary(new TopConsumerSummary(aggregator.getName(), aggregator.getSum()));
     }
   }
 

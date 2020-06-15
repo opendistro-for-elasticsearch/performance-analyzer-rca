@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.pyrometer;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.CompactNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ShardProfileSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -80,7 +81,7 @@ public class Api {
      * @param dimension The dimension to consider.
      * @return The difference in temperature of the
      */
-    public static boolean isClusterImbalanceAlongDimension(TemperatureVector.Dimension dimension) {
+    public static boolean isClusterImbalanceAlongDimension(TemperatureDimension dimension) {
         failIfNotElectedMaster("getClusterImbalanceAlongDimension");
         // TODO: Calculate this
         return true;
@@ -97,7 +98,7 @@ public class Api {
      * @return An ordered list of nodes.
      */
     public static @Nonnull
-    List<CompactNodeSummary> getNodesForGivenZone(final TemperatureVector.Dimension dimension,
+    List<CompactNodeSummary> getNodesForGivenZone(final TemperatureDimension dimension,
                                                   final HeatZoneAssigner.Zone zone,
                                                   final Count count,
                                                   final SortOrder order) {
@@ -112,7 +113,7 @@ public class Api {
      * @return A list of nodes ordered by the temperature Zone by the ordinal of    the enum.
      */
     public static @Nonnull
-    Map<HeatZoneAssigner.Zone, List<CompactNodeSummary>> getNodesForAllZones(final TemperatureVector.Dimension dimension,
+    Map<HeatZoneAssigner.Zone, List<CompactNodeSummary>> getNodesForAllZones(final TemperatureDimension dimension,
                                                                              final Count count,
                                                                              final SortOrder order) {
         failIfNotElectedMaster("getNodes");
@@ -142,7 +143,7 @@ public class Api {
     public static @Nonnull
     List<ShardProfileSummary> getShards(
             final CompactNodeSummary node,
-            final TemperatureVector.Dimension dimension,
+            final TemperatureDimension dimension,
             final HeatZoneAssigner.Zone zone,
             final Count count,
             final SortOrder sortOrder) {

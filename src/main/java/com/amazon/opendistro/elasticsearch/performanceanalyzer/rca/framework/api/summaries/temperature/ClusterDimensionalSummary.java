@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMess
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
@@ -64,7 +65,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
     /**
      * This determines which dimension for which this profile is.
      */
-    private final TemperatureVector.Dimension profileForDimension;
+    private final TemperatureDimension profileForDimension;
 
     /**
      * This is the mean temperature for this dimension over all the nodes in the cluster.
@@ -88,7 +89,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
      */
     private final ZoneSummary[] zoneProfiles;
 
-    public ClusterDimensionalSummary(TemperatureVector.Dimension profileForDimension) {
+    public ClusterDimensionalSummary(TemperatureDimension profileForDimension) {
         this.profileForDimension = profileForDimension;
 
         this.zoneProfiles = new ZoneSummary[HeatZoneAssigner.Zone.values().length];
@@ -127,7 +128,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
         return meanTemperature;
     }
 
-    public TemperatureVector.Dimension getProfileForDimension() {
+    public TemperatureDimension getProfileForDimension() {
         return profileForDimension;
     }
 
@@ -241,7 +242,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
                 Integer.class);
 
         ClusterDimensionalSummary summary =
-                new ClusterDimensionalSummary(TemperatureVector.Dimension.valueOf(dimensionName));
+                new ClusterDimensionalSummary(TemperatureDimension.valueOf(dimensionName));
         summary.setTotalUsage(total);
         summary.setMeanTemperature(meanTemp);
         summary.setNumberOfNodes(numNodes);

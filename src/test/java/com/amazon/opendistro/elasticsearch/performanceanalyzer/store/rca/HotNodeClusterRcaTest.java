@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
@@ -135,7 +136,7 @@ public class HotNodeClusterRcaTest {
     HotResourceSummary resourceSummary = new HotResourceSummary(type,
         10, val, 60);
     HotNodeSummary nodeSummary = new HotNodeSummary(nodeId, "127.0.0.0");
-    nodeSummary.addNestedSummaryList(resourceSummary);
+    nodeSummary.appendNestedSummary(resourceSummary);
     return new ResourceFlowUnit(System.currentTimeMillis(), new ResourceContext(Resources.State.HEALTHY), nodeSummary);
   }
 
