@@ -24,21 +24,37 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUnit<T>> {
+  private Clock clock;
+
   public RcaTestHelper() {
     super(5);
+    this.clock = Clock.systemUTC();
   }
 
   public void mockFlowUnit(ResourceFlowUnit<T> flowUnit) {
     this.flowUnits = Collections.singletonList(flowUnit);
   }
 
+  public void mockFlowUnit(ResourceFlowUnit<T> flowUnit1, ResourceFlowUnit<T> flowUnit2) {
+    this.flowUnits = Arrays.asList(flowUnit1, flowUnit2);
+  }
+
+  public void mockFlowUnit() {
+    this.flowUnits = Collections.singletonList((ResourceFlowUnit<T>)ResourceFlowUnit.generic());
+  }
+
   public void mockFlowUnits(List<ResourceFlowUnit<T>> flowUnitList) {
     this.flowUnits = flowUnitList;
+  }
+
+  public void setClock(Clock clock) {
+    this.clock = clock;
   }
 
   @Override
@@ -56,6 +72,15 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
     HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, "127.0.0.0");
     nodeSummary.appendNestedSummary(resourceSummary);
     return new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(healthy), nodeSummary);
+  }
+
+  public static ResourceFlowUnit<HotNodeSummary> generateFlowUnit(ResourceType type, String nodeID,
+      Resources.State healthy, long timestamp) {
+    HotResourceSummary resourceSummary = new HotResourceSummary(type,
+        10, 5, 60);
+    HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, "127.0.0.0");
+    nodeSummary.appendNestedSummary(resourceSummary);
+    return new ResourceFlowUnit<>(timestamp, new ResourceContext(healthy), nodeSummary);
   }
 
   public static ResourceFlowUnit<HotNodeSummary> generateFlowUnitForHotShard(String indexName, String shardId, String nodeID,

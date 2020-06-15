@@ -15,7 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources.State;
@@ -23,52 +22,54 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Table;
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
- * This is a generic cluster level RCA which subscripts a single upstream vertex HotNodeRca.
- * This cluster RCA maintains a two dimensional table indexed by (NodeId, ResourceType). And within
- * each cell, it keeps track of the last three consecutive resource summaries and will mark the node
- * as unhealthy if all three resource summaries received from that node are unhealthy,
+ * This is a generic cluster level RCA which subscripts a single upstream node level RCA.
+ * This cluster RCA maintains a hashtable to keep track of flowunits sending from different nodes across
+ * the cluster. This RCA will mark the cluster as unhealthy if the flowunits from any data nodes are unhealthy.
+ * <p></p>
+ * A few protected variables that can be overridden by derived class:
+ * numOfFlowUnitsInMap : number of consecutive flowunits stored in hashtable. Default is 1
+ * collectFromMasterNode : whether this RCA collect flowunit from master nodes.
+ * expirationTimeWindow : time window to determine whether flowunit in hashmap becomes stale
  */
-public class BaseClusterRca<T extends GenericSummary> extends Rca<ResourceFlowUnit<T>> {
-  private static final Logger LOG = LogManager.getLogger(BaseClusterRca.class);
-  private static final int UNHEALTHY_FLOWUNIT_THRESHOLD = 3;
-  private static final long TIMESTAMP_EXPIRATION_IN_MINS = 5;
-  private final Rca<ResourceFlowUnit> hotNodeRca;
-  private final HashSet<ResourceType> resourceTypes;
-  private final Table<String, ResourceType, ImmutableList<ResourceSummaryWrapper>> nodeTable;
+public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
+  private static final int DEFAULT_NUM_OF_FLOWUNITS = 1;
+  private static final long TIMESTAMP_EXPIRATION_IN_MILLIS = TimeUnit.MINUTES.toMillis(10);
+  private final Rca<ResourceFlowUnit<HotNodeSummary>> nodeRca;
+  private final Map<NodeKey, LinkedList<ResourceFlowUnit<HotNodeSummary>>> nodeMap;
   private final int rcaPeriod;
   private int counter;
-  private List<NodeDetails> dataNodesDetails;
   protected Clock clock;
+  protected int numOfFlowUnitsInMap;
+  protected boolean collectFromMasterNode;
+  protected long expirationTimeWindow;
 
-  public <R extends Rca> BaseClusterRca(final int rcaPeriod,
-      final R hotNodeRca, final List<ResourceType> resourceTypes) {
+
+  public <R extends Rca<ResourceFlowUnit<HotNodeSummary>>> BaseClusterRca(final int rcaPeriod,
+      final R nodeRca) {
     super(5);
     this.rcaPeriod = rcaPeriod;
     this.counter = 0;
     this.clock = Clock.systemUTC();
-    this.hotNodeRca = hotNodeRca;
-    this.resourceTypes = new HashSet<>(resourceTypes);
-    nodeTable = HashBasedTable.create();
+    this.nodeRca = nodeRca;
+    this.numOfFlowUnitsInMap = DEFAULT_NUM_OF_FLOWUNITS;
+    this.nodeMap = new HashMap<>();
+    this.collectFromMasterNode = false;
+    this.expirationTimeWindow = TIMESTAMP_EXPIRATION_IN_MILLIS;
   }
 
   @VisibleForTesting
@@ -76,134 +77,95 @@ public class BaseClusterRca<T extends GenericSummary> extends Rca<ResourceFlowUn
     this.clock = clock;
   }
 
-  //add Resource Summary to the corresponding cell in NodeTable
-  private void addSummaryToNodeMap(final String nodeId, final ResourceType resourceType, ResourceSummaryWrapper summaryWrapper) {
-    LinkedList<ResourceSummaryWrapper> linkedList = new LinkedList<>();
-    ImmutableList<ResourceSummaryWrapper> oldUsage = nodeTable.get(nodeId, resourceType);
-    if (oldUsage != null) {
-      linkedList.addAll(oldUsage);
-    }
-    linkedList.addLast(summaryWrapper);
-    while (!linkedList.isEmpty()) {
-      if (TimeUnit.MILLISECONDS.toMinutes(summaryWrapper.timestamp - linkedList.getFirst().timestamp)
-              > TIMESTAMP_EXPIRATION_IN_MINS) {
-        linkedList.pollFirst();
-      }
-      else {
-        break;
-      }
-    }
-    while (linkedList.size() > UNHEALTHY_FLOWUNIT_THRESHOLD) {
-      linkedList.pollFirst();
-    }
-    nodeTable.put(nodeId, resourceType, ImmutableList.copyOf(linkedList));
+  @VisibleForTesting
+  public void setCollectFromMasterNode(boolean collectFromMasterNode) {
+    this.collectFromMasterNode = collectFromMasterNode;
   }
 
-  //parse flowunit
-  private void parseFlowunit(List<ResourceFlowUnit> hotNodeRcaFlowUnits) {
-    for (ResourceFlowUnit hotNodeRcaFlowUnit : hotNodeRcaFlowUnits) {
-      if (hotNodeRcaFlowUnit.isEmpty()) {
+  //add upstream flowunits collected from different nodes into hashmap
+  private void addUpstreamFlowUnits(List<ResourceFlowUnit<HotNodeSummary>> flowUnits) {
+    for (ResourceFlowUnit<HotNodeSummary> flowUnit : flowUnits) {
+      if (flowUnit.isEmpty()) {
         continue;
       }
-      if (!(hotNodeRcaFlowUnit.getResourceSummary() instanceof HotNodeSummary)) {
-        LOG.error("RCA : Receive flowunit from unexpected rca node");
-        continue;
-      }
-      HotNodeSummary nodeSummary = (HotNodeSummary) hotNodeRcaFlowUnit.getResourceSummary();
+      HotNodeSummary nodeSummary = flowUnit.getSummary();
+      NodeKey nodeKey = new NodeKey(nodeSummary.getNodeID(), nodeSummary.getHostAddress());
 
-      long timestamp = clock.millis();
-      HashSet<ResourceType> unhealthyResourceType = new HashSet<>();
-      if (hotNodeRcaFlowUnit.getResourceContext().isUnhealthy() && nodeSummary.getNestedSummaryList() != null) {
-        for (GenericSummary summary : nodeSummary.getNestedSummaryList()) {
-          if (summary instanceof HotResourceSummary) {
-            HotResourceSummary resourceSummary = (HotResourceSummary) summary;
-            ResourceType currResourceType = resourceSummary.getResourceType();
-            if (resourceTypes.contains(currResourceType)) {
-              addSummaryToNodeMap(nodeSummary.getNodeID(), currResourceType,
-                  new ResourceSummaryWrapper(timestamp, false, resourceSummary));
-              unhealthyResourceType.add(currResourceType);
-            }
-          } else {
-            LOG.error("RCA : unexpected summary type !");
-          }
-        }
+      if (!nodeMap.containsKey(nodeKey)) {
+        nodeMap.put(nodeKey, new LinkedList<>());
       }
+      LinkedList<ResourceFlowUnit<HotNodeSummary>> linkedList = nodeMap.get(nodeKey);
+      linkedList.addLast(flowUnit);
+      if (linkedList.size() > numOfFlowUnitsInMap) {
+        linkedList.pollFirst();
+      }
+    }
+  }
 
-      for (ResourceType currResourceType : resourceTypes) {
-        if (!unhealthyResourceType.contains(currResourceType)) {
-          addSummaryToNodeMap(nodeSummary.getNodeID(), currResourceType,
-              new ResourceSummaryWrapper(timestamp, true, null));
-        }
-      }
+  private List<NodeDetails> getClusterNodesDetails() {
+    if (collectFromMasterNode) {
+      return ClusterDetailsEventProcessor.getNodesDetails();
+    }
+    else {
+      return ClusterDetailsEventProcessor.getDataNodesDetails();
     }
   }
 
   //TODO : we might need to change this function later to use EventListener
   // to update the nodeMap whenever the ClusterDetailsEventProcessor is updated
   // so we don't have to keep polling the NodeDetails in every time window.
-  private void removeInactiveNodeFromTable() {
+  private void removeInactiveNodeFromNodeMap() {
     Set<String> nodeIdSet = new HashSet<>();
-    for (NodeDetails nodeDetail : dataNodesDetails) {
+    for (NodeDetails nodeDetail : getClusterNodesDetails()) {
       nodeIdSet.add(nodeDetail.getId());
     }
-    for (String nodeId : nodeTable.rowKeySet()) {
-      if (!nodeIdSet.contains(nodeId)) {
-        nodeTable.row(nodeId).clear();
-      }
-    }
+    nodeMap.entrySet().removeIf(entry -> !nodeIdSet.contains(entry.getKey().getNodeId()));
   }
 
-  protected ResourceFlowUnit generateFlowunit() {
-    List<HotNodeSummary> unhealthyNodes = new ArrayList<>();
-    for (NodeDetails nodeDetails : dataNodesDetails) {
-
-      List<HotResourceSummary> unhealthyResources = new ArrayList<>();
-      for (ResourceType resourceType : resourceTypes) {
-        ImmutableList<ResourceSummaryWrapper> resourceSummaryWrappers =
-            nodeTable.get(nodeDetails.getId(), resourceType);
-        if (resourceSummaryWrappers != null) {
-          int cnt = 0;
-          for (ResourceSummaryWrapper wrapper : resourceSummaryWrappers) {
-            if (!wrapper.healthy) {
-              cnt++;
-            }
-          }
-          if (cnt >= UNHEALTHY_FLOWUNIT_THRESHOLD) {
-            unhealthyResources.add(resourceSummaryWrappers.get(0).resourceSummary);
-          }
+  /**
+   * generate flowunit for downstream based on the flowunits this RCA collects in hashmap
+   * flowunits with timestamp beyond expirationTimeWindow time frame are  considered
+   * as stale and ignored by this RCA.
+   * @return flowunit for downstream vertices
+   */
+  protected ResourceFlowUnit<HotClusterSummary> generateFlowUnit() {
+    List<HotNodeSummary> unhealthyNodeSummaries = new ArrayList<>();
+    long timestamp = clock.millis();
+    List<NodeDetails> clusterNodesDetails = getClusterNodesDetails();
+    for (NodeDetails nodeDetails : clusterNodesDetails) {
+      NodeKey nodeKey = new NodeKey(nodeDetails.getId(), nodeDetails.getHostAddress());
+      if (nodeMap.containsKey(nodeKey)) {
+        ResourceFlowUnit<HotNodeSummary> flowUnit = nodeMap.get(nodeKey).getLast();
+        if (timestamp - flowUnit.getTimeStamp() <= TIMESTAMP_EXPIRATION_IN_MILLIS
+            && flowUnit.getResourceContext().isUnhealthy()) {
+          unhealthyNodeSummaries.add(flowUnit.getSummary());
         }
       }
-
-      if (!unhealthyResources.isEmpty()) {
-        HotNodeSummary nodeSummary = new HotNodeSummary(nodeDetails.getId(), nodeDetails.getHostAddress());
-        nodeSummary.addNestedSummaryList(unhealthyResources);
-        unhealthyNodes.add(nodeSummary);
-      }
     }
 
-    if (!unhealthyNodes.isEmpty()) {
-      HotClusterSummary clusterSummary = new HotClusterSummary(dataNodesDetails.size(), unhealthyNodes.size());
-      clusterSummary.addNestedSummaryList(unhealthyNodes);
-      return new ResourceFlowUnit(clock.millis(), new ResourceContext(Resources.State.UNHEALTHY), clusterSummary, true);
+    if (!unhealthyNodeSummaries.isEmpty()) {
+      HotClusterSummary clusterSummary = new HotClusterSummary(clusterNodesDetails.size(), unhealthyNodeSummaries.size());
+      for (HotNodeSummary nodeSummary : unhealthyNodeSummaries) {
+        clusterSummary.appendNestedSummary(nodeSummary);
+      }
+      return new ResourceFlowUnit<>(timestamp, new ResourceContext(Resources.State.UNHEALTHY), clusterSummary, true);
     }
     else {
-      return new ResourceFlowUnit(clock.millis(), new ResourceContext(State.HEALTHY), null, true);
+      return new ResourceFlowUnit<>(timestamp, new ResourceContext(State.HEALTHY), null);
     }
   }
 
   @Override
-  public ResourceFlowUnit operate() {
-    dataNodesDetails = ClusterDetailsEventProcessor.getDataNodesDetails();
-
+  public ResourceFlowUnit<HotClusterSummary> operate() {
     counter += 1;
-    parseFlowunit(hotNodeRca.getFlowUnits());
+    addUpstreamFlowUnits(nodeRca.getFlowUnits());
 
     if (counter >= rcaPeriod) {
       counter = 0;
-      removeInactiveNodeFromTable();
-      return generateFlowunit();
+      removeInactiveNodeFromNodeMap();
+      return generateFlowUnit();
     } else {
-      return new ResourceFlowUnit(System.currentTimeMillis());
+      return new ResourceFlowUnit<>(System.currentTimeMillis());
     }
   }
 
@@ -211,20 +173,5 @@ public class BaseClusterRca<T extends GenericSummary> extends Rca<ResourceFlowUn
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
     throw new IllegalArgumentException(name() + "'s generateFlowUnitListFromWire() should not "
         + "be required.");
-  }
-
-  /**
-   * a wrapper to add local timestamp to HotResourceSummary
-   */
-  private static class ResourceSummaryWrapper {
-    private final long timestamp;
-    private final HotResourceSummary resourceSummary;
-    private boolean healthy;
-
-    ResourceSummaryWrapper(final long timestamp, final boolean healthy, final HotResourceSummary resourceSummary) {
-      this.timestamp = timestamp;
-      this.healthy = healthy;
-      this.resourceSummary = resourceSummary;
-    }
   }
 }
