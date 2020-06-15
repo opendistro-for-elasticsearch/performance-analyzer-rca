@@ -100,8 +100,8 @@ public class QueueRejectionRcaTest {
     Assert.assertTrue(flowUnit.hasResourceSummary());
     HotNodeSummary nodeSummary = flowUnit.getSummary();
     Assert.assertEquals(1, nodeSummary.getNestedSummaryList().size());
-    Assert.assertTrue(nodeSummary.getNestedSummaryList().get(0) instanceof HotResourceSummary);
-    HotResourceSummary resourceSummary = (HotResourceSummary) nodeSummary.getNestedSummaryList().get(0);
+    Assert.assertEquals(1, nodeSummary.getHotResourceSummaryList().size());
+    HotResourceSummary resourceSummary = nodeSummary.getHotResourceSummaryList().get(0);
     Assert.assertEquals(ThreadPoolEnum.WRITE_QUEUE, resourceSummary.getResourceType().getThreadPool());
     Assert.assertEquals(0.01, 6.0, resourceSummary.getValue());
 
@@ -139,11 +139,11 @@ public class QueueRejectionRcaTest {
     Assert.assertTrue(flowUnit.hasResourceSummary());
     HotNodeSummary nodeSummary = flowUnit.getSummary();
     Assert.assertEquals(2, nodeSummary.getNestedSummaryList().size());
-    Assert.assertTrue(nodeSummary.getNestedSummaryList().get(0) instanceof HotResourceSummary);
-    HotResourceSummary resourceSummary = (HotResourceSummary) nodeSummary.getNestedSummaryList().get(1);
+    Assert.assertEquals(2, nodeSummary.getHotResourceSummaryList().size());
+    HotResourceSummary resourceSummary = nodeSummary.getHotResourceSummaryList().get(1);
     Assert.assertEquals(ThreadPoolEnum.SEARCH_QUEUE, resourceSummary.getResourceType().getThreadPool());
     Assert.assertEquals(0.01, 9.0, resourceSummary.getValue());
-    resourceSummary = (HotResourceSummary) nodeSummary.getNestedSummaryList().get(0);
+    resourceSummary = nodeSummary.getHotResourceSummaryList().get(0);
     Assert.assertEquals(ThreadPoolEnum.WRITE_QUEUE, resourceSummary.getResourceType().getThreadPool());
     Assert.assertEquals(0.01, 7.0, resourceSummary.getValue());
   }

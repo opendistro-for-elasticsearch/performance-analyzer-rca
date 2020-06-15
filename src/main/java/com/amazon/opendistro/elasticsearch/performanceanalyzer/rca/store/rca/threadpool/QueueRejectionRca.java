@@ -44,9 +44,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This RCA reads ThreadPool_RejectionReqs from upstream metrics and it keeps track of
- * the amount of the time period(tp) when requests in the queues are continuously being rejected.
- * This RCA is marked as unhealthy if tp we find in write/search queue is above the threshold.
+ * This RCA reads ThreadPool_RejectionReqs from upstream metrics and maintain collectors for each
+ * thread pool queue type(currently we only support write/search queue). Each collector keeps track of
+ * the time window period(tp) where we repeatedly see rejections for the last tp duration.
+ * This RCA is marked as unhealthy if tp we find tp is above the threshold(300 seconds).
  */
 public class QueueRejectionRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
   private static final Logger LOG = LogManager.getLogger(QueueRejectionRca.class);
@@ -78,7 +79,7 @@ public class QueueRejectionRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
   public ResourceFlowUnit<HotNodeSummary> operate() {
     counter += 1;
     long currTimestamp = clock.millis();
-    //collect rejection metrics
+    // collect rejection metrics
     for (QueueRejectionCollector collector : queueRejectionCollectors) {
       collector.collect(currTimestamp);
     }
@@ -93,7 +94,7 @@ public class QueueRejectionRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
           if (nodeSummary == null) {
             nodeSummary = new HotNodeSummary(currentNode.getId(), currentNode.getHostAddress());
           }
-          nodeSummary.addNestedSummaryList(collector.generateSummary(currTimestamp));
+          nodeSummary.appendNestedSummary(collector.generateSummary(currTimestamp));
         }
       }
       ResourceContext context;
@@ -111,7 +112,7 @@ public class QueueRejectionRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
     }
   }
 
-  //TODO: move this method back into the Rca base class
+  // TODO: move this method back into the Rca base class
   @Override
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
     final List<FlowUnitMessage> flowUnitMessages =
