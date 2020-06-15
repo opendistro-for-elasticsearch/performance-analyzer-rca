@@ -16,7 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.calculators;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.TemperatureMetricsBase;
 import java.util.List;
 import org.jooq.DSLContext;
@@ -39,7 +39,7 @@ public class ShardBasedTemperatureCalculator extends TemperatureMetricsBase {
             AllMetrics.CommonDimension.SHARD_ID.toString()
     };
 
-    public ShardBasedTemperatureCalculator(TemperatureVector.Dimension metricType) {
+    public ShardBasedTemperatureCalculator(TemperatureDimension metricType) {
         // The temperature intendeds to spread the temperature around the cluster by re-allocating shards
         // from the hottest of nodes to the nodes that are relatively cold (with some randomness
         // so that it does not overwhelm the coldest node). Pyrometer also wants to size for peak

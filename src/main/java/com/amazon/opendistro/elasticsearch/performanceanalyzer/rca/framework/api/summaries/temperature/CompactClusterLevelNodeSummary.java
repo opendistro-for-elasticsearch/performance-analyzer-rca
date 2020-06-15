@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary.SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary.SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -53,7 +54,7 @@ public class CompactClusterLevelNodeSummary extends CompactNodeSummary {
 
         CompactClusterLevelNodeSummary summary = new CompactClusterLevelNodeSummary(nodeId, hostIp);
 
-        for (TemperatureVector.Dimension dimension : TemperatureVector.Dimension.values()) {
+        for (TemperatureDimension dimension : TemperatureDimension.values()) {
             try {
                 Short mean = record.get(dimension.NAME + MEAN_SUFFIX_KEY, Short.class);
                 double total = record.get(dimension.NAME + TOTAL_SUFFIX_KEY, Double.class);

@@ -3,9 +3,13 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.calculators.TotalNodeTemperatureCalculator;
 
-public class HeapAllocRateTotalTemperatureCalculator extends TotalNodeTemperatureCalculator {
+/**
+ * This class calculated the total disk used by shards in the node.
+ */
 
-  public HeapAllocRateTotalTemperatureCalculator() {
-    super(TemperatureDimension.Heap_AllocRate);
-  }
+public class ShardTotalDiskUsageTemperatureCalculator extends TotalNodeTemperatureCalculator {
+
+    public ShardTotalDiskUsageTemperatureCalculator() {
+        super(TemperatureDimension.Shard_Size_In_Bytes);
+    }
 }
