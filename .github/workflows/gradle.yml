@@ -38,7 +38,9 @@ jobs:
       run: ./gradlew jacocoTestReport
     - name: Upload coverage report
       working-directory: ./tmp/rca
-      run: bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }} -f ./build/reports/jacoco/test/jacocoTestReport.xml
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      run: bash <(curl -s https://codecov.io/bash) -f ./build/reports/jacoco/test/jacocoTestReport.xml
     - name: Publish RCA jar to maven local
       working-directory: ./tmp/rca
       run: ./gradlew publishToMavenLocal
