@@ -49,4 +49,14 @@ public class MetricTestHelper extends Metric {
     Result<Record> newRecordList = context.fetchFromStringData(stringData);
     this.flowUnits = Collections.singletonList(new MetricFlowUnit(0, newRecordList));
   }
+
+  public void createTestFlowUnitsWithMultipleRows(final List<String> fieldName, final List<List<String>> rows) {
+    List<String[]> stringData = new ArrayList<>();
+    stringData.add(fieldName.toArray(new String[0]));
+    for (List<String> row : rows) {
+      stringData.add(row.toArray(new String[0]));
+    }
+    Result<Record> newRecordList = context.fetchFromStringData(stringData);
+    this.flowUnits = Collections.singletonList(new MetricFlowUnit(0, newRecordList));
+  }
 }
