@@ -41,6 +41,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class NetClient {
 
+  // TESTING
   private static final Logger LOG = LogManager.getLogger(NetClient.class);
 
   /**
