@@ -472,7 +472,7 @@ Boolean esIsUp
 
 def esUpChecker = {
     String server = "http://localhost:9200"
-    int timeoutSeconds = 2 * 60
+    int timeoutSeconds = 2 * 300
     getHttpResponse(server, timeoutSeconds)
     esIsUp = true
 }
