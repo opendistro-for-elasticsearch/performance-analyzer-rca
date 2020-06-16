@@ -145,6 +145,53 @@ public class RcaTestHelper {
             new Event("", jtime.toString() + System.lineSeparator() + jNode.toString(), 0));
   }
 
+  public static class IpNodeRoleTriple {
+    private String ip;
+    private String nodeId;
+    private AllMetrics.NodeRole role;
+
+    public IpNodeRoleTriple(String ip, String nodeId, AllMetrics.NodeRole role) {
+      this.ip = ip;
+      this.nodeId = nodeId;
+      this.role = role;
+    }
+
+    public String getIp() {
+      return ip;
+    }
+
+    public String getNodeId() {
+      return nodeId;
+    }
+
+    public AllMetrics.NodeRole getRole() {
+      return role;
+    }
+  }
+
+  public static void setClusterDetails(List<IpNodeRoleTriple> nodeRolePairList) {
+    StringBuilder valueSB = new StringBuilder();
+
+    JSONObject jtime = new JSONObject();
+    jtime.put("current_time", 1566414001749L);
+    valueSB.append(jtime.toString()).append(System.lineSeparator());
+
+    for (IpNodeRoleTriple triple: nodeRolePairList) {
+      JSONObject jNode = new JSONObject();
+      jNode.put(AllMetrics.NodeDetailColumns.ID.toString(), triple.getNodeId());
+      jNode.put(AllMetrics.NodeDetailColumns.HOST_ADDRESS.toString(), triple.getIp());
+      jNode.put(AllMetrics.NodeDetailColumns.ROLE.toString(), triple.getRole());
+      jNode.put(AllMetrics.NodeDetailColumns.IS_MASTER_NODE,
+          triple.getRole() == AllMetrics.NodeRole.ELECTED_MASTER ? true : false);
+
+      valueSB.append(jNode.toString());
+      valueSB.append(System.lineSeparator());
+    }
+
+    ClusterDetailsEventProcessor eventProcessor = new ClusterDetailsEventProcessor();
+    eventProcessor.processEvent(new Event("", valueSB.toString(), 0));
+  }
+
   public static void truncate(File file) {
     try (FileChannel outChan = new FileOutputStream(file, false).getChannel()) {
       outChan.truncate(0);

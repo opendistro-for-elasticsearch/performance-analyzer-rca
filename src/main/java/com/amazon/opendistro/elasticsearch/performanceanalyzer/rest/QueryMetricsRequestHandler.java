@@ -63,6 +63,8 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
   private NetClient netClient;
   MetricsRestUtil metricsRestUtil;
 
+  public static final String NODES_PARAM = "nodes";
+
   public QueryMetricsRequestHandler(NetClient netClient, MetricsRestUtil metricsRestUtil) {
     this.netClient = netClient;
     this.metricsRestUtil = metricsRestUtil;
@@ -115,7 +117,7 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
       exchange.getResponseHeaders().set("Content-Type", "application/json");
       try {
 
-        String nodes = params.get("nodes");
+        String nodes = params.get(NODES_PARAM);
         List<String> metricList = metricsRestUtil.parseArrayParam(params, "metrics", false);
         List<String> aggList = metricsRestUtil.parseArrayParam(params, "agg", false);
         List<String> dimList = metricsRestUtil.parseArrayParam(params, "dim", true);

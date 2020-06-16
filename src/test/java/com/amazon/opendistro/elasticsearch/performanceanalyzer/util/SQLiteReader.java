@@ -30,7 +30,7 @@ import org.jooq.impl.DSL;
 public class SQLiteReader implements Queryable, Removable {
     private final Connection conn;
     private final DSLContext dslContext;
-    private final String DBProtocol = "jdbc:sqlite:";
+    private static final String DBProtocol = "jdbc:sqlite:";
 
     public SQLiteReader(final String pathToSqlite) throws SQLException {
         conn = DriverManager.getConnection(DBProtocol + pathToSqlite);

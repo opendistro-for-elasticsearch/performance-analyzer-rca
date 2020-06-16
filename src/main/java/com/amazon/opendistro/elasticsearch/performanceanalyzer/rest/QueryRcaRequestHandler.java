@@ -16,9 +16,15 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rest;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.RemoteNodeRcaRequest;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.RemoteNodeRcaResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsRestUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.Version;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
@@ -27,12 +33,21 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
@@ -94,10 +109,24 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
   private static final String LOCAL_PARAM = "local";
   private static final String VERSION_RESPONSE_PROPERTY = "version";
   public static final String NAME_PARAM = "name";
+  public static final String PARAM_VALUE_DELIMITER = ",";
+  public static final String DIMENSION_PARAM = "dim";
+  public static final String ZONE_PARAM = "zone";
+  public static final String TOP_K_PARAM = "topk";
+
+  private static final int TIME_OUT_VALUE = 2;
+  private static final TimeUnit TIME_OUT_UNIT = TimeUnit.SECONDS;
+
+  public static final TemperatureDimension DEFAULT_DIMENSION = TemperatureDimension.CPU_Utilization;
+  public static final HeatZoneAssigner.Zone DEFAULT_ZONE = HeatZoneAssigner.Zone.HOT;
+  public static final int DEFAULT_TOP_K = 3;
+
   private Persistable persistable;
   private MetricsRestUtil metricsRestUtil;
+  private NetClient netClient;
 
-  public QueryRcaRequestHandler() {
+  public QueryRcaRequestHandler(NetClient netClient) {
+    this.netClient = netClient;
     metricsRestUtil = new MetricsRestUtil();
   }
 
@@ -165,6 +194,52 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
     if (rcaList.isEmpty()) {
       rcaList = SQLiteQueryUtils.getClusterLevelRca();
     }
+    //check if we are querying from elected master
+    if (!validNodeRole()) {
+      JsonObject errResponse = new JsonObject();
+      errResponse.addProperty("error", "Node being queried is not elected master.");
+      sendResponse(exchange, errResponse.toString(),
+          HttpURLConnection.HTTP_BAD_REQUEST);
+      return;
+    }
+
+    // Temperature RCAs does not mix well with other RCAs. Therefore, all of them have to be temperature RCAs.
+    if (SQLiteQueryUtils.getMasterAccessibleNodeTemperatureRCASet().containsAll(getTemperatureRcasFromParam(params))) {
+      // When you ask for the temperature details of nodes, we want to make sure they are data nodes.
+      String[] nodes = params.get(QueryMetricsRequestHandler.NODES_PARAM).split(",");
+      if (allDataNodeIps(nodes)) {
+        try {
+          List<String> rcas = getTemperatureRcasFromParam(params);
+          List<String> dimensions = getDimensionFromParams(params);
+          List<String> zones = getZoneFromParams(params);
+          int topK = getTopKFromParams(params);
+
+          String response = gatherTemperatureFromDataNodes(nodes, rcas, dimensions, zones, topK);
+          sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
+          return;
+        } catch (IllegalArgumentException ex) {
+          JsonObject errResponse = new JsonObject();
+          errResponse.addProperty("error", ex.getMessage());
+          sendResponse(exchange, errResponse.toString(), HttpURLConnection.HTTP_BAD_REQUEST);
+          return;
+
+        }
+      } else {
+        JsonObject errResponse = new JsonObject();
+
+        StringBuilder errMsgBuilder =
+            new StringBuilder("One or more IPs provided that don't belong to data nodes. DataNode Ips: [");
+
+        errMsgBuilder
+                .append(getDataNodeIPSet())
+                .append("]. Provided list: [")
+                .append(String.join(", ", nodes)).append("]");
+        errResponse.addProperty("error", errMsgBuilder.toString());
+        sendResponse(exchange, errResponse.toString(), HttpURLConnection.HTTP_BAD_REQUEST);
+        return;
+      }
+    }
+
     //check if RCA is valid
     if (!validParams(rcaList)) {
       JsonObject errResponse = new JsonObject();
@@ -176,16 +251,188 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
           HttpURLConnection.HTTP_BAD_REQUEST);
       return;
     }
-    //check if we are querying from elected master
-    if (!validNodeRole()) {
-      JsonObject errResponse = new JsonObject();
-      errResponse.addProperty("error", "Node being queried is not elected master.");
-      sendResponse(exchange, errResponse.toString(),
-          HttpURLConnection.HTTP_BAD_REQUEST);
-      return;
-    }
     String response = getRcaData(persistable, rcaList).toString();
     sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
+  }
+
+  private List<String> getTemperatureRcasFromParam(Map<String, String> params) {
+    // NAME_PARAM is a mandatory parameter and the method "parseArrayParam" checks for it.
+    // So this is guaranteed to be not null.
+    return Arrays.stream(
+        params
+            .get(NAME_PARAM)
+            .split(PARAM_VALUE_DELIMITER))
+        .map(a -> a.trim())
+        .collect(Collectors.toList());
+  }
+
+  private List<String> getDimensionFromParams(Map<String, String> params) {
+    String dimensionStr = params.getOrDefault(DIMENSION_PARAM, DEFAULT_DIMENSION.NAME);
+    return Arrays.stream(dimensionStr.split(PARAM_VALUE_DELIMITER)).map(a -> {
+      String dim = a.trim();
+      boolean isValidDim = false;
+      List<String> validDim = new ArrayList<>();
+
+      for (TemperatureDimension dimension: TemperatureDimension.values()) {
+        validDim.add(dimension.NAME);
+        if (dimension.NAME.equals(dim)) {
+          isValidDim = true;
+          break;
+        }
+      }
+
+      if (!isValidDim) {
+        StringBuilder err =  new StringBuilder();
+        err.append("Unknown dimension '")
+        .append(dim)
+        .append("'. Valid dimensions are: ")
+        .append(validDim);
+
+        throw new IllegalArgumentException(err.toString());
+      }
+      return dim;
+    }).collect(Collectors.toList());
+  }
+
+  private List<String> getZoneFromParams(Map<String, String> params) {
+    String zoneStr = params.getOrDefault(ZONE_PARAM, DEFAULT_ZONE.name());
+    return Arrays.stream(zoneStr.split(PARAM_VALUE_DELIMITER)).map(a -> {
+      String zoneName = a.trim();
+
+      boolean isValid = false;
+      List<String> zones = new ArrayList<>();
+
+      for (HeatZoneAssigner.Zone zone: HeatZoneAssigner.Zone.values()) {
+        zones.add(zone.name());
+
+        if (zone.name().equals(zoneName)) {
+          isValid = true;
+          break;
+        }
+      }
+      if (!isValid) {
+        StringBuilder err =  new StringBuilder();
+        err.append("Unknown zone '")
+            .append(zoneName)
+            .append("'. Valid zones are: ")
+            .append(zones);
+
+        throw new IllegalArgumentException(err.toString());
+      }
+
+      return zoneName;
+    }).collect(Collectors.toList());
+  }
+
+  private int getTopKFromParams(Map<String, String> params) {
+    String topKStr = params.getOrDefault(TOP_K_PARAM, String.valueOf(DEFAULT_TOP_K));
+    try {
+      int topK = Integer.parseInt(topKStr);
+      if (topK < 1) {
+        throw new IllegalArgumentException(TOP_K_PARAM + " cannot be less than 1. Provided: " + topKStr);
+      }
+      return topK;
+    } catch (NumberFormatException ex) {
+      throw new IllegalArgumentException("Invalid number type found for " + TOP_K_PARAM + ". Provide: " + topKStr);
+    }
+  }
+
+  private Map<String, ClusterDetailsEventProcessor.NodeDetails> getIpDataNodeDetailsMap() {
+    Map<String, ClusterDetailsEventProcessor.NodeDetails> map = new HashMap<>();
+    for (ClusterDetailsEventProcessor.NodeDetails nodeDetails: ClusterDetailsEventProcessor.getDataNodesDetails()) {
+      map.put(nodeDetails.getHostAddress(), nodeDetails);
+    }
+    return map;
+  }
+
+  private String gatherTemperatureFromDataNodes(String[] nodes,
+                                                List<String> rcas,
+                                                List<String> dimensions,
+                                                List<String> zones,
+                                                int topK) {
+    CountDownLatch doneSignal = new CountDownLatch(nodes.length - 1);
+    ConcurrentHashMap<String, String> nodeResponses = new ConcurrentHashMap<>();
+
+    Map<String, ClusterDetailsEventProcessor.NodeDetails> nodeDetailsMap = getIpDataNodeDetailsMap();
+    for (String nodeIp: nodes) {
+      ClusterDetailsEventProcessor.NodeDetails node = nodeDetailsMap.get(nodeIp);
+      try {
+        collectRemoteRcas(node, topK, rcas, dimensions, zones, nodeResponses, doneSignal);
+      } catch (Exception e) {
+        LOG.error(
+            "Unable to collect Rcas from node, addr:{}, exception: {} ExceptionCode: {}",
+            nodeIp,
+            e,
+            StatExceptionCode.REQUEST_REMOTE_ERROR.toString());
+        StatsCollector.instance().logException(StatExceptionCode.REQUEST_REMOTE_ERROR);
+      }
+    }
+    boolean completed = false;
+    try {
+      completed = doneSignal.await(TIME_OUT_VALUE, TIME_OUT_UNIT);
+    } catch (InterruptedException e) {
+      LOG.error(
+          "Timeout before all nodes could respond. exception: {} ExceptionCode: {}",
+          e,
+          StatExceptionCode.REQUEST_REMOTE_ERROR.toString());
+      StatsCollector.instance().logException(StatExceptionCode.REQUEST_REMOTE_ERROR);
+    }
+    if (!completed) {
+      LOG.debug("Timeout while collecting remote stats");
+      StatsCollector.instance().logException(StatExceptionCode.REQUEST_REMOTE_ERROR);
+    }
+
+    return nodeResponses.toString();
+  }
+
+
+  void collectRemoteRcas(
+      ClusterDetailsEventProcessor.NodeDetails node,
+      int topK,
+      List<String> rcaNames,
+      List<String> dimensionNames,
+      List<String> zones,
+      final ConcurrentHashMap<String, String> nodeResponses,
+      final CountDownLatch doneSignal) {
+    RemoteNodeRcaRequest request = RemoteNodeRcaRequest
+        .newBuilder()
+        .addAllRcaName(rcaNames)
+        .addAllDimensionName(dimensionNames)
+        .addAllZone(zones)
+        .setTopK(topK)
+        .build();
+
+    ThreadSafeStreamObserver responseObserver = new ThreadSafeStreamObserver(node, nodeResponses, doneSignal);
+    try {
+      this.netClient.getRemoteRca(node.getHostAddress(), request, responseObserver);
+    } catch (Exception e) {
+      LOG.error("Metrics : Exception occurred while getting Metrics {}", e.getCause());
+    }
+  }
+
+  private Set getDataNodeIPSet() {
+    return ClusterDetailsEventProcessor
+        .getDataNodesDetails()
+        .stream()
+        .map(nodeDetail -> nodeDetail.getHostAddress())
+        .collect(Collectors.toSet());
+  }
+
+  /**
+   * A helper method to check if all the ips are those of data nodes.
+   * If there is even one IP that is a non-data node IP, the method returns false.
+   * @param ips The list of IPs provided as the request.
+   * @return true if all IPs provided belong to the data nodes.
+   */
+  private boolean allDataNodeIps(String[] ips) {
+    Set dataNodeIps = getDataNodeIPSet();
+
+    for (String ip: ips) {
+      if (!dataNodeIps.contains(ip.trim())) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private boolean isLocalTemperatureProfileRequest(final Map<String, String> params) {
@@ -255,7 +502,7 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
     return jsonObject;
   }
 
-  private JsonElement getTemperatureProfileRca(final Persistable persistable, String rca) {
+  public static JsonElement getTemperatureProfileRca(final Persistable persistable, String rca) {
     JsonObject responseJson = new JsonObject();
     if (persistable != null) {
       responseJson.add(rca, persistable.read(rca));
@@ -294,5 +541,35 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
     versionObject.addProperty(VERSION_RESPONSE_PROPERTY, Version.getRcaVersion());
 
     return versionObject.toString();
+  }
+
+  static class ThreadSafeStreamObserver implements StreamObserver<RemoteNodeRcaResponse> {
+    private final CountDownLatch doneSignal;
+    private final ConcurrentHashMap<String, String> nodeResponses;
+    private final ClusterDetailsEventProcessor.NodeDetails node;
+
+    ThreadSafeStreamObserver(
+        ClusterDetailsEventProcessor.NodeDetails node,
+        ConcurrentHashMap<String, String> nodeResponses,
+        CountDownLatch doneSignal) {
+      this.node = node;
+      this.doneSignal = doneSignal;
+      this.nodeResponses = nodeResponses;
+    }
+
+    public void onNext(RemoteNodeRcaResponse value) {
+      nodeResponses.putIfAbsent(node.getId(), value.getTemperatureJson());
+    }
+
+    @Override
+    public void onError(Throwable t) {
+      LOG.info("Metrics : Error occurred while getting Metrics for " + node.getHostAddress());
+      doneSignal.countDown();
+    }
+
+    @Override
+    public void onCompleted() {
+      doneSignal.countDown();
+    }
   }
 }

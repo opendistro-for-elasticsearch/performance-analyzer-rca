@@ -19,6 +19,9 @@ service InterNodeRpcService {
 
     // get Metrics for a particular node
     rpc GetMetrics(MetricsRequest) returns (MetricsResponse) {}
+
+    // get Remote node Rcas
+    rpc GetRemoteRca(RemoteNodeRcaRequest) returns (RemoteNodeRcaResponse) {}
 }
 
 /*
@@ -191,4 +194,20 @@ message MetricsRequest {
 */
 message MetricsResponse {
     string metrics_result = 1;
+}
+
+/*
+    Request Parameter for TemperatureProfile Request
+*/
+
+message RemoteNodeRcaRequest {
+    // Not specifying this value or setting it to 0 or negative gives all the shards in the zone.
+    int32 top_k = 1;
+    repeated string rca_name = 2;
+    repeated string dimension_name = 3;
+    repeated string zone = 4;
+}
+
+message RemoteNodeRcaResponse {
+    string temperature_json = 1;
 }

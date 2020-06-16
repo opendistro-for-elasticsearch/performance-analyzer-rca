@@ -135,7 +135,7 @@ public class ResourceHeatMapGraphTest {
     HttpServer httpServer = clientServers.getHttpServer();
     httpServer.start();
 
-    QueryRcaRequestHandler rcaRequestHandler = new QueryRcaRequestHandler();
+    QueryRcaRequestHandler rcaRequestHandler = new QueryRcaRequestHandler(clientServers.getNetClient());
     rcaRequestHandler.setPersistable(persistable);
     httpServer.createContext(Util.RCA_QUERY_URL, rcaRequestHandler);
 
@@ -291,6 +291,55 @@ public class ResourceHeatMapGraphTest {
 
     testJsonResponse(makeRestRequest(
         new String[]{"name", ClusterTemperatureRca.TABLE_NAME}));
+  }
+
+  @Test
+  public void shardTemperatureFromMaster() {
+    // List<ConnectedComponent> connectedComponents = createAndExecuteRcaGraph();
+    // System.out.println("Now for the MAster RCA.");
+    // String masterNodeRcaConf =
+    //     Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_elected_master.conf").toString();
+    // RcaConf rcaConf2 = new RcaConf(masterNodeRcaConf);
+    // SubscriptionManager subscriptionManager2 =
+    //     new SubscriptionManager(new GRPCConnectionManager(false));
+    // subscriptionManager2.setCurrentLocus(rcaConf2.getTagMap().get("locus"));
+
+    // WireHopper wireHopper2 = new WireHopper(new NodeStateManager(), clientServers.getNetClient(),
+    //     subscriptionManager2,
+    //     networkThreadPoolReference,
+    //     new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()));
+
+    // RCASchedulerTask rcaSchedulerTaskMaster =
+    //     new RCASchedulerTask(
+    //         1000,
+    //         Executors.newFixedThreadPool(THREADS),
+    //         connectedComponents,
+    //         reader,
+    //         persistable,
+    //         rcaConf2,
+    //         wireHopper2);
+    // AllMetrics.NodeRole nodeRole2 = AllMetrics.NodeRole.ELECTED_MASTER;
+    // RcaTestHelper.setMyIp("192.168.0.2", nodeRole2);
+    // rcaSchedulerTaskMaster.run();
+
+    RcaTestHelper.setMyIp("192.168.0.2", AllMetrics.NodeRole.DATA);
+    RcaTestHelper.setClusterDetails(Arrays.asList(
+        new RcaTestHelper.IpNodeRoleTriple[] {
+            new RcaTestHelper.IpNodeRoleTriple("192.168.0.1", "4sqG_APMQuaQwEW17_6zwg", AllMetrics.NodeRole.ELECTED_MASTER),
+            new RcaTestHelper.IpNodeRoleTriple("192.168.0.2", "4sqG_APMQuaQwEW17_6zwh", AllMetrics.NodeRole.DATA),
+            new RcaTestHelper.IpNodeRoleTriple("192.168.0.3", "4sqG_APMQuaQwEW17_6zwi", AllMetrics.NodeRole.DATA)
+        }));
+
+    String node = "192.168.0.2";
+    try {
+      testJsonResponse(makeRestRequest(
+          new String[]{
+              "name", ALL_TEMPERATURE_DIMENSIONS,
+              "nodes", node
+          }));
+    } catch (Exception ex) {
+      System.out.println(ex);
+    }
   }
 
   @Test

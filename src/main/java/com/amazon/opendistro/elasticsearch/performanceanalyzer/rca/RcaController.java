@@ -138,7 +138,7 @@ public class RcaController {
     this.useHttps = PluginSettings.instance().getHttpsEnabled();
     subscriptionManager = new SubscriptionManager(grpcConnectionManager);
     nodeStateManager = new NodeStateManager();
-    queryRcaRequestHandler = new QueryRcaRequestHandler();
+    queryRcaRequestHandler = new QueryRcaRequestHandler(this.rcaNetClient);
     this.rcaScheduler = null;
     this.rcaStateCheckIntervalMillis = rcaStateCheckIntervalMillis;
     this.roleCheckPeriodicity = nodeRoleCheckPeriodicityMillis;
@@ -170,6 +170,7 @@ public class RcaController {
           nodeStateManager, receivedFlowUnitStore, networkThreadPoolReference));
       rcaNetServer.setSubscribeHandler(
           new SubscribeServerHandler(subscriptionManager, networkThreadPoolReference));
+      rcaNetServer.setPersistable(persistable);
 
       rcaScheduler.setRole(currentRole);
       Thread rcaSchedulerThread = threadProvider.createThreadForRunnable(() -> rcaScheduler.start(),

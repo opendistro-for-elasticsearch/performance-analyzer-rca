@@ -23,6 +23,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpc
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsRequest;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PublishResponse;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.RemoteNodeRcaRequest;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.RemoteNodeRcaResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
@@ -118,6 +120,13 @@ public class NetClient {
     InterNodeRpcServiceGrpc.InterNodeRpcServiceStub stub =
         connectionManager.getClientStubForHost(remoteNodeIP);
     stub.getMetrics(request, responseObserver);
+  }
+
+  public void getRemoteRca(final String remoteIp,
+                           final RemoteNodeRcaRequest request,
+                           final StreamObserver<RemoteNodeRcaResponse> responseObserver) {
+    InterNodeRpcServiceGrpc.InterNodeRpcServiceStub stub = connectionManager.getClientStubForHost(remoteIp);
+    stub.getRemoteRca(request, responseObserver);
   }
 
   public void stop() {

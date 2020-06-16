@@ -48,6 +48,7 @@ public class SQLiteQueryUtils {
   private static final Set<String> temperatureProfileRCASet;
 
   public static final Set<String> temperatureProfileDimensionRCASet;
+  public static final Set<String> masterAccessibleNodeTemperatureRCASet;
 
   public static final String ALL_TEMPERATURE_DIMENSIONS = "AllTemperatureDimensions";
 
@@ -71,6 +72,11 @@ public class SQLiteQueryUtils {
     temperatureDimensions.add(ShardSizeDimensionTemperatureRca.class.getSimpleName());
 
     temperatureProfileDimensionRCASet = Collections.unmodifiableSet(temperatureDimensions);
+
+    Set masterAccessibleNodeTemperatureRCASetTemp = new HashSet<>();
+    masterAccessibleNodeTemperatureRCASetTemp.addAll(temperatureProfileDimensionRCASet);
+    masterAccessibleNodeTemperatureRCASetTemp.add(ALL_TEMPERATURE_DIMENSIONS);
+    masterAccessibleNodeTemperatureRCASet = Collections.unmodifiableSet(masterAccessibleNodeTemperatureRCASetTemp);
 
     Set<String> tempProfileRcaSet = new HashSet<>();
 
@@ -156,6 +162,11 @@ public class SQLiteQueryUtils {
 
     return temperatureProfileRCASet.contains(rca);
   }
+
+  public static Set<String> getMasterAccessibleNodeTemperatureRCASet() {
+    return masterAccessibleNodeTemperatureRCASet;
+  }
+
 }
 
 

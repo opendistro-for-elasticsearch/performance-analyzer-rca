@@ -21,11 +21,15 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpc
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsRequest;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PublishResponse;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.RemoteNodeRcaRequest;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.RemoteNodeRcaResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.handler.MetricsServerHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.handler.PublishRequestHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.handler.SubscribeServerHandler;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.RcaRequestHandler;
 import io.grpc.Server;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import io.grpc.netty.shaded.io.netty.channel.nio.NioEventLoopGroup;
@@ -75,14 +79,26 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
   private MetricsServerHandler metricsServerHandler;
 
   /**
+   * When the grpc client on the master invokes this server for the temperature profile, this handler serves it.
+   */
+  private RcaRequestHandler rcaRequestHandler;
+
+  /**
    * The server instance.
    */
   private Server server;
+
+  /**
+   * The database object.
+   */
+  private Persistable persistable;
 
   public NetServer(final int port, final int numServerThreads, final boolean useHttps) {
     this.port = port;
     this.numServerThreads = numServerThreads;
     this.useHttps = useHttps;
+    this.rcaRequestHandler = new RcaRequestHandler();
+    persistable = null;
   }
 
   // postStartHook executes after the NetServer has successfully started its Server
@@ -189,6 +205,11 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
     }
   }
 
+  @Override
+  public void getRemoteRca(RemoteNodeRcaRequest request, StreamObserver<RemoteNodeRcaResponse> responseStreamObserver) {
+    rcaRequestHandler.serve(request, responseStreamObserver, persistable);
+  }
+
   public void setSubscribeHandler(SubscribeServerHandler subscribeHandler) {
     this.subscribeHandler = subscribeHandler;
   }
@@ -200,6 +221,11 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
   public void setMetricsHandler(MetricsServerHandler metricsServerHandler) {
     this.metricsServerHandler = metricsServerHandler;
   }
+
+  public void setPersistable(Persistable persistable) {
+    this.persistable = persistable;
+  }
+
 
   /**
    * Unit test usage only.
