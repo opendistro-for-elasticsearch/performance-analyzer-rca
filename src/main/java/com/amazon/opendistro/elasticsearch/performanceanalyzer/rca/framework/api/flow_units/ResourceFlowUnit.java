@@ -144,6 +144,8 @@ public class ResourceFlowUnit<T extends GenericSummary> extends GenericFlowUnit 
                 .buildHotNodeSummaryFromMessage(message.getHotNodeSummary());
             break;
           }
+          default:
+            throw new IllegalArgumentException();
         }
       } catch (Exception e) {
         // we are not supposed to run into this unless we specified wrong summary template
