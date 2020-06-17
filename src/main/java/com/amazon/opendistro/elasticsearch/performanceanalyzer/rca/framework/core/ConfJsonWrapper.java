@@ -18,7 +18,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.co
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.annotations.VisibleForTesting;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -42,8 +41,7 @@ class ConfJsonWrapper {
   private final int networkQueueLength;
   private final int perVertexBufferLength;
   private final Map<String, Object> rcaConfigSettings;
-  // Note, this was made mutable to enable setMutedRcaList
-  private List<String> mutedRcaList;
+  private final List<String> mutedRcaList;
 
   String getRcaStoreLoc() {
     return rcaStoreLoc;
@@ -87,11 +85,6 @@ class ConfJsonWrapper {
 
   List<String> getMutedRcaList() {
     return mutedRcaList;
-  }
-
-  @VisibleForTesting
-  void setMutedRcaList(List<String> mutedRcas) {
-    this.mutedRcaList = mutedRcas;
   }
 
   public void setDatastoreRcaLogDirectory(String rcaLogLocation) {
