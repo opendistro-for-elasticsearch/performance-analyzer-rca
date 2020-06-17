@@ -31,10 +31,17 @@ import java.util.List;
 
 public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUnit<T>> {
   private Clock clock;
+  private String rcaName;
 
   public RcaTestHelper() {
     super(5);
     this.clock = Clock.systemUTC();
+    this.rcaName = name();
+  }
+
+  public RcaTestHelper(String rcaName) {
+    this();
+    this.rcaName = rcaName;
   }
 
   public void mockFlowUnit(ResourceFlowUnit<T> flowUnit) {
@@ -55,6 +62,11 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
 
   public void setClock(Clock clock) {
     this.clock = clock;
+  }
+
+  @Override
+  public String name() {
+    return rcaName;
   }
 
   @Override

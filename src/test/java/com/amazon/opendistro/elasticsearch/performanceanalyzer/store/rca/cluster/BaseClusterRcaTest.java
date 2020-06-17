@@ -44,6 +44,7 @@ import org.junit.experimental.categories.Category;
 public class BaseClusterRcaTest {
   private BaseClusterRca clusterRca;
   private RcaTestHelper<HotNodeSummary> nodeRca;
+  private RcaTestHelper<HotNodeSummary> nodeRca2;
   private ResourceType type1;
   private ResourceType type2;
   private ResourceType invalidType;
@@ -60,9 +61,10 @@ public class BaseClusterRcaTest {
 
   @Before
   public void init() {
-    nodeRca = new RcaTestHelper<>();
+    nodeRca = new RcaTestHelper<>("RCA1");
+    nodeRca2 = new RcaTestHelper<>("RCA2");
     invalidType = ResourceType.newBuilder().setJVM(JvmEnum.OLD_GEN).build();
-    clusterRca = new BaseClusterRca(1, nodeRca);
+    clusterRca = new BaseClusterRca(1, nodeRca, nodeRca2);
     type1 = ResourceType.newBuilder().setJVM(JvmEnum.OLD_GEN).build();
     type2 = ResourceType.newBuilder().setHardwareResourceType(HardwareEnum.CPU).build();
   }
@@ -106,6 +108,59 @@ public class BaseClusterRcaTest {
       Assert.assertTrue(compareNodeSummary("node1", type1, clusterSummary.getHotNodeSummaryList().get(1)));
       Assert.assertTrue(compareNodeSummary("node1", type1, clusterSummary.getHotNodeSummaryList().get(0)));
     }
+  }
+
+  @Test
+  public void testMultipleRcas() throws ClassCastException {
+    ResourceFlowUnit<HotClusterSummary> flowUnit;
+    nodeRca.mockFlowUnit(
+        RcaTestHelper.generateFlowUnit(type1, "node1", Resources.State.UNHEALTHY),
+        RcaTestHelper.generateFlowUnit(type1, "node2", Resources.State.HEALTHY)
+    );
+
+    nodeRca2.mockFlowUnit(
+        RcaTestHelper.generateFlowUnit(type2, "node1", Resources.State.HEALTHY),
+        RcaTestHelper.generateFlowUnit(type2, "node2", Resources.State.HEALTHY)
+    );
+
+    flowUnit = clusterRca.operate();
+    Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
+    HotClusterSummary clusterSummary = flowUnit.getSummary();
+    Assert.assertEquals(1, clusterSummary.getNumOfUnhealthyNodes());
+    Assert.assertTrue(compareNodeSummary("node1", type1, clusterSummary.getHotNodeSummaryList().get(0)));
+
+    nodeRca.mockFlowUnit(
+        RcaTestHelper.generateFlowUnit(type1, "node1", Resources.State.UNHEALTHY),
+        RcaTestHelper.generateFlowUnit(type1, "node2", Resources.State.HEALTHY)
+    );
+
+    nodeRca2.mockFlowUnit(
+        RcaTestHelper.generateFlowUnit(type2, "node1", Resources.State.HEALTHY),
+        RcaTestHelper.generateFlowUnit(type2, "node2", Resources.State.UNHEALTHY)
+    );
+
+    flowUnit = clusterRca.operate();
+    Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
+    clusterSummary = flowUnit.getSummary();
+    Assert.assertEquals(2, clusterSummary.getNumOfUnhealthyNodes());
+    Assert.assertTrue(compareNodeSummary("node1", type1, clusterSummary.getHotNodeSummaryList().get(0)));
+    Assert.assertTrue(compareNodeSummary("node2", type2, clusterSummary.getHotNodeSummaryList().get(1)));
+
+    nodeRca.mockFlowUnit(
+        RcaTestHelper.generateFlowUnit(type1, "node1", Resources.State.HEALTHY),
+        RcaTestHelper.generateFlowUnit(type1, "node2", Resources.State.HEALTHY)
+    );
+
+    nodeRca2.mockFlowUnit(
+        RcaTestHelper.generateFlowUnit(type2, "node1", Resources.State.HEALTHY),
+        RcaTestHelper.generateFlowUnit(type2, "node2", Resources.State.UNHEALTHY)
+    );
+
+    flowUnit = clusterRca.operate();
+    Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
+    clusterSummary = flowUnit.getSummary();
+    Assert.assertEquals(1, clusterSummary.getNumOfUnhealthyNodes());
+    Assert.assertTrue(compareNodeSummary("node2", type2, clusterSummary.getHotNodeSummaryList().get(0)));
   }
 
   @Test
