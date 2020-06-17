@@ -58,6 +58,12 @@ private static final long serialVersionUID = 0L;
             resourceTypeOneof_ = rawValue;
             break;
           }
+          case 24: {
+            int rawValue = input.readEnum();
+            resourceTypeOneofCase_ = 3;
+            resourceTypeOneof_ = rawValue;
+            break;
+          }
           default: {
             if (!parseUnknownField(
                 input, unknownFields, extensionRegistry, tag)) {
@@ -96,6 +102,7 @@ private static final long serialVersionUID = 0L;
       implements com.google.protobuf.Internal.EnumLite {
     JVM(1),
     HARDWARE_RESOURCE_TYPE(2),
+    THREAD_POOL(3),
     RESOURCETYPEONEOF_NOT_SET(0);
     private final int value;
     private ResourceTypeOneofCase(int value) {
@@ -113,6 +120,7 @@ private static final long serialVersionUID = 0L;
       switch (value) {
         case 1: return JVM;
         case 2: return HARDWARE_RESOURCE_TYPE;
+        case 3: return THREAD_POOL;
         case 0: return RESOURCETYPEONEOF_NOT_SET;
         default: return null;
       }
@@ -174,6 +182,29 @@ private static final long serialVersionUID = 0L;
     return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum.CPU;
   }
 
+  public static final int THREAD_POOL_FIELD_NUMBER = 3;
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum thread_pool = 3;</code>
+   */
+  public int getThreadPoolValue() {
+    if (resourceTypeOneofCase_ == 3) {
+      return (java.lang.Integer) resourceTypeOneof_;
+    }
+    return 0;
+  }
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum thread_pool = 3;</code>
+   */
+  public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum getThreadPool() {
+    if (resourceTypeOneofCase_ == 3) {
+      @SuppressWarnings("deprecation")
+      com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum result = com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum.valueOf(
+          (java.lang.Integer) resourceTypeOneof_);
+      return result == null ? com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum.UNRECOGNIZED : result;
+    }
+    return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum.WRITE_QUEUE;
+  }
+
   private byte memoizedIsInitialized = -1;
   @java.lang.Override
   public final boolean isInitialized() {
@@ -194,6 +225,9 @@ private static final long serialVersionUID = 0L;
     if (resourceTypeOneofCase_ == 2) {
       output.writeEnum(2, ((java.lang.Integer) resourceTypeOneof_));
     }
+    if (resourceTypeOneofCase_ == 3) {
+      output.writeEnum(3, ((java.lang.Integer) resourceTypeOneof_));
+    }
     unknownFields.writeTo(output);
   }
 
@@ -210,6 +244,10 @@ private static final long serialVersionUID = 0L;
     if (resourceTypeOneofCase_ == 2) {
       size += com.google.protobuf.CodedOutputStream
         .computeEnumSize(2, ((java.lang.Integer) resourceTypeOneof_));
+    }
+    if (resourceTypeOneofCase_ == 3) {
+      size += com.google.protobuf.CodedOutputStream
+        .computeEnumSize(3, ((java.lang.Integer) resourceTypeOneof_));
     }
     size += unknownFields.getSerializedSize();
     memoizedSize = size;
@@ -236,6 +274,10 @@ private static final long serialVersionUID = 0L;
         if (getHardwareResourceTypeValue()
             != other.getHardwareResourceTypeValue()) return false;
         break;
+      case 3:
+        if (getThreadPoolValue()
+            != other.getThreadPoolValue()) return false;
+        break;
       case 0:
       default:
     }
@@ -258,6 +300,10 @@ private static final long serialVersionUID = 0L;
       case 2:
         hash = (37 * hash) + HARDWARE_RESOURCE_TYPE_FIELD_NUMBER;
         hash = (53 * hash) + getHardwareResourceTypeValue();
+        break;
+      case 3:
+        hash = (37 * hash) + THREAD_POOL_FIELD_NUMBER;
+        hash = (53 * hash) + getThreadPoolValue();
         break;
       case 0:
       default:
@@ -433,6 +479,9 @@ private static final long serialVersionUID = 0L;
       if (resourceTypeOneofCase_ == 2) {
         result.resourceTypeOneof_ = resourceTypeOneof_;
       }
+      if (resourceTypeOneofCase_ == 3) {
+        result.resourceTypeOneof_ = resourceTypeOneof_;
+      }
       result.resourceTypeOneofCase_ = resourceTypeOneofCase_;
       onBuilt();
       return result;
@@ -489,6 +538,10 @@ private static final long serialVersionUID = 0L;
         }
         case HARDWARE_RESOURCE_TYPE: {
           setHardwareResourceTypeValue(other.getHardwareResourceTypeValue());
+          break;
+        }
+        case THREAD_POOL: {
+          setThreadPoolValue(other.getThreadPoolValue());
           break;
         }
         case RESOURCETYPEONEOF_NOT_SET: {
@@ -640,6 +693,60 @@ private static final long serialVersionUID = 0L;
      */
     public Builder clearHardwareResourceType() {
       if (resourceTypeOneofCase_ == 2) {
+        resourceTypeOneofCase_ = 0;
+        resourceTypeOneof_ = null;
+        onChanged();
+      }
+      return this;
+    }
+
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum thread_pool = 3;</code>
+     */
+    public int getThreadPoolValue() {
+      if (resourceTypeOneofCase_ == 3) {
+        return ((java.lang.Integer) resourceTypeOneof_).intValue();
+      }
+      return 0;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum thread_pool = 3;</code>
+     */
+    public Builder setThreadPoolValue(int value) {
+      resourceTypeOneofCase_ = 3;
+      resourceTypeOneof_ = value;
+      onChanged();
+      return this;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum thread_pool = 3;</code>
+     */
+    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum getThreadPool() {
+      if (resourceTypeOneofCase_ == 3) {
+        @SuppressWarnings("deprecation")
+        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum result = com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum.valueOf(
+            (java.lang.Integer) resourceTypeOneof_);
+        return result == null ? com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum.UNRECOGNIZED : result;
+      }
+      return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum.WRITE_QUEUE;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum thread_pool = 3;</code>
+     */
+    public Builder setThreadPool(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum value) {
+      if (value == null) {
+        throw new NullPointerException();
+      }
+      resourceTypeOneofCase_ = 3;
+      resourceTypeOneof_ = value.getNumber();
+      onChanged();
+      return this;
+    }
+    /**
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum thread_pool = 3;</code>
+     */
+    public Builder clearThreadPool() {
+      if (resourceTypeOneofCase_ == 3) {
         resourceTypeOneofCase_ = 0;
         resourceTypeOneof_ = null;
         onChanged();

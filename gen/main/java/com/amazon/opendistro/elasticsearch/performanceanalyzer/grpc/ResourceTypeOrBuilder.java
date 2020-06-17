@@ -25,5 +25,14 @@ public interface ResourceTypeOrBuilder extends
    */
   com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum getHardwareResourceType();
 
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum thread_pool = 3;</code>
+   */
+  int getThreadPoolValue();
+  /**
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum thread_pool = 3;</code>
+   */
+  com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum getThreadPool();
+
   public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType.ResourceTypeOneofCase getResourceTypeOneofCase();
 }
