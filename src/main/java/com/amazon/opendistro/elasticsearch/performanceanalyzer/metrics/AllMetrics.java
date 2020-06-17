@@ -415,7 +415,8 @@ public class AllMetrics {
     THREADPOOL_REJECTED_REQS(Constants.REJECTED_VALUE),
     THREADPOOL_TOTAL_THREADS(Constants.THREADS_COUNT_VALUE),
     THREADPOOL_ACTIVE_THREADS(Constants.THREADS_ACTIVE_VALUE),
-    THREADPOOL_QUEUE_LATENCY(Constants.QUEUE_LATENCY_VALUE);
+    THREADPOOL_QUEUE_LATENCY(Constants.QUEUE_LATENCY_VALUE),
+    THREADPOOL_QUEUE_CAPACITY(Constants.QUEUE_CAPACITY_VALUE);
 
     private final String value;
 
@@ -434,6 +435,7 @@ public class AllMetrics {
       public static final String THREADS_COUNT_VALUE = "ThreadPool_TotalThreads";
       public static final String THREADS_ACTIVE_VALUE = "ThreadPool_ActiveThreads";
       public static final String QUEUE_LATENCY_VALUE = "ThreadPool_QueueLatency";
+      public static final String QUEUE_CAPACITY_VALUE = "ThreadPool_QueueCapacity";
     }
   }
 
