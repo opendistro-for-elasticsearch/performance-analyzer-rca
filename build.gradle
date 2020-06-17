@@ -486,13 +486,15 @@ def enableComponent(endpoint, desiredState, timeoutSeconds) {
         try {
             def p = ['curl', endpoint, '-H', 'Content-Type: application/json', '-d', '{"enabled": true}'].execute()
             def json = new JsonSlurper().parseText(p.text)
-            if (json.get("currentPerformanceAnalyzerClusterState").equals(desiredState)) {
+            if (json.get("currentPerformanceAnalyzerClusterState").equals(desiredState) ||
+                    // desiredState+2 means that the "next" significant component is enabled
+                    json.get("currentPerformanceAnalyzerClusterState").equals(desiredState + 2)) {
                 break
             }
         } catch (Exception) {
-            Thread.sleep(increments);
-            passed += increments
         }
+        Thread.sleep(increments);
+        passed += increments
     }
     if (passed == timeout) {
         throw new GradleException(String.format("ERROR:  %s not ready.", endpoint));
