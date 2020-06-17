@@ -42,7 +42,8 @@ class ConfJsonWrapper {
   private final int networkQueueLength;
   private final int perVertexBufferLength;
   private final Map<String, Object> rcaConfigSettings;
-  private final List<String> mutedRcaList;
+  // Note, this was made mutable to enable setMutedRcaList
+  private List<String> mutedRcaList;
 
   String getRcaStoreLoc() {
     return rcaStoreLoc;
@@ -90,7 +91,7 @@ class ConfJsonWrapper {
 
   @VisibleForTesting
   void setMutedRcaList(List<String> mutedRcas) {
-    mutedRcas = mutedRcas;
+    this.mutedRcaList = mutedRcas;
   }
 
   public void setDatastoreRcaLogDirectory(String rcaLogLocation) {
