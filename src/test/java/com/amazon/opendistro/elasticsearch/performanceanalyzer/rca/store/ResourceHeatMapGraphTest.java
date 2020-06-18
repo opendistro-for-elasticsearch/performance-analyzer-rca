@@ -68,13 +68,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
-import java.net.Proxy;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -110,7 +106,6 @@ public class ResourceHeatMapGraphTest {
 
   private static SubscriptionManager subscriptionManager;
   private static AtomicReference<ExecutorService> networkThreadPoolReference;
-  private static Proxy proxy;
 
   @BeforeClass
   public static void init() {
@@ -129,13 +124,6 @@ public class ResourceHeatMapGraphTest {
     try {
       reader = new SQLiteReader(sqliteFile.toString());
     } catch (SQLException e) {
-      e.printStackTrace();
-      Assert.fail();
-    }
-
-    try {
-      proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(InetAddress.getLocalHost(), 9600));
-    } catch (UnknownHostException e) {
       e.printStackTrace();
       Assert.fail();
     }
@@ -230,7 +218,7 @@ public class ResourceHeatMapGraphTest {
     HttpURLConnection connection = null;
 
     try {
-      connection = (HttpURLConnection) url.openConnection(proxy);
+      connection = (HttpURLConnection) url.openConnection();
     } catch (IOException e) {
       e.printStackTrace();
       Assert.fail();
@@ -1123,7 +1111,7 @@ public class ResourceHeatMapGraphTest {
     }
 
     try {
-      HttpURLConnection con = (HttpURLConnection) url.openConnection(proxy);
+      HttpURLConnection con = (HttpURLConnection) url.openConnection();
       con.setRequestMethod("GET");
 
       int status = con.getResponseCode();

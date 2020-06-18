@@ -166,7 +166,6 @@ public class HotShardRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
 
         if (counter == rcaPeriod) {
             ResourceContext context = new ResourceContext(Resources.State.HEALTHY);
-            List<GenericSummary> HotShardSummaryList = new ArrayList<>();
             ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor.getCurrentNodeDetails();
 
             Set<IndexShardKey> indexShardKeySet = new HashSet<>(cpuUtilizationMap.keySet());

@@ -80,7 +80,7 @@ public class PerformanceAnalyzerWebServer {
       LOG.info(
           "Value Not Configured for: {} Using default value: binding only to local interface",
           WEBSERVICE_BIND_HOST_NAME);
-      server = HttpsServer.create(new InetSocketAddress(InetAddress.getLocalHost(), readerPort), INCOMING_QUEUE_LENGTH);
+      server = HttpsServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), readerPort), INCOMING_QUEUE_LENGTH);
     }
 
     TrustManager[] trustAllCerts =
@@ -131,7 +131,7 @@ public class PerformanceAnalyzerWebServer {
       LOG.info(
           "Value Not Configured for: {} Using default value: binding only to local interface",
           WEBSERVICE_BIND_HOST_NAME);
-      server = HttpServer.create(new InetSocketAddress(InetAddress.getLocalHost(), readerPort), INCOMING_QUEUE_LENGTH);
+      server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), readerPort), INCOMING_QUEUE_LENGTH);
     }
 
     return server;
