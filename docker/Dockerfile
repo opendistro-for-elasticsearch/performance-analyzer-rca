@@ -124,6 +124,9 @@ RUN chgrp 0 /usr/local/bin/docker-entrypoint.sh && \
     chmod g=u /etc/passwd && \
     chmod 0775 /usr/local/bin/docker-entrypoint.sh
 
+# Bind to all interfaces so that the docker container is accessible from the host machine
+RUN sed -i "s|#webservice-bind-host =|webservice-bind-host = 0.0.0.0|g" /usr/share/elasticsearch/plugins/opendistro_performance_analyzer/pa_config/performance-analyzer.properties
+
 EXPOSE 9200 9300 9600 9650
 
 LABEL org.label-schema.schema-version="1.0" \
