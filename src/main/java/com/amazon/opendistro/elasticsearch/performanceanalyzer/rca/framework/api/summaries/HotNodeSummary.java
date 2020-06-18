@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeConfiguration;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.JooqFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.google.gson.JsonElement;
@@ -52,6 +53,7 @@ public class HotNodeSummary extends GenericSummary {
   private final String hostAddress;
   private List<HotResourceSummary> hotResourceSummaryList;
   private List<HotShardSummary> hotShardSummaryList;
+  private NodeConfiguration nodeConfiguration;
 
   public HotNodeSummary(String nodeID, String hostAddress) {
     super();
@@ -59,6 +61,9 @@ public class HotNodeSummary extends GenericSummary {
     this.hostAddress = hostAddress;
     this.hotResourceSummaryList = new ArrayList<>();
     this.hotShardSummaryList = new ArrayList<>();
+    this.nodeConfiguration = NodeConfiguration.newBuilder()
+        .setSearchQueueCapacity(-1)
+        .setWriteQueueCapacity(-1).build();
   }
 
   public String getNodeID() {
@@ -85,6 +90,14 @@ public class HotNodeSummary extends GenericSummary {
     hotShardSummaryList.add(summary);
   }
 
+  public void setNodeConfiguration(NodeConfiguration nodeConfiguration) {
+    this.nodeConfiguration = nodeConfiguration;
+  }
+
+  public NodeConfiguration getNodeConfiguration() {
+    return nodeConfiguration;
+  }
+
   @Override
   public HotNodeSummaryMessage buildSummaryMessage() {
     final HotNodeSummaryMessage.Builder summaryMessageBuilder = HotNodeSummaryMessage.newBuilder();
@@ -97,6 +110,9 @@ public class HotNodeSummary extends GenericSummary {
     for (HotShardSummary hotShardSummary : hotShardSummaryList) {
       summaryMessageBuilder.getHotShardSummaryListBuilder()
           .addHotShardSummary(hotShardSummary.buildSummaryMessage());
+    }
+    if (nodeConfiguration != null) {
+      summaryMessageBuilder.getNodeConfigurationBuilder().mergeFrom(nodeConfiguration);
     }
     return summaryMessageBuilder.build();
   }
@@ -121,6 +137,7 @@ public class HotNodeSummary extends GenericSummary {
                 message.getHotShardSummaryList().getHotShardSummary(i)));
       }
     }
+    newSummary.setNodeConfiguration(message.getNodeConfiguration());
     return newSummary;
   }
 

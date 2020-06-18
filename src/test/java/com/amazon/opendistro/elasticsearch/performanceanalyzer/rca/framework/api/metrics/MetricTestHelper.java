@@ -42,6 +42,10 @@ public class MetricTestHelper extends Metric {
     context = DSL.using(new MockConnection(Mock.of(0)));
   }
 
+  public void createEmptyFlowunit() {
+    this.flowUnits = Collections.singletonList(MetricFlowUnit.generic());
+  }
+
   public void createTestFlowUnits(final List<String> fieldName, final List<String> row) {
     List<String[]> stringData = new ArrayList<>();
     stringData.add(fieldName.toArray(new String[0]));
