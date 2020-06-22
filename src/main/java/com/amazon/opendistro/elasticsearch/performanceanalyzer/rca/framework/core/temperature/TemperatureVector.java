@@ -22,22 +22,25 @@ import javax.annotation.Nullable;
 
 public class TemperatureVector {
     public static final String DIMENSION_KEY = "dimension";
-    public static final String VALUE_KEY = "value";
+    public static final String HEAT_VALUE_KEY = "heat_value";
+    public static final String TOTAL_RAW_VALUE_KEY = "total_raw_value";
 
-    public static class NormalizedValue {
+    public static class VectorValues {
         public static final int MIN = 0;
         public static final int MAX = 10;
 
-        private final short POINTS;
+        private final short HEATVALUE;
+        private final double RAWVALUE;
 
-        public NormalizedValue(short heatValue) {
-            if (heatValue < MIN || heatValue > MAX) {
+        public VectorValues(short HEATVALUE, double RAWVALUE) {
+            if (HEATVALUE < MIN || HEATVALUE > MAX) {
                 String err = String.format("Only values between %d and %d allowed. Given: %d", MIN, MAX,
-                        heatValue);
+                        HEATVALUE);
                 throw new IllegalArgumentException(err);
             }
 
-            this.POINTS = heatValue;
+            this.HEATVALUE = HEATVALUE;
+            this.RAWVALUE = RAWVALUE;
         }
 
         /**
@@ -45,39 +48,43 @@ public class TemperatureVector {
          * resource) and 10 being hot(almost all the units of the resource were consumed by it).
          * Temperature is calculated by determining what parts of 10 is consumed by the resource.
          */
-        public static NormalizedValue calculate(double consumedByCandidate, double totalConsumption) {
-            return new NormalizedValue((short) (consumedByCandidate * 10 / totalConsumption));
+        public static VectorValues calculate(double consumedByCandidate, double totalConsumption) {
+            return new VectorValues((short) (consumedByCandidate * 10 / totalConsumption), totalConsumption);
         }
 
-        public NormalizedValue diff(NormalizedValue b) {
-            return new NormalizedValue((short) (POINTS - b.POINTS));
+        public VectorValues diff(VectorValues b) {
+            return new VectorValues((short) (HEATVALUE - b.HEATVALUE), RAWVALUE);
         }
 
-        public boolean isGreaterThan(NormalizedValue b) {
-            return POINTS > b.POINTS;
+        public boolean isGreaterThan(VectorValues b) {
+            return HEATVALUE > b.HEATVALUE;
         }
 
-        public Comparator<NormalizedValue> comparator() {
-            return Comparator.comparingInt(o -> o.POINTS);
+        public Comparator<VectorValues> comparator() {
+            return Comparator.comparingInt(o -> o.HEATVALUE);
         }
 
-        public short getPOINTS() {
-            return POINTS;
+        public short getHeatValue() {
+            return HEATVALUE;
+        }
+
+        public double getRawValue() {
+            return RAWVALUE;
         }
 
         @Override
         public String toString() {
-            return "" + POINTS;
+            return "" + HEATVALUE;
         }
     }
 
     /**
      * This array contains a normalized value per dimension.
      */
-    private NormalizedValue[] normalizedValues;
+    private VectorValues[] vectorValues;
 
     public TemperatureVector() {
-        normalizedValues = new NormalizedValue[TemperatureDimension.values().length];
+        this.vectorValues = new VectorValues[TemperatureDimension.values().length];
     }
 
     @Override
@@ -88,11 +95,12 @@ public class TemperatureVector {
     public JsonArray toJson() {
         JsonArray array = new JsonArray();
         for (TemperatureDimension dim : TemperatureDimension.values()) {
-            NormalizedValue val = normalizedValues[dim.ordinal()];
+            VectorValues val = vectorValues[dim.ordinal()];
             if (val != null) {
                 JsonObject jsonObject = new JsonObject();
                 jsonObject.addProperty(DIMENSION_KEY, dim.NAME);
-                jsonObject.addProperty(VALUE_KEY, val.toString());
+                jsonObject.addProperty(HEAT_VALUE_KEY, val.getHeatValue());
+                jsonObject.addProperty(TOTAL_RAW_VALUE_KEY, val.getRawValue());
                 array.add(jsonObject);
             }
         }
@@ -106,12 +114,12 @@ public class TemperatureVector {
      * @return The normalized temperature value along that dimension.
      */
     @Nullable
-    public NormalizedValue getTemperatureFor(TemperatureDimension dimension) {
-        return normalizedValues[dimension.ordinal()];
+    public TemperatureVector.VectorValues getTemperatureVectorValue(TemperatureDimension dimension) {
+        return vectorValues[dimension.ordinal()];
     }
 
     public void updateTemperatureForDimension(TemperatureDimension dimension,
-                                              NormalizedValue normalizedValue) {
-        normalizedValues[dimension.ordinal()] = normalizedValue;
+                                              VectorValues vectorValue) {
+        vectorValues[dimension.ordinal()] = new VectorValues(vectorValue.getHeatValue(), vectorValue.getRawValue());
     }
 }

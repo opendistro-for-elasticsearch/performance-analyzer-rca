@@ -71,7 +71,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
     /**
      * This is the mean temperature for this dimension over all the nodes in the cluster.
      */
-    private TemperatureVector.NormalizedValue meanTemperature;
+    private TemperatureVector.VectorValues meanTemperature;
 
     /**
      * This is the average value used over shards.
@@ -105,7 +105,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
         }
     }
 
-    public void setMeanTemperature(TemperatureVector.NormalizedValue meanTemperature) {
+    public void setVectorValues(TemperatureVector.VectorValues meanTemperature) {
         this.meanTemperature = meanTemperature;
     }
 
@@ -135,7 +135,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
         numberOfNodes += 1;
     }
 
-    public TemperatureVector.NormalizedValue getMeanTemperature() {
+    public TemperatureVector.VectorValues getMeanTemperature() {
         return meanTemperature;
     }
 
@@ -208,7 +208,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
     public List<Object> getSqlValue() {
         List<Object> row = new ArrayList<>();
         row.add(getProfileForDimension().NAME);
-        row.add(getMeanTemperature().getPOINTS());
+        row.add(getMeanTemperature().getHeatValue());
         row.add(getAvgMetricValueOverNodes());
         row.add(getTotalMetricsValueUsedOverCluster());
         row.add(getNumberOfNodes());
@@ -224,7 +224,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
     public JsonElement toJson() {
         JsonObject summaryObj = new JsonObject();
         summaryObj.addProperty(DIM_KEY, getProfileForDimension().NAME);
-        summaryObj.addProperty(MEAN_KEY, getMeanTemperature().getPOINTS());
+        summaryObj.addProperty(MEAN_KEY, getMeanTemperature().getHeatValue());
         summaryObj.addProperty(AVG_NODE_KEY, getAvgMetricValueOverNodes());
         summaryObj.addProperty(TOTAL_KEY, getTotalMetricsValueUsedOverCluster());
         summaryObj.addProperty(NUM_NODES_KEY, getNumberOfNodes());
@@ -252,9 +252,9 @@ public class ClusterDimensionalSummary extends GenericSummary {
     public static ClusterDimensionalSummary build(Record record, DSLContext context) {
         String dimensionName = record.get(DIM_KEY, String.class);
 
-        TemperatureVector.NormalizedValue meanTemp =
-                new TemperatureVector.NormalizedValue(record.get(MEAN_KEY, Short.class));
         double total = record.get(TOTAL_KEY, Double.class);
+        TemperatureVector.VectorValues vectorValues =
+                new TemperatureVector.VectorValues(record.get(MEAN_KEY, Short.class), total);
         int numNodes = record.get(NUM_NODES_KEY, Integer.class);
         int dimSummaryId = record.get(SQLiteQueryUtils.getPrimaryKeyColumnName(TABLE_NAME),
                 Integer.class);
@@ -266,7 +266,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
         }
         summary.setAvgMetricValueUsedOverNodes(total / numNodes);
         summary.setTotalMetricsValueUsed(total);
-        summary.setMeanTemperature(meanTemp);
+        summary.setVectorValues(vectorValues);
         summary.setNumberOfNodes(numNodes);
 
         Field<Integer> foreignKeyForDimensionalTable = DSL.field(
@@ -379,7 +379,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
         }
 
         @Nullable
-        TemperatureVector.NormalizedValue getMinTemperature() {
+        TemperatureVector.VectorValues getMinTemperature() {
             if (minNode != null) {
                 return minNode.getTemperatureForDimension(profileForDimension);
             }
@@ -387,7 +387,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
         }
 
         @Nullable
-        TemperatureVector.NormalizedValue getMaxTemperature() {
+        TemperatureVector.VectorValues getMaxTemperature() {
             if (maxNode != null) {
                 return maxNode.getTemperatureForDimension(profileForDimension);
             }

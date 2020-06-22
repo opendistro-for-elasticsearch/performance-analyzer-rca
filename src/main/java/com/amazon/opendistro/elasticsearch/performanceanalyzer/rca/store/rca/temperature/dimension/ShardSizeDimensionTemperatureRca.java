@@ -1,8 +1,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.DimensionalTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
@@ -24,8 +22,8 @@ public class ShardSizeDimensionTemperatureRca extends Rca<DimensionalTemperature
     private static final Logger LOG = LogManager.getLogger(ShardSizeDimensionTemperatureRca.class);
     // The threshold set here is an initial threshold only.
     // TODO: Update the threshold appropriately after testing so that we assign heat correctly.
-    private static final TemperatureVector.NormalizedValue THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT =
-            new TemperatureVector.NormalizedValue((short) 2);
+    private static final TemperatureVector.VectorValues THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT =
+            new TemperatureVector.VectorValues((short) 2,0);
     private final ShardSizeMetricBasedTemperatureCalculator SHARD_SIZE_BY_SHARD;
     private final ShardSizeAvgTemperatureCalculator SHARD_SIZE_AVG;
     private final ShardTotalDiskUsageTemperatureCalculator SHARD_TOTAL_USAGE;
@@ -59,18 +57,8 @@ public class ShardSizeDimensionTemperatureRca extends Rca<DimensionalTemperature
                 SHARD_SIZE_AVG,
                 SHARD_TOTAL_USAGE,
                 THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT);
-        LOG.info("Shard Size temperature calculated: {}",
-                shardSizeTemperatureFlowUnit.getNodeDimensionProfile());
-        ResourceContext context;
-        try {
-            context = (shardSizeTemperatureFlowUnit.getNodeDimensionProfile().getMeanTemperature()
-                    .isGreaterThan(THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT)) ? new ResourceContext(Resources.State.UNHEALTHY) :
-                    new ResourceContext(Resources.State.HEALTHY);
-        } catch (Exception e) {
-            // Null Pointer Exception
-            context =  new ResourceContext(Resources.State.UNKNOWN);
-        }
-        shardSizeTemperatureFlowUnit.setResourceContext(context);
+        LOG.error("Shard Size temperature calculated: {}",
+                shardSizeTemperatureFlowUnit.getNodeDimensionProfile().toJson());
         return shardSizeTemperatureFlowUnit;
     }
 }

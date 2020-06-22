@@ -16,8 +16,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.DimensionalTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
@@ -41,8 +39,8 @@ public class CpuUtilDimensionTemperatureRca extends Rca<DimensionalTemperatureFl
 
     private final ShardStore shardStore;
 
-    public static final TemperatureVector.NormalizedValue THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT =
-            new TemperatureVector.NormalizedValue((short) 2);
+    public static final TemperatureVector.VectorValues THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT =
+            new TemperatureVector.VectorValues((short) 2,0);
 
     public CpuUtilDimensionTemperatureRca(final long evaluationIntervalSeconds,
                                           ShardStore shardStore,
@@ -71,18 +69,8 @@ public class CpuUtilDimensionTemperatureRca extends Rca<DimensionalTemperatureFl
                 CPU_UTIL_BY_SHARD,
                 AVG_CPU_UTIL_BY_SHARD, CPU_UTIL_SHARD_INDEPENDENT, CPU_UTIL_PEAK_USAGE,
                 THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT);
-        LOG.info("CPU Utilization temperature calculated: {}",
-                cpuUtilTemperatureFlowUnit.getNodeDimensionProfile());
-        ResourceContext context;
-        try {
-            context = (cpuUtilTemperatureFlowUnit.getNodeDimensionProfile().getMeanTemperature()
-                    .isGreaterThan(THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT)) ? new ResourceContext(Resources.State.UNHEALTHY) :
-                    new ResourceContext(Resources.State.HEALTHY);
-        } catch (Exception e) {
-            // Null Pointer Exception
-            context =  new ResourceContext(Resources.State.UNKNOWN);
-        }
-        cpuUtilTemperatureFlowUnit.setResourceContext(context);
+        LOG.error("CPU Utilization temperature calculated: {}",
+                cpuUtilTemperatureFlowUnit.getNodeDimensionProfile().toJson());
         return cpuUtilTemperatureFlowUnit;
     }
 }

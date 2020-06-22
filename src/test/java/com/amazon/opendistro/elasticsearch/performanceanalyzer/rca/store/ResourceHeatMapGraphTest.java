@@ -45,7 +45,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.RawMetricsVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
@@ -101,7 +100,7 @@ public class ResourceHeatMapGraphTest {
   private final int THREADS = 3;
   private static final String cwd = System.getProperty("user.dir");
   private static final Path sqliteFile =
-      Paths.get(cwd, "src", "test", "resources", "metricsdbs", "metricsdb_1590716125000");
+      Paths.get(cwd, "src", "test", "resources", "metricsdbs", "metricsdb_1592819195000");
 
   private static final RcaConf rcaConf =
       new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
@@ -674,24 +673,21 @@ public class ResourceHeatMapGraphTest {
     JsonArray rawMetrics = element.getAsJsonObject().get(ShardProfileSummary.RAW_METRIC_KEY).getAsJsonArray();
     JsonArray temperatureProfiles = element.getAsJsonObject().get(ShardProfileSummary.TEMPERATURE_KEY).getAsJsonArray();
     Iterator<JsonElement> temperatureProfileIterator = temperatureProfiles.iterator();
-    Iterator<JsonElement> rawMetricsIterator = rawMetrics.iterator();
-    while (temperatureProfileIterator.hasNext() && rawMetricsIterator.hasNext()) {
+    while (temperatureProfileIterator.hasNext()) {
       JsonObject temperatureObj = temperatureProfileIterator.next().getAsJsonObject();
-      JsonObject rawMetricsObj = rawMetricsIterator.next().getAsJsonObject();
       TemperatureDimension temperatureDimension =
               TemperatureDimension.valueOf(temperatureObj.get(TemperatureVector.DIMENSION_KEY).getAsString());
-      TemperatureVector.NormalizedValue temperatureValue =
-              new TemperatureVector.NormalizedValue((short) temperatureObj.get(TemperatureVector.VALUE_KEY).getAsInt());
-      double rawMetricsValue = rawMetricsObj.get(RawMetricsVector.VALUE_KEY).getAsDouble();
+      short heatValue = temperatureObj.get(TemperatureVector.HEAT_VALUE_KEY).getAsShort();
+      int rawMetricValue = temperatureObj.get(TemperatureVector.TOTAL_RAW_VALUE_KEY).getAsShort();
       if (temperatureDimension == TemperatureDimension.CPU_Utilization) {
-        Assert.assertEquals(rawMetricsValue,cpuUtilizationActualValue, 0.001);
-        Assert.assertEquals((int)temperatureValue.getPOINTS(),cpuUtilizationHeat);
+        Assert.assertEquals(rawMetricValue,cpuUtilizationActualValue, 0.001);
+        Assert.assertEquals((int)heatValue,cpuUtilizationHeat);
       } else if (temperatureDimension == TemperatureDimension.Heap_AllocRate) {
-        Assert.assertEquals(rawMetricsValue,heapAllocationActualValue, 0.001);
-        Assert.assertEquals((int)temperatureValue.getPOINTS(),heapAllocationHeat);
+        Assert.assertEquals(rawMetricValue,heapAllocationActualValue, 0.001);
+        Assert.assertEquals((int)heatValue,heapAllocationHeat);
       } else if (temperatureDimension == TemperatureDimension.Shard_Size_In_Bytes) {
-        Assert.assertEquals(rawMetricsValue,shardSizeActualValue, 0.001);
-        Assert.assertEquals((int)temperatureValue.getPOINTS(),shardSizeHeat);
+        Assert.assertEquals(rawMetricValue,shardSizeActualValue, 0.001);
+        Assert.assertEquals((int)heatValue,shardSizeHeat);
       }
     }
   }
@@ -1059,12 +1055,12 @@ public class ResourceHeatMapGraphTest {
       Assert.assertEquals("4sqG_APMQuaQwEW17_6zwg", node.get("node_id").getAsString());
       // Assert.assertEquals("192.168.0.1", node.get("host_address").getAsString());
       Assert.assertEquals(10, node.get("CPU_Utilization_mean").getAsInt());
-      Assert.assertEquals(0.113345915412554, node.get("CPU_Utilization_total").getAsDouble(),
+      Assert.assertEquals(0, node.get("CPU_Utilization_total").getAsDouble(),
           0.01);
       Assert.assertEquals(3, node.get("CPU_Utilization_num_shards").getAsInt());
 
       Assert.assertEquals(9, node.get("Heap_AllocRate_mean").getAsInt());
-      Assert.assertEquals(7429635, node.get("Heap_AllocRate_total").getAsInt());
+      Assert.assertEquals(0, node.get("Heap_AllocRate_total").getAsInt());
       Assert.assertEquals(3, node.get("Heap_AllocRate_num_shards").getAsInt());
 
     }

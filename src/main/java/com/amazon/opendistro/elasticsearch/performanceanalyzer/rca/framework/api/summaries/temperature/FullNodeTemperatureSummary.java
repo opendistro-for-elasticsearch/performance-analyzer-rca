@@ -18,7 +18,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.RawMetricsVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.google.gson.JsonElement;
@@ -42,8 +41,6 @@ public class FullNodeTemperatureSummary extends GenericSummary {
      * temperature along each dimension.
      */
     private final TemperatureVector temperatureVector;
-    private final RawMetricsVector avgMetricsVector;
-    private final RawMetricsVector totalMetricsVector;
 
 
     /**
@@ -61,8 +58,6 @@ public class FullNodeTemperatureSummary extends GenericSummary {
         this.nodeDimensionProfiles =
                 new NodeLevelDimensionalSummary[TemperatureDimension.values().length];
         this.temperatureVector = new TemperatureVector();
-        this.avgMetricsVector = new RawMetricsVector();
-        this.totalMetricsVector = new RawMetricsVector();
     }
 
     public TemperatureVector getTemperatureVector() {
@@ -84,9 +79,9 @@ public class FullNodeTemperatureSummary extends GenericSummary {
     public void updateNodeDimensionProfile(NodeLevelDimensionalSummary nodeDimensionProfile) {
         TemperatureDimension dimension = nodeDimensionProfile.getProfileForDimension();
         this.nodeDimensionProfiles[dimension.ordinal()] = nodeDimensionProfile;
-        temperatureVector.updateTemperatureForDimension(dimension, nodeDimensionProfile.getMeanTemperature());
-        avgMetricsVector.updateRawMetricsForDimension(dimension, nodeDimensionProfile.getAvgMetricValueOverShards());
-        totalMetricsVector.updateRawMetricsForDimension(dimension, nodeDimensionProfile.getTotalMetricValueUsed());
+        temperatureVector.updateTemperatureForDimension(dimension,
+                new TemperatureVector.VectorValues(nodeDimensionProfile.getTemperatureVectorHeatValue(),
+                                                   nodeDimensionProfile.getTotalMetricValueUsed()));
     }
 
     public List<GenericSummary> getNestedSummaryList() {
@@ -137,7 +132,7 @@ public class FullNodeTemperatureSummary extends GenericSummary {
         values.add(getHostAddress());
 
         for (TemperatureDimension dimension : TemperatureDimension.values()) {
-            values.add(temperatureVector.getTemperatureFor(dimension));
+            values.add(temperatureVector.getTemperatureVectorValue(dimension));
         }
         return values;
     }
@@ -146,10 +141,10 @@ public class FullNodeTemperatureSummary extends GenericSummary {
     public JsonElement toJson() {
         JsonObject summaryObj = new JsonObject();
         for (TemperatureDimension dimension : TemperatureDimension.values()) {
-            TemperatureVector.NormalizedValue value =
-                    temperatureVector.getTemperatureFor(dimension);
+            TemperatureVector.VectorValues value =
+                    temperatureVector.getTemperatureVectorValue(dimension);
             summaryObj.addProperty(dimension.NAME,
-                    value != null ? value.getPOINTS() : null);
+                    value != null ? value.getHeatValue() : null);
         }
         getNestedSummaryList().forEach(
                 summary -> {

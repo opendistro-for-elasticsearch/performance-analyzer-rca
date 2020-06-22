@@ -17,7 +17,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.RawMetricsVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.google.gson.JsonObject;
@@ -34,19 +33,18 @@ public class ShardProfileSummary extends GenericSummary {
     public static final String INDEX_NAME_KEY = "index_name";
     public static final String SHARD_ID_KEY = "shard_id";
     public static final String RAW_METRIC_KEY = "raw_metric";
+    public static final String HEAT_KEY = "heat";
     public static final String TEMPERATURE_KEY = "temperature";
 
     private final String indexName;
     private final int shardId;
 
     private final TemperatureVector temperatureVector;
-    private final RawMetricsVector perShardMetricsVector;
 
 
     public ShardProfileSummary(String indexName, int shardId) {
         this.indexName = indexName;
         this.shardId = shardId;
-        this.perShardMetricsVector = new RawMetricsVector();
         this.temperatureVector = new TemperatureVector();
     }
 
@@ -80,7 +78,7 @@ public class ShardProfileSummary extends GenericSummary {
         schema.add(DSL.field(DSL.name(INDEX_NAME_KEY), String.class));
         schema.add(DSL.field(DSL.name(SHARD_ID_KEY), Integer.class));
         for (TemperatureDimension dimension : TemperatureDimension.values()) {
-            schema.add(DSL.field(DSL.name(TEMPERATURE_KEY + dimension.NAME), Short.class));
+            schema.add(DSL.field(DSL.name(HEAT_KEY + dimension.NAME), Short.class));
             schema.add(DSL.field(DSL.name(RAW_METRIC_KEY + dimension.NAME), Short.class));
         }
         return schema;
@@ -92,8 +90,7 @@ public class ShardProfileSummary extends GenericSummary {
         values.add(indexName);
         values.add(shardId);
         for (TemperatureDimension dimension : TemperatureDimension.values()) {
-            values.add(temperatureVector.getTemperatureFor(dimension));
-            values.add(perShardMetricsVector.getMetricsFor(dimension));
+            values.add(temperatureVector.getTemperatureVectorValue(dimension));
         }
         return values;
     }
@@ -103,22 +100,16 @@ public class ShardProfileSummary extends GenericSummary {
         summaryObj.addProperty(INDEX_NAME_KEY, indexName);
         summaryObj.addProperty(SHARD_ID_KEY, shardId);
         summaryObj.add(TEMPERATURE_KEY, temperatureVector.toJson());
-        summaryObj.add(RAW_METRIC_KEY, perShardMetricsVector.toJson());
         return summaryObj;
     }
 
     @Nullable
-    public TemperatureVector.NormalizedValue getHeatInDimension(TemperatureDimension dimension) {
-        return temperatureVector.getTemperatureFor(dimension);
-    }
-
-    public void addRawMetricForDimension(TemperatureDimension dimension,
-                                         double value) {
-        perShardMetricsVector.updateRawMetricsForDimension(dimension, value);
+    public TemperatureVector.VectorValues getTemperatureVectorValueInDimension(TemperatureDimension dimension) {
+        return temperatureVector.getTemperatureVectorValue(dimension);
     }
 
     public void addTemperatureForDimension(TemperatureDimension dimension,
-                                           TemperatureVector.NormalizedValue value) {
+                                           TemperatureVector.VectorValues value) {
         // TODO: Need to handle rcas updating heat profile of a shard along a dimension multiple
         //  times per tick.
         temperatureVector.updateTemperatureForDimension(dimension, value);

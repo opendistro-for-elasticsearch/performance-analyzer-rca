@@ -1,13 +1,11 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.temperature.DimensionalTemperatureFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector.NormalizedValue;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector.VectorValues;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.HeapAllocRateByShardAvgTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.HeapAllocRateByShardTemperatureCalculator;
@@ -22,8 +20,9 @@ public class HeapAllocRateTemperatureRca extends Rca<DimensionalTemperatureFlowU
   private static final Logger LOG = LogManager.getLogger(HeapAllocRateTemperatureRca.class);
   // The threshold set here is an initial threshold only.
   // TODO: Update the threshold appropriately after testing so that we assign heat correctly.
-  private static final NormalizedValue THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT =
-          new TemperatureVector.NormalizedValue((short) 2);
+  // Raw Values here is not needed as we would be comparing just against the threshold.
+  private static final TemperatureVector.VectorValues THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT =
+          new TemperatureVector.VectorValues((short) 2, 0);
   private final HeapAllocRateByShardTemperatureCalculator HEAP_ALLOC_RATE_BY_SHARD;
   private final HeapAllocRateByShardAvgTemperatureCalculator HEAP_ALLOC_RATE_BY_SHARD_AVG;
   private final HeapAllocRateShardIndependentTemperatureCalculator HEAP_ALLOC_RATE_SHARD_INDEPENDENT;
@@ -61,18 +60,8 @@ public class HeapAllocRateTemperatureRca extends Rca<DimensionalTemperatureFlowU
               HEAP_ALLOC_RATE_SHARD_INDEPENDENT,
               HEAP_ALLOC_RATE_TOTAL,
               THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT);
-      LOG.info("Heap allocation rate temperature calculated: {}",
-              heapAllocRateTemperatureFlowUnit.getNodeDimensionProfile());
-      ResourceContext context;
-      try {
-          context = (heapAllocRateTemperatureFlowUnit.getNodeDimensionProfile().getMeanTemperature()
-                  .isGreaterThan(THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT)) ? new ResourceContext(Resources.State.UNHEALTHY) :
-                  new ResourceContext(Resources.State.HEALTHY);
-      } catch (Exception e) {
-          // Null Pointer Exception
-          context =  new ResourceContext(Resources.State.UNKNOWN);
-      }
-      heapAllocRateTemperatureFlowUnit.setResourceContext(context);
+      LOG.error("Heap allocation rate temperature calculated: {}",
+              heapAllocRateTemperatureFlowUnit.getNodeDimensionProfile().toJson());
       return heapAllocRateTemperatureFlowUnit;
   }
 }

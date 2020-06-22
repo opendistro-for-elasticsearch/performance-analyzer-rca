@@ -62,8 +62,7 @@ public class CompactClusterLevelNodeSummary extends CompactNodeSummary {
 
                 summary.setNumOfShards(dimension, num_shards);
                 summary.setTemperatureForDimension(dimension,
-                        new TemperatureVector.NormalizedValue(mean));
-                summary.setTotalConsumedByDimension(dimension, total);
+                        new TemperatureVector.VectorValues(mean, total));
             } catch (DataTypeException dex) {
                 LOG.error("Could not create valid summary object.", dex);
             }

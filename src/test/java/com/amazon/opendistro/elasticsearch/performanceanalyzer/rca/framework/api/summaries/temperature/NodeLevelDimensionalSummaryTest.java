@@ -31,9 +31,7 @@ public class NodeLevelDimensionalSummaryTest {
     final int SHARD_COUNT = 10;
 
     NodeLevelDimensionalSummary nodeSummary =
-        new NodeLevelDimensionalSummary(DIMENSION,
-            new TemperatureVector.NormalizedValue((short) 2),
-            12.0, 20);
+        new NodeLevelDimensionalSummary(DIMENSION, (short) 2,0,0);
 
     // The list of shards so obtained is shards ordered in ascending order of temperature
     // along the Dimension = DIMENSION.
@@ -48,7 +46,7 @@ public class NodeLevelDimensionalSummaryTest {
     // descending order of temperature.
     for (int i = 0; i < shards.size(); i++) {
       ShardProfileSummary shard = shards.get(i);
-      Assert.assertEquals(SHARD_COUNT - i - 1, shard.getHeatInDimension(DIMENSION).getPOINTS());
+      Assert.assertEquals(SHARD_COUNT - i - 1, shard.getTemperatureVectorValueInDimension(DIMENSION).getHeatValue());
     }
   }
 
@@ -57,7 +55,7 @@ public class NodeLevelDimensionalSummaryTest {
     for (int i = 0; i < count; i++) {
       ShardProfileSummary shard = new ShardProfileSummary("test-index", i);
       shard.addTemperatureForDimension(dimension,
-          new TemperatureVector.NormalizedValue((short) i));
+          new TemperatureVector.VectorValues((short) i, 20));
       shards.add(shard);
     }
     return shards;

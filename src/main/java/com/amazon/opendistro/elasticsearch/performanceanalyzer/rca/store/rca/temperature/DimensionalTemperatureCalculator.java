@@ -69,16 +69,12 @@ public class DimensionalTemperatureCalculator {
             AvgShardBasedTemperatureCalculator avgResUsageByAllShards,
             ShardIndependentTemperatureCalculator resourceShardIndependent,
             TotalNodeTemperatureCalculator resourcePeakUsage,
-            TemperatureVector.NormalizedValue threshold) {
+            TemperatureVector.VectorValues threshold) {
         List<MetricFlowUnit> shardIdBasedFlowUnits = resourceByShardId.getFlowUnits();
         List<MetricFlowUnit> avgResUsageFlowUnits = avgResUsageByAllShards.getFlowUnits();
         List<MetricFlowUnit> shardIdIndependentFlowUnits = resourceShardIndependent.getFlowUnits();
         List<MetricFlowUnit> resourcePeakFlowUnits = resourcePeakUsage.getFlowUnits();
 
-        LOG.info("shardIdBasedFlowUnits: {}", shardIdBasedFlowUnits);
-        LOG.info("avgResUsageFlowUnits: {}", avgResUsageFlowUnits);
-        LOG.info("shardIdIndependentFlowUnits: {}", shardIdIndependentFlowUnits);
-        LOG.info("resourcePeakFlowUnits: {}", resourcePeakFlowUnits);
 
         // example:
         // [0: [[IndexName, ShardID, sum], [geonames, 0, 0.35558242693567], [geonames, 2, 0.0320651297686606]]]
@@ -172,13 +168,12 @@ public class DimensionalTemperatureCalculator {
             return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
         }
 
-        TemperatureVector.NormalizedValue avgUsageAcrossShards =
-                TemperatureVector.NormalizedValue.calculate(avgValOverShards, totalConsumedInNode);
+        TemperatureVector.VectorValues avgUsageAcrossShards = TemperatureVector.VectorValues.calculate(avgValOverShards, totalConsumedInNode);
 
         Result<Record> rowsPerShard = shardIdBasedFlowUnits.get(0).getData();
 
         NodeLevelDimensionalSummary nodeDimensionProfile =
-                new NodeLevelDimensionalSummary(metricType, avgUsageAcrossShards, avgValOverShards, totalConsumedInNode);
+                new NodeLevelDimensionalSummary(metricType, avgUsageAcrossShards.getHeatValue() , avgValOverShards, totalConsumedInNode);
 
         // The shardIdBasedFlowUnits is supposed to contain one row per shard.
         nodeDimensionProfile.setNumberOfShards(rowsPerShard.size());
@@ -189,15 +184,15 @@ public class DimensionalTemperatureCalculator {
             String indexName = record.getValue(ColumnTypes.IndexName.name(), String.class);
             int shardId = record.getValue(ColumnTypes.ShardID.name(), Integer.class);
             double usage = record.getValue(ColumnTypes.sum.name(), Double.class);
-
-            TemperatureVector.NormalizedValue normalizedConsumptionByShard =
-                    TemperatureVector.NormalizedValue.calculate(usage, totalConsumedInNode);
+            TemperatureVector.VectorValues normalizedConsumptionByShard = TemperatureVector.VectorValues.calculate(
+                    usage, totalConsumedInNode);
             HeatZoneAssigner.Zone heatZoneForShard =
                     HeatZoneAssigner.assign(normalizedConsumptionByShard, avgUsageAcrossShards, threshold);
 
             ShardProfileSummary shardProfileSummary = shardStore.getOrCreateIfAbsent(indexName, shardId);
-            shardProfileSummary.addTemperatureForDimension(metricType, normalizedConsumptionByShard);
-            shardProfileSummary.addRawMetricForDimension(metricType, usage);
+            TemperatureVector.VectorValues shardTemperatureVector = new TemperatureVector.VectorValues(
+                    normalizedConsumptionByShard.getHeatValue(), usage);
+            shardProfileSummary.addTemperatureForDimension(metricType, shardTemperatureVector);
             nodeDimensionProfile.addShardToZone(shardProfileSummary, heatZoneForShard);
         }
         
@@ -209,7 +204,7 @@ public class DimensionalTemperatureCalculator {
             ShardBasedTemperatureCalculator resourceByShardId,
             AvgShardBasedTemperatureCalculator avgResUsageByAllShards,
             ShardTotalDiskUsageTemperatureCalculator shardSizePeakUsage,
-            TemperatureVector.NormalizedValue threshold) {
+            TemperatureVector.VectorValues threshold) {
         DiskUsageShardIndependentTemperatureCalculator diskUsageShardIndependent =
                 new DiskUsageShardIndependentTemperatureCalculator();
         return getTemperatureForDimension(shardStore,

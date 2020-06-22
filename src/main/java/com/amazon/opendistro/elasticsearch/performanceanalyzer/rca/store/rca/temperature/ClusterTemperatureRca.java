@@ -26,6 +26,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,8 +82,8 @@ public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
             }
 
             double nodeAverageForDimension = totalForDimension / NUM_NODES;
-            TemperatureVector.NormalizedValue normalizedAvgForDimension =
-                    TemperatureVector.NormalizedValue.calculate(nodeAverageForDimension, totalForDimension);
+            TemperatureVector.VectorValues normalizedAvgForDimension =
+                    TemperatureVector.VectorValues.calculate(nodeAverageForDimension, totalForDimension);
 
             clusterTemperatureSummary.createClusterDimensionalTemperature(dimension,
                     normalizedAvgForDimension, nodeAverageForDimension, totalForDimension);
@@ -114,13 +117,12 @@ public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
                     nodeTemperatureSummaryMap.get(key);
 
             double obtainedTotal = obtainedNodeTempSummary.getTotalConsumedByDimension(dimension);
-            TemperatureVector.NormalizedValue newClusterBasedValue =
-                    TemperatureVector.NormalizedValue.calculate(obtainedTotal, totalForDimension);
+            TemperatureVector.VectorValues newClusterBasedValue =
+                    TemperatureVector.VectorValues.calculate(obtainedTotal, totalForDimension);
 
             constructedCompactNodeTemperatureSummary.setTemperatureForDimension(dimension, newClusterBasedValue);
             constructedCompactNodeTemperatureSummary.setNumOfShards(dimension,
                     obtainedNodeTempSummary.getNumberOfShardsByDimension(dimension));
-            constructedCompactNodeTemperatureSummary.setTotalConsumedByDimension(dimension, obtainedTotal);
         }
     }
 }
