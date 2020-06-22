@@ -5,7 +5,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetServer;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.TestNetServer;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.SymptomFlowUnit;
@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.AfterClass;
@@ -43,25 +42,6 @@ import org.junit.experimental.categories.Category;
 
 @Category(GradleTaskForRca.class)
 public class WireHopperTest {
-    // TestNetServer is a NetServer that clients can check is running or not
-    private static class TestNetServer extends NetServer implements Runnable {
-        public AtomicBoolean isRunning = new AtomicBoolean(false);
-
-        public TestNetServer(final int port, final int numServerThreads, final boolean useHttps) {
-            super(port, numServerThreads, useHttps);
-        }
-
-        @Override
-        protected void postStartHook() {
-            isRunning.set(true);
-        }
-
-        @Override
-        protected void shutdownHook() {
-            isRunning.set(false);
-        }
-    }
-
     private static final String NODE1 = "NODE1";
     private static final String NODE2 = "NODE2";
     private static final String LOCALHOST = "127.0.0.1";
@@ -116,6 +96,7 @@ public class WireHopperTest {
         netServerExecutor.shutdown();
         netServer.stop();
         netClient.stop();
+        connectionManager.shutdown();
     }
 
     @Test

@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.net;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.CertificateUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpcServiceGrpc;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpcServiceGrpc.InterNodeRpcServiceStub;
@@ -24,9 +25,12 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
 import io.grpc.netty.shaded.io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+
+import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
 import org.apache.logging.log4j.LogManager;
@@ -145,12 +149,14 @@ public class GRPCConnectionManager {
 
   private ManagedChannel buildSecureChannel(final String remoteHost) {
     try {
+      File certFile = CertificateUtils.getCertificateFile();
+      File pkeyFile = CertificateUtils.getPrivateKeyFile();
       return NettyChannelBuilder.forAddress(remoteHost, Util.RPC_PORT)
                                 .sslContext(
                                     GrpcSslContexts.forClient()
-                                                   .trustManager(
-                                                       InsecureTrustManagerFactory.INSTANCE)
-                                                   .build())
+                                            .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                                            .keyManager(certFile, pkeyFile)
+                                            .build())
                                 .build();
     } catch (SSLException e) {
       LOG.error("Unable to build an SSL gRPC client. Exception: {}", e.getMessage());
@@ -177,7 +183,15 @@ public class GRPCConnectionManager {
   private void terminateAllConnections() {
     for (Map.Entry<String, AtomicReference<ManagedChannel>> entry : perHostChannelMap.entrySet()) {
       LOG.debug("shutting down connection to host: {}", entry.getKey());
-      entry.getValue().get().shutdownNow();
+      ManagedChannel channel = entry.getValue().get();
+      channel.shutdownNow();
+      try {
+        channel.awaitTermination(1, TimeUnit.MINUTES);
+      } catch (InterruptedException e) {
+        LOG.warn("Channel interrupted while shutting down", e);
+        channel.shutdownNow();
+      }
+
       perHostChannelMap.remove(entry.getKey());
     }
   }
