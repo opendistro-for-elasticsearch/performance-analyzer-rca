@@ -35,8 +35,8 @@ public class CertificateUtils {
   public static final String ALIAS_CERT = "cert";
   // The password is not used to encrypt keys on disk.
   public static final String IN_MEMORY_PWD = "opendistro";
-  private static final String CERTIFICATE_FILE_PATH = "certificate-file-path";
-  private static final String PRIVATE_KEY_FILE_PATH = "private-key-file-path";
+  public static final String CERTIFICATE_FILE_PATH = "certificate-file-path";
+  public static final String PRIVATE_KEY_FILE_PATH = "private-key-file-path";
   private static final Logger LOGGER = LogManager.getLogger(CertificateUtils.class);
 
   public static Certificate getCertificate(final FileReader certReader) throws Exception {
