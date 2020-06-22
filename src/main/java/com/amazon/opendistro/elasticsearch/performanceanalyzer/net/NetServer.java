@@ -259,6 +259,15 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
     // Remove handlers.
     sendDataHandler = null;
     subscribeHandler = null;
+
+    if (server != null) {
+      server.shutdown();
+      try {
+        server.awaitTermination(1, TimeUnit.MINUTES);
+      } catch (InterruptedException e) {
+        server.shutdownNow();
+      }
+    }
   }
 
   public void shutdown() {
