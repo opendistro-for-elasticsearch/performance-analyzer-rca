@@ -2,7 +2,9 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.ac
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolType;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Resource.CPU;
@@ -17,37 +19,48 @@ public class QueueCapacity implements Action {
     private int currentCapacity;
     private int desiredCapacity;
     private ThreadPoolType threadPoolType;
+    private String esNodeId;
 
     private Map<ThreadPoolType, Integer> lowerBound = new HashMap<>();
     private Map<ThreadPoolType, Integer> upperBound = new HashMap<>();
 
-    public QueueCapacity(ThreadPoolType threadPool, int currentCapacity, boolean increase) {
+    public QueueCapacity(String esNodeId, ThreadPoolType threadPool, int currentCapacity, boolean increase) {
         setBounds();
         int STEP_SIZE = 50;
+        this.esNodeId = esNodeId;
         this.threadPoolType = threadPool;
         this.currentCapacity = currentCapacity;
         int desiredCapacity = increase ? currentCapacity + STEP_SIZE : currentCapacity - STEP_SIZE;
         setDesiredCapacity(desiredCapacity);
     }
 
+    @Override
     public String getName() {
         return NAME;
     }
 
+    @Override
     public int coolOffPeriodInSeconds() {
         return COOL_OFF_PERIOD;
     }
 
-    public ImpactVector impact() {
+    @Override
+    public List<String> impactedNodes() {
+        return Collections.singletonList(esNodeId);
+    }
+
+    @Override
+    public Map<String, ImpactVector> impact() {
         ImpactVector impactVector = new ImpactVector();
         if (desiredCapacity > currentCapacity) {
             impactVector.increasesPressure(HEAP, CPU, NETWORK);
         } else if (desiredCapacity < currentCapacity) {
             impactVector.decreasesPressure(HEAP, CPU, NETWORK);
         }
-        return impactVector;
+        return Collections.singletonMap(esNodeId, impactVector);
     }
 
+    @Override
     public void execute() {
         // Making this a no-op for now
         // TODO: Modify based on downstream agent API calls
