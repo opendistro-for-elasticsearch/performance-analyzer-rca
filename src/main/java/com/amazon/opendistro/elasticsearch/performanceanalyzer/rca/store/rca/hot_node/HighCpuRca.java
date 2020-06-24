@@ -15,9 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hot_node;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 
 /**
  * This RCA can be used to calculate total cpu usage(combines all physical cores) and
@@ -27,8 +26,7 @@ public class HighCpuRca extends GenericResourceRca {
   private static final double CPU_USAGE_THRESHOLD = 0.7;
 
   public <M extends Metric> HighCpuRca(final int rcaPeriod, final M cpuUsageGroupByOperation) {
-    super(rcaPeriod, ResourceType.newBuilder().setHardwareResourceType(HardwareEnum.CPU).build(),
-        0, cpuUsageGroupByOperation);
+    super(rcaPeriod, ResourceUtil.CPU_USAGE, 0, cpuUsageGroupByOperation);
     int cores = Runtime.getRuntime().availableProcessors();
     this.setThreshold(CPU_USAGE_THRESHOLD * (double)cores);
   }

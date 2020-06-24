@@ -16,8 +16,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerThreads;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
@@ -31,6 +29,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ThresholdMain;
@@ -69,7 +68,7 @@ public class PersistFlowUnitAndSummaryTest {
     public ResourceFlowUnit<HotResourceSummary> operate() {
       ResourceContext context = new ResourceContext(Resources.State.UNHEALTHY);
       HotResourceSummary summary = new HotResourceSummary(
-          ResourceType.newBuilder().setJVM(JvmEnum.YOUNG_GEN).build(),
+          ResourceUtil.YOUNG_GEN_PROMOTION_RATE,
           400, 100, 60);
       return new ResourceFlowUnit<>(System.currentTimeMillis(), context, summary);
     }

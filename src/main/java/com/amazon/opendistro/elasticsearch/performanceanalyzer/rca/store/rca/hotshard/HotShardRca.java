@@ -21,8 +21,9 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
@@ -35,7 +36,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotShardSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
@@ -78,7 +78,6 @@ public class HotShardRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
     private final Metric cpuUtilization;
     private final Metric ioTotThroughput;
     private final Metric ioTotSyscallRate;
-    private final ResourceType resourceType;
     private final int rcaPeriod;
     private int counter;
     protected Clock clock;
@@ -96,7 +95,6 @@ public class HotShardRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
         this.ioTotSyscallRate = ioTotSyscallRate;
         this.rcaPeriod = rcaPeriod;
         this.counter = 0;
-        this.resourceType = ResourceType.newBuilder().setHardwareResourceTypeValue(HardwareEnum.CPU_VALUE).build();
         this.clock = Clock.systemUTC();
         this.cpuUtilizationMap = new HashMap<>();
         this.ioTotThroughputMap = new HashMap<>();

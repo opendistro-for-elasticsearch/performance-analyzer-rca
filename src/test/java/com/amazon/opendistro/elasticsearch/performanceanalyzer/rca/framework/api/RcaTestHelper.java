@@ -15,7 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
@@ -24,7 +24,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -50,7 +49,7 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
   }
 
-  public static ResourceFlowUnit<HotNodeSummary> generateFlowUnit(ResourceType type, String nodeID, Resources.State healthy) {
+  public static ResourceFlowUnit<HotNodeSummary> generateFlowUnit(Resource type, String nodeID, Resources.State healthy) {
     HotResourceSummary resourceSummary = new HotResourceSummary(type,
         10, 5, 60);
     HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, "127.0.0.0");

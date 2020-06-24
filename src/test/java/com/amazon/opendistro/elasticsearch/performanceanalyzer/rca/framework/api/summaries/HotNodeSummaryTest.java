@@ -17,13 +17,10 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary.SQL_SCHEMA_CONSTANTS;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-import java.util.Arrays;
 import java.util.List;
 import org.jooq.Field;
 import org.jooq.Record;
@@ -35,7 +32,6 @@ import org.mockito.Mockito;
 public class HotNodeSummaryTest {
     private static final String NODE_ID = "ABC123";
     private static final String HOST_ADDRESS = "127.0.0.0";
-    private static final ResourceType RESOURCE_TYPE = ResourceType.newBuilder().setJVM(JvmEnum.YOUNG_GEN).build();
     private static final double THRESHOLD = 3.14;
     private static final double VALUE = 2.71;
     private static HotNodeSummary uut;
@@ -43,7 +39,7 @@ public class HotNodeSummaryTest {
     @BeforeClass
     public static void setup() {
         uut = new HotNodeSummary(NODE_ID, HOST_ADDRESS);
-        uut.appendNestedSummary(new HotResourceSummary(RESOURCE_TYPE, THRESHOLD, VALUE, 0));
+        uut.appendNestedSummary(new HotResourceSummary(ResourceUtil.YOUNG_GEN_PROMOTION_RATE, THRESHOLD, VALUE, 0));
     }
 
     @Test
