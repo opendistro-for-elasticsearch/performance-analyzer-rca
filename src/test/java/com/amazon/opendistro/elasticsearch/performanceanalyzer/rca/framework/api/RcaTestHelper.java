@@ -24,6 +24,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collections;
@@ -87,10 +88,19 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
   }
 
   public static ResourceFlowUnit<HotNodeSummary> generateFlowUnit(ResourceType type, String nodeID,
-      Resources.State healthy, long timestamp) {
+      String hostAddress, Resources.State healthy) {
     HotResourceSummary resourceSummary = new HotResourceSummary(type,
         10, 5, 60);
-    HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, "127.0.0.0");
+    HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, hostAddress);
+    nodeSummary.appendNestedSummary(resourceSummary);
+    return new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(healthy), nodeSummary);
+  }
+
+  public static ResourceFlowUnit<HotNodeSummary> generateFlowUnit(ResourceType type, String nodeID,
+      String hostAddress, Resources.State healthy, long timestamp) {
+    HotResourceSummary resourceSummary = new HotResourceSummary(type,
+        10, 5, 60);
+    HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, hostAddress);
     nodeSummary.appendNestedSummary(resourceSummary);
     return new ResourceFlowUnit<>(timestamp, new ResourceContext(healthy), nodeSummary);
   }

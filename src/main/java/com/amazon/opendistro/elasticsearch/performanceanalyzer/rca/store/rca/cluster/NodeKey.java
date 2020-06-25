@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 public class NodeKey {
   private final String nodeId;
   private final String hostAddress;
@@ -43,6 +45,14 @@ public class NodeKey {
 
   @Override
   public int hashCode() {
-    return nodeId.hashCode();
+    return new HashCodeBuilder(17, 37)
+        .append(nodeId)
+        .append(hostAddress)
+        .toHashCode();
+  }
+
+  @Override
+  public String toString() {
+    return nodeId + " " + hostAddress;
   }
 }

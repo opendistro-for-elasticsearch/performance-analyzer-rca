@@ -36,22 +36,31 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
- * This is a generic cluster level RCA which subscripts a single upstream node level RCA.
+ * This is a generic cluster level RCA which subscripts upstream node level RCAs and generate a flowunit
+ * with cluster level summary that concludes the healthiness of the cluster in terms of those node level RCAs.
  * This cluster RCA maintains a Table to keep track of flowunits sending from different nodes across
- * the cluster. This table is a two dimensional table indexed by (NodeKey, Rca Name). This RCA will
+ * the cluster. This table is a two dimensional table indexed by (NodeKey, Rca Name) and each cells stores
+ * that last numOfFlowUnitsInMap flowunits it receives. This RCA will
  * mark the cluster as unhealthy if the flowunits from any data nodes are unhealthy.
  * <p></p>
  * A few protected variables that can be overridden by derived class:
  * numOfFlowUnitsInMap : number of consecutive flowunits stored in hashtable. Default is 1
  * collectFromMasterNode : whether this RCA collect flowunit from master nodes.
  * expirationTimeWindow : time window to determine whether flowunit in hashmap becomes stale
+ * method that can be overriden :
+ * generateNodeSummary(NodeKey) : how do we want to parse the table and generate summary for one node.
  */
 public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
+
+  private static final Logger LOG = LogManager.getLogger(BaseClusterRca.class);
   private static final int DEFAULT_NUM_OF_FLOWUNITS = 1;
   private static final long TIMESTAMP_EXPIRATION_IN_MILLIS = TimeUnit.MINUTES.toMillis(10);
   private final List<Rca<ResourceFlowUnit<HotNodeSummary>>> nodeRcas;
+  // two dimensional table indexed by (NodeKey, Rca Name) => last numOfFlowUnitsInMap flowunits
   private final Table<NodeKey, String, LinkedList<ResourceFlowUnit<HotNodeSummary>>> nodeTable;
   private final int rcaPeriod;
   private int counter;
@@ -127,6 +136,7 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
     for (NodeKey nodeKey : nodeTable.rowKeySet()) {
       if (!nodeIdSet.contains(nodeKey.getNodeId())) {
         inactiveNodes.add(nodeKey);
+        LOG.info("RCA: remove node {} from node map", nodeKey);
       }
     }
     inactiveNodes.forEach(nodeKey -> nodeTable.row(nodeKey).clear());
