@@ -98,12 +98,12 @@ public class NodeStatAggregator {
   // in either case, we need to write a function to clean up this hashtable on reader periodically
   // to remove node stats of inactive shards
   private void purgeHashTable(final long timestamp) {
-    Iterator<IndexShardKey> iterator = this.shardKeyMap.keySet().iterator();
+    Iterator<NodeStatValue> iterator = this.shardKeyMap.values().iterator();
     while (iterator.hasNext()) {
-      IndexShardKey key = iterator.next();
-      long timestampDiff = timestamp - this.shardKeyMap.get(key).getTimestamp();
+      NodeStatValue value = iterator.next();
+      long timestampDiff = timestamp - value.getTimestamp();
       if (TimeUnit.MILLISECONDS.toMinutes(timestampDiff) > PURGE_HASH_TABLE_INTERVAL_IN_MINS) {
-        this.sum -= this.shardKeyMap.get(key).getValue();
+        this.sum -= value.getValue();
         iterator.remove();
       }
     }
