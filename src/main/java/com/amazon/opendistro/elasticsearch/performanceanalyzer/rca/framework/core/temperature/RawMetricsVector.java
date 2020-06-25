@@ -30,7 +30,7 @@ public class RawMetricsVector {
     public static final String DIMENSION_KEY = "metrics_dimension";
     public static final String VALUE_KEY = "metrics_value";
 
-    public static double[] metricsValues;
+    private double[] metricsValues;
 
     public RawMetricsVector() {
         metricsValues = new double[TemperatureDimension.values().length];

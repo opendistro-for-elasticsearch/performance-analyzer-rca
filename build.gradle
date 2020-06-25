@@ -108,6 +108,11 @@ spotbugsTest {
     ignoreFailures = true
 }
 
+check {
+    dependsOn spotbugsMain
+    dependsOn spotbugsTest
+}
+
 jacoco {
     toolVersion = "0.8.5"
 }
@@ -280,10 +285,9 @@ idea {
     }
 }
 
-
-import org.ajoberstar.gradle.git.tasks.GitClone
-
+import groovy.json.JsonSlurper
 import java.nio.file.Paths
+import org.ajoberstar.gradle.git.tasks.GitClone
 
 String paDir
 String dockerBuildDir
@@ -468,6 +472,40 @@ def getHttpResponse(server, timeoutSeconds) {
     }
 }
 
+/**
+ * enableComponent is used to enable PA or RCA based on the given parameters
+ * @param endpoint the endpoint to make the request against e.g. localhost:9200/pa/rca/example
+ * @param desiredState
+ *          The list of enabled components is represented as an n-bit binary number
+ *          The LSB represents the state of PA and the LSB+1th bit is RCA
+ *          0x03 (00000011 in binary) is therefore a state where both PA and RCA are enabled
+ * @param timeoutSeconds we will attempt to enable the component for this many seconds before
+ *          giving up and throwing a GradleException
+ */
+def enableComponent(endpoint, desiredState, timeoutSeconds) {
+    long timeout = timeoutSeconds * 1000
+    long increments = 1000
+    long passed = 0
+    println 'waiting for ' + endpoint
+    while (passed < timeout) {
+        try {
+            def p = ['curl', endpoint, '-H', 'Content-Type: application/json', '-d', '{"enabled": true}'].execute()
+            def json = new JsonSlurper().parseText(p.text)
+            if (json.get("currentPerformanceAnalyzerClusterState").equals(desiredState) ||
+                    // desiredState+2 means that the "next" significant component is enabled
+                    json.get("currentPerformanceAnalyzerClusterState").equals(desiredState + 2)) {
+                break
+            }
+        } catch (Exception) {
+        }
+        Thread.sleep(increments);
+        passed += increments
+    }
+    if (passed == timeout) {
+        throw new GradleException(String.format("ERROR:  %s not ready.", endpoint));
+    }
+}
+
 Boolean esIsUp
 
 def esUpChecker = {
@@ -475,6 +513,22 @@ def esUpChecker = {
     int timeoutSeconds = 2 * 60
     getHttpResponse(server, timeoutSeconds)
     esIsUp = true
+}
+
+// Attempts to enable PA for up to 2 minutes. Returns when PA is successfully enabled or
+// throws an Exception if the timeout is exceeded
+def paUpChecker = {
+    String server = "localhost:9200/_opendistro/_performanceanalyzer/cluster/config"
+    int timeoutSeconds = 2 * 60
+    enableComponent(server, 1, timeoutSeconds)
+}
+
+// Attempts to enable RCA for up to 2 minutes. Returns when RCA is successfully enabled or
+// throws an Exception if the timeout is exceeded
+def rcaUpChecker = {
+    String server = "localhost:9200/_opendistro/_performanceanalyzer/rca/cluster/config"
+    int timeoutSeconds = 2 * 60
+    enableComponent(server, 3, timeoutSeconds)
 }
 
 Thread esRunnerThread
@@ -525,24 +579,21 @@ task unzipPerfTop(type: Copy) {
     enabled = !file(perfTopBin).exists()
 }
 
-task enablePa(type: Exec) {
+// Attempts to enable PA for up to 2 minutes. Returns when PA is successfully enabled or
+// throws an Exception if the timeout is exceeded
+task enablePa() {
     dependsOn(waitForES)
-    doFirst { // Ensures we don't get a Connection refused error on port 9200 from Elasticsearch
-        sleep(5000)
-    }
-    commandLine('curl', 'localhost:9200/_opendistro/_performanceanalyzer/cluster/config', '-H',
-            'Content-Type: application/json', '-d', '{"enabled": true}')
-    doLast { // Ensures PA is enabled before subsequent tasks rely on it
-        sleep(5000)
+    doLast {
+        paUpChecker()
     }
 }
 
-task enableRca(type: Exec) {
+// Attempts to enable RCA for up to 2 minutes. Returns when RCA is successfully enabled or
+// throws an Exception if the timeout is exceeded
+task enableRca() {
     dependsOn(enablePa)
-    commandLine('curl', 'localhost:9200/_opendistro/_performanceanalyzer/rca/cluster/config',
-            '-H', 'Content-Type: application/json', '-d', '{"enabled": true}')
-    doLast { // Ensures RCA is enabled before subsequent tasks rely on it
-        sleep(5000)
+    doLast {
+        rcaUpChecker()
     }
 }
 
