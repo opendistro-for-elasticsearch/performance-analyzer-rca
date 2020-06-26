@@ -32,6 +32,10 @@ public abstract class GenericContext {
         return this.state == Resources.State.UNHEALTHY || this.state == Resources.State.CONTENDED;
     }
 
+    public boolean isHealthy() {
+        return this.state == Resources.State.HEALTHY;
+    }
+
     public boolean isUnknown() {
         return this.state == Resources.State.UNKNOWN;
     }
