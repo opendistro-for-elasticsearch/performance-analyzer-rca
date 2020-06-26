@@ -61,7 +61,7 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
   private static final long TIMESTAMP_EXPIRATION_IN_MILLIS = TimeUnit.MINUTES.toMillis(10);
   private final List<Rca<ResourceFlowUnit<HotNodeSummary>>> nodeRcas;
   // two dimensional table indexed by (NodeKey, Rca Name) => last numOfFlowUnitsInMap flowunits
-  private final Table<NodeKey, String, LinkedList<ResourceFlowUnit<HotNodeSummary>>> nodeTable;
+  protected final Table<NodeKey, String, LinkedList<ResourceFlowUnit<HotNodeSummary>>> nodeTable;
   private final int rcaPeriod;
   private int counter;
   protected Clock clock;

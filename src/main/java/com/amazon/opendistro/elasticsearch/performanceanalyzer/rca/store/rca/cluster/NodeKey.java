@@ -38,11 +38,15 @@ public class NodeKey {
   public boolean equals(Object obj) {
     if (obj instanceof NodeKey) {
       NodeKey key = (NodeKey)obj;
-      return nodeId.equals(key.getNodeId());
+      return nodeId.equals(key.getNodeId()) && hostAddress.equals(key.getHostAddress());
     }
     return false;
   }
 
+  // the reason why we compare both node id and  hostAddress here is because in
+  // newer ES version(6.8 and above), see https://github.com/elastic/elasticsearch/pull/19140.
+  // if es restart, both node id and ip address will remain the same so we can continue add
+  // flowunit into the same row in table before es restart.
   @Override
   public int hashCode() {
     return new HashCodeBuilder(17, 37)
