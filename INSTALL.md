@@ -33,6 +33,18 @@ This document walks you through the process of building and deploying the RCA fr
     a. Launch IntelliJ IDEA
     
     b. Choose Import Project and select the `build.gradle` file in the root of this package
+    
+ 5. (Optional) TLS Setup
+ 
+    a. Open pa_config/performance-analyzer.properties
+    
+    b. Modify the certificate-file-path, private-key-file-path, and https-enabled entries
+    
+    c. Example performance-analyzer.properties:
+        
+        certificate-file-path = /etc/ssl/certs/example.com.crt
+        private-key-file-path = /home/myUser/.ssh/id_rsa
+        https-enabled = true
  
 ### Build RCA framework
 This package uses the [Gradle](https://docs.gradle.org/current/userguide/userguide.html) build system. Gradle comes with excellent documentation that should be your first stop when trying to figure out how to operate or modify the build.
