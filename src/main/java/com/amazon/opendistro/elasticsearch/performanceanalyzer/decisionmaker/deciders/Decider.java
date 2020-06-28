@@ -1,6 +1,9 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
@@ -25,9 +28,11 @@ import org.apache.logging.log4j.Logger;
 public abstract class Decider extends NonLeafNode<Decision> {
 
     private static final Logger LOG = LogManager.getLogger(Decider.class);
+    private final int decisionFrequency;
 
-    public Decider(long evaluationDurationSeconds) {
-        super(0, evaluationDurationSeconds);
+        public Decider(long evalIntervalSeconds, int decisionFrequency) {
+        super(0, evalIntervalSeconds);
+        this.decisionFrequency = decisionFrequency;
     }
 
     @Override
