@@ -14,12 +14,15 @@ public class Decision extends GenericFlowUnit {
     private List<Action> actions = new ArrayList<>();
     private String decider;
 
-    public Decision(long timeStamp) {
+    public Decision(long timeStamp, String deciderName) {
         super(timeStamp);
+        setDecider(deciderName);
     }
 
     public void addAction(Action action) {
-        actions.add(action);
+        if (action != null) {
+            actions.add(action);
+        }
     }
 
     public List<Action> getActions() {

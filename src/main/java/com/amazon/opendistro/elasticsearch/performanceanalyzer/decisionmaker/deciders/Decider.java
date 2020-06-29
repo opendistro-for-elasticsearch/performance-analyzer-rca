@@ -28,7 +28,7 @@ import org.apache.logging.log4j.Logger;
 public abstract class Decider extends NonLeafNode<Decision> {
 
     private static final Logger LOG = LogManager.getLogger(Decider.class);
-    private final int decisionFrequency;
+    protected final int decisionFrequency;  // Measured in terms of number of evaluationIntervalPeriods
 
         public Decider(long evalIntervalSeconds, int decisionFrequency) {
         super(0, evalIntervalSeconds);

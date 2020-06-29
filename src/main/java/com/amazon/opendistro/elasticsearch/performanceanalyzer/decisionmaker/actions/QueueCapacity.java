@@ -1,6 +1,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -19,15 +20,15 @@ public class QueueCapacity implements Action {
     private int currentCapacity;
     private int desiredCapacity;
     private ThreadPoolType threadPoolType;
-    private String esNodeId;
+    private NodeKey esNode;
 
     private Map<ThreadPoolType, Integer> lowerBound = new HashMap<>();
     private Map<ThreadPoolType, Integer> upperBound = new HashMap<>();
 
-    public QueueCapacity(String esNodeId, ThreadPoolType threadPool, int currentCapacity, boolean increase) {
+    public QueueCapacity(NodeKey esNode, ThreadPoolType threadPool, int currentCapacity, boolean increase) {
         setBounds();
         int STEP_SIZE = 50;
-        this.esNodeId = esNodeId;
+        this.esNode = esNode;
         this.threadPoolType = threadPool;
         this.currentCapacity = currentCapacity;
         int desiredCapacity = increase ? currentCapacity + STEP_SIZE : currentCapacity - STEP_SIZE;
@@ -35,8 +36,8 @@ public class QueueCapacity implements Action {
     }
 
     @Override
-    public String getName() {
-        return NAME;
+    public boolean isActionable() {
+        return desiredCapacity != currentCapacity;
     }
 
     @Override
@@ -45,19 +46,19 @@ public class QueueCapacity implements Action {
     }
 
     @Override
-    public List<String> impactedNodes() {
-        return Collections.singletonList(esNodeId);
+    public List<NodeKey> impactedNodes() {
+        return Collections.singletonList(esNode);
     }
 
     @Override
-    public Map<String, ImpactVector> impact() {
+    public Map<NodeKey, ImpactVector> impact() {
         ImpactVector impactVector = new ImpactVector();
         if (desiredCapacity > currentCapacity) {
             impactVector.increasesPressure(HEAP, CPU, NETWORK);
         } else if (desiredCapacity < currentCapacity) {
             impactVector.decreasesPressure(HEAP, CPU, NETWORK);
         }
-        return Collections.singletonMap(esNodeId, impactVector);
+        return Collections.singletonMap(esNode, impactVector);
     }
 
     @Override
@@ -68,6 +69,10 @@ public class QueueCapacity implements Action {
     }
 
     private void setBounds() {
+        // This is intentionally not made static because different nodes can
+        // have different bounds based on instance types
+        // TODO: Move configuration values to rca.conf
+
         // Write thread pool for bulk write requests
         this.lowerBound.put(ThreadPoolType.WRITE, 100);
         this.upperBound.put(ThreadPoolType.WRITE, 1000);
