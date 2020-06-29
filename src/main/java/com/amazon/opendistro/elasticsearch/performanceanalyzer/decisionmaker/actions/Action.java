@@ -37,4 +37,9 @@ public interface Action {
      */
     Map<NodeKey, ImpactVector> impact();
 
+    /**
+     * Return action name
+     */
+    String name();
+
 }

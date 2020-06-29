@@ -36,6 +36,11 @@ public class QueueCapacity implements Action {
     }
 
     @Override
+    public String name() {
+        return NAME;
+    }
+
+    @Override
     public boolean isActionable() {
         return desiredCapacity != currentCapacity;
     }
