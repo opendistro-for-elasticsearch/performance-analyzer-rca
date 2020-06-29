@@ -36,6 +36,11 @@ public class QueueHealthDecider extends Decider {
     }
 
     @Override
+    public String name() {
+        return NAME;
+    }
+
+    @Override
     public Decision operate() {
         Decision decision = new Decision(System.currentTimeMillis(), NAME);
         counter += 1;

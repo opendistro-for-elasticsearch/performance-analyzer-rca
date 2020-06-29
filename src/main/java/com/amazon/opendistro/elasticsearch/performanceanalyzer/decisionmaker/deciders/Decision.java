@@ -25,6 +25,10 @@ public class Decision extends GenericFlowUnit {
         }
     }
 
+    public void addAllActions(List<Action> actions) {
+        this.actions.addAll(actions);
+    }
+
     public List<Action> getActions() {
         return actions;
     }

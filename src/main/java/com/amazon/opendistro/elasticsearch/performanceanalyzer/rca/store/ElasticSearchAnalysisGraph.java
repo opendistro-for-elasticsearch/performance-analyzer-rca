@@ -21,6 +21,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_AGGREGATE_UPSTREAM;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_LOCUS;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Collator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.QueueHealthDecider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -179,6 +180,11 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
     constructShardResourceUsageGraph();
     constructResourceHeatMapGraph();
+
+    // Add Collator and Publisher
+    Collator collator = new Collator(EVALUATION_INTERVAL_SECONDS, queueHealthDecider);
+    collator.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    collator.addAllUpstreams(Arrays.asList(queueHealthDecider));
   }
 
   private void constructShardResourceUsageGraph() {

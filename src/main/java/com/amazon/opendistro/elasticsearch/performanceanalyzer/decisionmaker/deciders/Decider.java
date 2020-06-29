@@ -35,6 +35,8 @@ public abstract class Decider extends NonLeafNode<Decision> {
         this.decisionFrequency = decisionFrequency;
     }
 
+    public abstract String name();
+
     @Override
     public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
         LOG.debug("decider: Executing fromLocal: {}", name());
@@ -47,7 +49,7 @@ public abstract class Decider extends NonLeafNode<Decision> {
             LOG.error("decider: Exception in operate", ex);
             PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
                     ExceptionsAndErrors.EXCEPTION_IN_OPERATE, name(), 1);
-            decision = new Decision(System.currentTimeMillis());
+            decision = new Decision(System.currentTimeMillis(), this.name());
         }
         long duration = System.currentTimeMillis() - startTime;
 
@@ -71,7 +73,7 @@ public abstract class Decider extends NonLeafNode<Decision> {
 
     @Override
     public void handleNodeMuted() {
-        setLocalFlowUnit(new Decision(System.currentTimeMillis()));
+        setLocalFlowUnit(new Decision(System.currentTimeMillis(), this.name()));
     }
 
     @Override
