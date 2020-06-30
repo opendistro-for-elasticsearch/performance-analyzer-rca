@@ -89,7 +89,7 @@ public class QueueCapacity implements Action {
 
   private void setDesiredCapacity(int desiredCapacity) {
     this.desiredCapacity = Math.min(desiredCapacity, upperBound.get(threadPool));
-    this.desiredCapacity = Math.max(desiredCapacity, lowerBound.get(threadPool));
+    this.desiredCapacity = Math.max(this.desiredCapacity, lowerBound.get(threadPool));
   }
 
   public int getCurrentCapacity() {
