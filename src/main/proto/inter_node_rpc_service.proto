@@ -126,7 +126,7 @@ message HotShardSummaryMessage {
     double io_sys_callrate_threshold = 9;
     int32 timePeriod = 10;
 }
-message NodeConfiguration {
+message PerformanceControllerConfiguration {
     int32 writeQueueCapacity = 1;
     int32 searchQueueCapacity = 2;
 }
@@ -135,7 +135,7 @@ message HotNodeSummaryMessage {
     string hostAddress = 2;
     HotResourceSummaryList hotResourceSummaryList = 3;
     HotShardSummaryList hotShardSummaryList = 4;
-    NodeConfiguration nodeConfiguration = 5;
+    PerformanceControllerConfiguration performanceControllerConfiguration = 5;
 }
 message HotClusterSummaryMessage {
     int32 nodeCount = 1;

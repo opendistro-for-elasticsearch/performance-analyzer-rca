@@ -17,7 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.NodeConfiguration;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PerformanceControllerConfiguration;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.JooqFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.google.gson.JsonElement;
@@ -53,7 +53,7 @@ public class HotNodeSummary extends GenericSummary {
   private final String hostAddress;
   private List<HotResourceSummary> hotResourceSummaryList;
   private List<HotShardSummary> hotShardSummaryList;
-  private NodeConfiguration nodeConfiguration;
+  private PerformanceControllerConfiguration performanceControllerConfiguration;
 
   public HotNodeSummary(String nodeID, String hostAddress) {
     super();
@@ -61,7 +61,7 @@ public class HotNodeSummary extends GenericSummary {
     this.hostAddress = hostAddress;
     this.hotResourceSummaryList = new ArrayList<>();
     this.hotShardSummaryList = new ArrayList<>();
-    this.nodeConfiguration = NodeConfiguration.newBuilder()
+    this.performanceControllerConfiguration = PerformanceControllerConfiguration.newBuilder()
         .setSearchQueueCapacity(-1)
         .setWriteQueueCapacity(-1).build();
   }
@@ -90,12 +90,12 @@ public class HotNodeSummary extends GenericSummary {
     hotShardSummaryList.add(summary);
   }
 
-  public void setNodeConfiguration(NodeConfiguration nodeConfiguration) {
-    this.nodeConfiguration = nodeConfiguration;
+  public void setPerformanceControllerConfiguration(PerformanceControllerConfiguration performanceControllerConfiguration) {
+    this.performanceControllerConfiguration = performanceControllerConfiguration;
   }
 
-  public NodeConfiguration getNodeConfiguration() {
-    return nodeConfiguration;
+  public PerformanceControllerConfiguration getPerformanceControllerConfiguration() {
+    return performanceControllerConfiguration;
   }
 
   @Override
@@ -111,8 +111,9 @@ public class HotNodeSummary extends GenericSummary {
       summaryMessageBuilder.getHotShardSummaryListBuilder()
           .addHotShardSummary(hotShardSummary.buildSummaryMessage());
     }
-    if (nodeConfiguration != null) {
-      summaryMessageBuilder.getNodeConfigurationBuilder().mergeFrom(nodeConfiguration);
+    if (performanceControllerConfiguration != null) {
+      summaryMessageBuilder.getPerformanceControllerConfigurationBuilder().mergeFrom(
+          performanceControllerConfiguration);
     }
     return summaryMessageBuilder.build();
   }
@@ -137,7 +138,7 @@ public class HotNodeSummary extends GenericSummary {
                 message.getHotShardSummaryList().getHotShardSummary(i)));
       }
     }
-    newSummary.setNodeConfiguration(message.getNodeConfiguration());
+    newSummary.setPerformanceControllerConfiguration(message.getPerformanceControllerConfiguration());
     return newSummary;
   }
 
