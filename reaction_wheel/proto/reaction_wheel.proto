@@ -1,0 +1,122 @@
+syntax = "proto3";
+
+option go_package = "golang.a2z.com/GoAmzn-SearchServicesReactionWheelProto/controller";
+
+// Holds a Controller for enacting change on an Elasticsearch cluster.
+package controller;
+
+option java_package = "com.amazon.searchservices.reactionwheel.controller";
+
+// A Controller accepts requests to control one or more Targets in a cluster. It also provides a method
+// for describing the progress of control requests.
+service Controller {
+  rpc BatchStartControl(BatchStartControlRequest) returns (BatchStartControlResult) {};
+  rpc DescribeControlExecutions(DescribeControlExecutionsRequest) returns (DescribeControlExecutionsResult) {};
+  rpc ListControlExecutions(ListControlExecutionsRequest) returns (ListControlExecutionsResult) {};
+}
+
+// Client issues ControlRequest to enact a change on one or more Targets.
+message BatchStartControlRequest {
+  repeated Action actions = 1;
+}
+
+// A Controller operates on a Target such as a NODE or a CLUSTER.
+message Action {
+  Target target = 1;
+  Control control = 2;
+}
+
+// Target (e.g. node, cluster) for control action.
+message Target {
+  string type = 1; // type of target such as NODE or CLUSTER
+  string id = 2; // ID of the Target node
+  oneof optional_ip {string ip = 3;}; // IP address of the Target
+}
+
+// Control definition for action.
+message Control {
+  string type = 1; // type of control to enact
+  string version = 2;
+  oneof optional_params {string params = 3;}; // json blob of parameters with schema specific to the type of control
+}
+
+// A ControlResult provides a list of zero or more errors specifying which Target control
+// could not be initiated and for what reason. It also provides a list of ControlResults each with a controlId for
+// tracking the status of a Control for a given Target.
+message BatchStartControlResult {
+  repeated ControlResult results = 1;
+  repeated ControlError errors = 2;
+}
+
+// A ControlResult specifies the controlId for a given Target and Control for tracking status.
+message ControlResult {
+  Target target = 1;
+  Control control = 2;
+  string controlId = 3; // identifies the control attempt instance.
+}
+
+// A ControlError specifies that the Controller failed to initiate control on a given
+// Target ID. It gives a plain text reason as well as what the error code is.
+message ControlError {
+  Target target = 1;
+  Control control = 2;
+  string message = 3; // reason for error.
+  string code = 4; // such as BAD_REQUEST | INTERNAL_SERVER_ERROR | TARGET_TRANSITIONING
+}
+
+// Get Control Execution status for one or more control instances.
+message DescribeControlExecutionsRequest {
+  repeated string controlIds = 1; // up to 20 controlIds to fetch Control Executions for.
+}
+
+// Describe the Control Execution for each requested control instance ID. Provides a ControlExecutionDetails executions
+// list where each record has all information about a ControlExecution.
+message DescribeControlExecutionsResult {
+  repeated ControlExecutionDetails executions = 1;
+}
+
+// Provides reason and code for error during control
+message ControlExecutionError {
+  string message = 1; // reason for error.
+  string code = 2; // such as BAD_REQUEST | INTERNAL_SERVER_ERROR | TARGET_TRANSITIONING
+}
+
+// Provides the current state of a Control Execution for a given Target and Control definition.
+message ControlExecutionDetails {
+  string state = 1; // such as IN_PROGRESS | SUCCESS | FAILURE
+  string controlId = 2;
+  Target target = 3;
+  Control control = 4;
+  oneof optional_error {ControlExecutionError error = 5;} // optional error in case of FAILURE
+}
+
+// Filter matches have an attribute with a given name within the values set.
+message Filter {
+  string name = 1; // such as TARGET_TYPE, TARGET_ID, CONTROL_TYPE, CONTROL_ID
+  repeated string values = 2; // such as [NODE] (for TARGET_TYPE), [REMEDIATION_PLUGIN] (for CONTROL_TYPE)
+}
+
+// Request to list Control Executions. Allows specifying one or more filters. Provides all
+// Control Executions that satisfy the intersection of all filters.
+message ListControlExecutionsRequest {
+  repeated Filter filters = 1;
+  int32 maxResults = 2; // default 20; max is 20.
+  oneof optional_nextToken {string nextToken = 3;} // for paginated response.
+}
+
+// Result holds the Control Executions matching the filter and the next token for paginated results. Returns a concise
+// summary of each ControlExecution. The distinction between ControlExecutionSummary and ControlExecutionDetails allows
+// each API to evolve independently.
+message ListControlExecutionsResult {
+  repeated ControlExecutionSummary executions = 1;
+  oneof optional_nextToken {string nextToken = 2;}; // for paginated response.
+}
+
+// Provides the current state of a Control Execution for a given Target and Control definition.
+message ControlExecutionSummary {
+  string state = 1; // such as IN_PROGRESS | SUCCESS | FAILURE
+  string controlId = 2;
+  Target target = 3;
+  Control control = 4;
+  oneof optional_error {ControlExecutionError error = 5;} // optional error in case of FAILURE
+}

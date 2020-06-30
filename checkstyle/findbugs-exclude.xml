@@ -74,4 +74,12 @@
             <Bug pattern="UCF_USELESS_CONTROL_FLOW"/>
         </Or>
     </Match>
+    <!--Exclude gRPC generated classes for reaction wheel-->
+    <Match>
+        <Package name="com.amazon.searchservices.reactionwheel.controller"/>
+        <Or>
+            <Bug pattern="SE_BAD_FIELD"/>
+            <Bug pattern="UCF_USELESS_CONTROL_FLOW"/>
+        </Or>
+    </Match>
 </FindBugsFilter>

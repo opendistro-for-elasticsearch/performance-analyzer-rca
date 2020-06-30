@@ -133,7 +133,8 @@ jacocoTestReport {
                     exclude: [
                             '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/grpc/**',
                             '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/rca/framework/api/metrics/**',
-                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/rca/net/requests**'
+                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/rca/net/requests**',
+                            '**/com/amazon/searchservices/reactionwheel/controller/**'
                     ])
         })
     }
@@ -148,7 +149,9 @@ jacocoTestCoverageVerification {
                             '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/reader/**'
                     ],
                     exclude: [
-                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/grpc/**'])
+                            '**/com/amazon/opendistro/elasticsearch/performanceanalyzer/grpc/**',
+                            '**/com/amazon/searchservices/reactionwheel/controller/**'
+                    ])
         })
     }
     violationRules {
@@ -285,6 +288,23 @@ idea {
     module {
         sourceDirs += file("${projectDir}/build/generated/source/proto/main/java");
         sourceDirs += file("${projectDir}/build/generated/source/proto/main/grpc");
+    }
+}
+
+/**
+ * Protocol Buffer definition files for the ReactionWheel control agent. This is added
+ * as a placeholder to allow us to get rid of compile errors in decision maker publisher
+ */
+sourceSets {
+    main {
+        proto {
+            srcDir 'reaction_wheel/proto'
+        }
+    }
+    test {
+        proto {
+            srcDir 'reaction_wheel/proto'
+        }
     }
 }
 
