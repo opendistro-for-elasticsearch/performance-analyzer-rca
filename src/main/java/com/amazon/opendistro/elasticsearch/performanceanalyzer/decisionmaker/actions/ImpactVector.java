@@ -5,47 +5,47 @@ import java.util.Map;
 
 public class ImpactVector {
 
-    public enum Resource {
-        HEAP,
-        CPU,
-        RAM,
-        DISK,
-        NETWORK
-    }
+  public enum Resource {
+    HEAP,
+    CPU,
+    RAM,
+    DISK,
+    NETWORK
+  }
 
-    public enum Impact {
-        NO_IMPACT,
-        INCREASES_PRESSURE,
-        DECREASES_PRESSURE
-    }
+  public enum Impact {
+    NO_IMPACT,
+    INCREASES_PRESSURE,
+    DECREASES_PRESSURE
+  }
 
-    private Map<Resource, Impact> impactMap = new HashMap<>();
+  private Map<Resource, Impact> impactMap = new HashMap<>();
 
-    public ImpactVector() {
-        for (Resource r: Resource.values()) {
-            impactMap.put(r, Impact.NO_IMPACT);
-        }
+  public ImpactVector() {
+    for (Resource r : Resource.values()) {
+      impactMap.put(r, Impact.NO_IMPACT);
     }
+  }
 
-    public Map<Resource, Impact> getImpact() {
-        return impactMap;
-    }
+  public Map<Resource, Impact> getImpact() {
+    return impactMap;
+  }
 
-    public void increasesPressure(Resource... resources) {
-        for (Resource resource: resources) {
-            impactMap.put(resource, Impact.INCREASES_PRESSURE);
-        }
+  public void increasesPressure(Resource... resources) {
+    for (Resource resource : resources) {
+      impactMap.put(resource, Impact.INCREASES_PRESSURE);
     }
+  }
 
-    public void decreasesPressure(Resource... resources) {
-        for (Resource resource: resources) {
-            impactMap.put(resource, Impact.DECREASES_PRESSURE);
-        }
+  public void decreasesPressure(Resource... resources) {
+    for (Resource resource : resources) {
+      impactMap.put(resource, Impact.DECREASES_PRESSURE);
     }
+  }
 
-    public void noImpact(Resource... resources) {
-        for (Resource resource: resources) {
-            impactMap.put(resource, Impact.NO_IMPACT);
-        }
+  public void noImpact(Resource... resources) {
+    for (Resource resource : resources) {
+      impactMap.put(resource, Impact.NO_IMPACT);
     }
+  }
 }
