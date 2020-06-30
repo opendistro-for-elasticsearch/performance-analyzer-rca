@@ -73,6 +73,20 @@ public class QueueCapacity implements Action {
     assert true;
   }
 
+  @Override
+  public String summary() {
+    if (!isActionable()) {
+      return "No action to take";
+    }
+    return String.format("Update [%s] queue capacity from [%d] to [%d] on node [%s]",
+        threadPool.toString(), currentCapacity, desiredCapacity, esNode.getNodeId());
+  }
+
+  @Override
+  public String toString() {
+    return summary();
+  }
+
   private void setBounds() {
     // This is intentionally not made static because different nodes can
     // have different bounds based on instance types

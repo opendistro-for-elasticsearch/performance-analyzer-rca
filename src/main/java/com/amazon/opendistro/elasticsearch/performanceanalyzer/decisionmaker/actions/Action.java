@@ -31,6 +31,9 @@ public interface Action {
   /** Returns a map of Elasticsearch nodes to ImpactVector of this action on that node */
   Map<NodeKey, ImpactVector> impact();
 
-  /** Return action name */
+  /** Returns action name */
   String name();
+
+  /**  Returns a summary for the configured action */
+  String summary();
 }
