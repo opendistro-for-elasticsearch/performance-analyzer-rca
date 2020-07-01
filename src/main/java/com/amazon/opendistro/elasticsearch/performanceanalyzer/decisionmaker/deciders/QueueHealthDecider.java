@@ -18,7 +18,7 @@ import java.util.List;
 
 public class QueueHealthDecider extends Decider {
 
-  public static String NAME = "queue_health";
+  public static final String NAME = "queue_health";
 
   private QueueRejectionClusterRca queueRejectionRca;
   List<String> actionsByUserPriority = new ArrayList<>();

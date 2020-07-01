@@ -19,7 +19,7 @@ import java.util.List;
  */
 public class Collator extends Decider {
 
-  public static String NAME = "collator";
+  public static final String NAME = "collator";
 
   /* Deciders can choose to publish decisions at different frequencies based on the
    * type of resources monitored and rca signals. The collator should however, not introduce any
