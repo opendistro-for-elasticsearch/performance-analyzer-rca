@@ -90,10 +90,10 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit<HotClusterSumm
           if (flowUnit.getResourceContext().getState() == Resources.State.UNHEALTHY) {
             HotNodeSummary currentNodSummary = flowUnit.getSummary();
             for (HotResourceSummary resourceSummary : currentNodSummary.getHotResourceSummaryList()) {
-              if (resourceSummary.getResource().getResource() == ResourceEnum.YOUNG_GEN) {
+              if (resourceSummary.getResource().getResourceEnum() == ResourceEnum.YOUNG_GEN) {
                 youngGenSummaries.add(resourceSummary);
               }
-              else if (resourceSummary.getResource().getResource() == ResourceEnum.OLD_GEN) {
+              else if (resourceSummary.getResource().getResourceEnum() == ResourceEnum.OLD_GEN) {
                 oldGenSummaries.add(resourceSummary);
               }
             }

@@ -22,36 +22,42 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 
 /**
- * A utility class to parse and build grpc ResourceType
+ * A utility class to parse and build grpc Resource message
+ * Resource message consist of two parts : ResourceEnum and MetricEnum.
+ * Both Enum types are defined in protobuf (src/main/proto/inter_node_rpc_service.proto)
+ * <p></p>
+ * ResourceEnum : different resource type on instance : CPU, IO, CACHE, etc.
+ * MetricEnum : metrics of each resource type, i.e. IO can have metrics
+ * such as TOTAL_THROUGHPUT and SYS_CALL_RATE
  */
 public class ResourceUtil {
 
   // JVM resource
   public static Resource OLD_GEN_HEAP_USAGE = Resource.newBuilder()
-      .setResource(ResourceEnum.OLD_GEN)
-      .setMetric(MetricEnum.HEAP_USAGE).build();
+      .setResourceEnum(ResourceEnum.OLD_GEN)
+      .setMetricEnum(MetricEnum.HEAP_USAGE).build();
   public static Resource YOUNG_GEN_PROMOTION_RATE = Resource.newBuilder()
-      .setResource(ResourceEnum.YOUNG_GEN)
-      .setMetric(MetricEnum.PROMOTION_RATE).build();
+      .setResourceEnum(ResourceEnum.YOUNG_GEN)
+      .setMetricEnum(MetricEnum.PROMOTION_RATE).build();
 
   // hardware resource
   public static Resource CPU_USAGE = Resource.newBuilder()
-      .setResource(ResourceEnum.CPU)
-      .setMetric(MetricEnum.CPU_USAGE).build();
+      .setResourceEnum(ResourceEnum.CPU)
+      .setMetricEnum(MetricEnum.CPU_USAGE).build();
   public static Resource IO_TOTAL_THROUGHPUT = Resource.newBuilder()
-      .setResource(ResourceEnum.IO)
-      .setMetric(MetricEnum.TOTAL_THROUGHPUT).build();
+      .setResourceEnum(ResourceEnum.IO)
+      .setMetricEnum(MetricEnum.TOTAL_THROUGHPUT).build();
   public static Resource IO_TOTAL_SYS_CALLRATE = Resource.newBuilder()
-      .setResource(ResourceEnum.IO)
-      .setMetric(MetricEnum.TOTAL_SYS_CALLRATE).build();
+      .setResourceEnum(ResourceEnum.IO)
+      .setMetricEnum(MetricEnum.TOTAL_SYS_CALLRATE).build();
 
   // thread pool
   public static Resource WRITE_QUEUE_REJECTION = Resource.newBuilder()
-      .setResource(ResourceEnum.WRITE_THREADPOOL)
-      .setMetric(MetricEnum.QUEUE_REJECTION).build();
+      .setResourceEnum(ResourceEnum.WRITE_THREADPOOL)
+      .setMetricEnum(MetricEnum.QUEUE_REJECTION).build();
   public static Resource SEARCH_QUEUE_REJECTION = Resource.newBuilder()
-      .setResource(ResourceEnum.SEARCH_THREADPOOL)
-      .setMetric(MetricEnum.QUEUE_REJECTION).build();
+      .setResourceEnum(ResourceEnum.SEARCH_THREADPOOL)
+      .setMetricEnum(MetricEnum.QUEUE_REJECTION).build();
 
   /**
    * Read the resourceType name from the ResourceType object
@@ -59,7 +65,7 @@ public class ResourceUtil {
    * @return resource type name
    */
   public static String getResourceTypeName(Resource resource) {
-    return resource.getResource().getValueDescriptor().getOptions()
+    return resource.getResourceEnum().getValueDescriptor().getOptions()
           .getExtension(PANetworking.additionalFields).getName();
   }
 
@@ -68,22 +74,22 @@ public class ResourceUtil {
    * @param resource grpc ResourceType object
    * @return resource unit type
    */
-  public static String getResourceTypeUnit(Resource resource) {
-    AdditionalFields resourceMetricOptions = resource.getMetric().getValueDescriptor().getOptions()
+  public static String getResourceMetricName(Resource resource) {
+    AdditionalFields resourceMetricOptions = resource.getMetricEnum().getValueDescriptor().getOptions()
         .getExtension(PANetworking.additionalFields);
     return resourceMetricOptions.getName() + "(" + resourceMetricOptions.getDescription() + ")";
   }
 
   /**
-   * Map resourceTypeName to its enum object
+   * Build Resource object from enum value
    * @param resourceEnumValue resource enum value
    * @param metricEnumValue metric enum value
    * @return ResourceType enum object
    */
-  public static Resource buildResourceType(int resourceEnumValue, int metricEnumValue) {
+  public static Resource buildResource(int resourceEnumValue, int metricEnumValue) {
     Resource.Builder builder = Resource.newBuilder();
-    builder.setResourceValue(resourceEnumValue);
-    builder.setMetricValue(metricEnumValue);
+    builder.setResourceEnumValue(resourceEnumValue);
+    builder.setMetricEnumValue(metricEnumValue);
     return builder.build();
   }
 }

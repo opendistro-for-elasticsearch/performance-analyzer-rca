@@ -90,8 +90,8 @@ enum MetricEnum {
   message for resource type Enum
 */
 message Resource {
-    ResourceEnum resource = 1;
-    MetricEnum metric = 2;
+    ResourceEnum resource_enum = 1;
+    MetricEnum metric_enum = 2;
 }
 
 /*

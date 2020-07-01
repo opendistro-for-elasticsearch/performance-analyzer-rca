@@ -166,7 +166,7 @@ public class HotResourceSummary extends GenericSummary {
     return new StringBuilder()
         .append(ResourceUtil.getResourceTypeName(resource))
         .append(" ")
-        .append(ResourceUtil.getResourceTypeUnit(resource))
+        .append(ResourceUtil.getResourceMetricName(resource))
         .append(" ")
         .append(this.threshold)
         .append(" ")
@@ -201,8 +201,8 @@ public class HotResourceSummary extends GenericSummary {
   @Override
   public List<Object> getSqlValue() {
     List<Object> value = new ArrayList<>();
-    value.add(resource.getResourceValue());
-    value.add(resource.getMetricValue());
+    value.add(resource.getResourceEnumValue());
+    value.add(resource.getMetricEnumValue());
     value.add(Double.valueOf(this.threshold));
     value.add(Double.valueOf(this.value));
     value.add(Double.valueOf(this.avgValue));
@@ -223,7 +223,7 @@ public class HotResourceSummary extends GenericSummary {
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.RESOURCE_TYPE_COL_NAME,
         ResourceUtil.getResourceTypeName(this.resource));
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.RESOURCE_METRIC_COL_NAME,
-        ResourceUtil.getResourceTypeUnit(this.resource));
+        ResourceUtil.getResourceMetricName(this.resource));
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.THRESHOLD_COL_NAME, this.threshold);
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.VALUE_COL_NAME, this.value);
     summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.AVG_VALUE_COL_NAME, this.avgValue);
@@ -329,7 +329,7 @@ public class HotResourceSummary extends GenericSummary {
       Integer timePeriod = record.get(ResourceSummaryField.TIME_PERIOD_FIELD.getField(), Integer.class);
       String metaData = record.get(ResourceSummaryField.METADATA_FIELD.getField(), String.class);
       summary = new HotResourceSummary(
-          ResourceUtil.buildResourceType(resourceTypeEnumVal, resourceMetricEnumVal),
+          ResourceUtil.buildResource(resourceTypeEnumVal, resourceMetricEnumVal),
           threshold, value, timePeriod, metaData);
       // those three fields are optional. check before setting to the obj
       if (avgValue != null

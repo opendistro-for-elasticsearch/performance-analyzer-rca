@@ -94,7 +94,7 @@ public class HotResourceSummaryTest {
     @Test
     public void testToString() {
         String expected = ResourceUtil.getResourceTypeName(RESOURCE_TYPE)
-            + " " + ResourceUtil.getResourceTypeUnit(RESOURCE_TYPE) + " " + THRESHOLD + " " + VALUE
+            + " " + ResourceUtil.getResourceMetricName(RESOURCE_TYPE) + " " + THRESHOLD + " " + VALUE
             + " " + uut.getNestedSummaryList() + " " + META_DATA;
         Assert.assertEquals(expected, uut.toString());
     }
@@ -122,8 +122,8 @@ public class HotResourceSummaryTest {
     public void testGetSqlValue() {
         List<Object> values = uut.getSqlValue();
         Assert.assertEquals(9, values.size());
-        Assert.assertEquals(RESOURCE_TYPE.getResourceValue(), values.get(0));
-        Assert.assertEquals(RESOURCE_TYPE.getMetricValue(), values.get(1));
+        Assert.assertEquals(RESOURCE_TYPE.getResourceEnumValue(), values.get(0));
+        Assert.assertEquals(RESOURCE_TYPE.getMetricEnumValue(), values.get(1));
         Assert.assertEquals(THRESHOLD, values.get(2));
         Assert.assertEquals(VALUE, values.get(3));
         Assert.assertEquals(AVG_VALUE, values.get(4));
@@ -140,7 +140,7 @@ public class HotResourceSummaryTest {
         JsonObject json = ((JsonObject) elem);
         Assert.assertEquals(ResourceUtil.getResourceTypeName(RESOURCE_TYPE),
                 json.get(HotResourceSummary.SQL_SCHEMA_CONSTANTS.RESOURCE_TYPE_COL_NAME).getAsString());
-        Assert.assertEquals(ResourceUtil.getResourceTypeUnit(RESOURCE_TYPE),
+        Assert.assertEquals(ResourceUtil.getResourceMetricName(RESOURCE_TYPE),
                 json.get(HotResourceSummary.SQL_SCHEMA_CONSTANTS.RESOURCE_METRIC_COL_NAME).getAsString());
         Assert.assertEquals(THRESHOLD,
                 json.get(HotResourceSummary.SQL_SCHEMA_CONSTANTS.THRESHOLD_COL_NAME).getAsDouble(), 0);
@@ -170,10 +170,10 @@ public class HotResourceSummaryTest {
         Record testRecord = Mockito.mock(Record.class);
         Mockito.when(
                 testRecord.get(HotResourceSummary.ResourceSummaryField.RESOURCE_TYPE_FIELD.getField(), Integer.class))
-                .thenReturn(RESOURCE_TYPE.getResourceValue());
+                .thenReturn(RESOURCE_TYPE.getResourceEnumValue());
         Mockito.when(
                 testRecord.get(HotResourceSummary.ResourceSummaryField.RESOURCE_METRIC_FIELD.getField(), Integer.class))
-                .thenReturn(RESOURCE_TYPE.getMetricValue());
+                .thenReturn(RESOURCE_TYPE.getMetricEnumValue());
         Mockito.when(testRecord.get(HotResourceSummary.ResourceSummaryField.THRESHOLD_FIELD.getField(), Double.class))
                 .thenReturn(THRESHOLD);
         Mockito.when(testRecord.get(HotResourceSummary.ResourceSummaryField.VALUE_FIELD.getField(), Double.class))
@@ -190,8 +190,8 @@ public class HotResourceSummaryTest {
         Assert.assertNotNull(summary);
         List<Object> values = summary.getSqlValue();
         Assert.assertEquals(9, values.size());
-        Assert.assertEquals(RESOURCE_TYPE.getResourceValue(), values.get(0));
-        Assert.assertEquals(RESOURCE_TYPE.getMetricValue(), values.get(1));
+        Assert.assertEquals(RESOURCE_TYPE.getResourceEnumValue(), values.get(0));
+        Assert.assertEquals(RESOURCE_TYPE.getMetricEnumValue(), values.get(1));
         Assert.assertEquals(THRESHOLD, values.get(2));
         Assert.assertEquals(VALUE, values.get(3));
         Assert.assertEquals(AVG_VALUE, values.get(4));
