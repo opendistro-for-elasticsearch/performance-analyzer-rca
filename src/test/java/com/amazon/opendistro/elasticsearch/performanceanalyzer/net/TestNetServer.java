@@ -24,10 +24,12 @@ public class TestNetServer extends NetServer implements Runnable {
             // TODO (sidnaray) this is not the best practice for overriding settings
             // CertificateUtils should be abstracted into an interface and should have a regular and testing impl
             // The interface should be passed into the NetServer constructor and have the proper impl "injected"
+            PluginSettings.instance().overrideProperty(CertificateUtils.TRUSTED_CAS_FILE_PATH,
+                    Objects.requireNonNull(classLoader.getResource("tls/rootca/RootCA.pem")).getFile());
             PluginSettings.instance().overrideProperty(CertificateUtils.CERTIFICATE_FILE_PATH,
-                    Objects.requireNonNull(classLoader.getResource("tls/cert.pem")).getFile());
+                    Objects.requireNonNull(classLoader.getResource("tls/server/localhost.crt")).getFile());
             PluginSettings.instance().overrideProperty(CertificateUtils.PRIVATE_KEY_FILE_PATH,
-                    Objects.requireNonNull(classLoader.getResource("tls/key.pem")).getFile());
+                    Objects.requireNonNull(classLoader.getResource("tls/server/localhost.key")).getFile());
         }
     }
 

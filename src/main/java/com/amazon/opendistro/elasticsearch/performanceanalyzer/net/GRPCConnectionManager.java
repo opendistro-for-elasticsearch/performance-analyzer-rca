@@ -24,7 +24,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
-import io.grpc.netty.shaded.io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import io.grpc.netty.shaded.io.netty.handler.ssl.SslContextBuilder;
 
 import java.io.File;
 import java.util.Map;
@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,6 +47,11 @@ import org.apache.logging.log4j.Logger;
 public class GRPCConnectionManager {
 
   private static final Logger LOG = LogManager.getLogger(GRPCConnectionManager.class);
+  private final int port;
+  // TLS certificate, private key, and trusted root CA files
+  private File certFile;
+  private File pkeyFile;
+  private File trustedCasFile;
 
   /**
    * Map of remote host to a Netty channel to that host.
@@ -67,6 +73,27 @@ public class GRPCConnectionManager {
 
   public GRPCConnectionManager(final boolean shouldUseHttps) {
     this.shouldUseHttps = shouldUseHttps;
+    this.port = Util.RPC_PORT;
+    if (shouldUseHttps) {
+      this.certFile = CertificateUtils.getClientCertificateFile();
+      this.pkeyFile = CertificateUtils.getClientPrivateKeyFile();
+      this.trustedCasFile = CertificateUtils.getClientTrustedCasFile();
+    }
+  }
+
+  /**
+   * Constructor that allows you to specify which port a client should connect to
+   * @param shouldUseHttps Whether to enable TLS
+   * @param port The port number that client stubs should attempt to connect to
+   */
+  public GRPCConnectionManager(final boolean shouldUseHttps, int port) {
+    this.shouldUseHttps = shouldUseHttps;
+    this.port = port;
+    if (shouldUseHttps) {
+      this.certFile = CertificateUtils.getClientCertificateFile();
+      this.pkeyFile = CertificateUtils.getClientPrivateKeyFile();
+      this.trustedCasFile = CertificateUtils.getClientTrustedCasFile();
+    }
   }
 
   @VisibleForTesting
@@ -144,28 +171,26 @@ public class GRPCConnectionManager {
   }
 
   private ManagedChannel buildInsecureChannel(final String remoteHost) {
-    return ManagedChannelBuilder.forAddress(remoteHost, Util.RPC_PORT).usePlaintext().build();
+    return ManagedChannelBuilder.forAddress(remoteHost, this.port).usePlaintext().build();
   }
 
-  private ManagedChannel buildSecureChannel(final String remoteHost) {
-    try {
-      File certFile = CertificateUtils.getCertificateFile();
-      File pkeyFile = CertificateUtils.getPrivateKeyFile();
-      return NettyChannelBuilder.forAddress(remoteHost, Util.RPC_PORT)
-                                .sslContext(
-                                    GrpcSslContexts.forClient()
-                                            .trustManager(InsecureTrustManagerFactory.INSTANCE)
-                                            .keyManager(certFile, pkeyFile)
-                                            .build())
-                                .build();
-    } catch (SSLException e) {
-      LOG.error("Unable to build an SSL gRPC client. Exception: {}", e.getMessage());
-      e.printStackTrace();
+   private ManagedChannel buildSecureChannel(final String remoteHost) {
+     try {
+       SslContextBuilder sslContextBuilder = GrpcSslContexts.forClient().keyManager(certFile, pkeyFile);
+       if (trustedCasFile != null) {
+         sslContextBuilder.trustManager(trustedCasFile);
+       }
+       return NettyChannelBuilder.forAddress(remoteHost, this.port)
+               .sslContext(sslContextBuilder.build())
+               .build();
+     } catch (SSLException e) {
+       LOG.error("Unable to build an SSL gRPC client. Exception: {}", e.getMessage());
+       e.printStackTrace();
 
-      // Wrap the SSL Exception in a generic RTE and re-throw.
-      throw new RuntimeException(e);
-    }
-  }
+       // Wrap the SSL Exception in a generic RTE and re-throw.
+       throw new RuntimeException(e);
+     }
+   }
 
   private InterNodeRpcServiceStub buildStubForHost(
       final String remoteHost) {

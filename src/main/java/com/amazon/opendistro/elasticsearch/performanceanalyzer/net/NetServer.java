@@ -34,6 +34,7 @@ import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import io.grpc.netty.shaded.io.netty.channel.nio.NioEventLoopGroup;
 import io.grpc.netty.shaded.io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth;
+import io.grpc.netty.shaded.io.netty.handler.ssl.SslContextBuilder;
 import io.grpc.stub.StreamObserver;
 
 import java.io.File;
@@ -86,7 +87,7 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
   /**
    * The server instance.
    */
-  private Server server;
+  protected Server server;
 
   public NetServer(final int port, final int numServerThreads, final boolean useHttps) {
     this.port = port;
@@ -118,8 +119,12 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
         numServerThreads,
         useHttps);
     try {
-      server = useHttps ? buildHttpsServer(CertificateUtils.getCertificateFile(), CertificateUtils.getPrivateKeyFile())
-              : buildHttpServer();
+      if (useHttps) {
+        server =  buildHttpsServer(CertificateUtils.getTrustedCasFile(), CertificateUtils.getCertificateFile(),
+                CertificateUtils.getPrivateKeyFile());
+      } else {
+        server = buildHttpServer();
+      }
       server.start();
       LOG.info("gRPC server started successfully!");
       postStartHook();
@@ -144,13 +149,15 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
     return buildBaseServer().executor(Executors.newSingleThreadExecutor()).build();
   }
 
-  protected Server buildHttpsServer(File certFile, File pkeyFile) throws SSLException {
+  protected Server buildHttpsServer(File trustedCasFile, File certFile, File pkeyFile) throws SSLException {
+    SslContextBuilder sslContextBuilder = GrpcSslContexts.forServer(certFile, pkeyFile);
+    // If an authority is specified, authenticate clients
+    if (trustedCasFile != null) {
+      sslContextBuilder.trustManager(trustedCasFile).clientAuth(ClientAuth.REQUIRE);
+    }
     return buildBaseServer()
-            .sslContext(GrpcSslContexts.forServer(certFile, pkeyFile)
-                    .trustManager(certFile)
-                    .clientAuth(ClientAuth.REQUIRE)
-                    .build())
-            .useTransportSecurity(certFile, pkeyFile).build();
+            .sslContext(sslContextBuilder.build())
+            .build();
   }
 
   /**
@@ -246,7 +253,11 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
     // Remove handlers.
     sendDataHandler = null;
     subscribeHandler = null;
+  }
 
+  public void shutdown() {
+    stop();
+    // Actually stop the server
     if (server != null) {
       server.shutdown();
       try {
