@@ -21,6 +21,7 @@ import java.io.FileReader;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
@@ -37,6 +38,12 @@ public class CertificateUtils {
   public static final String IN_MEMORY_PWD = "opendistro";
   public static final String CERTIFICATE_FILE_PATH = "certificate-file-path";
   public static final String PRIVATE_KEY_FILE_PATH = "private-key-file-path";
+  public static final String TRUSTED_CAS_FILE_PATH = "trusted-cas-file-path";
+  public static final String CLIENT_PREFIX = "client-";
+  public static final String CLIENT_CERTIFICATE_FILE_PATH = CLIENT_PREFIX + CERTIFICATE_FILE_PATH;
+  public static final String CLIENT_PRIVATE_KEY_FILE_PATH = CLIENT_PREFIX + PRIVATE_KEY_FILE_PATH;
+  public static final String CLIENT_TRUSTED_CAS_FILE_PATH = CLIENT_PREFIX + TRUSTED_CAS_FILE_PATH;
+
   private static final Logger LOGGER = LogManager.getLogger(CertificateUtils.class);
 
   public static Certificate getCertificate(final FileReader certReader) throws Exception {
@@ -80,5 +87,40 @@ public class CertificateUtils {
   public static File getPrivateKeyFile() {
     String privateKeyPath = PluginSettings.instance().getSettingValue(PRIVATE_KEY_FILE_PATH);
     return new File(privateKeyPath);
+  }
+
+  @Nullable
+  public static File getTrustedCasFile() {
+    String trustedCasPath = PluginSettings.instance().getSettingValue(TRUSTED_CAS_FILE_PATH);
+    if (trustedCasPath == null || trustedCasPath.isEmpty()) {
+      return null;
+    }
+    return new File(trustedCasPath);
+  }
+
+  public static File getClientCertificateFile() {
+    String certFilePath = PluginSettings.instance().getSettingValue(CLIENT_CERTIFICATE_FILE_PATH);
+    if (certFilePath == null || certFilePath.isEmpty()) {
+      return getCertificateFile();
+    }
+    return new File(certFilePath);
+  }
+
+  public static File getClientPrivateKeyFile() {
+    String privateKeyPath = PluginSettings.instance().getSettingValue(CLIENT_PRIVATE_KEY_FILE_PATH);
+    if (privateKeyPath == null || privateKeyPath.isEmpty()) {
+      return getPrivateKeyFile();
+    }
+    return new File(privateKeyPath);
+  }
+
+  @Nullable
+  public static File getClientTrustedCasFile() {
+    String trustedCasPath = PluginSettings.instance().getSettingValue(CLIENT_TRUSTED_CAS_FILE_PATH);
+    // By default, use the same CA as the server
+    if (trustedCasPath == null || trustedCasPath.isEmpty()) {
+      return getTrustedCasFile();
+    }
+    return new File(trustedCasPath);
   }
 }

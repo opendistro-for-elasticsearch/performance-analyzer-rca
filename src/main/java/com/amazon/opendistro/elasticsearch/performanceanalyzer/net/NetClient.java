@@ -52,6 +52,10 @@ public class NetClient {
     this.connectionManager = connectionManager;
   }
 
+  public GRPCConnectionManager getConnectionManager() {
+    return connectionManager;
+  }
+
   private ConcurrentMap<String, AtomicReference<StreamObserver<FlowUnitMessage>>> perHostOpenDataStreamMap =
       new ConcurrentHashMap<>();
 
