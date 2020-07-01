@@ -1,14 +1,12 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class Publisher extends NonLeafNode<GenericFlowUnit> {
+public class Publisher extends NonLeafNode<EmptyFlowUnit> {
 
   private static final Logger LOG = LogManager.getLogger(Publisher.class);
 
@@ -21,7 +19,7 @@ public class Publisher extends NonLeafNode<GenericFlowUnit> {
   }
 
   @Override
-  public GenericFlowUnit operate() {
+  public EmptyFlowUnit operate() {
     // TODO: Pass through implementation, need to add dampening, cool-off, action flip-flop
     // avoidance, state persistence etc.
 
@@ -31,13 +29,7 @@ public class Publisher extends NonLeafNode<GenericFlowUnit> {
       action.execute();
     }
 
-    return new GenericFlowUnit(System.currentTimeMillis()) {
-      @Override
-      public FlowUnitMessage buildFlowUnitMessage(String graphNode, String esNode) {
-        throw new IllegalStateException(
-            this.getClass().getSimpleName() + " not expected to be passed over wire");
-      }
-    };
+    return new EmptyFlowUnit(System.currentTimeMillis());
   }
 
   /* Publisher does not have downstream nodes and does not emit flow units
