@@ -17,9 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca.cluste
 
 import static java.time.Instant.ofEpochMilli;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.RcaTestHelper;
@@ -28,6 +26,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.BaseClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
 import java.sql.SQLException;
@@ -45,9 +44,9 @@ public class BaseClusterRcaTest {
   private BaseClusterRca clusterRca;
   private RcaTestHelper<HotNodeSummary> nodeRca;
   private RcaTestHelper<HotNodeSummary> nodeRca2;
-  private ResourceType type1;
-  private ResourceType type2;
-  private ResourceType invalidType;
+  private Resource type1;
+  private Resource type2;
+  private Resource invalidType;
 
   @Before
   public void setupCluster() throws SQLException, ClassNotFoundException {
@@ -63,10 +62,10 @@ public class BaseClusterRcaTest {
   public void init() {
     nodeRca = new RcaTestHelper<>("RCA1");
     nodeRca2 = new RcaTestHelper<>("RCA2");
-    invalidType = ResourceType.newBuilder().setJVM(JvmEnum.OLD_GEN).build();
+    invalidType = ResourceUtil.OLD_GEN_HEAP_USAGE;
     clusterRca = new BaseClusterRca(1, nodeRca, nodeRca2);
-    type1 = ResourceType.newBuilder().setJVM(JvmEnum.OLD_GEN).build();
-    type2 = ResourceType.newBuilder().setHardwareResourceType(HardwareEnum.CPU).build();
+    type1 = ResourceUtil.OLD_GEN_HEAP_USAGE;
+    type2 = ResourceUtil.CPU_USAGE;
   }
 
   @Test
@@ -282,14 +281,14 @@ public class BaseClusterRcaTest {
     clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
   }
 
-  private boolean compareResourceSummary(ResourceType resourceType, HotResourceSummary resourceSummary) {
-    return resourceSummary.getResourceType().equals(resourceType);
+  private boolean compareResourceSummary(Resource resource, HotResourceSummary resourceSummary) {
+    return resourceSummary.getResource().equals(resource);
   }
 
-  private boolean compareNodeSummary(String nodeId, ResourceType resourceType, HotNodeSummary nodeSummary) {
+  private boolean compareNodeSummary(String nodeId, Resource resource, HotNodeSummary nodeSummary) {
     if (!nodeId.equals(nodeSummary.getNodeID()) || nodeSummary.getHotResourceSummaryList().isEmpty()) {
       return false;
     }
-    return compareResourceSummary(resourceType, nodeSummary.getHotResourceSummaryList().get(0));
+    return compareResourceSummary(resource, nodeSummary.getHotResourceSummaryList().get(0));
   }
 }

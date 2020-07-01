@@ -33,29 +33,29 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum
 public class ResourceUtil {
 
   // JVM resource
-  public static Resource OLD_GEN_HEAP_USAGE = Resource.newBuilder()
+  public static final Resource OLD_GEN_HEAP_USAGE = Resource.newBuilder()
       .setResourceEnum(ResourceEnum.OLD_GEN)
       .setMetricEnum(MetricEnum.HEAP_USAGE).build();
-  public static Resource YOUNG_GEN_PROMOTION_RATE = Resource.newBuilder()
+  public static final Resource YOUNG_GEN_PROMOTION_RATE = Resource.newBuilder()
       .setResourceEnum(ResourceEnum.YOUNG_GEN)
       .setMetricEnum(MetricEnum.PROMOTION_RATE).build();
 
   // hardware resource
-  public static Resource CPU_USAGE = Resource.newBuilder()
+  public static final Resource CPU_USAGE = Resource.newBuilder()
       .setResourceEnum(ResourceEnum.CPU)
       .setMetricEnum(MetricEnum.CPU_USAGE).build();
-  public static Resource IO_TOTAL_THROUGHPUT = Resource.newBuilder()
+  public static final Resource IO_TOTAL_THROUGHPUT = Resource.newBuilder()
       .setResourceEnum(ResourceEnum.IO)
       .setMetricEnum(MetricEnum.TOTAL_THROUGHPUT).build();
-  public static Resource IO_TOTAL_SYS_CALLRATE = Resource.newBuilder()
+  public static final Resource IO_TOTAL_SYS_CALLRATE = Resource.newBuilder()
       .setResourceEnum(ResourceEnum.IO)
       .setMetricEnum(MetricEnum.TOTAL_SYS_CALLRATE).build();
 
   // thread pool
-  public static Resource WRITE_QUEUE_REJECTION = Resource.newBuilder()
+  public static final Resource WRITE_QUEUE_REJECTION = Resource.newBuilder()
       .setResourceEnum(ResourceEnum.WRITE_THREADPOOL)
       .setMetricEnum(MetricEnum.QUEUE_REJECTION).build();
-  public static Resource SEARCH_QUEUE_REJECTION = Resource.newBuilder()
+  public static final Resource SEARCH_QUEUE_REJECTION = Resource.newBuilder()
       .setResourceEnum(ResourceEnum.SEARCH_THREADPOOL)
       .setMetricEnum(MetricEnum.QUEUE_REJECTION).build();
 
