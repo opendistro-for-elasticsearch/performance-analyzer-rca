@@ -15,7 +15,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionma
 public class QueueCapacity implements Action {
 
   public static final String NAME = "queue_capacity";
-  public static final int COOL_OFF_PERIOD = 300;
+  public static final int COOL_OFF_PERIOD_IN_SECONDS = 300;
 
   private int currentCapacity;
   private int desiredCapacity;
@@ -47,7 +47,7 @@ public class QueueCapacity implements Action {
 
   @Override
   public int coolOffPeriodInSeconds() {
-    return COOL_OFF_PERIOD;
+    return COOL_OFF_PERIOD_IN_SECONDS;
   }
 
   @Override

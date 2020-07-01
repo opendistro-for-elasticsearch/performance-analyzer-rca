@@ -15,7 +15,6 @@ import java.util.List;
 // This is a sample decider implementation to finalize decision maker interfaces.
 // TODO: 1. Read action priorities from a configurable yml
 // TODO: 2. Read current queue capacity from NodeConfigurationRca (PR #252)
-// TODO: 3. Add unit tests
 
 public class QueueHealthDecider extends Decider {
 
