@@ -16,7 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
@@ -24,7 +24,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaVerticesMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
@@ -91,10 +90,10 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit<HotClusterSumm
           if (flowUnit.getResourceContext().getState() == Resources.State.UNHEALTHY) {
             HotNodeSummary currentNodSummary = flowUnit.getSummary();
             for (HotResourceSummary resourceSummary : currentNodSummary.getHotResourceSummaryList()) {
-              if (resourceSummary.getResourceType().getJVM() == JvmEnum.YOUNG_GEN) {
+              if (resourceSummary.getResource().getResourceEnum() == ResourceEnum.YOUNG_GEN) {
                 youngGenSummaries.add(resourceSummary);
               }
-              else if (resourceSummary.getResourceType().getJVM() == JvmEnum.OLD_GEN) {
+              else if (resourceSummary.getResource().getResourceEnum() == ResourceEnum.OLD_GEN) {
                 oldGenSummaries.add(resourceSummary);
               }
             }

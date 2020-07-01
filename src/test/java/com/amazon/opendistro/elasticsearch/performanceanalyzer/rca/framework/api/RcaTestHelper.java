@@ -15,7 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
@@ -23,8 +23,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotShardSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
-
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collections;
@@ -79,7 +77,7 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
   public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
   }
 
-  public static ResourceFlowUnit<HotNodeSummary> generateFlowUnit(ResourceType type, String nodeID, Resources.State healthy) {
+  public static ResourceFlowUnit<HotNodeSummary> generateFlowUnit(Resource type, String nodeID, Resources.State healthy) {
     HotResourceSummary resourceSummary = new HotResourceSummary(type,
         10, 5, 60);
     HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, "127.0.0.0");
@@ -87,7 +85,7 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
     return new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(healthy), nodeSummary);
   }
 
-  public static ResourceFlowUnit<HotNodeSummary> generateFlowUnit(ResourceType type, String nodeID,
+  public static ResourceFlowUnit<HotNodeSummary> generateFlowUnit(Resource type, String nodeID,
       String hostAddress, Resources.State healthy) {
     HotResourceSummary resourceSummary = new HotResourceSummary(type,
         10, 5, 60);
@@ -96,7 +94,7 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
     return new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(healthy), nodeSummary);
   }
 
-  public static ResourceFlowUnit<HotNodeSummary> generateFlowUnit(ResourceType type, String nodeID,
+  public static ResourceFlowUnit<HotNodeSummary> generateFlowUnit(Resource type, String nodeID,
       String hostAddress, Resources.State healthy, long timestamp) {
     HotResourceSummary resourceSummary = new HotResourceSummary(type,
         10, 5, 60);

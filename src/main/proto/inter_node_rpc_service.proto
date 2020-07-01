@@ -48,40 +48,50 @@ message ResourceContextMessage {
 /*
   Enum for different resource type
 */
-message ResourceTypeOptions {
-  string resourceTypeName = 1;
-  string resourceTypeUnit = 2;
+message AdditionalFields {
+  string name = 1;
+  string description = 2;
 }
 
 extend google.protobuf.EnumValueOptions {
-  ResourceTypeOptions resourceTypeOptions = 50000;
+  AdditionalFields additional_fields = 50000;
 }
 
-enum JvmEnum {
-  OLD_GEN = 0 [(resourceTypeOptions).resourceTypeName = "old gen", (resourceTypeOptions).resourceTypeUnit = "heap usage in percentage"];
-  YOUNG_GEN = 1 [(resourceTypeOptions).resourceTypeName = "young gen", (resourceTypeOptions).resourceTypeUnit = "promotion rate in mb/s"];
+enum ResourceEnum {
+  // JVM
+  OLD_GEN = 0 [(additional_fields).name = "old gen"];
+  YOUNG_GEN = 1 [(additional_fields).name = "young gen"];
+
+  // hardware
+  CPU = 2 [(additional_fields).name = "cpu usage"];
+  IO = 3 [(additional_fields).name = "IO"];
+
+  // threadpool
+  WRITE_THREADPOOL = 4 [(additional_fields).name = "write threadpool"];
+  SEARCH_THREADPOOL = 5 [(additional_fields).name = "search threadpool"];
 }
 
-enum HardwareEnum {
-  CPU = 0 [(resourceTypeOptions).resourceTypeName = "cpu usage", (resourceTypeOptions).resourceTypeUnit = "cpu usage in percentage"];
-  IO_TOTAL_THROUGHPUT = 1 [(resourceTypeOptions).resourceTypeName = "IO total throughput", (resourceTypeOptions).resourceTypeUnit = "number of bytes read/written per second"];
-  IO_TOTAL_SYS_CALLRATE = 2 [(resourceTypeOptions).resourceTypeName = "IO total sys callrate", (resourceTypeOptions).resourceTypeUnit = "read and write system calls per second"];
-}
+enum MetricEnum {
+  // JVM
+  HEAP_USAGE = 0 [(additional_fields).name = "heap usage", (additional_fields).description = "memory usage in percentage"];
+  PROMOTION_RATE = 1 [(additional_fields).name = "promotion rate", (additional_fields).description = "mb/s"];
+  MINOR_GC = 2 [(additional_fields).name = "minor gc", (additional_fields).description = "time in percentage"];
 
-enum ThreadPoolEnum {
-  WRITE_QUEUE = 0 [(resourceTypeOptions).resourceTypeName = "write queue", (resourceTypeOptions).resourceTypeUnit = "rejection period in second"];
-  SEARCH_QUEUE = 1 [(resourceTypeOptions).resourceTypeName = "search queue", (resourceTypeOptions).resourceTypeUnit = "rejection period in second"];
+  // hardware
+  CPU_USAGE = 3 [(additional_fields).name = "cpu usage", (additional_fields).description = "num of cores"];
+  TOTAL_THROUGHPUT = 4 [(additional_fields).name = "total throughput", (additional_fields).description = "number of bytes read/written per second"];
+  TOTAL_SYS_CALLRATE = 5 [(additional_fields).name = "total sys callrate", (additional_fields).description = "read and write system calls per second"];
+
+  // threadpool
+  QUEUE_REJECTION = 6 [(additional_fields).name = "queue rejection", (additional_fields).description = "rejection period in second"];
 }
 
 /*
   message for resource type Enum
 */
-message ResourceType {
-    oneof resource_type_oneof {
-      JvmEnum JVM = 1;
-      HardwareEnum hardware_resource_type = 2;
-      ThreadPoolEnum thread_pool = 3;
-    }
+message Resource {
+    ResourceEnum resource_enum = 1;
+    MetricEnum metric_enum = 2;
 }
 
 /*
@@ -104,7 +114,7 @@ message TopConsumerSummaryMessage {
     double value = 2;
 }
 message HotResourceSummaryMessage {
-    ResourceType resourceType = 1;
+    Resource resource = 1;
     TopConsumerSummaryList consumers = 2;
     double threshold = 3;
     double value = 4;

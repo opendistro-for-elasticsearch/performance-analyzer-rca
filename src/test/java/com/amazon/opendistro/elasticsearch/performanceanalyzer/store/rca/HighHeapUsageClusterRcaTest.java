@@ -15,11 +15,10 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.RcaTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources.State;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
 import org.junit.Assert;
@@ -47,44 +46,40 @@ public class HighHeapUsageClusterRcaTest {
 
     // send three young gen flowunits (healthy, unhealthy, unhealthy) to node1
     // the cluterRca will generate three healthy flowunits
-    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(buildResourceType(JvmEnum.YOUNG_GEN), "node1", State.HEALTHY));
+    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(ResourceUtil.YOUNG_GEN_PROMOTION_RATE, "node1", State.HEALTHY));
     Assert.assertFalse(clusterRca.operate().getResourceContext().isUnhealthy());
-    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(buildResourceType(JvmEnum.YOUNG_GEN), "node1", State.UNHEALTHY));
+    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(ResourceUtil.YOUNG_GEN_PROMOTION_RATE, "node1", State.UNHEALTHY));
     Assert.assertFalse(clusterRca.operate().getResourceContext().isUnhealthy());
-    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(buildResourceType(JvmEnum.YOUNG_GEN), "node1", State.UNHEALTHY));
+    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(ResourceUtil.YOUNG_GEN_PROMOTION_RATE, "node1", State.UNHEALTHY));
     Assert.assertFalse(clusterRca.operate().getResourceContext().isUnhealthy());
 
     // send two young gen flowunits (unhealthy, unhealthy) to node2
     // the cluterRca will continue generating healthy flowunits
-    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(buildResourceType(JvmEnum.YOUNG_GEN), "node2", State.UNHEALTHY));
+    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(ResourceUtil.YOUNG_GEN_PROMOTION_RATE, "node2", State.UNHEALTHY));
     Assert.assertFalse(clusterRca.operate().getResourceContext().isUnhealthy());
-    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(buildResourceType(JvmEnum.YOUNG_GEN), "node2", State.UNHEALTHY));
+    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(ResourceUtil.YOUNG_GEN_PROMOTION_RATE, "node2", State.UNHEALTHY));
     Assert.assertFalse(clusterRca.operate().getResourceContext().isUnhealthy());
 
     // send two old gen flowunits (unhealthy, unhealthy) to node1
     // the cluterRca will continue generating healthy flowunits
-    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(buildResourceType(JvmEnum.OLD_GEN), "node1", State.UNHEALTHY));
+    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(ResourceUtil.OLD_GEN_HEAP_USAGE, "node1", State.UNHEALTHY));
     Assert.assertFalse(clusterRca.operate().getResourceContext().isUnhealthy());
-    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(buildResourceType(JvmEnum.OLD_GEN), "node1", State.UNHEALTHY));
+    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(ResourceUtil.OLD_GEN_HEAP_USAGE, "node1", State.UNHEALTHY));
     Assert.assertFalse(clusterRca.operate().getResourceContext().isUnhealthy());
 
     // send one old gen flowunits (unhealthy) to node1
     // the cluterRca will generate a unhealthy flowunit at the end
-    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(buildResourceType(JvmEnum.OLD_GEN), "node1", State.UNHEALTHY));
+    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(ResourceUtil.OLD_GEN_HEAP_USAGE, "node1", State.UNHEALTHY));
     Assert.assertTrue(clusterRca.operate().getResourceContext().isUnhealthy());
 
     // send one young gen flowunits (unhealthy) to node1
     // flowunit becomes healthy
-    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(buildResourceType(JvmEnum.YOUNG_GEN), "node1", State.UNHEALTHY));
+    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(ResourceUtil.YOUNG_GEN_PROMOTION_RATE, "node1", State.UNHEALTHY));
     Assert.assertFalse(clusterRca.operate().getResourceContext().isUnhealthy());
 
     // send one old gen flowunits (unhealthy) to node2
     // the cluterRca will generate a unhealthy flowunit at the end
-    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(buildResourceType(JvmEnum.YOUNG_GEN), "node2", State.UNHEALTHY));
+    nodeRca.mockFlowUnit(RcaTestHelper.generateFlowUnit(ResourceUtil.YOUNG_GEN_PROMOTION_RATE, "node2", State.UNHEALTHY));
     Assert.assertTrue(clusterRca.operate().getResourceContext().isUnhealthy());
-  }
-
-  private ResourceType buildResourceType(JvmEnum jvmEnum) {
-    return ResourceType.newBuilder().setJVM(jvmEnum).build();
   }
 }

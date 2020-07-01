@@ -18,10 +18,9 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.ho
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.OLD_GEN;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_FULL_GC;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.OLD_GEN_HEAP_USAGE;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
@@ -77,7 +76,6 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit<HotResourceSumm
   private final Metric gc_event;
   //list of node stat aggregator to collect node stats
   private final List<NodeStatAggregator> nodeStatAggregators;
-  private final ResourceType resourceType;
   // the amount of RCA period this RCA needs to run before sending out a flowunit
   private final int rcaPeriod;
   // The lower bound threshold in percentage to decide whether to send out summary.
@@ -108,7 +106,6 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit<HotResourceSumm
     this.lowerBoundThreshold = (lowerBoundThreshold >= 0 && lowerBoundThreshold <= 1.0)
         ? lowerBoundThreshold : 1.0;
     this.counter = 0;
-    this.resourceType = ResourceType.newBuilder().setJVM(JvmEnum.OLD_GEN).build();
     gcEventSlidingWindow = new SlidingWindow<>(SLIDING_WINDOW_SIZE_IN_MINS, TimeUnit.MINUTES);
     minOldGenSlidingWindow = new MinOldGenSlidingWindow(SLIDING_WINDOW_SIZE_IN_MINS,
         TimeUnit.MINUTES);
@@ -214,7 +211,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit<HotResourceSumm
       if (gcEventSlidingWindow.readSum() >= OLD_GEN_GC_THRESHOLD
           && !Double.isNaN(currentMinOldGenUsage)
           && currentMinOldGenUsage / maxOldGenHeapSize > OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE * this.lowerBoundThreshold) {
-        summary = new HotResourceSummary(this.resourceType,
+        summary = new HotResourceSummary(OLD_GEN_HEAP_USAGE,
             OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE, currentMinOldGenUsage / maxOldGenHeapSize, SLIDING_WINDOW_SIZE_IN_MINS * 60);
         addTopConsumers(summary);
       }
