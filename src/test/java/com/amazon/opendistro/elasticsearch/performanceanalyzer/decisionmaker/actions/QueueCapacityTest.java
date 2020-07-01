@@ -1,11 +1,12 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Impact;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Resource;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.Map;
@@ -23,12 +24,12 @@ public class QueueCapacityTest {
     assertEquals(ThreadPoolEnum.WRITE_QUEUE, queueCapacity.getThreadPool());
     assertEquals(1, queueCapacity.impactedNodes().size());
 
-    Map<Resource, Impact> impact = queueCapacity.impact().get(node1).getImpact();
-    assertEquals(Impact.INCREASES_PRESSURE, impact.get(Resource.HEAP));
-    assertEquals(Impact.INCREASES_PRESSURE, impact.get(Resource.CPU));
-    assertEquals(Impact.INCREASES_PRESSURE, impact.get(Resource.NETWORK));
-    assertEquals(Impact.NO_IMPACT, impact.get(Resource.RAM));
-    assertEquals(Impact.NO_IMPACT, impact.get(Resource.DISK));
+    Map<Dimension, Impact> impact = queueCapacity.impact().get(node1).getImpact();
+    assertEquals(Impact.INCREASES_PRESSURE, impact.get(HEAP));
+    assertEquals(Impact.INCREASES_PRESSURE, impact.get(CPU));
+    assertEquals(Impact.INCREASES_PRESSURE, impact.get(NETWORK));
+    assertEquals(Impact.NO_IMPACT, impact.get(RAM));
+    assertEquals(Impact.NO_IMPACT, impact.get(DISK));
   }
 
   @Test
@@ -41,12 +42,12 @@ public class QueueCapacityTest {
     assertEquals(ThreadPoolEnum.SEARCH_QUEUE, queueCapacity.getThreadPool());
     assertEquals(1, queueCapacity.impactedNodes().size());
 
-    Map<Resource, Impact> impact = queueCapacity.impact().get(node1).getImpact();
-    assertEquals(Impact.DECREASES_PRESSURE, impact.get(Resource.HEAP));
-    assertEquals(Impact.DECREASES_PRESSURE, impact.get(Resource.CPU));
-    assertEquals(Impact.DECREASES_PRESSURE, impact.get(Resource.NETWORK));
-    assertEquals(Impact.NO_IMPACT, impact.get(Resource.RAM));
-    assertEquals(Impact.NO_IMPACT, impact.get(Resource.DISK));
+    Map<Dimension, Impact> impact = queueCapacity.impact().get(node1).getImpact();
+    assertEquals(Impact.DECREASES_PRESSURE, impact.get(HEAP));
+    assertEquals(Impact.DECREASES_PRESSURE, impact.get(CPU));
+    assertEquals(Impact.DECREASES_PRESSURE, impact.get(NETWORK));
+    assertEquals(Impact.NO_IMPACT, impact.get(RAM));
+    assertEquals(Impact.NO_IMPACT, impact.get(DISK));
   }
 
   @Test
@@ -75,11 +76,11 @@ public class QueueCapacityTest {
   }
 
   private void assertNoImpact(NodeKey node, QueueCapacity queueCapacity) {
-    Map<Resource, Impact> impact = queueCapacity.impact().get(node).getImpact();
-    assertEquals(Impact.NO_IMPACT, impact.get(Resource.HEAP));
-    assertEquals(Impact.NO_IMPACT, impact.get(Resource.CPU));
-    assertEquals(Impact.NO_IMPACT, impact.get(Resource.NETWORK));
-    assertEquals(Impact.NO_IMPACT, impact.get(Resource.RAM));
-    assertEquals(Impact.NO_IMPACT, impact.get(Resource.DISK));
+    Map<Dimension, Impact> impact = queueCapacity.impact().get(node).getImpact();
+    assertEquals(Impact.NO_IMPACT, impact.get(HEAP));
+    assertEquals(Impact.NO_IMPACT, impact.get(CPU));
+    assertEquals(Impact.NO_IMPACT, impact.get(NETWORK));
+    assertEquals(Impact.NO_IMPACT, impact.get(RAM));
+    assertEquals(Impact.NO_IMPACT, impact.get(DISK));
   }
 }

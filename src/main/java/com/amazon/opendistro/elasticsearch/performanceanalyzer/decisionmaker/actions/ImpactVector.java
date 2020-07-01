@@ -5,7 +5,7 @@ import java.util.Map;
 
 public class ImpactVector {
 
-  public enum Resource {
+  public enum Dimension {
     HEAP,
     CPU,
     RAM,
@@ -19,33 +19,33 @@ public class ImpactVector {
     DECREASES_PRESSURE
   }
 
-  private Map<Resource, Impact> impactMap = new HashMap<>();
+  private Map<Dimension, Impact> impactMap = new HashMap<>();
 
   public ImpactVector() {
-    for (Resource r : Resource.values()) {
-      impactMap.put(r, Impact.NO_IMPACT);
+    for (Dimension d : Dimension.values()) {
+      impactMap.put(d, Impact.NO_IMPACT);
     }
   }
 
-  public Map<Resource, Impact> getImpact() {
+  public Map<Dimension, Impact> getImpact() {
     return impactMap;
   }
 
-  public void increasesPressure(Resource... resources) {
-    for (Resource resource : resources) {
-      impactMap.put(resource, Impact.INCREASES_PRESSURE);
+  public void increasesPressure(Dimension... dimensions) {
+    for (Dimension dimension : dimensions) {
+      impactMap.put(dimension, Impact.INCREASES_PRESSURE);
     }
   }
 
-  public void decreasesPressure(Resource... resources) {
-    for (Resource resource : resources) {
-      impactMap.put(resource, Impact.DECREASES_PRESSURE);
+  public void decreasesPressure(Dimension... dimensions) {
+    for (Dimension dimension : dimensions) {
+      impactMap.put(dimension, Impact.DECREASES_PRESSURE);
     }
   }
 
-  public void noImpact(Resource... resources) {
-    for (Resource resource : resources) {
-      impactMap.put(resource, Impact.NO_IMPACT);
+  public void noImpact(Dimension... dimensions) {
+    for (Dimension dimension : dimensions) {
+      impactMap.put(dimension, Impact.NO_IMPACT);
     }
   }
 }

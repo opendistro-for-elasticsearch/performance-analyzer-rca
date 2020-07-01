@@ -3,7 +3,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.ac
 import static org.junit.Assert.assertEquals;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Impact;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Resource;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension;
 import java.util.Map;
 import org.junit.Test;
 
@@ -12,7 +12,7 @@ public class ImpactVectorTest {
   @Test
   public void testInit() {
     ImpactVector impactVector = new ImpactVector();
-    Map<Resource, Impact> impact = impactVector.getImpact();
+    Map<Dimension, Impact> impact = impactVector.getImpact();
     impact.forEach((k, v) -> assertEquals(impact.get(k), Impact.NO_IMPACT));
   }
 
@@ -20,25 +20,25 @@ public class ImpactVectorTest {
   public void testUpdateImpact() {
     ImpactVector impactVector = new ImpactVector();
 
-    impactVector.increasesPressure(Resource.HEAP, Resource.CPU, Resource.DISK);
-    assertEquals(impactVector.getImpact().get(Resource.HEAP), Impact.INCREASES_PRESSURE);
-    assertEquals(impactVector.getImpact().get(Resource.CPU), Impact.INCREASES_PRESSURE);
-    assertEquals(impactVector.getImpact().get(Resource.RAM), Impact.NO_IMPACT);
-    assertEquals(impactVector.getImpact().get(Resource.DISK), Impact.INCREASES_PRESSURE);
-    assertEquals(impactVector.getImpact().get(Resource.NETWORK), Impact.NO_IMPACT);
+    impactVector.increasesPressure(Dimension.HEAP, Dimension.CPU, Dimension.DISK);
+    assertEquals(impactVector.getImpact().get(Dimension.HEAP), Impact.INCREASES_PRESSURE);
+    assertEquals(impactVector.getImpact().get(Dimension.CPU), Impact.INCREASES_PRESSURE);
+    assertEquals(impactVector.getImpact().get(Dimension.RAM), Impact.NO_IMPACT);
+    assertEquals(impactVector.getImpact().get(Dimension.DISK), Impact.INCREASES_PRESSURE);
+    assertEquals(impactVector.getImpact().get(Dimension.NETWORK), Impact.NO_IMPACT);
 
-    impactVector.decreasesPressure(Resource.RAM, Resource.NETWORK);
-    assertEquals(impactVector.getImpact().get(Resource.HEAP), Impact.INCREASES_PRESSURE);
-    assertEquals(impactVector.getImpact().get(Resource.CPU), Impact.INCREASES_PRESSURE);
-    assertEquals(impactVector.getImpact().get(Resource.RAM), Impact.DECREASES_PRESSURE);
-    assertEquals(impactVector.getImpact().get(Resource.DISK), Impact.INCREASES_PRESSURE);
-    assertEquals(impactVector.getImpact().get(Resource.NETWORK), Impact.DECREASES_PRESSURE);
+    impactVector.decreasesPressure(Dimension.RAM, Dimension.NETWORK);
+    assertEquals(impactVector.getImpact().get(Dimension.HEAP), Impact.INCREASES_PRESSURE);
+    assertEquals(impactVector.getImpact().get(Dimension.CPU), Impact.INCREASES_PRESSURE);
+    assertEquals(impactVector.getImpact().get(Dimension.RAM), Impact.DECREASES_PRESSURE);
+    assertEquals(impactVector.getImpact().get(Dimension.DISK), Impact.INCREASES_PRESSURE);
+    assertEquals(impactVector.getImpact().get(Dimension.NETWORK), Impact.DECREASES_PRESSURE);
 
-    impactVector.noImpact(Resource.DISK, Resource.RAM);
-    assertEquals(impactVector.getImpact().get(Resource.HEAP), Impact.INCREASES_PRESSURE);
-    assertEquals(impactVector.getImpact().get(Resource.CPU), Impact.INCREASES_PRESSURE);
-    assertEquals(impactVector.getImpact().get(Resource.RAM), Impact.NO_IMPACT);
-    assertEquals(impactVector.getImpact().get(Resource.DISK), Impact.NO_IMPACT);
-    assertEquals(impactVector.getImpact().get(Resource.NETWORK), Impact.DECREASES_PRESSURE);
+    impactVector.noImpact(Dimension.DISK, Dimension.RAM);
+    assertEquals(impactVector.getImpact().get(Dimension.HEAP), Impact.INCREASES_PRESSURE);
+    assertEquals(impactVector.getImpact().get(Dimension.CPU), Impact.INCREASES_PRESSURE);
+    assertEquals(impactVector.getImpact().get(Dimension.RAM), Impact.NO_IMPACT);
+    assertEquals(impactVector.getImpact().get(Dimension.DISK), Impact.NO_IMPACT);
+    assertEquals(impactVector.getImpact().get(Dimension.NETWORK), Impact.DECREASES_PRESSURE);
   }
 }
