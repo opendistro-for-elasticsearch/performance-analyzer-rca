@@ -15,7 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNodeClusterRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
@@ -24,7 +24,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
@@ -52,7 +51,7 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> 
   private static final double NODE_COUNT_THRESHOLD = 0.8;
   private static final long TIMESTAMP_EXPIRATION_IN_MINS = 5;
   private final Rca<ResourceFlowUnit<HotNodeSummary>> hotNodeRca;
-  private final Table<String, ResourceType, NodeResourceUsage> nodeTable;
+  private final Table<String, Resource, NodeResourceUsage> nodeTable;
   private final int rcaPeriod;
   private int counter;
   private List<NodeDetails> dataNodesDetails;
@@ -84,9 +83,9 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> 
       }
       long timestamp = clock.millis();
       for (HotResourceSummary resourceSummary : nodeSummary.getHotResourceSummaryList()) {
-        NodeResourceUsage oldUsage = nodeTable.get(nodeSummary.getNodeID(), resourceSummary.getResourceType());
+        NodeResourceUsage oldUsage = nodeTable.get(nodeSummary.getNodeID(), resourceSummary.getResource());
         if (oldUsage == null || oldUsage.timestamp < timestamp) {
-          nodeTable.put(nodeSummary.getNodeID(), resourceSummary.getResourceType(),
+          nodeTable.put(nodeSummary.getNodeID(), resourceSummary.getResource(),
               new NodeResourceUsage(timestamp, resourceSummary));
         }
       }
@@ -110,8 +109,8 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> 
 
     long currTimestamp = clock.millis();
     //For each resource type, scan over all the nodes in cluster and calculate its medium.
-    final List<ResourceType> resourceTypeColumnKeys = ImmutableList.copyOf(nodeTable.columnKeySet());
-    for (ResourceType resourceType : resourceTypeColumnKeys) {
+    final List<Resource> resourceTypeColumnKeys = ImmutableList.copyOf(nodeTable.columnKeySet());
+    for (Resource resourceType : resourceTypeColumnKeys) {
       List<NodeResourceUsage> resourceUsages = new ArrayList<>();
       for (NodeDetails nodeDetail : dataNodesDetails) {
         NodeResourceUsage currentUsage = nodeTable.get(nodeDetail.getId(), resourceType);

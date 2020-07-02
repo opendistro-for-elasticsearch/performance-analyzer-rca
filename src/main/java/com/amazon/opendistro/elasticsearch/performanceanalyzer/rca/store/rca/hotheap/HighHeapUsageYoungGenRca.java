@@ -18,12 +18,10 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.ho
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.OLD_GEN;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_YOUNG_GC;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.YOUNG_GEN_PROMOTION_RATE;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageYoungGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
@@ -39,7 +37,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaVerticesMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.time.Clock;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -59,7 +56,6 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
   private static final double CONVERT_BYTES_TO_MEGABYTES = Math.pow(1024, 2);
   private final Metric heap_Used;
   private final Metric gc_Collection_Time;
-  private final ResourceType resourceType;
   // the amount of RCA period this RCA needs to run before sending out a flowunit
   private final int rcaPeriod;
   // The lower bound threshold in percentage to decide whether to send out summary.
@@ -84,7 +80,6 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
     this.lowerBoundThreshold = (lowerBoundThreshold >= 0 && lowerBoundThreshold <= 1.0)
         ? lowerBoundThreshold : 1.0;
     this.counter = 0;
-    this.resourceType = ResourceType.newBuilder().setJVM(JvmEnum.YOUNG_GEN).build();
     this.gcTimeDeque = new SlidingWindow<>(PROMOTION_RATE_SLIDING_WINDOW_IN_MINS, TimeUnit.MINUTES);
     this.promotionRateThreshold = HighHeapUsageYoungGenRcaConfig.DEFAULT_PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC;
     this.youngGenGcTimeThreshold = HighHeapUsageYoungGenRcaConfig.DEFAULT_YOUNG_GEN_GC_TIME_THRESHOLD_IN_MS_PER_SEC;
@@ -182,7 +177,7 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
       //check to see if the value is above lower bound thres
       if (!Double.isNaN(avgPromotionRate)
           && avgPromotionRate > promotionRateThreshold * this.lowerBoundThreshold) {
-        summary = new HotResourceSummary(this.resourceType,
+        summary = new HotResourceSummary(YOUNG_GEN_PROMOTION_RATE,
             promotionRateThreshold, avgPromotionRate,
             PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
       }

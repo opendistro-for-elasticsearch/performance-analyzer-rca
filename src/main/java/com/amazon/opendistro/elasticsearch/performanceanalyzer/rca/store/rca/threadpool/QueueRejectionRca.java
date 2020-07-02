@@ -18,8 +18,9 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.th
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolDimension.THREAD_POOL_TYPE;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
@@ -31,6 +32,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.google.common.annotations.VisibleForTesting;
@@ -63,9 +65,9 @@ public class QueueRejectionRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
     counter = 0;
     clock = Clock.systemUTC();
     queueRejectionCollectors = Collections.unmodifiableList(Arrays.asList(
-        new QueueRejectionCollector(ThreadPoolEnum.WRITE_QUEUE, ThreadPoolType.WRITE,
+        new QueueRejectionCollector(ResourceUtil.WRITE_QUEUE_REJECTION, ThreadPoolType.WRITE,
             threadPool_RejectedReqs, REJECTION_TIME_PERIOD_IN_MILLISECOND),
-        new QueueRejectionCollector(ThreadPoolEnum.SEARCH_QUEUE, ThreadPoolType.SEARCH,
+        new QueueRejectionCollector(ResourceUtil.SEARCH_QUEUE_REJECTION, ThreadPoolType.SEARCH,
             threadPool_RejectedReqs, REJECTION_TIME_PERIOD_IN_MILLISECOND)
     ));
   }
@@ -129,16 +131,16 @@ public class QueueRejectionRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
    * A collector class to collect rejection from each queue type
    */
   private static class QueueRejectionCollector {
-    private final ResourceType threadPool;
+    private final Resource threadPool;
     private final ThreadPoolType threadPoolMetric;
     private final Metric threadPool_RejectedReqs;
     private boolean hasRejection;
     private long rejectionTimestamp;
     private long rejectionTimePeriodThreshold;
 
-    public QueueRejectionCollector(final ThreadPoolEnum threadPool, final ThreadPoolType threadPoolMetric,
+    public QueueRejectionCollector(final Resource threadPool, final ThreadPoolType threadPoolMetric,
         final Metric threadPool_RejectedReqs, final long threshold) {
-      this.threadPool = ResourceType.newBuilder().setThreadPool(threadPool).build();
+      this.threadPool = threadPool;
       this.threadPoolMetric = threadPoolMetric;
       this.threadPool_RejectedReqs = threadPool_RejectedReqs;
       this.hasRejection = false;

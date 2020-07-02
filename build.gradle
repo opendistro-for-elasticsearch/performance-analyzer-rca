@@ -108,6 +108,11 @@ spotbugsTest {
     ignoreFailures = true
 }
 
+check {
+    dependsOn spotbugsMain
+    dependsOn spotbugsTest
+}
+
 jacoco {
     toolVersion = "0.8.5"
 }
