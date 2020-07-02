@@ -19,7 +19,8 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionma
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.HEAP;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.NETWORK;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
+//import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 
 import java.util.Collections;
@@ -34,13 +35,13 @@ public class QueueCapacity implements Action {
 
   private int currentCapacity;
   private int desiredCapacity;
-  private ThreadPoolEnum threadPool;
+  private ResourceEnum threadPool;
   private NodeKey esNode;
 
-  private Map<ThreadPoolEnum, Integer> lowerBound = new HashMap<>();
-  private Map<ThreadPoolEnum, Integer> upperBound = new HashMap<>();
+  private Map<ResourceEnum, Integer> lowerBound = new HashMap<>();
+  private Map<ResourceEnum, Integer> upperBound = new HashMap<>();
 
-  public QueueCapacity(NodeKey esNode, ThreadPoolEnum threadPool, int currentCapacity, boolean increase) {
+  public QueueCapacity(NodeKey esNode, ResourceEnum threadPool, int currentCapacity, boolean increase) {
     setBounds();
     int STEP_SIZE = 50;
     this.esNode = esNode;
@@ -108,12 +109,12 @@ public class QueueCapacity implements Action {
     // TODO: Move configuration values to rca.conf
 
     // Write thread pool for bulk write requests
-    this.lowerBound.put(ThreadPoolEnum.WRITE_QUEUE, 100);
-    this.upperBound.put(ThreadPoolEnum.WRITE_QUEUE, 1000);
+    this.lowerBound.put(ResourceEnum.WRITE_THREADPOOL, 100);
+    this.upperBound.put(ResourceEnum.WRITE_THREADPOOL, 1000);
 
     // Search thread pool
-    this.lowerBound.put(ThreadPoolEnum.SEARCH_QUEUE, 1000);
-    this.upperBound.put(ThreadPoolEnum.SEARCH_QUEUE, 3000);
+    this.lowerBound.put(ResourceEnum.SEARCH_THREADPOOL, 1000);
+    this.upperBound.put(ResourceEnum.SEARCH_THREADPOOL, 3000);
   }
 
   private void setDesiredCapacity(int desiredCapacity) {
@@ -129,7 +130,7 @@ public class QueueCapacity implements Action {
     return desiredCapacity;
   }
 
-  public ThreadPoolEnum getThreadPool() {
+  public ResourceEnum getThreadPool() {
     return threadPool;
   }
 }

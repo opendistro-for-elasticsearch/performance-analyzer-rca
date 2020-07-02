@@ -17,7 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.QueueCapacity;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
@@ -68,7 +68,7 @@ public class QueueHealthDecider extends Decider {
     for (HotNodeSummary nodeSummary : clusterSummary.getHotNodeSummaryList()) {
       NodeKey esNode = new NodeKey(nodeSummary.getNodeID(), nodeSummary.getHostAddress());
       for (HotResourceSummary resource : nodeSummary.getHotResourceSummaryList()) {
-        decision.addAction(computeBestAction(esNode, resource.getResourceType().getThreadPool()));
+        decision.addAction(computeBestAction(esNode, resource.getResource().getResourceEnum()));
       }
     }
 
@@ -86,7 +86,7 @@ public class QueueHealthDecider extends Decider {
    * <p>Action relevance decided based on user configured priorities for now, this can be modified
    * to consume better signals going forward.
    */
-  private Action computeBestAction(NodeKey esNode, ThreadPoolEnum threadPool) {
+  private Action computeBestAction(NodeKey esNode, ResourceEnum threadPool) {
     Action action = null;
     for (String actionName : actionsByUserPriority) {
       action =
@@ -98,7 +98,7 @@ public class QueueHealthDecider extends Decider {
     return action;
   }
 
-  private Action getAction(String actionName, NodeKey esNode, ThreadPoolEnum threadPool, int currCapacity, boolean increase) {
+  private Action getAction(String actionName, NodeKey esNode, ResourceEnum threadPool, int currCapacity, boolean increase) {
     switch (actionName) {
       case QueueCapacity.NAME:
         return configureQueueCapacity(esNode, threadPool, currCapacity, increase);
@@ -107,7 +107,7 @@ public class QueueHealthDecider extends Decider {
     }
   }
 
-  private QueueCapacity configureQueueCapacity(NodeKey esNode, ThreadPoolEnum threadPool, int currentCapacity, boolean increase) {
+  private QueueCapacity configureQueueCapacity(NodeKey esNode, ResourceEnum threadPool, int currentCapacity, boolean increase) {
     QueueCapacity action = new QueueCapacity(esNode, threadPool, currentCapacity, increase);
     if (action.isActionable()) {
       return action;
@@ -115,9 +115,9 @@ public class QueueHealthDecider extends Decider {
     return null;
   }
 
-  private int getNodeQueueCapacity(NodeKey esNode, ThreadPoolEnum threadPool) {
+  private int getNodeQueueCapacity(NodeKey esNode, ResourceEnum threadPool) {
     // TODO: use NodeConfigurationRca to return capacity, for now returning defaults
-    if (threadPool.equals(ThreadPoolEnum.SEARCH_QUEUE)) {
+    if (threadPool.equals(ResourceEnum.SEARCH_THREADPOOL)) {
       return 1000;
     }
     return 100;

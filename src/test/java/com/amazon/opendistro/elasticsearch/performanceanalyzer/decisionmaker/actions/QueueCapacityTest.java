@@ -26,7 +26,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Impact;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.Map;
 import org.junit.Test;
@@ -36,11 +36,11 @@ public class QueueCapacityTest {
   @Test
   public void testIncreaseCapacity() {
     NodeKey node1 = new NodeKey("node-1", "1.2.3.4");
-    QueueCapacity queueCapacity = new QueueCapacity(node1, ThreadPoolEnum.WRITE_QUEUE, 300, true);
+    QueueCapacity queueCapacity = new QueueCapacity(node1, ResourceEnum.WRITE_THREADPOOL, 300, true);
     assertTrue(queueCapacity.getDesiredCapacity() > queueCapacity.getCurrentCapacity());
     assertTrue(queueCapacity.isActionable());
     assertEquals(300, queueCapacity.coolOffPeriodInSeconds());
-    assertEquals(ThreadPoolEnum.WRITE_QUEUE, queueCapacity.getThreadPool());
+    assertEquals(ResourceEnum.WRITE_THREADPOOL, queueCapacity.getThreadPool());
     assertEquals(1, queueCapacity.impactedNodes().size());
 
     Map<Dimension, Impact> impact = queueCapacity.impact().get(node1).getImpact();
@@ -54,11 +54,11 @@ public class QueueCapacityTest {
   @Test
   public void testDecreaseCapacity() {
     NodeKey node1 = new NodeKey("node-1", "1.2.3.4");
-    QueueCapacity queueCapacity = new QueueCapacity(node1, ThreadPoolEnum.SEARCH_QUEUE, 1500, false);
+    QueueCapacity queueCapacity = new QueueCapacity(node1, ResourceEnum.SEARCH_THREADPOOL, 1500, false);
     assertTrue(queueCapacity.getDesiredCapacity() < queueCapacity.getCurrentCapacity());
     assertTrue(queueCapacity.isActionable());
     assertEquals(300, queueCapacity.coolOffPeriodInSeconds());
-    assertEquals(ThreadPoolEnum.SEARCH_QUEUE, queueCapacity.getThreadPool());
+    assertEquals(ResourceEnum.SEARCH_THREADPOOL, queueCapacity.getThreadPool());
     assertEquals(1, queueCapacity.impactedNodes().size());
 
     Map<Dimension, Impact> impact = queueCapacity.impact().get(node1).getImpact();
@@ -73,22 +73,22 @@ public class QueueCapacityTest {
   public void testBounds() {
     // TODO: Move to work with test rcaConf when bounds moved to config
     NodeKey node1 = new NodeKey("node-1", "1.2.3.4");
-    QueueCapacity searchQueueIncrease = new QueueCapacity(node1, ThreadPoolEnum.SEARCH_QUEUE, 3000, true);
+    QueueCapacity searchQueueIncrease = new QueueCapacity(node1, ResourceEnum.SEARCH_THREADPOOL, 3000, true);
     assertEquals(searchQueueIncrease.getDesiredCapacity(), searchQueueIncrease.getCurrentCapacity());
     assertFalse(searchQueueIncrease.isActionable());
     assertNoImpact(node1, searchQueueIncrease);
 
-    QueueCapacity searchQueueDecrease = new QueueCapacity(node1, ThreadPoolEnum.SEARCH_QUEUE, 1000, false);
+    QueueCapacity searchQueueDecrease = new QueueCapacity(node1, ResourceEnum.SEARCH_THREADPOOL, 1000, false);
     assertEquals(searchQueueIncrease.getDesiredCapacity(), searchQueueIncrease.getCurrentCapacity());
     assertFalse(searchQueueIncrease.isActionable());
     assertNoImpact(node1, searchQueueDecrease);
 
-    QueueCapacity writeQueueIncrease = new QueueCapacity(node1, ThreadPoolEnum.WRITE_QUEUE, 1000, true);
+    QueueCapacity writeQueueIncrease = new QueueCapacity(node1, ResourceEnum.WRITE_THREADPOOL, 1000, true);
     assertEquals(writeQueueIncrease.getDesiredCapacity(), writeQueueIncrease.getCurrentCapacity());
     assertFalse(writeQueueIncrease.isActionable());
     assertNoImpact(node1, writeQueueIncrease);
 
-    QueueCapacity writeQueueDecrease = new QueueCapacity(node1, ThreadPoolEnum.WRITE_QUEUE, 100, false);
+    QueueCapacity writeQueueDecrease = new QueueCapacity(node1, ResourceEnum.WRITE_THREADPOOL, 100, false);
     assertEquals(writeQueueDecrease.getDesiredCapacity(), writeQueueDecrease.getCurrentCapacity());
     assertFalse(writeQueueDecrease.isActionable());
     assertNoImpact(node1, writeQueueDecrease);

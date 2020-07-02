@@ -105,9 +105,9 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
 
   /** Create HotNodeSummary flow unit with multiple unhealthy resources */
   public static ResourceFlowUnit<HotNodeSummary> generateFlowUnit(String nodeID, String hostAddress,
-      Resources.State healthy, ResourceType... resources) {
+      Resources.State healthy, Resource... resources) {
     HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, hostAddress);
-    for (ResourceType resource: resources) {
+    for (Resource resource: resources) {
       HotResourceSummary resourceSummary = new HotResourceSummary(resource, 10, 5, 60);
       nodeSummary.appendNestedSummary(resourceSummary);
     }
