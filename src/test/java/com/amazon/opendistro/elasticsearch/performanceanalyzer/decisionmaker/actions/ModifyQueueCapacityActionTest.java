@@ -31,19 +31,19 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.clu
 import java.util.Map;
 import org.junit.Test;
 
-public class QueueCapacityTest {
+public class ModifyQueueCapacityActionTest {
 
   @Test
   public void testIncreaseCapacity() {
     NodeKey node1 = new NodeKey("node-1", "1.2.3.4");
-    QueueCapacity queueCapacity = new QueueCapacity(node1, ResourceEnum.WRITE_THREADPOOL, 300, true);
-    assertTrue(queueCapacity.getDesiredCapacity() > queueCapacity.getCurrentCapacity());
-    assertTrue(queueCapacity.isActionable());
-    assertEquals(300, queueCapacity.coolOffPeriodInSeconds());
-    assertEquals(ResourceEnum.WRITE_THREADPOOL, queueCapacity.getThreadPool());
-    assertEquals(1, queueCapacity.impactedNodes().size());
+    ModifyQueueCapacityAction modifyQueueCapacityAction = new ModifyQueueCapacityAction(node1, ResourceEnum.WRITE_THREADPOOL, 300, true);
+    assertTrue(modifyQueueCapacityAction.getDesiredCapacity() > modifyQueueCapacityAction.getCurrentCapacity());
+    assertTrue(modifyQueueCapacityAction.isActionable());
+    assertEquals(300, modifyQueueCapacityAction.coolOffPeriodInSeconds());
+    assertEquals(ResourceEnum.WRITE_THREADPOOL, modifyQueueCapacityAction.getThreadPool());
+    assertEquals(1, modifyQueueCapacityAction.impactedNodes().size());
 
-    Map<Dimension, Impact> impact = queueCapacity.impact().get(node1).getImpact();
+    Map<Dimension, Impact> impact = modifyQueueCapacityAction.impact().get(node1).getImpact();
     assertEquals(Impact.INCREASES_PRESSURE, impact.get(HEAP));
     assertEquals(Impact.INCREASES_PRESSURE, impact.get(CPU));
     assertEquals(Impact.INCREASES_PRESSURE, impact.get(NETWORK));
@@ -54,14 +54,14 @@ public class QueueCapacityTest {
   @Test
   public void testDecreaseCapacity() {
     NodeKey node1 = new NodeKey("node-1", "1.2.3.4");
-    QueueCapacity queueCapacity = new QueueCapacity(node1, ResourceEnum.SEARCH_THREADPOOL, 1500, false);
-    assertTrue(queueCapacity.getDesiredCapacity() < queueCapacity.getCurrentCapacity());
-    assertTrue(queueCapacity.isActionable());
-    assertEquals(300, queueCapacity.coolOffPeriodInSeconds());
-    assertEquals(ResourceEnum.SEARCH_THREADPOOL, queueCapacity.getThreadPool());
-    assertEquals(1, queueCapacity.impactedNodes().size());
+    ModifyQueueCapacityAction modifyQueueCapacityAction = new ModifyQueueCapacityAction(node1, ResourceEnum.SEARCH_THREADPOOL, 1500, false);
+    assertTrue(modifyQueueCapacityAction.getDesiredCapacity() < modifyQueueCapacityAction.getCurrentCapacity());
+    assertTrue(modifyQueueCapacityAction.isActionable());
+    assertEquals(300, modifyQueueCapacityAction.coolOffPeriodInSeconds());
+    assertEquals(ResourceEnum.SEARCH_THREADPOOL, modifyQueueCapacityAction.getThreadPool());
+    assertEquals(1, modifyQueueCapacityAction.impactedNodes().size());
 
-    Map<Dimension, Impact> impact = queueCapacity.impact().get(node1).getImpact();
+    Map<Dimension, Impact> impact = modifyQueueCapacityAction.impact().get(node1).getImpact();
     assertEquals(Impact.DECREASES_PRESSURE, impact.get(HEAP));
     assertEquals(Impact.DECREASES_PRESSURE, impact.get(CPU));
     assertEquals(Impact.DECREASES_PRESSURE, impact.get(NETWORK));
@@ -73,29 +73,29 @@ public class QueueCapacityTest {
   public void testBounds() {
     // TODO: Move to work with test rcaConf when bounds moved to config
     NodeKey node1 = new NodeKey("node-1", "1.2.3.4");
-    QueueCapacity searchQueueIncrease = new QueueCapacity(node1, ResourceEnum.SEARCH_THREADPOOL, 3000, true);
+    ModifyQueueCapacityAction searchQueueIncrease = new ModifyQueueCapacityAction(node1, ResourceEnum.SEARCH_THREADPOOL, 3000, true);
     assertEquals(searchQueueIncrease.getDesiredCapacity(), searchQueueIncrease.getCurrentCapacity());
     assertFalse(searchQueueIncrease.isActionable());
     assertNoImpact(node1, searchQueueIncrease);
 
-    QueueCapacity searchQueueDecrease = new QueueCapacity(node1, ResourceEnum.SEARCH_THREADPOOL, 1000, false);
+    ModifyQueueCapacityAction searchQueueDecrease = new ModifyQueueCapacityAction(node1, ResourceEnum.SEARCH_THREADPOOL, 1000, false);
     assertEquals(searchQueueIncrease.getDesiredCapacity(), searchQueueIncrease.getCurrentCapacity());
     assertFalse(searchQueueIncrease.isActionable());
     assertNoImpact(node1, searchQueueDecrease);
 
-    QueueCapacity writeQueueIncrease = new QueueCapacity(node1, ResourceEnum.WRITE_THREADPOOL, 1000, true);
+    ModifyQueueCapacityAction writeQueueIncrease = new ModifyQueueCapacityAction(node1, ResourceEnum.WRITE_THREADPOOL, 1000, true);
     assertEquals(writeQueueIncrease.getDesiredCapacity(), writeQueueIncrease.getCurrentCapacity());
     assertFalse(writeQueueIncrease.isActionable());
     assertNoImpact(node1, writeQueueIncrease);
 
-    QueueCapacity writeQueueDecrease = new QueueCapacity(node1, ResourceEnum.WRITE_THREADPOOL, 100, false);
+    ModifyQueueCapacityAction writeQueueDecrease = new ModifyQueueCapacityAction(node1, ResourceEnum.WRITE_THREADPOOL, 100, false);
     assertEquals(writeQueueDecrease.getDesiredCapacity(), writeQueueDecrease.getCurrentCapacity());
     assertFalse(writeQueueDecrease.isActionable());
     assertNoImpact(node1, writeQueueDecrease);
   }
 
-  private void assertNoImpact(NodeKey node, QueueCapacity queueCapacity) {
-    Map<Dimension, Impact> impact = queueCapacity.impact().get(node).getImpact();
+  private void assertNoImpact(NodeKey node, ModifyQueueCapacityAction modifyQueueCapacityAction) {
+    Map<Dimension, Impact> impact = modifyQueueCapacityAction.impact().get(node).getImpact();
     assertEquals(Impact.NO_IMPACT, impact.get(HEAP));
     assertEquals(Impact.NO_IMPACT, impact.get(CPU));
     assertEquals(Impact.NO_IMPACT, impact.get(NETWORK));

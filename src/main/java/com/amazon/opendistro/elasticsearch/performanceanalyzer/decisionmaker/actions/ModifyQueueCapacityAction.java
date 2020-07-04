@@ -20,7 +20,6 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionma
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.NETWORK;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
-//import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 
 import java.util.Collections;
@@ -28,9 +27,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class QueueCapacity implements Action {
+public class ModifyQueueCapacityAction implements Action {
 
-  public static final String NAME = "queue_capacity";
+  public static final String NAME = "modify_queue_capacity";
   public static final int COOL_OFF_PERIOD_IN_SECONDS = 300;
 
   private int currentCapacity;
@@ -41,7 +40,7 @@ public class QueueCapacity implements Action {
   private Map<ResourceEnum, Integer> lowerBound = new HashMap<>();
   private Map<ResourceEnum, Integer> upperBound = new HashMap<>();
 
-  public QueueCapacity(NodeKey esNode, ResourceEnum threadPool, int currentCapacity, boolean increase) {
+  public ModifyQueueCapacityAction(NodeKey esNode, ResourceEnum threadPool, int currentCapacity, boolean increase) {
     setBounds();
     int STEP_SIZE = 50;
     this.esNode = esNode;

@@ -16,7 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.QueueCapacity;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
@@ -77,7 +77,7 @@ public class QueueHealthDecider extends Decider {
 
   private void configureActionPriority() {
     // TODO: Input from user configured yml
-    this.actionsByUserPriority.add(QueueCapacity.NAME);
+    this.actionsByUserPriority.add(ModifyQueueCapacityAction.NAME);
   }
 
   /**
@@ -100,15 +100,15 @@ public class QueueHealthDecider extends Decider {
 
   private Action getAction(String actionName, NodeKey esNode, ResourceEnum threadPool, int currCapacity, boolean increase) {
     switch (actionName) {
-      case QueueCapacity.NAME:
+      case ModifyQueueCapacityAction.NAME:
         return configureQueueCapacity(esNode, threadPool, currCapacity, increase);
       default:
         return null;
     }
   }
 
-  private QueueCapacity configureQueueCapacity(NodeKey esNode, ResourceEnum threadPool, int currentCapacity, boolean increase) {
-    QueueCapacity action = new QueueCapacity(esNode, threadPool, currentCapacity, increase);
+  private ModifyQueueCapacityAction configureQueueCapacity(NodeKey esNode, ResourceEnum threadPool, int currentCapacity, boolean increase) {
+    ModifyQueueCapacityAction action = new ModifyQueueCapacityAction(esNode, threadPool, currentCapacity, increase);
     if (action.isActionable()) {
       return action;
     }

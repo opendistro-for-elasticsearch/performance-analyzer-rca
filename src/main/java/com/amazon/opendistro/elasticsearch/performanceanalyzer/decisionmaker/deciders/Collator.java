@@ -40,7 +40,7 @@ public class Collator extends Decider {
    * type of resources monitored and rca signals. The collator should however, not introduce any
    * unnecessary delays. As soon as a decision is taken, it should be evaluated and published downstream.
    */
-  private static final int collatorFrequency = 1;
+  private static final int collatorFrequency = 1; // Measured in terms of number of evaluationIntervalPeriods
 
   private List<Decider> deciders;
 

@@ -49,6 +49,6 @@ public interface Action {
   /** Returns action name */
   String name();
 
-  /**  Returns a summary for the configured action */
+  /** Returns a summary for the configured action */
   String summary();
 }

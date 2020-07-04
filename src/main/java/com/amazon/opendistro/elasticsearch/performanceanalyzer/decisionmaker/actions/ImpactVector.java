@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,7 +44,7 @@ public class ImpactVector {
   }
 
   public Map<Dimension, Impact> getImpact() {
-    return impactMap;
+    return Collections.unmodifiableMap(impactMap);
   }
 
   public void increasesPressure(Dimension... dimensions) {
