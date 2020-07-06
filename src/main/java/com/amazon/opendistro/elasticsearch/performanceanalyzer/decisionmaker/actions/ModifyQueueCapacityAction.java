@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ public class ModifyQueueCapacityAction implements Action {
   @Override
   public String summary() {
     if (!isActionable()) {
-      return "No action to take";
+      return String.format("No action to take for: [%s]", NAME);
     }
     return String.format("Update [%s] queue capacity from [%d] to [%d] on node [%s]",
         threadPool.toString(), currentCapacity, desiredCapacity, esNode.getNodeId());
@@ -117,8 +117,7 @@ public class ModifyQueueCapacityAction implements Action {
   }
 
   private void setDesiredCapacity(int desiredCapacity) {
-    this.desiredCapacity = Math.min(desiredCapacity, upperBound.get(threadPool));
-    this.desiredCapacity = Math.max(this.desiredCapacity, lowerBound.get(threadPool));
+    this.desiredCapacity = Math.max(Math.min(desiredCapacity, upperBound.get(threadPool)), lowerBound.get(threadPool));
   }
 
   public int getCurrentCapacity() {
