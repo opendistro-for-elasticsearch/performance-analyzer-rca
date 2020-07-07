@@ -44,14 +44,14 @@ private static final long serialVersionUID = 0L;
             done = true;
             break;
           case 10: {
-            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType.Builder subBuilder = null;
-            if (resourceType_ != null) {
-              subBuilder = resourceType_.toBuilder();
+            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource.Builder subBuilder = null;
+            if (resource_ != null) {
+              subBuilder = resource_.toBuilder();
             }
-            resourceType_ = input.readMessage(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType.parser(), extensionRegistry);
+            resource_ = input.readMessage(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource.parser(), extensionRegistry);
             if (subBuilder != null) {
-              subBuilder.mergeFrom(resourceType_);
-              resourceType_ = subBuilder.buildPartial();
+              subBuilder.mergeFrom(resource_);
+              resource_ = subBuilder.buildPartial();
             }
 
             break;
@@ -137,25 +137,25 @@ private static final long serialVersionUID = 0L;
             com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryMessage.class, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryMessage.Builder.class);
   }
 
-  public static final int RESOURCETYPE_FIELD_NUMBER = 1;
-  private com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType resourceType_;
+  public static final int RESOURCE_FIELD_NUMBER = 1;
+  private com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource resource_;
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType resourceType = 1;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource resource = 1;</code>
    */
-  public boolean hasResourceType() {
-    return resourceType_ != null;
+  public boolean hasResource() {
+    return resource_ != null;
   }
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType resourceType = 1;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource resource = 1;</code>
    */
-  public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType getResourceType() {
-    return resourceType_ == null ? com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType.getDefaultInstance() : resourceType_;
+  public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource getResource() {
+    return resource_ == null ? com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource.getDefaultInstance() : resource_;
   }
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType resourceType = 1;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource resource = 1;</code>
    */
-  public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOrBuilder getResourceTypeOrBuilder() {
-    return getResourceType();
+  public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceOrBuilder getResourceOrBuilder() {
+    return getResource();
   }
 
   public static final int CONSUMERS_FIELD_NUMBER = 2;
@@ -281,8 +281,8 @@ private static final long serialVersionUID = 0L;
   @java.lang.Override
   public void writeTo(com.google.protobuf.CodedOutputStream output)
                       throws java.io.IOException {
-    if (resourceType_ != null) {
-      output.writeMessage(1, getResourceType());
+    if (resource_ != null) {
+      output.writeMessage(1, getResource());
     }
     if (consumers_ != null) {
       output.writeMessage(2, getConsumers());
@@ -317,9 +317,9 @@ private static final long serialVersionUID = 0L;
     if (size != -1) return size;
 
     size = 0;
-    if (resourceType_ != null) {
+    if (resource_ != null) {
       size += com.google.protobuf.CodedOutputStream
-        .computeMessageSize(1, getResourceType());
+        .computeMessageSize(1, getResource());
     }
     if (consumers_ != null) {
       size += com.google.protobuf.CodedOutputStream
@@ -367,10 +367,10 @@ private static final long serialVersionUID = 0L;
     }
     com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryMessage other = (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryMessage) obj;
 
-    if (hasResourceType() != other.hasResourceType()) return false;
-    if (hasResourceType()) {
-      if (!getResourceType()
-          .equals(other.getResourceType())) return false;
+    if (hasResource() != other.hasResource()) return false;
+    if (hasResource()) {
+      if (!getResource()
+          .equals(other.getResource())) return false;
     }
     if (hasConsumers() != other.hasConsumers()) return false;
     if (hasConsumers()) {
@@ -407,9 +407,9 @@ private static final long serialVersionUID = 0L;
     }
     int hash = 41;
     hash = (19 * hash) + getDescriptor().hashCode();
-    if (hasResourceType()) {
-      hash = (37 * hash) + RESOURCETYPE_FIELD_NUMBER;
-      hash = (53 * hash) + getResourceType().hashCode();
+    if (hasResource()) {
+      hash = (37 * hash) + RESOURCE_FIELD_NUMBER;
+      hash = (53 * hash) + getResource().hashCode();
     }
     if (hasConsumers()) {
       hash = (37 * hash) + CONSUMERS_FIELD_NUMBER;
@@ -567,11 +567,11 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public Builder clear() {
       super.clear();
-      if (resourceTypeBuilder_ == null) {
-        resourceType_ = null;
+      if (resourceBuilder_ == null) {
+        resource_ = null;
       } else {
-        resourceType_ = null;
-        resourceTypeBuilder_ = null;
+        resource_ = null;
+        resourceBuilder_ = null;
       }
       if (consumersBuilder_ == null) {
         consumers_ = null;
@@ -619,10 +619,10 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryMessage buildPartial() {
       com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryMessage result = new com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryMessage(this);
-      if (resourceTypeBuilder_ == null) {
-        result.resourceType_ = resourceType_;
+      if (resourceBuilder_ == null) {
+        result.resource_ = resource_;
       } else {
-        result.resourceType_ = resourceTypeBuilder_.build();
+        result.resource_ = resourceBuilder_.build();
       }
       if (consumersBuilder_ == null) {
         result.consumers_ = consumers_;
@@ -684,8 +684,8 @@ private static final long serialVersionUID = 0L;
 
     public Builder mergeFrom(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryMessage other) {
       if (other == com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryMessage.getDefaultInstance()) return this;
-      if (other.hasResourceType()) {
-        mergeResourceType(other.getResourceType());
+      if (other.hasResource()) {
+        mergeResource(other.getResource());
       }
       if (other.hasConsumers()) {
         mergeConsumers(other.getConsumers());
@@ -741,121 +741,121 @@ private static final long serialVersionUID = 0L;
       return this;
     }
 
-    private com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType resourceType_;
+    private com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource resource_;
     private com.google.protobuf.SingleFieldBuilderV3<
-        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOrBuilder> resourceTypeBuilder_;
+        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceOrBuilder> resourceBuilder_;
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType resourceType = 1;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource resource = 1;</code>
      */
-    public boolean hasResourceType() {
-      return resourceTypeBuilder_ != null || resourceType_ != null;
+    public boolean hasResource() {
+      return resourceBuilder_ != null || resource_ != null;
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType resourceType = 1;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource resource = 1;</code>
      */
-    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType getResourceType() {
-      if (resourceTypeBuilder_ == null) {
-        return resourceType_ == null ? com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType.getDefaultInstance() : resourceType_;
+    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource getResource() {
+      if (resourceBuilder_ == null) {
+        return resource_ == null ? com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource.getDefaultInstance() : resource_;
       } else {
-        return resourceTypeBuilder_.getMessage();
+        return resourceBuilder_.getMessage();
       }
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType resourceType = 1;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource resource = 1;</code>
      */
-    public Builder setResourceType(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType value) {
-      if (resourceTypeBuilder_ == null) {
+    public Builder setResource(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource value) {
+      if (resourceBuilder_ == null) {
         if (value == null) {
           throw new NullPointerException();
         }
-        resourceType_ = value;
+        resource_ = value;
         onChanged();
       } else {
-        resourceTypeBuilder_.setMessage(value);
+        resourceBuilder_.setMessage(value);
       }
 
       return this;
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType resourceType = 1;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource resource = 1;</code>
      */
-    public Builder setResourceType(
-        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType.Builder builderForValue) {
-      if (resourceTypeBuilder_ == null) {
-        resourceType_ = builderForValue.build();
+    public Builder setResource(
+        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource.Builder builderForValue) {
+      if (resourceBuilder_ == null) {
+        resource_ = builderForValue.build();
         onChanged();
       } else {
-        resourceTypeBuilder_.setMessage(builderForValue.build());
+        resourceBuilder_.setMessage(builderForValue.build());
       }
 
       return this;
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType resourceType = 1;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource resource = 1;</code>
      */
-    public Builder mergeResourceType(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType value) {
-      if (resourceTypeBuilder_ == null) {
-        if (resourceType_ != null) {
-          resourceType_ =
-            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType.newBuilder(resourceType_).mergeFrom(value).buildPartial();
+    public Builder mergeResource(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource value) {
+      if (resourceBuilder_ == null) {
+        if (resource_ != null) {
+          resource_ =
+            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource.newBuilder(resource_).mergeFrom(value).buildPartial();
         } else {
-          resourceType_ = value;
+          resource_ = value;
         }
         onChanged();
       } else {
-        resourceTypeBuilder_.mergeFrom(value);
+        resourceBuilder_.mergeFrom(value);
       }
 
       return this;
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType resourceType = 1;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource resource = 1;</code>
      */
-    public Builder clearResourceType() {
-      if (resourceTypeBuilder_ == null) {
-        resourceType_ = null;
+    public Builder clearResource() {
+      if (resourceBuilder_ == null) {
+        resource_ = null;
         onChanged();
       } else {
-        resourceType_ = null;
-        resourceTypeBuilder_ = null;
+        resource_ = null;
+        resourceBuilder_ = null;
       }
 
       return this;
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType resourceType = 1;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource resource = 1;</code>
      */
-    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType.Builder getResourceTypeBuilder() {
+    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource.Builder getResourceBuilder() {
       
       onChanged();
-      return getResourceTypeFieldBuilder().getBuilder();
+      return getResourceFieldBuilder().getBuilder();
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType resourceType = 1;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource resource = 1;</code>
      */
-    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOrBuilder getResourceTypeOrBuilder() {
-      if (resourceTypeBuilder_ != null) {
-        return resourceTypeBuilder_.getMessageOrBuilder();
+    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceOrBuilder getResourceOrBuilder() {
+      if (resourceBuilder_ != null) {
+        return resourceBuilder_.getMessageOrBuilder();
       } else {
-        return resourceType_ == null ?
-            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType.getDefaultInstance() : resourceType_;
+        return resource_ == null ?
+            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource.getDefaultInstance() : resource_;
       }
     }
     /**
-     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType resourceType = 1;</code>
+     * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource resource = 1;</code>
      */
     private com.google.protobuf.SingleFieldBuilderV3<
-        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOrBuilder> 
-        getResourceTypeFieldBuilder() {
-      if (resourceTypeBuilder_ == null) {
-        resourceTypeBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
-            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOrBuilder>(
-                getResourceType(),
+        com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceOrBuilder> 
+        getResourceFieldBuilder() {
+      if (resourceBuilder_ == null) {
+        resourceBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
+            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource.Builder, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceOrBuilder>(
+                getResource(),
                 getParentForChildren(),
                 isClean());
-        resourceType_ = null;
+        resource_ = null;
       }
-      return resourceTypeBuilder_;
+      return resourceBuilder_;
     }
 
     private com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.TopConsumerSummaryList consumers_;

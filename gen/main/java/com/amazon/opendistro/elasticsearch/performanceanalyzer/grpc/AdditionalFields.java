@@ -8,20 +8,20 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc;
  *Enum for different resource type
  * </pre>
  *
- * Protobuf type {@code com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions}
+ * Protobuf type {@code com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields}
  */
-public  final class ResourceTypeOptions extends
+public  final class AdditionalFields extends
     com.google.protobuf.GeneratedMessageV3 implements
-    // @@protoc_insertion_point(message_implements:com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions)
-    ResourceTypeOptionsOrBuilder {
+    // @@protoc_insertion_point(message_implements:com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields)
+    AdditionalFieldsOrBuilder {
 private static final long serialVersionUID = 0L;
-  // Use ResourceTypeOptions.newBuilder() to construct.
-  private ResourceTypeOptions(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
+  // Use AdditionalFields.newBuilder() to construct.
+  private AdditionalFields(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
     super(builder);
   }
-  private ResourceTypeOptions() {
-    resourceTypeName_ = "";
-    resourceTypeUnit_ = "";
+  private AdditionalFields() {
+    name_ = "";
+    description_ = "";
   }
 
   @java.lang.Override
@@ -29,7 +29,7 @@ private static final long serialVersionUID = 0L;
   getUnknownFields() {
     return this.unknownFields;
   }
-  private ResourceTypeOptions(
+  private AdditionalFields(
       com.google.protobuf.CodedInputStream input,
       com.google.protobuf.ExtensionRegistryLite extensionRegistry)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -51,13 +51,13 @@ private static final long serialVersionUID = 0L;
           case 10: {
             java.lang.String s = input.readStringRequireUtf8();
 
-            resourceTypeName_ = s;
+            name_ = s;
             break;
           }
           case 18: {
             java.lang.String s = input.readStringRequireUtf8();
 
-            resourceTypeUnit_ = s;
+            description_ = s;
             break;
           }
           default: {
@@ -81,79 +81,79 @@ private static final long serialVersionUID = 0L;
   }
   public static final com.google.protobuf.Descriptors.Descriptor
       getDescriptor() {
-    return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PANetworking.internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_ResourceTypeOptions_descriptor;
+    return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PANetworking.internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_AdditionalFields_descriptor;
   }
 
   @java.lang.Override
   protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internalGetFieldAccessorTable() {
-    return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PANetworking.internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_ResourceTypeOptions_fieldAccessorTable
+    return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PANetworking.internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_AdditionalFields_fieldAccessorTable
         .ensureFieldAccessorsInitialized(
-            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions.class, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions.Builder.class);
+            com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields.class, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields.Builder.class);
   }
 
-  public static final int RESOURCETYPENAME_FIELD_NUMBER = 1;
-  private volatile java.lang.Object resourceTypeName_;
+  public static final int NAME_FIELD_NUMBER = 1;
+  private volatile java.lang.Object name_;
   /**
-   * <code>string resourceTypeName = 1;</code>
+   * <code>string name = 1;</code>
    */
-  public java.lang.String getResourceTypeName() {
-    java.lang.Object ref = resourceTypeName_;
+  public java.lang.String getName() {
+    java.lang.Object ref = name_;
     if (ref instanceof java.lang.String) {
       return (java.lang.String) ref;
     } else {
       com.google.protobuf.ByteString bs = 
           (com.google.protobuf.ByteString) ref;
       java.lang.String s = bs.toStringUtf8();
-      resourceTypeName_ = s;
+      name_ = s;
       return s;
     }
   }
   /**
-   * <code>string resourceTypeName = 1;</code>
+   * <code>string name = 1;</code>
    */
   public com.google.protobuf.ByteString
-      getResourceTypeNameBytes() {
-    java.lang.Object ref = resourceTypeName_;
+      getNameBytes() {
+    java.lang.Object ref = name_;
     if (ref instanceof java.lang.String) {
       com.google.protobuf.ByteString b = 
           com.google.protobuf.ByteString.copyFromUtf8(
               (java.lang.String) ref);
-      resourceTypeName_ = b;
+      name_ = b;
       return b;
     } else {
       return (com.google.protobuf.ByteString) ref;
     }
   }
 
-  public static final int RESOURCETYPEUNIT_FIELD_NUMBER = 2;
-  private volatile java.lang.Object resourceTypeUnit_;
+  public static final int DESCRIPTION_FIELD_NUMBER = 2;
+  private volatile java.lang.Object description_;
   /**
-   * <code>string resourceTypeUnit = 2;</code>
+   * <code>string description = 2;</code>
    */
-  public java.lang.String getResourceTypeUnit() {
-    java.lang.Object ref = resourceTypeUnit_;
+  public java.lang.String getDescription() {
+    java.lang.Object ref = description_;
     if (ref instanceof java.lang.String) {
       return (java.lang.String) ref;
     } else {
       com.google.protobuf.ByteString bs = 
           (com.google.protobuf.ByteString) ref;
       java.lang.String s = bs.toStringUtf8();
-      resourceTypeUnit_ = s;
+      description_ = s;
       return s;
     }
   }
   /**
-   * <code>string resourceTypeUnit = 2;</code>
+   * <code>string description = 2;</code>
    */
   public com.google.protobuf.ByteString
-      getResourceTypeUnitBytes() {
-    java.lang.Object ref = resourceTypeUnit_;
+      getDescriptionBytes() {
+    java.lang.Object ref = description_;
     if (ref instanceof java.lang.String) {
       com.google.protobuf.ByteString b = 
           com.google.protobuf.ByteString.copyFromUtf8(
               (java.lang.String) ref);
-      resourceTypeUnit_ = b;
+      description_ = b;
       return b;
     } else {
       return (com.google.protobuf.ByteString) ref;
@@ -174,11 +174,11 @@ private static final long serialVersionUID = 0L;
   @java.lang.Override
   public void writeTo(com.google.protobuf.CodedOutputStream output)
                       throws java.io.IOException {
-    if (!getResourceTypeNameBytes().isEmpty()) {
-      com.google.protobuf.GeneratedMessageV3.writeString(output, 1, resourceTypeName_);
+    if (!getNameBytes().isEmpty()) {
+      com.google.protobuf.GeneratedMessageV3.writeString(output, 1, name_);
     }
-    if (!getResourceTypeUnitBytes().isEmpty()) {
-      com.google.protobuf.GeneratedMessageV3.writeString(output, 2, resourceTypeUnit_);
+    if (!getDescriptionBytes().isEmpty()) {
+      com.google.protobuf.GeneratedMessageV3.writeString(output, 2, description_);
     }
     unknownFields.writeTo(output);
   }
@@ -189,11 +189,11 @@ private static final long serialVersionUID = 0L;
     if (size != -1) return size;
 
     size = 0;
-    if (!getResourceTypeNameBytes().isEmpty()) {
-      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(1, resourceTypeName_);
+    if (!getNameBytes().isEmpty()) {
+      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(1, name_);
     }
-    if (!getResourceTypeUnitBytes().isEmpty()) {
-      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(2, resourceTypeUnit_);
+    if (!getDescriptionBytes().isEmpty()) {
+      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(2, description_);
     }
     size += unknownFields.getSerializedSize();
     memoizedSize = size;
@@ -205,15 +205,15 @@ private static final long serialVersionUID = 0L;
     if (obj == this) {
      return true;
     }
-    if (!(obj instanceof com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions)) {
+    if (!(obj instanceof com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields)) {
       return super.equals(obj);
     }
-    com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions other = (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions) obj;
+    com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields other = (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields) obj;
 
-    if (!getResourceTypeName()
-        .equals(other.getResourceTypeName())) return false;
-    if (!getResourceTypeUnit()
-        .equals(other.getResourceTypeUnit())) return false;
+    if (!getName()
+        .equals(other.getName())) return false;
+    if (!getDescription()
+        .equals(other.getDescription())) return false;
     if (!unknownFields.equals(other.unknownFields)) return false;
     return true;
   }
@@ -225,78 +225,78 @@ private static final long serialVersionUID = 0L;
     }
     int hash = 41;
     hash = (19 * hash) + getDescriptor().hashCode();
-    hash = (37 * hash) + RESOURCETYPENAME_FIELD_NUMBER;
-    hash = (53 * hash) + getResourceTypeName().hashCode();
-    hash = (37 * hash) + RESOURCETYPEUNIT_FIELD_NUMBER;
-    hash = (53 * hash) + getResourceTypeUnit().hashCode();
+    hash = (37 * hash) + NAME_FIELD_NUMBER;
+    hash = (53 * hash) + getName().hashCode();
+    hash = (37 * hash) + DESCRIPTION_FIELD_NUMBER;
+    hash = (53 * hash) + getDescription().hashCode();
     hash = (29 * hash) + unknownFields.hashCode();
     memoizedHashCode = hash;
     return hash;
   }
 
-  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions parseFrom(
+  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
     return PARSER.parseFrom(data);
   }
-  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions parseFrom(
+  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields parseFrom(
       java.nio.ByteBuffer data,
       com.google.protobuf.ExtensionRegistryLite extensionRegistry)
       throws com.google.protobuf.InvalidProtocolBufferException {
     return PARSER.parseFrom(data, extensionRegistry);
   }
-  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions parseFrom(
+  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields parseFrom(
       com.google.protobuf.ByteString data)
       throws com.google.protobuf.InvalidProtocolBufferException {
     return PARSER.parseFrom(data);
   }
-  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions parseFrom(
+  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields parseFrom(
       com.google.protobuf.ByteString data,
       com.google.protobuf.ExtensionRegistryLite extensionRegistry)
       throws com.google.protobuf.InvalidProtocolBufferException {
     return PARSER.parseFrom(data, extensionRegistry);
   }
-  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions parseFrom(byte[] data)
+  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields parseFrom(byte[] data)
       throws com.google.protobuf.InvalidProtocolBufferException {
     return PARSER.parseFrom(data);
   }
-  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions parseFrom(
+  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields parseFrom(
       byte[] data,
       com.google.protobuf.ExtensionRegistryLite extensionRegistry)
       throws com.google.protobuf.InvalidProtocolBufferException {
     return PARSER.parseFrom(data, extensionRegistry);
   }
-  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions parseFrom(java.io.InputStream input)
+  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields parseFrom(java.io.InputStream input)
       throws java.io.IOException {
     return com.google.protobuf.GeneratedMessageV3
         .parseWithIOException(PARSER, input);
   }
-  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions parseFrom(
+  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields parseFrom(
       java.io.InputStream input,
       com.google.protobuf.ExtensionRegistryLite extensionRegistry)
       throws java.io.IOException {
     return com.google.protobuf.GeneratedMessageV3
         .parseWithIOException(PARSER, input, extensionRegistry);
   }
-  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions parseDelimitedFrom(java.io.InputStream input)
+  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields parseDelimitedFrom(java.io.InputStream input)
       throws java.io.IOException {
     return com.google.protobuf.GeneratedMessageV3
         .parseDelimitedWithIOException(PARSER, input);
   }
-  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions parseDelimitedFrom(
+  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields parseDelimitedFrom(
       java.io.InputStream input,
       com.google.protobuf.ExtensionRegistryLite extensionRegistry)
       throws java.io.IOException {
     return com.google.protobuf.GeneratedMessageV3
         .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
   }
-  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions parseFrom(
+  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields parseFrom(
       com.google.protobuf.CodedInputStream input)
       throws java.io.IOException {
     return com.google.protobuf.GeneratedMessageV3
         .parseWithIOException(PARSER, input);
   }
-  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions parseFrom(
+  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields parseFrom(
       com.google.protobuf.CodedInputStream input,
       com.google.protobuf.ExtensionRegistryLite extensionRegistry)
       throws java.io.IOException {
@@ -309,7 +309,7 @@ private static final long serialVersionUID = 0L;
   public static Builder newBuilder() {
     return DEFAULT_INSTANCE.toBuilder();
   }
-  public static Builder newBuilder(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions prototype) {
+  public static Builder newBuilder(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields prototype) {
     return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
   }
   @java.lang.Override
@@ -329,26 +329,26 @@ private static final long serialVersionUID = 0L;
    *Enum for different resource type
    * </pre>
    *
-   * Protobuf type {@code com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions}
+   * Protobuf type {@code com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
-      // @@protoc_insertion_point(builder_implements:com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions)
-      com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptionsOrBuilder {
+      // @@protoc_insertion_point(builder_implements:com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields)
+      com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFieldsOrBuilder {
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PANetworking.internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_ResourceTypeOptions_descriptor;
+      return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PANetworking.internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_AdditionalFields_descriptor;
     }
 
     @java.lang.Override
     protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PANetworking.internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_ResourceTypeOptions_fieldAccessorTable
+      return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PANetworking.internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_AdditionalFields_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions.class, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions.Builder.class);
+              com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields.class, com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields.Builder.class);
     }
 
-    // Construct using com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions.newBuilder()
+    // Construct using com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields.newBuilder()
     private Builder() {
       maybeForceBuilderInitialization();
     }
@@ -366,9 +366,9 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public Builder clear() {
       super.clear();
-      resourceTypeName_ = "";
+      name_ = "";
 
-      resourceTypeUnit_ = "";
+      description_ = "";
 
       return this;
     }
@@ -376,17 +376,17 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public com.google.protobuf.Descriptors.Descriptor
         getDescriptorForType() {
-      return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PANetworking.internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_ResourceTypeOptions_descriptor;
+      return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PANetworking.internal_static_com_amazon_opendistro_elasticsearch_performanceanalyzer_grpc_AdditionalFields_descriptor;
     }
 
     @java.lang.Override
-    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions getDefaultInstanceForType() {
-      return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions.getDefaultInstance();
+    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields getDefaultInstanceForType() {
+      return com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields.getDefaultInstance();
     }
 
     @java.lang.Override
-    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions build() {
-      com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions result = buildPartial();
+    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields build() {
+      com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields result = buildPartial();
       if (!result.isInitialized()) {
         throw newUninitializedMessageException(result);
       }
@@ -394,10 +394,10 @@ private static final long serialVersionUID = 0L;
     }
 
     @java.lang.Override
-    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions buildPartial() {
-      com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions result = new com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions(this);
-      result.resourceTypeName_ = resourceTypeName_;
-      result.resourceTypeUnit_ = resourceTypeUnit_;
+    public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields buildPartial() {
+      com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields result = new com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields(this);
+      result.name_ = name_;
+      result.description_ = description_;
       onBuilt();
       return result;
     }
@@ -436,22 +436,22 @@ private static final long serialVersionUID = 0L;
     }
     @java.lang.Override
     public Builder mergeFrom(com.google.protobuf.Message other) {
-      if (other instanceof com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions) {
-        return mergeFrom((com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions)other);
+      if (other instanceof com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields) {
+        return mergeFrom((com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields)other);
       } else {
         super.mergeFrom(other);
         return this;
       }
     }
 
-    public Builder mergeFrom(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions other) {
-      if (other == com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions.getDefaultInstance()) return this;
-      if (!other.getResourceTypeName().isEmpty()) {
-        resourceTypeName_ = other.resourceTypeName_;
+    public Builder mergeFrom(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields other) {
+      if (other == com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields.getDefaultInstance()) return this;
+      if (!other.getName().isEmpty()) {
+        name_ = other.name_;
         onChanged();
       }
-      if (!other.getResourceTypeUnit().isEmpty()) {
-        resourceTypeUnit_ = other.resourceTypeUnit_;
+      if (!other.getDescription().isEmpty()) {
+        description_ = other.description_;
         onChanged();
       }
       this.mergeUnknownFields(other.unknownFields);
@@ -469,11 +469,11 @@ private static final long serialVersionUID = 0L;
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions parsedMessage = null;
+      com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields parsedMessage = null;
       try {
         parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
       } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-        parsedMessage = (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions) e.getUnfinishedMessage();
+        parsedMessage = (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields) e.getUnfinishedMessage();
         throw e.unwrapIOException();
       } finally {
         if (parsedMessage != null) {
@@ -483,140 +483,140 @@ private static final long serialVersionUID = 0L;
       return this;
     }
 
-    private java.lang.Object resourceTypeName_ = "";
+    private java.lang.Object name_ = "";
     /**
-     * <code>string resourceTypeName = 1;</code>
+     * <code>string name = 1;</code>
      */
-    public java.lang.String getResourceTypeName() {
-      java.lang.Object ref = resourceTypeName_;
+    public java.lang.String getName() {
+      java.lang.Object ref = name_;
       if (!(ref instanceof java.lang.String)) {
         com.google.protobuf.ByteString bs =
             (com.google.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
-        resourceTypeName_ = s;
+        name_ = s;
         return s;
       } else {
         return (java.lang.String) ref;
       }
     }
     /**
-     * <code>string resourceTypeName = 1;</code>
+     * <code>string name = 1;</code>
      */
     public com.google.protobuf.ByteString
-        getResourceTypeNameBytes() {
-      java.lang.Object ref = resourceTypeName_;
+        getNameBytes() {
+      java.lang.Object ref = name_;
       if (ref instanceof String) {
         com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
-        resourceTypeName_ = b;
+        name_ = b;
         return b;
       } else {
         return (com.google.protobuf.ByteString) ref;
       }
     }
     /**
-     * <code>string resourceTypeName = 1;</code>
+     * <code>string name = 1;</code>
      */
-    public Builder setResourceTypeName(
+    public Builder setName(
         java.lang.String value) {
       if (value == null) {
     throw new NullPointerException();
   }
   
-      resourceTypeName_ = value;
+      name_ = value;
       onChanged();
       return this;
     }
     /**
-     * <code>string resourceTypeName = 1;</code>
+     * <code>string name = 1;</code>
      */
-    public Builder clearResourceTypeName() {
+    public Builder clearName() {
       
-      resourceTypeName_ = getDefaultInstance().getResourceTypeName();
+      name_ = getDefaultInstance().getName();
       onChanged();
       return this;
     }
     /**
-     * <code>string resourceTypeName = 1;</code>
+     * <code>string name = 1;</code>
      */
-    public Builder setResourceTypeNameBytes(
+    public Builder setNameBytes(
         com.google.protobuf.ByteString value) {
       if (value == null) {
     throw new NullPointerException();
   }
   checkByteStringIsUtf8(value);
       
-      resourceTypeName_ = value;
+      name_ = value;
       onChanged();
       return this;
     }
 
-    private java.lang.Object resourceTypeUnit_ = "";
+    private java.lang.Object description_ = "";
     /**
-     * <code>string resourceTypeUnit = 2;</code>
+     * <code>string description = 2;</code>
      */
-    public java.lang.String getResourceTypeUnit() {
-      java.lang.Object ref = resourceTypeUnit_;
+    public java.lang.String getDescription() {
+      java.lang.Object ref = description_;
       if (!(ref instanceof java.lang.String)) {
         com.google.protobuf.ByteString bs =
             (com.google.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
-        resourceTypeUnit_ = s;
+        description_ = s;
         return s;
       } else {
         return (java.lang.String) ref;
       }
     }
     /**
-     * <code>string resourceTypeUnit = 2;</code>
+     * <code>string description = 2;</code>
      */
     public com.google.protobuf.ByteString
-        getResourceTypeUnitBytes() {
-      java.lang.Object ref = resourceTypeUnit_;
+        getDescriptionBytes() {
+      java.lang.Object ref = description_;
       if (ref instanceof String) {
         com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
-        resourceTypeUnit_ = b;
+        description_ = b;
         return b;
       } else {
         return (com.google.protobuf.ByteString) ref;
       }
     }
     /**
-     * <code>string resourceTypeUnit = 2;</code>
+     * <code>string description = 2;</code>
      */
-    public Builder setResourceTypeUnit(
+    public Builder setDescription(
         java.lang.String value) {
       if (value == null) {
     throw new NullPointerException();
   }
   
-      resourceTypeUnit_ = value;
+      description_ = value;
       onChanged();
       return this;
     }
     /**
-     * <code>string resourceTypeUnit = 2;</code>
+     * <code>string description = 2;</code>
      */
-    public Builder clearResourceTypeUnit() {
+    public Builder clearDescription() {
       
-      resourceTypeUnit_ = getDefaultInstance().getResourceTypeUnit();
+      description_ = getDefaultInstance().getDescription();
       onChanged();
       return this;
     }
     /**
-     * <code>string resourceTypeUnit = 2;</code>
+     * <code>string description = 2;</code>
      */
-    public Builder setResourceTypeUnitBytes(
+    public Builder setDescriptionBytes(
         com.google.protobuf.ByteString value) {
       if (value == null) {
     throw new NullPointerException();
   }
   checkByteStringIsUtf8(value);
       
-      resourceTypeUnit_ = value;
+      description_ = value;
       onChanged();
       return this;
     }
@@ -633,41 +633,41 @@ private static final long serialVersionUID = 0L;
     }
 
 
-    // @@protoc_insertion_point(builder_scope:com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions)
+    // @@protoc_insertion_point(builder_scope:com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields)
   }
 
-  // @@protoc_insertion_point(class_scope:com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions)
-  private static final com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions DEFAULT_INSTANCE;
+  // @@protoc_insertion_point(class_scope:com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields)
+  private static final com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields DEFAULT_INSTANCE;
   static {
-    DEFAULT_INSTANCE = new com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions();
+    DEFAULT_INSTANCE = new com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields();
   }
 
-  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions getDefaultInstance() {
+  public static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields getDefaultInstance() {
     return DEFAULT_INSTANCE;
   }
 
-  private static final com.google.protobuf.Parser<ResourceTypeOptions>
-      PARSER = new com.google.protobuf.AbstractParser<ResourceTypeOptions>() {
+  private static final com.google.protobuf.Parser<AdditionalFields>
+      PARSER = new com.google.protobuf.AbstractParser<AdditionalFields>() {
     @java.lang.Override
-    public ResourceTypeOptions parsePartialFrom(
+    public AdditionalFields parsePartialFrom(
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
-      return new ResourceTypeOptions(input, extensionRegistry);
+      return new AdditionalFields(input, extensionRegistry);
     }
   };
 
-  public static com.google.protobuf.Parser<ResourceTypeOptions> parser() {
+  public static com.google.protobuf.Parser<AdditionalFields> parser() {
     return PARSER;
   }
 
   @java.lang.Override
-  public com.google.protobuf.Parser<ResourceTypeOptions> getParserForType() {
+  public com.google.protobuf.Parser<AdditionalFields> getParserForType() {
     return PARSER;
   }
 
   @java.lang.Override
-  public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOptions getDefaultInstanceForType() {
+  public com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.AdditionalFields getDefaultInstanceForType() {
     return DEFAULT_INSTANCE;
   }
 

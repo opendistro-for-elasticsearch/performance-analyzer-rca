@@ -8,17 +8,17 @@ public interface HotResourceSummaryMessageOrBuilder extends
     com.google.protobuf.MessageOrBuilder {
 
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType resourceType = 1;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource resource = 1;</code>
    */
-  boolean hasResourceType();
+  boolean hasResource();
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType resourceType = 1;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource resource = 1;</code>
    */
-  com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType getResourceType();
+  com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource getResource();
   /**
-   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType resourceType = 1;</code>
+   * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource resource = 1;</code>
    */
-  com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceTypeOrBuilder getResourceTypeOrBuilder();
+  com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceOrBuilder getResourceOrBuilder();
 
   /**
    * <code>.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.TopConsumerSummaryList consumers = 2;</code>
