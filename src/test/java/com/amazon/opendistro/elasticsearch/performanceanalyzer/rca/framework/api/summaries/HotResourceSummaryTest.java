@@ -17,8 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotResourceSummaryMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.JvmEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -31,7 +30,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 public class HotResourceSummaryTest {
-    private final ResourceType RESOURCE_TYPE = ResourceType.newBuilder().setJVM(JvmEnum.YOUNG_GEN).build();
+    private final Resource RESOURCE_TYPE = ResourceUtil.YOUNG_GEN_PROMOTION_RATE;
     private final double THRESHOLD = 2.718;
     private final double VALUE = 3.14159;
     private final double AVG_VALUE = 1.414;
@@ -55,7 +54,7 @@ public class HotResourceSummaryTest {
     public void testBuildSummaryMessage() {
         Assert.assertEquals(1, uut.getNestedSummaryList().size());
         HotResourceSummaryMessage msg = uut.buildSummaryMessage();
-        Assert.assertEquals(RESOURCE_TYPE, msg.getResourceType());
+        Assert.assertEquals(RESOURCE_TYPE, msg.getResource());
         Assert.assertEquals(THRESHOLD, msg.getThreshold(), 0);
         Assert.assertEquals(VALUE, msg.getValue(), 0);
         Assert.assertEquals(AVG_VALUE, msg.getAvgValue(), 0);
@@ -79,7 +78,7 @@ public class HotResourceSummaryTest {
     @Test
     public void testBuildHotResourceSummaryFromMessage() {
         HotResourceSummaryMessage msg = uut.buildSummaryMessage();
-        Assert.assertEquals(RESOURCE_TYPE, msg.getResourceType());
+        Assert.assertEquals(RESOURCE_TYPE, msg.getResource());
         Assert.assertEquals(THRESHOLD, msg.getThreshold(), 0);
         Assert.assertEquals(VALUE, msg.getValue(), 0);
         Assert.assertEquals(AVG_VALUE, msg.getAvgValue(), 0);
@@ -94,9 +93,9 @@ public class HotResourceSummaryTest {
 
     @Test
     public void testToString() {
-        String expected = ResourceTypeUtil.getResourceTypeName(RESOURCE_TYPE) + " " + THRESHOLD + " " + VALUE
-                + " " + ResourceTypeUtil.getResourceTypeUnit(RESOURCE_TYPE) + " " + uut.getNestedSummaryList()
-                + " " + META_DATA;
+        String expected = ResourceUtil.getResourceTypeName(RESOURCE_TYPE)
+            + " " + ResourceUtil.getResourceMetricName(RESOURCE_TYPE) + " " + THRESHOLD + " " + VALUE
+            + " " + uut.getNestedSummaryList() + " " + META_DATA;
         Assert.assertEquals(expected, uut.toString());
     }
 
@@ -110,12 +109,12 @@ public class HotResourceSummaryTest {
         List<Field<?>> schema = uut.getSqlSchema();
         Assert.assertEquals(9, schema.size());
         Assert.assertEquals(HotResourceSummary.ResourceSummaryField.RESOURCE_TYPE_FIELD.getField(), schema.get(0));
-        Assert.assertEquals(HotResourceSummary.ResourceSummaryField.THRESHOLD_FIELD.getField(), schema.get(1));
-        Assert.assertEquals(HotResourceSummary.ResourceSummaryField.VALUE_FIELD.getField(), schema.get(2));
-        Assert.assertEquals(HotResourceSummary.ResourceSummaryField.AVG_VALUE_FIELD.getField(), schema.get(3));
-        Assert.assertEquals(HotResourceSummary.ResourceSummaryField.MIN_VALUE_FIELD.getField(), schema.get(4));
-        Assert.assertEquals(HotResourceSummary.ResourceSummaryField.MAX_VALUE_FIELD.getField(), schema.get(5));
-        Assert.assertEquals(HotResourceSummary.ResourceSummaryField.UNIT_TYPE_FIELD.getField(), schema.get(6));
+        Assert.assertEquals(HotResourceSummary.ResourceSummaryField.RESOURCE_METRIC_FIELD.getField(), schema.get(1));
+        Assert.assertEquals(HotResourceSummary.ResourceSummaryField.THRESHOLD_FIELD.getField(), schema.get(2));
+        Assert.assertEquals(HotResourceSummary.ResourceSummaryField.VALUE_FIELD.getField(), schema.get(3));
+        Assert.assertEquals(HotResourceSummary.ResourceSummaryField.AVG_VALUE_FIELD.getField(), schema.get(4));
+        Assert.assertEquals(HotResourceSummary.ResourceSummaryField.MIN_VALUE_FIELD.getField(), schema.get(5));
+        Assert.assertEquals(HotResourceSummary.ResourceSummaryField.MAX_VALUE_FIELD.getField(), schema.get(6));
         Assert.assertEquals(HotResourceSummary.ResourceSummaryField.TIME_PERIOD_FIELD.getField(), schema.get(7));
     }
 
@@ -123,13 +122,13 @@ public class HotResourceSummaryTest {
     public void testGetSqlValue() {
         List<Object> values = uut.getSqlValue();
         Assert.assertEquals(9, values.size());
-        Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(RESOURCE_TYPE), values.get(0));
-        Assert.assertEquals(THRESHOLD, values.get(1));
-        Assert.assertEquals(VALUE, values.get(2));
-        Assert.assertEquals(AVG_VALUE, values.get(3));
-        Assert.assertEquals(MIN_VALUE, values.get(4));
-        Assert.assertEquals(MAX_VALUE, values.get(5));
-        Assert.assertEquals(ResourceTypeUtil.getResourceTypeUnit(RESOURCE_TYPE), values.get(6));
+        Assert.assertEquals(RESOURCE_TYPE.getResourceEnumValue(), values.get(0));
+        Assert.assertEquals(RESOURCE_TYPE.getMetricEnumValue(), values.get(1));
+        Assert.assertEquals(THRESHOLD, values.get(2));
+        Assert.assertEquals(VALUE, values.get(3));
+        Assert.assertEquals(AVG_VALUE, values.get(4));
+        Assert.assertEquals(MIN_VALUE, values.get(5));
+        Assert.assertEquals(MAX_VALUE, values.get(6));
         Assert.assertEquals(TIME_PERIOD, values.get(7));
         Assert.assertEquals(META_DATA, values.get(8));
     }
@@ -139,8 +138,10 @@ public class HotResourceSummaryTest {
         JsonElement elem = uut.toJson();
         Assert.assertTrue(elem.isJsonObject());
         JsonObject json = ((JsonObject) elem);
-        Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(RESOURCE_TYPE),
+        Assert.assertEquals(ResourceUtil.getResourceTypeName(RESOURCE_TYPE),
                 json.get(HotResourceSummary.SQL_SCHEMA_CONSTANTS.RESOURCE_TYPE_COL_NAME).getAsString());
+        Assert.assertEquals(ResourceUtil.getResourceMetricName(RESOURCE_TYPE),
+                json.get(HotResourceSummary.SQL_SCHEMA_CONSTANTS.RESOURCE_METRIC_COL_NAME).getAsString());
         Assert.assertEquals(THRESHOLD,
                 json.get(HotResourceSummary.SQL_SCHEMA_CONSTANTS.THRESHOLD_COL_NAME).getAsDouble(), 0);
         Assert.assertEquals(VALUE,
@@ -151,8 +152,6 @@ public class HotResourceSummaryTest {
                 json.get(HotResourceSummary.SQL_SCHEMA_CONSTANTS.MIN_VALUE_COL_NAME).getAsDouble(), 0);
         Assert.assertEquals(MAX_VALUE,
                 json.get(HotResourceSummary.SQL_SCHEMA_CONSTANTS.MAX_VALUE_COL_NAME).getAsDouble(), 0);
-        Assert.assertEquals(ResourceTypeUtil.getResourceTypeUnit(RESOURCE_TYPE),
-                json.get(HotResourceSummary.SQL_SCHEMA_CONSTANTS.UNIT_TYPE_COL_NAME).getAsString());
         Assert.assertEquals(TIME_PERIOD,
                 json.get(HotResourceSummary.SQL_SCHEMA_CONSTANTS.TIME_PERIOD_COL_NAME).getAsDouble(), 0);
         Assert.assertEquals(META_DATA,
@@ -170,8 +169,11 @@ public class HotResourceSummaryTest {
         Assert.assertNull(HotResourceSummary.buildSummary(null));
         Record testRecord = Mockito.mock(Record.class);
         Mockito.when(
-                testRecord.get(HotResourceSummary.ResourceSummaryField.RESOURCE_TYPE_FIELD.getField(), String.class))
-                .thenReturn(ResourceTypeUtil.getResourceTypeName(RESOURCE_TYPE));
+                testRecord.get(HotResourceSummary.ResourceSummaryField.RESOURCE_TYPE_FIELD.getField(), Integer.class))
+                .thenReturn(RESOURCE_TYPE.getResourceEnumValue());
+        Mockito.when(
+                testRecord.get(HotResourceSummary.ResourceSummaryField.RESOURCE_METRIC_FIELD.getField(), Integer.class))
+                .thenReturn(RESOURCE_TYPE.getMetricEnumValue());
         Mockito.when(testRecord.get(HotResourceSummary.ResourceSummaryField.THRESHOLD_FIELD.getField(), Double.class))
                 .thenReturn(THRESHOLD);
         Mockito.when(testRecord.get(HotResourceSummary.ResourceSummaryField.VALUE_FIELD.getField(), Double.class))
@@ -188,13 +190,13 @@ public class HotResourceSummaryTest {
         Assert.assertNotNull(summary);
         List<Object> values = summary.getSqlValue();
         Assert.assertEquals(9, values.size());
-        Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(RESOURCE_TYPE), values.get(0));
-        Assert.assertEquals(THRESHOLD, values.get(1));
-        Assert.assertEquals(VALUE, values.get(2));
-        Assert.assertEquals(AVG_VALUE, values.get(3));
-        Assert.assertEquals(MIN_VALUE, values.get(4));
-        Assert.assertEquals(MAX_VALUE, values.get(5));
-        Assert.assertEquals(ResourceTypeUtil.getResourceTypeUnit(RESOURCE_TYPE), values.get(6));
+        Assert.assertEquals(RESOURCE_TYPE.getResourceEnumValue(), values.get(0));
+        Assert.assertEquals(RESOURCE_TYPE.getMetricEnumValue(), values.get(1));
+        Assert.assertEquals(THRESHOLD, values.get(2));
+        Assert.assertEquals(VALUE, values.get(3));
+        Assert.assertEquals(AVG_VALUE, values.get(4));
+        Assert.assertEquals(MIN_VALUE, values.get(5));
+        Assert.assertEquals(MAX_VALUE, values.get(6));
         Assert.assertEquals(TIME_PERIOD, values.get(7));
     }
 }

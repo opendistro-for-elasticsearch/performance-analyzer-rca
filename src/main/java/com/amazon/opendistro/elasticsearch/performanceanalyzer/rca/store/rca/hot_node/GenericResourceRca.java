@@ -15,7 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hot_node;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
@@ -50,7 +50,7 @@ public class GenericResourceRca extends Rca<ResourceFlowUnit<HotResourceSummary>
   private final Metric resourceUsageGroupByConsumer;
   private final int rcaPeriod;
   private int counter;
-  private final ResourceType resourceType;
+  private final Resource resource;
   private volatile double threshold;
   private volatile double lowerBoundThreshold;
   private volatile int topK;
@@ -58,14 +58,14 @@ public class GenericResourceRca extends Rca<ResourceFlowUnit<HotResourceSummary>
 
   /**
    * @param rcaPeriod num of rca periods for each evaluation interval
-   * @param resourceType resource type enum
+   * @param resource resource type enum
    * @param threshold threshold to identify contented resource
    * @param resourceUsageGroupByConsumer aggregate metric that groups resource
    *                                     metrics by some columns
    * @param <M> Metric base class
    */
   public <M extends Metric> GenericResourceRca(final int rcaPeriod,
-      final ResourceType resourceType, final double threshold,
+      final Resource resource, final double threshold,
       final M resourceUsageGroupByConsumer) {
     super(5);
     this.resourceUsageGroupByConsumer = resourceUsageGroupByConsumer;
@@ -75,7 +75,7 @@ public class GenericResourceRca extends Rca<ResourceFlowUnit<HotResourceSummary>
     this.clock = Clock.systemUTC();
     this.threshold = threshold;
     this.lowerBoundThreshold = DEFAULT_LOWER_BOUND_THRESHOLD;
-    this.resourceType = resourceType;
+    this.resource = resource;
     this.topK = DEFAULT_TOP_K;
   }
 
@@ -158,7 +158,7 @@ public class GenericResourceRca extends Rca<ResourceFlowUnit<HotResourceSummary>
 
       //check to see if the value is above lower bound thres
       if (!Double.isNaN(avgCpuUsage) && avgCpuUsage >= lowerBoundThreshold) {
-        summary = new HotResourceSummary(this.resourceType, threshold,
+        summary = new HotResourceSummary(this.resource, threshold,
             avgCpuUsage, SLIDING_WINDOW_IN_MIN * 60);
         addTopConsumerSummary(summary);
       }

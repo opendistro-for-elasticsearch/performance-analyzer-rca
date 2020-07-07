@@ -15,14 +15,12 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca.hotshard;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.RcaTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceTypeUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
@@ -44,13 +42,6 @@ public class HotShardClusterRcaTest {
     private HotShardClusterRca hotShardClusterRca;
 
     private ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper;
-
-    private ResourceType cpuResourceType = ResourceType.newBuilder().setHardwareResourceTypeValue(
-            HardwareEnum.CPU_VALUE).build();
-    private ResourceType ioTotalThroughputResourceType = ResourceType.newBuilder().setHardwareResourceTypeValue(
-            HardwareEnum.IO_TOTAL_THROUGHPUT_VALUE).build();
-    private ResourceType ioTotalSysCallRateResourceType = ResourceType.newBuilder().setHardwareResourceTypeValue(
-            HardwareEnum.IO_TOTAL_SYS_CALLRATE_VALUE).build();
 
     private enum index {
         index_1,
@@ -179,16 +170,16 @@ public class HotShardClusterRcaTest {
         List<Object> hotShard2 = nodeSummary.getNestedSummaryList().get(1).getSqlValue();
 
         // verify the resource type, cpu utilization value, node ID, Index Name, shard ID
-        Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(cpuResourceType), hotShard1.get(0));
-        Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(cpuResourceType), hotShard2.get(0));
+        Assert.assertEquals(ResourceUtil.CPU_USAGE.getResourceEnumValue(), hotShard1.get(0));
+        Assert.assertEquals(ResourceUtil.CPU_USAGE.getResourceEnumValue(), hotShard2.get(0));
 
-        Assert.assertEquals(0.75, hotShard1.get(2));
+        Assert.assertEquals(0.75, hotShard1.get(3));
         String [] nodeIndexShardInfo1 = hotShard1.get(8).toString().split(" ");
         Assert.assertEquals(node.node_1.name(), nodeIndexShardInfo1[0]);
         Assert.assertEquals(index.index_1.name(), nodeIndexShardInfo1[1]);
         Assert.assertEquals(shard.shard_1.name(), nodeIndexShardInfo1[2]);
 
-        Assert.assertEquals(0.80, hotShard2.get(2));
+        Assert.assertEquals(0.80, hotShard2.get(3));
         String [] nodeIndexShardInfo2 = hotShard2.get(8).toString().split(" ");
         Assert.assertEquals(node.node_2.name(), nodeIndexShardInfo2[0]);
         Assert.assertEquals(index.index_2.name(), nodeIndexShardInfo2[1]);
@@ -226,16 +217,16 @@ public class HotShardClusterRcaTest {
         List<Object> hotShard4 = nodeSummary.getNestedSummaryList().get(1).getSqlValue();
 
         // verify the resource type, IO total throughput, node ID, Index Name, shard ID
-        Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(ioTotalThroughputResourceType), hotShard3.get(0));
-        Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(ioTotalThroughputResourceType), hotShard4.get(0));
+        Assert.assertEquals(ResourceUtil.IO_TOTAL_THROUGHPUT.getResourceEnumValue(), hotShard3.get(0));
+        Assert.assertEquals(ResourceUtil.IO_TOTAL_THROUGHPUT.getResourceEnumValue(), hotShard4.get(0));
 
-        Assert.assertEquals(550000.0, hotShard3.get(2));
+        Assert.assertEquals(550000.0, hotShard3.get(3));
         String [] nodeIndexShardInfo3 = hotShard3.get(8).toString().split(" ");
         Assert.assertEquals(node.node_1.name(), nodeIndexShardInfo3[0]);
         Assert.assertEquals(index.index_1.name(), nodeIndexShardInfo3[1]);
         Assert.assertEquals(shard.shard_2.name(), nodeIndexShardInfo3[2]);
 
-        Assert.assertEquals(650000.0, hotShard4.get(2));
+        Assert.assertEquals(650000.0, hotShard4.get(3));
         String [] nodeIndexShardInfo4 = hotShard4.get(8).toString().split(" ");
         Assert.assertEquals(node.node_1.name(), nodeIndexShardInfo4[0]);
         Assert.assertEquals(index.index_2.name(), nodeIndexShardInfo4[1]);
@@ -270,16 +261,16 @@ public class HotShardClusterRcaTest {
         List<Object> hotShard6 = nodeSummary.getNestedSummaryList().get(1).getSqlValue();
 
         // verify the resource type, IO total sys callrate, node ID, Index Name, shard ID
-        Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(ioTotalSysCallRateResourceType), hotShard5.get(0));
-        Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(ioTotalSysCallRateResourceType), hotShard6.get(0));
+        Assert.assertEquals(ResourceUtil.IO_TOTAL_SYS_CALLRATE.getResourceEnumValue(), hotShard5.get(0));
+        Assert.assertEquals(ResourceUtil.IO_TOTAL_SYS_CALLRATE.getResourceEnumValue(), hotShard6.get(0));
 
-        Assert.assertEquals(0.75, hotShard5.get(2));
+        Assert.assertEquals(0.75, hotShard5.get(3));
         String [] nodeIndexShardInfo5 = hotShard5.get(8).toString().split(" ");
         Assert.assertEquals(node.node_1.name(), nodeIndexShardInfo5[0]);
         Assert.assertEquals(index.index_1.name(), nodeIndexShardInfo5[1]);
         Assert.assertEquals(shard.shard_1.name(), nodeIndexShardInfo5[2]);
 
-        Assert.assertEquals(0.50, hotShard6.get(2));
+        Assert.assertEquals(0.50, hotShard6.get(3));
         String [] nodeIndexShardInfo6 = hotShard6.get(8).toString().split(" ");
         Assert.assertEquals(node.node_2.name(), nodeIndexShardInfo6[0]);
         Assert.assertEquals(index.index_2.name(), nodeIndexShardInfo6[1]);
@@ -318,26 +309,26 @@ public class HotShardClusterRcaTest {
         List<Object> hotShard2 = nodeSummary.getNestedSummaryList().get(1).getSqlValue();
         List<Object> hotShard3 = nodeSummary.getNestedSummaryList().get(2).getSqlValue();
 
-        Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(cpuResourceType), hotShard1.get(0));
-        Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(ioTotalThroughputResourceType), hotShard2.get(0));
-        Assert.assertEquals(ResourceTypeUtil.getResourceTypeName(ioTotalSysCallRateResourceType), hotShard3.get(0));
+        Assert.assertEquals(ResourceUtil.CPU_USAGE.getResourceEnumValue(), hotShard1.get(0));
+        Assert.assertEquals(ResourceUtil.IO_TOTAL_THROUGHPUT.getResourceEnumValue(), hotShard2.get(0));
+        Assert.assertEquals(ResourceUtil.IO_TOTAL_SYS_CALLRATE.getResourceEnumValue(), hotShard3.get(0));
 
         // verify the resource type, cpu utilization value, node ID, Index Name, shard ID
-        Assert.assertEquals(0.75, hotShard1.get(2));
+        Assert.assertEquals(0.75, hotShard1.get(3));
         String [] nodeIndexShardInfo1 = hotShard1.get(8).toString().split(" ");
         Assert.assertEquals(node.node_1.name(), nodeIndexShardInfo1[0]);
         Assert.assertEquals(index.index_1.name(), nodeIndexShardInfo1[1]);
         Assert.assertEquals(shard.shard_1.name(), nodeIndexShardInfo1[2]);
 
         // verify the resource type, IO total throughput, node ID, Index Name, shard ID
-        Assert.assertEquals(560000.0, hotShard2.get(2));
+        Assert.assertEquals(560000.0, hotShard2.get(3));
         String [] nodeIndexShardInfo2 = hotShard2.get(8).toString().split(" ");
         Assert.assertEquals(node.node_1.name(), nodeIndexShardInfo2[0]);
         Assert.assertEquals(index.index_1.name(), nodeIndexShardInfo2[1]);
         Assert.assertEquals(shard.shard_2.name(), nodeIndexShardInfo2[2]);
 
         // verify the resource type, IO total sys callrate, node ID, Index Name, shard ID
-        Assert.assertEquals(0.50, hotShard3.get(2));
+        Assert.assertEquals(0.50, hotShard3.get(3));
         String [] nodeIndexShardInfo3 = hotShard3.get(8).toString().split(" ");
         Assert.assertEquals(node.node_2.name(), nodeIndexShardInfo3[0]);
         Assert.assertEquals(index.index_2.name(), nodeIndexShardInfo3[1]);

@@ -15,8 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HardwareEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardClusterRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
@@ -26,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotShardSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
@@ -134,11 +134,11 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>>
      * @param resourceInfoTable Guava Table with 'Index_Name', 'NodeShardKey' and 'UsageValue'
      * @param thresholdInPercentage Threshold for the resource in percentage
      * @param hotResourceSummaryList Summary List for hot shards
-     * @param resourceType Resource Type
+     * @param resource Resource message object defined in protobuf
      *
      */
     private void findHotShardAndCreateSummary(Table<String, NodeShardKey, Double> resourceInfoTable, double thresholdInPercentage,
-                                              List<HotResourceSummary> hotResourceSummaryList, ResourceType resourceType) {
+                                              List<HotResourceSummary> hotResourceSummaryList, Resource resource) {
         for (String indexName : resourceInfoTable.rowKeySet()) {
             Map<NodeShardKey, Double> perIndexShardInfo = resourceInfoTable.row(indexName);
             double thresholdValue = getThresholdValue(perIndexShardInfo, thresholdInPercentage);
@@ -149,7 +149,7 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>>
                             { shardInfo.getKey().getNodeId(), indexName, shardInfo.getKey().getShardId() });
 
                     // Add to hotResourceSummaryList
-                    hotResourceSummaryList.add(new HotResourceSummary(resourceType, thresholdValue,
+                    hotResourceSummaryList.add(new HotResourceSummary(resource, thresholdValue,
                             shardInfo.getValue(), SLIDING_WINDOW_IN_SECONDS, shardIdentifier));
                 }
             }
@@ -189,15 +189,15 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>>
             // We evaluate hot shards individually on all the 3 dimensions
             findHotShardAndCreateSummary(
                     cpuUtilizationInfoTable, cpuUtilizationClusterThreshold, hotShardSummaryList,
-                    ResourceType.newBuilder().setHardwareResourceTypeValue(HardwareEnum.CPU_VALUE).build());
+                    ResourceUtil.CPU_USAGE);
 
             findHotShardAndCreateSummary(
                     IOThroughputInfoTable, ioTotThroughputClusterThreshold, hotShardSummaryList,
-                    ResourceType.newBuilder().setHardwareResourceTypeValue(HardwareEnum.IO_TOTAL_THROUGHPUT_VALUE).build());
+                    ResourceUtil.IO_TOTAL_THROUGHPUT);
 
             findHotShardAndCreateSummary(
                     IOSysCallRateInfoTable, ioTotSysCallRateClusterThreshold, hotShardSummaryList,
-                    ResourceType.newBuilder().setHardwareResourceTypeValue(HardwareEnum.IO_TOTAL_SYS_CALLRATE_VALUE).build());
+                    ResourceUtil.IO_TOTAL_SYS_CALLRATE);
 
             if (hotShardSummaryList.isEmpty()) {
                 context = new ResourceContext(Resources.State.HEALTHY);

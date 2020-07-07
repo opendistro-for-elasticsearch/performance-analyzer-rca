@@ -18,7 +18,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca.thread
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolDimension.THREAD_POOL_TYPE;
 import static java.time.Instant.ofEpochMilli;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ThreadPoolEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
@@ -26,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.MetricTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.threadpool.QueueRejectionRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
 import java.time.Clock;
@@ -102,7 +102,7 @@ public class QueueRejectionRcaTest {
     Assert.assertEquals(1, nodeSummary.getNestedSummaryList().size());
     Assert.assertEquals(1, nodeSummary.getHotResourceSummaryList().size());
     HotResourceSummary resourceSummary = nodeSummary.getHotResourceSummaryList().get(0);
-    Assert.assertEquals(ThreadPoolEnum.WRITE_QUEUE, resourceSummary.getResourceType().getThreadPool());
+    Assert.assertEquals(ResourceUtil.WRITE_QUEUE_REJECTION, resourceSummary.getResource());
     Assert.assertEquals(0.01, 6.0, resourceSummary.getValue());
 
     mockFlowUnits(0, 0);
@@ -141,10 +141,10 @@ public class QueueRejectionRcaTest {
     Assert.assertEquals(2, nodeSummary.getNestedSummaryList().size());
     Assert.assertEquals(2, nodeSummary.getHotResourceSummaryList().size());
     HotResourceSummary resourceSummary = nodeSummary.getHotResourceSummaryList().get(1);
-    Assert.assertEquals(ThreadPoolEnum.SEARCH_QUEUE, resourceSummary.getResourceType().getThreadPool());
+    Assert.assertEquals(ResourceUtil.SEARCH_QUEUE_REJECTION, resourceSummary.getResource());
     Assert.assertEquals(0.01, 9.0, resourceSummary.getValue());
     resourceSummary = nodeSummary.getHotResourceSummaryList().get(0);
-    Assert.assertEquals(ThreadPoolEnum.WRITE_QUEUE, resourceSummary.getResourceType().getThreadPool());
+    Assert.assertEquals(ResourceUtil.WRITE_QUEUE_REJECTION, resourceSummary.getResource());
     Assert.assertEquals(0.01, 7.0, resourceSummary.getValue());
   }
 }
