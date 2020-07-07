@@ -1,0 +1,223 @@
+/*
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ *  permissions and limitations under the License.
+ */
+
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache;
+
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.SHARD_REQUEST_CACHE_EVICTION;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.SHARD_REQUEST_CACHE_HIT;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.CacheUtil.getTotalSizeInMB;
+
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.google.common.annotations.VisibleForTesting;
+import java.time.Clock;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jooq.Record;
+import org.jooq.Result;
+
+/**
+ * Shard Request Cache RCA is to identify when the cache is unhealthy(thrashing) and otherwise, healthy.
+ * The dimension we are using for this analysis is cache eviction, hit count, cache current weight(size)
+ * and cache max weight(size) configured.
+ *
+ * <p>Cache eviction within Elasticsearch happens in following scenarios:
+ * <ol>
+ *   <li> Mutation to Cache (Entry Insertion/Promotion and Manual Invalidation)
+ *   <li> Explicit call to refresh()
+ * </ol>
+ *
+ * <p>The Cache Eviction requires that either the cache weight exceeds OR the entry TTL is expired.
+ * For Shard Request Cache, TTL is defined via `indices.requests.cache.expire` setting which is never used
+ * in production clusters and only provided for backward compatibility, thus we ignore time based evictions.
+ * The weight based evictions(removal from Cache Map and LRU linked List with entry updated to EVICTED) occur
+ * when the cache_weight exceeds the max_cache_weight, eviction.
+ *
+ * <p>The Entry Invalidation is performed manually on cache clear(), index close() and for cached results from
+ * timed-out requests. A scheduled runnable, running every 10 minutes cleans up all the invalidated entries which
+ * have not been read/written to since invalidation.
+ *
+ * <p>The Cache Hit and Eviction metric presence implies cache is undergoing frequent load and eviction or undergoing
+ * scheduled cleanup for entries which had timed-out during execution.
+ *
+ * <p>This RCA reads 'shardRequestCacheEvictions',  'shardRequestCacheHits', 'shardRequestCacheSize' and
+ * 'shardRequestCacheMaxSize' from upstream metrics and maintains collectors which keeps track of the time window
+ * period(tp) where we repeatedly see evictions and hits for the last tp duration. This RCA is marked as unhealthy
+ * if tp we find tp is above the threshold(300 seconds) and cache size exceeds the max cache size configured.
+ *
+ */
+public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
+    private static final Logger LOG = LogManager.getLogger(ShardRequestCacheRca.class);
+    private static final long THRESHOLD_TIME_PERIOD_IN_MILLISECOND = TimeUnit.SECONDS.toMillis(300);
+
+    private final Metric shardRequestCacheEvictions;
+    private final Metric shardRequestCacheHits;
+    private final Metric shardRequestCacheSize;
+    private final Metric shardRequestCacheMaxSize;
+    private final int rcaPeriod;
+    private int counter;
+    private boolean exceedsSize;
+    protected Clock clock;
+    private final CacheCollector cacheEvictionCollector;
+    private final CacheCollector cacheHitCollector;
+
+    public <M extends Metric> ShardRequestCacheRca(final int rcaPeriod, final M shardRequestCacheEvictions,
+                                                   final M shardRequestCacheHits, final M shardRequestCacheSize,
+                                                   final M shardRequestCacheMaxSize) {
+        super(5);
+        this.rcaPeriod = rcaPeriod;
+        this.shardRequestCacheEvictions = shardRequestCacheEvictions;
+        this.shardRequestCacheHits = shardRequestCacheHits;
+        this.shardRequestCacheSize = shardRequestCacheSize;
+        this.shardRequestCacheMaxSize = shardRequestCacheMaxSize;
+        this.counter = 0;
+        this.exceedsSize = Boolean.FALSE;
+        this.clock = Clock.systemUTC();
+        this.cacheEvictionCollector = new CacheCollector(SHARD_REQUEST_CACHE_EVICTION,
+                shardRequestCacheEvictions, THRESHOLD_TIME_PERIOD_IN_MILLISECOND);
+        this.cacheHitCollector = new CacheCollector(SHARD_REQUEST_CACHE_HIT,
+                shardRequestCacheHits, THRESHOLD_TIME_PERIOD_IN_MILLISECOND);
+    }
+
+    @VisibleForTesting
+    public void setClock(Clock clock) {
+        this.clock = clock;
+    }
+
+    @Override
+    public ResourceFlowUnit operate() {
+        counter += 1;
+        long currTimestamp = clock.millis();
+
+        cacheEvictionCollector.collect(currTimestamp);
+        cacheHitCollector.collect(currTimestamp);
+        if (counter >= rcaPeriod) {
+            ResourceContext context;
+            HotNodeSummary nodeSummary;
+
+            ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor.getCurrentNodeDetails();
+            double cacheSize = getTotalSizeInMB(shardRequestCacheSize);
+            double cacheMaxSize = getTotalSizeInMB(shardRequestCacheMaxSize);
+            exceedsSize = cacheMaxSize != 0 && cacheMaxSize != 0 && cacheSize > cacheMaxSize;
+
+            // if eviction and hit counts persists in last 5 minutes and cache size exceeds the max cache size configured,
+            // the cache is considered as unhealthy
+            if (cacheEvictionCollector.isMetricPresentForThresholdTime(currTimestamp)
+                    && cacheHitCollector.isMetricPresentForThresholdTime(currTimestamp)
+                    && exceedsSize) {
+                context = new ResourceContext(Resources.State.UNHEALTHY);
+                nodeSummary = new HotNodeSummary(currentNode.getId(), currentNode.getHostAddress());
+                nodeSummary.appendNestedSummary(cacheEvictionCollector.generateSummary(currTimestamp));
+            } else {
+                context = new ResourceContext(Resources.State.HEALTHY);
+                nodeSummary = null;
+            }
+
+            counter = 0;
+            exceedsSize = Boolean.FALSE;
+            return new ResourceFlowUnit<>(currTimestamp, context, nodeSummary, !currentNode.getIsMasterNode());
+        }
+        else {
+            return new ResourceFlowUnit<>(currTimestamp);
+        }
+    }
+
+    @Override
+    public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
+        final List<FlowUnitMessage> flowUnitMessages =
+                args.getWireHopper().readFromWire(args.getNode());
+        List<ResourceFlowUnit<HotNodeSummary>> flowUnitList = new ArrayList<>();
+        LOG.debug("rca: Executing fromWire: {}", this.getClass().getSimpleName());
+        for (FlowUnitMessage flowUnitMessage : flowUnitMessages) {
+            flowUnitList.add(ResourceFlowUnit.buildFlowUnitFromWrapper(flowUnitMessage));
+        }
+        setFlowUnits(flowUnitList);
+    }
+
+    /**
+     * A collector class to collect metrics (eviction and hit) for cache
+     */
+    private static class CacheCollector {
+        private final Resource cache;
+        private final Metric cacheMetrics;
+        private boolean hasMetric;
+        private long metricTimestamp;
+        private long metricTimePeriodThreshold;
+
+        public CacheCollector(final Resource cache, final Metric cacheMetrics, final long threshold) {
+            this.cache = cache;
+            this.cacheMetrics = cacheMetrics;
+            this.hasMetric = false;
+            this.metricTimestamp = 0;
+            this.metricTimePeriodThreshold = threshold;
+        }
+
+        public void collect(final long currTimestamp) {
+            for (MetricFlowUnit flowUnit : cacheMetrics.getFlowUnits()) {
+                if (flowUnit.isEmpty()) {
+                    continue;
+                }
+
+                Result<Record> records = flowUnit.getData();
+                double metricCount = records.stream().mapToDouble(
+                        record -> record.getValue(MetricsDB.MAX, Double.class)).sum();
+                if (!Double.isNaN(metricCount)) {
+                    if (metricCount > 0) {
+                        if (!hasMetric) {
+                            metricTimestamp = currTimestamp;
+                        }
+                        hasMetric = true;
+                    }
+                    else {
+                        hasMetric = false;
+                    }
+                }
+                else {
+                    LOG.error("Failed to parse metric from cache {}", cache.toString());
+                }
+            }
+        }
+
+        public boolean isMetricPresentForThresholdTime(final long currTimestamp) {
+            return hasMetric && (currTimestamp - metricTimestamp) >= metricTimePeriodThreshold;
+        }
+
+        private HotResourceSummary generateSummary(final long currTimestamp) {
+            HotResourceSummary resourceSummary = null;
+            if (isMetricPresentForThresholdTime(currTimestamp)) {
+                resourceSummary = new HotResourceSummary(cache,
+                        TimeUnit.MILLISECONDS.toSeconds(metricTimePeriodThreshold),
+                        TimeUnit.MILLISECONDS.toSeconds(currTimestamp - metricTimestamp),
+                        0);
+            }
+            return resourceSummary;
+        }
+    }
+}

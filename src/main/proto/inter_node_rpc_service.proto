@@ -69,6 +69,11 @@ enum ResourceEnum {
   // threadpool
   WRITE_THREADPOOL = 4 [(additional_fields).name = "write threadpool"];
   SEARCH_THREADPOOL = 5 [(additional_fields).name = "search threadpool"];
+
+  // Cache
+  FIELD_DATA_CACHE = 6 [(additional_fields).name = "field data cache"];
+  SHARD_REQUEST_CACHE = 7 [(additional_fields).name = "shard request cache"];
+  NODE_QUERY_CACHE = 8 [(additional_fields).name = "node query cache"];
 }
 
 enum MetricEnum {
@@ -84,6 +89,10 @@ enum MetricEnum {
 
   // threadpool
   QUEUE_REJECTION = 6 [(additional_fields).name = "queue rejection", (additional_fields).description = "rejection period in second"];
+
+  // cache
+  CACHE_EVICTION = 7 [(additional_fields).name = "cache eviction", (additional_fields).description = "cache eviction count"];
+  CACHE_HIT = 8 [(additional_fields).name = "cache hit", (additional_fields).description = "cache hit count"];
 }
 
 /*
