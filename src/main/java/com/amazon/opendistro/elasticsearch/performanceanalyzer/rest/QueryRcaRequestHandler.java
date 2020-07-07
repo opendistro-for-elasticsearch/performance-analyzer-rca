@@ -205,36 +205,19 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
 
     // Temperature RCAs does not mix well with other RCAs. Therefore, all of them have to be temperature RCAs.
     if (SQLiteQueryUtils.getMasterAccessibleNodeTemperatureRCASet().containsAll(getTemperatureRcasFromParam(params))) {
-      // When you ask for the temperature details of nodes, we want to make sure they are data nodes.
-      String[] nodes = params.get(QueryMetricsRequestHandler.NODES_PARAM).split(",");
-      if (allDataNodeIps(nodes)) {
-        try {
-          List<String> rcas = getTemperatureRcasFromParam(params);
-          List<String> dimensions = getDimensionFromParams(params);
-          List<String> zones = getZoneFromParams(params);
-          int topK = getTopKFromParams(params);
+      try {
+        String[] nodes = getNodesFromParam(params);
+        List<String> rcas = getTemperatureRcasFromParam(params);
+        List<String> dimensions = getDimensionFromParams(params);
+        List<String> zones = getZoneFromParams(params);
+        int topK = getTopKFromParams(params);
 
-          String response = gatherTemperatureFromDataNodes(nodes, rcas, dimensions, zones, topK);
-          sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
-          return;
-        } catch (IllegalArgumentException ex) {
-          JsonObject errResponse = new JsonObject();
-          errResponse.addProperty("error", ex.getMessage());
-          sendResponse(exchange, errResponse.toString(), HttpURLConnection.HTTP_BAD_REQUEST);
-          return;
-
-        }
-      } else {
+        String response = gatherTemperatureFromDataNodes(nodes, rcas, dimensions, zones, topK);
+        sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
+        return;
+      } catch (IllegalArgumentException ex) {
         JsonObject errResponse = new JsonObject();
-
-        StringBuilder errMsgBuilder =
-            new StringBuilder("One or more IPs provided that don't belong to data nodes. DataNode Ips: [");
-
-        errMsgBuilder
-                .append(getDataNodeIPSet())
-                .append("]. Provided list: [")
-                .append(String.join(", ", nodes)).append("]");
-        errResponse.addProperty("error", errMsgBuilder.toString());
+        errResponse.addProperty("error", ex.getMessage());
         sendResponse(exchange, errResponse.toString(), HttpURLConnection.HTTP_BAD_REQUEST);
         return;
       }
@@ -253,6 +236,30 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
     }
     String response = getRcaData(persistable, rcaList).toString();
     sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
+  }
+
+  private String[] getNodesFromParam(Map<String, String> params) {
+    String nodesStr = params.get(QueryMetricsRequestHandler.NODES_PARAM);
+    String[] nodes;
+    Set dataNodes = getDataNodeIPSet();
+
+    if (nodesStr == null) {
+      nodes = new String[dataNodes.size()];
+      dataNodes.toArray(nodes);
+    } else {
+      nodes = params.get(QueryMetricsRequestHandler.NODES_PARAM).split(",");
+      if (!allDataNodeIps(nodes)) {
+        StringBuilder errMsgBuilder =
+            new StringBuilder("One or more IPs provided that don't belong to data nodes. DataNode Ips: [");
+
+        errMsgBuilder
+            .append(String.join(", ", dataNodes))
+            .append("]. Provided list: [")
+            .append(String.join(", ", nodes)).append("]");
+        throw new IllegalArgumentException(errMsgBuilder.toString());
+      }
+    }
+    return nodes;
   }
 
   private List<String> getTemperatureRcasFromParam(Map<String, String> params) {
@@ -410,7 +417,7 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
     }
   }
 
-  private Set getDataNodeIPSet() {
+  private Set<String> getDataNodeIPSet() {
     return ClusterDetailsEventProcessor
         .getDataNodesDetails()
         .stream()
