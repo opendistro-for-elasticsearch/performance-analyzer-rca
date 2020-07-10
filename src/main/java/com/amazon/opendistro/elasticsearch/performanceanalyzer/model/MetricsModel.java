@@ -243,6 +243,9 @@ public class MetricsModel {
         ShardStatsValue.CACHE_FIELDDATA_SIZE.toString(),
         new MetricAttributes(MetricUnits.BYTE.toString(), ShardStatsDerivedDimension.values()));
     allMetricsInitializer.put(
+        ShardStatsValue.CACHE_FIELDDATA_MAX_SIZE.toString(),
+        new MetricAttributes(MetricUnits.BYTE.toString(), ShardStatsDerivedDimension.values()));
+    allMetricsInitializer.put(
         ShardStatsValue.CACHE_REQUEST_HIT.toString(),
         new MetricAttributes(MetricUnits.COUNT.toString(), ShardStatsDerivedDimension.values()));
     allMetricsInitializer.put(
@@ -253,6 +256,9 @@ public class MetricsModel {
         new MetricAttributes(MetricUnits.COUNT.toString(), ShardStatsDerivedDimension.values()));
     allMetricsInitializer.put(
         ShardStatsValue.CACHE_REQUEST_SIZE.toString(),
+        new MetricAttributes(MetricUnits.BYTE.toString(), ShardStatsDerivedDimension.values()));
+    allMetricsInitializer.put(
+        ShardStatsValue.CACHE_REQUEST_MAX_SIZE.toString(),
         new MetricAttributes(MetricUnits.BYTE.toString(), ShardStatsDerivedDimension.values()));
     allMetricsInitializer.put(
         ShardStatsValue.REFRESH_EVENT.toString(),
