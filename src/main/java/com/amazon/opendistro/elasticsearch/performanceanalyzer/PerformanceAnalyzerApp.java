@@ -47,6 +47,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryMetricsRequestHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.exceptions.PAThreadException;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.sun.net.httpserver.HttpServer;
 import java.util.ArrayList;
@@ -114,20 +115,21 @@ public class PerformanceAnalyzerApp {
     final GRPCConnectionManager connectionManager = new GRPCConnectionManager(
         settings.getHttpsEnabled());
     final ClientServers clientServers = createClientServers(connectionManager, appContext);
-    startErrorHandlingThread();
+    startErrorHandlingThread(THREAD_PROVIDER, exceptionQueue);
 
-    startReaderThread(appContext);
-    startGrpcServerThread(clientServers.getNetServer());
-    startWebServerThread(clientServers.getHttpServer());
-    startRcaTopLevelThread(clientServers, connectionManager, appContext);
+    startReaderThread(appContext, THREAD_PROVIDER);
+    startGrpcServerThread(clientServers.getNetServer(), THREAD_PROVIDER);
+    startWebServerThread(clientServers.getHttpServer(), THREAD_PROVIDER);
+    startRcaTopLevelThread(clientServers, connectionManager, appContext, THREAD_PROVIDER);
   }
 
   private static void startRcaTopLevelThread(final ClientServers clientServers,
                                              final GRPCConnectionManager connectionManager,
-                                             final AppContext appContext) {
+                                             final AppContext appContext,
+                                             final ThreadProvider threadProvider) {
     rcaController =
         new RcaController(
-            THREAD_PROVIDER,
+            threadProvider,
             netOperationsExecutor,
             connectionManager,
             clientServers,
@@ -136,17 +138,22 @@ public class PerformanceAnalyzerApp {
             RcaConsts.nodeRolePollerPeriodicityInSeconds * 1000,
             appContext
         );
-
-    Thread rcaControllerThread = THREAD_PROVIDER.createThreadForRunnable(() -> rcaController.run(),
-        PerformanceAnalyzerThreads.RCA_CONTROLLER);
-    rcaControllerThread.start();
+    startRcaTopLevelThread(rcaController, threadProvider);
   }
 
-  private static void startErrorHandlingThread() {
-    final Thread errorHandlingThread = THREAD_PROVIDER.createThreadForRunnable(() -> {
+  public static Thread startRcaTopLevelThread(final RcaController rcaController1, final ThreadProvider threadProvider) {
+    Thread rcaControllerThread = threadProvider.createThreadForRunnable(() -> rcaController1.run(),
+        PerformanceAnalyzerThreads.RCA_CONTROLLER);
+    rcaControllerThread.start();
+    return rcaControllerThread;
+  }
+
+  public static Thread startErrorHandlingThread(final ThreadProvider threadProvider,
+                                                final BlockingQueue<PAThreadException> errorQueue) {
+    final Thread errorHandlingThread = threadProvider.createThreadForRunnable(() -> {
       while (true) {
         try {
-          final PAThreadException exception = exceptionQueue.take();
+          final PAThreadException exception = errorQueue.take();
           handle(exception);
         } catch (InterruptedException e) {
           LOG.error("Exception handling thread interrupted. Reason: {}", e.getMessage(), e);
@@ -156,6 +163,7 @@ public class PerformanceAnalyzerApp {
     }, PerformanceAnalyzerThreads.PA_ERROR_HANDLER);
 
     errorHandlingThread.start();
+    return errorHandlingThread;
   }
 
   /**
@@ -174,27 +182,29 @@ public class PerformanceAnalyzerApp {
     StatsCollector.instance().logException(exception.getExceptionCode());
   }
 
-  private static void startWebServerThread(final HttpServer server) {
-    final Thread webServerThread = THREAD_PROVIDER
-        .createThreadForRunnable(server::start, PerformanceAnalyzerThreads.WEB_SERVER);
+  public static Thread startWebServerThread(final HttpServer server, final ThreadProvider threadProvider) {
+    final Thread webServerThread =
+        threadProvider.createThreadForRunnable(server::start, PerformanceAnalyzerThreads.WEB_SERVER);
     // We don't want to hold up the app from restarting just because the web server is up and all
     // other threads have died.
     webServerThread.setDaemon(true);
     webServerThread.start();
+    return webServerThread;
   }
 
-  private static void startGrpcServerThread(final NetServer server) {
-    final Thread grpcServerThread = THREAD_PROVIDER.createThreadForRunnable(server,
+  public static Thread startGrpcServerThread(final NetServer server, final ThreadProvider threadProvider) {
+    final Thread grpcServerThread = threadProvider.createThreadForRunnable(server,
         PerformanceAnalyzerThreads.GRPC_SERVER);
     // We don't want to hold up the app from restarting just because the grpc server is up and
     // all other threads have died.
     grpcServerThread.setDaemon(true);
     grpcServerThread.start();
+    return grpcServerThread;
   }
 
-  private static void startReaderThread(final AppContext appContext) {
+  private static void startReaderThread(final AppContext appContext, final ThreadProvider threadProvider) {
     PluginSettings settings = PluginSettings.instance();
-    final Thread readerThread = THREAD_PROVIDER.createThreadForRunnable(() -> {
+    final Thread readerThread = threadProvider.createThreadForRunnable(() -> {
       while (true) {
         try {
           ReaderMetricsProcessor mp =
@@ -227,18 +237,40 @@ public class PerformanceAnalyzerApp {
    */
   public static ClientServers createClientServers(final GRPCConnectionManager connectionManager,
                                                   final AppContext appContext) {
-    boolean useHttps = PluginSettings.instance().getHttpsEnabled();
+    PluginSettings settings = PluginSettings.instance();
+    boolean useHttps = settings.getHttpsEnabled();
+    return createClientServers(
+        connectionManager,
+        Util.RPC_PORT,
+        new MetricsServerHandler(),
+        new MetricsRestUtil(),
+        useHttps,
+        settings.getSettingValue(PerformanceAnalyzerWebServer.WEBSERVICE_PORT_CONF_NAME),
+        settings.getSettingValue(PerformanceAnalyzerWebServer.WEBSERVICE_BIND_HOST_NAME),
+        appContext);
+  }
 
-    NetServer netServer = new NetServer(Util.RPC_PORT, 1, useHttps);
+  public static ClientServers createClientServers(final GRPCConnectionManager connectionManager,
+                                                  int rpcPort,
+                                                  final MetricsServerHandler metricsServerHandler,
+                                                  final MetricsRestUtil metricsRestUtil,
+                                                  boolean useHttps,
+                                                  final String webServerPortFromSetting,
+                                                  final String hostFromSetting,
+                                                  final AppContext appContext) {
+    NetServer netServer = new NetServer(rpcPort, 1, useHttps);
     NetClient netClient = new NetClient(connectionManager);
-    MetricsRestUtil metricsRestUtil = new MetricsRestUtil();
 
-    netServer.setMetricsHandler(new MetricsServerHandler());
+    if (metricsServerHandler != null) {
+      netServer.setMetricsHandler(metricsServerHandler);
+    }
+
     HttpServer httpServer =
-        PerformanceAnalyzerWebServer.createInternalServer(PluginSettings.instance());
-    httpServer.createContext(
-        QUERY_URL,
-        new QueryMetricsRequestHandler(netClient, metricsRestUtil, appContext));
+        PerformanceAnalyzerWebServer.createInternalServer(webServerPortFromSetting, hostFromSetting, useHttps);
+
+    if (metricsRestUtil != null) {
+      httpServer.createContext(QUERY_URL, new QueryMetricsRequestHandler(netClient, metricsRestUtil, appContext));
+    }
 
     return new ClientServers(httpServer, netServer, netClient);
   }
@@ -259,4 +291,12 @@ public class PerformanceAnalyzerApp {
     return measurementSets.toArray(new MeasurementSet[]{});
   }
 
+  public static RcaController getRcaController() {
+    return rcaController;
+  }
+
+  @VisibleForTesting
+  public static void setRcaController(RcaController rcaController) {
+    PerformanceAnalyzerApp.rcaController = rcaController;
+  }
 }

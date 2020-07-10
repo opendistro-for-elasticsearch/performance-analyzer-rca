@@ -61,6 +61,7 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -80,7 +81,7 @@ public class RcaController {
 
   private static final Logger LOG = LogManager.getLogger(RcaController.class);
 
-  private static final String RCA_ENABLED_CONF_FILE = "rca_enabled.conf";
+  public static final String RCA_ENABLED_CONF_FILE = "rca_enabled.conf";
 
   private final ScheduledExecutorService netOpsExecutorService;
   private final boolean useHttps;
@@ -88,13 +89,13 @@ public class RcaController {
   private boolean rcaEnabledDefaultValue = false;
 
   // This needs to be volatile as the RcaConfPoller writes it but the Nanny reads it.
-  private static volatile boolean rcaEnabled = false;
+  private volatile boolean rcaEnabled = false;
 
   // This needs to be volatile as the RcaConfPoller writes it but the Nanny reads it.
-  private static volatile long lastModifiedTimeInMillisInMemory = 0;
+  private volatile long lastModifiedTimeInMillisInMemory = 0;
 
   // This needs to be volatile as the NodeRolePoller writes it but the Nanny reads it.
-  private volatile NodeRole currentRole = NodeRole.UNKNOWN;
+  protected volatile NodeRole currentRole = NodeRole.UNKNOWN;
 
   private final ThreadProvider threadProvider;
   private RCAScheduler rcaScheduler;
@@ -114,6 +115,8 @@ public class RcaController {
   private final long rcaStateCheckIntervalMillis;
   private final long roleCheckPeriodicity;
 
+  private boolean deliberateInterrupt;
+
   // Atomic reference to the networking threadpool as it is used by multiple threads. When we
   // replace the threadpool instance, we want the update to be visible to all others holding a
   // reference.
@@ -121,6 +124,8 @@ public class RcaController {
   private ReceivedFlowUnitStore receivedFlowUnitStore;
 
   private final AppContext appContext;
+
+  protected Queryable dbProvider = null;
 
   public RcaController(
       final ThreadProvider threadProvider,
@@ -146,17 +151,46 @@ public class RcaController {
     this.rcaScheduler = null;
     this.rcaStateCheckIntervalMillis = rcaStateCheckIntervalMillis;
     this.roleCheckPeriodicity = nodeRoleCheckPeriodicityMillis;
+    this.deliberateInterrupt = false;
+  }
+
+  @VisibleForTesting
+  public RcaController() {
+    netOpsExecutorService = null;
+    useHttps = false;
+    threadProvider = null;
+    RCA_ENABLED_CONF_LOCATION = "";
+    rcaStateCheckIntervalMillis = 0;
+    roleCheckPeriodicity = 0;
+    appContext = null;
+  }
+
+  protected List<ConnectedComponent> getRcaGraphComponents(
+      RcaConf rcaConf) throws ClassNotFoundException,
+      NoSuchMethodException,
+      InstantiationException,
+      IllegalAccessException,
+      InvocationTargetException {
+    return RcaUtil.getAnalysisGraphComponents(rcaConf);
   }
 
   private void start() {
     try {
+      Objects.requireNonNull(subscriptionManager);
+      Objects.requireNonNull(rcaConf);
+
       subscriptionManager.setCurrentLocus(rcaConf.getTagMap().get("locus"));
-      List<ConnectedComponent> connectedComponents = RcaUtil.getAnalysisGraphComponents(rcaConf);
+      List<ConnectedComponent> connectedComponents = getRcaGraphComponents(rcaConf);
 
       // Mute the rca nodes after the graph creation and before the scheduler start
       readAndUpdateMutesRcasDuringStart();
 
-      Queryable db = new MetricsDBProvider();
+      Queryable db;
+      if (dbProvider == null) {
+        db = new MetricsDBProvider();
+      } else {
+        db = dbProvider;
+      }
       ThresholdMain thresholdMain = new ThresholdMain(RcaConsts.THRESHOLDS_PATH, rcaConf);
       Persistable persistable = PersistenceFactory.create(rcaConf);
       networkThreadPoolReference
@@ -251,8 +285,10 @@ public class RcaController {
           Thread.sleep(rcaStateCheckIntervalMillis - duration);
         }
       } catch (InterruptedException ie) {
-        LOG.error("RCA controller thread was interrupted. Reason: {}", ie.getMessage());
-        LOG.error(ie);
+        if (!deliberateInterrupt) {
+          LOG.error("RCA controller thread was interrupted. Reason: {}", ie.getMessage());
+          LOG.error(ie);
+        }
         break;
       }
       tick++;
@@ -401,7 +437,7 @@ public class RcaController {
     return RCA_ENABLED_CONF_FILE;
   }
 
-  public static boolean isRcaEnabled() {
+  public boolean isRcaEnabled() {
     return rcaEnabled;
   }
 
@@ -420,5 +456,9 @@ public class RcaController {
 
   private void addRcaRequestHandler() {
     httpServer.createContext(Util.RCA_QUERY_URL, queryRcaRequestHandler);
+  }
+
+  public void setDeliberateInterrupt() {
+    deliberateInterrupt = true;
   }
 }
