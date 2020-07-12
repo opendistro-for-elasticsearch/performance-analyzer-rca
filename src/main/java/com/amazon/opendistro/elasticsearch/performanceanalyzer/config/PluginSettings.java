@@ -104,6 +104,11 @@ public class PluginSettings {
   }
 
   @VisibleForTesting
+  public void setHttpsEnabled(boolean httpsEnabled) {
+    this.httpsEnabled = httpsEnabled;
+  }
+
+  @VisibleForTesting
   public void overrideProperty(String key, String value) {
     settings.setProperty(key, value);
   }
