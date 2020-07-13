@@ -32,6 +32,7 @@ public class AllMetrics {
   // metric name (not complete, only metrics use the json format and contains
   // numeric values. Will add more when needed)
   public enum MetricName {
+    CACHE_CUSTOM,
     CIRCUIT_BREAKER,
     HEAP_METRICS,
     DISK_METRICS,
@@ -126,6 +127,44 @@ public class AllMetrics {
       public static final String EDEN_VALUE = "Eden";
       public static final String NON_HEAP_VALUE = "NonHeap";
       public static final String HEAP_VALUE = "Heap";
+    }
+  }
+
+  public enum CacheCustomDimension implements MetricDimension {
+    CACHE_TYPE(Constants.TYPE_VALUE);
+
+    private final String value;
+
+    CacheCustomDimension(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String TYPE_VALUE = "CacheType";
+    }
+  }
+
+  public enum CacheCustomValue implements MetricValue {
+    CACHE_MAX_SIZE(Constants.MAX_SIZE);
+
+    private final String value;
+
+    CacheCustomValue(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String MAX_SIZE = "Cache_MaxSize";
     }
   }
 
@@ -524,12 +563,10 @@ public class AllMetrics {
     CACHE_QUERY_SIZE(Constants.QUERY_CACHE_IN_BYTES_VALUE),
     CACHE_FIELDDATA_EVICTION(Constants.FIELDDATA_EVICTION_VALUE),
     CACHE_FIELDDATA_SIZE(Constants.FIELD_DATA_IN_BYTES_VALUE),
-    CACHE_FIELDDATA_MAX_SIZE(Constants.FIELD_DATA_MAX_SIZE_IN_BYTES_VALUE),
     CACHE_REQUEST_HIT(Constants.REQUEST_CACHE_HIT_COUNT_VALUE),
     CACHE_REQUEST_MISS(Constants.REQUEST_CACHE_MISS_COUNT_VALUE),
     CACHE_REQUEST_EVICTION(Constants.REQUEST_CACHE_EVICTION_VALUE),
     CACHE_REQUEST_SIZE(Constants.REQUEST_CACHE_IN_BYTES_VALUE),
-    CACHE_REQUEST_MAX_SIZE(Constants.REQUEST_CACHE_MAX_SIZE_IN_BYTES_VALUE),
     REFRESH_EVENT(Constants.REFRESH_COUNT_VALUE),
     REFRESH_TIME(Constants.REFRESH_TIME_VALUE),
     FLUSH_EVENT(Constants.FLUSH_COUNT_VALUE),
@@ -571,13 +608,9 @@ public class AllMetrics {
 
       public static final String QUERY_CACHE_IN_BYTES_VALUE = "Cache_Query_Size";
 
-      public static final String QUERY_CACHE_MAX_SIZE_IN_BYTES_VALUE = "Cache_Query_Max_Size";
-
       public static final String FIELDDATA_EVICTION_VALUE = "Cache_FieldData_Eviction";
 
       public static final String FIELD_DATA_IN_BYTES_VALUE = "Cache_FieldData_Size";
-
-      public static final String FIELD_DATA_MAX_SIZE_IN_BYTES_VALUE = "Cache_FieldData_Max_Size";
 
       public static final String REQUEST_CACHE_HIT_COUNT_VALUE = "Cache_Request_Hit";
 
@@ -586,8 +619,6 @@ public class AllMetrics {
       public static final String REQUEST_CACHE_EVICTION_VALUE = "Cache_Request_Eviction";
 
       public static final String REQUEST_CACHE_IN_BYTES_VALUE = "Cache_Request_Size";
-
-      public static final String REQUEST_CACHE_MAX_SIZE_IN_BYTES_VALUE = "Cache_Request_Max_Size";
 
       public static final String REFRESH_COUNT_VALUE = "Refresh_Event";
 
