@@ -107,7 +107,6 @@ public class PerformanceAnalyzerApp {
     StatsCollector.STATS_TYPE = "agent-stats-metadata";
     METRIC_COLLECTOR_EXECUTOR.addScheduledMetricCollector(StatsCollector.instance());
     StatsCollector.instance().addDefaultExceptionCode(StatExceptionCode.READER_RESTART_PROCESSING);
-    StatsCollector.instance().addDefaultExceptionCode(StatExceptionCode.CIRCUIT_BREAKING_ERROR);
     METRIC_COLLECTOR_EXECUTOR.setEnabled(true);
     METRIC_COLLECTOR_EXECUTOR.start();
 
