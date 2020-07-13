@@ -17,6 +17,8 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.model;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.AggregatedOSDimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheCustomDimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheCustomValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CircuitBreakerDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CircuitBreakerValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonMetric;
@@ -122,6 +124,11 @@ public class MetricsModel {
     allMetricsInitializer.put(
         HttpMetric.HTTP_TOTAL_REQUESTS.toString(),
         new MetricAttributes(MetricUnits.COUNT.toString(), HttpOnlyDimension.values()));
+
+    // Cache Max Size Metrics
+    allMetricsInitializer.put(
+        CacheCustomValue.CACHE_MAX_SIZE.toString(),
+        new MetricAttributes(MetricUnits.BYTE.toString(), CacheCustomDimension.values()));
 
     // Circuit Breaker Metrics
     allMetricsInitializer.put(
@@ -243,9 +250,6 @@ public class MetricsModel {
         ShardStatsValue.CACHE_FIELDDATA_SIZE.toString(),
         new MetricAttributes(MetricUnits.BYTE.toString(), ShardStatsDerivedDimension.values()));
     allMetricsInitializer.put(
-        ShardStatsValue.CACHE_FIELDDATA_MAX_SIZE.toString(),
-        new MetricAttributes(MetricUnits.BYTE.toString(), ShardStatsDerivedDimension.values()));
-    allMetricsInitializer.put(
         ShardStatsValue.CACHE_REQUEST_HIT.toString(),
         new MetricAttributes(MetricUnits.COUNT.toString(), ShardStatsDerivedDimension.values()));
     allMetricsInitializer.put(
@@ -256,9 +260,6 @@ public class MetricsModel {
         new MetricAttributes(MetricUnits.COUNT.toString(), ShardStatsDerivedDimension.values()));
     allMetricsInitializer.put(
         ShardStatsValue.CACHE_REQUEST_SIZE.toString(),
-        new MetricAttributes(MetricUnits.BYTE.toString(), ShardStatsDerivedDimension.values()));
-    allMetricsInitializer.put(
-        ShardStatsValue.CACHE_REQUEST_MAX_SIZE.toString(),
         new MetricAttributes(MetricUnits.BYTE.toString(), ShardStatsDerivedDimension.values()));
     allMetricsInitializer.put(
         ShardStatsValue.REFRESH_EVENT.toString(),
