@@ -15,8 +15,13 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.clients.Client;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.clients.RpcClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,11 +31,13 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
   private static final Logger LOG = LogManager.getLogger(Publisher.class);
 
   private Collator collator;
+  private Client client;
   private boolean isMuted = false;
 
   public Publisher(int evalIntervalSeconds, Collator collator) {
     super(0, evalIntervalSeconds);
     this.collator = collator;
+    this.client = new RpcClient();
   }
 
   @Override
@@ -39,22 +46,36 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
     // avoidance, state persistence etc.
 
     Decision decision = collator.getFlowUnits().get(0);
+    client.newBatchRequest();
     for (Action action : decision.getActions()) {
       LOG.info("Executing action: [{}]", action.name());
-      action.execute();
+      action.buildRequest(client);
     }
-
+    client.sendBatchRequest();
     return new EmptyFlowUnit(System.currentTimeMillis());
   }
 
-  /* Publisher does not have downstream nodes and does not emit flow units
-   */
-
   @Override
   public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
-    assert true;
+    LOG.debug("Publisher: Executing fromLocal: {}", name());
+    long startTime = System.currentTimeMillis();
+
+    try {
+      this.operate();
+    } catch (Exception ex) {
+      LOG.error("Publisher: Exception in operate", ex);
+      PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
+          ExceptionsAndErrors.EXCEPTION_IN_OPERATE, name(), 1);
+    }
+    long duration = System.currentTimeMillis() - startTime;
+
+    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
+        RcaGraphMetrics.GRAPH_NODE_OPERATE_CALL, this.name(), duration);
   }
 
+  /**
+   * Publisher does not have downstream nodes and does not emit flow units
+   */
   @Override
   public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
     assert true;
