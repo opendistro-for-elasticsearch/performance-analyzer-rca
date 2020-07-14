@@ -126,7 +126,7 @@ public class GRPCTest {
         insecureClient.getMetrics("127.0.0.1", METRICS_REQUEST, observer);
         // Wait for the client to fail
         WaitFor.waitFor(() -> observer.errors[0] != null && observer.errors[0] instanceof StatusRuntimeException,
-                15, TimeUnit.SECONDS);
+                1, TimeUnit.MINUTES);
         insecureClient.stop();
         insecureClient.getConnectionManager().shutdown();
     }
