@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca.hotshard;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.RcaTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
@@ -22,13 +23,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardClusterRca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,8 +39,6 @@ public class HotShardClusterRcaTest {
     private RcaTestHelper hotShardRca;
 
     private HotShardClusterRca hotShardClusterRca;
-
-    private ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper;
 
     private enum index {
         index_1,
@@ -65,10 +62,11 @@ public class HotShardClusterRcaTest {
         try {
             hotShardRca = new RcaTestHelper<HotNodeSummary>();
             hotShardClusterRca = new HotShardClusterRca(1, hotShardRca);
-            clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
-            clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.0", false);
-            clusterDetailsEventProcessorTestHelper.addNodeDetails("node2", "127.0.0.1", false);
-            clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
+
+            InstanceDetails instanceDetails =
+                new InstanceDetails(AllMetrics.NodeRole.DATA, "node1", "127.0.0.1", false);
+            hotShardRca.setInstanceDetails(instanceDetails);
+            hotShardClusterRca.setInstanceDetails(instanceDetails);
         } catch (Exception e) {
             Assert.assertTrue("Exception when generating cluster details event", false);
             return;

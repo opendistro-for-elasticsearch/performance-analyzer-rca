@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerThreads;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
@@ -33,6 +34,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ThresholdMain;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
@@ -135,7 +137,8 @@ public class PersistFlowUnitAndSummaryTest {
     queryable = new MetricsDBProviderTestHelper(false);
   }
 
-  private RCAScheduler startScheduler(RcaConf rcaConf, AnalysisGraph graph, Persistable persistable, Queryable queryable, NodeRole role) {
+  private RCAScheduler startScheduler(RcaConf rcaConf, AnalysisGraph graph, Persistable persistable,
+                                      Queryable queryable, InstanceDetails instanceDetails) {
     RCAScheduler scheduler =
         new RCAScheduler(
             RcaUtil.getAnalysisGraphComponents(graph),
@@ -144,8 +147,9 @@ public class PersistFlowUnitAndSummaryTest {
             new ThresholdMain(
                 Paths.get(RcaConsts.TEST_CONFIG_PATH, "thresholds").toString(), rcaConf),
             persistable,
-            new WireHopper(null, null, null, null, null));
-    scheduler.setRole(role);
+            new WireHopper(null, null, null, null,
+                null, new AppContext()),
+            instanceDetails);
     ThreadProvider threadProvider = new ThreadProvider();
     Thread rcaSchedulerThread =
         threadProvider.createThreadForRunnable(scheduler::start, PerformanceAnalyzerThreads.RCA_SCHEDULER);
@@ -166,7 +170,8 @@ public class PersistFlowUnitAndSummaryTest {
     AnalysisGraph graph = new DataNodeGraph();
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
     Persistable persistable = PersistenceFactory.create(rcaConf);
-    RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, AllMetrics.NodeRole.DATA);
+    RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable,
+        new InstanceDetails(AllMetrics.NodeRole.DATA));
     // Wait at most 1 minute for the persisted data to show up with the correct contents
     WaitFor.waitFor(() -> {
       String readTableStr = persistable.read();
@@ -194,7 +199,8 @@ public class PersistFlowUnitAndSummaryTest {
     AnalysisGraph graph = new MasterNodeGraph();
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_elected_master.conf").toString());
     Persistable persistable = PersistenceFactory.create(rcaConf);
-    RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, NodeRole.ELECTED_MASTER);
+    RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable,
+        new InstanceDetails(NodeRole.ELECTED_MASTER));
     // Wait at most 1 minute for the persisted data to show up with the correct contents
     WaitFor.waitFor(() -> {
       String readTableStr = persistable.read();

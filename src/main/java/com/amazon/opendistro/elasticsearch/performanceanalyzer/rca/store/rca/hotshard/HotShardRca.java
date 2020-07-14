@@ -37,6 +37,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotShardSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.time.Clock;
@@ -164,13 +165,15 @@ public class HotShardRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
 
         if (counter == rcaPeriod) {
             ResourceContext context = new ResourceContext(Resources.State.HEALTHY);
-            ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor.getCurrentNodeDetails();
+
+            InstanceDetails instanceDetails = getInstanceDetails();
 
             Set<IndexShardKey> indexShardKeySet = new HashSet<>(cpuUtilizationMap.keySet());
             indexShardKeySet.addAll(ioTotThroughputMap.keySet());
             indexShardKeySet.addAll(ioTotSyscallRateMap.keySet());
 
-            HotNodeSummary nodeSummary = new HotNodeSummary(currentNode.getId(), currentNode.getHostAddress());
+            HotNodeSummary nodeSummary = new HotNodeSummary(instanceDetails.getInstanceId(),
+                instanceDetails.getInstanceIp());
             for (IndexShardKey indexShardKey : indexShardKeySet) {
                 double avgCpuUtilization = fetchUsageValueFromMap(cpuUtilizationMap, indexShardKey);
                 double avgIoTotThroughput = fetchUsageValueFromMap(ioTotThroughputMap, indexShardKey);
@@ -180,7 +183,8 @@ public class HotShardRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
                         || avgIoTotThroughput > ioTotThroughputThreshold
                         || avgIoTotSyscallRate > ioTotSysCallRateThreshold) {
                     HotShardSummary summary = new HotShardSummary(indexShardKey.getIndexName(),
-                            String.valueOf(indexShardKey.getShardId()), currentNode.getId(), SLIDING_WINDOW_IN_SECONDS);
+                            String.valueOf(indexShardKey.getShardId()), instanceDetails.getInstanceId(),
+                        SLIDING_WINDOW_IN_SECONDS);
                     summary.setcpuUtilization(avgCpuUtilization);
                     summary.setCpuUtilizationThreshold(cpuUtilizationThreshold);
                     summary.setIoThroughput(avgIoTotThroughput);
@@ -199,7 +203,7 @@ public class HotShardRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
 
             //check if the current node is data node. If it is the data node
             //then HotNodeRca is the top level RCA on this node and we want to persist summaries in flowunit.
-            boolean isDataNode = !currentNode.getIsMasterNode();
+            boolean isDataNode = !instanceDetails.getIsMaster();
             return new ResourceFlowUnit<>(this.clock.millis(), context, nodeSummary, isDataNode);
         } else {
             LOG.debug("Empty FlowUnit returned for Hot Shard RCA");

@@ -20,8 +20,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ThresholdMain;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.sql.SQLException;
 import java.util.List;
@@ -48,7 +50,9 @@ public class RCAScheduler {
   private WireHopper net;
   private boolean shutdownRequested;
   private volatile RcaSchedulerState schedulerState = RcaSchedulerState.STATE_NOT_STARTED;
-  private NodeRole role = NodeRole.UNKNOWN;
+  private final NodeRole role;
+  private final InstanceDetails instanceDetails;
+
   final ThreadFactory schedThreadFactory =
       new ThreadFactoryBuilder().setNameFormat("sched-%d").setDaemon(true).build();
 
@@ -76,7 +80,8 @@ public class RCAScheduler {
       RcaConf rcaConf,
       ThresholdMain thresholdMain,
       Persistable persistable,
-      WireHopper net) {
+      WireHopper net,
+      InstanceDetails instanceDetails) {
     this.connectedComponents = connectedComponents;
     this.db = db;
     this.rcaConf = rcaConf;
@@ -84,6 +89,8 @@ public class RCAScheduler {
     this.persistable = persistable;
     this.net = net;
     this.shutdownRequested = false;
+    this.instanceDetails = instanceDetails;
+    this.role = this.instanceDetails.getRole();
   }
 
   public void start() {
@@ -96,7 +103,8 @@ public class RCAScheduler {
       schedulerState = RcaSchedulerState.STATE_STARTED;
 
       final RCASchedulerTask task = new RCASchedulerTask(
-          10000, rcaSchedulerPeriodicExecutor, connectedComponents, db, persistable, rcaConf, net);
+          10000, rcaSchedulerPeriodicExecutor, connectedComponents, db, persistable, rcaConf, net,
+          new InstanceDetails(role));
       while (schedulerState == RcaSchedulerState.STATE_STARTED) {
         try {
           long startTime = System.currentTimeMillis();
@@ -162,7 +170,8 @@ public class RCAScheduler {
     return role;
   }
 
-  public void setRole(NodeRole role) {
-    this.role = role;
+  @VisibleForTesting
+  public void setQueryable(Queryable queryable) {
+    this.db = queryable;
   }
 }

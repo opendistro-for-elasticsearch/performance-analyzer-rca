@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
@@ -65,6 +66,11 @@ public abstract class Node<T extends GenericFlowUnit> {
    * location.
    */
   private Map<String, String> tags;
+
+  /**
+   * A view of the instanceDetails that the RCAs can have access to.
+   */
+  private InstanceDetails instanceDetails;
 
   Node(int level, long evaluationIntervalSeconds) {
     this.downStreams = new ArrayList<>();
@@ -186,5 +192,13 @@ public abstract class Node<T extends GenericFlowUnit> {
    */
   public void readRcaConf(RcaConf conf) {
     return;
+  }
+
+  public void setInstanceDetails(InstanceDetails instanceDetails) {
+    this.instanceDetails = instanceDetails;
+  }
+
+  public InstanceDetails getInstanceDetails() {
+    return this.instanceDetails;
   }
 }

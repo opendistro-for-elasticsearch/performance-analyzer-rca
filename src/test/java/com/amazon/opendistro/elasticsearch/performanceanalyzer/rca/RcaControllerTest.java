@@ -2,6 +2,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaTestHelper.updateConfFileForMutedRcas;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.ClientServers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerThreads;
@@ -14,6 +15,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCAScheduler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RcaSchedulerState;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.MetricsDBProviderTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
@@ -112,7 +114,8 @@ public class RcaControllerTest {
             clientServers,
             rcaEnabledFileLoc.toString(),
             100,
-            200
+            200,
+            new AppContext()
         );
 
     setMyIp(masterIP, AllMetrics.NodeRole.UNKNOWN);
@@ -200,6 +203,7 @@ public class RcaControllerTest {
     String mutedRcaConfPath = Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_muted.conf").toString();
     List<String> mutedRcas1 = Arrays.asList("CPU_Utilization", "Heap_AllocRate");
     List<String> mutedRcas2 = Arrays.asList("Paging_MajfltRate");
+
 
     // RCA enabled, mutedRcas1 is muted nodes
     changeRcaRunState(RcaState.RUN);
@@ -368,6 +372,7 @@ public class RcaControllerTest {
     ClusterDetailsEventProcessor eventProcessor = new ClusterDetailsEventProcessor();
     eventProcessor.processEvent(
         new Event("", jtime.toString() + System.lineSeparator() + jNode.toString(), 0));
+    rcaController.getAppContext().setClusterDetailsEventProcessor(eventProcessor);
   }
 
   enum RcaState {
@@ -391,7 +396,7 @@ public class RcaControllerTest {
   private <T> boolean check(IEval eval, T expected) {
     final long SLEEP_TIME_MILLIS = 1000;
 
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 10; i++) {
       if (eval.evaluateAndCheck(expected)) {
         return true;
       }
