@@ -17,7 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PerformanceControllerConfiguration;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.JooqFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.google.gson.JsonElement;
@@ -25,6 +25,7 @@ import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
@@ -53,7 +54,7 @@ public class HotNodeSummary extends GenericSummary {
   private final String hostAddress;
   private List<HotResourceSummary> hotResourceSummaryList;
   private List<HotShardSummary> hotShardSummaryList;
-  private PerformanceControllerConfiguration performanceControllerConfiguration;
+  private final HashMap<Resource, HotResourceSummary> resourceMap;
 
   public HotNodeSummary(String nodeID, String hostAddress) {
     super();
@@ -61,9 +62,7 @@ public class HotNodeSummary extends GenericSummary {
     this.hostAddress = hostAddress;
     this.hotResourceSummaryList = new ArrayList<>();
     this.hotShardSummaryList = new ArrayList<>();
-    this.performanceControllerConfiguration = PerformanceControllerConfiguration.newBuilder()
-        .setSearchQueueCapacity(-1)
-        .setWriteQueueCapacity(-1).build();
+    this.resourceMap = new HashMap<>();
   }
 
   public String getNodeID() {
@@ -83,19 +82,25 @@ public class HotNodeSummary extends GenericSummary {
   }
 
   public void appendNestedSummary(HotResourceSummary summary) {
-    hotResourceSummaryList.add(summary);
+    if (summary != null) {
+      hotResourceSummaryList.add(summary);
+      resourceMap.put(summary.getResource(), summary);
+    }
   }
 
   public void appendNestedSummary(HotShardSummary summary) {
     hotShardSummaryList.add(summary);
   }
 
-  public void setPerformanceControllerConfiguration(PerformanceControllerConfiguration performanceControllerConfiguration) {
-    this.performanceControllerConfiguration = performanceControllerConfiguration;
-  }
-
-  public PerformanceControllerConfiguration getPerformanceControllerConfiguration() {
-    return performanceControllerConfiguration;
+  /**
+   * read the HotResourceSummary that is tied to the given resource type
+   * from the resource summary list
+   * @param resource Resource type
+   * @return the resource summary object that is tied to the given resource type
+   */
+  @Nullable
+  public HotResourceSummary getResourceSummary(Resource resource) {
+    return resourceMap.get(resource);
   }
 
   @Override
@@ -110,10 +115,6 @@ public class HotNodeSummary extends GenericSummary {
     for (HotShardSummary hotShardSummary : hotShardSummaryList) {
       summaryMessageBuilder.getHotShardSummaryListBuilder()
           .addHotShardSummary(hotShardSummary.buildSummaryMessage());
-    }
-    if (performanceControllerConfiguration != null) {
-      summaryMessageBuilder.getPerformanceControllerConfigurationBuilder().mergeFrom(
-          performanceControllerConfiguration);
     }
     return summaryMessageBuilder.build();
   }
@@ -138,7 +139,6 @@ public class HotNodeSummary extends GenericSummary {
                 message.getHotShardSummaryList().getHotShardSummary(i)));
       }
     }
-    newSummary.setPerformanceControllerConfiguration(message.getPerformanceControllerConfiguration());
     return newSummary;
   }
 

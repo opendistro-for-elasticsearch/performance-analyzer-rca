@@ -84,6 +84,7 @@ enum MetricEnum {
 
   // threadpool
   QUEUE_REJECTION = 6 [(additional_fields).name = "queue rejection", (additional_fields).description = "rejection period in second"];
+  QUEUE_CAPACITY = 7 [(additional_fields).name = "queue capacity", (additional_fields).description = "max capacity of the queue"];
 }
 
 /*
@@ -136,16 +137,11 @@ message HotShardSummaryMessage {
     double io_sys_callrate_threshold = 9;
     int32 timePeriod = 10;
 }
-message PerformanceControllerConfiguration {
-    int32 writeQueueCapacity = 1;
-    int32 searchQueueCapacity = 2;
-}
 message HotNodeSummaryMessage {
     string nodeID = 1;
     string hostAddress = 2;
     HotResourceSummaryList hotResourceSummaryList = 3;
     HotShardSummaryList hotShardSummaryList = 4;
-    PerformanceControllerConfiguration performanceControllerConfiguration = 5;
 }
 message HotClusterSummaryMessage {
     int32 nodeCount = 1;

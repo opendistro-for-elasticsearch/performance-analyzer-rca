@@ -2,53 +2,63 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.re
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolDimension.THREAD_POOL_TYPE;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PerformanceControllerConfiguration;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.EsConfigNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.NodeConfigFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_QueueCapacity;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import java.util.HashMap;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jooq.Record;
+import org.jooq.Result;
 
 /**
  * This is a node level collector in RCA graph which collect the current config settings of PerformanceControllor
  * PerformanceController is a ES plugin that helps with cache/queue auto tuning and this collector collect configs
  * set by PerformanceController and pass them down to Decision Maker for the next round of resource auto-tuning.
  */
-public class PerformanceControllerConfigCollector extends EsConfigNode {
+public class NodeConfigCollector extends EsConfigNode {
 
-  private static final Logger LOG = LogManager.getLogger(PerformanceControllerConfigCollector.class);
-  private final Metric threadPool_queueCapacity;
+  private static final Logger LOG = LogManager.getLogger(NodeConfigCollector.class);
+  private final ThreadPool_QueueCapacity threadPool_queueCapacity;
   private final int rcaPeriod;
   private int counter;
-  private int writeQueueCapacity;
-  private int searchQueueCapacity;
+  private final HashMap<Resource, Double> configResult;
 
-  public <M extends Metric> PerformanceControllerConfigCollector(int rcaPeriod, M threadPool_queueCapacity) {
+  public NodeConfigCollector(int rcaPeriod, ThreadPool_QueueCapacity threadPool_queueCapacity) {
     this.threadPool_queueCapacity = threadPool_queueCapacity;
     this.rcaPeriod = rcaPeriod;
     this.counter = 0;
-    this.writeQueueCapacity = -1;
-    this.searchQueueCapacity = -1;
+    this.configResult = new HashMap<>();
   }
 
   private void collectQueueCapacity(MetricFlowUnit flowUnit) {
     double writeQueueCapacity = SQLParsingUtil.readDataFromSqlResult(flowUnit.getData(),
         THREAD_POOL_TYPE.getField(), ThreadPoolType.WRITE.toString(), MetricsDB.MAX);
     if (!Double.isNaN(writeQueueCapacity)) {
-      this.writeQueueCapacity = (int) writeQueueCapacity;
+      configResult.put(ResourceUtil.WRITE_QUEUE_CAPACITY, writeQueueCapacity);
+    }
+    else {
+      LOG.error("write queue capacity is NaN");
     }
     double searchQueueCapacity = SQLParsingUtil.readDataFromSqlResult(flowUnit.getData(),
         THREAD_POOL_TYPE.getField(), ThreadPoolType.SEARCH.toString(), MetricsDB.MAX);
     if (!Double.isNaN(searchQueueCapacity)) {
-      this.searchQueueCapacity = (int) searchQueueCapacity;
+      configResult.put(ResourceUtil.SEARCH_QUEUE_CAPACITY, searchQueueCapacity);
+    }
+    else {
+      LOG.error("search queue capacity is NaN");
     }
   }
 
@@ -59,7 +69,7 @@ public class PerformanceControllerConfigCollector extends EsConfigNode {
    * @return ResourceFlowUnit with HotNodeSummary. And HotNodeSummary carries PerformanceControllerConfiguration
    */
   @Override
-  public ResourceFlowUnit<HotNodeSummary> operate() {
+  public NodeConfigFlowUnit operate() {
     counter += 1;
     for (MetricFlowUnit flowUnit : threadPool_queueCapacity.getFlowUnits()) {
       if (flowUnit.isEmpty()) {
@@ -72,14 +82,11 @@ public class PerformanceControllerConfigCollector extends EsConfigNode {
       ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor
           .getCurrentNodeDetails();
       HotNodeSummary nodeSummary = new HotNodeSummary(currentNode.getId(), currentNode.getHostAddress());
-      nodeSummary.setPerformanceControllerConfiguration(PerformanceControllerConfiguration.newBuilder()
-              .setWriteQueueCapacity(writeQueueCapacity)
-              .setSearchQueueCapacity(searchQueueCapacity)
-              .build());
-      return new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(Resources.State.HEALTHY), nodeSummary);
+      configResult.values().forEach(nodeSummary::appendNestedSummary);
+      return new NodeConfigFlowUnit(System.currentTimeMillis(), nodeSummary);
     }
     else {
-      return new ResourceFlowUnit<>(System.currentTimeMillis());
+      return new NodeConfigFlowUnit(System.currentTimeMillis());
     }
   }
 }
