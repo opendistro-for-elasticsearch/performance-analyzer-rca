@@ -114,6 +114,7 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
     }
   }
 
+  @Deprecated
   public static NodeDetails getCurrentNodeDetails() {
     List<NodeDetails> allNodes = getNodesDetails();
     if (allNodes.size() > 0) {

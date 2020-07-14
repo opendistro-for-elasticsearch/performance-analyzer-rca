@@ -204,7 +204,6 @@ public class RcaControllerTest {
     List<String> mutedRcas1 = Arrays.asList("CPU_Utilization", "Heap_AllocRate");
     List<String> mutedRcas2 = Arrays.asList("Paging_MajfltRate");
 
-
     // RCA enabled, mutedRcas1 is muted nodes
     changeRcaRunState(RcaState.RUN);
     setMyIp(masterIP, AllMetrics.NodeRole.MASTER);

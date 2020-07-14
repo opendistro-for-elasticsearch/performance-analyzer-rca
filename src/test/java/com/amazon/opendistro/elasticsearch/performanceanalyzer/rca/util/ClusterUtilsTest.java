@@ -20,15 +20,6 @@ public class ClusterUtilsTest {
     }
 
     @Test
-    public void testGetCurrentHostAddress() {
-        Assert.assertEquals(ClusterUtils.EMPTY_STRING, ClusterUtils.getCurrentNodeHostAddress());
-        ClusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(
-                ClusterDetailsEventProcessorTestHelper.newNodeDetails(null, HOST, false)
-        ));
-        Assert.assertEquals(HOST, ClusterUtils.getCurrentNodeHostAddress());
-    }
-
-    @Test
     public void testGetAllPeerHostAddresses() {
         // method should behave when fed an empty list of peers
         Assert.assertEquals(Collections.emptyList(), ClusterUtils.getAllPeerHostAddresses());

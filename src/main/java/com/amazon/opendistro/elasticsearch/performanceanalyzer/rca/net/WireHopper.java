@@ -69,8 +69,12 @@ public class WireHopper {
     ExecutorService executor = executorReference.get();
     if (executor != null) {
       try {
-        executor.execute(new BroadcastSubscriptionTxTask(netClient, msg, subscriptionManager,
-            nodeStateManager));
+        executor.execute(new BroadcastSubscriptionTxTask(
+            netClient,
+            msg,
+            subscriptionManager,
+            nodeStateManager,
+            appContext));
       } catch (final RejectedExecutionException ree) {
         LOG.warn("Dropped sending subscription because the threadpool queue is full");
         StatsCollector.instance()
@@ -113,9 +117,12 @@ public class WireHopper {
       final ExecutorService executor = executorReference.get();
       if (executor != null) {
         try {
-          executor.execute(new UnicastSubscriptionTxTask(netClient, new UnicastIntentMsg("",
-              nodeName, node.getTags(), host),
-              subscriptionManager, nodeStateManager));
+          executor.execute(new UnicastSubscriptionTxTask(
+              netClient,
+              new UnicastIntentMsg("", nodeName, node.getTags(), host),
+              subscriptionManager,
+              nodeStateManager,
+              appContext));
         } catch (final RejectedExecutionException ree) {
           LOG.warn("Dropped sending subscription request because the threadpool queue is "
               + "full");

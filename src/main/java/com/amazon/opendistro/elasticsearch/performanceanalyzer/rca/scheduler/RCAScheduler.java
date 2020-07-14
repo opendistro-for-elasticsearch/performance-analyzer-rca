@@ -103,8 +103,14 @@ public class RCAScheduler {
       schedulerState = RcaSchedulerState.STATE_STARTED;
 
       final RCASchedulerTask task = new RCASchedulerTask(
-          10000, rcaSchedulerPeriodicExecutor, connectedComponents, db, persistable, rcaConf, net,
-          new InstanceDetails(role));
+          10000,
+          rcaSchedulerPeriodicExecutor,
+          connectedComponents,
+          db,
+          persistable,
+          rcaConf,
+          net,
+          instanceDetails);
       while (schedulerState == RcaSchedulerState.STATE_STARTED) {
         try {
           long startTime = System.currentTimeMillis();

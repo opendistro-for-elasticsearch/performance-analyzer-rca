@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
@@ -55,15 +56,19 @@ public abstract class SubscriptionTxTask implements Runnable {
    */
   protected final NodeStateManager nodeStateManager;
 
+  private final AppContext appContext;
+
   public SubscriptionTxTask(
       final NetClient netClient,
       final IntentMsg intentMsg,
       final SubscriptionManager subscriptionManager,
-      final NodeStateManager nodeStateManager) {
+      final NodeStateManager nodeStateManager,
+      final AppContext appContext) {
     this.netClient = netClient;
     this.intentMsg = intentMsg;
     this.subscriptionManager = subscriptionManager;
     this.nodeStateManager = nodeStateManager;
+    this.appContext = appContext;
   }
 
   protected void sendSubscribeRequest(final String remoteHost, final String requesterVertex,
@@ -73,9 +78,9 @@ public abstract class SubscriptionTxTask implements Runnable {
                                                               .setDestinationNode(destinationVertex)
                                                               .setRequesterNode(requesterVertex)
                                                               .putTags("locus", tags.get("locus"))
-                                                              .putTags("requester",
-                                                                  ClusterUtils
-                                                                      .getCurrentNodeHostAddress())
+                                                              .putTags(
+                                                                  "requester",
+                                                                  appContext.getMyInstanceDetails().getInstanceIp())
                                                               .build();
     netClient.subscribe(remoteHost, subscribeMessage,
         new SubscribeResponseHandler(subscriptionManager, nodeStateManager, remoteHost,

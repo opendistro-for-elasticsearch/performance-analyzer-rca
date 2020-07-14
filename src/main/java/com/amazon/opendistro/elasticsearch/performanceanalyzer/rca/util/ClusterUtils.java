@@ -1,10 +1,8 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.util;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
 import com.google.common.annotations.VisibleForTesting;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -15,21 +13,6 @@ public class ClusterUtils {
 
   @VisibleForTesting
   static final String EMPTY_STRING = "";
-
-
-  /**
-   * Get the current host's ip address.
-   *
-   * @return The host address for the current node.
-   */
-  public static String getCurrentNodeHostAddress() {
-    final NodeDetails currentNodeDetails = ClusterDetailsEventProcessor.getCurrentNodeDetails();
-    if (currentNodeDetails != null) {
-      return currentNodeDetails.getHostAddress();
-    }
-
-    return EMPTY_STRING;
-  }
 
   /**
    * Get host addresses for all the other nodes in the cluster.
