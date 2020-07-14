@@ -57,7 +57,6 @@ public class PublisherTest {
 
     @Test
     public void testIsCooledOff() throws Exception {
-        int expectedExecutions = 0;
         List<Decision> decisionList = Lists.newArrayList(decision);
         Mockito.when(collator.getFlowUnits()).thenReturn(decisionList);
         Mockito.when(decision.getActions()).thenReturn(Lists.newArrayList(action));
@@ -66,21 +65,20 @@ public class PublisherTest {
         // Verify that a newly initialized publisher doesn't execute an action until the publisher object
         // has been alive for longer than the action's cool off period
         publisher.operate();
-        Mockito.verify(action, Mockito.times(expectedExecutions)).execute();
+        Mockito.verify(action, Mockito.times(0)).execute();
         Mockito.when(action.coolOffPeriodInMillis()).thenReturn(Instant.now().toEpochMilli()
                 - publisher.getInitTime() - 1000L);
         publisher.operate();
-        expectedExecutions++;
-        Mockito.verify(action, Mockito.times(expectedExecutions)).execute();
+        Mockito.verify(action, Mockito.times(1)).execute();
+        Mockito.reset(action);
         // Verify that a publisher doesn't execute a previously executed action until the action's cool off period
         // has elapsed
-        Mockito.when(action.coolOffPeriodInMillis()).thenReturn(3_000L);
+        Mockito.when(action.coolOffPeriodInMillis()).thenReturn(3000L);
         publisher.operate();
-        Mockito.verify(action, Mockito.times(expectedExecutions)).execute();
+        Mockito.verify(action, Mockito.times(0)).execute();
         // Verify that a published executes a previously executed action once the action's cool off period has elapsed
         Thread.sleep(4000L);
         publisher.operate();
-        expectedExecutions++;
-        Mockito.verify(action, Mockito.times(expectedExecutions)).execute();
+        Mockito.verify(action, Mockito.times(1)).execute();
     }
 }

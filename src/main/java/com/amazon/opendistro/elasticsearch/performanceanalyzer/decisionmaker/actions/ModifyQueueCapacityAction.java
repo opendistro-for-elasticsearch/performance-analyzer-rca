@@ -30,7 +30,7 @@ import java.util.Map;
 public class ModifyQueueCapacityAction implements Action {
 
   public static final String NAME = "modify_queue_capacity";
-  public static final long COOL_OFF_PERIOD_IN_MILLIS = 300 * 1_000_000;
+  public static final long COOL_OFF_PERIOD_IN_MILLIS = 300 * 1_000;
 
   private int currentCapacity;
   private int desiredCapacity;

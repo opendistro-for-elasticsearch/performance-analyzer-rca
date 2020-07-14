@@ -20,8 +20,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,23 +38,29 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
   public Publisher(int evalIntervalSeconds, Collator collator) {
     super(0, evalIntervalSeconds);
     this.collator = collator;
-    this.actionToExecutionTime = new ConcurrentHashMap<>();
+    this.actionToExecutionTime = new HashMap<>();
     initTime = Instant.now().toEpochMilli();
   }
 
   /**
-   * Returns true if a given {@link Action}'s last execution time was > {@link Action#coolOffPeriodInMillis()} ago
+   * Returns true if a given {@link Action}'s last execution time was >= {@link Action#coolOffPeriodInMillis()} ago
    *
    * <p>If this Publisher has never executed the action, the last execution time is defined as the time that the publisher
    * object was constructed.
    *
    * @param action The {@link Action} to test
-   * @return true if a given {@link Action}'s last execution time was > {@link Action#coolOffPeriodInMillis()} ago
+   * @return true if a given {@link Action}'s last execution time was >= {@link Action#coolOffPeriodInMillis()} ago
    */
   public boolean isCooledOff(Action action) {
     long lastExecution = actionToExecutionTime.getOrDefault(action.name(), initTime);
-    long now = Instant.now().toEpochMilli();
-    return now - lastExecution > action.coolOffPeriodInMillis();
+    long elapsed = Instant.now().toEpochMilli() - lastExecution;
+    if (elapsed >= action.coolOffPeriodInMillis()) {
+      return true;
+    } else {
+      LOG.debug("Action {} still has {} ms left in its cool off period", action.name(),
+              action.coolOffPeriodInMillis() - elapsed);
+      return false;
+    }
   }
 
   @Override
