@@ -45,7 +45,7 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
   /**
    * Returns true if a given {@link Action}'s last execution time was > {@link Action#coolOffPeriodInMillis()} ago
    *
-   * If this Publisher has never executed the action, the last execution time is defined as the time that the publisher
+   * <p>If this Publisher has never executed the action, the last execution time is defined as the time that the publisher
    * object was constructed.
    *
    * @param action The {@link Action} to test
