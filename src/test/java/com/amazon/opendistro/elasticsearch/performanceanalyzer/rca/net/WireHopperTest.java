@@ -1,7 +1,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
@@ -69,6 +68,7 @@ public class WireHopperTest {
     private static final String LOCUS = "data-node";
     private static final long EVAL_INTERVAL_S = 5L;
     private static final long TIMESTAMP = 66L;
+    private static final int TEST_PORT = 12936;
     private static final ExecutorService rejectingExecutor = new RejectingExecutor();
 
     private static NetClient netClient;
@@ -86,12 +86,12 @@ public class WireHopperTest {
 
     @BeforeClass
     public static void setupClass() throws Exception {
-        connectionManager = new GRPCConnectionManager(PluginSettings.instance().getHttpsEnabled());
+        connectionManager = new GRPCConnectionManager(PluginSettings.instance().getHttpsEnabled(), TEST_PORT);
         netClient = new NetClient(connectionManager);
         executorService = Executors.newSingleThreadExecutor();
         clientExecutor = new AtomicReference<>(null);
         serverExecutor = new AtomicReference<>(Executors.newSingleThreadExecutor());
-        netServer = new TestNetServer(Util.RPC_PORT, 1, false);
+        netServer = new TestNetServer(TEST_PORT, 1, false);
         netServerExecutor = Executors.newSingleThreadExecutor();
         netServerExecutor.execute(netServer);
         // Wait for the TestNetServer to start

@@ -60,9 +60,16 @@ public class GRPCConnectionManager {
    * Flag that controls if we need to use a secure or an insecure channel.
    */
   private final boolean shouldUseHttps;
+  private final int port;
 
   public GRPCConnectionManager(final boolean shouldUseHttps) {
     this.shouldUseHttps = shouldUseHttps;
+    this.port = Util.RPC_PORT;
+  }
+
+  public GRPCConnectionManager(final boolean shouldUseHttps, int port) {
+    this.shouldUseHttps = shouldUseHttps;
+    this.port = port;
   }
 
   @VisibleForTesting
@@ -140,12 +147,12 @@ public class GRPCConnectionManager {
   }
 
   private ManagedChannel buildInsecureChannel(final String remoteHost) {
-    return ManagedChannelBuilder.forAddress(remoteHost, Util.RPC_PORT).usePlaintext().build();
+    return ManagedChannelBuilder.forAddress(remoteHost, this.port).usePlaintext().build();
   }
 
   private ManagedChannel buildSecureChannel(final String remoteHost) {
     try {
-      return NettyChannelBuilder.forAddress(remoteHost, Util.RPC_PORT)
+      return NettyChannelBuilder.forAddress(remoteHost, this.port)
                                 .sslContext(
                                     GrpcSslContexts.forClient()
                                                    .trustManager(
