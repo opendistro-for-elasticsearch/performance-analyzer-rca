@@ -264,6 +264,7 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
         server.awaitTermination(1, TimeUnit.MINUTES);
       } catch (InterruptedException e) {
         server.shutdownNow();
+        Thread.currentThread().interrupt();
       }
     }
   }

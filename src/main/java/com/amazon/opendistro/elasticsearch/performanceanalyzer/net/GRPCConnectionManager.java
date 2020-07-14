@@ -174,23 +174,23 @@ public class GRPCConnectionManager {
     return ManagedChannelBuilder.forAddress(remoteHost, this.port).usePlaintext().build();
   }
 
-   private ManagedChannel buildSecureChannel(final String remoteHost) {
-     try {
-       SslContextBuilder sslContextBuilder = GrpcSslContexts.forClient().keyManager(certFile, pkeyFile);
-       if (trustedCasFile != null) {
-         sslContextBuilder.trustManager(trustedCasFile);
-       }
-       return NettyChannelBuilder.forAddress(remoteHost, this.port)
-               .sslContext(sslContextBuilder.build())
-               .build();
-     } catch (SSLException e) {
-       LOG.error("Unable to build an SSL gRPC client. Exception: {}", e.getMessage());
-       e.printStackTrace();
+  private ManagedChannel buildSecureChannel(final String remoteHost) {
+    try {
+      SslContextBuilder sslContextBuilder = GrpcSslContexts.forClient().keyManager(certFile, pkeyFile);
+      if (trustedCasFile != null) {
+        sslContextBuilder.trustManager(trustedCasFile);
+      }
+      return NettyChannelBuilder.forAddress(remoteHost, this.port)
+              .sslContext(sslContextBuilder.build())
+              .build();
+    } catch (SSLException e) {
+      LOG.error("Unable to build an SSL gRPC client. Exception: {}", e.getMessage());
+      e.printStackTrace();
 
-       // Wrap the SSL Exception in a generic RTE and re-throw.
-       throw new RuntimeException(e);
-     }
-   }
+      // Wrap the SSL Exception in a generic RTE and re-throw.
+      throw new RuntimeException(e);
+    }
+  }
 
   private InterNodeRpcServiceStub buildStubForHost(
       final String remoteHost) {
@@ -215,6 +215,7 @@ public class GRPCConnectionManager {
       } catch (InterruptedException e) {
         LOG.warn("Channel interrupted while shutting down", e);
         channel.shutdownNow();
+        Thread.currentThread().interrupt();
       }
 
       perHostChannelMap.remove(entry.getKey());
