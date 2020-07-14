@@ -177,7 +177,7 @@ public class RcaController {
               thresholdMain,
               persistable,
               net,
-              appContext.getMyInstanceDetails());
+              appContext);
 
       rcaNetServer.setSendDataHandler(new PublishRequestHandler(
           nodeStateManager, receivedFlowUnitStore, networkThreadPoolReference));

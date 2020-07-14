@@ -18,6 +18,10 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The PA agent process is composed of multiple components. The PA Reader and RCA are two such components that are
@@ -28,16 +32,15 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDet
 public class AppContext {
   private volatile ClusterDetailsEventProcessor clusterDetailsEventProcessor;
 
+  @VisibleForTesting
+  private volatile List<InstanceDetails> instances;
+
   public AppContext() {
     this.clusterDetailsEventProcessor = null;
   }
 
   public void setClusterDetailsEventProcessor(final ClusterDetailsEventProcessor clusterDetailsEventProcessor) {
     this.clusterDetailsEventProcessor = clusterDetailsEventProcessor;
-  }
-
-  public ClusterDetailsEventProcessor getClusterDetailsEventProcessor() {
-    return clusterDetailsEventProcessor;
   }
 
   public InstanceDetails getMyInstanceDetails() {
@@ -54,5 +57,31 @@ public class AppContext {
           nodeDetails.getIsMasterNode());
     }
     return ret;
+  }
+
+  /**
+   * Can be used to get all the nodes in the cluster.
+   * @return Returns an empty list of the details are not available or else it provides the immutable list of nodes in
+   *     the cluster.
+   */
+  public List<InstanceDetails> getAllClusterInstances() {
+    List<ClusterDetailsEventProcessor.NodeDetails> nodes = clusterDetailsEventProcessor.getNodesDetails();
+    List<InstanceDetails> instances = new ArrayList<>();
+
+    for (ClusterDetailsEventProcessor.NodeDetails node: nodes) {
+      InstanceDetails instanceDetails = new InstanceDetails(
+          AllMetrics.NodeRole.valueOf(node.getRole()), node.getId(), node.getHostAddress(), node.getIsMasterNode());
+
+      instances.add(instanceDetails);
+    }
+    return ImmutableList.copyOf(instances);
+  }
+
+  public List<InstanceDetails> getInstances() {
+    return instances;
+  }
+
+  public void setInstances(List<InstanceDetails> instances) {
+    this.instances = instances;
   }
 }

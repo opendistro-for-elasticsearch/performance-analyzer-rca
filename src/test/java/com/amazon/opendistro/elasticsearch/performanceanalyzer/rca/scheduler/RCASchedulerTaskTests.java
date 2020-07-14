@@ -254,7 +254,7 @@ public class RCASchedulerTaskTests {
             null,
             conf,
             wireHopper,
-            new InstanceDetails(AllMetrics.NodeRole.UNKNOWN));
+            new AppContext());
       }
     }
 

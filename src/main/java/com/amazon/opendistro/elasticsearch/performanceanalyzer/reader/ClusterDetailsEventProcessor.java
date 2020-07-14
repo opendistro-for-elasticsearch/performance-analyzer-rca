@@ -20,6 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.Performan
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaControllerHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.JsonConverter;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -139,6 +140,14 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
       role = (String) map.get(AllMetrics.NodeDetailColumns.ROLE.toString());
       Object isMasterNodeObject = map.get(AllMetrics.NodeDetailColumns.IS_MASTER_NODE.toString());
       isMasterNode = isMasterNodeObject != null ? (Boolean) isMasterNodeObject : null;
+    }
+
+    @VisibleForTesting
+    public NodeDetails(AllMetrics.NodeRole role, String id, String hostAddress, boolean isMaster) {
+      this.id = id;
+      this.hostAddress = hostAddress;
+      this.isMasterNode = isMaster;
+      this.role = role.toString();
     }
 
     @Override

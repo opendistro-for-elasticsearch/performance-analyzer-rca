@@ -149,7 +149,9 @@ public class PersistFlowUnitAndSummaryTest {
             persistable,
             new WireHopper(null, null, null, null,
                 null, new AppContext()),
-            instanceDetails);
+            new AppContext()
+            //instanceDetails
+            );
     ThreadProvider threadProvider = new ThreadProvider();
     Thread rcaSchedulerThread =
         threadProvider.createThreadForRunnable(scheduler::start, PerformanceAnalyzerThreads.RCA_SCHEDULER);

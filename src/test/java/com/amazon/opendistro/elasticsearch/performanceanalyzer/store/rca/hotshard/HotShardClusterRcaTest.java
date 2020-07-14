@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca.hotshard;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.RcaTestHelper;
@@ -25,6 +26,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -65,8 +67,20 @@ public class HotShardClusterRcaTest {
 
             InstanceDetails instanceDetails =
                 new InstanceDetails(AllMetrics.NodeRole.DATA, "node1", "127.0.0.1", false);
-            hotShardRca.setInstanceDetails(instanceDetails);
-            hotShardClusterRca.setInstanceDetails(instanceDetails);
+            ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
+            clusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(
+                new ClusterDetailsEventProcessor.NodeDetails(
+                    AllMetrics.NodeRole.DATA,
+                    "node1",
+                    "127.0.0.1",
+                    false
+                )
+            ));
+            AppContext appContext = new AppContext();
+            appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
+
+            hotShardRca.setAppContext(appContext);
+            hotShardClusterRca.setAppContext(appContext);
         } catch (Exception e) {
             Assert.assertTrue("Exception when generating cluster details event", false);
             return;

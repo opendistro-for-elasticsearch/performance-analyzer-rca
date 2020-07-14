@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.google.common.annotations.VisibleForTesting;
@@ -70,7 +71,7 @@ public abstract class Node<T extends GenericFlowUnit> {
   /**
    * A view of the instanceDetails that the RCAs can have access to.
    */
-  private InstanceDetails instanceDetails;
+  private AppContext appContext;
 
   Node(int level, long evaluationIntervalSeconds) {
     this.downStreams = new ArrayList<>();
@@ -194,11 +195,15 @@ public abstract class Node<T extends GenericFlowUnit> {
     return;
   }
 
-  public void setInstanceDetails(InstanceDetails instanceDetails) {
-    this.instanceDetails = instanceDetails;
+  public void setAppContext(final AppContext appContext) {
+    this.appContext = appContext;
   }
 
   public InstanceDetails getInstanceDetails() {
-    return this.instanceDetails;
+    return this.appContext.getMyInstanceDetails();
+  }
+
+  public List<InstanceDetails> getAllClusterInstances() {
+    return this.appContext.getAllClusterInstances();
   }
 }

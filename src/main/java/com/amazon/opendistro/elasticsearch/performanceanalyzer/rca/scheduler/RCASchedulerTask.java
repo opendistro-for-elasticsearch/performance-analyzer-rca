@@ -15,15 +15,14 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
@@ -104,7 +103,7 @@ public class RCASchedulerTask implements Runnable {
       final Persistable persistable,
       final RcaConf conf,
       final WireHopper hopper,
-      final InstanceDetails instanceDetails) {
+      final AppContext appContext) {
     this.maxTicks = maxTicks;
     this.executorPool = executorPool;
     this.remotelyDesirableNodeSet = new HashMap<>();
@@ -120,7 +119,7 @@ public class RCASchedulerTask implements Runnable {
               db,
               persistable,
               nodeTaskletMap,
-              instanceDetails);
+              appContext);
 
       // Merge the list across connected components.
       dependencyOrderedLocallyExecutables =
@@ -183,7 +182,7 @@ public class RCASchedulerTask implements Runnable {
       final Queryable db,
       final Persistable persistable,
       final Map<Node<?>, Tasklet> nodeTaskletMap,
-      final  InstanceDetails instanceDetails) {
+      final AppContext appContext) {
     // This is just used for membership check in the createTaskletAndSendIntent. If a node is
     // present here, then the tasklet corresponding to it will be doing local evaluation or else,
     // the tasklet will read data from the read API provided by the wirehopper.
@@ -195,7 +194,7 @@ public class RCASchedulerTask implements Runnable {
     for (List<Node<?>> levelNodes : orderedNodes) {
       List<Tasklet> locallyExecutableInThisLevel = new ArrayList<>();
       for (Node<?> node : levelNodes) {
-        node.setInstanceDetails(instanceDetails);
+        node.setAppContext(appContext);
 
         if (RcaUtil.shouldExecuteLocally(node, conf)) {
           // This node will be executed locally, so add it to the set to keep track of this.

@@ -188,7 +188,7 @@ public class ResourceHeatMapGraphTest {
             persistable,
             rcaConf,
             wireHopper,
-            instanceDetails);
+            appContext);
 
     RcaTestHelper.setMyIp(instanceDetails.getInstanceIp(), instanceDetails.getRole());
     rcaSchedulerTaskData.run();
@@ -293,7 +293,7 @@ public class ResourceHeatMapGraphTest {
             persistable,
             rcaConf2,
             wireHopper2,
-            instanceDetails);
+            appContext);
     AllMetrics.NodeRole nodeRole2 = instanceDetails.getRole();
     RcaTestHelper.setMyIp(instanceDetails.getInstanceIp(), nodeRole2);
     rcaSchedulerTaskMaster.run();
@@ -1085,7 +1085,7 @@ public class ResourceHeatMapGraphTest {
             persistable,
             rcaConf,
             wireHopper,
-            dataInstance);
+            appContext);
     AllMetrics.NodeRole nodeRole = dataInstance.getRole();
     RcaTestHelper.setMyIp(dataInstance.getInstanceIp(), nodeRole);
     rcaSchedulerTaskData.run();
@@ -1114,7 +1114,7 @@ public class ResourceHeatMapGraphTest {
             persistable,
             rcaConf2,
             wireHopper2,
-            masterInstance);
+            appContextMaster);
     AllMetrics.NodeRole nodeRole2 = masterInstance.getRole();
     RcaTestHelper.setMyIp(masterInstance.getInstanceIp(), nodeRole2);
     rcaSchedulerTaskMaster.run();

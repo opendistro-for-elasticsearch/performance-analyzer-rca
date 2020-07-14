@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
@@ -51,7 +52,7 @@ public class RCAScheduler {
   private boolean shutdownRequested;
   private volatile RcaSchedulerState schedulerState = RcaSchedulerState.STATE_NOT_STARTED;
   private final NodeRole role;
-  private final InstanceDetails instanceDetails;
+  private final AppContext appContext;
 
   final ThreadFactory schedThreadFactory =
       new ThreadFactoryBuilder().setNameFormat("sched-%d").setDaemon(true).build();
@@ -70,7 +71,6 @@ public class RCAScheduler {
   Persistable persistable;
   static final int PERIODICITY_SECONDS = 1;
   static final int PERIODICITY_IN_MS = PERIODICITY_SECONDS * 1000;
-  ScheduledFuture<?> futureHandle;
 
   private static final Logger LOG = LogManager.getLogger(RCAScheduler.class);
 
@@ -81,7 +81,7 @@ public class RCAScheduler {
       ThresholdMain thresholdMain,
       Persistable persistable,
       WireHopper net,
-      InstanceDetails instanceDetails) {
+      final AppContext appContext) {
     this.connectedComponents = connectedComponents;
     this.db = db;
     this.rcaConf = rcaConf;
@@ -89,8 +89,8 @@ public class RCAScheduler {
     this.persistable = persistable;
     this.net = net;
     this.shutdownRequested = false;
-    this.instanceDetails = instanceDetails;
-    this.role = this.instanceDetails.getRole();
+    this.appContext = appContext;
+    this.role = this.appContext.getMyInstanceDetails().getRole();
   }
 
   public void start() {
@@ -110,7 +110,7 @@ public class RCAScheduler {
           persistable,
           rcaConf,
           net,
-          instanceDetails);
+          appContext);
       while (schedulerState == RcaSchedulerState.STATE_STARTED) {
         try {
           long startTime = System.currentTimeMillis();
