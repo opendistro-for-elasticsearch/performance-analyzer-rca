@@ -28,6 +28,7 @@ import org.junit.experimental.categories.Category;
 @Category(GradleTaskForRca.class)
 public class GRPCTest {
     private static final Logger LOG = LogManager.getLogger(GRPCTest.class);
+    private static final int TEST_PORT = 13231;
     private static final MetricsRequest METRICS_REQUEST = MetricsRequest.newBuilder()
             .addMetricList("CPU_UTILIZATION")
             .addAggList("avg")
@@ -58,7 +59,7 @@ public class GRPCTest {
     @BeforeClass
     // setupServer sets up the gRPC TestNetServer on port 9650
     public static void setupServer() throws Exception {
-        netServer = new TestNetServer(Util.RPC_PORT, 1, true);
+        netServer = new TestNetServer(TEST_PORT, 1, true);
         startTestNetServer(netServer);
     }
 
@@ -79,7 +80,7 @@ public class GRPCTest {
                 Objects.requireNonNull(classLoader.getResource("tls/client/localhost.crt")).getFile());
         PluginSettings.instance().overrideProperty(CertificateUtils.CLIENT_PRIVATE_KEY_FILE_PATH,
                 Objects.requireNonNull(classLoader.getResource("tls/client/localhost.key")).getFile());
-        NetClient validClient = new NetClient(new GRPCConnectionManager(true));
+        NetClient validClient = new NetClient(new GRPCConnectionManager(true, TEST_PORT));
         // Make getMetrics request to server
         ResponseObserver observer = new ResponseObserver();
         validClient.getMetrics("127.0.0.1", METRICS_REQUEST, observer);
@@ -102,7 +103,7 @@ public class GRPCTest {
                 Objects.requireNonNull(classLoader.getResource("tls/attacker/attack_cert.pem")).getFile());
         PluginSettings.instance().overrideProperty(CertificateUtils.CLIENT_PRIVATE_KEY_FILE_PATH,
                 Objects.requireNonNull(classLoader.getResource("tls/attacker/attack_key.pem")).getFile());
-        NetClient invalidClient = new NetClient(new GRPCConnectionManager(true));
+        NetClient invalidClient = new NetClient(new GRPCConnectionManager(true, TEST_PORT));
         // Make invalid getMetrics request to server
         ErrorObserver<MetricsResponse> observer = new ErrorObserver<>();
         invalidClient.getMetrics("127.0.0.1", METRICS_REQUEST, observer);
@@ -119,7 +120,7 @@ public class GRPCTest {
      */
     @Test
     public void testNonTLSGetMetricsFails() throws Exception {
-        NetClient insecureClient = new NetClient(new GRPCConnectionManager(false));
+        NetClient insecureClient = new NetClient(new GRPCConnectionManager(false, TEST_PORT));
         // Make invalid getMetrics request to server
         ErrorObserver<MetricsResponse> observer = new ErrorObserver<>();
         insecureClient.getMetrics("127.0.0.1", METRICS_REQUEST, observer);
@@ -143,7 +144,7 @@ public class GRPCTest {
                 Objects.requireNonNull(classLoader.getResource("tls/client/localhost.crt")).getFile());
         PluginSettings.instance().overrideProperty(CertificateUtils.CLIENT_PRIVATE_KEY_FILE_PATH,
                 Objects.requireNonNull(classLoader.getResource("tls/client/localhost.key")).getFile());
-        NetClient client = new NetClient(new GRPCConnectionManager(true));
+        NetClient client = new NetClient(new GRPCConnectionManager(true, TEST_PORT));
         // Make valid getMetrics request to server
         ErrorObserver<MetricsResponse> observer = new ErrorObserver<>();
         client.getMetrics("127.0.0.1", METRICS_REQUEST, observer);
