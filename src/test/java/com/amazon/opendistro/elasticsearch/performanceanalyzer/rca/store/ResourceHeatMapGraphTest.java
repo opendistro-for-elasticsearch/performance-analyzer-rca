@@ -154,7 +154,7 @@ public class ResourceHeatMapGraphTest {
   private static class AnalysisGraphX extends ElasticSearchAnalysisGraph {
     @Override
     public void construct() {
-      super.constructResourceHeatMapGraph();
+      super.construct();
     }
   }
 
