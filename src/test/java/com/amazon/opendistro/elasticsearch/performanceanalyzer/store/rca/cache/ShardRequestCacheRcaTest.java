@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ public class ShardRequestCacheRcaTest {
         shardRequestCacheMaxSize = new MetricTestHelper(5);
         shardRequestCacheRca = new ShardRequestCacheRca(
                 1, shardRequestCacheEvictions, shardRequestCacheHits, shardRequestCacheSize, shardRequestCacheMaxSize);
-        columnName = Arrays.asList(INDEX_NAME.toString(), SHARD_ID.toString(), MetricsDB.MAX);
+        columnName = Arrays.asList(INDEX_NAME.toString(), SHARD_ID.toString(), MetricsDB.SUM, MetricsDB.MAX);
         ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
         clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.0", false);
         clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
@@ -72,13 +72,13 @@ public class ShardRequestCacheRcaTest {
      */
     private void mockFlowUnits(int cacheEvictionCnt, int cacheHitCnt, double cacheSize, double  cacheMaxSize) {
         shardRequestCacheEvictions.createTestFlowUnits(columnName,
-                Arrays.asList("index_1", "0", String.valueOf(cacheEvictionCnt)));
+                Arrays.asList("index_1", "0", String.valueOf(cacheEvictionCnt), String.valueOf(cacheEvictionCnt)));
         shardRequestCacheHits.createTestFlowUnits(columnName,
-                Arrays.asList("index_1", "0", String.valueOf(cacheHitCnt)));
+                Arrays.asList("index_1", "0", String.valueOf(cacheHitCnt), String.valueOf(cacheHitCnt)));
         shardRequestCacheSize.createTestFlowUnits(columnName,
-                Arrays.asList("index_1", "0", String.valueOf(cacheSize)));
+                Arrays.asList("index_1", "0", String.valueOf(cacheSize), String.valueOf(cacheSize)));
         shardRequestCacheMaxSize.createTestFlowUnits(columnName,
-                Arrays.asList("index_1", "0", String.valueOf(cacheMaxSize)));
+                Arrays.asList("index_1", "0", String.valueOf(cacheMaxSize), String.valueOf(cacheMaxSize)));
     }
 
     @Test

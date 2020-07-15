@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -17,11 +17,12 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.ca
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.SHARD_REQUEST_CACHE_EVICTION;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.SHARD_REQUEST_CACHE_HIT;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.CacheUtil.getTotalSizeInMB;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.CacheUtil.isSizeThresholdExceeded;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
@@ -30,6 +31,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.google.common.annotations.VisibleForTesting;
@@ -54,7 +56,7 @@ import org.jooq.Result;
  *   <li> Explicit call to refresh()
  * </ol>
  *
- * <p>The Cache Eviction requires that either the cache weight exceeds OR the entry TTL is expired.
+ * <p>Cache Eviction requires either cache weight exceeds maximum weight OR the entry TTL is expired.
  * For Shard Request Cache, TTL is defined via `indices.requests.cache.expire` setting which is never used
  * in production clusters and only provided for backward compatibility, thus we ignore time based evictions.
  * The weight based evictions(removal from Cache Map and LRU linked List with entry updated to EVICTED) occur
@@ -67,9 +69,9 @@ import org.jooq.Result;
  * <p>The Cache Hit and Eviction metric presence implies cache is undergoing frequent load and eviction or undergoing
  * scheduled cleanup for entries which had timed-out during execution.
  *
- * <p>This RCA reads 'shardRequestCacheEvictions',  'shardRequestCacheHits', 'shardRequestCacheSize' and
- * 'shardRequestCacheMaxSize' from upstream metrics and maintains collectors which keeps track of the time window
- * period(tp) where we repeatedly see evictions and hits for the last tp duration. This RCA is marked as unhealthy
+ * <p>This RCA reads 'shardRequestCacheEvictions', 'shardRequestCacheHits', 'shardRequestCacheSizeGroupByOperation' and
+ * 'shardRequestCacheMaxSizeGroupByOperation' from upstream metrics and maintains collectors which keep track of time
+ * window period(tp) where we repeatedly see evictions and hits for the last tp duration. This RCA is marked as unhealthy
  * if tp we find tp is above the threshold(300 seconds) and cache size exceeds the max cache size configured.
  *
  */
@@ -79,26 +81,26 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
 
     private final Metric shardRequestCacheEvictions;
     private final Metric shardRequestCacheHits;
-    private final Metric shardRequestCacheSize;
-    private final Metric shardRequestCacheMaxSize;
+    private final Metric shardRequestCacheSizeGroupByOperation;
+    private final Metric shardRequestCacheMaxSizeGroupByOperation;
     private final int rcaPeriod;
     private int counter;
-    private boolean exceedsSize;
+    private double cacheSizeThreshold;
     protected Clock clock;
     private final CacheCollector cacheEvictionCollector;
     private final CacheCollector cacheHitCollector;
 
     public <M extends Metric> ShardRequestCacheRca(final int rcaPeriod, final M shardRequestCacheEvictions,
-                                                   final M shardRequestCacheHits, final M shardRequestCacheSize,
-                                                   final M shardRequestCacheMaxSize) {
+                                                   final M shardRequestCacheHits, final M shardRequestCacheSizeGroupByOperation,
+                                                   final M shardRequestCacheMaxSizeGroupByOperation) {
         super(5);
         this.rcaPeriod = rcaPeriod;
         this.shardRequestCacheEvictions = shardRequestCacheEvictions;
         this.shardRequestCacheHits = shardRequestCacheHits;
-        this.shardRequestCacheSize = shardRequestCacheSize;
-        this.shardRequestCacheMaxSize = shardRequestCacheMaxSize;
+        this.shardRequestCacheSizeGroupByOperation = shardRequestCacheSizeGroupByOperation;
+        this.shardRequestCacheMaxSizeGroupByOperation = shardRequestCacheMaxSizeGroupByOperation;
         this.counter = 0;
-        this.exceedsSize = Boolean.FALSE;
+        this.cacheSizeThreshold = CacheConfig.DEFAULT_SHARD_REQUEST_CACHE_SIZE_THRESHOLD;
         this.clock = Clock.systemUTC();
         this.cacheEvictionCollector = new CacheCollector(SHARD_REQUEST_CACHE_EVICTION,
                 shardRequestCacheEvictions, THRESHOLD_TIME_PERIOD_IN_MILLISECOND);
@@ -123,15 +125,14 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
             HotNodeSummary nodeSummary;
 
             ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor.getCurrentNodeDetails();
-            double cacheSize = getTotalSizeInMB(shardRequestCacheSize);
-            double cacheMaxSize = getTotalSizeInMB(shardRequestCacheMaxSize);
-            exceedsSize = cacheMaxSize != 0 && cacheMaxSize != 0 && cacheSize > cacheMaxSize;
+            Boolean exceedsSizeThreshold = isSizeThresholdExceeded(
+                    shardRequestCacheSizeGroupByOperation, shardRequestCacheMaxSizeGroupByOperation, cacheSizeThreshold);
 
-            // if eviction and hit counts persists in last 5 minutes and cache size exceeds the max cache size configured,
+            // if eviction and hit counts persists in last 5 minutes and cache size exceeds max cache size * threshold percentage,
             // the cache is considered as unhealthy
             if (cacheEvictionCollector.isMetricPresentForThresholdTime(currTimestamp)
                     && cacheHitCollector.isMetricPresentForThresholdTime(currTimestamp)
-                    && exceedsSize) {
+                    && exceedsSizeThreshold) {
                 context = new ResourceContext(Resources.State.UNHEALTHY);
                 nodeSummary = new HotNodeSummary(currentNode.getId(), currentNode.getHostAddress());
                 nodeSummary.appendNestedSummary(cacheEvictionCollector.generateSummary(currTimestamp));
@@ -141,12 +142,21 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
             }
 
             counter = 0;
-            exceedsSize = Boolean.FALSE;
             return new ResourceFlowUnit<>(currTimestamp, context, nodeSummary, !currentNode.getIsMasterNode());
         }
         else {
             return new ResourceFlowUnit<>(currTimestamp);
         }
+    }
+
+    /**
+     * read threshold values from rca.conf
+     * @param conf RcaConf object
+     */
+    @Override
+    public void readRcaConf(RcaConf conf) {
+        CacheConfig configObj = conf.getCacheConfig();
+        cacheSizeThreshold = configObj.getShardRequestCacheSizeThreshold();
     }
 
     @Override

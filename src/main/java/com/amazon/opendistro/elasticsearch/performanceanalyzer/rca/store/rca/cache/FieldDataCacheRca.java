@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -16,11 +16,12 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.FIELD_DATA_CACHE_EVICTION;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.CacheUtil.getTotalSizeInMB;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.CacheUtil.isSizeThresholdExceeded;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
@@ -29,6 +30,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.google.common.annotations.VisibleForTesting;
@@ -51,7 +53,7 @@ import org.apache.logging.log4j.Logger;
  *   <li>Explicit call to refresh()
  * </ol>
  *
- * <p>The Cache Eviction requires that either the cache weight exceeds OR the entry TTL is expired.
+ * <p>Cache Eviction requires either cache weight exceeds maximum weight OR the entry TTL is expired.
  * For Field Data Cache, no expire setting is present, so only in case of cache_weight exceeding the
  * max_cache_weight, eviction(removal from Cache Map and LRU linked List, entry updated to EVICTED)
  * happens.
@@ -59,10 +61,11 @@ import org.apache.logging.log4j.Logger;
  * <p>Contrarily, the Cache Invalidation is performed manually on cache clear() and index close()
  * invocation, with removalReason as INVALIDATED and a force eviction is performed to ensure cleanup.
  *
- * <p>This RCA reads 'fieldDataCacheEvictions', 'fieldDataCacheSize' and 'fieldDataCacheMaxSize'
- * from upstream metrics and maintains a collector which keeps track of the time window period(tp)
- * where we repeatedly see evictions for the last tp duration. This RCA is marked as unhealthy if
- * tp is above the threshold(300 seconds) and cache size exceeds the max cache size configured.
+ * <p>This RCA reads 'fieldDataCacheEvictions', 'fieldDataCacheSizeGroupByOperation' and
+ * 'fieldDataCacheMaxSizeGroupByOperation' from upstream metrics and maintains a collector
+ * which keeps track of the time window period(tp) where we repeatedly see evictions for the last
+ * tp duration. This RCA is marked as unhealthy if tp is above the threshold(300 seconds) and
+ * cache size exceeds the max cache size configured.
  *
  */
 public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
@@ -70,23 +73,25 @@ public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
     private static final long EVICTION_THRESHOLD_TIME_PERIOD_IN_MILLISECOND = TimeUnit.SECONDS.toMillis(300);
 
     private final Metric fieldDataCacheEvictions;
-    private final Metric fieldDataCacheSize;
-    private final Metric fieldDataCacheMaxSize;
+    private final Metric fieldDataCacheSizeGroupByOperation;
+    private final Metric fieldDataCacheMaxSizeGroupByOperation;
+
     private final int rcaPeriod;
     private int counter;
-    private boolean exceedsSize;
+    private double cacheSizeThreshold;
     protected Clock clock;
     private final CacheEvictionCollector cacheEvictionCollector;
 
+
     public <M extends Metric> FieldDataCacheRca(final int rcaPeriod, final M fieldDataCacheEvictions,
-                                                final M fieldDataCacheSize, final M fieldDataCacheMaxSize) {
+                                                final M fieldDataCacheSizeGroupByOperation, final M fieldDataCacheMaxSizeGroupByOperation) {
         super(5);
         this.rcaPeriod = rcaPeriod;
         this.fieldDataCacheEvictions = fieldDataCacheEvictions;
-        this.fieldDataCacheSize = fieldDataCacheSize;
-        this.fieldDataCacheMaxSize = fieldDataCacheMaxSize;
+        this.fieldDataCacheSizeGroupByOperation = fieldDataCacheSizeGroupByOperation;
+        this.fieldDataCacheMaxSizeGroupByOperation = fieldDataCacheMaxSizeGroupByOperation;
         this.counter = 0;
-        this.exceedsSize = Boolean.FALSE;
+        this.cacheSizeThreshold = CacheConfig.DEFAULT_FIELD_DATA_CACHE_SIZE_THRESHOLD;
         this.clock = Clock.systemUTC();
         this.cacheEvictionCollector = new CacheEvictionCollector(FIELD_DATA_CACHE_EVICTION,
                 fieldDataCacheEvictions, EVICTION_THRESHOLD_TIME_PERIOD_IN_MILLISECOND);
@@ -108,10 +113,9 @@ public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
             HotNodeSummary nodeSummary;
 
             ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor.getCurrentNodeDetails();
-            double cacheSize = getTotalSizeInMB(fieldDataCacheSize);
-            double cacheMaxSize = getTotalSizeInMB(fieldDataCacheMaxSize);
-            exceedsSize = cacheMaxSize != 0 && cacheMaxSize != 0 && cacheSize > cacheMaxSize;
-            if (cacheEvictionCollector.isUnhealthy(currTimestamp) && exceedsSize) {
+            Boolean exceedsSizeThreshold = isSizeThresholdExceeded(
+                    fieldDataCacheSizeGroupByOperation, fieldDataCacheMaxSizeGroupByOperation, cacheSizeThreshold);
+            if (cacheEvictionCollector.isUnhealthy(currTimestamp) && exceedsSizeThreshold) {
                 context = new ResourceContext(Resources.State.UNHEALTHY);
                 nodeSummary = new HotNodeSummary(currentNode.getId(), currentNode.getHostAddress());
                 nodeSummary.appendNestedSummary(cacheEvictionCollector.generateSummary(currTimestamp));
@@ -122,12 +126,21 @@ public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
             }
 
             counter = 0;
-            exceedsSize = Boolean.FALSE;
             return new ResourceFlowUnit<>(currTimestamp, context, nodeSummary, !currentNode.getIsMasterNode());
         }
         else {
             return new ResourceFlowUnit<>(currTimestamp);
         }
+    }
+
+    /**
+     * read threshold values from rca.conf
+     * @param conf RcaConf object
+     */
+    @Override
+    public void readRcaConf(RcaConf conf) {
+        CacheConfig configObj = conf.getCacheConfig();
+        cacheSizeThreshold = configObj.getFieldDataCacheSizeThreshold();
     }
 
     @Override

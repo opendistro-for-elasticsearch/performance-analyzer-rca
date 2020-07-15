@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ public class FieldDataCacheRcaTest {
         fieldDataCacheWeight = new MetricTestHelper(5);
         fieldDataCacheMaxWeight = new MetricTestHelper(5);
         fieldDataCacheRca = new FieldDataCacheRca(1, fieldDataCacheEvictions, fieldDataCacheWeight, fieldDataCacheMaxWeight);
-        columnName = Arrays.asList(INDEX_NAME.toString(), SHARD_ID.toString(), MetricsDB.MAX);
+        columnName = Arrays.asList(INDEX_NAME.toString(), SHARD_ID.toString(), MetricsDB.SUM, MetricsDB.MAX);
         ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
         clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.0", false);
         clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
@@ -69,11 +69,11 @@ public class FieldDataCacheRcaTest {
      */
     private void mockFlowUnits(int cacheEvictionCnt, double cacheWeight, double cacheMaxWeight) {
         fieldDataCacheEvictions.createTestFlowUnits(columnName,
-                Arrays.asList("index_1", "0", String.valueOf(cacheEvictionCnt)));
+                Arrays.asList("index_1", "0", String.valueOf(cacheEvictionCnt), String.valueOf(cacheEvictionCnt)));
         fieldDataCacheWeight.createTestFlowUnits(columnName,
-                Arrays.asList("index_1", "0", String.valueOf(cacheWeight)));
+                Arrays.asList("index_1", "0", String.valueOf(cacheWeight), String.valueOf(cacheWeight)));
         fieldDataCacheMaxWeight.createTestFlowUnits(columnName,
-                Arrays.asList("index_1", "0", String.valueOf(cacheMaxWeight)));
+                Arrays.asList("index_1", "0", String.valueOf(cacheMaxWeight), String.valueOf(cacheMaxWeight)));
     }
 
     @Test
