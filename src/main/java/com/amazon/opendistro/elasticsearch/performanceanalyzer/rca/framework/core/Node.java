@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.google.common.annotations.VisibleForTesting;
@@ -200,14 +201,27 @@ public abstract class Node<T extends GenericFlowUnit> {
   }
 
   public InstanceDetails getInstanceDetails() {
-    return this.appContext.getMyInstanceDetails();
+    InstanceDetails ret = new InstanceDetails(AllMetrics.NodeRole.UNKNOWN);
+    if (this.appContext != null) {
+      ret = this.appContext.getMyInstanceDetails();
+    }
+    return ret;
   }
 
   public List<InstanceDetails> getAllClusterInstances() {
-    return this.appContext.getAllClusterInstances();
+    List<InstanceDetails> ret = Collections.EMPTY_LIST;
+
+    if (this.appContext != null) {
+      ret = this.appContext.getAllClusterInstances();
+    }
+    return ret;
   }
 
   public List<InstanceDetails> getDataNodeInstances() {
-    return this.appContext.getDataNodeInstances();
+    List<InstanceDetails> ret = Collections.EMPTY_LIST;
+    if (this.appContext != null) {
+      return this.appContext.getDataNodeInstances();
+    }
+    return ret;
   }
 }

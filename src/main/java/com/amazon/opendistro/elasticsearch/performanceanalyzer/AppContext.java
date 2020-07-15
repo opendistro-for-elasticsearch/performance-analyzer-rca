@@ -21,6 +21,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDet
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,9 +34,6 @@ import java.util.stream.Collectors;
 public class AppContext {
   private volatile ClusterDetailsEventProcessor clusterDetailsEventProcessor;
 
-  @VisibleForTesting
-  private volatile List<InstanceDetails> instances;
-
   public AppContext() {
     this.clusterDetailsEventProcessor = null;
   }
@@ -45,12 +43,10 @@ public class AppContext {
   }
 
   public InstanceDetails getMyInstanceDetails() {
-    ClusterDetailsEventProcessor.NodeDetails nodeDetails = clusterDetailsEventProcessor.getCurrentNodeDetails();
+    InstanceDetails ret = new InstanceDetails(AllMetrics.NodeRole.UNKNOWN);
 
-    InstanceDetails ret;
-    if (nodeDetails == null) {
-      ret = new InstanceDetails(AllMetrics.NodeRole.UNKNOWN);
-    } else {
+    if (clusterDetailsEventProcessor != null && clusterDetailsEventProcessor.getCurrentNodeDetails() != null) {
+      ClusterDetailsEventProcessor.NodeDetails nodeDetails = clusterDetailsEventProcessor.getCurrentNodeDetails();
       ret = new InstanceDetails(
           AllMetrics.NodeRole.valueOf(nodeDetails.getRole()),
           nodeDetails.getId(),
@@ -67,11 +63,20 @@ public class AppContext {
    *     the cluster.
    */
   public List<InstanceDetails> getAllClusterInstances() {
-    return getInstanceDetailsFromNodeDetails(clusterDetailsEventProcessor.getNodesDetails());
+    List<InstanceDetails> ret = Collections.EMPTY_LIST;
+
+    if (clusterDetailsEventProcessor != null) {
+      ret = getInstanceDetailsFromNodeDetails(clusterDetailsEventProcessor.getNodesDetails());
+    }
+    return ret;
   }
 
   public List<InstanceDetails> getDataNodeInstances() {
-    return getInstanceDetailsFromNodeDetails(clusterDetailsEventProcessor.getDataNodesDetails());
+    List<InstanceDetails> ret = Collections.EMPTY_LIST;
+    if (clusterDetailsEventProcessor != null) {
+      ret = getInstanceDetailsFromNodeDetails(clusterDetailsEventProcessor.getDataNodesDetails());
+    }
+    return ret;
   }
 
   private static List<InstanceDetails> getInstanceDetailsFromNodeDetails(
