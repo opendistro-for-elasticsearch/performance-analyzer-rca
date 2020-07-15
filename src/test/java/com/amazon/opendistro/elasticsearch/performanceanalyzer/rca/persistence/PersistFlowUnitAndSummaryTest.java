@@ -203,7 +203,7 @@ public class PersistFlowUnitAndSummaryTest {
                 && readTableStr.contains("HighHeapUsageClusterRcaX");
       }
       return false;
-    }, 1, TimeUnit.MINUTES);
+    }, 2, TimeUnit.MINUTES);
     scheduler.shutdown();
     persistable.close();
   }
