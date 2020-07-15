@@ -19,11 +19,10 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionma
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.HEAP;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.NETWORK;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.clients.Const;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.clients.Client;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.clients.Const;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
-
 import com.google.gson.JsonObject;
 import java.util.Collections;
 import java.util.HashMap;

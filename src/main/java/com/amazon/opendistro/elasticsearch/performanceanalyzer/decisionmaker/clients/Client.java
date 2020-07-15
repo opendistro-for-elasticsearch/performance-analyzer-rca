@@ -29,7 +29,7 @@ public interface Client {
   void newBatchRequest();
 
   /**
-   * Create a single request and insert itself into the batch request
+   * Create a single request and append itself to the batch request
    * @param nodeKey target instance of the action
    * @param resourceEnum resource type of the action
    * @param payload json payload that is sent to target
