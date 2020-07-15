@@ -144,7 +144,7 @@ public class RcaController {
     netPersistor = new NetPersistor();
     this.useHttps = PluginSettings.instance().getHttpsEnabled();
     subscriptionManager = new SubscriptionManager(grpcConnectionManager);
-    nodeStateManager = new NodeStateManager();
+    nodeStateManager = new NodeStateManager(this.appContext);
     queryRcaRequestHandler = new QueryRcaRequestHandler(this.appContext);
     this.rcaScheduler = null;
     this.rcaStateCheckIntervalMillis = rcaStateCheckIntervalMillis;

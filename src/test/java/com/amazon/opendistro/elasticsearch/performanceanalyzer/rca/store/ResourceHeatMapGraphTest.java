@@ -173,7 +173,7 @@ public class ResourceHeatMapGraphTest {
         new SubscriptionManager(new GRPCConnectionManager(false));
     subscriptionManager.setCurrentLocus(rcaConf.getTagMap().get("locus"));
 
-    WireHopper wireHopper = new WireHopper(new NodeStateManager(), clientServers.getNetClient(),
+    WireHopper wireHopper = new WireHopper(new NodeStateManager(new AppContext()), clientServers.getNetClient(),
         subscriptionManager,
         networkThreadPoolReference,
         new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()), appContext);
@@ -278,7 +278,7 @@ public class ResourceHeatMapGraphTest {
     subscriptionManager2.setCurrentLocus(rcaConf2.getTagMap().get("locus"));
 
 
-    WireHopper wireHopper2 = new WireHopper(new NodeStateManager(), clientServers.getNetClient(),
+    WireHopper wireHopper2 = new WireHopper(new NodeStateManager(new AppContext()), clientServers.getNetClient(),
         subscriptionManager2,
         networkThreadPoolReference,
         new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()), appContext);
@@ -1071,7 +1071,7 @@ public class ResourceHeatMapGraphTest {
 
     AppContext appContext = RcaTestHelper.setMyIp("192.168.0.1", AllMetrics.NodeRole.DATA);
 
-    WireHopper wireHopper = new WireHopper(new NodeStateManager(), clientServers.getNetClient(),
+    WireHopper wireHopper = new WireHopper(new NodeStateManager(new AppContext()), clientServers.getNetClient(),
         subscriptionManager,
         networkThreadPoolReference,
         new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()), appContext);
@@ -1099,7 +1099,7 @@ public class ResourceHeatMapGraphTest {
 
     AppContext appContextMaster = RcaTestHelper.setMyIp("192.168.0.4", AllMetrics.NodeRole.ELECTED_MASTER);
 
-    WireHopper wireHopper2 = new WireHopper(new NodeStateManager(), clientServers.getNetClient(),
+    WireHopper wireHopper2 = new WireHopper(new NodeStateManager(new AppContext()), clientServers.getNetClient(),
         subscriptionManager2,
         networkThreadPoolReference,
         new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()), appContextMaster);

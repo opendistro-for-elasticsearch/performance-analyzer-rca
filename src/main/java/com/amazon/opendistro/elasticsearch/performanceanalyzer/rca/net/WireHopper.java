@@ -104,7 +104,7 @@ public class WireHopper {
     final Set<String> publisherSet = subscriptionManager.getPublishersForNode(nodeName);
 
     for (final String publisher : publisherSet) {
-      if (!ClusterUtils.isHostAddressInCluster(publisher)) {
+      if (!ClusterUtils.isHostAddressInCluster(publisher, appContext.getAllClusterInstances())) {
         subscriptionManager.unsubscribeAndTerminateConnection(nodeName, publisher);
       }
     }

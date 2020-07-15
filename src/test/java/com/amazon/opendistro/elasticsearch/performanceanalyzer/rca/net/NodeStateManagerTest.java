@@ -1,5 +1,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
@@ -27,7 +28,7 @@ public class NodeStateManagerTest {
 
   @Before
   public void setUp() {
-    this.testNodeStateManager = new NodeStateManager();
+    this.testNodeStateManager = new NodeStateManager(new AppContext());
   }
 
   @Test

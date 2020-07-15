@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * The PA agent process is composed of multiple components. The PA Reader and RCA are two such components that are
@@ -61,27 +62,34 @@ public class AppContext {
 
   /**
    * Can be used to get all the nodes in the cluster.
+   *
    * @return Returns an empty list of the details are not available or else it provides the immutable list of nodes in
-   *     the cluster.
+   * the cluster.
    */
   public List<InstanceDetails> getAllClusterInstances() {
-    List<ClusterDetailsEventProcessor.NodeDetails> nodes = clusterDetailsEventProcessor.getNodesDetails();
+    return getInstanceDetailsFromNodeDetails(clusterDetailsEventProcessor.getNodesDetails());
+  }
+
+  public List<InstanceDetails> getDataNodeInstances() {
+    return getInstanceDetailsFromNodeDetails(clusterDetailsEventProcessor.getDataNodesDetails());
+  }
+
+  private static List<InstanceDetails> getInstanceDetailsFromNodeDetails(
+      final List<ClusterDetailsEventProcessor.NodeDetails> nodeDetails) {
     List<InstanceDetails> instances = new ArrayList<>();
 
-    for (ClusterDetailsEventProcessor.NodeDetails node: nodes) {
+    for (ClusterDetailsEventProcessor.NodeDetails node : nodeDetails) {
       InstanceDetails instanceDetails = new InstanceDetails(
           AllMetrics.NodeRole.valueOf(node.getRole()), node.getId(), node.getHostAddress(), node.getIsMasterNode());
-
       instances.add(instanceDetails);
     }
     return ImmutableList.copyOf(instances);
   }
 
-  public List<InstanceDetails> getInstances() {
-    return instances;
-  }
-
-  public void setInstances(List<InstanceDetails> instances) {
-    this.instances = instances;
+  public List<String> getPeerInstanceIps() {
+    return getAllClusterInstances().stream()
+        .skip(1)  // Skipping the first instance as it is self.
+        .map(InstanceDetails::getInstanceIp)
+        .collect(Collectors.toList());
   }
 }

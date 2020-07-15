@@ -81,7 +81,7 @@ public class WireHopperTest {
 
     @Before
     public void setup() {
-        nodeStateManager = new NodeStateManager();
+        nodeStateManager = new NodeStateManager(new AppContext());
         receivedFlowUnitStore = new ReceivedFlowUnitStore();
         subscriptionManager = new SubscriptionManager(connectionManager);
         clientExecutor.set(null);

@@ -185,7 +185,7 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>>
             List<HotResourceSummary> hotShardSummaryList = new ArrayList<>();
             ResourceContext context;
             HotClusterSummary summary = new HotClusterSummary(
-                    ClusterDetailsEventProcessor.getNodesDetails().size(), unhealthyNodes.size());
+                getAllClusterInstances().size(), unhealthyNodes.size());
 
             // We evaluate hot shards individually on all the 3 dimensions
             findHotShardAndCreateSummary(

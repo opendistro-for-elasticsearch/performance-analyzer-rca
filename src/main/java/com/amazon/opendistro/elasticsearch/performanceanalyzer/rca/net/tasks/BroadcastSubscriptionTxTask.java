@@ -47,7 +47,7 @@ public class BroadcastSubscriptionTxTask extends SubscriptionTxTask {
     final String destinationVertex = intentMsg.getDestinationNode();
     final Map<String, String> tags = intentMsg.getRcaConfTags();
 
-    for (final String remoteHost : ClusterUtils.getAllPeerHostAddresses()) {
+    for (final String remoteHost : getPeerIps()) {
       sendSubscribeRequest(remoteHost, requesterVertex, destinationVertex, tags);
     }
   }

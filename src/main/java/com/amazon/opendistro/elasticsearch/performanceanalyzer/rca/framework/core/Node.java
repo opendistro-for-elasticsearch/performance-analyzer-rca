@@ -206,4 +206,8 @@ public abstract class Node<T extends GenericFlowUnit> {
   public List<InstanceDetails> getAllClusterInstances() {
     return this.appContext.getAllClusterInstances();
   }
+
+  public List<InstanceDetails> getDataNodeInstances() {
+    return this.appContext.getDataNodeInstances();
+  }
 }

@@ -25,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaVerticesMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.google.common.cache.CacheBuilder;
@@ -80,9 +81,8 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit<HotClusterSumm
     List<HotNodeSummary> unhealthyNodeList = new ArrayList<>();
     ConcurrentMap<String, ImmutableList<ResourceFlowUnit<HotNodeSummary>>> currentMap =
         this.nodeStateCache.asMap();
-    for (ClusterDetailsEventProcessor.NodeDetails nodeDetails : ClusterDetailsEventProcessor
-        .getDataNodesDetails()) {
-      ImmutableList<ResourceFlowUnit<HotNodeSummary>> nodeStateList = currentMap.get(nodeDetails.getId());
+    for (InstanceDetails nodeDetails : getDataNodeInstances()) {
+      ImmutableList<ResourceFlowUnit<HotNodeSummary>> nodeStateList = currentMap.get(nodeDetails.getInstanceId());
       if (nodeStateList != null) {
         List<HotResourceSummary> oldGenSummaries = new ArrayList<>();
         List<HotResourceSummary> youngGenSummaries = new ArrayList<>();
@@ -102,7 +102,7 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit<HotClusterSumm
         // youngGenSummaries can have multiple elements but we will only consider it as unhealthy if
         // three consecutive summaries are all unhealthy and we will then pick the first element as the summary for output.
         if (youngGenSummaries.size() >= UNHEALTHY_FLOWUNIT_THRESHOLD || oldGenSummaries.size() >= UNHEALTHY_FLOWUNIT_THRESHOLD) {
-          HotNodeSummary nodeSummary = new HotNodeSummary(nodeDetails.getId(), nodeDetails.getHostAddress());
+          HotNodeSummary nodeSummary = new HotNodeSummary(nodeDetails.getInstanceId(), nodeDetails.getInstanceIp());
           if (youngGenSummaries.size() >= UNHEALTHY_FLOWUNIT_THRESHOLD) {
             nodeSummary.appendNestedSummary(youngGenSummaries.get(0));
           }
@@ -150,7 +150,8 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit<HotClusterSumm
       LOG.debug("Unhealthy node id list : {}", unhealthyNodeList);
       if (unhealthyNodeList.size() > 0) {
         context = new ResourceContext(Resources.State.UNHEALTHY);
-        summary = new HotClusterSummary(ClusterDetailsEventProcessor.getNodesDetails().size(),
+        summary = new HotClusterSummary(
+            getAllClusterInstances().size(),
             unhealthyNodeList.size());
         for (HotNodeSummary unhealthyNodeSummary : unhealthyNodeList) {
           summary.appendNestedSummary(unhealthyNodeSummary);

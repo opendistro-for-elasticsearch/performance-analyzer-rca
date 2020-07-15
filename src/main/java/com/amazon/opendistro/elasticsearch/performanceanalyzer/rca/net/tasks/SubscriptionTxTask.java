@@ -25,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeState
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscribeResponseHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.util.ClusterUtils;
+import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -88,5 +89,9 @@ public abstract class SubscriptionTxTask implements Runnable {
     PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR
         .updateStat(RcaGraphMetrics.RCA_NODES_SUB_REQ_COUNT,
             requesterVertex + ":" + destinationVertex, 1);
+  }
+
+  public List<String> getPeerIps() {
+    return appContext.getPeerInstanceIps();
   }
 }
