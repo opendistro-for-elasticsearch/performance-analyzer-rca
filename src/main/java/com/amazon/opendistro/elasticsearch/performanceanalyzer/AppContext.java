@@ -64,7 +64,7 @@ public class AppContext {
    * Can be used to get all the nodes in the cluster.
    *
    * @return Returns an empty list of the details are not available or else it provides the immutable list of nodes in
-   * the cluster.
+   *     the cluster.
    */
   public List<InstanceDetails> getAllClusterInstances() {
     return getInstanceDetailsFromNodeDetails(clusterDetailsEventProcessor.getNodesDetails());

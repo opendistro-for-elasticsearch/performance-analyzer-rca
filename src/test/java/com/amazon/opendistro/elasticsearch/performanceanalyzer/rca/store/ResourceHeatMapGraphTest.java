@@ -132,7 +132,7 @@ public class ResourceHeatMapGraphTest {
     AllMetrics.NodeRole nodeRole2 = AllMetrics.NodeRole.ELECTED_MASTER;
     AppContext appContext = RcaTestHelper.setMyIp("192.168.0.2", nodeRole2);
     connectionManager = new GRPCConnectionManager(false);
-    clientServers = PerformanceAnalyzerApp.createClientServers(connectionManager);
+    clientServers = PerformanceAnalyzerApp.createClientServers(connectionManager, new AppContext());
 
     HttpServer httpServer = clientServers.getHttpServer();
     httpServer.start();

@@ -112,10 +112,10 @@ public class PerformanceAnalyzerApp {
 
     final GRPCConnectionManager connectionManager = new GRPCConnectionManager(
         settings.getHttpsEnabled());
-    final ClientServers clientServers = createClientServers(connectionManager);
+    AppContext appContext = new AppContext();
+    final ClientServers clientServers = createClientServers(connectionManager, appContext);
     startErrorHandlingThread();
 
-    AppContext appContext = new AppContext();
     startReaderThread(appContext);
     startGrpcServerThread(clientServers.getNetServer());
     startWebServerThread(clientServers.getHttpServer());
@@ -225,7 +225,8 @@ public class PerformanceAnalyzerApp {
    *
    * @return gRPC client and the gRPC server and the httpServer wrapped in a class.
    */
-  public static ClientServers createClientServers(final GRPCConnectionManager connectionManager) {
+  public static ClientServers createClientServers(final GRPCConnectionManager connectionManager,
+                                                  final AppContext appContext) {
     boolean useHttps = PluginSettings.instance().getHttpsEnabled();
 
     NetServer netServer = new NetServer(Util.RPC_PORT, 1, useHttps);
@@ -235,7 +236,9 @@ public class PerformanceAnalyzerApp {
     netServer.setMetricsHandler(new MetricsServerHandler());
     HttpServer httpServer =
         PerformanceAnalyzerWebServer.createInternalServer(PluginSettings.instance());
-    httpServer.createContext(QUERY_URL, new QueryMetricsRequestHandler(netClient, metricsRestUtil));
+    httpServer.createContext(
+        QUERY_URL,
+        new QueryMetricsRequestHandler(netClient, metricsRestUtil, appContext));
 
     return new ClientServers(httpServer, netServer, netClient);
   }

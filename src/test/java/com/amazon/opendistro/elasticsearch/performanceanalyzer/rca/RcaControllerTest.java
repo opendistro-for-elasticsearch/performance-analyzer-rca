@@ -73,7 +73,7 @@ public class RcaControllerTest {
             3, new ThreadFactoryBuilder().setNameFormat("test-network-thread-%d").build());
     boolean useHttps = PluginSettings.instance().getHttpsEnabled();
     connectionManager = new GRPCConnectionManager(useHttps);
-    clientServers = PerformanceAnalyzerApp.createClientServers(connectionManager);
+    clientServers = PerformanceAnalyzerApp.createClientServers(connectionManager, new AppContext());
     clientServers.getHttpServer().start();
 
     URI uri = URI.create(RcaController.getCatMasterUrl());
