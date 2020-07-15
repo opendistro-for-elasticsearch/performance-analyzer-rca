@@ -138,4 +138,9 @@ public class NodeStateManager {
 
     return ImmutableList.copyOf(hostsToSubscribeTo);
   }
+
+  @VisibleForTesting
+  public AppContext getAppContext() {
+    return appContext;
+  }
 }

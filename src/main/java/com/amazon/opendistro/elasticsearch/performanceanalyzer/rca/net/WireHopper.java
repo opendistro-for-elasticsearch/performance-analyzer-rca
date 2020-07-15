@@ -29,6 +29,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks.Bro
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks.FlowUnitTxTask;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks.UnicastSubscriptionTxTask;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.util.ClusterUtils;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Set;
@@ -94,6 +95,11 @@ public class WireHopper {
                       .logException(StatExceptionCode.RCA_NETWORK_THREADPOOL_QUEUE_FULL_ERROR);
       }
     }
+  }
+
+  @VisibleForTesting
+  public AppContext getAppContext() {
+    return appContext;
   }
 
   public List<FlowUnitMessage> readFromWire(Node<?> node) {

@@ -56,11 +56,15 @@ public class NodeStateManagerTest {
 
     testNodeStateManager
         .updateSubscriptionState(TEST_NODE_1, TEST_HOST_1, SubscriptionStatus.SUCCESS);
-    ClusterDetailsEventProcessor.setNodesDetails(Lists.newArrayList(
+
+    ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
+    clusterDetailsEventProcessor.setNodesDetails(Lists.newArrayList(
             EMPTY_DETAILS,
             ClusterDetailsEventProcessorTestHelper.newNodeDetails(null, TEST_HOST_1, false),
             ClusterDetailsEventProcessorTestHelper.newNodeDetails(null, TEST_HOST_2, false)
     ));
+
+    testNodeStateManager.getAppContext().setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
 
     ImmutableList<String> hostsToSubscribeTo =
         testNodeStateManager.getStaleOrNotSubscribedNodes(TEST_NODE_1, TEN_S_IN_MILLIS,
@@ -82,12 +86,14 @@ public class NodeStateManagerTest {
     testNodeStateManager.updateReceiveTime(TEST_HOST_2, TEST_NODE_1, currentTime);
     testNodeStateManager.updateSubscriptionState(TEST_NODE_1, TEST_HOST_2, SubscriptionStatus.SUCCESS);
 
-    ClusterDetailsEventProcessor.setNodesDetails(Lists.newArrayList(
+    ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
+    clusterDetailsEventProcessor.setNodesDetails(Lists.newArrayList(
             EMPTY_DETAILS,
             ClusterDetailsEventProcessorTestHelper.newNodeDetails(null, TEST_HOST_1, false),
             ClusterDetailsEventProcessorTestHelper.newNodeDetails(null, TEST_HOST_2, false),
             ClusterDetailsEventProcessorTestHelper.newNodeDetails(null, TEST_HOST_3, false)
     ));
+    testNodeStateManager.getAppContext().setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
 
     ImmutableList<String> hostsToSubscribeTo =
         testNodeStateManager.getStaleOrNotSubscribedNodes(TEST_NODE_1, TEN_S_IN_MILLIS,
