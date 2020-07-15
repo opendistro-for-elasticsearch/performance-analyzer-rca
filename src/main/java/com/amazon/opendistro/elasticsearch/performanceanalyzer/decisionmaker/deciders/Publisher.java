@@ -17,8 +17,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.clients.Client;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.clients.RpcClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
@@ -31,13 +29,11 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
   private static final Logger LOG = LogManager.getLogger(Publisher.class);
 
   private Collator collator;
-  private Client client;
   private boolean isMuted = false;
 
   public Publisher(int evalIntervalSeconds, Collator collator) {
     super(0, evalIntervalSeconds);
     this.collator = collator;
-    this.client = new RpcClient();
   }
 
   @Override
@@ -46,12 +42,10 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
     // avoidance, state persistence etc.
 
     Decision decision = collator.getFlowUnits().get(0);
-    client.newBatchRequest();
     for (Action action : decision.getActions()) {
       LOG.info("Executing action: [{}]", action.name());
-      action.buildRequest(client);
+      action.execute();
     }
-    client.sendBatchRequest();
     return new EmptyFlowUnit(System.currentTimeMillis());
   }
 

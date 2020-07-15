@@ -15,7 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.clients.Client;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 
 import java.util.List;
@@ -39,7 +38,7 @@ public interface Action {
    *
    * <p>Specific implementation may include executing the action, or invoking downstream APIs
    */
-  void buildRequest(Client client);
+  void execute();
 
   /** Returns a list of Elasticsearch nodes impacted by this action. */
   List<NodeKey> impactedNodes();

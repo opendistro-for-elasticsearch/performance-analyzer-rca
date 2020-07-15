@@ -19,11 +19,9 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionma
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.HEAP;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.NETWORK;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.clients.Client;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.clients.Const;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
-import com.google.gson.JsonObject;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -84,8 +82,10 @@ public class ModifyQueueCapacityAction implements Action {
   }
 
   @Override
-  public void buildRequest(Client client) {
-    client.addRequest(esNode, threadPool, buildJsonPayload());
+  public void execute() {
+    // Making this a no-op for now
+    // TODO: Modify based on downstream agent API calls
+    assert true;
   }
 
   @Override
@@ -100,12 +100,6 @@ public class ModifyQueueCapacityAction implements Action {
   @Override
   public String toString() {
     return summary();
-  }
-
-  private String buildJsonPayload() {
-    JsonObject payload = new JsonObject();
-    payload.addProperty(Const.MAX_CAPACITY, getDesiredCapacity());
-    return payload.toString();
   }
 
   private void setBounds() {
