@@ -113,14 +113,14 @@ public class PersistFlowUnitAndSummaryTest {
     @Override
     public void construct() {
       Metric heapUsed = new Heap_Used(5);
-      heapUsed.addTag(RcaTagConstants.TAG_LOCUS, RcaTagConstants.LOCUS_MASTER_NODE);
+      heapUsed.addTag(RcaTagConstants.TAG_LOCUS, RcaTagConstants.LOCUS_DATA_MASTER_NODE);
       addLeaf(heapUsed);
       Rca<ResourceFlowUnit<HotResourceSummary>> dummyYoungGenRca = new DummyYoungGenRca(heapUsed);
       dummyYoungGenRca.addAllUpstreams(Collections.singletonList(heapUsed));
-      dummyYoungGenRca.addTag(RcaTagConstants.TAG_LOCUS, RcaTagConstants.LOCUS_MASTER_NODE);
+      dummyYoungGenRca.addTag(RcaTagConstants.TAG_LOCUS, RcaTagConstants.LOCUS_DATA_MASTER_NODE);
 
       Rca<ResourceFlowUnit<HotNodeSummary>> nodeRca = new HotNodeRcaX(1, dummyYoungGenRca);
-      nodeRca.addTag(RcaTagConstants.TAG_LOCUS, RcaTagConstants.LOCUS_MASTER_NODE);
+      nodeRca.addTag(RcaTagConstants.TAG_LOCUS, RcaTagConstants.LOCUS_DATA_MASTER_NODE);
       nodeRca.addAllUpstreams(Collections.singletonList(dummyYoungGenRca));
 
       Rca<ResourceFlowUnit<HotClusterSummary>> highHeapUsageClusterRca =
@@ -172,8 +172,7 @@ public class PersistFlowUnitAndSummaryTest {
       String readTableStr = persistable.read();
       if (readTableStr != null) {
         return readTableStr.contains("HotResourceSummary") && readTableStr.contains("DummyYoungGenRca")
-                && readTableStr.contains("HotNodeSummary") && readTableStr.contains("HotNodeRcaX")
-                && readTableStr.contains("HighHeapUsageClusterRcaX");
+                && readTableStr.contains("HotNodeSummary") && readTableStr.contains("HotNodeRcaX");
       }
       return false;
     }, 1, TimeUnit.MINUTES);
