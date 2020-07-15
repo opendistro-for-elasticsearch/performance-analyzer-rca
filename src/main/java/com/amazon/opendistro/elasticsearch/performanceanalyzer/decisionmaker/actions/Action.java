@@ -52,5 +52,4 @@ public interface Action {
 
   /** Returns a summary for the configured action */
   String summary();
-
 }
