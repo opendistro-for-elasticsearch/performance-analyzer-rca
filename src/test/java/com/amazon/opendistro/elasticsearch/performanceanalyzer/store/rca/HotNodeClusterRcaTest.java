@@ -50,7 +50,7 @@ public class HotNodeClusterRcaTest {
   private AppContext appContext;
 
   @Before
-  public void setupCluster() throws SQLException, ClassNotFoundException {
+  public void setupCluster() {
     ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
     ClusterDetailsEventProcessor.NodeDetails node1 =
         new ClusterDetailsEventProcessor.NodeDetails(AllMetrics.NodeRole.DATA, "node1", "127.0.0.0", false);

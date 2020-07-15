@@ -44,11 +44,14 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCA
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.MetricsDBProviderTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.WaitFor;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Assert;
@@ -138,7 +141,7 @@ public class PersistFlowUnitAndSummaryTest {
   }
 
   private RCAScheduler startScheduler(RcaConf rcaConf, AnalysisGraph graph, Persistable persistable,
-                                      Queryable queryable, InstanceDetails instanceDetails) {
+                                      Queryable queryable, AppContext appContext) {
     RCAScheduler scheduler =
         new RCAScheduler(
             RcaUtil.getAnalysisGraphComponents(graph),
@@ -148,9 +151,8 @@ public class PersistFlowUnitAndSummaryTest {
                 Paths.get(RcaConsts.TEST_CONFIG_PATH, "thresholds").toString(), rcaConf),
             persistable,
             new WireHopper(null, null, null, null,
-                null, new AppContext()),
-            new AppContext()
-            //instanceDetails
+                null, appContext),
+            appContext
             );
     ThreadProvider threadProvider = new ThreadProvider();
     Thread rcaSchedulerThread =
@@ -159,24 +161,33 @@ public class PersistFlowUnitAndSummaryTest {
     return scheduler;
   }
 
+  private AppContext createAppContextWithDataNodes(String nodeName, NodeRole role) {
+    ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
+    List<ClusterDetailsEventProcessor.NodeDetails> nodes = new ArrayList<>();
+
+    ClusterDetailsEventProcessor.NodeDetails node1 =
+        new ClusterDetailsEventProcessor.NodeDetails(role, nodeName, "127.0.0.0", role == NodeRole.ELECTED_MASTER);
+    nodes.add(node1);
+
+    clusterDetailsEventProcessor.setNodesDetails(nodes);
+
+    AppContext appContext = new AppContext();
+    appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
+    return appContext;
+  }
+
   @Test
   public void testPersistSummaryOnDataNode() throws Exception {
-    try {
-      ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
-      clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.0", false);
-      clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
-    } catch (Exception e) {
-      Assert.assertTrue("got exception when generating cluster details event", false);
-      return;
-    }
+    AppContext appContext = createAppContextWithDataNodes("node1", NodeRole.DATA);
+
     AnalysisGraph graph = new DataNodeGraph();
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
     Persistable persistable = PersistenceFactory.create(rcaConf);
-    RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable,
-        new InstanceDetails(AllMetrics.NodeRole.DATA));
+    RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, appContext);
     // Wait at most 1 minute for the persisted data to show up with the correct contents
     WaitFor.waitFor(() -> {
       String readTableStr = persistable.read();
+      System.out.println(readTableStr);
       if (readTableStr != null) {
         return readTableStr.contains("HotResourceSummary") && readTableStr.contains("DummyYoungGenRca")
                 && readTableStr.contains("HotNodeSummary") && readTableStr.contains("HotNodeRcaX")
@@ -190,19 +201,11 @@ public class PersistFlowUnitAndSummaryTest {
 
   @Test
   public void testPersistSummaryOnMasterNode() throws Exception {
-    try {
-      ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
-      clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.0", true);
-      clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
-    } catch (Exception e) {
-      Assert.assertTrue("got exception when generating cluster details event", false);
-      return;
-    }
+    AppContext appContext = createAppContextWithDataNodes("node1", NodeRole.ELECTED_MASTER);
     AnalysisGraph graph = new MasterNodeGraph();
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_elected_master.conf").toString());
     Persistable persistable = PersistenceFactory.create(rcaConf);
-    RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable,
-        new InstanceDetails(NodeRole.ELECTED_MASTER));
+    RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, appContext);
     // Wait at most 1 minute for the persisted data to show up with the correct contents
     WaitFor.waitFor(() -> {
       String readTableStr = persistable.read();
