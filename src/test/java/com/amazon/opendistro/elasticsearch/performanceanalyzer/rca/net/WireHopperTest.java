@@ -1,9 +1,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
-<<<<<<< HEAD
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
-=======
->>>>>>> d84454b... Add full mutual auth to gRPC client/server and augment tests
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
