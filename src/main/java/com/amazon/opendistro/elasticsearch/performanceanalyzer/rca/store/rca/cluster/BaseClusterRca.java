@@ -97,7 +97,7 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
   private void addUpstreamFlowUnits(Rca<ResourceFlowUnit<HotNodeSummary>> nodeRca) {
     List<ResourceFlowUnit<HotNodeSummary>> flowUnits = nodeRca.getFlowUnits();
     for (ResourceFlowUnit<HotNodeSummary> flowUnit : flowUnits) {
-      if (flowUnit.isEmpty()) {
+      if (flowUnit.isEmpty() || !flowUnit.hasResourceSummary()) {
         continue;
       }
       HotNodeSummary nodeSummary = flowUnit.getSummary();

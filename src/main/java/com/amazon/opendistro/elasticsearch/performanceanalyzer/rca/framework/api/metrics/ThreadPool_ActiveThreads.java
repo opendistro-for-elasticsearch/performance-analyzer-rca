@@ -20,6 +20,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 
 public class ThreadPool_ActiveThreads extends Metric {
   public ThreadPool_ActiveThreads(long evaluationIntervalSeconds) {
-    super(AllMetrics.ThreadPoolValue.THREADPOOL_ACTIVE_THREADS.name(), evaluationIntervalSeconds);
+    super(AllMetrics.ThreadPoolValue.THREADPOOL_ACTIVE_THREADS.toString(), evaluationIntervalSeconds);
   }
 }

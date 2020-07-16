@@ -85,21 +85,18 @@ public class QueueRejectionRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
     }
     if (counter == rcaPeriod) {
       counter = 0;
-
       InstanceDetails instanceDetails = getInstanceDetails();
-
-      HotNodeSummary nodeSummary = null;
+      HotNodeSummary nodeSummary = new HotNodeSummary(instanceDetails.getInstanceId(), instanceDetails.getInstanceIp());
+      boolean hasUnhealthyQueue = false;
       for (QueueRejectionCollector collector : queueRejectionCollectors) {
         // if we've see thread pool rejection in the last 5 mins, the thread pool is considered as contended
         if (collector.isUnhealthy(currTimestamp)) {
-          if (nodeSummary == null) {
-            nodeSummary = new HotNodeSummary(instanceDetails.getInstanceId(), instanceDetails.getInstanceIp());
-          }
           nodeSummary.appendNestedSummary(collector.generateSummary(currTimestamp));
+          hasUnhealthyQueue = true;
         }
       }
       ResourceContext context;
-      if (nodeSummary == null) {
+      if (!hasUnhealthyQueue) {
         context = new ResourceContext(Resources.State.HEALTHY);
       }
       else {
