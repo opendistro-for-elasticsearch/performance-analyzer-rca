@@ -56,7 +56,7 @@ public class Decision extends GenericFlowUnit {
 
   @Override
   public String toString() {
-    return decider + actions;
+    return decider + " : " + actions;
   }
 
   @Override
