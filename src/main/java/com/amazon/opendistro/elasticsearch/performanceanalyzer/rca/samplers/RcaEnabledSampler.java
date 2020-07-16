@@ -31,7 +31,7 @@ public class RcaEnabledSampler implements ISampler {
   private final AppContext appContext;
 
   RcaEnabledSampler(final AppContext appContext) {
-    Objects.nonNull(appContext);
+    Objects.requireNonNull(appContext);
     this.appContext = appContext;
   }
 
