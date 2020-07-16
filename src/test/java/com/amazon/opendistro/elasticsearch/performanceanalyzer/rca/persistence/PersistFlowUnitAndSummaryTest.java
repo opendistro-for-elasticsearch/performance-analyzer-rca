@@ -118,14 +118,14 @@ public class PersistFlowUnitAndSummaryTest {
     @Override
     public void construct() {
       Metric heapUsed = new Heap_Used(5);
-      heapUsed.addTag(RcaTagConstants.TAG_LOCUS, RcaTagConstants.LOCUS_MASTER_NODE);
+      heapUsed.addTag(RcaTagConstants.TAG_LOCUS, RcaTagConstants.LOCUS_DATA_MASTER_NODE);
       addLeaf(heapUsed);
       Rca<ResourceFlowUnit<HotResourceSummary>> dummyYoungGenRca = new DummyYoungGenRca(heapUsed);
       dummyYoungGenRca.addAllUpstreams(Collections.singletonList(heapUsed));
-      dummyYoungGenRca.addTag(RcaTagConstants.TAG_LOCUS, RcaTagConstants.LOCUS_MASTER_NODE);
+      dummyYoungGenRca.addTag(RcaTagConstants.TAG_LOCUS, RcaTagConstants.LOCUS_DATA_MASTER_NODE);
 
       Rca<ResourceFlowUnit<HotNodeSummary>> nodeRca = new HotNodeRcaX(1, dummyYoungGenRca);
-      nodeRca.addTag(RcaTagConstants.TAG_LOCUS, RcaTagConstants.LOCUS_MASTER_NODE);
+      nodeRca.addTag(RcaTagConstants.TAG_LOCUS, RcaTagConstants.LOCUS_DATA_MASTER_NODE);
       nodeRca.addAllUpstreams(Collections.singletonList(dummyYoungGenRca));
 
       Rca<ResourceFlowUnit<HotClusterSummary>> highHeapUsageClusterRca =
@@ -161,12 +161,12 @@ public class PersistFlowUnitAndSummaryTest {
     return scheduler;
   }
 
-  private AppContext createAppContextWithDataNodes(String nodeName, NodeRole role) {
+  private AppContext createAppContextWithDataNodes(String nodeName, NodeRole role, boolean isMaster) {
     ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
     List<ClusterDetailsEventProcessor.NodeDetails> nodes = new ArrayList<>();
 
     ClusterDetailsEventProcessor.NodeDetails node1 =
-        new ClusterDetailsEventProcessor.NodeDetails(role, nodeName, "127.0.0.0", role == NodeRole.ELECTED_MASTER);
+        new ClusterDetailsEventProcessor.NodeDetails(role, nodeName, "127.0.0.0", isMaster);
     nodes.add(node1);
 
     clusterDetailsEventProcessor.setNodesDetails(nodes);
@@ -176,13 +176,26 @@ public class PersistFlowUnitAndSummaryTest {
     return appContext;
   }
 
+  /**
+   * Add testPersistSummaryOnDataNode() and testPersistSummaryOnMasterNode() into a single UT
+   * This will force both tests to run in sequential and can avoid access contention to the
+   * same db file.
+   * @throws Exception SQL exception
+   */
   @Test
-  public void testPersistSummaryOnDataNode() throws Exception {
-    AppContext appContext = createAppContextWithDataNodes("node1", NodeRole.DATA);
+  public void testPersisSummary() throws Exception {
+    RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
+    RcaConf masterRcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_elected_master.conf").toString());
+    Persistable persistable = PersistenceFactory.create(rcaConf);
+    testPersistSummaryOnDataNode(rcaConf, persistable);
+    testPersistSummaryOnMasterNode(masterRcaConf, persistable);
+    persistable.close();
+  }
+
+  private void testPersistSummaryOnDataNode(RcaConf rcaConf, Persistable persistable) throws Exception {
+    AppContext appContext = createAppContextWithDataNodes("node1", NodeRole.DATA, false);
 
     AnalysisGraph graph = new DataNodeGraph();
-    RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
-    Persistable persistable = PersistenceFactory.create(rcaConf);
     RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, appContext);
     // Wait at most 1 minute for the persisted data to show up with the correct contents
     WaitFor.waitFor(() -> {
@@ -190,8 +203,7 @@ public class PersistFlowUnitAndSummaryTest {
       System.out.println(readTableStr);
       if (readTableStr != null) {
         return readTableStr.contains("HotResourceSummary") && readTableStr.contains("DummyYoungGenRca")
-                && readTableStr.contains("HotNodeSummary") && readTableStr.contains("HotNodeRcaX")
-                && readTableStr.contains("HighHeapUsageClusterRcaX");
+                && readTableStr.contains("HotNodeSummary") && readTableStr.contains("HotNodeRcaX");
       }
       return false;
     }, 1, TimeUnit.MINUTES);
@@ -199,12 +211,9 @@ public class PersistFlowUnitAndSummaryTest {
     persistable.close();
   }
 
-  @Test
-  public void testPersistSummaryOnMasterNode() throws Exception {
-    AppContext appContext = createAppContextWithDataNodes("node1", NodeRole.ELECTED_MASTER);
+  private void testPersistSummaryOnMasterNode(RcaConf rcaConf, Persistable persistable) throws Exception {
+    AppContext appContext = createAppContextWithDataNodes("node1", NodeRole.DATA, true);
     AnalysisGraph graph = new MasterNodeGraph();
-    RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_elected_master.conf").toString());
-    Persistable persistable = PersistenceFactory.create(rcaConf);
     RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, appContext);
     // Wait at most 1 minute for the persisted data to show up with the correct contents
     WaitFor.waitFor(() -> {

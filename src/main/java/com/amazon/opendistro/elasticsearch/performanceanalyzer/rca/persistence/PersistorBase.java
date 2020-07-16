@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.Field;
+import org.jooq.exception.DataAccessException;
 
 // TODO: Scheme to rotate the current file and garbage collect older files.
 public abstract class PersistorBase implements Persistable {
@@ -211,7 +212,7 @@ public abstract class PersistorBase implements Persistable {
       T flowUnit, String tableName) throws SQLException, IOException {
     try {
         tryWriteFlowUnit(flowUnit, tableName);
-    } catch (SQLException e) {
+    } catch (SQLException | DataAccessException e) {
       LOG.info(
           "RCA: Fail to write to table '{}', try creating a new DB", tableName);
       rotateRegisterGarbageThenCreateNewDB(RotationType.FORCE_ROTATE);
@@ -220,7 +221,7 @@ public abstract class PersistorBase implements Persistable {
   }
 
   private <T extends ResourceFlowUnit> void tryWriteFlowUnit(
-          T flowUnit, String nodeName) throws SQLException {
+          T flowUnit, String nodeName) throws SQLException, DataAccessException {
     String tableName = ResourceFlowUnit.RCA_TABLE_NAME;
     if (!tableNames.contains(tableName)) {
       LOG.info(
