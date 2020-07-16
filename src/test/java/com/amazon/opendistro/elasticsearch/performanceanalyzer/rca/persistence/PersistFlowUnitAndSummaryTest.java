@@ -53,6 +53,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -156,7 +157,7 @@ public class PersistFlowUnitAndSummaryTest {
     return scheduler;
   }
 
-  @Test
+  @Ignore
   public void testPersistSummaryOnDataNode() throws Exception {
     try {
       ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
