@@ -202,6 +202,8 @@ public class PersistFlowUnitAndSummaryTest {
       String readTableStr = persistable.read();
       System.out.println(readTableStr);
       if (readTableStr != null) {
+        // HighHeapUsageClusterRcaX is a cluster level RCA so it should not be scheduled and persisted on
+        // data node.
         return readTableStr.contains("HotResourceSummary") && readTableStr.contains("DummyYoungGenRca")
                 && readTableStr.contains("HotNodeSummary") && readTableStr.contains("HotNodeRcaX");
       }
