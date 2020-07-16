@@ -5,7 +5,6 @@ on:
     branches: 
       - master
       - dev
-      - rguo*
 
   pull_request:
     branches: 
