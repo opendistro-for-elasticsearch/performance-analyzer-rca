@@ -39,7 +39,8 @@ public class ModifyCacheCapacityActionTest {
     ModifyCacheCapacityAction modifyCacheCapacityAction =
         new ModifyCacheCapacityAction(node1, ResourceEnum.FIELD_DATA_CACHE, 5000, true);
     assertTrue(
-        modifyCacheCapacityAction.getDesiredCapacity() > modifyCacheCapacityAction.getCurrentCapacity());
+        modifyCacheCapacityAction.getDesiredCapacityInBytes()
+            > modifyCacheCapacityAction.getCurrentCapacityInBytes());
     assertTrue(modifyCacheCapacityAction.isActionable());
     assertEquals(300, modifyCacheCapacityAction.coolOffPeriodInSeconds());
     assertEquals(ResourceEnum.FIELD_DATA_CACHE, modifyCacheCapacityAction.getCacheType());
@@ -54,20 +55,20 @@ public class ModifyCacheCapacityActionTest {
   }
 
   @Test
-  public void testDecreaseCapacity() {
+  public void testNoIncreaseCapacity() {
     NodeKey node1 = new NodeKey("node-1", "1.2.3.4");
     ModifyCacheCapacityAction modifyCacheCapacityAction =
         new ModifyCacheCapacityAction(node1, ResourceEnum.FIELD_DATA_CACHE, 5000, false);
-    assertTrue(
-        modifyCacheCapacityAction.getDesiredCapacity()
-            < modifyCacheCapacityAction.getCurrentCapacity());
-    assertTrue(modifyCacheCapacityAction.isActionable());
+    assertEquals(
+        modifyCacheCapacityAction.getDesiredCapacityInBytes(),
+        modifyCacheCapacityAction.getCurrentCapacityInBytes());
+    assertFalse(modifyCacheCapacityAction.isActionable());
     assertEquals(300, modifyCacheCapacityAction.coolOffPeriodInSeconds());
     assertEquals(ResourceEnum.FIELD_DATA_CACHE, modifyCacheCapacityAction.getCacheType());
     assertEquals(1, modifyCacheCapacityAction.impactedNodes().size());
 
     Map<Dimension, Impact> impact = modifyCacheCapacityAction.impact().get(node1).getImpact();
-    assertEquals(Impact.DECREASES_PRESSURE, impact.get(HEAP));
+    assertEquals(Impact.NO_IMPACT, impact.get(HEAP));
     assertEquals(Impact.NO_IMPACT, impact.get(CPU));
     assertEquals(Impact.NO_IMPACT, impact.get(NETWORK));
     assertEquals(Impact.NO_IMPACT, impact.get(RAM));
@@ -80,27 +81,15 @@ public class ModifyCacheCapacityActionTest {
     NodeKey node1 = new NodeKey("node-1", "1.2.3.4");
     ModifyCacheCapacityAction fieldCacheIncrease =
         new ModifyCacheCapacityAction(node1, ResourceEnum.FIELD_DATA_CACHE, 12000, true);
-    assertEquals(fieldCacheIncrease.getDesiredCapacity(), fieldCacheIncrease.getCurrentCapacity());
+    assertEquals(fieldCacheIncrease.getDesiredCapacityInBytes(), fieldCacheIncrease.getCurrentCapacityInBytes());
     assertFalse(fieldCacheIncrease.isActionable());
     assertNoImpact(node1, fieldCacheIncrease);
 
-    ModifyCacheCapacityAction fieldCacheDecrease =
-        new ModifyCacheCapacityAction(node1, ResourceEnum.FIELD_DATA_CACHE, 1000, false);
-    assertEquals(fieldCacheDecrease.getDesiredCapacity(), fieldCacheDecrease.getCurrentCapacity());
-    assertFalse(fieldCacheDecrease.isActionable());
-    assertNoImpact(node1, fieldCacheDecrease);
-
     ModifyCacheCapacityAction shardRequestCacheIncrease =
         new ModifyCacheCapacityAction(node1, ResourceEnum.SHARD_REQUEST_CACHE, 12000, true);
-    assertEquals(shardRequestCacheIncrease.getDesiredCapacity(), shardRequestCacheIncrease.getCurrentCapacity());
+    assertEquals(shardRequestCacheIncrease.getDesiredCapacityInBytes(), shardRequestCacheIncrease.getCurrentCapacityInBytes());
     assertFalse(shardRequestCacheIncrease.isActionable());
     assertNoImpact(node1, shardRequestCacheIncrease);
-
-    ModifyCacheCapacityAction shardRequestCacheDecrease =
-        new ModifyCacheCapacityAction(node1, ResourceEnum.SHARD_REQUEST_CACHE, 0, false);
-    assertEquals(shardRequestCacheDecrease.getDesiredCapacity(), shardRequestCacheDecrease.getCurrentCapacity());
-    assertFalse(shardRequestCacheDecrease.isActionable());
-    assertNoImpact(node1, shardRequestCacheDecrease);
   }
 
   private void assertNoImpact(NodeKey node, ModifyCacheCapacityAction modifyCacheCapacityAction) {

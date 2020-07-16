@@ -22,14 +22,17 @@ import static org.junit.Assert.assertTrue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.RcaTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.BaseClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.ShardRequestCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
+import com.google.common.collect.ImmutableList;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -81,11 +84,14 @@ public class CacheHealthDeciderTest {
     ShardRequestCacheClusterRca shardRequestCacheClusterRca = new ShardRequestCacheClusterRca(1, shardRequestCacheNodeRca);
     shardRequestCacheClusterRca.generateFlowUnitListFromLocal(null);
 
-    CacheHealthDecider decider = new CacheHealthDecider(
+    CacheHealthDecider decider =
+        new CacheHealthDecider(
             5,
             12,
-            fieldDataCacheClusterRca,
-            shardRequestCacheClusterRca);
+            ImmutableList.<BaseClusterRca>builder()
+                .add(fieldDataCacheClusterRca)
+                .add(shardRequestCacheClusterRca)
+                .build());
 
     // Since deciderFrequency is 12, the first 11 invocations return empty decision
     for (int i = 0; i < 11; i++) {

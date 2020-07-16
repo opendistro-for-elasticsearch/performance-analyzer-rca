@@ -18,12 +18,14 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheCapacityAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.BaseClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.ShardRequestCacheClusterRca;
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,21 +33,18 @@ import java.util.List;
 
 public class CacheHealthDecider extends Decider {
 
-  public static final String NAME = "cache_health";
+  public static final String NAME = "cacheHealthDecider";
 
-  private FieldDataCacheClusterRca fieldDataCacheClusterRca;
-  private ShardRequestCacheClusterRca shardRequestCacheClusterRca;
   List<String> actionsByUserPriority = new ArrayList<>();
   private int counter = 0;
+  private ImmutableList<BaseClusterRca> cacheClusterRca;
 
   public CacheHealthDecider(final long evalIntervalSeconds,
                             final int decisionFrequency,
-                            final FieldDataCacheClusterRca fieldDataCacheClusterRca,
-                            final ShardRequestCacheClusterRca shardRequestCacheClusterRca) {
+                            final ImmutableList<BaseClusterRca> cacheClusterRca) {
     // TODO: Also consume NodeConfigurationRca
     super(evalIntervalSeconds, decisionFrequency);
-    this.fieldDataCacheClusterRca = fieldDataCacheClusterRca;
-    this.shardRequestCacheClusterRca = shardRequestCacheClusterRca;
+    this.cacheClusterRca = cacheClusterRca;
     configureActionPriority();
   }
 
@@ -62,8 +61,7 @@ public class CacheHealthDecider extends Decider {
       return decision;
     }
     counter = 0;
-    getActionsFromRca(fieldDataCacheClusterRca, decision);
-    getActionsFromRca(shardRequestCacheClusterRca, decision);
+    cacheClusterRca.forEach(rca -> getActionsFromRca(rca, decision));
     return decision;
   }
 
@@ -72,17 +70,17 @@ public class CacheHealthDecider extends Decider {
       final HotClusterSummary clusterSummary = cacheClusterRca.getFlowUnits().get(0).getSummary();
 
       clusterSummary
-          .getHotNodeSummaryList()
-          .forEach(
-              hotNodeSummary -> {
-                final NodeKey esNode =
-                    new NodeKey(hotNodeSummary.getNodeID(), hotNodeSummary.getHostAddress());
-                for (final HotResourceSummary resource :
-                    hotNodeSummary.getHotResourceSummaryList()) {
-                  decision.addAction(
-                      computeBestAction(esNode, resource.getResource().getResourceEnum()));
-                }
-              });
+              .getHotNodeSummaryList()
+              .forEach(
+                      hotNodeSummary -> {
+                        final NodeKey esNode =
+                                new NodeKey(hotNodeSummary.getNodeID(), hotNodeSummary.getHostAddress());
+                        for (final HotResourceSummary resource :
+                                hotNodeSummary.getHotResourceSummaryList()) {
+                          decision.addAction(
+                                  computeBestAction(esNode, resource.getResource().getResourceEnum()));
+                        }
+                      });
     }
   }
 
@@ -101,7 +99,7 @@ public class CacheHealthDecider extends Decider {
     Action action = null;
     for (String actionName : actionsByUserPriority) {
       action =
-          getAction(actionName, esNode, cacheType, getNodeCacheCapacity(esNode, cacheType), true);
+              getAction(actionName, esNode, cacheType, getNodeCacheCapacityInBytes(esNode, cacheType), true);
       if (action != null) {
         break;
       }
@@ -112,29 +110,31 @@ public class CacheHealthDecider extends Decider {
   private Action getAction(final String actionName,
                            final NodeKey esNode,
                            final ResourceEnum cacheType,
-                           final int currentCapacity,
+                           final long currentCapacityInBytes,
                            final boolean increase) {
     if (ModifyCacheCapacityAction.NAME.equals(actionName)) {
-      return configureCacheCapacity(esNode, cacheType, currentCapacity, increase);
+      return configureCacheCapacity(esNode, cacheType, currentCapacityInBytes, increase);
     }
     return null;
   }
 
-  private ModifyCacheCapacityAction configureCacheCapacity(final NodeKey esNode,
-                                                           final ResourceEnum cacheType,
-                                                           final int currentCapacity,
-                                                           final boolean increase) {
-    final ModifyCacheCapacityAction action = new ModifyCacheCapacityAction(esNode, cacheType, currentCapacity, increase);
+  private ModifyCacheCapacityAction configureCacheCapacity(
+          final NodeKey esNode,
+          final ResourceEnum cacheType,
+          final long currentCapacityInBytes,
+          final boolean increase) {
+    final ModifyCacheCapacityAction action =
+            new ModifyCacheCapacityAction(esNode, cacheType, currentCapacityInBytes, increase);
     if (action.isActionable()) {
       return action;
     }
     return null;
   }
 
-  private int getNodeCacheCapacity(final NodeKey esNode, final ResourceEnum cacheType) {
-    // TODO: use NodeConfigurationRca to return capacity, for now returning random value in MB
+  private int getNodeCacheCapacityInBytes(final NodeKey esNode, final ResourceEnum cacheType) {
+    // TODO: use NodeConfigurationRca to return capacity, for now returning random value in Bytes
     if (cacheType.equals(ResourceEnum.FIELD_DATA_CACHE)) {
-      return 10000;
+      return 1000;
     }
     return 1000;
   }

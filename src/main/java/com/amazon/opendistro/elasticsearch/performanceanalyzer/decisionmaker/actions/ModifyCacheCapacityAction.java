@@ -25,24 +25,27 @@ import java.util.List;
 import java.util.Map;
 
 public class ModifyCacheCapacityAction implements Action {
-  public static final String NAME = "modify_cache_capacity";
+  public static final String NAME = "modifyCacheCapacity";
   public static final int COOL_OFF_PERIOD_IN_SECONDS = 300;
 
-  private int currentCapacity;
-  private int desiredCapacity;
+  private long currentCapacityInBytes;
+  private long desiredCapacityInBytes;
   private ResourceEnum cacheType;
   private NodeKey esNode;
 
-  private Map<ResourceEnum, Integer> lowerBound = new HashMap<>();
   private Map<ResourceEnum, Integer> upperBound = new HashMap<>();
 
-  public ModifyCacheCapacityAction(NodeKey esNode, ResourceEnum cacheType, int currentCapacity, boolean increase) {
+  public ModifyCacheCapacityAction(
+          NodeKey esNode, ResourceEnum cacheType, long currentCapacityInBytes, boolean increase) {
+    // TODO: Also consume NodeConfigurationRca
     setBounds();
-    int STEP_SIZE = 50;
+    // TODO: Update the step size to be a percentage of max size instead of an absolute value
+    int STEP_SIZE_IN_BYTES = 50;
     this.esNode = esNode;
     this.cacheType = cacheType;
-    this.currentCapacity = currentCapacity;
-    int desiredCapacity = increase ? currentCapacity + STEP_SIZE : currentCapacity - STEP_SIZE;
+    this.currentCapacityInBytes = currentCapacityInBytes;
+    long desiredCapacity =
+            increase ? currentCapacityInBytes + STEP_SIZE_IN_BYTES : currentCapacityInBytes;
     setDesiredCapacity(desiredCapacity);
   }
 
@@ -53,7 +56,7 @@ public class ModifyCacheCapacityAction implements Action {
 
   @Override
   public boolean isActionable() {
-    return desiredCapacity != currentCapacity;
+    return desiredCapacityInBytes != currentCapacityInBytes;
   }
 
   @Override
@@ -68,10 +71,10 @@ public class ModifyCacheCapacityAction implements Action {
 
   @Override
   public Map<NodeKey, ImpactVector> impact() {
-    ImpactVector impactVector = new ImpactVector();
-    if (desiredCapacity > currentCapacity) {
+    final ImpactVector impactVector = new ImpactVector();
+    if (desiredCapacityInBytes > currentCapacityInBytes) {
       impactVector.increasesPressure(HEAP);
-    } else if (desiredCapacity < currentCapacity) {
+    } else if (desiredCapacityInBytes < currentCapacityInBytes) {
       impactVector.decreasesPressure(HEAP);
     }
     return Collections.singletonMap(esNode, impactVector);
@@ -90,7 +93,7 @@ public class ModifyCacheCapacityAction implements Action {
       return String.format("No action to take for: [%s]", NAME);
     }
     return String.format("Update [%s] capacity from [%d] to [%d] on node [%s]",
-        cacheType.toString(), currentCapacity, desiredCapacity, esNode.getNodeId());
+            cacheType.toString(), currentCapacityInBytes, desiredCapacityInBytes, esNode.getNodeId());
   }
 
   @Override
@@ -101,27 +104,25 @@ public class ModifyCacheCapacityAction implements Action {
   private void setBounds() {
     // This is intentionally not made static because different nodes can
     // have different bounds based on instance types
-    // TODO: Read the upper bound and lower bound from node configuration rca.
+    // TODO: Read the upperBound from NodeConfigurationRca.
 
-    // Field data cache used when sorting on or computing aggregation on the field (in MB)
-    lowerBound.put(ResourceEnum.FIELD_DATA_CACHE, 1000);
+    // Field data cache used when sorting on or computing aggregation on the field (in Bytes)
     upperBound.put(ResourceEnum.FIELD_DATA_CACHE, 12000);
 
-    // Shard request cache (in MB)
-    lowerBound.put(ResourceEnum.SHARD_REQUEST_CACHE, 0);
+    // Shard request cache (in Bytes)
     upperBound.put(ResourceEnum.SHARD_REQUEST_CACHE, 12000);
   }
 
-  private void setDesiredCapacity(int desiredCapacity) {
-    this.desiredCapacity = Math.max(Math.min(desiredCapacity, upperBound.get(cacheType)), lowerBound.get(cacheType));
+  private void setDesiredCapacity(long desiredCapacity) {
+    this.desiredCapacityInBytes = Math.min(desiredCapacity, upperBound.get(cacheType));
   }
 
-  public int getCurrentCapacity() {
-    return currentCapacity;
+  public long getCurrentCapacityInBytes() {
+    return currentCapacityInBytes;
   }
 
-  public int getDesiredCapacity() {
-    return desiredCapacity;
+  public long getDesiredCapacityInBytes() {
+    return desiredCapacityInBytes;
   }
 
   public ResourceEnum getCacheType() {
