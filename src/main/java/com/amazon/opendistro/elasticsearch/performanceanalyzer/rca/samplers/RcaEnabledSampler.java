@@ -15,15 +15,25 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.samplers;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaRuntimeMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.collectors.SampleAggregator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.emitters.ISampler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
 import com.google.common.annotations.VisibleForTesting;
+import java.util.Objects;
+import javax.annotation.Nonnull;
 
 public class RcaEnabledSampler implements ISampler {
+  private final AppContext appContext;
+
+  RcaEnabledSampler(final AppContext appContext) {
+    Objects.requireNonNull(appContext);
+    this.appContext = appContext;
+  }
 
   @Override
   public void sample(SampleAggregator sampleCollector) {
@@ -32,8 +42,8 @@ public class RcaEnabledSampler implements ISampler {
 
   @VisibleForTesting
   boolean isRcaEnabled() {
-    NodeDetails currentNode = ClusterDetailsEventProcessor.getCurrentNodeDetails();
-    if (currentNode != null && currentNode.getIsMasterNode()) {
+    InstanceDetails currentNode = appContext.getMyInstanceDetails();
+    if (currentNode != null && currentNode.getIsMaster()) {
       return RcaController.isRcaEnabled();
     }
     return false;

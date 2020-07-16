@@ -38,7 +38,7 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
   /**
    * keep a volatile immutable list to make the read/write to this list thread safe.
    */
-  private static volatile ImmutableList<NodeDetails> nodesDetails = null;
+  private volatile ImmutableList<NodeDetails> nodesDetails = null;
 
   @Override
   public void initializeProcessing(long startTime, long endTime) {}
@@ -92,11 +92,11 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
 
   }
 
-  public static void setNodesDetails(List<NodeDetails> nodesDetails) {
-    ClusterDetailsEventProcessor.nodesDetails = ImmutableList.copyOf(nodesDetails);
+  public void setNodesDetails(final List<NodeDetails> nodesDetails) {
+    this.nodesDetails = ImmutableList.copyOf(nodesDetails);
   }
 
-  public static List<NodeDetails> getNodesDetails() {
+  public List<NodeDetails> getNodesDetails() {
     if (nodesDetails != null) {
       return nodesDetails.asList();
     } else {
@@ -104,7 +104,7 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
     }
   }
 
-  public static List<NodeDetails> getDataNodesDetails() {
+  public List<NodeDetails> getDataNodesDetails() {
     List<NodeDetails> allNodes = getNodesDetails();
     if (allNodes.size() > 0) {
       return allNodes.stream()
@@ -115,8 +115,7 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
     }
   }
 
-  @Deprecated
-  public static NodeDetails getCurrentNodeDetails() {
+  public NodeDetails getCurrentNodeDetails() {
     List<NodeDetails> allNodes = getNodesDetails();
     if (allNodes.size() > 0) {
       return allNodes.get(0);
