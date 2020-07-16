@@ -48,6 +48,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.WaitFor;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -58,6 +60,7 @@ import org.junit.experimental.categories.Category;
 @SuppressWarnings("serial")
 public class PersistFlowUnitAndSummaryTest {
   Queryable queryable;
+  private static final Logger LOG = LogManager.getLogger(PersistFlowUnitAndSummaryTest.class);
 
   static class DummyYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSummary>> {
     public <M extends Metric> DummyYoungGenRca(M metric) {
@@ -211,15 +214,9 @@ public class PersistFlowUnitAndSummaryTest {
         return false;
       }, 1, TimeUnit.MINUTES);
     } catch (Exception e) {
-      //Assert.fail("Read timeout, table string = " + persistable.read());
+      LOG.error("ruizhen : {}", persistable.read());
+      Assert.fail("Read timeout, table string = " + persistable.read());
     }
-    String readTableStr = persistable.read();
-    Assert.assertTrue(!readTableStr.isEmpty());
-    Assert.assertTrue(readTableStr.contains("HotResourceSummary"));
-    Assert.assertTrue(readTableStr.contains("DummyYoungGenRca"));
-    Assert.assertTrue(readTableStr.contains("HotNodeSummary"));
-    Assert.assertTrue(readTableStr.contains("HotNodeRcaX"));
-    Assert.assertTrue(readTableStr.contains("HighHeapUsageClusterRcaX"));
     scheduler.shutdown();
     persistable.close();
   }
