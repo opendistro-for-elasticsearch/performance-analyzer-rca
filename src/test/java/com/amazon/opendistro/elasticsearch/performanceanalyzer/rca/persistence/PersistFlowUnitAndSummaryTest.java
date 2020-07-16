@@ -194,16 +194,20 @@ public class PersistFlowUnitAndSummaryTest {
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_elected_master.conf").toString());
     Persistable persistable = PersistenceFactory.create(rcaConf);
     RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, NodeRole.ELECTED_MASTER);
-    // Wait at most 1 minute for the persisted data to show up with the correct contents
-    WaitFor.waitFor(() -> {
-      String readTableStr = persistable.read();
-      if (readTableStr != null) {
-        return readTableStr.contains("HotResourceSummary") && readTableStr.contains("DummyYoungGenRca")
-                && readTableStr.contains("HotNodeSummary") && readTableStr.contains("HotNodeRcaX")
-                && readTableStr.contains("HighHeapUsageClusterRcaX");
-      }
-      return false;
-    }, 2, TimeUnit.MINUTES);
+    try {
+      // Wait at most 1 minute for the persisted data to show up with the correct contents
+      WaitFor.waitFor(() -> {
+        String readTableStr = persistable.read();
+        if (readTableStr != null) {
+          return readTableStr.contains("HotResourceSummary") && readTableStr.contains("DummyYoungGenRca")
+              && readTableStr.contains("HotNodeSummary") && readTableStr.contains("HotNodeRcaX")
+              && readTableStr.contains("HighHeapUsageClusterRcaX");
+        }
+        return false;
+      }, 1, TimeUnit.MINUTES);
+    } catch (Exception e) {
+      Assert.fail("Fail to read table, table string = " + persistable.read());
+    }
     scheduler.shutdown();
     persistable.close();
   }
