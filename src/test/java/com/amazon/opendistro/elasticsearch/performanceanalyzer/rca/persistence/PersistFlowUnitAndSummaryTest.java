@@ -61,6 +61,7 @@ import org.junit.experimental.categories.Category;
 @SuppressWarnings("serial")
 public class PersistFlowUnitAndSummaryTest {
   Queryable queryable;
+  Persistable persistable;
   private static final Logger LOG = LogManager.getLogger(PersistFlowUnitAndSummaryTest.class);
 
   static class DummyYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSummary>> {
@@ -137,6 +138,8 @@ public class PersistFlowUnitAndSummaryTest {
   @Before
   public void before() throws Exception {
     queryable = new MetricsDBProviderTestHelper(false);
+    RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
+    persistable = PersistenceFactory.create(rcaConf);
   }
 
   private RCAScheduler startScheduler(RcaConf rcaConf, AnalysisGraph graph, Persistable persistable, Queryable queryable, NodeRole role) {
@@ -157,7 +160,7 @@ public class PersistFlowUnitAndSummaryTest {
     return scheduler;
   }
 
-  @Ignore
+  @Test
   public void testPersistSummaryOnDataNode() throws Exception {
     try {
       ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
@@ -169,7 +172,6 @@ public class PersistFlowUnitAndSummaryTest {
     }
     AnalysisGraph graph = new DataNodeGraph();
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
-    Persistable persistable = PersistenceFactory.create(rcaConf);
     RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, AllMetrics.NodeRole.DATA);
     try {
       // Wait at most 1 minute for the persisted data to show up with the correct contents
@@ -185,7 +187,6 @@ public class PersistFlowUnitAndSummaryTest {
       Assert.fail("Read timeout, table string = " + persistable.read());
     } finally {
       scheduler.shutdown();
-      persistable.close();
     }
   }
 
@@ -201,7 +202,6 @@ public class PersistFlowUnitAndSummaryTest {
     }
     AnalysisGraph graph = new MasterNodeGraph();
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_elected_master.conf").toString());
-    Persistable persistable = PersistenceFactory.create(rcaConf);
     RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, NodeRole.ELECTED_MASTER);
     try {
       // Wait at most 1 minute for the persisted data to show up with the correct contents
@@ -217,9 +217,9 @@ public class PersistFlowUnitAndSummaryTest {
     } catch (Exception e) {
       LOG.error("ruizhen : {}", persistable.read());
       Assert.fail("Read timeout, table string = " + persistable.read());
+    } finally {
+      scheduler.shutdown();
     }
-    scheduler.shutdown();
-    persistable.close();
   }
 
   @After
@@ -228,5 +228,6 @@ public class PersistFlowUnitAndSummaryTest {
       queryable.getMetricsDB().close();
       queryable.getMetricsDB().deleteOnDiskFile();
     }
+    persistable.close();
   }
 }
