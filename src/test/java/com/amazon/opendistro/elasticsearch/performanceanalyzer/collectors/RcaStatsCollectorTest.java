@@ -15,9 +15,12 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp.PERIODIC_SAMPLE_AGGREGATOR;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
@@ -35,6 +38,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.uti
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCASchedulerTask;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.MetricsDBProviderTestHelper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.emitters.PeriodicSamplers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.measurements.MeasurementSet;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.nio.file.Paths;
@@ -43,6 +47,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -131,6 +136,11 @@ public class RcaStatsCollectorTest {
     }
     for (JvmMetrics jvmMetrics1: jvmMetrics) {
       if (!verify(jvmMetrics1)) {
+        PerformanceAnalyzerApp.PERIODIC_SAMPLERS = new PeriodicSamplers(PERIODIC_SAMPLE_AGGREGATOR,
+            PerformanceAnalyzerApp.getAllSamplers(appContext),
+                (MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval) / 2,
+                TimeUnit.MILLISECONDS);
+
         PerformanceAnalyzerApp.PERIODIC_SAMPLERS.run();
       }
       Assert.assertTrue(verify(jvmMetrics1));

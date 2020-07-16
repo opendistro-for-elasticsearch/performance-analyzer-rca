@@ -17,6 +17,7 @@ public class ClusterUtilsTest {
     private static final String HOST2 = "127.0.0.2";
     private static final ClusterDetailsEventProcessor.NodeDetails EMPTY_DETAILS =
             ClusterDetailsEventProcessorTestHelper.newNodeDetails("", "", false);
+    private ClusterDetailsEventProcessor clusterDetailsEventProcessor;
 
     private List<InstanceDetails> getInstancesFromHost(List<String> hostIps) {
         List<InstanceDetails> instances = new ArrayList<>();
@@ -29,7 +30,8 @@ public class ClusterUtilsTest {
 
     @Before
     public void setup() {
-        ClusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(EMPTY_DETAILS));
+        clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
+        clusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(EMPTY_DETAILS));
     }
 
     @Test
@@ -37,7 +39,7 @@ public class ClusterUtilsTest {
         // method should return false when there are no peers
         Assert.assertFalse(ClusterUtils.isHostAddressInCluster(HOST, getInstancesFromHost(Collections.EMPTY_LIST)));
         // method should properly recognize which hosts are peers and which aren't
-        ClusterDetailsEventProcessor.setNodesDetails(Lists.newArrayList(
+        clusterDetailsEventProcessor.setNodesDetails(Lists.newArrayList(
                 ClusterDetailsEventProcessorTestHelper.newNodeDetails(null, HOST, false)
         ));
 
