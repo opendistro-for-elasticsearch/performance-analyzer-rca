@@ -167,17 +167,22 @@ public class PersistFlowUnitAndSummaryTest {
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
     Persistable persistable = PersistenceFactory.create(rcaConf);
     RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, AllMetrics.NodeRole.DATA);
-    // Wait at most 1 minute for the persisted data to show up with the correct contents
-    WaitFor.waitFor(() -> {
-      String readTableStr = persistable.read();
-      if (readTableStr != null) {
-        return readTableStr.contains("HotResourceSummary") && readTableStr.contains("DummyYoungGenRca")
-                && readTableStr.contains("HotNodeSummary") && readTableStr.contains("HotNodeRcaX");
-      }
-      return false;
-    }, 1, TimeUnit.MINUTES);
-    scheduler.shutdown();
-    persistable.close();
+    try {
+      // Wait at most 1 minute for the persisted data to show up with the correct contents
+      WaitFor.waitFor(() -> {
+        String readTableStr = persistable.read();
+        if (readTableStr != null) {
+          return readTableStr.contains("HotResourceSummary") && readTableStr.contains("DummyYoungGenRca")
+              && readTableStr.contains("HotNodeSummary") && readTableStr.contains("HotNodeRcaX");
+        }
+        return false;
+      }, 1, TimeUnit.MINUTES);
+    } catch (Exception e) {
+      Assert.fail("Read timeout, table string = " + persistable.read());
+    } finally {
+      scheduler.shutdown();
+      persistable.close();
+    }
   }
 
   @Test
@@ -206,8 +211,15 @@ public class PersistFlowUnitAndSummaryTest {
         return false;
       }, 1, TimeUnit.MINUTES);
     } catch (Exception e) {
-      Assert.fail("Fail to read table, table string = " + persistable.read());
+      //Assert.fail("Read timeout, table string = " + persistable.read());
     }
+    String readTableStr = persistable.read();
+    Assert.assertTrue(!readTableStr.isEmpty());
+    Assert.assertTrue(readTableStr.contains("HotResourceSummary"));
+    Assert.assertTrue(readTableStr.contains("DummyYoungGenRca"));
+    Assert.assertTrue(readTableStr.contains("HotNodeSummary"));
+    Assert.assertTrue(readTableStr.contains("HotNodeRcaX"));
+    Assert.assertTrue(readTableStr.contains("HighHeapUsageClusterRcaX"));
     scheduler.shutdown();
     persistable.close();
   }
