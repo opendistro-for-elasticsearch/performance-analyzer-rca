@@ -214,7 +214,7 @@ public abstract class PersistorBase implements Persistable {
         tryWriteFlowUnit(flowUnit, tableName);
     } catch (SQLException | DataAccessException e) {
       LOG.info(
-          "RCA: Fail to write to table '{}', try creating a new DB", tableName);
+          "RCA: Fail to write to table '{}', creating a new DB file and retrying write/create operation", tableName);
       rotateRegisterGarbageThenCreateNewDB(RotationType.FORCE_ROTATE);
       tryWriteFlowUnit(flowUnit, tableName);
     }
