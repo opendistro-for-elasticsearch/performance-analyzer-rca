@@ -92,9 +92,11 @@ public class AppContext {
   }
 
   public List<String> getPeerInstanceIps() {
-    return getAllClusterInstances().stream()
-        .skip(1)  // Skipping the first instance as it is self.
-        .map(InstanceDetails::getInstanceIp)
-        .collect(Collectors.toList());
+    return ImmutableList.copyOf(
+        getAllClusterInstances()
+            .stream()
+            .skip(1)  // Skipping the first instance as it is self.
+            .map(InstanceDetails::getInstanceIp)
+            .collect(Collectors.toList()));
   }
 }
