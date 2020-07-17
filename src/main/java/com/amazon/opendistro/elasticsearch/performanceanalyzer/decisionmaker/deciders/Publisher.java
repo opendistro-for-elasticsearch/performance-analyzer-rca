@@ -18,11 +18,9 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
-
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,7 +55,8 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
     if (elapsed >= action.coolOffPeriodInMillis()) {
       return true;
     } else {
-      LOG.debug("Action {} still has {} ms left in its cool off period", action.name(),
+      LOG.debug("Publisher: Action {} still has {} ms left in its cool off period",
+          action.name(),
               action.coolOffPeriodInMillis() - elapsed);
       return false;
     }
@@ -70,7 +69,7 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
     Decision decision = collator.getFlowUnits().get(0);
     for (Action action : decision.getActions()) {
       if (isCooledOff(action)) { // Only execute actions which have passed their cool off period
-        LOG.info("Executing action: [{}]", action.name());
+        LOG.info("Publisher: Executing action: [{}]", action.name());
         action.execute();
         actionToExecutionTime.put(action.name(), Instant.now().toEpochMilli());
       }
