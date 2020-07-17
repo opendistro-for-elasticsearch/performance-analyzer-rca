@@ -31,7 +31,6 @@ public abstract class EsConfigNode extends NonLeafNode<NodeConfigFlowUnit> {
   @Override
   public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
     long startTime = System.currentTimeMillis();
-
     NodeConfigFlowUnit result;
     try {
       result = this.operate();
@@ -73,5 +72,6 @@ public abstract class EsConfigNode extends NonLeafNode<NodeConfigFlowUnit> {
    */
   @Override
   public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
+    assert true;
   }
 }

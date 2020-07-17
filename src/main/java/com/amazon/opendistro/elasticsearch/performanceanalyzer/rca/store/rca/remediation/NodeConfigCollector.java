@@ -1,3 +1,18 @@
+/*
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ *  permissions and limitations under the License.
+ */
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.remediation;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolDimension.THREAD_POOL_TYPE;
@@ -6,27 +21,19 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.EsConfigNode;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.NodeConfigFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.NodeConfigFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_QueueCapacity;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.HashMap;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jooq.Record;
-import org.jooq.Result;
 
 /**
- * This is a node level collector in RCA graph which collect the current config settings of PerformanceControllor
- * PerformanceController is a ES plugin that helps with cache/queue auto tuning and this collector collect configs
- * set by PerformanceController and pass them down to Decision Maker for the next round of resource auto-tuning.
+ * This is a node level collector in RCA graph which collect the current config settings from ES (queue/cache capacity etc.)
+ * And pass them down to Decision Maker for the next round of resource auto-tuning.
  */
 public class NodeConfigCollector extends EsConfigNode {
 
@@ -79,11 +86,9 @@ public class NodeConfigCollector extends EsConfigNode {
     }
     if (counter == rcaPeriod) {
       counter = 0;
-      ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor
-          .getCurrentNodeDetails();
-      HotNodeSummary nodeSummary = new HotNodeSummary(currentNode.getId(), currentNode.getHostAddress());
-      configResult.values().forEach(nodeSummary::appendNestedSummary);
-      return new NodeConfigFlowUnit(System.currentTimeMillis(), nodeSummary);
+      NodeConfigFlowUnit flowUnits = new NodeConfigFlowUnit(System.currentTimeMillis(), new NodeKey(getInstanceDetails()));
+      configResult.forEach(flowUnits::addConfig);
+      return flowUnits;
     }
     else {
       return new NodeConfigFlowUnit(System.currentTimeMillis());

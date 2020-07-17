@@ -2,16 +2,20 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca.remedi
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolDimension.THREAD_POOL_TYPE;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PerformanceControllerConfiguration;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.MetricTestHelper;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.NodeConfigFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_QueueCapacity;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.flow_units.MetricFlowUnitTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.remediation.NodeConfigCollector;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.util.Arrays;
+import java.util.Collections;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,48 +24,53 @@ import org.junit.experimental.categories.Category;
 @Category(GradleTaskForRca.class)
 public class NodeConfigCollectorTest {
 
-  private MetricTestHelper threadPool_QueueCapacity;
+  private ThreadPool_QueueCapacity threadPool_QueueCapacity;
   private NodeConfigCollector nodeConfigCollector;
 
   @Before
-  public void init() throws Exception {
-    threadPool_QueueCapacity = new MetricTestHelper(5);
+  public void init() {
+    threadPool_QueueCapacity = new ThreadPool_QueueCapacity();
     nodeConfigCollector = new NodeConfigCollector(1, threadPool_QueueCapacity);
-    ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
-    clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.0", false);
-    clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
+
+    ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
+    ClusterDetailsEventProcessor.NodeDetails node1 =
+        new ClusterDetailsEventProcessor.NodeDetails(AllMetrics.NodeRole.DATA, "node1", "127.0.0.0", false);
+    clusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(node1));
+    AppContext appContext = new AppContext();
+    appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
+    nodeConfigCollector.setAppContext(appContext);
   }
 
   /**
    * generate flowunit and bind the flowunits it generate to metrics
    */
+  @SuppressWarnings("unchecked")
   private void mockFlowUnits(int writeQueueCapacity, int searchQueueCapacity) {
-    threadPool_QueueCapacity.createTestFlowUnitsWithMultipleRows(
+    MetricFlowUnit flowUnit = MetricFlowUnitTestHelper.createFlowUnit(
         Arrays.asList(THREAD_POOL_TYPE.toString(), MetricsDB.MAX),
-        Arrays.asList(
-            Arrays.asList(ThreadPoolType.WRITE.toString(), String.valueOf(writeQueueCapacity)),
-            Arrays.asList(ThreadPoolType.SEARCH.toString(), String.valueOf(searchQueueCapacity))
-        )
+        Arrays.asList(ThreadPoolType.WRITE.toString(), String.valueOf(writeQueueCapacity)),
+        Arrays.asList(ThreadPoolType.SEARCH.toString(), String.valueOf(searchQueueCapacity))
     );
+    threadPool_QueueCapacity.setLocalFlowUnit(flowUnit);
   }
 
   @Test
   public void testCapacityMetricNotExist() {
-    threadPool_QueueCapacity.createEmptyFlowunit();
-    ResourceFlowUnit<HotNodeSummary> flowUnit = nodeConfigCollector.operate();
-    Assert.assertFalse(flowUnit.isEmpty());
-    PerformanceControllerConfiguration performanceControllerConfiguration = flowUnit.getSummary().getPerformanceControllerConfiguration();
-    Assert.assertEquals(-1, performanceControllerConfiguration.getSearchQueueCapacity());
-    Assert.assertEquals(-1, performanceControllerConfiguration.getWriteQueueCapacity());
+    threadPool_QueueCapacity.setLocalFlowUnit(MetricFlowUnit.generic());
+    NodeConfigFlowUnit flowUnit = nodeConfigCollector.operate();
+    Assert.assertTrue(flowUnit.isEmpty());
+    Assert.assertFalse(flowUnit.hasConfig(ResourceUtil.SEARCH_QUEUE_CAPACITY));
+    Assert.assertFalse(flowUnit.hasConfig(ResourceUtil.WRITE_QUEUE_CAPACITY));
   }
 
   @Test
   public void testCapacityCollection() {
     mockFlowUnits(100, 200);
-    ResourceFlowUnit<HotNodeSummary> flowUnit = nodeConfigCollector.operate();
+    NodeConfigFlowUnit flowUnit = nodeConfigCollector.operate();
     Assert.assertFalse(flowUnit.isEmpty());
-    PerformanceControllerConfiguration performanceControllerConfiguration = flowUnit.getSummary().getPerformanceControllerConfiguration();
-    Assert.assertEquals(200, performanceControllerConfiguration.getSearchQueueCapacity());
-    Assert.assertEquals(100, performanceControllerConfiguration.getWriteQueueCapacity());
+    Assert.assertTrue(flowUnit.hasConfig(ResourceUtil.SEARCH_QUEUE_CAPACITY));
+    Assert.assertEquals(200, flowUnit.readConfig(ResourceUtil.SEARCH_QUEUE_CAPACITY), 0.01);
+    Assert.assertTrue(flowUnit.hasConfig(ResourceUtil.WRITE_QUEUE_CAPACITY));
+    Assert.assertEquals(100, flowUnit.readConfig(ResourceUtil.WRITE_QUEUE_CAPACITY), 0.01);
   }
 }
