@@ -2,13 +2,17 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.google.common.collect.Lists;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 
+import java.util.Map;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.mockito.Mock;
@@ -29,37 +33,17 @@ public class PublisherTest {
     @Mock
     private Action action;
 
-    private static class TestDecider extends Decider {
-        public TestDecider(long evalIntervalSeconds, int decisionFrequency) {
-            super(evalIntervalSeconds, decisionFrequency);
-        }
-
-        @Override
-        public String name() {
-            return getClass().getSimpleName();
-        }
-
-        @Override
-        public Decision operate() {
-            return null;
-        }
-    }
-
-    @BeforeClass
-    public static void setupClass() {
-    }
-
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
         publisher = new Publisher(EVAL_INTERVAL_S, collator);
+        List<Decision> decisionList = Lists.newArrayList(decision);
+        Mockito.when(collator.getFlowUnits()).thenReturn(decisionList);
+        Mockito.when(decision.getActions()).thenReturn(Lists.newArrayList(action));
     }
 
     @Test
     public void testIsCooledOff() throws Exception {
-        List<Decision> decisionList = Lists.newArrayList(decision);
-        Mockito.when(collator.getFlowUnits()).thenReturn(decisionList);
-        Mockito.when(decision.getActions()).thenReturn(Lists.newArrayList(action));
         Mockito.when(action.name()).thenReturn("testIsCooledOffAction");
         Mockito.when(action.coolOffPeriodInMillis()).thenReturn(100_000L);
         // Verify that a newly initialized publisher doesn't execute an action until the publisher object
@@ -80,5 +64,30 @@ public class PublisherTest {
         Thread.sleep(4000L);
         publisher.operate();
         Mockito.verify(action, Mockito.times(1)).execute();
+    }
+
+    @Test
+    public void testRejectsFlipFlops() throws Exception {
+        // Setup testing objects
+        NodeKey nodeKey = new NodeKey("A", "localhost");
+        ImpactVector allDecrease = new ImpactVector();
+        allDecrease.decreasesPressure(Dimension.values());
+        Map<NodeKey, ImpactVector> impactVectorMap = new HashMap<>();
+        impactVectorMap.put(nodeKey, allDecrease);
+        Mockito.when(action.name()).thenReturn("testIsCooledOffAction");
+        Mockito.when(action.coolOffPeriodInMillis()).thenReturn(500L);
+        Mockito.when(action.impact()).thenReturn(impactVectorMap);
+        // Record a flip flopping action
+        publisher.getFlipFlopDetector().recordAction(action);
+        ImpactVector allIncrease = new ImpactVector();
+        allIncrease.increasesPressure(Dimension.values());
+        Map<NodeKey, ImpactVector> increaseMap = new HashMap<>();
+        increaseMap.put(nodeKey, allIncrease);
+        Mockito.when(action.impact()).thenReturn(increaseMap);
+        Thread.sleep(1000L);
+        // Even though our action has cooled off, it will flip flop, so the publisher shouldn't
+        // execute it
+        publisher.operate();
+        Mockito.verify(action, Mockito.times(0)).execute();
     }
 }
