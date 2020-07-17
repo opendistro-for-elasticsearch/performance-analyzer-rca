@@ -80,7 +80,7 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
       if (isCooledOff(action) && !flipFlopDetector.isFlipFlop(action)) { // Only execute actions which have passed their cool off period
         LOG.info("Publisher: Executing action: [{}]", action.name());
         action.execute();
-        //flipFlopDetector.up
+        flipFlopDetector.recordAction(action);
         actionToExecutionTime.put(action.name(), Instant.now().toEpochMilli());
       }
     }
