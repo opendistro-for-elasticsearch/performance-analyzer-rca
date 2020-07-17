@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class ConfigReader {
-    public static HashMap<Decider, ArrayList<String> > getDeciderActionPriorityOrder() {
+    public static HashMap<Decider, ArrayList<String>> getDeciderActionPriorityOrder() {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         HashMap<Decider, ArrayList<String>> deciderActionPriorityOrder = null;
         try {
