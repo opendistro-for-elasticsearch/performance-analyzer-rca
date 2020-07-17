@@ -31,10 +31,31 @@ public class PerformanceAnalyzerWebServerTest {
     private static final String PORT = "11021";
     private static final String MESSAGE = "hello";
 
+    private String oldBindHost;
+    private String oldPort;
+    private String oldCertificateFilePath;
+    private String oldPrivateKeyFilePath;
+    private String oldTrustedCasFilePath;
+    private String oldClientCertificateFilePath;
+    private String oldClientPrivateKeyFilePath;
+    private String oldClientTrustedCasFilePath;
+    private boolean oldHttpsEnabled;
+
     private HttpServer server;
 
     @Before
     public void setup() {
+        // Save old PluginSettings values
+        oldBindHost = PluginSettings.instance().getSettingValue(PerformanceAnalyzerWebServer.WEBSERVICE_BIND_HOST_NAME);
+        oldPort = PluginSettings.instance().getSettingValue(PerformanceAnalyzerWebServer.WEBSERVICE_PORT_CONF_NAME);
+        oldCertificateFilePath = PluginSettings.instance().getSettingValue(CertificateUtils.CERTIFICATE_FILE_PATH);
+        oldPrivateKeyFilePath = PluginSettings.instance().getSettingValue(CertificateUtils.PRIVATE_KEY_FILE_PATH);
+        oldTrustedCasFilePath = PluginSettings.instance().getSettingValue(CertificateUtils.TRUSTED_CAS_FILE_PATH);
+        oldClientCertificateFilePath = PluginSettings.instance().getSettingValue(CertificateUtils.CLIENT_CERTIFICATE_FILE_PATH);
+        oldClientPrivateKeyFilePath = PluginSettings.instance().getSettingValue(CertificateUtils.CLIENT_PRIVATE_KEY_FILE_PATH);
+        oldClientTrustedCasFilePath = PluginSettings.instance().getSettingValue(CertificateUtils.CLIENT_TRUSTED_CAS_FILE_PATH);
+        oldHttpsEnabled = PluginSettings.instance().getHttpsEnabled();
+        // Update bind host, port, and server certs for the test
         PluginSettings.instance().overrideProperty(PerformanceAnalyzerWebServer.WEBSERVICE_BIND_HOST_NAME, BIND_HOST);
         PluginSettings.instance().overrideProperty(PerformanceAnalyzerWebServer.WEBSERVICE_PORT_CONF_NAME, PORT);
         ClassLoader classLoader = getClass().getClassLoader();
@@ -47,10 +68,32 @@ public class PerformanceAnalyzerWebServerTest {
     @After
     public void tearDown() {
         // Unset all SSL settings
-        PluginSettings.instance().overrideProperty(CertificateUtils.CERTIFICATE_FILE_PATH, "");
-        PluginSettings.instance().overrideProperty(CertificateUtils.PRIVATE_KEY_FILE_PATH, "");
-        PluginSettings.instance().overrideProperty(CertificateUtils.CLIENT_TRUSTED_CAS_FILE_PATH, "");
-        PluginSettings.instance().overrideProperty(CertificateUtils.TRUSTED_CAS_FILE_PATH, "");
+        if (oldBindHost != null) {
+            PluginSettings.instance().overrideProperty(PerformanceAnalyzerWebServer.WEBSERVICE_BIND_HOST_NAME, oldBindHost);
+        }
+        if (oldPort != null) {
+            PluginSettings.instance().overrideProperty(PerformanceAnalyzerWebServer.WEBSERVICE_PORT_CONF_NAME, oldPort);
+        }
+        if (oldCertificateFilePath != null) {
+            PluginSettings.instance().overrideProperty(CertificateUtils.CERTIFICATE_FILE_PATH, oldCertificateFilePath);
+        }
+        if (oldPrivateKeyFilePath != null) {
+            PluginSettings.instance().overrideProperty(CertificateUtils.PRIVATE_KEY_FILE_PATH, oldPrivateKeyFilePath);
+        }
+        if (oldTrustedCasFilePath != null) {
+            PluginSettings.instance().overrideProperty(CertificateUtils.TRUSTED_CAS_FILE_PATH, oldTrustedCasFilePath);
+        }
+        if (oldClientCertificateFilePath != null) {
+            PluginSettings.instance().overrideProperty(CertificateUtils.CLIENT_CERTIFICATE_FILE_PATH, oldClientCertificateFilePath);
+        }
+        if (oldClientPrivateKeyFilePath != null) {
+            PluginSettings.instance().overrideProperty(CertificateUtils.CLIENT_PRIVATE_KEY_FILE_PATH, oldClientPrivateKeyFilePath);
+        }
+        if (oldClientTrustedCasFilePath != null) {
+            PluginSettings.instance().overrideProperty(CertificateUtils.CLIENT_TRUSTED_CAS_FILE_PATH, oldClientTrustedCasFilePath);
+        }
+        PluginSettings.instance().setHttpsEnabled(oldHttpsEnabled);
+
         // Stop the server
         if (server != null) {
             server.stop(0);
@@ -202,6 +245,8 @@ public class PerformanceAnalyzerWebServerTest {
         ClassLoader classLoader = getClass().getClassLoader();
         PluginSettings.instance().overrideProperty(CertificateUtils.TRUSTED_CAS_FILE_PATH,
                 Objects.requireNonNull(classLoader.getResource("tls/rootca/RootCA.pem")).getFile());
+        PluginSettings.instance().overrideProperty(CertificateUtils.CLIENT_TRUSTED_CAS_FILE_PATH,
+            Objects.requireNonNull(classLoader.getResource("tls/rootca/RootCA.pem")).getFile());
         initializeServer(true);
         // Build the request
         verifyHttpsRequest(String.format("https://%s:%s/test", BIND_HOST, PORT),
