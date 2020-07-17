@@ -81,8 +81,8 @@ public class QueueHealthDecider extends Decider {
   }
 
   private void configureActionPriority() {
-    // TODO: Input from user configured yml
-    this.actionsByUserPriority.add(ModifyQueueCapacityAction.NAME);
+    ArrayList<String> actionPriority = getDeciderActionPriorityOrder(this.getClass().getName());
+    this.actionsByUserPriority = actionPriority;
   }
 
   /**

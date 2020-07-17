@@ -1,0 +1,12 @@
+# Order of action priorities
+# Loaded to a map of Decider and action priorities
+# action priorities are given as a list
+# priority order is decreasing in nature.
+---
+deciderActionPriorityOrder:
+  QueueHealthDecider:
+    - ModifyQueueCapacityAction
+    - Action2
+  CacheHealthDecider:
+    - ModifyCacheCapacityAction
+    - Action2

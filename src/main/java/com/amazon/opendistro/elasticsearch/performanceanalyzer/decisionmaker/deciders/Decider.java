@@ -16,12 +16,17 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.ConfigReader;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * Generic base class outlining the basic structure of a Decider.
@@ -41,10 +46,12 @@ public abstract class Decider extends NonLeafNode<Decision> {
 
   private static final Logger LOG = LogManager.getLogger(Decider.class);
   protected final int decisionFrequency; // Measured in terms of number of evaluationIntervalPeriods
+  private final HashMap<Decider, ArrayList<String> > deciderActionPriorityOrder;
 
   public Decider(long evalIntervalSeconds, int decisionFrequency) {
     super(0, evalIntervalSeconds);
     this.decisionFrequency = decisionFrequency;
+    this.deciderActionPriorityOrder = ConfigReader.getDeciderActionPriorityOrder();
   }
 
   public abstract String name();
@@ -90,4 +97,8 @@ public abstract class Decider extends NonLeafNode<Decision> {
 
   @Override
   public abstract Decision operate();
+
+  public ArrayList<String> getDeciderActionPriorityOrder(String decider){
+    return deciderActionPriorityOrder.get(decider);
+  }
 }
