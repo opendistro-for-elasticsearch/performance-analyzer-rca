@@ -47,8 +47,8 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
     this.flowUnits = Collections.singletonList(flowUnit);
   }
 
-  public void mockFlowUnit(ResourceFlowUnit<T> flowUnit1, ResourceFlowUnit<T> flowUnit2) {
-    this.flowUnits = Arrays.asList(flowUnit1, flowUnit2);
+  public void mockFlowUnit(ResourceFlowUnit<T>... flowUnit) {
+    this.flowUnits = Arrays.asList(flowUnit);
   }
 
   public void mockFlowUnit() {
@@ -101,6 +101,17 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
     HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, hostAddress);
     nodeSummary.appendNestedSummary(resourceSummary);
     return new ResourceFlowUnit<>(timestamp, new ResourceContext(healthy), nodeSummary);
+  }
+
+  /** Create HotNodeSummary flow unit with multiple unhealthy resources */
+  public static ResourceFlowUnit<HotNodeSummary> generateFlowUnit(String nodeID, String hostAddress,
+      Resources.State healthy, Resource... resources) {
+    HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, hostAddress);
+    for (Resource resource: resources) {
+      HotResourceSummary resourceSummary = new HotResourceSummary(resource, 10, 5, 60);
+      nodeSummary.appendNestedSummary(resourceSummary);
+    }
+    return new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(healthy), nodeSummary);
   }
 
   public static ResourceFlowUnit<HotNodeSummary> generateFlowUnitForHotShard(String indexName, String shardId, String nodeID,

@@ -15,12 +15,17 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.RcaTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources.State;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -30,19 +35,25 @@ public class HighHeapUsageClusterRcaTest {
 
   @Test
   public void testOperate() {
-    RcaTestHelper nodeRca = new RcaTestHelper();
-    HighHeapUsageClusterRca clusterRca = new HighHeapUsageClusterRca(1, nodeRca);
+    ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
+    ClusterDetailsEventProcessor.NodeDetails node1 =
+        new ClusterDetailsEventProcessor.NodeDetails(AllMetrics.NodeRole.DATA, "node1", "127.0.0.0", false);
+    ClusterDetailsEventProcessor.NodeDetails node2 =
+        new ClusterDetailsEventProcessor.NodeDetails(AllMetrics.NodeRole.DATA, "node2", "127.0.0.1", false);
 
-    //setup cluster details
-    try {
-      ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
-      clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.0", false);
-      clusterDetailsEventProcessorTestHelper.addNodeDetails("node2", "127.0.0.1", false);
-      clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
-    } catch (Exception e) {
-      Assert.assertTrue("got exception when generating cluster details event", false);
-      return;
-    }
+    List<ClusterDetailsEventProcessor.NodeDetails> nodes = new ArrayList<>();
+    nodes.add(node1);
+    nodes.add(node2);
+    clusterDetailsEventProcessor.setNodesDetails(nodes);
+
+    AppContext appContext = new AppContext();
+    appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
+
+    RcaTestHelper nodeRca = new RcaTestHelper();
+    nodeRca.setAppContext(appContext);
+
+    HighHeapUsageClusterRca clusterRca = new HighHeapUsageClusterRca(1, nodeRca);
+    clusterRca.setAppContext(appContext);
 
     // send three young gen flowunits (healthy, unhealthy, unhealthy) to node1
     // the cluterRca will generate three healthy flowunits

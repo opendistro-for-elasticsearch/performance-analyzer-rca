@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
@@ -101,7 +102,8 @@ public class RCASchedulerTask implements Runnable {
       final Queryable db,
       final Persistable persistable,
       final RcaConf conf,
-      final WireHopper hopper) {
+      final WireHopper hopper,
+      final AppContext appContext) {
     this.maxTicks = maxTicks;
     this.executorPool = executorPool;
     this.remotelyDesirableNodeSet = new HashMap<>();
@@ -116,7 +118,8 @@ public class RCASchedulerTask implements Runnable {
               hopper,
               db,
               persistable,
-              nodeTaskletMap);
+              nodeTaskletMap,
+              appContext);
 
       // Merge the list across connected components.
       dependencyOrderedLocallyExecutables =
@@ -173,12 +176,13 @@ public class RCASchedulerTask implements Runnable {
    * @return a level ordered list of Tasklets.
    */
   private List<List<Tasklet>> getLocallyExecutableNodes(
-      List<List<Node<?>>> orderedNodes,
-      RcaConf conf,
-      WireHopper hopper,
-      Queryable db,
-      Persistable persistable,
-      Map<Node<?>, Tasklet> nodeTaskletMap) {
+      final List<List<Node<?>>> orderedNodes,
+      final RcaConf conf,
+      final WireHopper hopper,
+      final Queryable db,
+      final Persistable persistable,
+      final Map<Node<?>, Tasklet> nodeTaskletMap,
+      final AppContext appContext) {
     // This is just used for membership check in the createTaskletAndSendIntent. If a node is
     // present here, then the tasklet corresponding to it will be doing local evaluation or else,
     // the tasklet will read data from the read API provided by the wirehopper.
@@ -190,6 +194,8 @@ public class RCASchedulerTask implements Runnable {
     for (List<Node<?>> levelNodes : orderedNodes) {
       List<Tasklet> locallyExecutableInThisLevel = new ArrayList<>();
       for (Node<?> node : levelNodes) {
+        node.setAppContext(appContext);
+
         if (RcaUtil.shouldExecuteLocally(node, conf)) {
           // This node will be executed locally, so add it to the set to keep track of this.
           locallyExecutableSet.add(node);

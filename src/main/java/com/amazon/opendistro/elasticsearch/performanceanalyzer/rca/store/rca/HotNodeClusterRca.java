@@ -25,13 +25,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Table;
-
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -54,7 +52,7 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> 
   private final Table<String, Resource, NodeResourceUsage> nodeTable;
   private final int rcaPeriod;
   private int counter;
-  private List<NodeDetails> dataNodesDetails;
+  private List<InstanceDetails> dataNodesDetails;
   private double unbalancedResourceThreshold;
   private double resourceUsageLowerBoundThreshold;
   protected Clock clock;
@@ -112,15 +110,15 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> 
     final List<Resource> resourceTypeColumnKeys = ImmutableList.copyOf(nodeTable.columnKeySet());
     for (Resource resourceType : resourceTypeColumnKeys) {
       List<NodeResourceUsage> resourceUsages = new ArrayList<>();
-      for (NodeDetails nodeDetail : dataNodesDetails) {
-        NodeResourceUsage currentUsage = nodeTable.get(nodeDetail.getId(), resourceType);
+      for (InstanceDetails nodeDetail : dataNodesDetails) {
+        NodeResourceUsage currentUsage = nodeTable.get(nodeDetail.getInstanceId(), resourceType);
         // some node does not has this resource type in table.
         if (currentUsage == null) {
           continue;
         }
         // drop the value if the timestamp expires
         if (currTimestamp - currentUsage.timestamp > TimeUnit.MINUTES.toMillis(TIMESTAMP_EXPIRATION_IN_MINS)) {
-          nodeTable.row(nodeDetail.getId()).remove(resourceType);
+          nodeTable.row(nodeDetail.getInstanceId()).remove(resourceType);
           continue;
         }
         resourceUsages.add(currentUsage);
@@ -147,8 +145,8 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> 
       double medium = resourceUsages.get(mediumIdx).resourceSummary.getValue();
 
       //iterate the nodeid list again and check if some node is unbalanced
-      for (NodeDetails nodeDetail : dataNodesDetails) {
-        NodeResourceUsage currentUsage = nodeTable.get(nodeDetail.getId(), resourceType);
+      for (InstanceDetails nodeDetail : dataNodesDetails) {
+        NodeResourceUsage currentUsage = nodeTable.get(nodeDetail.getInstanceId(), resourceType);
         if (currentUsage == null) {
           continue;
         }
@@ -158,11 +156,11 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> 
         if (currentUsage.resourceSummary.getValue() >= medium * (1 + unbalancedResourceThreshold)
             && currentUsage.resourceSummary.getValue()
                 >= currentUsage.resourceSummary.getThreshold() * resourceUsageLowerBoundThreshold) {
-          if (!nodeSummaryMap.containsKey(nodeDetail.getId())) {
-            nodeSummaryMap.put(nodeDetail.getId(),
-                new HotNodeSummary(nodeDetail.getId(), nodeDetail.getHostAddress()));
+          if (!nodeSummaryMap.containsKey(nodeDetail.getInstanceId())) {
+            nodeSummaryMap.put(nodeDetail.getInstanceId(),
+                new HotNodeSummary(nodeDetail.getInstanceId(), nodeDetail.getInstanceIp()));
           }
-          nodeSummaryMap.get(nodeDetail.getId()).appendNestedSummary(currentUsage.resourceSummary);
+          nodeSummaryMap.get(nodeDetail.getInstanceId()).appendNestedSummary(currentUsage.resourceSummary);
         }
       }
     }
@@ -187,8 +185,8 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> 
   // so we don't have to keep polling the NodeDetails in every time window.
   private void removeInactiveNodeFromTable() {
     Set<String> nodeIdSet = new HashSet<>();
-    for (NodeDetails nodeDetail : dataNodesDetails) {
-      nodeIdSet.add(nodeDetail.getId());
+    for (InstanceDetails nodeDetail : dataNodesDetails) {
+      nodeIdSet.add(nodeDetail.getInstanceId());
     }
     for (String nodeId : nodeTable.rowKeySet()) {
       if (!nodeIdSet.contains(nodeId)) {
@@ -199,7 +197,7 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> 
 
   @Override
   public ResourceFlowUnit<HotClusterSummary> operate() {
-    dataNodesDetails = ClusterDetailsEventProcessor.getDataNodesDetails();
+    dataNodesDetails = getDataNodeInstances();
     //skip this RCA if the cluster has only single data node
     if (dataNodesDetails.size() <= 1) {
       return new ResourceFlowUnit<>(System.currentTimeMillis());

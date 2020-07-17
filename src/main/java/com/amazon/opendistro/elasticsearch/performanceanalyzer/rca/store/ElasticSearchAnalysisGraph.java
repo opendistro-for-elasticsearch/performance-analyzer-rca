@@ -21,6 +21,9 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_AGGREGATE_UPSTREAM;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_LOCUS;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Collator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Publisher;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.QueueHealthDecider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
@@ -46,6 +49,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.StoredFields_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.TermVectors_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Terms_Memory;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_RejectedReqs;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.VersionMap_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
@@ -68,6 +72,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hot_node.HighCpuRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageOldGenRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageYoungGenRca;
@@ -78,17 +83,19 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.tem
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.HeapAllocRateTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.ShardSizeDimensionTemperatureRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.threadpool.QueueRejectionRca;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
   private static final Logger LOG = LogManager.getLogger(ElasticSearchAnalysisGraph.class);
-  private static final int RCA_PERIOD = 12;
+  private static final int RCA_PERIOD = 12;  // 1 minute. RCA_PERIOD is measured as number of EVALUATION_INTERVAL_SECONDS
   private static final int EVALUATION_INTERVAL_SECONDS = 5;
 
 
@@ -150,8 +157,41 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     hotNodeClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     hotNodeClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
 
+    /* Queue Rejection RCAs
+     */
+    // TODO: Refactor this monolithic function
+    Metric threadpool_RejectedReqs = new ThreadPool_RejectedReqs(EVALUATION_INTERVAL_SECONDS);
+    threadpool_RejectedReqs.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    addLeaf(threadpool_RejectedReqs);
+
+    // Node level queue rejection RCA
+    QueueRejectionRca queueRejectionNodeRca = new QueueRejectionRca(RCA_PERIOD, threadpool_RejectedReqs);
+    queueRejectionNodeRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    queueRejectionNodeRca.addAllUpstreams(Collections.singletonList(threadpool_RejectedReqs));
+
+    // Cluster level queue rejection RCA
+    QueueRejectionClusterRca queueRejectionClusterRca = new QueueRejectionClusterRca(RCA_PERIOD, queueRejectionNodeRca);
+    queueRejectionClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    queueRejectionClusterRca.addAllUpstreams(Collections.singletonList(queueRejectionNodeRca));
+    queueRejectionClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
+
+    // Queue Health Decider
+    QueueHealthDecider queueHealthDecider = new QueueHealthDecider(EVALUATION_INTERVAL_SECONDS, 12, queueRejectionClusterRca);
+    queueHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    queueHealthDecider.addAllUpstreams(Collections.singletonList(queueRejectionClusterRca));
+
     constructShardResourceUsageGraph();
     constructResourceHeatMapGraph();
+
+    // Collator - Collects actions from all deciders and aligns impact vectors
+    Collator collator = new Collator(EVALUATION_INTERVAL_SECONDS, queueHealthDecider);
+    collator.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    collator.addAllUpstreams(Arrays.asList(queueHealthDecider));
+
+    // Publisher - Executes decisions output from collator
+    Publisher publisher = new Publisher(EVALUATION_INTERVAL_SECONDS, collator);
+    publisher.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    publisher.addAllUpstreams(Collections.singletonList(collator));
   }
 
   private void constructShardResourceUsageGraph() {

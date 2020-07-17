@@ -95,34 +95,36 @@ public class PerformanceAnalyzerApp {
       new RcaStatsReporter(Arrays.asList(RCA_GRAPH_METRICS_AGGREGATOR,
           RCA_RUNTIME_METRICS_AGGREGATOR, RCA_VERTICES_METRICS_AGGREGATOR,
           ERRORS_AND_EXCEPTIONS_AGGREGATOR, PERIODIC_SAMPLE_AGGREGATOR));
-  public static final PeriodicSamplers PERIODIC_SAMPLERS =
-      new PeriodicSamplers(PERIODIC_SAMPLE_AGGREGATOR, getAllSamplers(),
-          (MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval) / 2,
-          TimeUnit.MILLISECONDS);
+  public static PeriodicSamplers PERIODIC_SAMPLERS;
   public static final BlockingQueue<PAThreadException> exceptionQueue =
       new ArrayBlockingQueue<>(EXCEPTION_QUEUE_LENGTH);
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
+    AppContext appContext = new AppContext();
+    PERIODIC_SAMPLERS = new PeriodicSamplers(PERIODIC_SAMPLE_AGGREGATOR, getAllSamplers(appContext),
+        (MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval) / 2,
+        TimeUnit.MILLISECONDS);
     PluginSettings settings = PluginSettings.instance();
     StatsCollector.STATS_TYPE = "agent-stats-metadata";
     METRIC_COLLECTOR_EXECUTOR.addScheduledMetricCollector(StatsCollector.instance());
     StatsCollector.instance().addDefaultExceptionCode(StatExceptionCode.READER_RESTART_PROCESSING);
-    StatsCollector.instance().addDefaultExceptionCode(StatExceptionCode.CIRCUIT_BREAKING_ERROR);
     METRIC_COLLECTOR_EXECUTOR.setEnabled(true);
     METRIC_COLLECTOR_EXECUTOR.start();
 
     final GRPCConnectionManager connectionManager = new GRPCConnectionManager(
         settings.getHttpsEnabled());
-    final ClientServers clientServers = createClientServers(connectionManager);
+    final ClientServers clientServers = createClientServers(connectionManager, appContext);
     startErrorHandlingThread();
-    startReaderThread();
+
+    startReaderThread(appContext);
     startGrpcServerThread(clientServers.getNetServer());
     startWebServerThread(clientServers.getHttpServer());
-    startRcaTopLevelThread(clientServers, connectionManager);
+    startRcaTopLevelThread(clientServers, connectionManager, appContext);
   }
 
   private static void startRcaTopLevelThread(final ClientServers clientServers,
-      final GRPCConnectionManager connectionManager) {
+                                             final GRPCConnectionManager connectionManager,
+                                             final AppContext appContext) {
     rcaController =
         new RcaController(
             THREAD_PROVIDER,
@@ -131,7 +133,8 @@ public class PerformanceAnalyzerApp {
             clientServers,
             Util.DATA_DIR,
             RcaConsts.RCA_STATE_CHECK_INTERVAL_IN_MS,
-            RcaConsts.nodeRolePollerPeriodicityInSeconds * 1000
+            RcaConsts.nodeRolePollerPeriodicityInSeconds * 1000,
+            appContext
         );
 
     Thread rcaControllerThread = THREAD_PROVIDER.createThreadForRunnable(() -> rcaController.run(),
@@ -189,13 +192,13 @@ public class PerformanceAnalyzerApp {
     grpcServerThread.start();
   }
 
-  private static void startReaderThread() {
+  private static void startReaderThread(final AppContext appContext) {
     PluginSettings settings = PluginSettings.instance();
     final Thread readerThread = THREAD_PROVIDER.createThreadForRunnable(() -> {
       while (true) {
         try {
           ReaderMetricsProcessor mp =
-              new ReaderMetricsProcessor(settings.getMetricsLocation(), true);
+              new ReaderMetricsProcessor(settings.getMetricsLocation(), true, appContext);
           ReaderMetricsProcessor.setCurrentInstance(mp);
           mp.run();
         } catch (Throwable e) {
@@ -222,7 +225,8 @@ public class PerformanceAnalyzerApp {
    *
    * @return gRPC client and the gRPC server and the httpServer wrapped in a class.
    */
-  public static ClientServers createClientServers(final GRPCConnectionManager connectionManager) {
+  public static ClientServers createClientServers(final GRPCConnectionManager connectionManager,
+                                                  final AppContext appContext) {
     boolean useHttps = PluginSettings.instance().getHttpsEnabled();
 
     NetServer netServer = new NetServer(Util.RPC_PORT, 1, useHttps);
@@ -232,15 +236,17 @@ public class PerformanceAnalyzerApp {
     netServer.setMetricsHandler(new MetricsServerHandler());
     HttpServer httpServer =
         PerformanceAnalyzerWebServer.createInternalServer(PluginSettings.instance());
-    httpServer.createContext(QUERY_URL, new QueryMetricsRequestHandler(netClient, metricsRestUtil));
+    httpServer.createContext(
+        QUERY_URL,
+        new QueryMetricsRequestHandler(netClient, metricsRestUtil, appContext));
 
     return new ClientServers(httpServer, netServer, netClient);
   }
 
-  private static List<ISampler> getAllSamplers() {
+  public static List<ISampler> getAllSamplers(final AppContext appContext) {
     List<ISampler> allSamplers = new ArrayList<>();
     allSamplers.addAll(AllJvmSamplers.getJvmSamplers());
-    allSamplers.add(RcaStateSamplers.getRcaEnabledSampler());
+    allSamplers.add(RcaStateSamplers.getRcaEnabledSampler(appContext));
 
     return allSamplers;
   }
