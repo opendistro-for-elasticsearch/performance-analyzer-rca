@@ -82,13 +82,6 @@ public class ModifyQueueCapacityAction implements Action {
   }
 
   @Override
-  public void execute() {
-    // Making this a no-op for now
-    // TODO: Modify based on downstream agent API calls
-    assert true;
-  }
-
-  @Override
   public String summary() {
     if (!isActionable()) {
       return String.format("No action to take for: [%s]", NAME);
