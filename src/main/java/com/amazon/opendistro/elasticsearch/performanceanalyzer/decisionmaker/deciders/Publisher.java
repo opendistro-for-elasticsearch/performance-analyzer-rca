@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ActionListener;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.FlipFlopDetector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.TimedFlipFlopDetector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
@@ -25,9 +26,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.met
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.google.common.annotations.VisibleForTesting;
 import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,10 +43,12 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
   private FlipFlopDetector flipFlopDetector;
   private boolean isMuted = false;
   private Map<String, Long> actionToExecutionTime;
+  private List<ActionListener> actionListeners;
 
   public Publisher(int evalIntervalSeconds, Collator collator) {
     super(0, evalIntervalSeconds);
     this.collator = collator;
+    this.actionListeners = new ArrayList<>();
     this.actionToExecutionTime = new HashMap<>();
     // TODO please bring in guice so we can configure this with DI
     this.flipFlopDetector = new TimedFlipFlopDetector(1, TimeUnit.HOURS);
@@ -53,8 +58,8 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
   /**
    * Returns true if a given {@link Action}'s last execution time was >= {@link Action#coolOffPeriodInMillis()} ago
    *
-   * <p>If this Publisher has never executed the action, the last execution time is defined as the time that the publisher
-   * object was constructed.
+   * <p>If this Publisher has never executed the action, the last execution time is defined as the time that the
+   * publisher object was constructed.
    *
    * @param action The {@link Action} to test
    * @return true if a given {@link Action}'s last execution time was >= {@link Action#coolOffPeriodInMillis()} ago
@@ -67,7 +72,7 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
     } else {
       LOG.debug("Publisher: Action {} still has {} ms left in its cool off period",
           action.name(),
-              action.coolOffPeriodInMillis() - elapsed);
+          action.coolOffPeriodInMillis() - elapsed);
       return false;
     }
   }
@@ -78,10 +83,11 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
     Decision decision = collator.getFlowUnits().get(0);
     for (Action action : decision.getActions()) {
       if (isCooledOff(action) && !flipFlopDetector.isFlipFlop(action)) {
-        LOG.info("Publisher: Executing action: [{}]", action.name());
-        action.execute();
         flipFlopDetector.recordAction(action);
         actionToExecutionTime.put(action.name(), Instant.now().toEpochMilli());
+        for (ActionListener listener : actionListeners) {
+          listener.actionPublished(action);
+        }
       }
     }
     return new EmptyFlowUnit(Instant.now().toEpochMilli());
@@ -103,6 +109,15 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
 
     PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
         RcaGraphMetrics.GRAPH_NODE_OPERATE_CALL, this.name(), duration);
+  }
+
+  /**
+   * Register an action listener with Publisher
+   * <p>
+   * The listener is notified whenever an action is published
+   */
+  public void addActionListener(ActionListener listener) {
+    actionListeners.add(listener);
   }
 
   /**
