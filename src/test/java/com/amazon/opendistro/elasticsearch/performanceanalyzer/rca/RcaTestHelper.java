@@ -131,8 +131,12 @@ public class RcaTestHelper {
   }
 
   public static AppContext setMyIp(String ip, AllMetrics.NodeRole nodeRole) {
+    final String separator = System.lineSeparator();
     JSONObject jtime = new JSONObject();
     jtime.put("current_time", 1566414001749L);
+
+    JSONObject jOverrides = new JSONObject();
+    JSONObject jOverridesTimeStamp = new JSONObject();
 
     JSONObject jNode = new JSONObject();
     jNode.put(AllMetrics.NodeDetailColumns.ID.toString(), "4sqG_APMQuaQwEW17_6zwg");
@@ -142,8 +146,16 @@ public class RcaTestHelper {
             nodeRole == AllMetrics.NodeRole.ELECTED_MASTER ? true : false);
 
     ClusterDetailsEventProcessor eventProcessor = new ClusterDetailsEventProcessor();
+    StringBuilder nodeDetails = new StringBuilder();
+    nodeDetails.append(jtime);
+    nodeDetails.append(separator);
+    nodeDetails.append(jOverrides);
+    nodeDetails.append(separator);
+    nodeDetails.append(jOverridesTimeStamp);
+    nodeDetails.append(separator);
+    nodeDetails.append(jNode.toString());
     eventProcessor.processEvent(
-            new Event("", jtime.toString() + System.lineSeparator() + jNode.toString(), 0));
+            new Event("", nodeDetails.toString(), 0));
     AppContext appContext = new AppContext();
     appContext.setClusterDetailsEventProcessor(eventProcessor);
     return appContext;
