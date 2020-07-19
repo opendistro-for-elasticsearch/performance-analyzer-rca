@@ -17,7 +17,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.JooqFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.google.gson.JsonElement;
@@ -25,7 +24,6 @@ import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
@@ -54,7 +52,6 @@ public class HotNodeSummary extends GenericSummary {
   private final String hostAddress;
   private List<HotResourceSummary> hotResourceSummaryList;
   private List<HotShardSummary> hotShardSummaryList;
-  private final HashMap<Resource, HotResourceSummary> resourceMap;
 
   public HotNodeSummary(String nodeID, String hostAddress) {
     super();
@@ -62,7 +59,6 @@ public class HotNodeSummary extends GenericSummary {
     this.hostAddress = hostAddress;
     this.hotResourceSummaryList = new ArrayList<>();
     this.hotShardSummaryList = new ArrayList<>();
-    this.resourceMap = new HashMap<>();
   }
 
   public String getNodeID() {
@@ -84,23 +80,11 @@ public class HotNodeSummary extends GenericSummary {
   public void appendNestedSummary(HotResourceSummary summary) {
     if (summary != null) {
       hotResourceSummaryList.add(summary);
-      resourceMap.put(summary.getResource(), summary);
     }
   }
 
   public void appendNestedSummary(HotShardSummary summary) {
     hotShardSummaryList.add(summary);
-  }
-
-  /**
-   * read the HotResourceSummary that is tied to the given resource type
-   * from the resource summary list
-   * @param resource Resource type
-   * @return the resource summary object that is tied to the given resource type
-   */
-  @Nullable
-  public HotResourceSummary getResourceSummary(Resource resource) {
-    return resourceMap.get(resource);
   }
 
   @Override
