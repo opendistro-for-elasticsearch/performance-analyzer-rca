@@ -32,7 +32,7 @@ public class AllMetrics {
   // metric name (not complete, only metrics use the json format and contains
   // numeric values. Will add more when needed)
   public enum MetricName {
-    CACHE_CUSTOM,
+    CACHE_CONFIG,
     CIRCUIT_BREAKER,
     HEAP_METRICS,
     DISK_METRICS,
@@ -130,12 +130,12 @@ public class AllMetrics {
     }
   }
 
-  public enum CacheCustomDimension implements MetricDimension {
+  public enum CacheConfigDimension implements MetricDimension {
     CACHE_TYPE(Constants.TYPE_VALUE);
 
     private final String value;
 
-    CacheCustomDimension(String value) {
+    CacheConfigDimension(String value) {
       this.value = value;
     }
 
@@ -149,12 +149,12 @@ public class AllMetrics {
     }
   }
 
-  public enum CacheCustomValue implements MetricValue {
-    CACHE_MAX_SIZE(Constants.MAX_SIZE);
+  public enum CacheConfigValue implements MetricValue {
+    CACHE_MAX_SIZE(Constants.CACHE_MAX_SIZE_VALUE);
 
     private final String value;
 
-    CacheCustomValue(String value) {
+    CacheConfigValue(String value) {
       this.value = value;
     }
 
@@ -164,7 +164,7 @@ public class AllMetrics {
     }
 
     public static class Constants {
-      public static final String MAX_SIZE = "Cache_MaxSize";
+      public static final String CACHE_MAX_SIZE_VALUE = "Cache_MaxSize";
     }
   }
 
