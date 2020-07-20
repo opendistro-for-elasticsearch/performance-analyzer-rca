@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.ConfigReader;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
@@ -24,13 +25,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
-
 import java.util.ArrayList;
 import java.util.List;
 
 // This is a sample decider implementation to finalize decision maker interfaces.
-// TODO: 1. Read action priorities from a configurable yml
-// TODO: 2. Read current queue capacity from NodeConfigurationRca (PR #252)
+// TODO: 1. Read current queue capacity from NodeConfigurationRca (PR #252)
 
 public class QueueHealthDecider extends Decider {
 
@@ -81,8 +80,8 @@ public class QueueHealthDecider extends Decider {
   }
 
   private void configureActionPriority() {
-    ArrayList<String> actionPriority = getDeciderActionPriorityOrder(this.getClass().getName());
-    this.actionsByUserPriority = actionPriority;
+    ArrayList<String> actionPriority = ConfigReader.getActionPriorityOrder(name());
+    actionsByUserPriority = actionPriority;
   }
 
   /**
