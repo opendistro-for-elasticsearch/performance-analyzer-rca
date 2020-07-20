@@ -25,6 +25,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -55,6 +56,7 @@ public class RcaConf {
     }
   }
 
+  @VisibleForTesting
   // This should only be used for Tests.
   public RcaConf() {}
 
