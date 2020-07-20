@@ -84,6 +84,7 @@ enum MetricEnum {
 
   // threadpool
   QUEUE_REJECTION = 6 [(additional_fields).name = "queue rejection", (additional_fields).description = "rejection period in second"];
+  QUEUE_CAPACITY = 7 [(additional_fields).name = "queue capacity", (additional_fields).description = "max capacity of the queue"];
 }
 
 /*

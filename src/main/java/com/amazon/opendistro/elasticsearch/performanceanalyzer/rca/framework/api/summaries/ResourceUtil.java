@@ -58,6 +58,12 @@ public class ResourceUtil {
   public static final Resource SEARCH_QUEUE_REJECTION = Resource.newBuilder()
       .setResourceEnum(ResourceEnum.SEARCH_THREADPOOL)
       .setMetricEnum(MetricEnum.QUEUE_REJECTION).build();
+  public static final Resource WRITE_QUEUE_CAPACITY = Resource.newBuilder()
+      .setResourceEnum(ResourceEnum.WRITE_THREADPOOL)
+      .setMetricEnum(MetricEnum.QUEUE_CAPACITY).build();
+  public static final Resource SEARCH_QUEUE_CAPACITY = Resource.newBuilder()
+      .setResourceEnum(ResourceEnum.SEARCH_THREADPOOL)
+      .setMetricEnum(MetricEnum.QUEUE_CAPACITY).build();
 
   /**
    * Read the resourceType name from the ResourceType object
