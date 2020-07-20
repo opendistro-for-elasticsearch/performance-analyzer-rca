@@ -115,7 +115,7 @@ public class RcaController {
   private final long rcaStateCheckIntervalMillis;
   private final long roleCheckPeriodicity;
 
-  private boolean deliberateInterrupt;
+  private volatile boolean deliberateInterrupt;
 
   // Atomic reference to the networking threadpool as it is used by multiple threads. When we
   // replace the threadpool instance, we want the update to be visible to all others holding a

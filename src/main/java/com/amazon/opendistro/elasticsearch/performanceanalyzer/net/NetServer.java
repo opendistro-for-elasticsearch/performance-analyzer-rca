@@ -89,7 +89,7 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
    */
   protected Server server;
 
-  private boolean attemptedShutdown;
+  private volatile boolean attemptedShutdown;
 
   public NetServer(final int port, final int numServerThreads, final boolean useHttps) {
     this.port = port;
