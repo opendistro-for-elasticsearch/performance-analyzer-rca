@@ -13,8 +13,7 @@ public class ConfigReader {
     private static final Logger LOG = LogManager.getLogger(ConfigReader.class);
     private static HashMap<Decider, ArrayList<String>> deciderActionPriorityOrder;
 
-    public static final String CONFIG_FILE_PATH = "./src/main/java/com/amazon/opendistro/elasticsearch/"
-            + "performanceanalyzer/decisionmaker/deciderConfig.yml";
+    public static final String CONFIG_FILE_PATH = "./pa_config/deciderConfig.yml";
 
     public ConfigReader() {
         this.deciderActionPriorityOrder = null;
