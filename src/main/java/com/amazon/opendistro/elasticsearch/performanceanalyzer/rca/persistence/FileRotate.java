@@ -128,6 +128,8 @@ public class FileRotate {
 
     Path ret;
 
+    LOG.info("About to rotate file: {} to {}", FILE_TO_ROTATE, targetFilePath);
+
     // Fallback in rotating a file:
     // try 1. Rotate the file, don't try to replace the destination file if one exists.
     // try 2: Rotate the file now with replacement and add a log saying the destination file will be deleted.
@@ -135,8 +137,9 @@ public class FileRotate {
     // try 4: If the delete fails, all bets are off, throw an exception and let the caller decide.
     try {
       ret = Files.move(FILE_TO_ROTATE, targetFilePath, StandardCopyOption.ATOMIC_MOVE);
+      LOG.info("## File rotated successfully to : {}", targetFilePath);
     } catch (FileAlreadyExistsException fae) {
-      LOG.error("Deleting file '{}' or else we cannot rotate the current {}", targetFilePath, FILE_TO_ROTATE);
+      LOG.error("**Deleting file '{}' or else we cannot rotate the current {}", targetFilePath, FILE_TO_ROTATE);
       if (!Files.deleteIfExists(targetFilePath)) {
         LOG.error("Could not delete file: " + targetFilePath);
       }

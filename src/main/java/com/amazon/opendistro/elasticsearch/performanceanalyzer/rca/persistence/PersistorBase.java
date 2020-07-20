@@ -37,6 +37,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.Field;
+import org.jooq.Record;
+import org.jooq.Result;
 import org.jooq.exception.DataAccessException;
 
 // TODO: Scheme to rotate the current file and garbage collect older files.
@@ -82,6 +84,8 @@ public abstract class PersistorBase implements Persistable {
 
     Path path = Paths.get(dir, filenameParam);
     fileRotate = new FileRotate(path, fileRotationTimeUnit, fileRotationPeriod, dateFormat);
+
+    LOG.info("Force Rotating DB file during startup.");
     fileRotate.forceRotate(System.currentTimeMillis());
 
     fileGC =  new FileGC(Paths.get(dir), filenameParam, fileRotationTimeUnit, fileRotationPeriod,
@@ -112,6 +116,8 @@ public abstract class PersistorBase implements Persistable {
   abstract JsonElement readRca(String rca);
 
   abstract void createNewDSLContext();
+
+  public abstract List<Result<Record>> getRecordsForAllTables();
 
   // Not required for now.
   @Override
@@ -146,7 +152,6 @@ public abstract class PersistorBase implements Persistable {
     String url = String.format("%s%s", this.dbProtocol, this.filename);
     close();
     conn = DriverManager.getConnection(url);
-    LOG.info("RCA: Periodic File Rotation - Created a new database connection - " + url);
     createNewDSLContext();
   }
 
@@ -200,6 +205,7 @@ public abstract class PersistorBase implements Persistable {
     // If we are here that means the tryRotate or the forceRotate didn't throw exception and therefore,
     // the current DBFile does not exist anymore. We therefore should create a new one.
     if (fileRotate.getLastRotatedMillis() == currTime) {
+      LOG.info("Periodic file rotation type: {}", type.toString());
       openNewDBFile();
     }
   }

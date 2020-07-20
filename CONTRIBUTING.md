@@ -61,6 +61,11 @@ e.g.
 ./gradlew test --tests RCASchedulerTaskTests.getLocallyExecutableNodes
 ```
 
+### Adding your own tests
+- You can add a unit tests using the junit framework
+- There is also a mechanism to add integration tests for the RCA framework. For details, please
+ see [here](docs/rcait.md).
+
 Before submitting the PR, we request that you also run
 ```shell script
 ./gradlew build

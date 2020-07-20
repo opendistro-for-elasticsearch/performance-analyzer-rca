@@ -54,18 +54,16 @@ public class RCAScheduler {
   private final NodeRole role;
   private final AppContext appContext;
 
-  final ThreadFactory schedThreadFactory =
-      new ThreadFactoryBuilder().setNameFormat("sched-%d").setDaemon(true).build();
+  final ThreadFactory schedThreadFactory;
 
   // TODO: Fix number of threads based on config.
-  final ThreadFactory taskThreadFactory =
-      new ThreadFactoryBuilder().setNameFormat("task-%d-").setDaemon(true).build();
+  final ThreadFactory taskThreadFactory;
 
   ExecutorService rcaSchedulerPeriodicExecutor;
   ScheduledExecutorService scheduledPool;
 
   List<ConnectedComponent> connectedComponents;
-  Queryable db;
+  volatile Queryable db;
   RcaConf rcaConf;
   ThresholdMain thresholdMain;
   Persistable persistable;
@@ -82,6 +80,18 @@ public class RCAScheduler {
       Persistable persistable,
       WireHopper net,
       final AppContext appContext) {
+    String instanceId = appContext.getMyInstanceDetails().getInstanceId().toString();
+    this.schedThreadFactory = new ThreadFactoryBuilder()
+        .setNameFormat(instanceId + "-sched-%d")
+        .setDaemon(true)
+        .build();
+
+    // TODO: Fix number of threads based on config.
+    this.taskThreadFactory = new ThreadFactoryBuilder()
+        .setNameFormat(instanceId + "-task-%d-")
+        .setDaemon(true)
+        .build();
+
     this.connectedComponents = connectedComponents;
     this.db = db;
     this.rcaConf = rcaConf;
@@ -119,7 +129,7 @@ public class RCAScheduler {
         appContext);
 
     schedulerState = RcaSchedulerState.STATE_STARTED;
-    LOG.info("RCA scheduler thread started successfully.");
+    LOG.info("RCA scheduler thread started successfully on node: {}", appContext.getMyInstanceDetails().getInstanceId());
 
     while (schedulerState == RcaSchedulerState.STATE_STARTED) {
       try {

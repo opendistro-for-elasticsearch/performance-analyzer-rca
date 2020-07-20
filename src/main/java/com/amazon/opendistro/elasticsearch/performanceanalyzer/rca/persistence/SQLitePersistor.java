@@ -34,11 +34,15 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.CreateTableConstraintStep;
@@ -47,6 +51,7 @@ import org.jooq.Field;
 import org.jooq.InsertValuesStepN;
 import org.jooq.JSONFormat;
 import org.jooq.Record;
+import org.jooq.Record1;
 import org.jooq.Result;
 import org.jooq.SQLDialect;
 import org.jooq.SelectJoinStep;
@@ -187,6 +192,35 @@ class SQLitePersistor extends PersistorBase {
     return tablesObject.toString();
   }
 
+  public synchronized List<Result<Record>> getRecordsForAllTables() {
+    List<Result<Record>> results = new ArrayList<>();
+    super.tableNames.forEach(
+            table -> results.add(getRecords(table))
+    );
+    return results;
+  }
+
+  @Override
+  public Result<Record> getRecordsForTable(String tableName) {
+    return getRecords(tableName);
+  }
+
+
+  @Override
+  public List<String> getAllPersistedRcas() {
+    List<String> tables = new ArrayList<>();
+    try {
+          tables =
+                  (List<String>) create.selectDistinct(ResourceFlowUnitFieldValue.RCA_NAME_FILELD.getField())
+          .from(ResourceFlowUnit.RCA_TABLE_NAME)
+          .fetch(0).stream().collect(Collectors.toList());
+    } catch (DataAccessException dex) {
+
+    }
+    return tables;
+  }
+
+
   //read table content and convert it into JSON format
   private synchronized String readTable(String tableName) {
     String tableStr;
@@ -206,6 +240,24 @@ class SQLitePersistor extends PersistorBase {
       tableStr = "[]";
     }
     return tableStr;
+  }
+
+  private synchronized @Nullable Result<Record> getRecords(String tableName) {
+    try {
+      Result<Record> result;
+      if (tableName.equals(ResourceFlowUnit.RCA_TABLE_NAME)) {
+        result = create.select()
+                .from(tableName)
+                .orderBy(ResourceFlowUnitFieldValue.RCA_NAME_FILELD.getField())
+                .fetch();
+      } else {
+        result = create.select().from(tableName).fetch();
+      }
+      return result;
+    } catch (DataAccessException e) {
+      LOG.error("Fail to read table {}", tableName);
+    }
+    return null;
   }
 
   /**
@@ -287,7 +339,7 @@ class SQLitePersistor extends PersistorBase {
       } catch (DataAccessException de) {
         // it is totally fine if we fail to read some certain tables as some types of summaries might be missing
         LOG.warn("Fail to read Summary table : {}, query = {},  exceptions : {}",
-            nestedTableName, rcaQuery.toString(), de.getStackTrace());
+            nestedTableName, rcaQuery.toString(), de);
       } catch (IllegalArgumentException ie) {
         LOG.error("Reading nested summary from wrong table, message : {}", ie.getMessage());
       }
@@ -322,7 +374,7 @@ class SQLitePersistor extends PersistorBase {
       }
     } catch (DataAccessException de) {
       // it is totally fine if we fail to read some certain tables.
-      LOG.warn("Fail to read RCA : {}, query = {},  exceptions : {}", rca, rcaQuery.toString(), de.getStackTrace());
+      LOG.warn("Fail to read RCA : {}, query = {},  exceptions : {}", rca, rcaQuery.toString(), de);
     }
     JsonElement ret = null;
     if (response != null) {
