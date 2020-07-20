@@ -20,7 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 
 public class Cache_Max_Size extends Metric {
 
-    public static final String NAME = AllMetrics.CacheCustomValue.CACHE_MAX_SIZE.name();
+    public static final String NAME = AllMetrics.CacheConfigValue.CACHE_MAX_SIZE.toString();
     
     public Cache_Max_Size(long evaluationIntervalSeconds) {
         super(NAME, evaluationIntervalSeconds);

@@ -16,8 +16,8 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheCustomDimension;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheCustomValue;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheConfigDimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheConfigValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CircuitBreakerDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CircuitBreakerValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.DiskDimension;
@@ -155,7 +155,7 @@ public final class MetricPropertiesConfig {
 
   private MetricPropertiesConfig() {
     metricPathMap = new HashMap<>();
-    metricPathMap.put(MetricName.CACHE_CUSTOM, PerformanceAnalyzerMetrics.sCacheCustomPath);
+    metricPathMap.put(MetricName.CACHE_CONFIG, PerformanceAnalyzerMetrics.sCacheConfigPath);
     metricPathMap.put(MetricName.CIRCUIT_BREAKER, PerformanceAnalyzerMetrics.sCircuitBreakerPath);
     metricPathMap.put(MetricName.HEAP_METRICS, PerformanceAnalyzerMetrics.sHeapPath);
     metricPathMap.put(MetricName.DISK_METRICS, PerformanceAnalyzerMetrics.sDisksPath);
@@ -166,7 +166,7 @@ public final class MetricPropertiesConfig {
     metricPathMap.put(MetricName.MASTER_PENDING, PerformanceAnalyzerMetrics.sPendingTasksPath);
 
     eventKeyToMetricNameMap = new HashMap<>();
-    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sCacheCustomPath, MetricName.CACHE_CUSTOM);
+    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sCacheConfigPath, MetricName.CACHE_CONFIG);
     eventKeyToMetricNameMap.put(
         PerformanceAnalyzerMetrics.sCircuitBreakerPath, MetricName.CIRCUIT_BREAKER);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sHeapPath, MetricName.HEAP_METRICS);
@@ -181,11 +181,11 @@ public final class MetricPropertiesConfig {
     metricName2Property = new HashMap<>();
 
     metricName2Property.put(
-        MetricName.CACHE_CUSTOM,
+        MetricName.CACHE_CONFIG,
         new MetricProperties(
-            CacheCustomDimension.values(),
-            CacheCustomValue.values(),
-            createFileHandler(metricPathMap.get(MetricName.CACHE_CUSTOM))));
+            CacheConfigDimension.values(),
+            CacheConfigValue.values(),
+            createFileHandler(metricPathMap.get(MetricName.CACHE_CONFIG))));
     metricName2Property.put(
         MetricName.CIRCUIT_BREAKER,
         new MetricProperties(

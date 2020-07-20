@@ -17,8 +17,8 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.model;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.AggregatedOSDimension;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheCustomDimension;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheCustomValue;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheConfigDimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheConfigValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CircuitBreakerDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CircuitBreakerValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonMetric;
@@ -127,8 +127,8 @@ public class MetricsModel {
 
     // Cache Max Size Metrics
     allMetricsInitializer.put(
-        CacheCustomValue.CACHE_MAX_SIZE.toString(),
-        new MetricAttributes(MetricUnits.BYTE.toString(), CacheCustomDimension.values()));
+        CacheConfigValue.CACHE_MAX_SIZE.toString(),
+        new MetricAttributes(MetricUnits.BYTE.toString(), CacheConfigDimension.values()));
 
     // Circuit Breaker Metrics
     allMetricsInitializer.put(
