@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.samplers;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaRuntimeMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
@@ -40,11 +41,10 @@ public class RcaEnabledSampler implements ISampler {
     sampleCollector.updateStat(RcaRuntimeMetrics.RCA_ENABLED, "", isRcaEnabled() ? 1 : 0);
   }
 
-  @VisibleForTesting
   boolean isRcaEnabled() {
     InstanceDetails currentNode = appContext.getMyInstanceDetails();
     if (currentNode != null && currentNode.getIsMaster()) {
-      return RcaController.isRcaEnabled();
+      return PerformanceAnalyzerApp.getRcaController().isRcaEnabled();
     }
     return false;
   }
