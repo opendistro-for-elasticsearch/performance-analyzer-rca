@@ -15,11 +15,12 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.samplers;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.emitters.ISampler;
 
 public class RcaStateSamplers {
 
-  public static ISampler getRcaEnabledSampler() {
-    return new RcaEnabledSampler();
+  public static ISampler getRcaEnabledSampler(final AppContext appContext) {
+    return new RcaEnabledSampler(appContext);
   }
 }

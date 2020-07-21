@@ -20,6 +20,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 
 public class ThreadPool_QueueSize extends Metric {
   public ThreadPool_QueueSize(long evaluationIntervalSeconds) {
-    super(AllMetrics.ThreadPoolValue.THREADPOOL_QUEUE_SIZE.name(), evaluationIntervalSeconds);
+    super(AllMetrics.ThreadPoolValue.THREADPOOL_QUEUE_SIZE.toString(), evaluationIntervalSeconds);
   }
 }

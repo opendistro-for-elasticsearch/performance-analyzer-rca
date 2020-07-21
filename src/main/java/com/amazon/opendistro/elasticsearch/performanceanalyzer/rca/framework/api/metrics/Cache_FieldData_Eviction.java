@@ -20,6 +20,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 
 public class Cache_FieldData_Eviction extends Metric {
   public Cache_FieldData_Eviction(long evaluationIntervalSeconds) {
-    super(AllMetrics.ShardStatsValue.CACHE_FIELDDATA_EVICTION.name(), evaluationIntervalSeconds);
+    super(AllMetrics.ShardStatsValue.CACHE_FIELDDATA_EVICTION.toString(), evaluationIntervalSeconds);
   }
 }

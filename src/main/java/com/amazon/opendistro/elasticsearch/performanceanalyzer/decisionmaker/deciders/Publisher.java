@@ -15,8 +15,11 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.time.Instant;
 import java.util.HashMap;
@@ -74,18 +77,30 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
         actionToExecutionTime.put(action.name(), Instant.now().toEpochMilli());
       }
     }
-
     return new EmptyFlowUnit(Instant.now().toEpochMilli());
   }
 
-  /* Publisher does not have downstream nodes and does not emit flow units
-   */
-
   @Override
   public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
-    assert true;
+    LOG.debug("Publisher: Executing fromLocal: {}", name());
+    long startTime = System.currentTimeMillis();
+
+    try {
+      this.operate();
+    } catch (Exception ex) {
+      LOG.error("Publisher: Exception in operate", ex);
+      PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
+          ExceptionsAndErrors.EXCEPTION_IN_OPERATE, name(), 1);
+    }
+    long duration = System.currentTimeMillis() - startTime;
+
+    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
+        RcaGraphMetrics.GRAPH_NODE_OPERATE_CALL, this.name(), duration);
   }
 
+  /**
+   * Publisher does not have downstream nodes and does not emit flow units
+   */
   @Override
   public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
     assert true;

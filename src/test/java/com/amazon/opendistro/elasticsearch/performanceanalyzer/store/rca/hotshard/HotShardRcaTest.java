@@ -4,6 +4,8 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.Al
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension.SHARD_ID;
 import static java.time.Instant.ofEpochMilli;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
@@ -13,15 +15,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotShardSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardRca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
-
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,8 +35,6 @@ public class HotShardRcaTest {
     private MetricTestHelper ioTotThroughput;
     private MetricTestHelper ioTotSyscallRate;
     private List<String> columnName;
-
-    private ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper;
 
     private enum index {
         index_1,
@@ -52,14 +50,17 @@ public class HotShardRcaTest {
                 cpuUtilization, ioTotThroughput, ioTotSyscallRate);
         columnName = Arrays.asList(INDEX_NAME.toString(), SHARD_ID.toString(), MetricsDB.SUM);
 
-        try {
-            clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
-            clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.0", false);
-            clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
-        } catch (Exception e) {
-            Assert.assertTrue("Exception when generating cluster details event", false);
-            return;
-        }
+        ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
+        clusterDetailsEventProcessor.setNodesDetails(
+            Collections.singletonList(new ClusterDetailsEventProcessor.NodeDetails(
+                AllMetrics.NodeRole.DATA,
+                "node1",
+                "127.0.0.1",
+                false))
+        );
+        AppContext appContext = new AppContext();
+        appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
+        hotShardRcaX.setAppContext(appContext);
     }
 
 

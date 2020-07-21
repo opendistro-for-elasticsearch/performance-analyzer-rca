@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
@@ -64,7 +65,11 @@ public class QueueHealthDecider extends Decider {
       return decision;
     }
 
-    HotClusterSummary clusterSummary = queueRejectionRca.getFlowUnits().get(0).getSummary();
+    ResourceFlowUnit<HotClusterSummary> flowUnit = queueRejectionRca.getFlowUnits().get(0);
+    if (!flowUnit.hasResourceSummary()) {
+      return decision;
+    }
+    HotClusterSummary clusterSummary = flowUnit.getSummary();
     for (HotNodeSummary nodeSummary : clusterSummary.getHotNodeSummaryList()) {
       NodeKey esNode = new NodeKey(nodeSummary.getNodeID(), nodeSummary.getHostAddress());
       for (HotResourceSummary resource : nodeSummary.getHotResourceSummaryList()) {

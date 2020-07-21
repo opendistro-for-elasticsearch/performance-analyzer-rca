@@ -22,9 +22,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -78,9 +77,9 @@ public class HotNodeRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
 
     if (counter == rcaPeriod) {
       ResourceContext context;
-      ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor
-          .getCurrentNodeDetails();
-      HotNodeSummary summary = new HotNodeSummary(currentNode.getId(), currentNode.getHostAddress());
+
+      InstanceDetails instanceDetails = getInstanceDetails();
+      HotNodeSummary summary = new HotNodeSummary(instanceDetails.getInstanceId(), instanceDetails.getInstanceIp());
 
       for (HotResourceSummary hotResourceSummary : hotResourceSummaryList) {
         summary.appendNestedSummary(hotResourceSummary);
@@ -97,7 +96,7 @@ public class HotNodeRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
       hasUnhealthyFlowUnit = false;
       //check if the current node is data node. If it is the data node
       //then HotNodeRca is the top level RCA on this node and we want to persist summaries in flowunit.
-      boolean isDataNode = !currentNode.getIsMasterNode();
+      boolean isDataNode = !instanceDetails.getIsMaster();
       return new ResourceFlowUnit<>(System.currentTimeMillis(), context, summary, isDataNode);
     } else {
       return new ResourceFlowUnit<>(System.currentTimeMillis());

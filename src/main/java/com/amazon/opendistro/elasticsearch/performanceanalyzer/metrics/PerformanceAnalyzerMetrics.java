@@ -37,6 +37,7 @@ public class PerformanceAnalyzerMetrics {
   public static final String sIndicesPath = "indices";
   public static final String sThreadPoolPath = "thread_pool";
   public static final String sThreadsPath = "threads";
+  public static final String sCacheConfigPath = "cache_config";
   public static final String sCircuitBreakerPath = "circuit_breaker";
   public static final String sShardBulkPath = "shardbulk";
   public static final String sShardFetchPath = "shardfetch";

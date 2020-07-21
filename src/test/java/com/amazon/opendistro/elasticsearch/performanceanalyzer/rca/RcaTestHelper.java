@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
@@ -129,7 +130,7 @@ public class RcaTestHelper {
     }
   }
 
-  public static void setMyIp(String ip, AllMetrics.NodeRole nodeRole) {
+  public static AppContext setMyIp(String ip, AllMetrics.NodeRole nodeRole) {
     JSONObject jtime = new JSONObject();
     jtime.put("current_time", 1566414001749L);
 
@@ -143,6 +144,9 @@ public class RcaTestHelper {
     ClusterDetailsEventProcessor eventProcessor = new ClusterDetailsEventProcessor();
     eventProcessor.processEvent(
             new Event("", jtime.toString() + System.lineSeparator() + jNode.toString(), 0));
+    AppContext appContext = new AppContext();
+    appContext.setClusterDetailsEventProcessor(eventProcessor);
+    return appContext;
   }
 
   public static void truncate(File file) {

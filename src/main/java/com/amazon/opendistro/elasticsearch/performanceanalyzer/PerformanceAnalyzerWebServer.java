@@ -39,21 +39,21 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 public class PerformanceAnalyzerWebServer {
 
   private static final Logger LOG = LogManager.getLogger(PerformanceAnalyzerWebServer.class);
-  private static final int WEBSERVICE_DEFAULT_PORT = 9600;
-  private static final String WEBSERVICE_PORT_CONF_NAME = "webservice-listener-port";
-  private static final String WEBSERVICE_BIND_HOST_NAME = "webservice-bind-host";
+  public static final int WEBSERVICE_DEFAULT_PORT = 9600;
+  public static final String WEBSERVICE_PORT_CONF_NAME = "webservice-listener-port";
+  public static final String WEBSERVICE_BIND_HOST_NAME = "webservice-bind-host";
   // Use system default for max backlog.
   private static final int INCOMING_QUEUE_LENGTH = 1;
 
-  public static HttpServer createInternalServer(PluginSettings settings) {
-    int internalPort = getPortNumber();
+  public static HttpServer createInternalServer(String portFromSetting, String hostFromSetting, boolean httpsEnabled) {
+    int internalPort = getPortNumber(portFromSetting);
     try {
       Security.addProvider(new BouncyCastleProvider());
       HttpServer server;
-      if (settings.getHttpsEnabled()) {
-        server = createHttpsServer(internalPort);
+      if (httpsEnabled) {
+        server = createHttpsServer(internalPort, hostFromSetting);
       } else {
-        server = createHttpServer(internalPort);
+        server = createHttpServer(internalPort, hostFromSetting);
       }
       server.setExecutor(Executors.newCachedThreadPool());
       return server;
@@ -63,13 +63,11 @@ public class PerformanceAnalyzerWebServer {
       ex.printStackTrace();
       Runtime.getRuntime().halt(1);
     }
-
     return null;
   }
 
-  private static HttpServer createHttpsServer(int readerPort) throws Exception {
+  private static HttpServer createHttpsServer(int readerPort, String bindHost) throws Exception {
     HttpsServer server = null;
-    String bindHost = getBindHost();
     if (bindHost != null && !bindHost.trim().isEmpty()) {
       LOG.info("Binding to Interface: {}", bindHost);
       server =
@@ -118,9 +116,8 @@ public class PerformanceAnalyzerWebServer {
     return server;
   }
 
-  private static HttpServer createHttpServer(int readerPort) throws Exception {
+  private static HttpServer createHttpServer(int readerPort, String bindHost) throws Exception {
     HttpServer server = null;
-    String bindHost = getBindHost();
     if (bindHost != null && !bindHost.trim().isEmpty()) {
       LOG.info("Binding to Interface: {}", bindHost);
       server =
@@ -137,11 +134,8 @@ public class PerformanceAnalyzerWebServer {
     return server;
   }
 
-  private static int getPortNumber() {
-    String readerPortValue;
+  private static int getPortNumber(String readerPortValue) {
     try {
-      readerPortValue = PluginSettings.instance().getSettingValue(WEBSERVICE_PORT_CONF_NAME);
-
       if (readerPortValue == null) {
         LOG.info(
             "{} not configured; using default value: {}",
@@ -159,9 +153,5 @@ public class PerformanceAnalyzerWebServer {
           ex.toString());
       return WEBSERVICE_DEFAULT_PORT;
     }
-  }
-
-  private static String getBindHost() {
-    return PluginSettings.instance().getSettingValue(WEBSERVICE_BIND_HOST_NAME);
   }
 }

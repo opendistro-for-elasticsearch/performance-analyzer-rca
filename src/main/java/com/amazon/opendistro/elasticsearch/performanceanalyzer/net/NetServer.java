@@ -26,13 +26,23 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeRes
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.handler.MetricsServerHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.handler.PublishRequestHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.handler.SubscribeServerHandler;
+import com.google.common.annotations.VisibleForTesting;
+
 import io.grpc.Server;
+import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import io.grpc.netty.shaded.io.netty.channel.nio.NioEventLoopGroup;
 import io.grpc.netty.shaded.io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth;
+import io.grpc.netty.shaded.io.netty.handler.ssl.SslContextBuilder;
 import io.grpc.stub.StreamObserver;
+
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import javax.net.ssl.SSLException;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -77,12 +87,15 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
   /**
    * The server instance.
    */
-  private Server server;
+  protected Server server;
+
+  private volatile boolean attemptedShutdown;
 
   public NetServer(final int port, final int numServerThreads, final boolean useHttps) {
     this.port = port;
     this.numServerThreads = numServerThreads;
     this.useHttps = useHttps;
+    this.attemptedShutdown = false;
   }
 
   // postStartHook executes after the NetServer has successfully started its Server
@@ -108,40 +121,49 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
         port,
         numServerThreads,
         useHttps);
-    server = useHttps ? buildHttpsServer() : buildHttpServer();
     try {
+      if (useHttps) {
+        server =  buildHttpsServer(CertificateUtils.getTrustedCasFile(), CertificateUtils.getCertificateFile(),
+                CertificateUtils.getPrivateKeyFile());
+      } else {
+        server = buildHttpServer();
+      }
       server.start();
       LOG.info("gRPC server started successfully!");
       postStartHook();
       server.awaitTermination();
-      LOG.info(" gRPC server terminating..");
+      LOG.info("gRPC server terminating..");
     } catch (InterruptedException | IOException e) {
-      e.printStackTrace();
+      if (!this.attemptedShutdown) {
+        // print stack trace only if this wasn't meant to be.
+        LOG.error("GrpcServer interrupted", e);
+      }
       server.shutdownNow();
       shutdownHook();
     }
   }
 
-  private Server buildHttpServer() {
+  private NettyServerBuilder buildBaseServer() {
     return NettyServerBuilder.forPort(port)
-                             .addService(this)
-                             .bossEventLoopGroup(new NioEventLoopGroup(numServerThreads))
-                             .workerEventLoopGroup(new NioEventLoopGroup(numServerThreads))
-                             .channelType(NioServerSocketChannel.class)
-                             .executor(Executors.newSingleThreadExecutor())
-                             .build();
+            .addService(this)
+            .bossEventLoopGroup(new NioEventLoopGroup(numServerThreads))
+            .workerEventLoopGroup(new NioEventLoopGroup(numServerThreads))
+            .channelType(NioServerSocketChannel.class);
   }
 
-  private Server buildHttpsServer() {
-    return NettyServerBuilder.forPort(port)
-                             .addService(this)
-                             .bossEventLoopGroup(new NioEventLoopGroup(numServerThreads))
-                             .workerEventLoopGroup(new NioEventLoopGroup(numServerThreads))
-                             .channelType(NioServerSocketChannel.class)
-                             .useTransportSecurity(
-                                 CertificateUtils.getCertificateFile(),
-                                 CertificateUtils.getPrivateKeyFile())
-                             .build();
+  private Server buildHttpServer() {
+    return buildBaseServer().executor(Executors.newSingleThreadExecutor()).build();
+  }
+
+  protected Server buildHttpsServer(File trustedCasFile, File certFile, File pkeyFile) throws SSLException {
+    SslContextBuilder sslContextBuilder = GrpcSslContexts.forServer(certFile, pkeyFile);
+    // If an authority is specified, authenticate clients
+    if (trustedCasFile != null) {
+      sslContextBuilder.trustManager(trustedCasFile).clientAuth(ClientAuth.REQUIRE);
+    }
+    return buildBaseServer()
+            .sslContext(sslContextBuilder.build())
+            .build();
   }
 
   /**
@@ -205,6 +227,7 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
    * Unit test usage only.
    * @return Current handler for /metrics rpc.
    */
+  @VisibleForTesting
   public MetricsServerHandler getMetricsServerHandler() {
     return metricsServerHandler;
   }
@@ -213,6 +236,7 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
    * Unit test usage only.
    * @return Current handler for /publish rpc.
    */
+  @VisibleForTesting
   public PublishRequestHandler getSendDataHandler() {
     return sendDataHandler;
   }
@@ -221,6 +245,7 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
    * Unit test usage only.
    * @return Current handler for /subscribe rpc.
    */
+  @VisibleForTesting
   public SubscribeServerHandler getSubscribeHandler() {
     return subscribeHandler;
   }
@@ -234,5 +259,23 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
     // Remove handlers.
     sendDataHandler = null;
     subscribeHandler = null;
+  }
+
+  public void shutdown() {
+    stop();
+    // Actually stop the server
+    if (server != null) {
+      server.shutdown();
+      try {
+        server.awaitTermination(1, TimeUnit.MINUTES);
+      } catch (InterruptedException e) {
+        server.shutdownNow();
+        Thread.currentThread().interrupt();
+      }
+    }
+  }
+
+  public void setAttemptedShutdown() {
+    attemptedShutdown = true;
   }
 }

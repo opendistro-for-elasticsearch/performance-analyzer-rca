@@ -20,6 +20,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 
 public class Cache_Request_Hit extends Metric {
   public Cache_Request_Hit(long evaluationIntervalSeconds) {
-    super(AllMetrics.ShardStatsValue.CACHE_REQUEST_HIT.name(), evaluationIntervalSeconds);
+    super(AllMetrics.ShardStatsValue.CACHE_REQUEST_HIT.toString(), evaluationIntervalSeconds);
   }
 }
