@@ -20,6 +20,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 
 public class Cache_FieldData_Max_Size extends Metric {
     public Cache_FieldData_Max_Size(long evaluationIntervalSeconds) {
-        super(AllMetrics.ShardStatsValue.CACHE_FIELDDATA_MAX_SIZE.name(), evaluationIntervalSeconds);
+        super(AllMetrics.ShardStatsValue.CACHE_FIELDDATA_MAX_SIZE.toString(), evaluationIntervalSeconds);
     }
 }

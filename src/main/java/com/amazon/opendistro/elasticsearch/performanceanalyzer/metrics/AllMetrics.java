@@ -130,6 +130,14 @@ public class AllMetrics {
     }
   }
 
+  /*
+   * column names of Cache_MaxSize table
+   * cache type | sum | avg | max | min |
+   *
+   * <p>Example:
+   * Field Data Cache|26214400.0|26214400.0|26214400.0|26214400.0
+   * Shard Request Cache|80181985.0|80181985.0|80181985.0|80181985.0
+   */
   public enum CacheConfigDimension implements MetricDimension {
     CACHE_TYPE(Constants.TYPE_VALUE);
 
