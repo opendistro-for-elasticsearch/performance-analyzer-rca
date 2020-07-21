@@ -83,7 +83,7 @@ public class QueueHealthDeciderTest {
     );
 
     // Upload the config from YAML into memory.
-    ConfigReader reader = new ConfigReader();
+    ConfigReader reader = new ConfigReader("./pa_config/deciderActionPriorities.yml");
     reader.updateDeciderActionPriorityOrder();
 
     QueueRejectionClusterRca queueClusterRca = new QueueRejectionClusterRca(1, nodeRca);

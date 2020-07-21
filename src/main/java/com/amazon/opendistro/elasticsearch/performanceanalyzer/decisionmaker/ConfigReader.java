@@ -12,17 +12,17 @@ import org.apache.logging.log4j.Logger;
 public class ConfigReader {
     private static final Logger LOG = LogManager.getLogger(ConfigReader.class);
     private static HashMap<Decider, ArrayList<String>> deciderActionPriorityOrder;
+    private static String configFilePath;
 
-    public static final String CONFIG_FILE_PATH = "./pa_config/deciderConfig.yml";
-
-    public ConfigReader() {
-        this.deciderActionPriorityOrder = null;
+    public ConfigReader(String configFilePath) {
+    this.configFilePath = configFilePath;
+    this.deciderActionPriorityOrder = null;
     }
 
     public static void updateDeciderActionPriorityOrder() {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         try {
-            deciderActionPriorityOrder = mapper.readValue(new File(CONFIG_FILE_PATH), HashMap.class);
+            deciderActionPriorityOrder = mapper.readValue(new File(configFilePath), HashMap.class);
         } catch (Exception e) {
             LOG.error("Could not read the Decider Config File");
             e.printStackTrace();
@@ -31,6 +31,13 @@ public class ConfigReader {
     }
 
     public static ArrayList<String> getActionPriorityOrder(String decider) {
-        return deciderActionPriorityOrder.get(decider);
+        ArrayList<String> actionPriorities = null;
+        try {
+            actionPriorities = deciderActionPriorityOrder.get(decider);
+        } catch (Exception e) {
+            LOG.error("Decider Not found in the Config File");
+            e.printStackTrace();
+        }
+        return actionPriorities;
     }
 }

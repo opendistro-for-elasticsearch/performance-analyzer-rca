@@ -35,6 +35,7 @@ public class RcaConsts {
   public static final long RCA_STATE_CHECK_INTERVAL_IN_MS = 5000;
   private static final String RCA_CONF_FILENAME = "rca.conf";
   private static final String RCA_CONF_IDLE_MASTER_FILENAME = "rca_idle_master.conf";
+  private static final String DECIDER_ACTION_PRIORITIES_FILENAME = "deciderActionPriorities.yml";
   private static final String THRESHOLDS_DIR_NAME = "thresholds";
   private static final String CONFIG_DIR_PATH =
       Paths.get(Util.READER_LOCATION, "pa_config").toString();
@@ -44,6 +45,8 @@ public class RcaConsts {
       Paths.get(CONFIG_DIR_PATH, RCA_CONF_MASTER_FILENAME).toString();
   public static final String RCA_CONF_IDLE_MASTER_PATH =
       Paths.get(CONFIG_DIR_PATH, RCA_CONF_IDLE_MASTER_FILENAME).toString();
+  public static final String DECIDER_ACTION_PRIORITIES_PATH =
+      Paths.get(CONFIG_DIR_PATH, DECIDER_ACTION_PRIORITIES_FILENAME).toString();
   public static final String THRESHOLDS_PATH =
       Paths.get(CONFIG_DIR_PATH, THRESHOLDS_DIR_NAME).toString();
   public static final String RCA_MUTE_ERROR_METRIC = "RcaMuteError";
