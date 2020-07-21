@@ -176,6 +176,30 @@ public class AllMetrics {
     }
   }
 
+  //list of caches
+  public enum CacheType {
+    FIELD_DATA_CACHE(Constants.FIELD_DATA_CACHE_NAME),
+    SHARD_REQUEST_CACHE(Constants.SHARD_REQUEST_CACHE_NAME),
+    NODE_QUERY_CACHE(Constants.NODE_QUERY_CACHE_NAME);
+
+    private final String value;
+
+    CacheType(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String FIELD_DATA_CACHE_NAME = "Field_Data_Cache";
+      public static final String SHARD_REQUEST_CACHE_NAME = "Shard_Request_Cache";
+      public static final String NODE_QUERY_CACHE_NAME = "Node_Query_Cache";
+    }
+  }
+
   // column names of database table
   public enum CircuitBreakerDimension implements MetricDimension {
     CB_TYPE(Constants.TYPE_VALUE);
@@ -571,12 +595,10 @@ public class AllMetrics {
     CACHE_QUERY_SIZE(Constants.QUERY_CACHE_IN_BYTES_VALUE),
     CACHE_FIELDDATA_EVICTION(Constants.FIELDDATA_EVICTION_VALUE),
     CACHE_FIELDDATA_SIZE(Constants.FIELD_DATA_IN_BYTES_VALUE),
-    CACHE_FIELDDATA_MAX_SIZE(Constants.FIELD_DATA_MAX_SIZE_IN_BYTES_VALUE),
     CACHE_REQUEST_HIT(Constants.REQUEST_CACHE_HIT_COUNT_VALUE),
     CACHE_REQUEST_MISS(Constants.REQUEST_CACHE_MISS_COUNT_VALUE),
     CACHE_REQUEST_EVICTION(Constants.REQUEST_CACHE_EVICTION_VALUE),
     CACHE_REQUEST_SIZE(Constants.REQUEST_CACHE_IN_BYTES_VALUE),
-    CACHE_REQUEST_MAX_SIZE(Constants.REQUEST_CACHE_MAX_SIZE_IN_BYTES_VALUE),
     REFRESH_EVENT(Constants.REFRESH_COUNT_VALUE),
     REFRESH_TIME(Constants.REFRESH_TIME_VALUE),
     FLUSH_EVENT(Constants.FLUSH_COUNT_VALUE),
@@ -618,13 +640,9 @@ public class AllMetrics {
 
       public static final String QUERY_CACHE_IN_BYTES_VALUE = "Cache_Query_Size";
 
-      public static final String QUERY_CACHE_MAX_SIZE_IN_BYTES_VALUE = "Cache_Query_Max_Size";
-
       public static final String FIELDDATA_EVICTION_VALUE = "Cache_FieldData_Eviction";
 
       public static final String FIELD_DATA_IN_BYTES_VALUE = "Cache_FieldData_Size";
-
-      public static final String FIELD_DATA_MAX_SIZE_IN_BYTES_VALUE = "Cache_FieldData_Max_Size";
 
       public static final String REQUEST_CACHE_HIT_COUNT_VALUE = "Cache_Request_Hit";
 
@@ -633,8 +651,6 @@ public class AllMetrics {
       public static final String REQUEST_CACHE_EVICTION_VALUE = "Cache_Request_Eviction";
 
       public static final String REQUEST_CACHE_IN_BYTES_VALUE = "Cache_Request_Size";
-
-      public static final String REQUEST_CACHE_MAX_SIZE_IN_BYTES_VALUE = "Cache_Request_Max_Size";
 
       public static final String REFRESH_COUNT_VALUE = "Refresh_Event";
 
