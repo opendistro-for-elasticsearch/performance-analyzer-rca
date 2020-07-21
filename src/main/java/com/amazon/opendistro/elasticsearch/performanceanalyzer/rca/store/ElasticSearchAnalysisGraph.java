@@ -22,7 +22,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_AGGREGATE_UPSTREAM;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_LOCUS;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.ConfigReader;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.DeciderActionPriorityReader;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Collator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Publisher;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.QueueHealthDecider;
@@ -178,7 +178,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     queueRejectionClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
     // Upload the config from YAML into memory.
-    ConfigReader reader = new ConfigReader(DECIDER_ACTION_PRIORITIES_PATH);
+    DeciderActionPriorityReader reader = new DeciderActionPriorityReader(DECIDER_ACTION_PRIORITIES_PATH);
     reader.updateDeciderActionPriorityOrder();
 
     // Queue Health Decider

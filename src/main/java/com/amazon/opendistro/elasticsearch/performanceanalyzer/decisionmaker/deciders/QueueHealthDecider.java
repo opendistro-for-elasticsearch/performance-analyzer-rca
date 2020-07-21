@@ -15,7 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.ConfigReader;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.DeciderActionPriorityReader;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
@@ -80,7 +80,7 @@ public class QueueHealthDecider extends Decider {
   }
 
   private void configureActionPriority() {
-    ArrayList<String> actionPriority = ConfigReader.getActionPriorityOrder(name());
+    ArrayList<String> actionPriority = DeciderActionPriorityReader.getActionPriorityOrder(name());
     actionsByUserPriority = actionPriority;
   }
 
