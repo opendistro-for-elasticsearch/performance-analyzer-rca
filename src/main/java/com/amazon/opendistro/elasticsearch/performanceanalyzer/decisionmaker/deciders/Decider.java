@@ -90,5 +90,4 @@ public abstract class Decider extends NonLeafNode<Decision> {
 
   @Override
   public abstract Decision operate();
-
 }
