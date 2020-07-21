@@ -23,6 +23,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotShardSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collections;
@@ -57,6 +59,11 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
 
   public void mockFlowUnits(List<ResourceFlowUnit<T>> flowUnitList) {
     this.flowUnits = flowUnitList;
+  }
+
+  public double readConfig(NodeKey nodeKey, Resource resource) {
+    NodeConfigCache nodeConfigCache = getAppContext().getNodeConfigCache();
+    return nodeConfigCache.get(nodeKey, resource);
   }
 
   public void setClock(Clock clock) {

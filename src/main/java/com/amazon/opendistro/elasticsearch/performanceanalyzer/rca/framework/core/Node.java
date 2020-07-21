@@ -67,7 +67,7 @@ public abstract class Node<T extends GenericFlowUnit> {
    * These are matched against the tags in the rca.conf, to determine if a node is to executed at a
    * location.
    */
-  private Map<String, String> tags;
+  protected Map<String, String> tags;
 
   /**
    * A view of the instanceDetails that the RCAs can have access to.
@@ -198,6 +198,10 @@ public abstract class Node<T extends GenericFlowUnit> {
 
   public void setAppContext(final AppContext appContext) {
     this.appContext = appContext;
+  }
+
+  protected AppContext getAppContext() {
+    return this.appContext;
   }
 
   public InstanceDetails getInstanceDetails() {

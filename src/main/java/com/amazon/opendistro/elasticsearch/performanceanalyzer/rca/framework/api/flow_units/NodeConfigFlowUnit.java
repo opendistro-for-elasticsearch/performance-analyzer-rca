@@ -24,7 +24,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * a flowunit type to carry ES node configurations (queue/cache capacities, etc.)
@@ -82,6 +85,14 @@ public class NodeConfigFlowUnit extends ResourceFlowUnit<HotNodeSummary> {
       return Double.NaN;
     }
     return configSummary.getValue();
+  }
+
+  /**
+   * get list of config settings that this flowunit contains
+   * @return list of config settings
+   */
+  public List<Resource> getConfigList() {
+    return new ArrayList<>(configMap.keySet());
   }
 
   @Override
