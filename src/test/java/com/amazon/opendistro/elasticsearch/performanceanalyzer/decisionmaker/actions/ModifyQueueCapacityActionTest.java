@@ -39,7 +39,8 @@ public class ModifyQueueCapacityActionTest {
     ModifyQueueCapacityAction modifyQueueCapacityAction = new ModifyQueueCapacityAction(node1, ResourceEnum.WRITE_THREADPOOL, 300, true);
     assertTrue(modifyQueueCapacityAction.getDesiredCapacity() > modifyQueueCapacityAction.getCurrentCapacity());
     assertTrue(modifyQueueCapacityAction.isActionable());
-    assertEquals(300, modifyQueueCapacityAction.coolOffPeriodInSeconds());
+    assertEquals(ModifyQueueCapacityAction.COOL_OFF_PERIOD_IN_MILLIS,
+            modifyQueueCapacityAction.coolOffPeriodInMillis());
     assertEquals(ResourceEnum.WRITE_THREADPOOL, modifyQueueCapacityAction.getThreadPool());
     assertEquals(1, modifyQueueCapacityAction.impactedNodes().size());
 
@@ -57,7 +58,8 @@ public class ModifyQueueCapacityActionTest {
     ModifyQueueCapacityAction modifyQueueCapacityAction = new ModifyQueueCapacityAction(node1, ResourceEnum.SEARCH_THREADPOOL, 1500, false);
     assertTrue(modifyQueueCapacityAction.getDesiredCapacity() < modifyQueueCapacityAction.getCurrentCapacity());
     assertTrue(modifyQueueCapacityAction.isActionable());
-    assertEquals(300, modifyQueueCapacityAction.coolOffPeriodInSeconds());
+    assertEquals(ModifyQueueCapacityAction.COOL_OFF_PERIOD_IN_MILLIS,
+            modifyQueueCapacityAction.coolOffPeriodInMillis());
     assertEquals(ResourceEnum.SEARCH_THREADPOOL, modifyQueueCapacityAction.getThreadPool());
     assertEquals(1, modifyQueueCapacityAction.impactedNodes().size());
 
