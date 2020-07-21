@@ -18,8 +18,11 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
-public class Cache_Request_Hit extends Metric {
-  public Cache_Request_Hit(long evaluationIntervalSeconds) {
-    super(AllMetrics.ShardStatsValue.CACHE_REQUEST_HIT.toString(), evaluationIntervalSeconds);
-  }
+public class Cache_Max_Size extends Metric {
+
+    public static final String NAME = AllMetrics.CacheConfigValue.CACHE_MAX_SIZE.toString();
+    
+    public Cache_Max_Size(long evaluationIntervalSeconds) {
+        super(NAME, evaluationIntervalSeconds);
+    }
 }
