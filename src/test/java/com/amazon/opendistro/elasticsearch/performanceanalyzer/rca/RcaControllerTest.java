@@ -365,7 +365,7 @@ public class RcaControllerTest {
     jtime.put("current_time", 1566414001749L);
 
     JSONObject jOverrides = new JSONObject();
-    JSONObject jOverridesTimeStamp = new JSONObject();
+    long overridesTimestamp = System.currentTimeMillis();
 
     JSONObject jNode = new JSONObject();
     jNode.put(AllMetrics.NodeDetailColumns.ID.toString(), "4sqG_APMQuaQwEW17_6zwg");
@@ -376,9 +376,9 @@ public class RcaControllerTest {
     StringBuilder nodeDetails = new StringBuilder();
     nodeDetails.append(jtime);
     nodeDetails.append(separator);
-    nodeDetails.append(jOverrides);
+    nodeDetails.append(overridesTimestamp);
     nodeDetails.append(separator);
-    nodeDetails.append(jOverridesTimeStamp);
+    nodeDetails.append(jOverrides);
     nodeDetails.append(separator);
     nodeDetails.append(jNode.toString());
     eventProcessor.processEvent(
@@ -388,7 +388,7 @@ public class RcaControllerTest {
 
   enum RcaState {
     RUN,
-    STOP;
+    STOP
   }
 
   private void changeRcaRunState(RcaState state) throws IOException {

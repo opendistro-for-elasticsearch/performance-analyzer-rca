@@ -24,41 +24,64 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotSh
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class RcaConf {
+
   protected String configFileLoc;
   protected long lastModifiedTime;
-  protected ConfJsonWrapper conf;
+  protected volatile ConfJsonWrapper conf;
 
   protected static RcaConf instance;
+
+  private final ObjectMapper mapper;
   private static final Logger LOG = LogManager.getLogger(PerformanceAnalyzerApp.class);
 
   public RcaConf(String configPath) {
     this.configFileLoc = configPath;
     JsonFactory factory = new JsonFactory();
     factory.enable(JsonParser.Feature.ALLOW_COMMENTS);
-    ObjectMapper mapper = new ObjectMapper(factory);
+    this.mapper = new ObjectMapper(factory);
     mapper.enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
+    mapper.enable(SerializationFeature.INDENT_OUTPUT);
     try {
       File configFile = new File(this.configFileLoc);
       this.lastModifiedTime = configFile.lastModified();
       this.conf = mapper.readValue(configFile, ConfJsonWrapper.class);
     } catch (IOException e) {
-      LOG.error(e.getMessage());
+      LOG.error("Couldn't deserialize" + e.getMessage(), e);
     }
   }
 
   @VisibleForTesting
   // This should only be used for Tests.
-  public RcaConf() {}
+  public RcaConf() {
+    this.mapper = new ObjectMapper();
+  }
 
   public static void clear() {
     instance = null;
@@ -73,7 +96,7 @@ public class RcaConf {
   }
 
   public long getNewRcaCheckPeriocicityMins() {
-    return conf.getNewRcaCheckPeriocicityMins();
+    return conf.getNewRcaCheckPeriodicityMins();
   }
 
   public long getNewThresholdCheckPeriodicityMins() {
@@ -137,6 +160,18 @@ public class RcaConf {
     return conf.getMutedRcaList();
   }
 
+  public List<String> getMutedDeciderList() {
+    return conf.getMutedDeciderList();
+  }
+
+  public List<String> getMutedActionList() {
+    return conf.getMutedActionList();
+  }
+
+  public Map<String, Object> getRcaConfigSettings() {
+    return ImmutableMap.copyOf(conf.getRcaConfigSettings());
+  }
+
   @SuppressWarnings("unchecked")
   public <T> T readRcaConfig(String rcaName, String key, Class<? extends T> clazz) {
     T setting = null;
@@ -158,5 +193,67 @@ public class RcaConf {
       LOG.error("rca.conf contains value in invalid format, trace : {}", ne.getMessage());
     }
     return setting;
+  }
+
+  public void updateRcaConf(final Set<String> mutedRcas, final Set<String> mutedDeciders,
+      final Set<String> mutedActions) {
+    String updatedPath = this.configFileLoc + ".updated";
+    try {
+      // create the config json Object from rca config file
+      Scanner scanner = new Scanner(new FileInputStream(this.configFileLoc), StandardCharsets.UTF_8.name());
+      String jsonText = scanner.useDelimiter("\\A").next();
+      ObjectMapper mapper = new ObjectMapper();
+      mapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
+      mapper.enable(SerializationFeature.INDENT_OUTPUT);
+      JsonNode configObject = mapper.readTree(jsonText);
+
+      // update the `MUTED_RCAS_CONFIG` value in config Object
+      ArrayNode mutedRcasArray = mapper.valueToTree(mutedRcas);
+      ArrayNode mutedDecidersArray = mapper.valueToTree(mutedDeciders);
+      ArrayNode mutedActionsArray = mapper.valueToTree(mutedActions);
+      ((ObjectNode) configObject).putArray("muted-rcas").addAll(mutedRcasArray)
+      ((ObjectNode) configObject).putArray("muted-deciders").addAll(mutedDecidersArray);
+      ((ObjectNode) configObject).putArray("muted-actions").addAll(mutedActionsArray);
+
+      mapper.writeValue(new FileOutputStream(updatedPath), configObject);
+    } catch (IOException e) {
+      LOG.error("Unable to copy rca conf to a temp file", e);
+      return;
+    }
+
+    try {
+      LOG.error("Writing new file: {}", Paths.get(updatedPath));
+      Files.move(Paths.get(updatedPath), Paths.get(configFileLoc), StandardCopyOption.ATOMIC_MOVE,
+          StandardCopyOption.REPLACE_EXISTING);
+    } catch (IOException e) {
+      LOG.error("Unable to move and replace the old conf file with updated conf file.", e);
+    }
+  }
+
+  /**
+   * Re-writes the contents of the rca[_idle][_master].conf
+   * @param confJsonWrapper The structure/content that will overwrite the current contents of the
+   *                        file.
+   */
+  public void writeRcaConf(final ConfJsonWrapper confJsonWrapper) {
+    String updatedPath = this.configFileLoc + ".updated";
+    try (FileOutputStream dos = new FileOutputStream(updatedPath, false)) {
+      dos.write(mapper.writeValueAsBytes(confJsonWrapper));
+      dos.flush();
+    } catch (IOException e) {
+      LOG.error("unable to write the updated rca conf. Dropping the update.", e);
+      return;
+    }
+
+    try {
+      LOG.error("Writing new file: {}", Paths.get(updatedPath));
+      Files.move(Paths.get(updatedPath), Paths.get(configFileLoc), StandardCopyOption.ATOMIC_MOVE,
+          StandardCopyOption.REPLACE_EXISTING);
+      File newConfFile = new File(this.configFileLoc);
+      this.lastModifiedTime = newConfFile.lastModified();
+      this.conf = confJsonWrapper;
+    } catch (IOException e) {
+      LOG.error("Unable to move and replace the old conf file with updated conf file.", e);
+    }
   }
 }

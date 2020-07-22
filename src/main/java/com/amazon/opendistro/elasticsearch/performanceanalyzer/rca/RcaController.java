@@ -108,8 +108,7 @@ public class RcaController {
   private QueryRcaRequestHandler queryRcaRequestHandler;
 
   private SubscriptionManager subscriptionManager;
-
-  private RcaConf rcaConf;
+  private volatile RcaConf rcaConf;
 
   private final String RCA_ENABLED_CONF_LOCATION;
   private final long rcaStateCheckIntervalMillis;
@@ -360,7 +359,14 @@ public class RcaController {
       long lastModifiedTimeInMillisOnDisk = rcaConf.getLastModifiedTime();
       if (lastModifiedTimeInMillisOnDisk > lastModifiedTimeInMillisInMemory) {
         Set<String> rcasForMute = new HashSet<>(rcaConf.getMutedRcaList());
-        LOG.info("RCAs provided for muting : {}", rcasForMute);
+        Set<String> decidersForMute = new HashSet<>(rcaConf.getMutedDeciderList());
+        Set<String> actionsForMute = new HashSet<>(rcaConf.getMutedActionList());
+
+        Set<String> graphNodesForMute = new HashSet<>();
+        graphNodesForMute.addAll(rcasForMute);
+        graphNodesForMute.addAll(decidersForMute);
+        graphNodesForMute.addAll(actionsForMute);
+        LOG.info("Graph nodes provided for muting : {}", graphNodesForMute);
 
         // Update rcasForMute to retain only valid RCAs
         rcasForMute.retainAll(ConnectedComponent.getNodeNames());
@@ -460,5 +466,9 @@ public class RcaController {
 
   public void setDeliberateInterrupt() {
     deliberateInterrupt = true;
+  }
+
+  public RcaConf getRcaConf() {
+    return rcaConf;
   }
 }

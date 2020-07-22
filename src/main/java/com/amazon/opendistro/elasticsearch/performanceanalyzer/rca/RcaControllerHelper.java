@@ -36,17 +36,17 @@ public class RcaControllerHelper {
    */
   public static RcaConf pickRcaConfForRole(final NodeRole nodeRole) {
     if (NodeRole.ELECTED_MASTER == nodeRole) {
-      LOG.debug("picking elected master conf");
+      LOG.error("picking elected master conf");
       return new RcaConf(ELECTED_MASTER_RCA_CONF_PATH);
     }
 
     if (NodeRole.MASTER == nodeRole) {
-      LOG.debug("picking idle master conf");
+      LOG.error("picking idle master conf");
       return new RcaConf(MASTER_RCA_CONF_PATH);
     }
 
     if (NodeRole.DATA == nodeRole) {
-      LOG.debug("picking data node conf");
+      LOG.error("picking data node conf");
       return new RcaConf(RCA_CONF_PATH);
     }
 

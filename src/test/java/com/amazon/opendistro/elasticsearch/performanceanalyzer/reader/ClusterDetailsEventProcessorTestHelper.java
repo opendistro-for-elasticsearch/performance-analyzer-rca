@@ -15,9 +15,11 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.overrides.ConfigOverrides;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.JsonConverter;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,9 +54,9 @@ public class ClusterDetailsEventProcessorTestHelper extends AbstractReaderTests 
     StringBuilder stringBuilder = new StringBuilder().append(PerformanceAnalyzerMetrics.getJsonCurrentMilliSeconds());
     stringBuilder.append(SEPARATOR);
     // TODO: @ktkrg - Change this in the PR for #291
-    stringBuilder.append("RESERVED FOR CONFIG OVERRIDES");
+    stringBuilder.append(System.currentTimeMillis());
     stringBuilder.append(SEPARATOR);
-    stringBuilder.append("RESERVED FOR CONFIG OVERRIDES");
+    stringBuilder.append(JsonConverter.writeValueAsString(new ConfigOverrides()));
     nodeDetails.stream().forEach(
         node -> {
           stringBuilder.append(SEPARATOR)
