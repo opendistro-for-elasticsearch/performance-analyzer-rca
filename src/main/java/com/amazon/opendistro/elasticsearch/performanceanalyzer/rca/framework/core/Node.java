@@ -67,7 +67,7 @@ public abstract class Node<T extends GenericFlowUnit> {
    * These are matched against the tags in the rca.conf, to determine if a node is to executed at a
    * location.
    */
-  protected Map<String, String> tags;
+  private Map<String, String> tags;
 
   /**
    * A view of the instanceDetails that the RCAs can have access to.
