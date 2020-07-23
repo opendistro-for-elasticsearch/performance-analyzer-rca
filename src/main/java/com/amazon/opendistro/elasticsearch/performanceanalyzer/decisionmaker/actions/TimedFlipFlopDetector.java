@@ -29,34 +29,38 @@ public class TimedFlipFlopDetector implements FlipFlopDetector {
     }
 
     /**
-     * Tests if (a,b) is a flip flopping sequence of impacts.
+     * Tests if (prev, curr) is a flip flopping sequence of impacts.
      *
-     * <p>Only an increase following a decrease is considered a flip flop
+     * <p>Only an increase following a decrease is considered a flip flop. Therefore, if
+     * prev decreases pressure and curr increases pressure, then (prev, curr) is a flip flop.
      *
-     * @param a The first impact that would be applied
-     * @param b The subsequent impact that would be applied
-     * @return Whether or not (a,b) is a flip flopping sequence of impacts
+     * @param prev The {@link Impact} that curr is compared against
+     * @param curr The {@link Impact} that you'd like to test and apply
+     * @return Whether or not (prev, curr) is a flip flopping sequence of impacts
      */
-    protected boolean isFlipFlopImpact(Impact a, Impact b) {
-        return a.equals(Impact.DECREASES_PRESSURE) && b.equals(Impact.INCREASES_PRESSURE);
+    protected boolean isFlipFlopImpact(Impact prev, Impact curr) {
+        return prev.equals(Impact.DECREASES_PRESSURE) && curr.equals(Impact.INCREASES_PRESSURE);
     }
 
     /**
-     * Returns true if the impact for a given Dimension in v is a flip flop Impact when compared to
-     * the impact for a given dimension in u
+     * Returns true if the impact for any given Dimension in prev is a flip flop Impact when compared to
+     * the impact for a given dimension in prev
      *
-     * <p>e.g. for u = (HEAP: INCREASE, CPU: DECREASE), v = (HEAP: DECREASE, CPU: INCREASE)
-     * (u,v) is a flip flop vector because a CPU: DECREASE followed by a CPU: INCREASE is a flip
-     * flop impact
+     * <p>e.g. for prev = (HEAP: INCREASE, CPU: DECREASE), curr = (HEAP: DECREASE, CPU: INCREASE)
+     * (prev, curr) is a flip flop vector because a CPU: DECREASE followed by a CPU: INCREASE is a flip
+     * flop impact. Note that (HEAP: DECREASE) followed by (CPU: INCREASE) is not a flip flop
+     * because HEAP =/= CPU.
      *
-     * @param u The first impact vector that would be applied
-     * @param v The subsequent impact vector that would be applied
-     * @return true if the impact for a given Dimension in v is a flip flop Impact when compared to
-     *      the impact for a given dimension in u
+     * @param prev The first {@link ImpactVector}. Its Impacts appear on the LHS of calls to
+     *             {@link this#isFlipFlopImpact(Impact, Impact)}
+     * @param curr The second {@link ImpactVector}. Its Impacts appear on the RHS of calls to
+     *            {@link this#isFlipFlopImpact(Impact, Impact)}.
+     * @return true if the impact for any given Dimension in curr is a flip flop Impact when compared to
+     *      the impact for a given dimension in prev
      */
-    protected boolean isFlipFlopVector(ImpactVector u, ImpactVector v) {
-        Map<Dimension, Impact> currentImpact = v.getImpact();
-        for (Map.Entry<Dimension, Impact> impactEntry : u.getImpact().entrySet()) {
+    protected boolean isFlipFlopVector(ImpactVector prev, ImpactVector curr) {
+        Map<Dimension, Impact> currentImpact = curr.getImpact();
+        for (Map.Entry<Dimension, Impact> impactEntry : prev.getImpact().entrySet()) {
             Dimension dim = impactEntry.getKey();
             Impact vImpact = currentImpact.get(dim);
             if (isFlipFlopImpact(impactEntry.getValue(), vImpact)) {

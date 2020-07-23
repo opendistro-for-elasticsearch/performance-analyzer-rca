@@ -77,7 +77,7 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
     // TODO: Need to add dampening, avoidance, state persistence etc.
     Decision decision = collator.getFlowUnits().get(0);
     for (Action action : decision.getActions()) {
-      if (isCooledOff(action) && !flipFlopDetector.isFlipFlop(action)) { // Only execute actions which have passed their cool off period
+      if (isCooledOff(action) && !flipFlopDetector.isFlipFlop(action)) {
         LOG.info("Publisher: Executing action: [{}]", action.name());
         action.execute();
         flipFlopDetector.recordAction(action);
