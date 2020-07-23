@@ -65,6 +65,17 @@ public class ResourceUtil {
       .setResourceEnum(ResourceEnum.SEARCH_THREADPOOL)
       .setMetricEnum(MetricEnum.QUEUE_CAPACITY).build();
 
+  // cache
+  public static final Resource FIELD_DATA_CACHE_EVICTION = Resource.newBuilder()
+          .setResourceEnum(ResourceEnum.FIELD_DATA_CACHE)
+          .setMetricEnum(MetricEnum.CACHE_EVICTION).build();
+  public static final Resource SHARD_REQUEST_CACHE_EVICTION = Resource.newBuilder()
+          .setResourceEnum(ResourceEnum.SHARD_REQUEST_CACHE)
+          .setMetricEnum(MetricEnum.CACHE_EVICTION).build();
+  public static final Resource SHARD_REQUEST_CACHE_HIT = Resource.newBuilder()
+          .setResourceEnum(ResourceEnum.SHARD_REQUEST_CACHE)
+          .setMetricEnum(MetricEnum.CACHE_HIT).build();
+
   /**
    * Read the resourceType name from the ResourceType object
    * @param resource grpc Resource object
