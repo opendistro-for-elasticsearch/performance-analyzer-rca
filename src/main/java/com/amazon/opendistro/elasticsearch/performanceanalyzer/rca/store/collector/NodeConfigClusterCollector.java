@@ -42,6 +42,10 @@ public class NodeConfigClusterCollector extends NonLeafNode<EmptyFlowUnit> {
     this.nodeConfigCollector = nodeConfigCollector;
   }
 
+  /**
+   * read and parse the NodeConfigFlowUnit. retrieve the list of configs from the flowunit
+   * and update the cache entries that are associated with the NodeKey + config type
+   */
   private void addNodeLevelConfigs() {
     List<NodeConfigFlowUnit> flowUnits = nodeConfigCollector.getFlowUnits();
     for (NodeConfigFlowUnit flowUnit : flowUnits) {
