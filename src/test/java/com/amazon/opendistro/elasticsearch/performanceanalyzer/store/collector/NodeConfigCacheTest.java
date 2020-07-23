@@ -38,17 +38,17 @@ public class NodeConfigCacheTest {
     this.nodeKey2 = new NodeKey("node2", "127.0.0.2");
   }
 
-  @Test
+  @Test(expected = IllegalArgumentException.class)
   public void testNonExistentKey() {
     double val = nodeConfigCache.get(nodeKey1, ResourceUtil.WRITE_QUEUE_CAPACITY);
-    Assert.assertTrue(Double.isNaN(val));
+    Assert.fail();
+  }
 
+  @Test(expected = IllegalArgumentException.class)
+  public void testReadWrongKey() {
     nodeConfigCache.put(nodeKey1, ResourceUtil.WRITE_QUEUE_CAPACITY, 2.0);
-    val = nodeConfigCache.get(nodeKey1, ResourceUtil.WRITE_QUEUE_REJECTION);
-    Assert.assertTrue(Double.isNaN(val));
-
-    val = nodeConfigCache.get(nodeKey2, ResourceUtil.WRITE_QUEUE_CAPACITY);
-    Assert.assertTrue(Double.isNaN(val));
+    double val = nodeConfigCache.get(nodeKey1, ResourceUtil.WRITE_QUEUE_REJECTION);
+    Assert.fail();
   }
 
   @Test

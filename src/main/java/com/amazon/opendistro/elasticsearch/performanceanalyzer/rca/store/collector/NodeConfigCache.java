@@ -30,25 +30,38 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  */
 public class NodeConfigCache {
 
-  private static final int LOADING_CACHE_EVICTION_TIMEOUT = 10;
+  private static final int CACHE_TTL = 10;
   private final Cache<NodeConfigKey, Double> nodeConfigCache;
 
-  //unbounded cache with eviction timeout set to 10 mins
+  //unbounded cache with TTL set to 10 mins
   public NodeConfigCache() {
     nodeConfigCache =
         CacheBuilder.newBuilder()
-            .expireAfterWrite(LOADING_CACHE_EVICTION_TIMEOUT, TimeUnit.MINUTES)
+            .expireAfterWrite(CACHE_TTL, TimeUnit.MINUTES)
             .build();
   }
 
+  /**
+   * add config value into cache
+   * @param nodeKey the NodeKey of the node on which this config is collected
+   * @param config the config type
+   * @param value the config value
+   */
   public void put(NodeKey nodeKey, Resource config, double value) {
     nodeConfigCache.put(new NodeConfigKey(nodeKey, config), value);
   }
 
-  public double get(NodeKey nodeKey, Resource config) {
+  /**
+   * returns the config value that is associated with the nodeKey and config
+   * @param nodeKey the NodeKey of the node
+   * @param config the config type
+   * @return the config value
+   * @throws IllegalArgumentException throws an exception if the config does not exist in cache
+   */
+  public double get(NodeKey nodeKey, Resource config) throws IllegalArgumentException {
     Double ret = nodeConfigCache.getIfPresent(new NodeConfigKey(nodeKey, config));
     if (ret == null) {
-      return Double.NaN;
+      throw new IllegalArgumentException();
     }
     return ret;
   }

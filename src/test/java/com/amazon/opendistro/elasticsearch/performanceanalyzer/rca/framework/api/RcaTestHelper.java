@@ -61,7 +61,7 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
     this.flowUnits = flowUnitList;
   }
 
-  public double readConfig(NodeKey nodeKey, Resource resource) {
+  public double readConfig(NodeKey nodeKey, Resource resource) throws IllegalArgumentException {
     NodeConfigCache nodeConfigCache = getAppContext().getNodeConfigCache();
     return nodeConfigCache.get(nodeKey, resource);
   }
