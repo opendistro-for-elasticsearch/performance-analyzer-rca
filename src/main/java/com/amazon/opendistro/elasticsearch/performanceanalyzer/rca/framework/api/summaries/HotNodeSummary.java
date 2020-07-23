@@ -78,7 +78,9 @@ public class HotNodeSummary extends GenericSummary {
   }
 
   public void appendNestedSummary(HotResourceSummary summary) {
-    hotResourceSummaryList.add(summary);
+    if (summary != null) {
+      hotResourceSummaryList.add(summary);
+    }
   }
 
   public void appendNestedSummary(HotShardSummary summary) {

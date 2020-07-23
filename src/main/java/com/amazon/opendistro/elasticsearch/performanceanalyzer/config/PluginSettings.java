@@ -17,8 +17,11 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.config;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.ConfigStatus;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
+import com.google.common.annotations.VisibleForTesting;
+
 import java.io.File;
 import java.util.Properties;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
@@ -98,6 +101,11 @@ public class PluginSettings {
 
   public boolean getHttpsEnabled() {
     return this.httpsEnabled;
+  }
+
+  @VisibleForTesting
+  public void overrideProperty(String key, String value) {
+    settings.setProperty(key, value);
   }
 
   public boolean shouldCleanupMetricsDBFiles() {

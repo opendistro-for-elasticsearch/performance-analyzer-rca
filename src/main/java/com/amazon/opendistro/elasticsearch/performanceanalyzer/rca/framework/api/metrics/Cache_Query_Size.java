@@ -20,6 +20,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 
 public class Cache_Query_Size extends Metric {
   public Cache_Query_Size(long evaluationIntervalSeconds) {
-    super(AllMetrics.ShardStatsValue.CACHE_QUERY_SIZE.name(), evaluationIntervalSeconds);
+    super(AllMetrics.ShardStatsValue.CACHE_QUERY_SIZE.toString(), evaluationIntervalSeconds);
   }
 }

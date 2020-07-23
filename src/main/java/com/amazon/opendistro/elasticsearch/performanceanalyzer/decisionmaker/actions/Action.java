@@ -31,7 +31,7 @@ public interface Action {
   boolean isActionable();
 
   /** Time to wait since last recommendation, before suggesting this action again */
-  int coolOffPeriodInSeconds();
+  long coolOffPeriodInMillis();
 
   /**
    * Called when the action is invoked.

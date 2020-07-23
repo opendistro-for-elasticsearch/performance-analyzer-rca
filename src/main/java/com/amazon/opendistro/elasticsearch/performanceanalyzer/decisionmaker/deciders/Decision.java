@@ -55,6 +55,11 @@ public class Decision extends GenericFlowUnit {
   }
 
   @Override
+  public String toString() {
+    return decider + " : " + actions;
+  }
+
+  @Override
   public boolean isEmpty() {
     return actions.isEmpty();
   }

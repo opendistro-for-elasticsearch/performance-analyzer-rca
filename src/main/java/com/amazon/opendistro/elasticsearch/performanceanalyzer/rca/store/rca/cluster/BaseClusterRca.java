@@ -22,9 +22,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
@@ -98,7 +97,7 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
   private void addUpstreamFlowUnits(Rca<ResourceFlowUnit<HotNodeSummary>> nodeRca) {
     List<ResourceFlowUnit<HotNodeSummary>> flowUnits = nodeRca.getFlowUnits();
     for (ResourceFlowUnit<HotNodeSummary> flowUnit : flowUnits) {
-      if (flowUnit.isEmpty()) {
+      if (flowUnit.isEmpty() || !flowUnit.hasResourceSummary()) {
         continue;
       }
       HotNodeSummary nodeSummary = flowUnit.getSummary();
@@ -115,12 +114,12 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
     }
   }
 
-  private List<NodeDetails> getClusterNodesDetails() {
+  private List<InstanceDetails> getClusterNodesDetails() {
     if (collectFromMasterNode) {
-      return ClusterDetailsEventProcessor.getNodesDetails();
+      return getAllClusterInstances();
     }
     else {
-      return ClusterDetailsEventProcessor.getDataNodesDetails();
+      return getDataNodeInstances();
     }
   }
 
@@ -130,8 +129,8 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
   private void removeInactiveNodeFromNodeMap() {
     Set<String> nodeIdSet = new HashSet<>();
     List<NodeKey> inactiveNodes = new ArrayList<>();
-    for (NodeDetails nodeDetail : getClusterNodesDetails()) {
-      nodeIdSet.add(nodeDetail.getId());
+    for (InstanceDetails nodeDetail : getClusterNodesDetails()) {
+      nodeIdSet.add(nodeDetail.getInstanceId());
     }
     for (NodeKey nodeKey : nodeTable.rowKeySet()) {
       if (!nodeIdSet.contains(nodeKey.getNodeId())) {
@@ -151,10 +150,10 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
   private ResourceFlowUnit<HotClusterSummary> generateFlowUnit() {
     List<HotNodeSummary> unhealthyNodeSummaries = new ArrayList<>();
     long timestamp = clock.millis();
-    List<NodeDetails> clusterNodesDetails = getClusterNodesDetails();
+    List<InstanceDetails> clusterNodesDetails = getClusterNodesDetails();
     // iterate through this table
-    for (NodeDetails nodeDetails : clusterNodesDetails) {
-      NodeKey nodeKey = new NodeKey(nodeDetails.getId(), nodeDetails.getHostAddress());
+    for (InstanceDetails nodeDetails : clusterNodesDetails) {
+      NodeKey nodeKey = new NodeKey(nodeDetails.getInstanceId(), nodeDetails.getInstanceIp());
       // skip if the node is not found in table
       if (!nodeTable.containsRow(nodeKey)) {
         continue;

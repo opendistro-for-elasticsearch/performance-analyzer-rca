@@ -44,9 +44,9 @@ public class ClusterDetailsEventProcessorTestHelper extends AbstractReaderTests 
     return createNodeDetails(nodeId, address, isMasterNode);
   }
 
-  public void generateClusterDetailsEvent() {
+  public ClusterDetailsEventProcessor generateClusterDetailsEvent() {
     if (nodeDetails.isEmpty()) {
-      return;
+      return new ClusterDetailsEventProcessor();
     }
     StringBuilder stringBuilder = new StringBuilder().append(PerformanceAnalyzerMetrics.getJsonCurrentMilliSeconds());
     nodeDetails.stream().forEach(
@@ -58,5 +58,6 @@ public class ClusterDetailsEventProcessorTestHelper extends AbstractReaderTests 
     Event testEvent = new Event("", stringBuilder.toString(), 0);
     ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
     clusterDetailsEventProcessor.processEvent(testEvent);
+    return clusterDetailsEventProcessor;
   }
 }

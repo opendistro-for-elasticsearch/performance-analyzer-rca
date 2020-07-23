@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MasterPendingValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MetricName;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
@@ -52,7 +53,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
   @Test
   public void testReaderMetricsProcessorFrequently() throws Exception {
     deleteAll();
-    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true);
+    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
 
     mp.processMetrics(rootLocation, 1566413975000L);
     mp.processMetrics(rootLocation, 1566413980000L);

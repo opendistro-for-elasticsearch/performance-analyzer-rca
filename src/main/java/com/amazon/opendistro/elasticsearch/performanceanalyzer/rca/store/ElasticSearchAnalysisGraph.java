@@ -173,6 +173,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     QueueRejectionClusterRca queueRejectionClusterRca = new QueueRejectionClusterRca(RCA_PERIOD, queueRejectionNodeRca);
     queueRejectionClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     queueRejectionClusterRca.addAllUpstreams(Collections.singletonList(queueRejectionNodeRca));
+    queueRejectionClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
     // Queue Health Decider
     QueueHealthDecider queueHealthDecider = new QueueHealthDecider(EVALUATION_INTERVAL_SECONDS, 12, queueRejectionClusterRca);

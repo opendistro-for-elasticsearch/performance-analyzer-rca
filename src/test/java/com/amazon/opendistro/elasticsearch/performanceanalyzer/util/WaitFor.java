@@ -24,7 +24,7 @@ public class WaitFor {
             maxWaitMillis -= (curTime - pollTime);
             pollTime = curTime;
         }
-        if (maxWait < 0) {
+        if (maxWaitMillis < 0) {
             throw new TimeoutException("WaitFor timed out before task evaluated to true");
         }
     }
