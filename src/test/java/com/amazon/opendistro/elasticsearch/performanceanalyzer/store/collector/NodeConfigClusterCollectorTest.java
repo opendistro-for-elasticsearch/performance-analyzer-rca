@@ -56,10 +56,24 @@ public class NodeConfigClusterCollectorTest {
     clusterCollector.operate();
     double val1 = observer.readConfig(nodeKey1, ResourceUtil.WRITE_QUEUE_CAPACITY);
     Assert.assertEquals(100, val1, 0.01);
-    double val2 = observer.readConfig(nodeKey1, ResourceUtil.SEARCH_QUEUE_CAPACITY);
-    Assert.assertTrue(Double.isNaN(val2));
-    double val3 = observer.readConfig(nodeKey2, ResourceUtil.SEARCH_QUEUE_CAPACITY);
-    Assert.assertTrue(Double.isNaN(val3));
+    boolean hasException;
+    double val2;
+    double val3;
+    try {
+      val2 = observer.readConfig(nodeKey1, ResourceUtil.SEARCH_QUEUE_CAPACITY);
+      hasException = true;
+    } catch (IllegalArgumentException e) {
+      hasException = true;
+    }
+    Assert.assertTrue(hasException);
+
+    try {
+      val3 = observer.readConfig(nodeKey2, ResourceUtil.SEARCH_QUEUE_CAPACITY);
+      hasException = true;
+    } catch (IllegalArgumentException e) {
+      hasException = true;
+    }
+    Assert.assertTrue(hasException);
 
     flowUnit = new NodeConfigFlowUnit(0, nodeKey1);
     flowUnit.addConfig(ResourceUtil.SEARCH_QUEUE_CAPACITY, 500);
