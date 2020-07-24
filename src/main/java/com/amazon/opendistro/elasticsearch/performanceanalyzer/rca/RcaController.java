@@ -195,14 +195,19 @@ public class RcaController {
       }
       ThresholdMain thresholdMain = new ThresholdMain(RcaConsts.THRESHOLDS_PATH, rcaConf);
       Persistable persistable = PersistenceFactory.create(rcaConf);
-      networkThreadPoolReference
-          .set(RcaControllerHelper.buildNetworkThreadPool(rcaConf.getNetworkQueueLength()));
+      networkThreadPoolReference.set(RcaControllerHelper.buildNetworkThreadPool(rcaConf.getNetworkQueueLength()));
       addRcaRequestHandler();
       queryRcaRequestHandler.setPersistable(persistable);
       receivedFlowUnitStore = new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength());
       WireHopper net =
           new WireHopper(nodeStateManager, rcaNetClient, subscriptionManager,
               networkThreadPoolReference, receivedFlowUnitStore, appContext);
+
+      // RcaScheduler should be started with a snapshot of the AppContext as RcaController
+      // monitors it for stale state and always restarts the scheduler if it finds its state
+      // stale.
+      AppContext copyAppContext = new AppContext(this.appContext);
+
       this.rcaScheduler =
           new RCAScheduler(connectedComponents,
               db,
@@ -210,7 +215,7 @@ public class RcaController {
               thresholdMain,
               persistable,
               net,
-              appContext);
+              copyAppContext);
 
       rcaNetServer.setSendDataHandler(new PublishRequestHandler(
           nodeStateManager, receivedFlowUnitStore, networkThreadPoolReference));
@@ -260,7 +265,7 @@ public class RcaController {
   }
 
   public void run() {
-    long tick = 1;
+    long tick = 0;
     long nodeRoleCheckInTicks = roleCheckPeriodicity / rcaStateCheckIntervalMillis;
     while (true) {
       try {

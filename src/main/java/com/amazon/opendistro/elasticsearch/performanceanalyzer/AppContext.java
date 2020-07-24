@@ -43,6 +43,10 @@ public class AppContext {
     this.nodeConfigCache = new NodeConfigCache();
   }
 
+  public AppContext(AppContext other) {
+    this.clusterDetailsEventProcessor = new ClusterDetailsEventProcessor(other.clusterDetailsEventProcessor);
+  }
+
   public void setClusterDetailsEventProcessor(final ClusterDetailsEventProcessor clusterDetailsEventProcessor) {
     this.clusterDetailsEventProcessor = clusterDetailsEventProcessor;
   }

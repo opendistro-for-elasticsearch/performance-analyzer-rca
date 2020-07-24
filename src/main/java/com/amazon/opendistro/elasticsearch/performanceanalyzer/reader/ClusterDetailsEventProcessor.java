@@ -40,6 +40,19 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
    */
   private volatile ImmutableList<NodeDetails> nodesDetails = null;
 
+  public ClusterDetailsEventProcessor() {}
+
+  public ClusterDetailsEventProcessor(final ClusterDetailsEventProcessor other) {
+    if (other.nodesDetails != null) {
+      List<NodeDetails> nodeDetails = new ArrayList<>();
+      for (final NodeDetails oldDetails : other.nodesDetails) {
+        NodeDetails copiedNodeDetails = new NodeDetails(oldDetails);
+        nodeDetails.add(copiedNodeDetails);
+      }
+      this.nodesDetails = ImmutableList.copyOf(nodeDetails);
+    }
+  }
+
   @Override
   public void initializeProcessing(long startTime, long endTime) {}
 
@@ -146,6 +159,13 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
       this.hostAddress = hostAddress;
       this.isMasterNode = isMaster;
       this.role = role.toString();
+    }
+
+    public NodeDetails(NodeDetails other) {
+      this.id = other.id;
+      this.hostAddress = other.hostAddress;
+      this.isMasterNode = other.isMasterNode;
+      this.role = other.role;
     }
 
     @Override

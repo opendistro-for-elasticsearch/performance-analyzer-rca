@@ -436,10 +436,7 @@ public class ReaderMetricsProcessor implements Runnable {
     EventProcessor nodeEventsProcessor =
         NodeMetricsEventProcessor.buildNodeMetricEventsProcessor(
             currWindowStartTime, conn, nodeMetricsMap);
-    EventProcessor clusterDetailsEventsProcessor = new ClusterDetailsEventProcessor();
-    if (appContext != null) {
-      appContext.setClusterDetailsEventProcessor((ClusterDetailsEventProcessor) clusterDetailsEventsProcessor);
-    }
+    ClusterDetailsEventProcessor clusterDetailsEventsProcessor = new ClusterDetailsEventProcessor();
 
     // The event dispatcher dispatches events to each of the registered event processors.
     // In addition to event processing each processor has an initialize/finalize function that is
@@ -465,6 +462,10 @@ public class ReaderMetricsProcessor implements Runnable {
     eventDispatcher.finalizeProcessing();
 
     emitMetrics(currWindowStartTime);
+
+    if (appContext != null && !clusterDetailsEventsProcessor.getNodesDetails().isEmpty()) {
+      appContext.setClusterDetailsEventProcessor(clusterDetailsEventsProcessor);
+    }
 
     StatsCollector.instance()
         .logStatsRecord(null, STATS_DATA, TIMING_STATS, start, System.currentTimeMillis());
