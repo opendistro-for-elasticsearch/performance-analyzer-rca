@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.DECIDER_ACTION_PRIORITIES_PATH;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RCA_MUTE_ERROR_METRIC;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
@@ -24,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyz
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.DeciderActionPriorityReader;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
@@ -239,10 +241,14 @@ public class RcaController {
         }
 
         // If RCA is enabled, update Analysis graph with Muted RCAs value
+        // Update the decider action priority config into memory
         if (rcaEnabled) {
           rcaConf = RcaControllerHelper.pickRcaConfForRole(currentRole);
           LOG.debug("Updating Analysis Graph with Muted RCAs");
           readAndUpdateMutesRcas();
+          // Upload the config from YAML into memory.
+          DeciderActionPriorityReader reader = new DeciderActionPriorityReader(DECIDER_ACTION_PRIORITIES_PATH);
+          reader.updateDeciderActionPriorityOrder();
         }
         updateRcaState();
 

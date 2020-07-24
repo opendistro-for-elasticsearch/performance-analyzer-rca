@@ -80,8 +80,7 @@ public class QueueHealthDecider extends Decider {
   }
 
   private void configureActionPriority() {
-    ArrayList<String> actionPriority = DeciderActionPriorityReader.getActionPriorityOrder(name());
-    actionsByUserPriority = actionPriority;
+    actionsByUserPriority = DeciderActionPriorityReader.getActionPriorityOrder(name());
   }
 
   /**
