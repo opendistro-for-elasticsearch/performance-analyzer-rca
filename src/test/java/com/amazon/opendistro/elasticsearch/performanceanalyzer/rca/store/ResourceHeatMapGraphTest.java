@@ -22,7 +22,6 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_LOCUS;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils.ALL_TEMPERATURE_DIMENSIONS;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.ClientServers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
@@ -46,7 +45,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.HeatZoneAssigner;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
@@ -130,14 +128,14 @@ public class ResourceHeatMapGraphTest {
     }
 
     AllMetrics.NodeRole nodeRole2 = AllMetrics.NodeRole.ELECTED_MASTER;
-    AppContext appContext = RcaTestHelper.setMyIp("192.168.0.2", nodeRole2);
+    RcaTestHelper.setMyIp("192.168.0.2", nodeRole2);
     connectionManager = new GRPCConnectionManager(false);
-    clientServers = PerformanceAnalyzerApp.createClientServers(connectionManager, new AppContext());
+    clientServers = PerformanceAnalyzerApp.createClientServers(connectionManager);
 
     HttpServer httpServer = clientServers.getHttpServer();
     httpServer.start();
 
-    QueryRcaRequestHandler rcaRequestHandler = new QueryRcaRequestHandler(appContext);
+    QueryRcaRequestHandler rcaRequestHandler = new QueryRcaRequestHandler();
     rcaRequestHandler.setPersistable(persistable);
     httpServer.createContext(Util.RCA_QUERY_URL, rcaRequestHandler);
 
@@ -160,7 +158,7 @@ public class ResourceHeatMapGraphTest {
     }
   }
 
-  private List<ConnectedComponent> createAndExecuteRcaGraph(AppContext appContext) {
+  private List<ConnectedComponent> createAndExecuteRcaGraph() {
     AnalysisGraph analysisGraph = new AnalysisGraphX();
     List<ConnectedComponent> connectedComponents =
         RcaUtil.getAnalysisGraphComponents(analysisGraph);
@@ -173,12 +171,11 @@ public class ResourceHeatMapGraphTest {
         new SubscriptionManager(new GRPCConnectionManager(false));
     subscriptionManager.setCurrentLocus(rcaConf.getTagMap().get("locus"));
 
-    WireHopper wireHopper = new WireHopper(new NodeStateManager(new AppContext()), clientServers.getNetClient(),
+    WireHopper wireHopper = new WireHopper(new NodeStateManager(), clientServers.getNetClient(),
         subscriptionManager,
         networkThreadPoolReference,
-        new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()), appContext);
+        new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()));
 
-    InstanceDetails instanceDetails = appContext.getMyInstanceDetails();
     RCASchedulerTask rcaSchedulerTaskData =
         new RCASchedulerTask(
             1000,
@@ -187,10 +184,9 @@ public class ResourceHeatMapGraphTest {
             reader,
             persistable,
             rcaConf,
-            wireHopper,
-            appContext);
-
-    RcaTestHelper.setMyIp(instanceDetails.getInstanceIp(), instanceDetails.getRole());
+            wireHopper);
+    AllMetrics.NodeRole nodeRole = AllMetrics.NodeRole.DATA;
+    RcaTestHelper.setMyIp("192.168.0.1", nodeRole);
     rcaSchedulerTaskData.run();
     return connectedComponents;
   }
@@ -266,9 +262,7 @@ public class ResourceHeatMapGraphTest {
 
   @Test
   public void clusterTemperatureProfile() {
-    AppContext appContext = RcaTestHelper.setMyIp("192.168.0.2", AllMetrics.NodeRole.ELECTED_MASTER);
-
-    List<ConnectedComponent> connectedComponents = createAndExecuteRcaGraph(appContext);
+    List<ConnectedComponent> connectedComponents = createAndExecuteRcaGraph();
     System.out.println("Now for the MAster RCA.");
     String masterNodeRcaConf =
         Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_elected_master.conf").toString();
@@ -277,13 +271,11 @@ public class ResourceHeatMapGraphTest {
         new SubscriptionManager(new GRPCConnectionManager(false));
     subscriptionManager2.setCurrentLocus(rcaConf2.getTagMap().get("locus"));
 
-
-    WireHopper wireHopper2 = new WireHopper(new NodeStateManager(new AppContext()), clientServers.getNetClient(),
+    WireHopper wireHopper2 = new WireHopper(new NodeStateManager(), clientServers.getNetClient(),
         subscriptionManager2,
         networkThreadPoolReference,
-        new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()), appContext);
+        new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()));
 
-    InstanceDetails instanceDetails = appContext.getMyInstanceDetails();
     RCASchedulerTask rcaSchedulerTaskMaster =
         new RCASchedulerTask(
             1000,
@@ -292,10 +284,9 @@ public class ResourceHeatMapGraphTest {
             reader,
             persistable,
             rcaConf2,
-            wireHopper2,
-            appContext);
-    AllMetrics.NodeRole nodeRole2 = instanceDetails.getRole();
-    RcaTestHelper.setMyIp(instanceDetails.getInstanceIp(), nodeRole2);
+            wireHopper2);
+    AllMetrics.NodeRole nodeRole2 = AllMetrics.NodeRole.ELECTED_MASTER;
+    RcaTestHelper.setMyIp("192.168.0.2", nodeRole2);
     rcaSchedulerTaskMaster.run();
 
     testJsonResponse(makeRestRequest(
@@ -304,8 +295,7 @@ public class ResourceHeatMapGraphTest {
 
   @Test
   public void fullNodeTemperatureProfile() {
-    AppContext appContext = RcaTestHelper.setMyIp("192.168.0.3", AllMetrics.NodeRole.DATA);
-    createAndExecuteRcaGraph(appContext);
+    createAndExecuteRcaGraph();
     verifyFullNodeTemperatureProfile(makeRestRequest(
         new String[]{
             "name", ALL_TEMPERATURE_DIMENSIONS,
@@ -317,8 +307,7 @@ public class ResourceHeatMapGraphTest {
   // {"AllTemperatureDimensions":[]}
   @Test
   public void mutedTemperatureProfile() {
-    AppContext appContext = RcaTestHelper.setMyIp("192.168.0.7", AllMetrics.NodeRole.MASTER);
-    createAndExecuteRcaGraph(appContext);
+    createAndExecuteRcaGraph();
 
     Set<String> oldMuted = new HashSet<>();
     for (String muted : Stats.getInstance().getMutedGraphNodes()) {
@@ -1069,13 +1058,11 @@ public class ResourceHeatMapGraphTest {
         new SubscriptionManager(new GRPCConnectionManager(false));
     subscriptionManager.setCurrentLocus(rcaConf.getTagMap().get("locus"));
 
-    AppContext appContext = RcaTestHelper.setMyIp("192.168.0.1", AllMetrics.NodeRole.DATA);
-
-    WireHopper wireHopper = new WireHopper(new NodeStateManager(new AppContext()), clientServers.getNetClient(),
+    WireHopper wireHopper = new WireHopper(new NodeStateManager(), clientServers.getNetClient(),
         subscriptionManager,
         networkThreadPoolReference,
-        new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()), appContext);
-    InstanceDetails dataInstance = appContext.getMyInstanceDetails();
+        new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()));
+
     RCASchedulerTask rcaSchedulerTaskData =
         new RCASchedulerTask(
             1000,
@@ -1084,10 +1071,9 @@ public class ResourceHeatMapGraphTest {
             reader,
             persistable,
             rcaConf,
-            wireHopper,
-            appContext);
-    AllMetrics.NodeRole nodeRole = dataInstance.getRole();
-    RcaTestHelper.setMyIp(dataInstance.getInstanceIp(), nodeRole);
+            wireHopper);
+    AllMetrics.NodeRole nodeRole = AllMetrics.NodeRole.DATA;
+    RcaTestHelper.setMyIp("192.168.0.1", nodeRole);
     rcaSchedulerTaskData.run();
 
     String masterNodeRcaConf =
@@ -1097,14 +1083,11 @@ public class ResourceHeatMapGraphTest {
         new SubscriptionManager(new GRPCConnectionManager(false));
     subscriptionManager2.setCurrentLocus(rcaConf2.getTagMap().get("locus"));
 
-    AppContext appContextMaster = RcaTestHelper.setMyIp("192.168.0.4", AllMetrics.NodeRole.ELECTED_MASTER);
-
-    WireHopper wireHopper2 = new WireHopper(new NodeStateManager(new AppContext()), clientServers.getNetClient(),
+    WireHopper wireHopper2 = new WireHopper(new NodeStateManager(), clientServers.getNetClient(),
         subscriptionManager2,
         networkThreadPoolReference,
-        new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()), appContextMaster);
+        new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()));
 
-    InstanceDetails masterInstance = appContextMaster.getMyInstanceDetails();
     RCASchedulerTask rcaSchedulerTaskMaster =
         new RCASchedulerTask(
             1000,
@@ -1113,10 +1096,9 @@ public class ResourceHeatMapGraphTest {
             reader,
             persistable,
             rcaConf2,
-            wireHopper2,
-            appContextMaster);
-    AllMetrics.NodeRole nodeRole2 = masterInstance.getRole();
-    RcaTestHelper.setMyIp(masterInstance.getInstanceIp(), nodeRole2);
+            wireHopper2);
+    AllMetrics.NodeRole nodeRole2 = AllMetrics.NodeRole.ELECTED_MASTER;
+    RcaTestHelper.setMyIp("1c", nodeRole2);
     rcaSchedulerTaskMaster.run();
 
     URL url = null;

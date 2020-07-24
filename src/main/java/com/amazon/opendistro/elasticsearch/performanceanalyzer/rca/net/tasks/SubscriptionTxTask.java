@@ -15,7 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
@@ -25,7 +24,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeState
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscribeResponseHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.util.ClusterUtils;
-import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -57,19 +55,15 @@ public abstract class SubscriptionTxTask implements Runnable {
    */
   protected final NodeStateManager nodeStateManager;
 
-  private final AppContext appContext;
-
   public SubscriptionTxTask(
       final NetClient netClient,
       final IntentMsg intentMsg,
       final SubscriptionManager subscriptionManager,
-      final NodeStateManager nodeStateManager,
-      final AppContext appContext) {
+      final NodeStateManager nodeStateManager) {
     this.netClient = netClient;
     this.intentMsg = intentMsg;
     this.subscriptionManager = subscriptionManager;
     this.nodeStateManager = nodeStateManager;
-    this.appContext = appContext;
   }
 
   protected void sendSubscribeRequest(final String remoteHost, final String requesterVertex,
@@ -79,9 +73,9 @@ public abstract class SubscriptionTxTask implements Runnable {
                                                               .setDestinationNode(destinationVertex)
                                                               .setRequesterNode(requesterVertex)
                                                               .putTags("locus", tags.get("locus"))
-                                                              .putTags(
-                                                                  "requester",
-                                                                  appContext.getMyInstanceDetails().getInstanceIp())
+                                                              .putTags("requester",
+                                                                  ClusterUtils
+                                                                      .getCurrentNodeHostAddress())
                                                               .build();
     netClient.subscribe(remoteHost, subscribeMessage,
         new SubscribeResponseHandler(subscriptionManager, nodeStateManager, remoteHost,
@@ -89,9 +83,5 @@ public abstract class SubscriptionTxTask implements Runnable {
     PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR
         .updateStat(RcaGraphMetrics.RCA_NODES_SUB_REQ_COUNT,
             requesterVertex + ":" + destinationVertex, 1);
-  }
-
-  public List<String> getPeerIps() {
-    return appContext.getPeerInstanceIps();
   }
 }

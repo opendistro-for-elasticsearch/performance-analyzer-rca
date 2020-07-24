@@ -27,6 +27,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.util.HashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -86,7 +87,9 @@ public class NodeConfigCollector extends EsConfigNode {
     }
     if (counter == rcaPeriod) {
       counter = 0;
-      NodeConfigFlowUnit flowUnits = new NodeConfigFlowUnit(System.currentTimeMillis(), new NodeKey(getInstanceDetails()));
+      NodeConfigFlowUnit flowUnits = new NodeConfigFlowUnit(System.currentTimeMillis(),
+          new NodeKey(ClusterDetailsEventProcessor.getCurrentNodeDetails().getId(),
+              ClusterDetailsEventProcessor.getCurrentNodeDetails().getHostAddress()));
       configResult.forEach(flowUnits::addConfig);
       return flowUnits;
     }

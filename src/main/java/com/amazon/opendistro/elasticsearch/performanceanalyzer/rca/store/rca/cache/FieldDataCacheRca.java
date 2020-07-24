@@ -31,8 +31,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.google.common.annotations.VisibleForTesting;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -112,12 +112,13 @@ public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
             ResourceContext context;
             HotNodeSummary nodeSummary;
 
-            InstanceDetails instanceDetails = getInstanceDetails();
             Boolean exceedsSizeThreshold = isSizeThresholdExceeded(
                     fieldDataCacheSizeGroupByOperation, fieldDataCacheMaxSizeGroupByOperation, cacheSizeThreshold);
             if (cacheEvictionCollector.isUnhealthy(currTimestamp) && exceedsSizeThreshold) {
                 context = new ResourceContext(Resources.State.UNHEALTHY);
-                nodeSummary = new HotNodeSummary(instanceDetails.getInstanceId(), instanceDetails.getInstanceIp());
+                nodeSummary = new HotNodeSummary(
+                    ClusterDetailsEventProcessor.getCurrentNodeDetails().getId(),
+                    ClusterDetailsEventProcessor.getCurrentNodeDetails().getHostAddress());
                 nodeSummary.appendNestedSummary(cacheEvictionCollector.generateSummary(currTimestamp));
             }
             else {
@@ -126,7 +127,8 @@ public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
             }
 
             counter = 0;
-            return new ResourceFlowUnit<>(currTimestamp, context, nodeSummary, !instanceDetails.getIsMaster());
+            return new ResourceFlowUnit<>(currTimestamp, context, nodeSummary,
+                !ClusterDetailsEventProcessor.getCurrentNodeDetails().getIsMasterNode());
         }
         else {
             return new ResourceFlowUnit<>(currTimestamp);

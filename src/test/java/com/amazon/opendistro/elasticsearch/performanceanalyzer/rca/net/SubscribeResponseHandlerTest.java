@@ -1,6 +1,5 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
 import com.google.common.collect.Sets;
@@ -20,7 +19,7 @@ public class SubscribeResponseHandlerTest {
     public void setup() {
         GRPCConnectionManager grpcConnectionManager = new GRPCConnectionManager(true);
         subscriptionManager = new SubscriptionManager(grpcConnectionManager);
-        nodeStateManager = new NodeStateManager(new AppContext());
+        nodeStateManager = new NodeStateManager();
         uut = new SubscribeResponseHandler(subscriptionManager, nodeStateManager, HOST, NODE);
     }
 

@@ -1,6 +1,5 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
@@ -22,6 +21,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.WaitFor;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -81,13 +82,11 @@ public class WireHopperTest {
 
     @Before
     public void setup() {
-        AppContext appContext = new AppContext();
-        nodeStateManager = new NodeStateManager(appContext);
+        nodeStateManager = new NodeStateManager();
         receivedFlowUnitStore = new ReceivedFlowUnitStore();
         subscriptionManager = new SubscriptionManager(connectionManager);
         clientExecutor.set(null);
-        uut = new WireHopper(nodeStateManager, netClient, subscriptionManager, clientExecutor, receivedFlowUnitStore,
-            appContext);
+        uut = new WireHopper(nodeStateManager, netClient, subscriptionManager, clientExecutor, receivedFlowUnitStore);
     }
 
     @AfterClass
@@ -111,13 +110,10 @@ public class WireHopperTest {
         // verify method generates appropriate task
         clientExecutor.set(executorService);
         subscriptionManager.setCurrentLocus(RcaConsts.RcaTagConstants.LOCUS_DATA_NODE);
-
-        ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
-        clusterDetailsEventProcessor.setNodesDetails(Lists.newArrayList(
+        ClusterDetailsEventProcessor.setNodesDetails(Lists.newArrayList(
                 ClusterDetailsEventProcessorTestHelper.newNodeDetails(NODE1, LOCALHOST, false),
                 ClusterDetailsEventProcessorTestHelper.newNodeDetails(node.name(), LOCALHOST, false)
         ));
-        uut.getAppContext().setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
         uut.sendIntent(msg);
         WaitFor.waitFor(() -> subscriptionManager.getSubscribersFor(node.name()).size() == 1, 5,
                 TimeUnit.SECONDS);
@@ -142,13 +138,10 @@ public class WireHopperTest {
         subscriptionManager.setCurrentLocus(LOCUS);
         subscriptionManager.addSubscriber(NODE1, LOCALHOST, LOCUS);
         // verify sendData works
-        ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
-        clusterDetailsEventProcessor.setNodesDetails(Lists.newArrayList(
+        ClusterDetailsEventProcessor.setNodesDetails(Lists.newArrayList(
                 ClusterDetailsEventProcessorTestHelper.newNodeDetails(NODE1, LOCALHOST, false),
                 ClusterDetailsEventProcessorTestHelper.newNodeDetails(NODE2, LOCALHOST, false)
         ));
-        uut.getAppContext().setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
-
         uut.sendData(msg);
         WaitFor.waitFor(() -> nodeStateManager.getLastReceivedTimestamp(NODE1, LOCALHOST) != 0, 1,
                 TimeUnit.SECONDS);
@@ -172,13 +165,9 @@ public class WireHopperTest {
         uut.readFromWire(node);
         // Execute test method and verify return value
         clientExecutor.set(executorService);
-
-        ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
-        clusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(
+        ClusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(
                 ClusterDetailsEventProcessorTestHelper.newNodeDetails(
                         node.name(), LOCALHOST, false)));
-        uut.getAppContext().setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
-
         subscriptionManager.setCurrentLocus(RcaConsts.RcaTagConstants.LOCUS_DATA_NODE);
         subscriptionManager.addPublisher(node.name(), LOCALHOST);
         subscriptionManager.addPublisher(node.name(), HOST_NOT_IN_CLUSTER);

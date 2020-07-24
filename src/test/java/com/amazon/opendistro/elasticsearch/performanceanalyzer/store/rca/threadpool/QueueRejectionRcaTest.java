@@ -18,8 +18,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca.thread
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolDimension.THREAD_POOL_TYPE;
 import static java.time.Instant.ofEpochMilli;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
@@ -29,12 +27,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.threadpool.QueueRejectionRca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Before;
@@ -65,20 +62,9 @@ public class QueueRejectionRcaTest {
     threadPool_RejectedReqs = new MetricTestHelper(5);
     queueRejectionRca = new QueueRejectionRca(1, threadPool_RejectedReqs);
     columnName = Arrays.asList(THREAD_POOL_TYPE.toString(), MetricsDB.MAX);
-
-    ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
-    clusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(
-        new ClusterDetailsEventProcessor.NodeDetails(
-            AllMetrics.NodeRole.DATA,
-            "node1",
-            "127.0.0.1",
-            false
-        )
-    ));
-    AppContext appContext = new AppContext();
-    appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
-
-    queueRejectionRca.setAppContext(appContext);
+    ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
+    clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.0", false);
+    clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
   }
 
   @Test

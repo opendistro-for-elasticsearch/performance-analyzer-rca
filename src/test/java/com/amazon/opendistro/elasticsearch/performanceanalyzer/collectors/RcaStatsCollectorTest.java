@@ -15,9 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
@@ -36,10 +34,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.uti
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCASchedulerTask;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.MetricsDBProviderTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.measurements.MeasurementSet;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -102,17 +98,6 @@ public class RcaStatsCollectorTest {
         RcaUtil.getAnalysisGraphComponents(new FaultyAnalysisGraph());
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
 
-    ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
-    clusterDetailsEventProcessor.setNodesDetails(
-        Collections.singletonList(new ClusterDetailsEventProcessor.NodeDetails(
-            AllMetrics.NodeRole.UNKNOWN,
-            "node1",
-            "127.0.0.1",
-            false))
-    );
-    AppContext appContext = new AppContext();
-    appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
-
     RCASchedulerTask rcaSchedulerTask =
         new RCASchedulerTask(
             1000,
@@ -121,8 +106,7 @@ public class RcaStatsCollectorTest {
             new MetricsDBProviderTestHelper(true),
             null,
             rcaConf,
-            null,
-            appContext);
+            null);
     rcaSchedulerTask.run();
     StatsCollector statsCollector = new StatsCollector("test-stats", 0, new HashMap<>());
 

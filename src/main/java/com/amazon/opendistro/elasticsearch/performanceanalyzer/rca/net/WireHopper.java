@@ -15,13 +15,11 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.DataMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.UnicastIntentMsg;
@@ -29,7 +27,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks.Bro
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks.FlowUnitTxTask;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks.UnicastSubscriptionTxTask;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.util.ClusterUtils;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Set;
@@ -49,33 +46,26 @@ public class WireHopper {
   private final NodeStateManager nodeStateManager;
   private final AtomicReference<ExecutorService> executorReference;
   private final ReceivedFlowUnitStore receivedFlowUnitStore;
-  private final AppContext appContext;
 
   public WireHopper(
       final NodeStateManager nodeStateManager,
       final NetClient netClient,
       final SubscriptionManager subscriptionManager,
       final AtomicReference<ExecutorService> executorReference,
-      final ReceivedFlowUnitStore receivedFlowUnitStore,
-      final AppContext appContext) {
+      final ReceivedFlowUnitStore receivedFlowUnitStore) {
     this.netClient = netClient;
     this.subscriptionManager = subscriptionManager;
     this.nodeStateManager = nodeStateManager;
     this.executorReference = executorReference;
     this.receivedFlowUnitStore = receivedFlowUnitStore;
-    this.appContext = appContext;
   }
 
   public void sendIntent(IntentMsg msg) {
     ExecutorService executor = executorReference.get();
     if (executor != null) {
       try {
-        executor.execute(new BroadcastSubscriptionTxTask(
-            netClient,
-            msg,
-            subscriptionManager,
-            nodeStateManager,
-            appContext));
+        executor.execute(new BroadcastSubscriptionTxTask(netClient, msg, subscriptionManager,
+            nodeStateManager));
       } catch (final RejectedExecutionException ree) {
         LOG.warn("Dropped sending subscription because the threadpool queue is full");
         StatsCollector.instance()
@@ -88,18 +78,13 @@ public class WireHopper {
     ExecutorService executor = executorReference.get();
     if (executor != null) {
       try {
-        executor.execute(new FlowUnitTxTask(netClient, subscriptionManager, msg, appContext));
+        executor.execute(new FlowUnitTxTask(netClient, subscriptionManager, msg));
       } catch (final RejectedExecutionException ree) {
         LOG.warn("Dropped sending flow unit because the threadpool queue is full");
         StatsCollector.instance()
                       .logException(StatExceptionCode.RCA_NETWORK_THREADPOOL_QUEUE_FULL_ERROR);
       }
     }
-  }
-
-  @VisibleForTesting
-  public AppContext getAppContext() {
-    return appContext;
   }
 
   public List<FlowUnitMessage> readFromWire(Node<?> node) {
@@ -110,7 +95,7 @@ public class WireHopper {
     final Set<String> publisherSet = subscriptionManager.getPublishersForNode(nodeName);
 
     for (final String publisher : publisherSet) {
-      if (!ClusterUtils.isHostAddressInCluster(publisher, appContext.getAllClusterInstances())) {
+      if (!ClusterUtils.isHostAddressInCluster(publisher)) {
         subscriptionManager.unsubscribeAndTerminateConnection(nodeName, publisher);
       }
     }
@@ -123,12 +108,9 @@ public class WireHopper {
       final ExecutorService executor = executorReference.get();
       if (executor != null) {
         try {
-          executor.execute(new UnicastSubscriptionTxTask(
-              netClient,
-              new UnicastIntentMsg("", nodeName, node.getTags(), host),
-              subscriptionManager,
-              nodeStateManager,
-              appContext));
+          executor.execute(new UnicastSubscriptionTxTask(netClient, new UnicastIntentMsg("",
+              nodeName, node.getTags(), host),
+              subscriptionManager, nodeStateManager));
         } catch (final RejectedExecutionException ree) {
           LOG.warn("Dropped sending subscription request because the threadpool queue is "
               + "full");

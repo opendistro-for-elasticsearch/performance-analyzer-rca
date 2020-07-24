@@ -19,7 +19,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
@@ -28,47 +27,29 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
-import java.util.ArrayList;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
+import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
 public class QueueHealthDeciderTest {
-  AppContext appContext;
 
   @Before
-  public void setupCluster() {
-    ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
-    ClusterDetailsEventProcessor.NodeDetails node1 =
-        new ClusterDetailsEventProcessor.NodeDetails(NodeRole.DATA, "node1", "127.0.0.1", false);
-    ClusterDetailsEventProcessor.NodeDetails node2 =
-        new ClusterDetailsEventProcessor.NodeDetails(NodeRole.DATA, "node2", "127.0.0.2", false);
-    ClusterDetailsEventProcessor.NodeDetails node3 =
-        new ClusterDetailsEventProcessor.NodeDetails(NodeRole.DATA, "node3", "127.0.0.3", false);
-    ClusterDetailsEventProcessor.NodeDetails node4 =
-        new ClusterDetailsEventProcessor.NodeDetails(NodeRole.DATA, "node3", "127.0.0.4", false);
-    ClusterDetailsEventProcessor.NodeDetails master =
-        new ClusterDetailsEventProcessor.NodeDetails(NodeRole.ELECTED_MASTER, "master", "127.0.0.9", true);
-
-    List<ClusterDetailsEventProcessor.NodeDetails> nodes = new ArrayList<>();
-    nodes.add(node1);
-    nodes.add(node2);
-    nodes.add(node3);
-    nodes.add(node4);
-    nodes.add(master);
-    clusterDetailsEventProcessor.setNodesDetails(nodes);
-
-    appContext = new AppContext();
-    appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
+  public void setupCluster() throws SQLException, ClassNotFoundException {
+    ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
+    clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.1", false);
+    clusterDetailsEventProcessorTestHelper.addNodeDetails("node2", "127.0.0.2", false);
+    clusterDetailsEventProcessorTestHelper.addNodeDetails("node3", "127.0.0.3", false);
+    clusterDetailsEventProcessorTestHelper.addNodeDetails("node4", "127.0.0.4", false);
+    clusterDetailsEventProcessorTestHelper.addNodeDetails("master", "127.0.0.9", NodeRole.ELECTED_MASTER, true);
+    clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
   }
 
   @Test
   public void testHighRejectionRemediation() {
     RcaTestHelper<HotNodeSummary> nodeRca = new RcaTestHelper<>("QueueRejectionNodeRca");
-    nodeRca.setAppContext(appContext);
     // node1: Both write and search queues unhealthy
     // node2: Only write unhealthy
     // node3: Only search unhealthy
@@ -82,7 +63,6 @@ public class QueueHealthDeciderTest {
     );
 
     QueueRejectionClusterRca queueClusterRca = new QueueRejectionClusterRca(1, nodeRca);
-    queueClusterRca.setAppContext(appContext);
     queueClusterRca.generateFlowUnitListFromLocal(null);
     QueueHealthDecider decider = new QueueHealthDecider(5, 12, queueClusterRca);
 

@@ -15,13 +15,13 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rest;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsRestUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.Version;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -96,10 +96,8 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
   public static final String NAME_PARAM = "name";
   private Persistable persistable;
   private MetricsRestUtil metricsRestUtil;
-  private AppContext appContext;
 
-  public QueryRcaRequestHandler(final AppContext appContext) {
-    this.appContext = appContext;
+  public QueryRcaRequestHandler() {
     metricsRestUtil = new MetricsRestUtil();
   }
 
@@ -241,7 +239,9 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
 
   // check if we are querying from elected master
   private boolean validNodeRole() {
-    return appContext.getMyInstanceDetails().getIsMaster();
+    ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor
+        .getCurrentNodeDetails();
+    return currentNode.getIsMasterNode();
   }
 
   private JsonElement getRcaData(Persistable persistable, List<String> rcaList) {

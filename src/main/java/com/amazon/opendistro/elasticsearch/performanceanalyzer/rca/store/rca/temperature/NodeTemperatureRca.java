@@ -24,11 +24,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.CompactNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.FullNodeTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.NodeLevelDimensionalSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.HeapAllocRateTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.ShardSizeDimensionTemperatureRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -128,11 +128,11 @@ public class NodeTemperatureRca extends Rca<CompactNodeTemperatureFlowUnit> {
 
   private FullNodeTemperatureSummary buildNodeProfile(
       List<NodeLevelDimensionalSummary> dimensionProfiles) {
-
-    InstanceDetails instanceDetails = getInstanceDetails();
+    ClusterDetailsEventProcessor.NodeDetails currentNodeDetails =
+        ClusterDetailsEventProcessor.getCurrentNodeDetails();
     FullNodeTemperatureSummary nodeProfile = new FullNodeTemperatureSummary(
-        instanceDetails.getInstanceId(),
-        instanceDetails.getInstanceIp());
+        currentNodeDetails.getId(),
+        currentNodeDetails.getHostAddress());
     for (NodeLevelDimensionalSummary profile : dimensionProfiles) {
       nodeProfile.updateNodeDimensionProfile(profile);
     }

@@ -17,8 +17,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
 import static org.junit.Assert.assertEquals;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
@@ -30,7 +28,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.DataMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
@@ -221,7 +218,7 @@ public class RCASchedulerTaskTests {
       }
 
       private WireHopperDerived(List<IntentMsg> intentMsg, DataMsg dataMsg) {
-        super(null, null, null, null, null, new AppContext());
+        super(null, null, null, null, null);
         this.intentMsgs = intentMsg;
         this.dataMsg = dataMsg;
       }
@@ -253,8 +250,7 @@ public class RCASchedulerTaskTests {
             null,
             null,
             conf,
-            wireHopper,
-            new AppContext());
+            wireHopper);
       }
     }
 

@@ -18,9 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca;
 
 import static java.time.Instant.ofEpochMilli;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.RcaTestHelper;
@@ -32,14 +30,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,34 +42,21 @@ import org.junit.experimental.categories.Category;
 
 @Category(GradleTaskForRca.class)
 public class HotNodeClusterRcaTest {
-  private AppContext appContext;
+
 
   @Before
-  public void setupCluster() {
-    ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
-    ClusterDetailsEventProcessor.NodeDetails node1 =
-        new ClusterDetailsEventProcessor.NodeDetails(AllMetrics.NodeRole.DATA, "node1", "127.0.0.0", false);
-    ClusterDetailsEventProcessor.NodeDetails node2 =
-        new ClusterDetailsEventProcessor.NodeDetails(AllMetrics.NodeRole.DATA, "node2", "127.0.0.1", false);
-    ClusterDetailsEventProcessor.NodeDetails node3 =
-        new ClusterDetailsEventProcessor.NodeDetails(AllMetrics.NodeRole.DATA, "node3", "127.0.0.2", false);
-
-    List<ClusterDetailsEventProcessor.NodeDetails> nodes = new ArrayList<>();
-    nodes.add(node1);
-    nodes.add(node2);
-    nodes.add(node3);
-    clusterDetailsEventProcessor.setNodesDetails(nodes);
-
-    appContext = new AppContext();
-    appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
+  public void setupCluster() throws SQLException, ClassNotFoundException {
+    ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
+    clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.0", false);
+    clusterDetailsEventProcessorTestHelper.addNodeDetails("node2", "127.0.0.1", false);
+    clusterDetailsEventProcessorTestHelper.addNodeDetails("node3", "127.0.0.2", false);
+    clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
   }
 
   @Test
   public void testNodeCntThresholdAndTimestampExpiration() {
     RcaTestHelper nodeRca = new RcaTestHelper();
-    nodeRca.setAppContext(appContext);
     HotNodeClusterRcaX clusterRca = new HotNodeClusterRcaX(1, nodeRca);
-    clusterRca.setAppContext(appContext);
 
     Clock constantClock = Clock.fixed(ofEpochMilli(0), ZoneId.systemDefault());
     clusterRca.setClock(constantClock);
@@ -96,9 +78,7 @@ public class HotNodeClusterRcaTest {
   public void testCaptureHotNode() {
     ResourceFlowUnit fu;
     RcaTestHelper nodeRca = new RcaTestHelper();
-    nodeRca.setAppContext(appContext);
     HotNodeClusterRcaX clusterRca = new HotNodeClusterRcaX(1, nodeRca);
-    clusterRca.setAppContext(appContext);
 
     //medium = 5, below the 30% threshold
     nodeRca.mockFlowUnit(generateFlowUnit(ResourceUtil.OLD_GEN_HEAP_USAGE, 4, "node1"));
@@ -130,9 +110,7 @@ public class HotNodeClusterRcaTest {
   //check whether can filter out noise data if the resource usage is very small
   public void testFilterNoiseData() {
     RcaTestHelper nodeRca = new RcaTestHelper();
-    nodeRca.setAppContext(appContext);
     HotNodeClusterRcaX clusterRca = new HotNodeClusterRcaX(1, nodeRca);
-    clusterRca.setAppContext(appContext);
 
     //medium = 0.2, 0.8 is above the 30% threshold. but since the data is too small, we will drop it
     nodeRca.mockFlowUnit(generateFlowUnit(ResourceUtil.OLD_GEN_HEAP_USAGE, 0.1, "node1"));

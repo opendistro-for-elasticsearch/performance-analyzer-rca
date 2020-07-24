@@ -15,7 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.util.ClusterUtils;
 import com.google.common.annotations.VisibleForTesting;
@@ -44,12 +43,6 @@ public class NodeStateManager {
    */
   private final ConcurrentMap<String, AtomicReference<SubscriptionStatus>> subscriptionStatusMap =
       new ConcurrentHashMap<>();
-
-  private final AppContext appContext;
-
-  public NodeStateManager(final AppContext appContext) {
-    this.appContext = appContext;
-  }
 
   /**
    * Updates the timestamp for the composite key: (host, vertex) marking when the last successful
@@ -121,12 +114,12 @@ public class NodeStateManager {
     for (final String publisher : publishers) {
       long lastRxTimestamp = getLastReceivedTimestamp(graphNode, publisher);
       if (lastRxTimestamp > 0 && currentTime - lastRxTimestamp > maxIdleDuration && ClusterUtils
-          .isHostAddressInCluster(publisher, appContext.getAllClusterInstances())) {
+          .isHostAddressInCluster(publisher)) {
         hostsToSubscribeTo.add(publisher);
       }
     }
 
-    final List<String> peers = appContext.getPeerInstanceIps();
+    final List<String> peers = ClusterUtils.getAllPeerHostAddresses();
     if (peers != null) {
       for (final String peerHost : peers) {
         String compositeKey = graphNode + SEPARATOR + peerHost;
@@ -137,10 +130,5 @@ public class NodeStateManager {
     }
 
     return ImmutableList.copyOf(hostsToSubscribeTo);
-  }
-
-  @VisibleForTesting
-  public AppContext getAppContext() {
-    return appContext;
   }
 }

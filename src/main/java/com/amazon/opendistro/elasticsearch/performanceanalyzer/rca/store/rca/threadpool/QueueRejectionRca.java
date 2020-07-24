@@ -18,7 +18,9 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.th
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolDimension.THREAD_POOL_TYPE;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
@@ -31,8 +33,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.google.common.annotations.VisibleForTesting;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -85,12 +87,16 @@ public class QueueRejectionRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
     }
     if (counter == rcaPeriod) {
       counter = 0;
-      InstanceDetails instanceDetails = getInstanceDetails();
-      HotNodeSummary nodeSummary = new HotNodeSummary(instanceDetails.getInstanceId(), instanceDetails.getInstanceIp());
+      ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor
+          .getCurrentNodeDetails();
       boolean hasUnhealthyQueue = false;
+      HotNodeSummary nodeSummary = null;
       for (QueueRejectionCollector collector : queueRejectionCollectors) {
         // if we've see thread pool rejection in the last 5 mins, the thread pool is considered as contended
         if (collector.isUnhealthy(currTimestamp)) {
+          if (nodeSummary == null) {
+            nodeSummary = new HotNodeSummary(currentNode.getId(), currentNode.getHostAddress());
+          }
           nodeSummary.appendNestedSummary(collector.generateSummary(currTimestamp));
           hasUnhealthyQueue = true;
         }
@@ -102,7 +108,7 @@ public class QueueRejectionRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
       else {
         context = new ResourceContext(Resources.State.UNHEALTHY);
       }
-      boolean isDataNode = !instanceDetails.getIsMaster();
+      boolean isDataNode = !currentNode.getIsMasterNode();
       return new ResourceFlowUnit<>(currTimestamp, context, nodeSummary, isDataNode);
     }
     else {

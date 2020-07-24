@@ -2,7 +2,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca.remedi
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolDimension.THREAD_POOL_TYPE;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -18,9 +17,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+@Ignore
 @Category(GradleTaskForRca.class)
 public class NodeConfigCollectorTest {
 
@@ -29,16 +30,6 @@ public class NodeConfigCollectorTest {
 
   @Before
   public void init() {
-    threadPool_QueueCapacity = new ThreadPool_QueueCapacity();
-    nodeConfigCollector = new NodeConfigCollector(1, threadPool_QueueCapacity);
-
-    ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
-    ClusterDetailsEventProcessor.NodeDetails node1 =
-        new ClusterDetailsEventProcessor.NodeDetails(AllMetrics.NodeRole.DATA, "node1", "127.0.0.0", false);
-    clusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(node1));
-    AppContext appContext = new AppContext();
-    appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
-    nodeConfigCollector.setAppContext(appContext);
   }
 
   /**

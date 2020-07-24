@@ -15,7 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
@@ -27,13 +26,13 @@ import java.util.Map;
  * Task that broadcasts a subscription request to the current node's peers.
  */
 public class BroadcastSubscriptionTxTask extends SubscriptionTxTask {
+
   public BroadcastSubscriptionTxTask(
       NetClient netClient,
       IntentMsg intentMsg,
       SubscriptionManager subscriptionManager,
-      NodeStateManager nodeStateManager,
-      final AppContext appContext) {
-    super(netClient, intentMsg, subscriptionManager, nodeStateManager, appContext);
+      NodeStateManager nodeStateManager) {
+    super(netClient, intentMsg, subscriptionManager, nodeStateManager);
   }
 
   /**
@@ -47,7 +46,7 @@ public class BroadcastSubscriptionTxTask extends SubscriptionTxTask {
     final String destinationVertex = intentMsg.getDestinationNode();
     final Map<String, String> tags = intentMsg.getRcaConfTags();
 
-    for (final String remoteHost : getPeerIps()) {
+    for (final String remoteHost : ClusterUtils.getAllPeerHostAddresses()) {
       sendSubscribeRequest(remoteHost, requesterVertex, destinationVertex, tags);
     }
   }

@@ -15,7 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerThreads;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
@@ -34,7 +33,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ThresholdMain;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
@@ -44,14 +42,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCA
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.MetricsDBProviderTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeRca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.WaitFor;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Assert;
@@ -140,8 +135,7 @@ public class PersistFlowUnitAndSummaryTest {
     queryable = new MetricsDBProviderTestHelper(false);
   }
 
-  private RCAScheduler startScheduler(RcaConf rcaConf, AnalysisGraph graph, Persistable persistable,
-                                      Queryable queryable, AppContext appContext) {
+  private RCAScheduler startScheduler(RcaConf rcaConf, AnalysisGraph graph, Persistable persistable, Queryable queryable, NodeRole role) {
     RCAScheduler scheduler =
         new RCAScheduler(
             RcaUtil.getAnalysisGraphComponents(graph),
@@ -150,10 +144,8 @@ public class PersistFlowUnitAndSummaryTest {
             new ThresholdMain(
                 Paths.get(RcaConsts.TEST_CONFIG_PATH, "thresholds").toString(), rcaConf),
             persistable,
-            new WireHopper(null, null, null, null,
-                null, appContext),
-            appContext
-            );
+            new WireHopper(null, null, null, null, null));
+    scheduler.setRole(role);
     ThreadProvider threadProvider = new ThreadProvider();
     Thread rcaSchedulerThread =
         threadProvider.createThreadForRunnable(scheduler::start, PerformanceAnalyzerThreads.RCA_SCHEDULER);
@@ -161,46 +153,24 @@ public class PersistFlowUnitAndSummaryTest {
     return scheduler;
   }
 
-  private AppContext createAppContextWithDataNodes(String nodeName, NodeRole role, boolean isMaster) {
-    ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
-    List<ClusterDetailsEventProcessor.NodeDetails> nodes = new ArrayList<>();
-
-    ClusterDetailsEventProcessor.NodeDetails node1 =
-        new ClusterDetailsEventProcessor.NodeDetails(role, nodeName, "127.0.0.0", isMaster);
-    nodes.add(node1);
-
-    clusterDetailsEventProcessor.setNodesDetails(nodes);
-
-    AppContext appContext = new AppContext();
-    appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
-    return appContext;
-  }
-
-  /**
-   * Add testPersistSummaryOnDataNode() and testPersistSummaryOnMasterNode() into a single UT
-   * This will force both tests to run in sequential and can avoid access contention to the
-   * same db file.
-   * @throws Exception SQL exception
-   */
   @Test
-  public void testPersisSummary() throws Exception {
+  public void testPersistSummaryOnDataNode() throws Exception {
+    try {
+      ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
+      clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.0", false);
+      clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
+    } catch (Exception e) {
+      Assert.assertTrue("got exception when generating cluster details event", false);
+      return;
+    }
+    AnalysisGraph graph = new DataNodeGraph();
     RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString());
     RcaConf masterRcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_elected_master.conf").toString());
     Persistable persistable = PersistenceFactory.create(rcaConf);
-    testPersistSummaryOnDataNode(rcaConf, persistable);
-    testPersistSummaryOnMasterNode(masterRcaConf, persistable);
-    persistable.close();
-  }
-
-  private void testPersistSummaryOnDataNode(RcaConf rcaConf, Persistable persistable) throws Exception {
-    AppContext appContext = createAppContextWithDataNodes("node1", NodeRole.DATA, false);
-
-    AnalysisGraph graph = new DataNodeGraph();
-    RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, appContext);
+    RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, AllMetrics.NodeRole.DATA);
     // Wait at most 1 minute for the persisted data to show up with the correct contents
     WaitFor.waitFor(() -> {
       String readTableStr = persistable.read();
-      System.out.println(readTableStr);
       if (readTableStr != null) {
         // HighHeapUsageClusterRcaX is a cluster level RCA so it should not be scheduled and persisted on
         // data node.
@@ -213,10 +183,20 @@ public class PersistFlowUnitAndSummaryTest {
     persistable.close();
   }
 
-  private void testPersistSummaryOnMasterNode(RcaConf rcaConf, Persistable persistable) throws Exception {
-    AppContext appContext = createAppContextWithDataNodes("node1", NodeRole.DATA, true);
+  @Test
+  public void testPersistSummaryOnMasterNode() throws Exception {
+    try {
+      ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
+      clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.0", true);
+      clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
+    } catch (Exception e) {
+      Assert.assertTrue("got exception when generating cluster details event", false);
+      return;
+    }
     AnalysisGraph graph = new MasterNodeGraph();
-    RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, appContext);
+    RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_elected_master.conf").toString());
+    Persistable persistable = PersistenceFactory.create(rcaConf);
+    RCAScheduler scheduler = startScheduler(rcaConf, graph, persistable, this.queryable, NodeRole.ELECTED_MASTER);
     // Wait at most 1 minute for the persisted data to show up with the correct contents
     WaitFor.waitFor(() -> {
       String readTableStr = persistable.read();

@@ -22,8 +22,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
@@ -114,12 +115,12 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
     }
   }
 
-  private List<InstanceDetails> getClusterNodesDetails() {
+  private List<NodeDetails> getClusterNodesDetails() {
     if (collectFromMasterNode) {
-      return getAllClusterInstances();
+      return ClusterDetailsEventProcessor.getNodesDetails();
     }
     else {
-      return getDataNodeInstances();
+      return ClusterDetailsEventProcessor.getDataNodesDetails();
     }
   }
 
@@ -129,8 +130,8 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
   private void removeInactiveNodeFromNodeMap() {
     Set<String> nodeIdSet = new HashSet<>();
     List<NodeKey> inactiveNodes = new ArrayList<>();
-    for (InstanceDetails nodeDetail : getClusterNodesDetails()) {
-      nodeIdSet.add(nodeDetail.getInstanceId());
+    for (NodeDetails nodeDetail : getClusterNodesDetails()) {
+      nodeIdSet.add(nodeDetail.getId());
     }
     for (NodeKey nodeKey : nodeTable.rowKeySet()) {
       if (!nodeIdSet.contains(nodeKey.getNodeId())) {
@@ -150,10 +151,10 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
   private ResourceFlowUnit<HotClusterSummary> generateFlowUnit() {
     List<HotNodeSummary> unhealthyNodeSummaries = new ArrayList<>();
     long timestamp = clock.millis();
-    List<InstanceDetails> clusterNodesDetails = getClusterNodesDetails();
+    List<NodeDetails> clusterNodesDetails = getClusterNodesDetails();
     // iterate through this table
-    for (InstanceDetails nodeDetails : clusterNodesDetails) {
-      NodeKey nodeKey = new NodeKey(nodeDetails.getInstanceId(), nodeDetails.getInstanceIp());
+    for (NodeDetails nodeDetails : clusterNodesDetails) {
+      NodeKey nodeKey = new NodeKey(nodeDetails.getId(), nodeDetails.getHostAddress());
       // skip if the node is not found in table
       if (!nodeTable.containsRow(nodeKey)) {
         continue;

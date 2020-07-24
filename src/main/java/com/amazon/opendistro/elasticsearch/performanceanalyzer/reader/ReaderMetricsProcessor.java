@@ -15,7 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
@@ -67,8 +66,6 @@ public class ReaderMetricsProcessor implements Runnable {
   private static final Map<String, Double> TIMING_STATS = new HashMap<>();
   private static final Map<String, String> STATS_DATA = new HashMap<>();
 
-  private final AppContext appContext;
-
   static {
     STATS_DATA.put("MethodName", "ProcessMetrics");
   }
@@ -86,10 +83,10 @@ public class ReaderMetricsProcessor implements Runnable {
   }
 
   public ReaderMetricsProcessor(String rootLocation) throws Exception {
-    this(rootLocation, false, null);
+    this(rootLocation, false);
   }
 
-  public ReaderMetricsProcessor(String rootLocation, boolean processNewFormat, final AppContext appContext) throws Exception {
+  public ReaderMetricsProcessor(String rootLocation, boolean processNewFormat) throws Exception {
     conn = DriverManager.getConnection(DB_URL);
     create = DSL.using(conn, SQLDialect.SQLITE);
     metricsDBMap = new ConcurrentSkipListMap<>();
@@ -106,7 +103,6 @@ public class ReaderMetricsProcessor implements Runnable {
     }
     eventLogFileHandler = new EventLogFileHandler(new EventLog(), rootLocation);
     this.processNewFormat = processNewFormat;
-    this.appContext = appContext;
   }
 
   @Override
@@ -437,9 +433,6 @@ public class ReaderMetricsProcessor implements Runnable {
         NodeMetricsEventProcessor.buildNodeMetricEventsProcessor(
             currWindowStartTime, conn, nodeMetricsMap);
     EventProcessor clusterDetailsEventsProcessor = new ClusterDetailsEventProcessor();
-    if (appContext != null) {
-      appContext.setClusterDetailsEventProcessor((ClusterDetailsEventProcessor) clusterDetailsEventsProcessor);
-    }
 
     // The event dispatcher dispatches events to each of the registered event processors.
     // In addition to event processing each processor has an initialize/finalize function that is

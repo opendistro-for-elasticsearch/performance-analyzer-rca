@@ -2,7 +2,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaTestHelper.updateConfFileForMutedRcas;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.ClientServers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerThreads;
@@ -72,7 +71,7 @@ public class RcaControllerTest {
             3, new ThreadFactoryBuilder().setNameFormat("test-network-thread-%d").build());
     boolean useHttps = PluginSettings.instance().getHttpsEnabled();
     connectionManager = new GRPCConnectionManager(useHttps);
-    clientServers = PerformanceAnalyzerApp.createClientServers(connectionManager, new AppContext());
+    clientServers = PerformanceAnalyzerApp.createClientServers(connectionManager);
     clientServers.getHttpServer().start();
 
     URI uri = URI.create(RcaController.getCatMasterUrl());
@@ -113,8 +112,7 @@ public class RcaControllerTest {
             clientServers,
             rcaEnabledFileLoc.toString(),
             100,
-            200,
-            new AppContext()
+            200
         );
 
     setMyIp(masterIP, AllMetrics.NodeRole.UNKNOWN);
@@ -370,7 +368,6 @@ public class RcaControllerTest {
     ClusterDetailsEventProcessor eventProcessor = new ClusterDetailsEventProcessor();
     eventProcessor.processEvent(
         new Event("", jtime.toString() + System.lineSeparator() + jNode.toString(), 0));
-    rcaController.getAppContext().setClusterDetailsEventProcessor(eventProcessor);
   }
 
   enum RcaState {
@@ -394,7 +391,7 @@ public class RcaControllerTest {
   private <T> boolean check(IEval eval, T expected) {
     final long SLEEP_TIME_MILLIS = 1000;
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 2; i++) {
       if (eval.evaluateAndCheck(expected)) {
         return true;
       }

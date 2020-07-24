@@ -28,8 +28,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import java.util.ArrayList;
@@ -184,7 +184,7 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>>
             List<HotResourceSummary> hotShardSummaryList = new ArrayList<>();
             ResourceContext context;
             HotClusterSummary summary = new HotClusterSummary(
-                getAllClusterInstances().size(), unhealthyNodes.size());
+                    ClusterDetailsEventProcessor.getNodesDetails().size(), unhealthyNodes.size());
 
             // We evaluate hot shards individually on all the 3 dimensions
             findHotShardAndCreateSummary(
@@ -203,10 +203,8 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>>
                 context = new ResourceContext(Resources.State.HEALTHY);
             } else {
                 context = new ResourceContext(Resources.State.UNHEALTHY);
-
-                InstanceDetails instanceDetails = getInstanceDetails();
-                HotNodeSummary nodeSummary = new HotNodeSummary(instanceDetails.getInstanceId(),
-                    instanceDetails.getInstanceIp());
+                ClusterDetailsEventProcessor.NodeDetails currentNode = ClusterDetailsEventProcessor.getCurrentNodeDetails();
+                HotNodeSummary nodeSummary = new HotNodeSummary(currentNode.getId(), currentNode.getHostAddress());
                 for (HotResourceSummary hotResourceSummary : hotShardSummaryList) {
                     nodeSummary.appendNestedSummary(hotResourceSummary);
                 }

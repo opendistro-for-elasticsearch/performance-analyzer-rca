@@ -15,7 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
@@ -54,17 +53,13 @@ public class FlowUnitTxTask implements Runnable {
    */
   private final DataMsg dataMsg;
 
-  private final AppContext appContext;
-
   public FlowUnitTxTask(
       final NetClient client,
       final SubscriptionManager subscriptionManager,
-      final DataMsg dataMsg,
-      final AppContext appContext) {
+      final DataMsg dataMsg) {
     this.client = client;
     this.subscriptionManager = subscriptionManager;
     this.dataMsg = dataMsg;
-    this.appContext = appContext;
   }
 
   /**
@@ -75,8 +70,7 @@ public class FlowUnitTxTask implements Runnable {
   @Override
   public void run() {
     final String sourceNode = dataMsg.getSourceNode();
-    final String esNode = appContext.getMyInstanceDetails().getInstanceIp();
-
+    final String esNode = ClusterUtils.getCurrentNodeHostAddress();
     if (subscriptionManager.isNodeSubscribed(sourceNode)) {
       final Set<String> downstreamHostAddresses = subscriptionManager
           .getSubscribersFor(sourceNode);
