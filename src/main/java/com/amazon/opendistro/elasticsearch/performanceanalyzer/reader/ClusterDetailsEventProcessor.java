@@ -161,7 +161,7 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
       this.role = role.toString();
     }
 
-    public NodeDetails(NodeDetails other) {
+    public NodeDetails(final NodeDetails other) {
       this.id = other.id;
       this.hostAddress = other.hostAddress;
       this.isMasterNode = other.isMasterNode;
