@@ -113,7 +113,11 @@ public class Stats {
   }
 
   public int getMutedGraphNodesCount() {
-    return mutedGraphNodes.size();
+    int count = 0;
+    if (mutedGraphNodes != null) {
+      count = mutedGraphNodes.size();
+    }
+    return count;
   }
 
   public static void clear() {

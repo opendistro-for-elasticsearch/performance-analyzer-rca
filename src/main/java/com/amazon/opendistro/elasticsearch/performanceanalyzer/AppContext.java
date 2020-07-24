@@ -43,6 +43,13 @@ public class AppContext {
     this.nodeConfigCache = new NodeConfigCache();
   }
 
+  public AppContext(AppContext other) {
+    this.clusterDetailsEventProcessor = new ClusterDetailsEventProcessor(other.clusterDetailsEventProcessor);
+
+    // Initializing this as we don't want to copy the entire cache.
+    this.nodeConfigCache = new NodeConfigCache();
+  }
+
   public void setClusterDetailsEventProcessor(final ClusterDetailsEventProcessor clusterDetailsEventProcessor) {
     this.clusterDetailsEventProcessor = clusterDetailsEventProcessor;
   }

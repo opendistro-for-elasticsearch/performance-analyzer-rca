@@ -49,4 +49,14 @@ public class InstanceDetails {
   public boolean getIsMaster() {
     return isMaster;
   }
+
+  @Override
+  public String toString() {
+    return "InstanceDetails{"
+            + "role=" + role
+            + ", InstanceId='" + InstanceId + '\''
+            + ", instanceIp='" + instanceIp + '\''
+            + ", isMaster=" + isMaster
+            + '}';
+  }
 }

@@ -181,7 +181,9 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     queueHealthDecider.addAllUpstreams(Collections.singletonList(queueRejectionClusterRca));
 
     constructShardResourceUsageGraph();
-    constructResourceHeatMapGraph();
+
+    // The temperature profile is not stable. It is turned OFF for now.
+    // constructResourceHeatMapGraph();
 
     // Collator - Collects actions from all deciders and aligns impact vectors
     Collator collator = new Collator(EVALUATION_INTERVAL_SECONDS, queueHealthDecider);

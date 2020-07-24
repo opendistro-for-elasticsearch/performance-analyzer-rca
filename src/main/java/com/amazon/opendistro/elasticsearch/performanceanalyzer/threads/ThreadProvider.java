@@ -46,6 +46,7 @@ public class ThreadProvider {
       try {
         innerRunnable.run();
       } catch (Throwable innerThrowable) {
+        LOG.error("A thread crashed: ", innerThrowable);
         try {
           PerformanceAnalyzerApp.exceptionQueue.put(new PAThreadException(paThread,
               innerThrowable));
