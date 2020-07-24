@@ -6,7 +6,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaRuntimeMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.collectors.SampleAggregator;
@@ -34,9 +33,6 @@ public class RcaEnabledSamplerTest {
 
     @Test
     public void testIsRcaEnabled() {
-        RcaController rcaController = new RcaController();
-        PerformanceAnalyzerApp.setRcaController(rcaController);
-
         assertFalse(uut.isRcaEnabled());
         ClusterDetailsEventProcessor.NodeDetails details =
                 ClusterDetailsEventProcessorTestHelper.newNodeDetails("", "", false);
@@ -48,17 +44,15 @@ public class RcaEnabledSamplerTest {
         assertFalse(uut.isRcaEnabled());
         details = ClusterDetailsEventProcessorTestHelper.newNodeDetails("", "", true);
         clusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(details));
-        assertEquals(rcaController.isRcaEnabled(), uut.isRcaEnabled());
+        assertEquals(RcaController.isRcaEnabled(), uut.isRcaEnabled());
     }
 
     @Test
     public void testSample() {
-        RcaController rcaController = new RcaController();
-        PerformanceAnalyzerApp.setRcaController(rcaController);
-
+        ClusterDetailsEventProcessor.NodeDetails details =
+                ClusterDetailsEventProcessorTestHelper.newNodeDetails("", "", true);
         uut.sample(sampleAggregator);
         verify(sampleAggregator, times(1))
-                .updateStat(RcaRuntimeMetrics.RCA_ENABLED, "",
-                    PerformanceAnalyzerApp.getRcaController().isRcaEnabled() ? 1 : 0);
+                .updateStat(RcaRuntimeMetrics.RCA_ENABLED, "", RcaController.isRcaEnabled() ? 1 : 0);
     }
 }

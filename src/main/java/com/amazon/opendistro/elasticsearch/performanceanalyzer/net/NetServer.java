@@ -89,13 +89,10 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
    */
   protected Server server;
 
-  private volatile boolean attemptedShutdown;
-
   public NetServer(final int port, final int numServerThreads, final boolean useHttps) {
     this.port = port;
     this.numServerThreads = numServerThreads;
     this.useHttps = useHttps;
-    this.attemptedShutdown = false;
   }
 
   // postStartHook executes after the NetServer has successfully started its Server
@@ -134,10 +131,7 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
       server.awaitTermination();
       LOG.info("gRPC server terminating..");
     } catch (InterruptedException | IOException e) {
-      if (!this.attemptedShutdown) {
-        // print stack trace only if this wasn't meant to be.
-        LOG.error("GrpcServer interrupted", e);
-      }
+      LOG.error("gRPC server failed to start", e);
       server.shutdownNow();
       shutdownHook();
     }
@@ -273,9 +267,5 @@ public class NetServer extends InterNodeRpcServiceGrpc.InterNodeRpcServiceImplBa
         Thread.currentThread().interrupt();
       }
     }
-  }
-
-  public void setAttemptedShutdown() {
-    attemptedShutdown = true;
   }
 }

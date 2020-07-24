@@ -141,6 +141,7 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
       isMasterNode = isMasterNodeObject != null ? (Boolean) isMasterNodeObject : null;
     }
 
+    @VisibleForTesting
     public NodeDetails(AllMetrics.NodeRole role, String id, String hostAddress, boolean isMaster) {
       this.id = id;
       this.hostAddress = hostAddress;
