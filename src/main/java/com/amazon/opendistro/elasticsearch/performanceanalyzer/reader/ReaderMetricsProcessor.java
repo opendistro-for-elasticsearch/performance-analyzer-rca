@@ -463,6 +463,11 @@ public class ReaderMetricsProcessor implements Runnable {
 
     emitMetrics(currWindowStartTime);
 
+    // There are cases, such as tests where appContext may not be initialized.
+    // We always create a new ClusterDetailsEventsProcessor object above but we may not always
+    // process the writer file, in which case the recently initialized
+    // ClusterDetailsEventsProcessor does not contain valid values. Therefore, the empty check
+    // for nodeDetails is required.
     if (appContext != null && !clusterDetailsEventsProcessor.getNodesDetails().isEmpty()) {
       appContext.setClusterDetailsEventProcessor(clusterDetailsEventsProcessor);
     }

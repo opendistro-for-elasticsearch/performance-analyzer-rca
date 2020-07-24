@@ -44,12 +44,11 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
 
   public ClusterDetailsEventProcessor(final ClusterDetailsEventProcessor other) {
     if (other.nodesDetails != null) {
-      List<NodeDetails> nodeDetails = new ArrayList<>();
+      ImmutableList.Builder builder = new ImmutableList.Builder<NodeDetails>();
       for (final NodeDetails oldDetails : other.nodesDetails) {
-        NodeDetails copiedNodeDetails = new NodeDetails(oldDetails);
-        nodeDetails.add(copiedNodeDetails);
+        builder.add(new NodeDetails(oldDetails));
       }
-      this.nodesDetails = ImmutableList.copyOf(nodeDetails);
+      this.nodesDetails = builder.build();
     }
   }
 
@@ -162,10 +161,12 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
     }
 
     public NodeDetails(final NodeDetails other) {
-      this.id = other.id;
-      this.hostAddress = other.hostAddress;
-      this.isMasterNode = other.isMasterNode;
-      this.role = other.role;
+      if (other != null) {
+        this.id = other.id;
+        this.hostAddress = other.hostAddress;
+        this.isMasterNode = other.isMasterNode;
+        this.role = other.role;
+      }
     }
 
     @Override
