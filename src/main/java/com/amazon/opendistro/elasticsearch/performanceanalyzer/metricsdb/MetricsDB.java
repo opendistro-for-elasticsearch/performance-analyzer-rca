@@ -21,6 +21,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsC
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.Removable;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.ArrayList;
@@ -239,6 +240,10 @@ public class MetricsDB implements Removable {
     return create.select().from(DSL.table(metric)).fetch();
   }
 
+  public Result<Record> queryMetric(String metric, int limit) {
+    return create.select().from(DSL.table(metric)).limit(limit).fetch();
+  }
+
   public void commit() throws Exception {
     conn.commit();
   }
@@ -265,5 +270,29 @@ public class MetricsDB implements Removable {
 
   public boolean metricExists(String metric) {
     return DBUtils.checkIfTableExists(create, metric);
+  }
+
+  public static void deleteOnDiskFile(long windowStartTime) {
+    String dbFilePath = PluginSettings.instance()
+            .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT)
+            + Long.toString(windowStartTime);
+    File dbFile = new File(dbFilePath);
+    if (!dbFile.delete()) {
+      LOG.error(
+              "Failed to delete File - {} with ExceptionCode: {}",
+              dbFilePath,
+              StatExceptionCode.OTHER.toString());
+      StatsCollector.instance().logException();
+    }
+  }
+
+  public static MetricsDB fetchExisting(long windowStartTime) throws Exception {
+    String filePath = PluginSettings.instance()
+            .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT)
+            + Long.toString(windowStartTime);
+    if (!(new File(filePath)).exists()) {
+      throw new FileNotFoundException(String.format("MetricsDB file %s could not be found.", filePath));
+    }
+    return new MetricsDB(windowStartTime);
   }
 }

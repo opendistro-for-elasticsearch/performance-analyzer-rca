@@ -20,6 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatEx
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.overrides.ConfigOverridesApplier;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MetricName;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
@@ -28,14 +29,17 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metrics
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.EventLog;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.EventLogFileHandler;
 import com.google.common.annotations.VisibleForTesting;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
@@ -70,6 +74,13 @@ public class ReaderMetricsProcessor implements Runnable {
 
   private final AppContext appContext;
   private final ConfigOverridesApplier configOverridesApplier;
+
+  private static final String BATCH_METRICS_ENABLED_CONF_FILE = "batch_metrics_enabled.conf";
+  private boolean batchMetricsEnabled;
+  private boolean defaultBatchMetricsEnabled = false;
+  public static final int retentionPeriod = 6;
+  public static final int minRetentionPeriod = 2;
+  private ConcurrentSkipListSet<Long> batchMetricsDBSet;
 
   static {
     STATS_DATA.put("MethodName", "ProcessMetrics");
@@ -110,6 +121,8 @@ public class ReaderMetricsProcessor implements Runnable {
     eventLogFileHandler = new EventLogFileHandler(new EventLog(), rootLocation);
     this.processNewFormat = processNewFormat;
     this.appContext = appContext;
+    batchMetricsEnabled = defaultBatchMetricsEnabled;
+    batchMetricsDBSet = new ConcurrentSkipListSet<>();
   }
 
   @Override
@@ -201,8 +214,36 @@ public class ReaderMetricsProcessor implements Runnable {
     trimMap(shardRqMetricsMap, RQ_SNAPSHOTS);
     trimMap(httpRqMetricsMap, HTTP_RQ_SNAPSHOTS);
     trimMap(masterEventMetricsMap, MASTER_EVENT_SNAPSHOTS);
-    trimDatabases(
-        metricsDBMap, MAX_DATABASES, PluginSettings.instance().shouldCleanupMetricsDBFiles());
+
+    boolean deleteDBFiles = PluginSettings.instance().shouldCleanupMetricsDBFiles();
+    if (metricsDBMap.size() > MAX_DATABASES) {
+      Map.Entry<Long, MetricsDB> lowestEntry = metricsDBMap.pollFirstEntry();
+      if (lowestEntry != null) {
+        Long key = lowestEntry.getKey();
+        MetricsDB value = lowestEntry.getValue();
+        value.remove();
+        if (deleteDBFiles && !batchMetricsDBSet.contains(key)) {
+          value.deleteOnDiskFile();
+        }
+      }
+    }
+    if (!batchMetricsEnabled && !batchMetricsDBSet.isEmpty()) {
+      if (deleteDBFiles) {
+        for (Long timestamp : batchMetricsDBSet) {
+          if (!metricsDBMap.containsKey(timestamp)) {
+            MetricsDB.deleteOnDiskFile(timestamp);
+          }
+        }
+      }
+      batchMetricsDBSet.clear();
+    }
+    readBatchMetricsEnabledFromConf();
+    if (batchMetricsDBSet.size() > retentionPeriod) {
+      Long timestamp = batchMetricsDBSet.pollFirst();
+      if (timestamp != null && deleteDBFiles && !metricsDBMap.containsKey(timestamp)) {
+        MetricsDB.deleteOnDiskFile(timestamp);
+      }
+    }
 
     for (NavigableMap<Long, MemoryDBSnapshot> snap : nodeMetricsMap.values()) {
       // do the same thing as OS_SNAPSHOTS.  Eventually MemoryDBSnapshot
@@ -289,6 +330,9 @@ public class ReaderMetricsProcessor implements Runnable {
 
     metricsDB.commit();
     metricsDBMap.put(prevWindowStartTime, metricsDB);
+    if (batchMetricsEnabled) {
+      batchMetricsDBSet.add(prevWindowStartTime);
+    }
     mFinalT = System.currentTimeMillis();
     LOG.debug("Total time taken for emitting Metrics: {}", mFinalT - mCurrT);
     TIMING_STATS.put("emitMetrics", (double) (mFinalT - mCurrT));
@@ -697,6 +741,24 @@ public class ReaderMetricsProcessor implements Runnable {
   }
 
   /**
+   * This is called by operations outside of the ReaderMetricsProcessor.
+   *
+   * @return A list of the timestamps associated with MetricsDB files. The oldest of the MetricsDB files typically
+   *     have a lifetime of ~SAMPLING_INTERVAL seconds (no less than SAMPLING_INTERVAL/2 seconds). Null if batch
+   *     metrics is disabled.
+   */
+  public NavigableSet<Long> getBatchMetrics() {
+    if (batchMetricsEnabled) {
+      TreeSet<Long> batchMetricsDBSetCopy = new TreeSet<>(batchMetricsDBSet.clone());
+      if (batchMetricsDBSetCopy.size() > retentionPeriod) {
+        batchMetricsDBSetCopy.pollFirst();
+      }
+      return Collections.unmodifiableNavigableSet(batchMetricsDBSetCopy);
+    }
+    return null;
+  }
+
+  /**
    * Enrich event data with node metrics and calculate aggregated metrics on dimensions like (shard,
    * index, operation, role). The aggregated metrics are then written to a metricsDB.
    *
@@ -752,6 +814,21 @@ public class ReaderMetricsProcessor implements Runnable {
       mFinalT = System.currentTimeMillis();
       LOG.debug("Total time taken for emitting node metrics: {}", mFinalT - mCurrT);
     }
+  }
+
+  private void readBatchMetricsEnabledFromConf() {
+    Path filePath = Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE);
+
+    Util.invokePrivileged(
+            () -> {
+              try (Scanner sc = new Scanner(filePath)) {
+                String nextLine = sc.nextLine();
+                batchMetricsEnabled = Boolean.parseBoolean(nextLine);
+              } catch (IOException e) {
+                LOG.error("Error reading file '{}': {}", filePath.toString(), e);
+                e.printStackTrace();
+              }
+            });
   }
 
   /**
