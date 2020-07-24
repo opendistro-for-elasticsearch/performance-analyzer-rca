@@ -38,18 +38,17 @@ public class ClusterDetailsEventProcessorTests {
     String address2 = "10.212.52.241";
     boolean isMasterNode2 = false;
 
-    ClusterDetailsEventProcessor clusterDetailsEventProcessor;
     try {
       ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
       clusterDetailsEventProcessorTestHelper.addNodeDetails(nodeId1, address1, isMasterNode1);
       clusterDetailsEventProcessorTestHelper.addNodeDetails(nodeId2, address2, isMasterNode2);
-      clusterDetailsEventProcessor = clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
+      clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
     } catch (Exception e) {
       Assert.assertTrue("got exception when generating cluster details event", false);
       return;
     }
 
-    List<NodeDetails> nodes = clusterDetailsEventProcessor.getNodesDetails();
+    List<NodeDetails> nodes = ClusterDetailsEventProcessor.getNodesDetails();
 
     assertEquals(nodeId1, nodes.get(0).getId());
     assertEquals(address1, nodes.get(0).getHostAddress());

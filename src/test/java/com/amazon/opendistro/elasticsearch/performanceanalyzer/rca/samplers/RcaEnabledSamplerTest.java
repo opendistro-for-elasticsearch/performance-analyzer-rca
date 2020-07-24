@@ -5,7 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaRuntimeMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.collectors.SampleAggregator;
@@ -19,7 +18,6 @@ import org.mockito.MockitoAnnotations;
 
 public class RcaEnabledSamplerTest {
     private RcaEnabledSampler uut;
-    private AppContext appContext;
 
     @Mock
     private SampleAggregator sampleAggregator;
@@ -27,8 +25,7 @@ public class RcaEnabledSamplerTest {
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        appContext = new AppContext();
-        uut = new RcaEnabledSampler(appContext);
+        uut = new RcaEnabledSampler();
     }
 
     @Test
@@ -36,14 +33,10 @@ public class RcaEnabledSamplerTest {
         assertFalse(uut.isRcaEnabled());
         ClusterDetailsEventProcessor.NodeDetails details =
                 ClusterDetailsEventProcessorTestHelper.newNodeDetails("", "", false);
-
-        ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
-        clusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(details));
-        appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
-
+        ClusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(details));
         assertFalse(uut.isRcaEnabled());
         details = ClusterDetailsEventProcessorTestHelper.newNodeDetails("", "", true);
-        clusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(details));
+        ClusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(details));
         assertEquals(RcaController.isRcaEnabled(), uut.isRcaEnabled());
     }
 

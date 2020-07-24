@@ -246,8 +246,7 @@ public class BaseClusterRcaTest {
     Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
     Assert.assertEquals(2, flowUnit.getSummary().getNumOfUnhealthyNodes());
 
-    ClusterDetailsEventProcessor clusterDetailsEventProcessor = removeNodeFromCluster();
-    appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
+    removeNodeFromCluster();
 
     nodeRca.mockFlowUnit();
     flowUnit = clusterRca.operate();
@@ -269,10 +268,9 @@ public class BaseClusterRcaTest {
     Assert.assertEquals(1, flowUnit.getSummary().getNumOfUnhealthyNodes());
     Assert.assertTrue(compareNodeSummary("node1", type1, flowUnit.getSummary().getHotNodeSummaryList().get(0)));
 
-    ClusterDetailsEventProcessor clusterDetailsEventProcessor = addNewNodeIntoCluster();
+    addNewNodeIntoCluster();
 
     nodeRca.mockFlowUnit();
-    appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
     flowUnit = clusterRca.operate();
     Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
     Assert.assertEquals(1, flowUnit.getSummary().getNumOfUnhealthyNodes());
@@ -287,22 +285,22 @@ public class BaseClusterRcaTest {
     Assert.assertTrue(compareNodeSummary("node4", type2, clusterSummary.getHotNodeSummaryList().get(1)));
   }
 
-   private ClusterDetailsEventProcessor removeNodeFromCluster() throws SQLException, ClassNotFoundException {
+   private void removeNodeFromCluster() throws SQLException, ClassNotFoundException {
     ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
     clusterDetailsEventProcessorTestHelper.addNodeDetails("node2", "127.0.0.1", false);
     clusterDetailsEventProcessorTestHelper.addNodeDetails("node3", "127.0.0.2", false);
     clusterDetailsEventProcessorTestHelper.addNodeDetails("master", "127.0.0.9", NodeRole.ELECTED_MASTER, true);
-    return clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
+    clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
   }
 
-  private ClusterDetailsEventProcessor addNewNodeIntoCluster() throws SQLException, ClassNotFoundException {
+  private void addNewNodeIntoCluster() throws SQLException, ClassNotFoundException {
     ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
     clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.0", false);
     clusterDetailsEventProcessorTestHelper.addNodeDetails("node2", "127.0.0.1", false);
     clusterDetailsEventProcessorTestHelper.addNodeDetails("node3", "127.0.0.2", false);
     clusterDetailsEventProcessorTestHelper.addNodeDetails("node4", "127.0.0.3", false);
     clusterDetailsEventProcessorTestHelper.addNodeDetails("master", "127.0.0.9", NodeRole.ELECTED_MASTER, true);
-    return clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
+    clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
   }
 
   private boolean compareResourceSummary(Resource resource, HotResourceSummary resourceSummary) {

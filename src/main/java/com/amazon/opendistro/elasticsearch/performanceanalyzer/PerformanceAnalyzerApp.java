@@ -95,15 +95,14 @@ public class PerformanceAnalyzerApp {
       new RcaStatsReporter(Arrays.asList(RCA_GRAPH_METRICS_AGGREGATOR,
           RCA_RUNTIME_METRICS_AGGREGATOR, RCA_VERTICES_METRICS_AGGREGATOR,
           ERRORS_AND_EXCEPTIONS_AGGREGATOR, PERIODIC_SAMPLE_AGGREGATOR));
-  public static PeriodicSamplers PERIODIC_SAMPLERS;
+  public static final PeriodicSamplers PERIODIC_SAMPLERS =
+      new PeriodicSamplers(PERIODIC_SAMPLE_AGGREGATOR, getAllSamplers(),
+          (MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval) / 2,
+          TimeUnit.MILLISECONDS);
   public static final BlockingQueue<PAThreadException> exceptionQueue =
       new ArrayBlockingQueue<>(EXCEPTION_QUEUE_LENGTH);
 
   public static void main(String[] args) {
-    AppContext appContext = new AppContext();
-    PERIODIC_SAMPLERS = new PeriodicSamplers(PERIODIC_SAMPLE_AGGREGATOR, getAllSamplers(appContext),
-        (MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval) / 2,
-        TimeUnit.MILLISECONDS);
     PluginSettings settings = PluginSettings.instance();
     StatsCollector.STATS_TYPE = "agent-stats-metadata";
     METRIC_COLLECTOR_EXECUTOR.addScheduledMetricCollector(StatsCollector.instance());
@@ -113,6 +112,7 @@ public class PerformanceAnalyzerApp {
 
     final GRPCConnectionManager connectionManager = new GRPCConnectionManager(
         settings.getHttpsEnabled());
+    AppContext appContext = new AppContext();
     final ClientServers clientServers = createClientServers(connectionManager, appContext);
     startErrorHandlingThread();
 
@@ -243,10 +243,10 @@ public class PerformanceAnalyzerApp {
     return new ClientServers(httpServer, netServer, netClient);
   }
 
-  public static List<ISampler> getAllSamplers(final AppContext appContext) {
+  private static List<ISampler> getAllSamplers() {
     List<ISampler> allSamplers = new ArrayList<>();
     allSamplers.addAll(AllJvmSamplers.getJvmSamplers());
-    allSamplers.add(RcaStateSamplers.getRcaEnabledSampler(appContext));
+    allSamplers.add(RcaStateSamplers.getRcaEnabledSampler());
 
     return allSamplers;
   }
