@@ -1,11 +1,11 @@
 ** GoogleGuava; version 27.0.1-jre -- https://github.com/google/guava
-** Jackson-annotations; version 2.8.11 -- https://github.com/FasterXML/jackson-annotations/
-** Jackson-databind; version 2.8.11 -- https://github.com/FasterXML/jackson-databind
+** Jackson-annotations; version 2.11.1 -- https://github.com/FasterXML/jackson-annotations/
+** Jackson-databind; version 2.11.1 -- https://github.com/FasterXML/jackson-databind
 ** jooq; version 3.10.8 -- https://github.com/jOOQ/jOOQ
 ** org.xerial:sqlite-jdbc; version 3.8.11.2 -- https://bitbucket.org/xerial/sqlite-jdbc/src/8de652d3f54cdfd32d5a493130c995f36e16c652/LICENSE?at=default&fileviewer=file-view-default
 ** PowerMock; version 1.6.1 -- https://github.com/powermock/powermock
 ** Javax-annotation; version 1.3.2 -- https://github.com/javaee/javax.annotation
-** Bouncy castle; version 1.60 -- https://github.com/bcgit/bc-java
+** Bouncy castle; version 1.66 -- https://github.com/bcgit/bc-java
 ** xerial/sqlite-jdbc; version 3.8.11 -- https://github.com/xerial/sqlite-jdbc
 ** log4j; version 2.8 -- https://github.com/apache/log4j
 ** grpc-java; version 1.25 -- https://github.com/grpc/grpc-java
