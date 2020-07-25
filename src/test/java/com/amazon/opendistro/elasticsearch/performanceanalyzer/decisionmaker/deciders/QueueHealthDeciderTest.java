@@ -90,6 +90,7 @@ public class QueueHealthDeciderTest {
     queueClusterRca.setAppContext(appContext);
     queueClusterRca.generateFlowUnitListFromLocal(null);
     QueueHealthDecider decider = new QueueHealthDecider(5, 12, queueClusterRca);
+    decider.configureActionPriority(reader.getActionPriorityOrder(decider.name()));
 
     // Since deciderFrequency is 12, the first 11 invocations return empty decision
     for (int i = 0; i < 11; i++) {
