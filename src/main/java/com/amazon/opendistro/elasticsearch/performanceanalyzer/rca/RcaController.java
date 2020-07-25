@@ -280,9 +280,6 @@ public class RcaController {
           rcaConf = RcaControllerHelper.pickRcaConfForRole(currentRole);
           LOG.debug("Updating Analysis Graph with Muted RCAs");
           readAndUpdateMutesRcas();
-          // Upload the config from YAML into memory.
-          DeciderActionPriorityReader reader = new DeciderActionPriorityReader(DECIDER_ACTION_PRIORITIES_PATH);
-          reader.updateDeciderActionPriorityOrder();
         }
         updateRcaState();
 

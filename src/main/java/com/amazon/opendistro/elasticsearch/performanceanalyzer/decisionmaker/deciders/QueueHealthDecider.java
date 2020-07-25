@@ -36,14 +36,13 @@ public class QueueHealthDecider extends Decider {
   public static final String NAME = "queue_health";
 
   private QueueRejectionClusterRca queueRejectionRca;
-  List<String> actionsByUserPriority = new ArrayList<>();
+  List<String> actionsByUserPriority = null;
   private int counter = 0;
 
   public QueueHealthDecider(long evalIntervalSeconds, int decisionFrequency, QueueRejectionClusterRca queueRejectionClusterRca) {
     // TODO: Also consume NodeConfigurationRca
     super(evalIntervalSeconds, decisionFrequency);
     this.queueRejectionRca = queueRejectionClusterRca;
-    configureActionPriority();
   }
 
   @Override
@@ -79,8 +78,8 @@ public class QueueHealthDecider extends Decider {
     return decision;
   }
 
-  private void configureActionPriority() {
-    actionsByUserPriority = DeciderActionPriorityReader.getActionPriorityOrder(name());
+  public void configureActionPriority(ArrayList<String> priority) {
+    actionsByUserPriority = priority;
   }
 
   /**

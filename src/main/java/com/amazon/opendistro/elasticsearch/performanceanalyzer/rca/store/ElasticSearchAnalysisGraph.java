@@ -15,12 +15,14 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.DECIDER_ACTION_PRIORITIES_PATH;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.LOCUS_DATA_MASTER_NODE;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.LOCUS_DATA_NODE;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.LOCUS_MASTER_NODE;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_AGGREGATE_UPSTREAM;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_LOCUS;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.DeciderActionPriorityReader;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Collator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Publisher;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.QueueHealthDecider;
@@ -175,10 +177,16 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     queueRejectionClusterRca.addAllUpstreams(Collections.singletonList(queueRejectionNodeRca));
     queueRejectionClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
+    // Upload the config from YAML into memory.
+    DeciderActionPriorityReader reader = new DeciderActionPriorityReader(DECIDER_ACTION_PRIORITIES_PATH);
+    reader.updateDeciderActionPriorityOrder();
+
     // Queue Health Decider
-    QueueHealthDecider queueHealthDecider = new QueueHealthDecider(EVALUATION_INTERVAL_SECONDS, 12, queueRejectionClusterRca);
+    QueueHealthDecider queueHealthDecider = new QueueHealthDecider(EVALUATION_INTERVAL_SECONDS, 12,
+            queueRejectionClusterRca);
     queueHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     queueHealthDecider.addAllUpstreams(Collections.singletonList(queueRejectionClusterRca));
+    queueHealthDecider.configureActionPriority(reader.getActionPriorityOrder(queueHealthDecider.name()));
 
     constructShardResourceUsageGraph();
     constructResourceHeatMapGraph();

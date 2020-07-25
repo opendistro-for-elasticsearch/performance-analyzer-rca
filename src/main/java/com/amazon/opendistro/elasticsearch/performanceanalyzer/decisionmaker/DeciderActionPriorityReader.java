@@ -32,15 +32,14 @@ import org.apache.logging.log4j.Logger;
 
 public class DeciderActionPriorityReader {
     private static final Logger LOG = LogManager.getLogger(DeciderActionPriorityReader.class);
-    private static HashMap<Decider, ArrayList<String>> deciderActionPriorityOrder;
-    private static String configFilePath;
+    private HashMap<String, ArrayList<String>> deciderActionPriorityOrder = null;
+    private String configFilePath;
 
     public DeciderActionPriorityReader(String configFilePath) {
     this.configFilePath = configFilePath;
-    this.deciderActionPriorityOrder = null;
     }
 
-    public static void updateDeciderActionPriorityOrder() {
+    public void updateDeciderActionPriorityOrder() {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         try {
             deciderActionPriorityOrder = mapper.readValue(new File(configFilePath), HashMap.class);
@@ -51,7 +50,7 @@ public class DeciderActionPriorityReader {
         return;
     }
 
-    public static ArrayList<String> getActionPriorityOrder(String decider) {
+    public ArrayList<String> getActionPriorityOrder(String decider) {
         ArrayList<String> actionPriorities = null;
         try {
             actionPriorities = deciderActionPriorityOrder.get(decider);
