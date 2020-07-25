@@ -18,7 +18,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 import static org.junit.Assert.assertEquals;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
@@ -30,7 +29,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.DataMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
@@ -42,7 +40,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -228,16 +225,16 @@ public class RCASchedulerTaskTests {
 
       @Override
       public void sendData(DataMsg msg) {
-        assertEquals(msg.getSourceNode(), this.dataMsg.getSourceNode());
-        AssertHelper.compareLists(msg.getDestinationNode(), this.dataMsg.getDestinationNode());
+        assertEquals(msg.getSourceGraphNode(), this.dataMsg.getSourceGraphNode());
+        AssertHelper.compareLists(msg.getDestinationGraphNodes(), this.dataMsg.getDestinationGraphNodes());
       }
 
       @Override
       public void sendIntent(IntentMsg intentMsg) {
         assertEquals(
-            intentMsg.getRequesterNode(), this.intentMsgs.get(intextIdx).getRequesterNode());
+            intentMsg.getRequesterGraphNode(), this.intentMsgs.get(intextIdx).getRequesterGraphNode());
         assertEquals(
-            intentMsg.getDestinationNode(), this.intentMsgs.get(intextIdx).getDestinationNode());
+            intentMsg.getDestinationGraphNode(), this.intentMsgs.get(intextIdx).getDestinationGraphNode());
         intextIdx++;
       }
     }

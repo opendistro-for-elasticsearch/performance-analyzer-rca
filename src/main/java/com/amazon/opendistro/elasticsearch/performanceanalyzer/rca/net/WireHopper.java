@@ -105,30 +105,34 @@ public class WireHopper {
   public List<FlowUnitMessage> readFromWire(Node<?> node) {
     final String nodeName = node.name();
     final long intervalInSeconds = node.getEvaluationIntervalSeconds();
-    final ImmutableList<FlowUnitMessage> remoteFlowUnits = receivedFlowUnitStore
-        .drainNode(nodeName);
-    final Set<String> publisherSet = subscriptionManager.getPublishersForNode(nodeName);
+    final ImmutableList<FlowUnitMessage> remoteFlowUnits = receivedFlowUnitStore.drainNode(nodeName);
 
-    for (final String publisher : publisherSet) {
-      if (!ClusterUtils.isHostAddressInCluster(publisher, appContext.getAllClusterInstances())) {
+    // Publishers are a set of cluster-instances that send out flowUnits for the corresponding graph node,
+    // when one is generated.
+    final Set<InstanceDetails.Id> publisherSet = subscriptionManager.getPublishersForNode(nodeName);
+
+    for (final InstanceDetails.Id publisher : publisherSet) {
+      if (!ClusterUtils.isHostIdInCluster(publisher, appContext.getAllClusterInstances())) {
         subscriptionManager.unsubscribeAndTerminateConnection(nodeName, publisher);
       }
     }
 
-    final ImmutableList<String> hostsToSubscribeTo =
-        nodeStateManager
-            .getStaleOrNotSubscribedNodes(nodeName, 2 * intervalInSeconds * MS_IN_S, publisherSet);
+    final ImmutableList<InstanceDetails> hostsToSubscribeTo =
+        nodeStateManager.getStaleOrNotSubscribedNodes(nodeName, 2 * intervalInSeconds * MS_IN_S, publisherSet);
 
-    for (final String host : hostsToSubscribeTo) {
+    // There are some stale hosts from which this node hasn't received any FLowUnits. This might be because the remote node
+    // restarted and lost out subscription msg. Therefore, we resend it.
+    for (final InstanceDetails instance : hostsToSubscribeTo) {
       final ExecutorService executor = executorReference.get();
       if (executor != null) {
         try {
-          executor.execute(new UnicastSubscriptionTxTask(
-              netClient,
-              new UnicastIntentMsg("", nodeName, node.getTags(), host),
-              subscriptionManager,
-              nodeStateManager,
-              appContext));
+          executor.execute(
+                  new UnicastSubscriptionTxTask(
+                          netClient,
+                          new UnicastIntentMsg("", nodeName, node.getTags(), instance),
+                          subscriptionManager,
+                          nodeStateManager,
+                          appContext));
         } catch (final RejectedExecutionException ree) {
           LOG.warn("Dropped sending subscription request because the threadpool queue is "
               + "full");
@@ -136,7 +140,6 @@ public class WireHopper {
                         .logException(StatExceptionCode.RCA_NETWORK_THREADPOOL_QUEUE_FULL_ERROR);
         }
       }
-
     }
     return remoteFlowUnits;
   }

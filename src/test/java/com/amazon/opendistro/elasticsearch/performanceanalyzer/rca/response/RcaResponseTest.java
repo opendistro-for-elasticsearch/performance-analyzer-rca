@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.isA;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.jooq.Field;
@@ -39,6 +40,7 @@ public class RcaResponseTest {
     private static final Long TIMESTAMP = 0L;
     private static final String NODE = "NODE";
     private static final String HOST = "HOST";
+    private static final String IP = "127.0.0.1";
 
 
     private RcaResponse uut;
@@ -108,7 +110,7 @@ public class RcaResponseTest {
                 .get(ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.STATE_COL_NAME).getAsString());
         Assert.assertEquals(TIMESTAMP, (Long) obj
                 .get(ResourceFlowUnit.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME).getAsLong());
-        HotNodeSummary summary = new HotNodeSummary(NODE, HOST);
+        HotNodeSummary summary = new HotNodeSummary(new InstanceDetails.Id(NODE), new InstanceDetails.Ip(IP));
         uut.addNestedSummaryList(summary);
         jsonElement = uut.toJson();
         obj = jsonElement.getAsJsonObject();

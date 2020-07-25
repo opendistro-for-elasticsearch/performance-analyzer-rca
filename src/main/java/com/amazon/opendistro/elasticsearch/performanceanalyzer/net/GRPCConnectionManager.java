@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.CertificateUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpcServiceGrpc;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpcServiceGrpc.InterNodeRpcServiceStub;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.google.common.annotations.VisibleForTesting;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -54,17 +55,15 @@ public class GRPCConnectionManager {
   private File trustedCasFile;
 
   /**
-   * Map of remote host to a Netty channel to that host.
+   * Map of remote hostId to a Netty channel to that host.
    */
-  private ConcurrentMap<String, AtomicReference<ManagedChannel>> perHostChannelMap =
-      new ConcurrentHashMap<>();
+  private ConcurrentMap<InstanceDetails.Id, AtomicReference<ManagedChannel>> perHostChannelMap = new ConcurrentHashMap<>();
 
   /**
-   * Map of remote host to a grpc client object of that host. The client objects are created over
+   * Map of remote hostId to a grpc client object of that host. The client objects are created over
    * the channels for those hosts and are used to call RPC methods on the hosts.
    */
-  private ConcurrentMap<String, AtomicReference<InterNodeRpcServiceStub>> perHostClientStubMap =
-      new ConcurrentHashMap<>();
+  private ConcurrentMap<InstanceDetails.Id, AtomicReference<InterNodeRpcServiceStub>> perHostClientStubMap = new ConcurrentHashMap<>();
 
   /**
    * Flag that controls if we need to use a secure or an insecure channel.
@@ -73,7 +72,7 @@ public class GRPCConnectionManager {
 
   public GRPCConnectionManager(final boolean shouldUseHttps) {
     this.shouldUseHttps = shouldUseHttps;
-    this.port = Util.RPC_PORT;
+    this.port = 0;
     if (shouldUseHttps) {
       this.certFile = CertificateUtils.getClientCertificateFile();
       this.pkeyFile = CertificateUtils.getClientPrivateKeyFile();
@@ -97,12 +96,12 @@ public class GRPCConnectionManager {
   }
 
   @VisibleForTesting
-  public ConcurrentMap<String, AtomicReference<ManagedChannel>> getPerHostChannelMap() {
+  public ConcurrentMap<InstanceDetails.Id, AtomicReference<ManagedChannel>> getPerHostChannelMap() {
     return perHostChannelMap;
   }
 
   @VisibleForTesting
-  public ConcurrentMap<String, AtomicReference<InterNodeRpcServiceStub>> getPerHostClientStubMap() {
+  public ConcurrentMap<InstanceDetails.Id, AtomicReference<InterNodeRpcServiceStub>> getPerHostClientStubMap() {
     return perHostClientStubMap;
   }
 
@@ -113,9 +112,8 @@ public class GRPCConnectionManager {
    * @return The stub object.
    */
   public InterNodeRpcServiceStub getClientStubForHost(
-      final String remoteHost) {
-    final AtomicReference<InterNodeRpcServiceStub> stubAtomicReference =
-        perHostClientStubMap.get(remoteHost);
+      final InstanceDetails remoteHost) {
+    final AtomicReference<InterNodeRpcServiceStub> stubAtomicReference = perHostClientStubMap.get(remoteHost);
     if (stubAtomicReference != null) {
       return stubAtomicReference.get();
     }
@@ -129,11 +127,10 @@ public class GRPCConnectionManager {
    * @param remoteHost The host to which an RPC needs to be made.
    * @return The stub object.
    */
-  private synchronized InterNodeRpcServiceStub addOrUpdateClientStubForHost(
-      final String remoteHost) {
+  private synchronized InterNodeRpcServiceStub addOrUpdateClientStubForHost(final InstanceDetails remoteHost) {
     final InterNodeRpcServiceStub stub = buildStubForHost(remoteHost);
-    perHostClientStubMap.computeIfAbsent(remoteHost, s -> new AtomicReference<>());
-    perHostClientStubMap.get(remoteHost).set(stub);
+    perHostClientStubMap.computeIfAbsent(remoteHost.getInstanceId(), s -> new AtomicReference<>());
+    perHostClientStubMap.get(remoteHost.getInstanceId()).set(stub);
     return stub;
   }
 
@@ -142,9 +139,8 @@ public class GRPCConnectionManager {
     terminateAllConnections();
   }
 
-  private ManagedChannel getChannelForHost(final String remoteHost) {
-    final AtomicReference<ManagedChannel> managedChannelAtomicReference = perHostChannelMap
-        .get(remoteHost);
+  private ManagedChannel getChannelForHost(final InstanceDetails remoteHost) {
+    final AtomicReference<ManagedChannel> managedChannelAtomicReference = perHostChannelMap.get(remoteHost.getInstanceId());
     if (managedChannelAtomicReference != null) {
       return managedChannelAtomicReference.get();
     }
@@ -159,28 +155,41 @@ public class GRPCConnectionManager {
    * @param remoteHost The host to which we want to establish a channel to.
    * @return a Managed channel object.
    */
-  private synchronized ManagedChannel addOrUpdateChannelForHost(final String remoteHost) {
+  private synchronized ManagedChannel addOrUpdateChannelForHost(final InstanceDetails remoteHost) {
     final ManagedChannel channel = buildChannelForHost(remoteHost);
-    perHostChannelMap.computeIfAbsent(remoteHost, s -> new AtomicReference<>());
-    perHostChannelMap.get(remoteHost).set(channel);
+    perHostChannelMap.computeIfAbsent(remoteHost.getInstanceId(), s -> new AtomicReference<>());
+    perHostChannelMap.get(remoteHost.getInstanceId()).set(channel);
     return channel;
   }
 
-  private ManagedChannel buildChannelForHost(final String remoteHost) {
+  private ManagedChannel buildChannelForHost(final InstanceDetails remoteHost) {
     return shouldUseHttps ? buildSecureChannel(remoteHost) : buildInsecureChannel(remoteHost);
   }
 
-  private ManagedChannel buildInsecureChannel(final String remoteHost) {
-    return ManagedChannelBuilder.forAddress(remoteHost, this.port).usePlaintext().build();
+  private int getPortFromHost(final InstanceDetails remoteHost) {
+    int port = this.port != 0 ? this.port : remoteHost.getGrpcPort();
+    if (port == -1) {
+      throw new IllegalArgumentException("Invalid port for grpc: " + port);
+    }
+    return port;
   }
 
-  private ManagedChannel buildSecureChannel(final String remoteHost) {
+  private ManagedChannel buildInsecureChannel(final InstanceDetails remoteHost) {
+    return ManagedChannelBuilder.forAddress(
+            remoteHost.getInstanceIp().toString(),
+            getPortFromHost(remoteHost)
+    ).usePlaintext().build();
+  }
+
+  private ManagedChannel buildSecureChannel(final InstanceDetails remoteHost) {
     try {
       SslContextBuilder sslContextBuilder = GrpcSslContexts.forClient().keyManager(certFile, pkeyFile);
       if (trustedCasFile != null) {
         sslContextBuilder.trustManager(trustedCasFile);
       }
-      return NettyChannelBuilder.forAddress(remoteHost, this.port)
+      return NettyChannelBuilder.forAddress(
+              remoteHost.getInstanceIp().toString(),
+              getPortFromHost(remoteHost))
               .sslContext(sslContextBuilder.build())
               .build();
     } catch (SSLException e) {
@@ -192,21 +201,19 @@ public class GRPCConnectionManager {
     }
   }
 
-  private InterNodeRpcServiceStub buildStubForHost(
-      final String remoteHost) {
+  private InterNodeRpcServiceStub buildStubForHost(final InstanceDetails remoteHost) {
     return InterNodeRpcServiceGrpc.newStub(getChannelForHost(remoteHost));
   }
 
   private void removeAllStubs() {
-    for (Map.Entry<String, AtomicReference<InterNodeRpcServiceStub>> entry :
-        perHostClientStubMap.entrySet()) {
+    for (Map.Entry<InstanceDetails.Id, AtomicReference<InterNodeRpcServiceStub>> entry : perHostClientStubMap.entrySet()) {
       LOG.debug("Removing client stub for host: {}", entry.getKey());
       perHostClientStubMap.remove(entry.getKey());
     }
   }
 
   private void terminateAllConnections() {
-    for (Map.Entry<String, AtomicReference<ManagedChannel>> entry : perHostChannelMap.entrySet()) {
+    for (Map.Entry<InstanceDetails.Id, AtomicReference<ManagedChannel>> entry : perHostChannelMap.entrySet()) {
       LOG.debug("shutting down connection to host: {}", entry.getKey());
       ManagedChannel channel = entry.getValue().get();
       channel.shutdownNow();
@@ -227,7 +234,7 @@ public class GRPCConnectionManager {
    *
    * @param remoteHost the host to which we want to terminate connection from.
    */
-  public void terminateConnection(String remoteHost) {
+  public void terminateConnection(InstanceDetails.Id remoteHost) {
     perHostClientStubMap.remove(remoteHost);
     perHostChannelMap.remove(remoteHost);
   }

@@ -136,7 +136,7 @@ public class CacheHealthDeciderTest {
     Map<String, Map<ResourceEnum, Integer>> nodeActionCounter = new HashMap<>();
     for (Action action : decision.getActions()) {
       assertEquals(1, action.impactedNodes().size());
-      String nodeId = action.impactedNodes().get(0).getNodeId();
+      String nodeId = action.impactedNodes().get(0).getNodeId().toString();
       String summary = action.summary();
       if (summary.contains(ResourceEnum.FIELD_DATA_CACHE.toString())) {
         nodeActionCounter

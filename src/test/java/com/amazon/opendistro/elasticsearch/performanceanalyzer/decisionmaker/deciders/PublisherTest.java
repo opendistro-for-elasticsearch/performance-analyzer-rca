@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.google.common.collect.Lists;
 
@@ -84,7 +85,7 @@ public class PublisherTest {
     @Test
     public void testRejectsFlipFlops() throws Exception {
         // Setup testing objects
-        NodeKey nodeKey = new NodeKey("A", "localhost");
+        NodeKey nodeKey = new NodeKey(new InstanceDetails.Id("A"), new InstanceDetails.Ip("127.0.0.1"));
         ImpactVector allDecrease = new ImpactVector();
         allDecrease.decreasesPressure(Dimension.values());
         Map<NodeKey, ImpactVector> impactVectorMap = new HashMap<>();

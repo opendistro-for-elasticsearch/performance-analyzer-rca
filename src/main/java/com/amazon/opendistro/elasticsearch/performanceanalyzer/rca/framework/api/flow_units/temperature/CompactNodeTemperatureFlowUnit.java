@@ -20,6 +20,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.CompactNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 
 /**
  * This is a grpc wrapper on top of the CompactNodeTemperatureSummary. The flow unit is passed
@@ -43,10 +45,10 @@ public class CompactNodeTemperatureFlowUnit extends ResourceFlowUnit<CompactNode
     }
 
     @Override
-    public FlowUnitMessage buildFlowUnitMessage(String graphNode, String esNode) {
+    public FlowUnitMessage buildFlowUnitMessage(String graphNode, InstanceDetails.Id esNode) {
         FlowUnitMessage.Builder builder = FlowUnitMessage.newBuilder();
         builder.setGraphNode(graphNode);
-        builder.setEsNode(esNode);
+        builder.setEsNode(esNode.toString());
         builder.setTimeStamp(System.currentTimeMillis());
         if (compactNodeTemperatureSummary != null) {
             compactNodeTemperatureSummary.buildSummaryMessageAndAddToFlowUnit(builder);
