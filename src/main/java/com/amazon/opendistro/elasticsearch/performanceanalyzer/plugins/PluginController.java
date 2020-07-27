@@ -58,7 +58,8 @@ public class PluginController {
         plugins.add((Plugin) constructors[0].newInstance());
         LOG.info("loaded plugin: [{}]", plugins.get(plugins.size() - 1).name());
       } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-        e.printStackTrace();
+        LOG.error("Failed to instantiate plugin", e);
+        throw new IllegalStateException("Failed to instantiate plugin: [" + pluginClass.getName() + "]", e);
       }
     }
   }
