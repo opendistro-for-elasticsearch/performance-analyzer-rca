@@ -23,7 +23,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
 /**
- * Stores a set of elements which are automatically removed from the Set after a given time period.
+ * Caches a set of elements which are automatically evicted based on the cache TTL.
  *
  * <p>Subsequent calls to add with the same element refresh the expiry period for that element.
  */
@@ -32,12 +32,16 @@ public class TimeExpiringSet<E> implements Iterable<E> {
 
   /**
    * Allocates a new TimeExpiringSet whose elements expire after the given time period
-   * @param duration The magnitude of the expiry duration
-   * @param unit The unit of the expiry duration
+   *
+   * <p>E.g. for a ttl of 5 and a unit of TimeUnit.SECONDS, a newly added element will remain
+   * in the Set for 5 seconds before it is evicted.
+   *
+   * @param ttl The magnitude of the time a unit will remain in the cache before it is evicted
+   * @param unit The unit of the ttl
    */
-  public TimeExpiringSet(long duration, TimeUnit unit) {
+  public TimeExpiringSet(long ttl, TimeUnit unit) {
     cache = CacheBuilder.newBuilder()
-        .expireAfterWrite(duration, unit)
+        .expireAfterWrite(ttl, unit)
         .build();
   }
 
