@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ActionListener;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Publisher;
+import com.google.common.annotations.VisibleForTesting;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -68,5 +69,10 @@ public class PluginController {
         publisher.addActionListener((ActionListener)plugin);
       }
     }
+  }
+
+  @VisibleForTesting
+  List<Plugin> getPlugins() {
+    return plugins;
   }
 }
