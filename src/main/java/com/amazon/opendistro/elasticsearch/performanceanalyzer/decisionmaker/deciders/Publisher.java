@@ -25,12 +25,14 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.met
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.google.common.annotations.VisibleForTesting;
+
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -113,8 +115,8 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
 
   /**
    * Register an action listener with Publisher
-   * <p>
-   * The listener is notified whenever an action is published
+   *
+   * <p>The listener is notified whenever an action is published
    */
   public void addActionListener(ActionListener listener) {
     actionListeners.add(listener);
