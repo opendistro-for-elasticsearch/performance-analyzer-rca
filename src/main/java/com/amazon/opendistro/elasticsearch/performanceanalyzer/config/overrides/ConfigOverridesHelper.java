@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.config.overrides;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.JsonConverter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.security.AccessController;
@@ -35,6 +36,10 @@ public class ConfigOverridesHelper {
    * @throws IOException if conversion runs into an IOException.
    */
   public static String serialize(final ConfigOverrides overrides) throws IOException {
+    // We can't use a local variable to set the exception generated inside the lambda as the
+    // local variable is not effectively final(because we'll end up mutating the reference).
+    // In order to fish the exception out, we need to create a wrapper and set the exception
+    // there instead for the caller to get the value.
     final IOException[] exception = new IOException[1];
     final String serializedOverrides = AccessController.doPrivileged((PrivilegedAction<String>) () -> {
       try {
@@ -60,6 +65,10 @@ public class ConfigOverridesHelper {
    * @throws IOException if conversion runs into an IOException.
    */
   public static ConfigOverrides deserialize(final String overrides) throws IOException {
+    // We can't use a local variable to set the exception generated inside the lambda as the
+    // local variable is not effectively final(because we'll end up mutating the reference).
+    // In order to fish the exception out, we need to create a wrapper and set the exception
+    // there instead for the caller to get the value.
     final IOException[] exception = new IOException[1];
     final ConfigOverrides configOverrides = AccessController.doPrivileged((PrivilegedAction<ConfigOverrides>) () -> {
       try {
