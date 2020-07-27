@@ -17,7 +17,9 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,9 +34,20 @@ import java.util.stream.Collectors;
  */
 public class AppContext {
   private volatile ClusterDetailsEventProcessor clusterDetailsEventProcessor;
+  // initiate a node config cache within each AppContext space
+  // to store node config settings from ES
+  private final NodeConfigCache nodeConfigCache;
 
   public AppContext() {
     this.clusterDetailsEventProcessor = null;
+    this.nodeConfigCache = new NodeConfigCache();
+  }
+
+  public AppContext(AppContext other) {
+    this.clusterDetailsEventProcessor = new ClusterDetailsEventProcessor(other.clusterDetailsEventProcessor);
+
+    // Initializing this as we don't want to copy the entire cache.
+    this.nodeConfigCache = new NodeConfigCache();
   }
 
   public void setClusterDetailsEventProcessor(final ClusterDetailsEventProcessor clusterDetailsEventProcessor) {
@@ -90,6 +103,11 @@ public class AppContext {
     return ImmutableList.copyOf(instances);
   }
 
+  @VisibleForTesting
+  public ClusterDetailsEventProcessor getClusterDetailsEventProcessor() {
+    return clusterDetailsEventProcessor;
+  }
+
   public List<String> getPeerInstanceIps() {
     return ImmutableList.copyOf(
         getAllClusterInstances()
@@ -97,5 +115,9 @@ public class AppContext {
             .skip(1)  // Skipping the first instance as it is self.
             .map(InstanceDetails::getInstanceIp)
             .collect(Collectors.toList()));
+  }
+
+  public NodeConfigCache getNodeConfigCache() {
+    return this.nodeConfigCache;
   }
 }

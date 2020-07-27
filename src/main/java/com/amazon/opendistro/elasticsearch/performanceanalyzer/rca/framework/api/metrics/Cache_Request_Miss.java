@@ -20,6 +20,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 
 public class Cache_Request_Miss extends Metric {
   public Cache_Request_Miss(long evaluationIntervalSeconds) {
-    super(AllMetrics.ShardStatsValue.CACHE_REQUEST_MISS.name(), evaluationIntervalSeconds);
+    super(AllMetrics.ShardStatsValue.CACHE_REQUEST_MISS.toString(), evaluationIntervalSeconds);
   }
 }

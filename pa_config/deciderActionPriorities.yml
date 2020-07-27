@@ -1,0 +1,9 @@
+# Order of action priorities
+# Loaded to a map of Decider and action priorities
+# action priorities are given as a list
+# priority order is decreasing in nature.
+---
+queue_health:
+  - modify_queue_capacity
+cache_health:
+  - modify_cache_capacity

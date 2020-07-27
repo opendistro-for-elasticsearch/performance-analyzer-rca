@@ -20,6 +20,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.DeciderActionPriorityReader;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
@@ -80,6 +81,10 @@ public class QueueHealthDeciderTest {
         RcaTestHelper.generateFlowUnit("node3", "127.0.0.3", Resources.State.UNHEALTHY, ResourceUtil.SEARCH_QUEUE_REJECTION),
         RcaTestHelper.generateFlowUnit("node4", "127.0.0.4", Resources.State.HEALTHY)
     );
+
+    // Upload the config from YAML into memory.
+    DeciderActionPriorityReader reader = new DeciderActionPriorityReader("./pa_config/deciderActionPriorities.yml");
+    reader.updateDeciderActionPriorityOrder();
 
     QueueRejectionClusterRca queueClusterRca = new QueueRejectionClusterRca(1, nodeRca);
     queueClusterRca.setAppContext(appContext);

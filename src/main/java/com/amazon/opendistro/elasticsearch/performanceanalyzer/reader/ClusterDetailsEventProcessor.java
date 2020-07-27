@@ -40,6 +40,18 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
    */
   private volatile ImmutableList<NodeDetails> nodesDetails = null;
 
+  public ClusterDetailsEventProcessor() {}
+
+  public ClusterDetailsEventProcessor(final ClusterDetailsEventProcessor other) {
+    if (other.nodesDetails != null) {
+      ImmutableList.Builder builder = new ImmutableList.Builder<NodeDetails>();
+      for (final NodeDetails oldDetails : other.nodesDetails) {
+        builder.add(new NodeDetails(oldDetails));
+      }
+      this.nodesDetails = builder.build();
+    }
+  }
+
   @Override
   public void initializeProcessing(long startTime, long endTime) {}
 
@@ -149,12 +161,20 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
       isMasterNode = isMasterNodeObject != null ? (Boolean) isMasterNodeObject : null;
     }
 
-    @VisibleForTesting
     public NodeDetails(AllMetrics.NodeRole role, String id, String hostAddress, boolean isMaster) {
       this.id = id;
       this.hostAddress = hostAddress;
       this.isMasterNode = isMaster;
       this.role = role.toString();
+    }
+
+    public NodeDetails(final NodeDetails other) {
+      if (other != null) {
+        this.id = other.id;
+        this.hostAddress = other.hostAddress;
+        this.isMasterNode = other.isMasterNode;
+        this.role = other.role;
+      }
     }
 
     @Override

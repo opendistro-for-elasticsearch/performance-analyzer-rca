@@ -166,11 +166,11 @@ public class RcaControllerTest {
   public void readRcaEnabledFromConf() throws IOException {
     changeRcaRunState(RcaState.STOP);
     Assert.assertTrue(check(new RcaEnabledEval(rcaController), false));
-    Assert.assertFalse(RcaController.isRcaEnabled());
+    Assert.assertFalse(rcaController.isRcaEnabled());
 
     changeRcaRunState(RcaState.RUN);
     Assert.assertTrue(check(new RcaEnabledEval(rcaController), true));
-    Assert.assertTrue(RcaController.isRcaEnabled());
+    Assert.assertTrue(rcaController.isRcaEnabled());
   }
 
   @Test
@@ -435,7 +435,7 @@ public class RcaControllerTest {
 
     @Override
     public boolean evaluateAndCheck(Boolean t) {
-      return RcaController.isRcaEnabled() == t;
+      return rcaController.isRcaEnabled() == t;
     }
   }
 

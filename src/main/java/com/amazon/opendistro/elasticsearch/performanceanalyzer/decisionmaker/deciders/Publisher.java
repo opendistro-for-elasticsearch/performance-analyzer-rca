@@ -21,32 +21,63 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class Publisher extends NonLeafNode<EmptyFlowUnit> {
 
   private static final Logger LOG = LogManager.getLogger(Publisher.class);
+  private final long initTime;
 
   private Collator collator;
   private boolean isMuted = false;
+  private Map<String, Long> actionToExecutionTime;
 
   public Publisher(int evalIntervalSeconds, Collator collator) {
     super(0, evalIntervalSeconds);
     this.collator = collator;
+    this.actionToExecutionTime = new HashMap<>();
+    initTime = Instant.now().toEpochMilli();
+  }
+
+  /**
+   * Returns true if a given {@link Action}'s last execution time was >= {@link Action#coolOffPeriodInMillis()} ago
+   *
+   * <p>If this Publisher has never executed the action, the last execution time is defined as the time that the publisher
+   * object was constructed.
+   *
+   * @param action The {@link Action} to test
+   * @return true if a given {@link Action}'s last execution time was >= {@link Action#coolOffPeriodInMillis()} ago
+   */
+  public boolean isCooledOff(Action action) {
+    long lastExecution = actionToExecutionTime.getOrDefault(action.name(), initTime);
+    long elapsed = Instant.now().toEpochMilli() - lastExecution;
+    if (elapsed >= action.coolOffPeriodInMillis()) {
+      return true;
+    } else {
+      LOG.debug("Publisher: Action {} still has {} ms left in its cool off period",
+          action.name(),
+              action.coolOffPeriodInMillis() - elapsed);
+      return false;
+    }
   }
 
   @Override
   public EmptyFlowUnit operate() {
-    // TODO: Pass through implementation, need to add dampening, cool-off, action flip-flop
+    // TODO: Pass through implementation, need to add dampening, action flip-flop
     // avoidance, state persistence etc.
-
     Decision decision = collator.getFlowUnits().get(0);
     for (Action action : decision.getActions()) {
-      LOG.info("Executing action: [{}]", action.name());
-      action.execute();
+      if (isCooledOff(action)) { // Only execute actions which have passed their cool off period
+        LOG.info("Publisher: Executing action: [{}]", action.name());
+        action.execute();
+        actionToExecutionTime.put(action.name(), Instant.now().toEpochMilli());
+      }
     }
-    return new EmptyFlowUnit(System.currentTimeMillis());
+    return new EmptyFlowUnit(Instant.now().toEpochMilli());
   }
 
   @Override
@@ -83,5 +114,9 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
   @Override
   public void handleNodeMuted() {
     assert true;
+  }
+
+  public long getInitTime() {
+    return this.initTime;
   }
 }

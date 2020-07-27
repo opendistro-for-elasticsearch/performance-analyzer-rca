@@ -99,35 +99,43 @@ public class RCAScheduler {
     LOG.info("RCA: Starting RCA scheduler ...........");
     createExecutorPools();
 
-    if (scheduledPool != null && role != NodeRole.UNKNOWN) {
-      schedulerState = RcaSchedulerState.STATE_STARTED;
-
-      final RCASchedulerTask task = new RCASchedulerTask(
-          10000,
-          rcaSchedulerPeriodicExecutor,
-          connectedComponents,
-          db,
-          persistable,
-          rcaConf,
-          net,
-          appContext);
-      while (schedulerState == RcaSchedulerState.STATE_STARTED) {
-        try {
-          long startTime = System.currentTimeMillis();
-          task.run();
-          long duration = System.currentTimeMillis() - startTime;
-          if (duration < PERIODICITY_IN_MS) {
-            Thread.sleep(PERIODICITY_IN_MS - duration);
-          }
-        } catch (InterruptedException ie) {
-          LOG.error("Rca scheduler thread sleep interrupted. Reason: {}", ie.getMessage());
-          LOG.error(ie);
-          shutdown();
-          schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
-        }
-      }
-    } else {
+    if (scheduledPool == null) {
       LOG.error("Couldn't start RCA scheduler. Executor pool is not set.");
+      return;
+    }
+    if (role == NodeRole.UNKNOWN) {
+      LOG.error("Couldn't start RCA scheduler as the node role is UNKNOWN.");
+      return;
+    }
+
+    final RCASchedulerTask task = new RCASchedulerTask(
+        10000,
+        rcaSchedulerPeriodicExecutor,
+        connectedComponents,
+        db,
+        persistable,
+        rcaConf,
+        net,
+        appContext);
+
+    schedulerState = RcaSchedulerState.STATE_STARTED;
+    LOG.info("RCA scheduler thread started successfully.");
+
+    while (schedulerState == RcaSchedulerState.STATE_STARTED) {
+      try {
+        long startTime = System.currentTimeMillis();
+        task.run();
+        long duration = System.currentTimeMillis() - startTime;
+        if (duration < PERIODICITY_IN_MS) {
+          Thread.sleep(PERIODICITY_IN_MS - duration);
+        }
+      } catch (InterruptedException ie) {
+        LOG.error("**ERR: Rca scheduler thread sleep interrupted.", ie);
+        shutdown();
+        schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
+      } catch (Exception ex) {
+        LOG.error("**ERR Scheduler failed: ", ex);
+      }
     }
   }
 

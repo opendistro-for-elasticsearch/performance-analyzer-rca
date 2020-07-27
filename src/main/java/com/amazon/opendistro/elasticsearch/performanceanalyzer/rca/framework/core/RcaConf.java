@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageYoungGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNodeClusterRcaConfig;
@@ -25,6 +26,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -55,6 +57,7 @@ public class RcaConf {
     }
   }
 
+  @VisibleForTesting
   // This should only be used for Tests.
   public RcaConf() {}
 
@@ -129,6 +132,10 @@ public class RcaConf {
 
   public HotShardClusterRcaConfig getHotShardClusterRcaConfig() {
     return new HotShardClusterRcaConfig(this);
+  }
+
+  public CacheConfig getCacheConfig() {
+    return new CacheConfig(this);
   }
 
   public List<String> getMutedRcaList() {
