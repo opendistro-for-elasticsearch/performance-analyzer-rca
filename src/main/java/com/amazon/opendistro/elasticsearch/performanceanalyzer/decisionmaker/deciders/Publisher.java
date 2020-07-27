@@ -17,13 +17,17 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.FlipFlopDetector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.TimedFlipFlopDetector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import com.google.common.annotations.VisibleForTesting;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -33,6 +37,7 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
   private final long initTime;
 
   private Collator collator;
+  private FlipFlopDetector flipFlopDetector;
   private boolean isMuted = false;
   private Map<String, Long> actionToExecutionTime;
 
@@ -40,6 +45,8 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
     super(0, evalIntervalSeconds);
     this.collator = collator;
     this.actionToExecutionTime = new HashMap<>();
+    // TODO please bring in guice so we can configure this with DI
+    this.flipFlopDetector = new TimedFlipFlopDetector(1, TimeUnit.HOURS);
     initTime = Instant.now().toEpochMilli();
   }
 
@@ -67,13 +74,13 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
 
   @Override
   public EmptyFlowUnit operate() {
-    // TODO: Pass through implementation, need to add dampening, action flip-flop
-    // avoidance, state persistence etc.
+    // TODO: Need to add dampening, avoidance, state persistence etc.
     Decision decision = collator.getFlowUnits().get(0);
     for (Action action : decision.getActions()) {
-      if (isCooledOff(action)) { // Only execute actions which have passed their cool off period
+      if (isCooledOff(action) && !flipFlopDetector.isFlipFlop(action)) {
         LOG.info("Publisher: Executing action: [{}]", action.name());
         action.execute();
+        flipFlopDetector.recordAction(action);
         actionToExecutionTime.put(action.name(), Instant.now().toEpochMilli());
       }
     }
@@ -118,5 +125,10 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
 
   public long getInitTime() {
     return this.initTime;
+  }
+
+  @VisibleForTesting
+  protected FlipFlopDetector getFlipFlopDetector() {
+    return this.flipFlopDetector;
   }
 }
