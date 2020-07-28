@@ -94,6 +94,14 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
       LOG.warn("The batch metrics api has not been enabled for this node.");
       return;
     }
+    if (batchMetrics.isEmpty()) {
+      sendResponse(
+              exchange,
+              "{\"error\":\"There are no metrics databases. The reader has run into an issue or has just started.\"}",
+              HttpURLConnection.HTTP_UNAVAILABLE);
+      LOG.warn("There are no metrics databases. The reader has run into an issue or has just started.");
+      return;
+    }
 
     if (requestMethod.equalsIgnoreCase("GET")) {
 
