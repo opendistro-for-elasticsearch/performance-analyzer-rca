@@ -94,6 +94,7 @@ enum MetricEnum {
   // cache
   CACHE_EVICTION = 10 [(additional_fields).name = "cache eviction", (additional_fields).description = "cache eviction count"];
   CACHE_HIT = 11 [(additional_fields).name = "cache hit", (additional_fields).description = "cache hit count"];
+  CACHE_MAX_SIZE = 12 [(additional_fields).name = "cache max size", (additional_fields).description = "max cache size in bytes"];
 }
 
 /*

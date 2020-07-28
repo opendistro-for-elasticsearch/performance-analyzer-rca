@@ -15,14 +15,17 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheConfigDimension.CACHE_TYPE;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolDimension.THREAD_POOL_TYPE;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.EsConfigNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.NodeConfigFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Max_Size;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_QueueCapacity;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
@@ -39,12 +42,16 @@ public class NodeConfigCollector extends EsConfigNode {
 
   private static final Logger LOG = LogManager.getLogger(NodeConfigCollector.class);
   private final ThreadPool_QueueCapacity threadPool_queueCapacity;
+  private final Cache_Max_Size cacheMaxSize;
   private final int rcaPeriod;
   private int counter;
   private final HashMap<Resource, Double> configResult;
 
-  public NodeConfigCollector(int rcaPeriod, ThreadPool_QueueCapacity threadPool_queueCapacity) {
+  public NodeConfigCollector(int rcaPeriod,
+                             ThreadPool_QueueCapacity threadPool_queueCapacity,
+                             Cache_Max_Size cacheMaxSize) {
     this.threadPool_queueCapacity = threadPool_queueCapacity;
+    this.cacheMaxSize = cacheMaxSize;
     this.rcaPeriod = rcaPeriod;
     this.counter = 0;
     this.configResult = new HashMap<>();
@@ -69,6 +76,26 @@ public class NodeConfigCollector extends EsConfigNode {
     }
   }
 
+  private void collectCacheMaxSize(MetricFlowUnit cacheMaxSize) {
+    double fieldDataCacheMaxSize = SQLParsingUtil.readDataFromSqlResult(cacheMaxSize.getData(),
+            CACHE_TYPE.getField(), CacheType.FIELD_DATA_CACHE.toString(), MetricsDB.MAX);
+    if (!Double.isNaN(fieldDataCacheMaxSize)) {
+      configResult.put(ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE, fieldDataCacheMaxSize);
+    }
+    else {
+      LOG.error("Field Data cache max size is NaN");
+    }
+
+    double shardRequestCacheMaxSize = SQLParsingUtil.readDataFromSqlResult(cacheMaxSize.getData(),
+            CACHE_TYPE.getField(), CacheType.SHARD_REQUEST_CACHE.toString(), MetricsDB.MAX);
+    if (!Double.isNaN(shardRequestCacheMaxSize)) {
+      configResult.put(ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE, shardRequestCacheMaxSize);
+    }
+    else {
+      LOG.error("Shard Request cache max size is NaN");
+    }
+  }
+
   /**
    * collect config settings from the upstream metric flowunits and set them into the protobuf
    * message PerformanceControllerConfiguration. This will allow us to serialize / de-serialize
@@ -83,6 +110,12 @@ public class NodeConfigCollector extends EsConfigNode {
         continue;
       }
       collectQueueCapacity(flowUnit);
+    }
+    for (MetricFlowUnit flowUnit : cacheMaxSize.getFlowUnits()) {
+      if (flowUnit.isEmpty()) {
+        continue;
+      }
+      collectCacheMaxSize(flowUnit);
     }
     if (counter == rcaPeriod) {
       counter = 0;
