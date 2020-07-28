@@ -30,8 +30,10 @@ public class PluginController {
   private static final Logger LOG = LogManager.getLogger(PluginController.class);
   private final Publisher publisher;
   private List<Plugin> plugins;
+  private PluginControllerConfig pluginControllerConfig;
 
-  public PluginController(Publisher publisher) {
+  public PluginController(PluginControllerConfig pluginConfig, Publisher publisher) {
+    this.pluginControllerConfig = pluginConfig;
     this.publisher = publisher;
     this.plugins = new ArrayList<>();
     loadFrameworkPlugins();
@@ -39,7 +41,7 @@ public class PluginController {
   }
 
   private void loadFrameworkPlugins() {
-    for (Class<?> pluginClass : PluginControllerConfig.getFrameworkPlugins()) {
+    for (Class<?> pluginClass : pluginControllerConfig.getFrameworkPlugins()) {
       final Constructor<?>[] constructors = pluginClass.getConstructors();
       if (constructors.length == 0) {
         throw new IllegalStateException(

@@ -20,12 +20,17 @@ import java.util.List;
 
 public class PluginControllerConfig {
 
+  private List<Class<? extends Plugin>> frameworkPlugins;
+
+  public PluginControllerConfig() {
+    frameworkPlugins = new ArrayList<>();
+    frameworkPlugins.add(PublisherEventsLogger.class);
+  }
+
   /**
    * Returns a list of entry point classes for internal framework plugins
    */
-  public static List<Class<? extends Plugin>> getFrameworkPlugins() {
-    List<Class<? extends Plugin>> frameworkPlugins = new ArrayList<>();
-    frameworkPlugins.add(PublisherEventsLogger.class);
+  public List<Class<? extends Plugin>> getFrameworkPlugins() {
     return frameworkPlugins;
   }
 }

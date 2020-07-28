@@ -26,28 +26,20 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.dec
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
-@PowerMockIgnore({"com.sun.org.apache.xerces.*", "org.apache.logging.log4j.*"})
-@RunWith(PowerMockRunner.class)
-@PrepareForTest(PluginControllerConfig.class)
 public class PluginControllerTest {
 
   @Test
   public void testInit() {
-    PowerMockito.mockStatic(PluginControllerConfig.class);
     List<Class<? extends Plugin>> frameworkPlugins = new ArrayList<Class<? extends Plugin>>() {{
       add(TestActionListener.class);
       add(TestPlugin.class);
     }};
-    PowerMockito.when(PluginControllerConfig.getFrameworkPlugins()).thenReturn(frameworkPlugins);
+    PluginControllerConfig pluginControllerConfig = Mockito.mock(PluginControllerConfig.class);
+    Mockito.when(pluginControllerConfig.getFrameworkPlugins()).thenReturn(frameworkPlugins);
     Publisher publisher = Mockito.mock(Publisher.class);
-    PluginController pluginController = new PluginController(publisher);
+    PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
 
     List<Plugin> plugins = pluginController.getPlugins();
     assertEquals(2, plugins.size());
@@ -59,35 +51,35 @@ public class PluginControllerTest {
 
   @Test(expected = IllegalStateException.class)
   public void testPrivateConstructorPlugin() {
-    PowerMockito.mockStatic(PluginControllerConfig.class);
     List<Class<? extends Plugin>> frameworkPlugins = new ArrayList<Class<? extends Plugin>>() {{
       add(TestPrivateConstructorPlugin.class);
     }};
-    PowerMockito.when(PluginControllerConfig.getFrameworkPlugins()).thenReturn(frameworkPlugins);
+    PluginControllerConfig pluginControllerConfig = Mockito.mock(PluginControllerConfig.class);
+    Mockito.when(pluginControllerConfig.getFrameworkPlugins()).thenReturn(frameworkPlugins);
     Publisher publisher = Mockito.mock(Publisher.class);
-    PluginController pluginController = new PluginController(publisher);
+    PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
   }
 
   @Test(expected = IllegalStateException.class)
   public void testMultiConstructorPlugin() {
-    PowerMockito.mockStatic(PluginControllerConfig.class);
     List<Class<? extends Plugin>> frameworkPlugins = new ArrayList<Class<? extends Plugin>>() {{
       add(TestMultiConstructorPlugin.class);
     }};
-    PowerMockito.when(PluginControllerConfig.getFrameworkPlugins()).thenReturn(frameworkPlugins);
+    PluginControllerConfig pluginControllerConfig = Mockito.mock(PluginControllerConfig.class);
+    Mockito.when(pluginControllerConfig.getFrameworkPlugins()).thenReturn(frameworkPlugins);
     Publisher publisher = Mockito.mock(Publisher.class);
-    PluginController pluginController = new PluginController(publisher);
+    PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
   }
 
   @Test(expected = IllegalStateException.class)
   public void testNonDefaultConstructorPlugin() {
-    PowerMockito.mockStatic(PluginControllerConfig.class);
     List<Class<? extends Plugin>> frameworkPlugins = new ArrayList<Class<? extends Plugin>>() {{
       add(TestNonDefaultConstructorPlugin.class);
     }};
-    PowerMockito.when(PluginControllerConfig.getFrameworkPlugins()).thenReturn(frameworkPlugins);
+    PluginControllerConfig pluginControllerConfig = Mockito.mock(PluginControllerConfig.class);
+    Mockito.when(pluginControllerConfig.getFrameworkPlugins()).thenReturn(frameworkPlugins);
     Publisher publisher = Mockito.mock(Publisher.class);
-    PluginController pluginController = new PluginController(publisher);
+    PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
   }
 
   public static class TestActionListener extends Plugin implements ActionListener {
@@ -154,5 +146,4 @@ public class PluginControllerTest {
       return name;
     }
   }
-
 }
