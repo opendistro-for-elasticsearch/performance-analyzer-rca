@@ -147,7 +147,7 @@ public class NetClient {
   private StreamObserver<FlowUnitMessage> getDataStreamForHost(
       final InstanceDetails remoteHost, final StreamObserver<PublishResponse> serverResponseStream) {
     final AtomicReference<StreamObserver<FlowUnitMessage>> streamObserverAtomicReference =
-        perHostOpenDataStreamMap.get(remoteHost);
+        perHostOpenDataStreamMap.get(remoteHost.getInstanceId());
     if (streamObserverAtomicReference != null) {
       return streamObserverAtomicReference.get();
     }

@@ -113,7 +113,7 @@ public class GRPCConnectionManager {
    */
   public InterNodeRpcServiceStub getClientStubForHost(
       final InstanceDetails remoteHost) {
-    final AtomicReference<InterNodeRpcServiceStub> stubAtomicReference = perHostClientStubMap.get(remoteHost);
+    final AtomicReference<InterNodeRpcServiceStub> stubAtomicReference = perHostClientStubMap.get(remoteHost.getInstanceId());
     if (stubAtomicReference != null) {
       return stubAtomicReference.get();
     }
