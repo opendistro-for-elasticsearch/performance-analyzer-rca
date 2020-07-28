@@ -35,7 +35,7 @@ public class ConfigOverridesHelper {
    * @return String in JSON format representing the serialized equivalent.
    * @throws IOException if conversion runs into an IOException.
    */
-  public static String serialize(final ConfigOverrides overrides) throws IOException {
+  public static synchronized String serialize(final ConfigOverrides overrides) throws IOException {
     // We can't use a local variable to set the exception generated inside the lambda as the
     // local variable is not effectively final(because we'll end up mutating the reference).
     // In order to fish the exception out, we need to create a wrapper and set the exception
@@ -64,7 +64,7 @@ public class ConfigOverridesHelper {
    * @return A {@link ConfigOverrides} instance if the JSON is valid.
    * @throws IOException if conversion runs into an IOException.
    */
-  public static ConfigOverrides deserialize(final String overrides) throws IOException {
+  public static synchronized ConfigOverrides deserialize(final String overrides) throws IOException {
     // We can't use a local variable to set the exception generated inside the lambda as the
     // local variable is not effectively final(because we'll end up mutating the reference).
     // In order to fish the exception out, we need to create a wrapper and set the exception
