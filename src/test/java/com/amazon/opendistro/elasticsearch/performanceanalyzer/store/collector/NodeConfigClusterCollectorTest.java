@@ -38,7 +38,7 @@ public class NodeConfigClusterCollectorTest {
 
   @Before
   public void init() {
-    collector = new NodeConfigCollector(1, null);
+    collector = new NodeConfigCollector(1, null, null);
     clusterCollector = new NodeConfigClusterCollector(collector);
     observer = new RcaTestHelper<>();
     AppContext appContext = new AppContext();
@@ -47,7 +47,7 @@ public class NodeConfigClusterCollectorTest {
   }
 
   @Test
-  public void testCollections() {
+  public void testQueueCapacityCollection() {
     NodeKey nodeKey1 = new NodeKey("node1", "127.0.0.1");
     NodeKey nodeKey2 = new NodeKey("node2", "127.0.0.2");
     NodeConfigFlowUnit flowUnit = new NodeConfigFlowUnit(0, nodeKey1);
@@ -108,4 +108,65 @@ public class NodeConfigClusterCollectorTest {
     Assert.assertEquals(180, val2, 0.01);
   }
 
+  @Test
+  public void testCacheMaxSizeCollection() {
+    NodeKey nodeKey1 = new NodeKey("node1", "127.0.0.1");
+    NodeKey nodeKey2 = new NodeKey("node2", "127.0.0.2");
+    NodeConfigFlowUnit flowUnit = new NodeConfigFlowUnit(0, nodeKey1);
+    flowUnit.addConfig(ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE, 100000);
+    collector.setLocalFlowUnit(flowUnit);
+    clusterCollector.operate();
+    double val1 = observer.readConfig(nodeKey1, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE);
+    Assert.assertEquals(100000, val1, 0.01);
+    boolean hasException;
+    double val2;
+    double val3;
+    try {
+      val2 = observer.readConfig(nodeKey1, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE);
+      hasException = true;
+    } catch (IllegalArgumentException e) {
+      hasException = true;
+    }
+    Assert.assertTrue(hasException);
+
+    try {
+      val3 = observer.readConfig(nodeKey2, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE);
+      hasException = true;
+    } catch (IllegalArgumentException e) {
+      hasException = true;
+    }
+    Assert.assertTrue(hasException);
+
+    flowUnit = new NodeConfigFlowUnit(0, nodeKey1);
+    flowUnit.addConfig(ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE, 500000);
+    collector.setLocalFlowUnit(flowUnit);
+    clusterCollector.operate();
+    val1 = observer.readConfig(nodeKey1, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE);
+    Assert.assertEquals(100000, val1, 0.01);
+    val2 = observer.readConfig(nodeKey1, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE);
+    Assert.assertEquals(500000, val2, 0.01);
+
+    flowUnit = new NodeConfigFlowUnit(0, nodeKey1);
+    flowUnit.addConfig(ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE, 10);
+    collector.setLocalFlowUnit(flowUnit);
+    clusterCollector.operate();
+    val1 = observer.readConfig(nodeKey1, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE);
+    Assert.assertEquals(10, val1, 0.01);
+    val2 = observer.readConfig(nodeKey1, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE);
+    Assert.assertEquals(500000, val2, 0.01);
+
+    flowUnit = new NodeConfigFlowUnit(0, nodeKey2);
+    flowUnit.addConfig(ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE, 80000);
+    flowUnit.addConfig(ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE, 180000);
+    collector.setLocalFlowUnit(flowUnit);
+    clusterCollector.operate();
+    val1 = observer.readConfig(nodeKey1, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE);
+    Assert.assertEquals(10, val1, 0.01);
+    val2 = observer.readConfig(nodeKey1, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE);
+    Assert.assertEquals(500000, val2, 0.01);
+    val1 = observer.readConfig(nodeKey2, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE);
+    Assert.assertEquals(80000, val1, 0.01);
+    val2 = observer.readConfig(nodeKey2, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE);
+    Assert.assertEquals(180000, val2, 0.01);
+  }
 }

@@ -24,6 +24,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metrics
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.NodeConfigFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Max_Size;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_QueueCapacity;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.flow_units.MetricFlowUnitTestHelper;
@@ -40,12 +41,14 @@ import org.junit.experimental.categories.Category;
 public class NodeConfigCollectorTest {
 
   private ThreadPool_QueueCapacity threadPool_QueueCapacity;
+  private Cache_Max_Size cacheMaxSize;
   private NodeConfigCollector nodeConfigCollector;
 
   @Before
   public void init() {
     threadPool_QueueCapacity = new ThreadPool_QueueCapacity();
-    nodeConfigCollector = new NodeConfigCollector(1, threadPool_QueueCapacity);
+    cacheMaxSize = new Cache_Max_Size(5);
+    nodeConfigCollector = new NodeConfigCollector(1, threadPool_QueueCapacity, cacheMaxSize);
 
     ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
     ClusterDetailsEventProcessor.NodeDetails node1 =
@@ -70,7 +73,7 @@ public class NodeConfigCollectorTest {
   }
 
   @Test
-  public void testCapacityMetricNotExist() {
+  public void testQueueCapacityMetricNotExist() {
     threadPool_QueueCapacity.setLocalFlowUnit(MetricFlowUnit.generic());
     NodeConfigFlowUnit flowUnit = nodeConfigCollector.operate();
     Assert.assertTrue(flowUnit.isEmpty());
@@ -79,7 +82,16 @@ public class NodeConfigCollectorTest {
   }
 
   @Test
-  public void testCapacityCollection() {
+  public void testCacheMaxSizeMetricNotExist() {
+    cacheMaxSize.setLocalFlowUnit(MetricFlowUnit.generic());
+    NodeConfigFlowUnit flowUnit = nodeConfigCollector.operate();
+    Assert.assertTrue(flowUnit.isEmpty());
+    Assert.assertFalse(flowUnit.hasConfig(ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE));
+    Assert.assertFalse(flowUnit.hasConfig(ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE));
+  }
+
+  @Test
+  public void testQueueCapacityCollection() {
     mockFlowUnits(100, 200);
     NodeConfigFlowUnit flowUnit = nodeConfigCollector.operate();
     Assert.assertFalse(flowUnit.isEmpty());
