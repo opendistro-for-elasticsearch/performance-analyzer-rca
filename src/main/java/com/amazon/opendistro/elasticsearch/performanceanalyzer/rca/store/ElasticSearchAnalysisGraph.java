@@ -58,6 +58,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigClusterCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric.AggregateFunction;
@@ -195,6 +196,10 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     NodeConfigCollector nodeConfigCollector = new NodeConfigCollector(RCA_PERIOD, queueCapacity, cacheMaxSize);
     nodeConfigCollector.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     nodeConfigCollector.addAllUpstreams(Arrays.asList(threadpool_RejectedReqs, cacheMaxSize));
+    NodeConfigClusterCollector nodeConfigClusterCollector = new NodeConfigClusterCollector(nodeConfigCollector);
+    nodeConfigClusterCollector.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    nodeConfigClusterCollector.addAllUpstreams(Collections.singletonList(nodeConfigCollector));
+    nodeConfigClusterCollector.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
     constructShardResourceUsageGraph();
 
