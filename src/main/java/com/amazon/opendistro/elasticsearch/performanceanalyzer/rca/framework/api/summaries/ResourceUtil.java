@@ -31,8 +31,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum
  * such as TOTAL_THROUGHPUT and SYS_CALL_RATE
  */
 public class ResourceUtil {
-
   // JVM resource
+  public static final Resource HEAP_MAX_SIZE = Resource.newBuilder()
+          .setResourceEnum(ResourceEnum.OLD_GEN)
+          .setMetricEnum(MetricEnum.HEAP_MAX).build();
   public static final Resource OLD_GEN_HEAP_USAGE = Resource.newBuilder()
       .setResourceEnum(ResourceEnum.OLD_GEN)
       .setMetricEnum(MetricEnum.HEAP_USAGE).build();

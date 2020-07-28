@@ -27,26 +27,32 @@ import static org.junit.Assert.assertTrue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Impact;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheDeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.Map;
 import org.junit.Test;
 
-public class ModifyCacheCapacityActionTest {
+public class ModifyCacheMaxSizeActionTest {
 
     @Test
     public void testIncreaseCapacity() {
         NodeKey node1 = new NodeKey("node-1", "1.2.3.4");
-        ModifyCacheCapacityAction modifyCacheCapacityAction =
-                new ModifyCacheCapacityAction(node1, ResourceEnum.FIELD_DATA_CACHE, 5000, true);
+        ModifyCacheMaxSizeAction modifyCacheSizeAction =
+                new ModifyCacheMaxSizeAction(
+                        node1,
+                        ResourceEnum.FIELD_DATA_CACHE,
+                        5000,
+                        12000 * 1_000_000L,
+                        true);
         assertTrue(
-                modifyCacheCapacityAction.getDesiredCapacityInBytes()
-                        > modifyCacheCapacityAction.getCurrentCapacityInBytes());
-        assertTrue(modifyCacheCapacityAction.isActionable());
-        assertEquals(300 * 1_000, modifyCacheCapacityAction.coolOffPeriodInMillis());
-        assertEquals(ResourceEnum.FIELD_DATA_CACHE, modifyCacheCapacityAction.getCacheType());
-        assertEquals(1, modifyCacheCapacityAction.impactedNodes().size());
+                modifyCacheSizeAction.getDesiredCacheMaxSizeInBytes()
+                        > modifyCacheSizeAction.getCurrentCacheMaxSizeInBytes());
+        assertTrue(modifyCacheSizeAction.isActionable());
+        assertEquals(300 * 1_000, modifyCacheSizeAction.coolOffPeriodInMillis());
+        assertEquals(ResourceEnum.FIELD_DATA_CACHE, modifyCacheSizeAction.getCacheType());
+        assertEquals(1, modifyCacheSizeAction.impactedNodes().size());
 
-        Map<Dimension, Impact> impact = modifyCacheCapacityAction.impact().get(node1).getImpact();
+        Map<Dimension, Impact> impact = modifyCacheSizeAction.impact().get(node1).getImpact();
         assertEquals(Impact.INCREASES_PRESSURE, impact.get(HEAP));
         assertEquals(Impact.NO_IMPACT, impact.get(CPU));
         assertEquals(Impact.NO_IMPACT, impact.get(NETWORK));
@@ -57,17 +63,22 @@ public class ModifyCacheCapacityActionTest {
     @Test
     public void testNoIncreaseCapacity() {
         NodeKey node1 = new NodeKey("node-1", "1.2.3.4");
-        ModifyCacheCapacityAction modifyCacheCapacityAction =
-                new ModifyCacheCapacityAction(node1, ResourceEnum.FIELD_DATA_CACHE, 5000, false);
+        ModifyCacheMaxSizeAction modifyCacheSizeAction =
+                new ModifyCacheMaxSizeAction(
+                        node1,
+                        ResourceEnum.FIELD_DATA_CACHE,
+                        5000,
+                        12000 * 1_000_000L,
+                        false);
         assertEquals(
-                modifyCacheCapacityAction.getDesiredCapacityInBytes(),
-                modifyCacheCapacityAction.getCurrentCapacityInBytes());
-        assertFalse(modifyCacheCapacityAction.isActionable());
-        assertEquals(300 * 1_000, modifyCacheCapacityAction.coolOffPeriodInMillis());
-        assertEquals(ResourceEnum.FIELD_DATA_CACHE, modifyCacheCapacityAction.getCacheType());
-        assertEquals(1, modifyCacheCapacityAction.impactedNodes().size());
+                modifyCacheSizeAction.getDesiredCacheMaxSizeInBytes(),
+                modifyCacheSizeAction.getCurrentCacheMaxSizeInBytes());
+        assertFalse(modifyCacheSizeAction.isActionable());
+        assertEquals(300 * 1_000, modifyCacheSizeAction.coolOffPeriodInMillis());
+        assertEquals(ResourceEnum.FIELD_DATA_CACHE, modifyCacheSizeAction.getCacheType());
+        assertEquals(1, modifyCacheSizeAction.impactedNodes().size());
 
-        Map<Dimension, Impact> impact = modifyCacheCapacityAction.impact().get(node1).getImpact();
+        Map<Dimension, Impact> impact = modifyCacheSizeAction.impact().get(node1).getImpact();
         assertEquals(Impact.NO_IMPACT, impact.get(HEAP));
         assertEquals(Impact.NO_IMPACT, impact.get(CPU));
         assertEquals(Impact.NO_IMPACT, impact.get(NETWORK));
@@ -78,28 +89,37 @@ public class ModifyCacheCapacityActionTest {
     @Test
     public void testBounds() {
         // TODO: Move to work with test rcaConf when bounds moved to nodeConfiguration rca
+        final long maxSizeInBytes = 12000 * 1_000_000L;
         NodeKey node1 = new NodeKey("node-1", "1.2.3.4");
-        ModifyCacheCapacityAction fieldCacheIncrease =
-            new ModifyCacheCapacityAction(
-                node1, ResourceEnum.FIELD_DATA_CACHE, 12000 * 1_000_000L, true);
+        ModifyCacheMaxSizeAction fieldCacheIncrease =
+            new ModifyCacheMaxSizeAction(
+                    node1,
+                    ResourceEnum.FIELD_DATA_CACHE,
+                    (long) (maxSizeInBytes * CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND),
+                    maxSizeInBytes,
+                    true);
         assertEquals(
-            fieldCacheIncrease.getDesiredCapacityInBytes(),
-            fieldCacheIncrease.getCurrentCapacityInBytes());
+            fieldCacheIncrease.getDesiredCacheMaxSizeInBytes(),
+            fieldCacheIncrease.getCurrentCacheMaxSizeInBytes());
         assertFalse(fieldCacheIncrease.isActionable());
         assertNoImpact(node1, fieldCacheIncrease);
 
-        ModifyCacheCapacityAction shardRequestCacheIncrease =
-            new ModifyCacheCapacityAction(
-                node1, ResourceEnum.SHARD_REQUEST_CACHE, 120000 * 1_000L, true);
+        ModifyCacheMaxSizeAction shardRequestCacheIncrease =
+            new ModifyCacheMaxSizeAction(
+                    node1,
+                    ResourceEnum.SHARD_REQUEST_CACHE,
+                    (long) (maxSizeInBytes * CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND),
+                    maxSizeInBytes,
+                    true);
         assertEquals(
-            shardRequestCacheIncrease.getDesiredCapacityInBytes(),
-            shardRequestCacheIncrease.getCurrentCapacityInBytes());
+            shardRequestCacheIncrease.getDesiredCacheMaxSizeInBytes(),
+            shardRequestCacheIncrease.getCurrentCacheMaxSizeInBytes());
         assertFalse(shardRequestCacheIncrease.isActionable());
         assertNoImpact(node1, shardRequestCacheIncrease);
     }
 
-    private void assertNoImpact(NodeKey node, ModifyCacheCapacityAction modifyCacheCapacityAction) {
-        Map<Dimension, Impact> impact = modifyCacheCapacityAction.impact().get(node).getImpact();
+    private void assertNoImpact(NodeKey node, ModifyCacheMaxSizeAction modifyCacheSizeAction) {
+        Map<Dimension, Impact> impact = modifyCacheSizeAction.impact().get(node).getImpact();
         assertEquals(Impact.NO_IMPACT, impact.get(HEAP));
         assertEquals(Impact.NO_IMPACT, impact.get(CPU));
         assertEquals(Impact.NO_IMPACT, impact.get(NETWORK));

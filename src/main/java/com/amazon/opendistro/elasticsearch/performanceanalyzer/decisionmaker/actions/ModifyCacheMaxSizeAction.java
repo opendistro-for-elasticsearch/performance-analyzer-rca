@@ -18,39 +18,51 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.ac
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.HEAP;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheDeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-public class ModifyCacheCapacityAction implements Action {
+public class ModifyCacheMaxSizeAction implements Action {
+    private static final Logger LOG = LogManager.getLogger(ModifyCacheMaxSizeAction.class);
     public static final String NAME = "modifyCacheCapacity";
     public static final long COOL_OFF_PERIOD_IN_MILLIS = 300 * 1_000;
 
-    private long currentCapacityInBytes;
-    private long desiredCapacityInBytes;
+    private long currentCacheMaxSizeInBytes;
+    private long desiredCacheMaxSizeInBytes;
+    private long heapMaxSizeInBytes;
+    private double fieldDataCacheSizeUpperBound;
+    private double shardRequestCacheSizeUpperBound;
     private ResourceEnum cacheType;
     private NodeKey esNode;
 
     private Map<ResourceEnum, Long> stepSizeInBytes = new HashMap<>();
     private Map<ResourceEnum, Long> upperBoundInBytes = new HashMap<>();
 
-    public ModifyCacheCapacityAction(
+    public ModifyCacheMaxSizeAction(
             final NodeKey esNode,
             final ResourceEnum cacheType,
-            final long currentCapacityInBytes,
+            final long currentCacheMaxSizeInBytes,
+            final long heapMaxSizeInBytes,
             final boolean increase) {
-        // TODO: Also consume NodeConfigurationRca
+        // TODO: Consume from rca conf file
+        this.fieldDataCacheSizeUpperBound = CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND;
+        this.shardRequestCacheSizeUpperBound = CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND;
+        this.heapMaxSizeInBytes = heapMaxSizeInBytes;
+
         setBounds();
         setStepSize();
 
         this.esNode = esNode;
         this.cacheType = cacheType;
-        this.currentCapacityInBytes = currentCapacityInBytes;
+        this.currentCacheMaxSizeInBytes = currentCacheMaxSizeInBytes;
         long desiredCapacity =
-                increase ? currentCapacityInBytes + getStepSize(cacheType) : currentCapacityInBytes;
-        setDesiredCapacity(desiredCapacity);
+                increase ? currentCacheMaxSizeInBytes + getStepSize(cacheType) : currentCacheMaxSizeInBytes;
+        setDesiredCacheMaxSize(desiredCapacity);
     }
 
     @Override
@@ -60,7 +72,7 @@ public class ModifyCacheCapacityAction implements Action {
 
     @Override
     public boolean isActionable() {
-        return desiredCapacityInBytes != currentCapacityInBytes;
+        return desiredCacheMaxSizeInBytes != currentCacheMaxSizeInBytes;
     }
 
     @Override
@@ -76,9 +88,9 @@ public class ModifyCacheCapacityAction implements Action {
     @Override
     public Map<NodeKey, ImpactVector> impact() {
         final ImpactVector impactVector = new ImpactVector();
-        if (desiredCapacityInBytes > currentCapacityInBytes) {
+        if (desiredCacheMaxSizeInBytes > currentCacheMaxSizeInBytes) {
             impactVector.increasesPressure(HEAP);
-        } else if (desiredCapacityInBytes < currentCapacityInBytes) {
+        } else if (desiredCacheMaxSizeInBytes < currentCacheMaxSizeInBytes) {
             impactVector.decreasesPressure(HEAP);
         }
         return Collections.singletonMap(esNode, impactVector);
@@ -97,7 +109,7 @@ public class ModifyCacheCapacityAction implements Action {
             return String.format("No action to take for: [%s]", NAME);
         }
         return String.format("Update [%s] capacity from [%d] to [%d] on node [%s]",
-                cacheType.toString(), currentCapacityInBytes, desiredCapacityInBytes, esNode.getNodeId());
+                cacheType.toString(), currentCacheMaxSizeInBytes, desiredCacheMaxSizeInBytes, esNode.getNodeId());
     }
 
     @Override
@@ -109,12 +121,11 @@ public class ModifyCacheCapacityAction implements Action {
         // This is intentionally not made static because different nodes can
         // have different bounds based on instance types
 
-        // TODO: Read the upperBound from NodeConfigurationRca.
         // Field data cache used when sorting on or computing aggregation on the field (in Bytes)
-        upperBoundInBytes.put(ResourceEnum.FIELD_DATA_CACHE, 12000 * 1_000_000L);
+        upperBoundInBytes.put(ResourceEnum.FIELD_DATA_CACHE, (long) (heapMaxSizeInBytes * fieldDataCacheSizeUpperBound));
 
         // Shard request cache (in Bytes)
-        upperBoundInBytes.put(ResourceEnum.SHARD_REQUEST_CACHE, 120000 * 1_000L);
+        upperBoundInBytes.put(ResourceEnum.SHARD_REQUEST_CACHE, (long) (heapMaxSizeInBytes * shardRequestCacheSizeUpperBound));
     }
 
     private void setStepSize() {
@@ -130,16 +141,16 @@ public class ModifyCacheCapacityAction implements Action {
         return stepSizeInBytes.get(cacheType);
     }
 
-    private void setDesiredCapacity(final long desiredCapacity) {
-        this.desiredCapacityInBytes = Math.min(desiredCapacity, upperBoundInBytes.get(cacheType));
+    private void setDesiredCacheMaxSize(final long desiredCacheMaxSize) {
+        this.desiredCacheMaxSizeInBytes = Math.min(desiredCacheMaxSize, upperBoundInBytes.get(cacheType));
     }
 
-    public long getCurrentCapacityInBytes() {
-        return currentCapacityInBytes;
+    public long getCurrentCacheMaxSizeInBytes() {
+        return currentCacheMaxSizeInBytes;
     }
 
-    public long getDesiredCapacityInBytes() {
-        return desiredCapacityInBytes;
+    public long getDesiredCacheMaxSizeInBytes() {
+        return desiredCacheMaxSizeInBytes;
     }
 
     public ResourceEnum getCacheType() {

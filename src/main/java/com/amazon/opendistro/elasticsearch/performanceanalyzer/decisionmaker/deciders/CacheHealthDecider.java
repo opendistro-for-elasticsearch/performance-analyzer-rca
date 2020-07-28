@@ -16,12 +16,13 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheCapacityAction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.BaseClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
@@ -29,10 +30,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.clu
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-// TODO: 1. Read current cache capacity, total cache capacity, upper bound, lower bound from NodeConfigurationRca
 public class CacheHealthDecider extends Decider {
-
+    private static final Logger LOG = LogManager.getLogger(CacheHealthDecider.class);
     public static final String NAME = "cacheHealthDecider";
 
     private final FieldDataCacheClusterRca fieldDataCacheClusterRca;
@@ -45,7 +47,6 @@ public class CacheHealthDecider extends Decider {
                               final int decisionFrequency,
                               final FieldDataCacheClusterRca fieldDataCacheClusterRca,
                               final ShardRequestCacheClusterRca shardRequestCacheClusterRca) {
-        // TODO: Also consume NodeConfigurationRca
         super(evalIntervalSeconds, decisionFrequency);
 
         this.fieldDataCacheClusterRca = fieldDataCacheClusterRca;
@@ -87,26 +88,20 @@ public class CacheHealthDecider extends Decider {
                 return;
             }
 
-            final HotClusterSummary clusterSummary = flowUnit.getSummary();
+            final List<HotNodeSummary> clusterSummary = flowUnit.getSummary().getHotNodeSummaryList();
 
-            clusterSummary
-                    .getHotNodeSummaryList()
-                    .forEach(
-                            hotNodeSummary -> {
-                                final NodeKey esNode =
-                                        new NodeKey(hotNodeSummary.getNodeID(), hotNodeSummary.getHostAddress());
-                                for (final HotResourceSummary resource :
-                                        hotNodeSummary.getHotResourceSummaryList()) {
-                                    decision.addAction(
-                                            computeBestAction(esNode, resource.getResource().getResourceEnum()));
-                                }
-                            });
+            for (final HotNodeSummary hotNodeSummary : clusterSummary) {
+                final NodeKey esNode = new NodeKey(hotNodeSummary.getNodeID(), hotNodeSummary.getHostAddress());
+                for (final HotResourceSummary resource : hotNodeSummary.getHotResourceSummaryList()) {
+                    decision.addAction(computeBestAction(esNode, resource.getResource().getResourceEnum()));
+                }
+            }
         }
     }
 
     private void configureActionPriority() {
         // TODO: Input from user configured yml
-        this.actionsByUserPriority.add(ModifyCacheCapacityAction.NAME);
+        this.actionsByUserPriority.add(ModifyCacheMaxSizeAction.NAME);
     }
 
     /**
@@ -119,7 +114,13 @@ public class CacheHealthDecider extends Decider {
         Action action = null;
         for (String actionName : actionsByUserPriority) {
             action =
-                    getAction(actionName, esNode, cacheType, getNodeCacheCapacityInBytes(esNode, cacheType), true);
+                getAction(
+                    actionName,
+                    esNode,
+                    cacheType,
+                    getNodeCacheMaxSizeInBytes(esNode, cacheType),
+                    getHeapMaxSizeInBytes(esNode),
+                    true);
             if (action != null) {
                 break;
             }
@@ -130,32 +131,54 @@ public class CacheHealthDecider extends Decider {
     private Action getAction(final String actionName,
                              final NodeKey esNode,
                              final ResourceEnum cacheType,
-                             final long currentCapacityInBytes,
+                             final long currentMaxSizeInBytes,
+                             final long heapMaxSizeInBytes,
                              final boolean increase) {
-        if (ModifyCacheCapacityAction.NAME.equals(actionName)) {
-            return configureCacheCapacity(esNode, cacheType, currentCapacityInBytes, increase);
+        if (currentMaxSizeInBytes == -1 || heapMaxSizeInBytes == -1) {
+            return null;
+        }
+        if (ModifyCacheMaxSizeAction.NAME.equals(actionName)) {
+            return configureCacheMaxSize(esNode, cacheType, currentMaxSizeInBytes, heapMaxSizeInBytes, increase);
         }
         return null;
     }
 
-    private ModifyCacheCapacityAction configureCacheCapacity(
+    private ModifyCacheMaxSizeAction configureCacheMaxSize(
             final NodeKey esNode,
             final ResourceEnum cacheType,
-            final long currentCapacityInBytes,
+            final long currentMaxSizeInBytes,
+            final long heapMaxSizeInBytes,
             final boolean increase) {
-        final ModifyCacheCapacityAction action =
-                new ModifyCacheCapacityAction(esNode, cacheType, currentCapacityInBytes, increase);
+        final ModifyCacheMaxSizeAction action =
+                new ModifyCacheMaxSizeAction(esNode, cacheType, currentMaxSizeInBytes, heapMaxSizeInBytes, increase);
         if (action.isActionable()) {
             return action;
         }
         return null;
     }
 
-    private long getNodeCacheCapacityInBytes(final NodeKey esNode, final ResourceEnum cacheType) {
-        // TODO: use NodeConfigurationRca to return capacity, for now returning random value in Bytes
-        if (cacheType.equals(ResourceEnum.FIELD_DATA_CACHE)) {
-            return 1000L;
+    private long getNodeCacheMaxSizeInBytes(final NodeKey esNode, final ResourceEnum cacheType) {
+        try {
+            if (cacheType.equals(ResourceEnum.FIELD_DATA_CACHE)) {
+                return (long) getAppContext().getNodeConfigCache().get(esNode, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE);
+            }
+            return (long) getAppContext().getNodeConfigCache().get(esNode, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE);
+        } catch (final Exception e) {
+            LOG.error("Exception while reading cache max size from Node Config Cache", e);
         }
-        return 1000L;
-    }
+        // No action if value not present in the cache.
+        // No action will be triggered as this value was wiped out from the cache
+        return -1;
+  }
+
+  private long getHeapMaxSizeInBytes(final NodeKey esNode) {
+      try {
+          return (long) getAppContext().getNodeConfigCache().get(esNode, ResourceUtil.HEAP_MAX_SIZE);
+      } catch (final Exception e) {
+          LOG.error("Exception while reading heap max size from Node Config Cache", e);
+      }
+      // No action if value not present in the cache.
+      // No action will be triggered as this value was wiped out from the cache
+      return -1;
+  }
 }

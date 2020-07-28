@@ -38,7 +38,7 @@ public class NodeConfigClusterCollectorTest {
 
   @Before
   public void init() {
-    collector = new NodeConfigCollector(1, null, null);
+    collector = new NodeConfigCollector(1, null, null, null);
     clusterCollector = new NodeConfigClusterCollector(collector);
     observer = new RcaTestHelper<>();
     AppContext appContext = new AppContext();
@@ -168,5 +168,37 @@ public class NodeConfigClusterCollectorTest {
     Assert.assertEquals(80000, val1, 0.01);
     val2 = observer.readConfig(nodeKey2, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE);
     Assert.assertEquals(180000, val2, 0.01);
+  }
+
+  @Test
+  public void testHeapMaxSizeCollection() {
+    NodeKey nodeKey1 = new NodeKey("node1", "127.0.0.1");
+    NodeKey nodeKey2 = new NodeKey("node2", "127.0.0.2");
+    NodeConfigFlowUnit flowUnit = new NodeConfigFlowUnit(0, nodeKey1);
+    flowUnit.addConfig(ResourceUtil.HEAP_MAX_SIZE, 100000);
+    collector.setLocalFlowUnit(flowUnit);
+    clusterCollector.operate();
+    double val1 = observer.readConfig(nodeKey1, ResourceUtil.HEAP_MAX_SIZE);
+    Assert.assertEquals(100000, val1, 0.01);
+
+    boolean hasException;
+    double val2;
+    try {
+      observer.readConfig(nodeKey2, ResourceUtil.HEAP_MAX_SIZE);
+      hasException = true;
+    } catch (IllegalArgumentException e) {
+      hasException = true;
+    }
+    Assert.assertTrue(hasException);
+
+
+    flowUnit = new NodeConfigFlowUnit(0, nodeKey2);
+    flowUnit.addConfig(ResourceUtil.HEAP_MAX_SIZE, 80000);
+    collector.setLocalFlowUnit(flowUnit);
+    clusterCollector.operate();
+    val1 = observer.readConfig(nodeKey1, ResourceUtil.HEAP_MAX_SIZE);
+    Assert.assertEquals(100000, val1, 0.01);
+    val2 = observer.readConfig(nodeKey2, ResourceUtil.HEAP_MAX_SIZE);
+    Assert.assertEquals(80000, val2, 0.01);
   }
 }
