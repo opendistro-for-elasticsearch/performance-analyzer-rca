@@ -93,11 +93,11 @@ public class QueueHealthDecider extends Decider {
    * <p>Action relevance decided based on user configured priorities for now, this can be modified
    * to consume better signals going forward.
    */
-  private Action computeBestAction(NodeKey esNode, ResourceEnum threadpool) {
+  private Action computeBestAction(NodeKey esNode, ResourceEnum threadPool) {
     Action action = null;
     int currQueueCapacity;
     try {
-        currQueueCapacity = getNodeQueueCapacity(esNode, threadpool);
+        currQueueCapacity = getNodeQueueCapacity(esNode, threadPool);
     } catch (Exception e) {
       // No action if value not present in the cache.
       // Assumption here is the cache has been wiped off due to
@@ -108,7 +108,7 @@ public class QueueHealthDecider extends Decider {
 
     for (String actionName : actionsByUserPriority) {
       action =
-        getAction(actionName, esNode, threadpool, currQueueCapacity, true);
+        getAction(actionName, esNode, threadPool, currQueueCapacity, true);
       if (action != null) {
         break;
       }
