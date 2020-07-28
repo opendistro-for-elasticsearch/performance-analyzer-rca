@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
@@ -74,7 +75,7 @@ public class QueueHealthDecider extends Decider {
     for (HotNodeSummary nodeSummary : clusterSummary.getHotNodeSummaryList()) {
       NodeKey esNode = new NodeKey(nodeSummary.getNodeID(), nodeSummary.getHostAddress());
       for (HotResourceSummary resource : nodeSummary.getHotResourceSummaryList()) {
-        decision.addAction(computeBestAction(esNode, resource.getResource()));
+        decision.addAction(computeBestAction(esNode, resource.getResource().getResourceEnum()));
       }
     }
 
@@ -92,11 +93,11 @@ public class QueueHealthDecider extends Decider {
    * <p>Action relevance decided based on user configured priorities for now, this can be modified
    * to consume better signals going forward.
    */
-  private Action computeBestAction(NodeKey esNode, Resource resource) {
+  private Action computeBestAction(NodeKey esNode, ResourceEnum threadpool) {
     Action action = null;
     for (String actionName : actionsByUserPriority) {
       action =
-        getAction(actionName, esNode, resource.getResourceEnum(), getNodeQueueCapacity(esNode, resource), true);
+        getAction(actionName, esNode, threadpool, getNodeQueueCapacity(esNode, threadpool), true);
       if (action != null) {
         break;
       }
@@ -124,9 +125,11 @@ public class QueueHealthDecider extends Decider {
     return null;
   }
 
-  private int getNodeQueueCapacity(NodeKey esNode, Resource resource) {
+  private int getNodeQueueCapacity(NodeKey esNode, ResourceEnum threadPool) {
     try {
-      return (int) getAppContext().getNodeConfigCache().get(esNode, resource);
+      return (int) getAppContext().getNodeConfigCache().get(esNode, Resource.newBuilder()
+              .setResourceEnum(threadPool)
+              .setMetricEnum(MetricEnum.QUEUE_CAPACITY).build());
     } catch (Exception e) {
       LOG.error("Exception while reading values from Node Config Cache", e);
     }
