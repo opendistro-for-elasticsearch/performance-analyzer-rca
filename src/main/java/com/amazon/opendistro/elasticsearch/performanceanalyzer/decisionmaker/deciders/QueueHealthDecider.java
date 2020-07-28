@@ -25,11 +25,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 // This is a sample decider implementation to finalize decision maker interfaces.
 // TODO: 1. Read action priorities from a configurable yml
@@ -128,7 +127,7 @@ public class QueueHealthDecider extends Decider {
   private int getNodeQueueCapacity(NodeKey esNode, Resource resource) {
     try {
       return (int) getAppContext().getNodeConfigCache().get(esNode, resource);
-    } catch (Exception e){
+    } catch (Exception e) {
       LOG.error("Exception while reading values from Node Config Cache", e);
     }
     // No action if value not present in the cache.
