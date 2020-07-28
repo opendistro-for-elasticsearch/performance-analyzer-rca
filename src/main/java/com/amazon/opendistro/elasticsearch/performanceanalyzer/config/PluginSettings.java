@@ -115,7 +115,8 @@ public class PluginSettings {
   }
 
   @VisibleForTesting
-  public @Nullable String getProperty(String key) {
+  @Nullable
+  public String getProperty(String key) {
     return settings.getProperty(key);
   }
 
