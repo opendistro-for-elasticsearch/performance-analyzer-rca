@@ -95,9 +95,20 @@ public class QueueHealthDecider extends Decider {
    */
   private Action computeBestAction(NodeKey esNode, ResourceEnum threadpool) {
     Action action = null;
+    int currQueueCapacity;
+    try {
+        currQueueCapacity = getNodeQueueCapacity(esNode, threadpool);
+    } catch (Exception e) {
+      // No action if value not present in the cache.
+      // Assumption here is the cache has been wiped off due to
+      // unforeseen events and we dont want to trigger any action.
+      LOG.error("Exception while reading values from Node Config Cache", e);
+      return null;
+    }
+
     for (String actionName : actionsByUserPriority) {
       action =
-        getAction(actionName, esNode, threadpool, getNodeQueueCapacity(esNode, threadpool), true);
+        getAction(actionName, esNode, threadpool, currQueueCapacity, true);
       if (action != null) {
         break;
       }
@@ -106,9 +117,6 @@ public class QueueHealthDecider extends Decider {
   }
 
   private Action getAction(String actionName, NodeKey esNode, ResourceEnum threadPool, int currCapacity, boolean increase) {
-    if (currCapacity == -1) {
-      return null;
-    }
     switch (actionName) {
       case ModifyQueueCapacityAction.NAME:
         return configureQueueCapacity(esNode, threadPool, currCapacity, increase);
@@ -126,16 +134,8 @@ public class QueueHealthDecider extends Decider {
   }
 
   private int getNodeQueueCapacity(NodeKey esNode, ResourceEnum threadPool) {
-    try {
       return (int) getAppContext().getNodeConfigCache().get(esNode, Resource.newBuilder()
               .setResourceEnum(threadPool)
               .setMetricEnum(MetricEnum.QUEUE_CAPACITY).build());
-    } catch (Exception e) {
-      LOG.error("Exception while reading values from Node Config Cache", e);
-    }
-    // No action if value not present in the cache.
-    // Assumption here is the cache has been wiped off due to
-    // unforeseen events and we dont want to trigger any action.
-    return -1;
   }
 }
