@@ -143,4 +143,11 @@ public class WireHopper {
     }
     return remoteFlowUnits;
   }
+
+  @VisibleForTesting
+  public void shutdownAll() {
+    executorReference.get().shutdown();
+    netClient.stop();
+    netClient.getConnectionManager().shutdown();
+  }
 }
