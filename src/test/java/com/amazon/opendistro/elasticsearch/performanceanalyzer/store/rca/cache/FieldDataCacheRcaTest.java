@@ -15,23 +15,31 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca.cache;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardStatsDerivedDimension.INDEX_NAME;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardStatsDerivedDimension.SHARD_ID;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE;
 import static java.time.Instant.ofEpochMilli;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.RcaTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.MetricTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.FieldDataCacheRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Before;
@@ -45,6 +53,7 @@ public class FieldDataCacheRcaTest {
     private MetricTestHelper fieldDataCacheWeight;
     private FieldDataCacheRca fieldDataCacheRca;
     private List<String> columnName;
+    private AppContext appContext;
 
     @Before
     public void init() throws Exception {
@@ -52,9 +61,16 @@ public class FieldDataCacheRcaTest {
         fieldDataCacheWeight = new MetricTestHelper(5);
         fieldDataCacheRca = new FieldDataCacheRca(1, fieldDataCacheEvictions, fieldDataCacheWeight);
         columnName = Arrays.asList(INDEX_NAME.toString(), SHARD_ID.toString(), MetricsDB.SUM, MetricsDB.MAX);
-        ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
-        clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.0", false);
-        clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
+
+        ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
+        ClusterDetailsEventProcessor.NodeDetails node =
+                new ClusterDetailsEventProcessor.NodeDetails(NodeRole.DATA, "node1", "127.0.0.1", false);
+        clusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(node));
+        appContext = new AppContext();
+        appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
+        appContext.getNodeConfigCache().put(new NodeKey(new InstanceDetails.Id("node1"), new InstanceDetails.Ip("127.0.0.1")),
+                FIELD_DATA_CACHE_MAX_SIZE, 5.0);
+        fieldDataCacheRca.setAppContext(appContext);
     }
 
     /**

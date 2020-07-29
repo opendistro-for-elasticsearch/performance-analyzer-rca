@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.ca
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.SHARD_REQUEST_CACHE_EVICTION;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.SHARD_REQUEST_CACHE_HIT;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.CacheUtil.getCacheMaxSize;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.CacheUtil.isSizeThresholdExceeded;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
@@ -84,7 +85,6 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
     private final Metric shardRequestCacheEvictions;
     private final Metric shardRequestCacheHits;
     private final Metric shardRequestCacheSizeGroupByOperation;
-    private final Double shardRequestCacheMaxSizeInBytes;
     private final int rcaPeriod;
     private int counter;
     private double cacheSizeThreshold;
@@ -101,9 +101,6 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
         this.shardRequestCacheEvictions = shardRequestCacheEvictions;
         this.shardRequestCacheHits = shardRequestCacheHits;
         this.shardRequestCacheSizeGroupByOperation = shardRequestCacheSizeGroupByOperation;
-        NodeKey nodeKey = new NodeKey(getInstanceDetails());
-        this.shardRequestCacheMaxSizeInBytes = getAppContext().getNodeConfigCache().get(
-                nodeKey, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE);
         this.counter = 0;
         this.cacheSizeThreshold = CacheConfig.DEFAULT_SHARD_REQUEST_CACHE_SIZE_THRESHOLD;
         this.clock = Clock.systemUTC();
@@ -130,6 +127,9 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
             HotNodeSummary nodeSummary;
 
             InstanceDetails instanceDetails = getInstanceDetails();
+            double shardRequestCacheMaxSizeInBytes = getCacheMaxSize(
+                    getAppContext(), new NodeKey(instanceDetails), ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE);
+            LOG.info("MOCHI, fieldDataCacheMaxSizeInBytes: {}", shardRequestCacheMaxSizeInBytes);
             Boolean exceedsSizeThreshold = isSizeThresholdExceeded(
                     shardRequestCacheSizeGroupByOperation, shardRequestCacheMaxSizeInBytes, cacheSizeThreshold);
 

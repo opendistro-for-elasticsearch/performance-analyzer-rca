@@ -17,8 +17,12 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca.cache;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardStatsDerivedDimension.INDEX_NAME;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardStatsDerivedDimension.SHARD_ID;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE;
 import static java.time.Instant.ofEpochMilli;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
@@ -26,12 +30,16 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.ShardRequestCacheRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Before;
@@ -46,6 +54,7 @@ public class ShardRequestCacheRcaTest {
     private MetricTestHelper shardRequestCacheSize;
     private ShardRequestCacheRca shardRequestCacheRca;
     private List<String> columnName;
+    private AppContext appContext;
 
     @Before
     public void init() throws Exception {
@@ -55,9 +64,16 @@ public class ShardRequestCacheRcaTest {
         shardRequestCacheRca = new ShardRequestCacheRca(
                 1, shardRequestCacheEvictions, shardRequestCacheHits, shardRequestCacheSize);
         columnName = Arrays.asList(INDEX_NAME.toString(), SHARD_ID.toString(), MetricsDB.SUM, MetricsDB.MAX);
-        ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
-        clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.0", false);
-        clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
+
+        ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
+        ClusterDetailsEventProcessor.NodeDetails node =
+                new ClusterDetailsEventProcessor.NodeDetails(AllMetrics.NodeRole.DATA, "node1", "127.0.0.1", false);
+        clusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(node));
+        appContext = new AppContext();
+        appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
+        appContext.getNodeConfigCache().put(new NodeKey(new InstanceDetails.Id("node1"), new InstanceDetails.Ip("127.0.0.1")),
+                SHARD_REQUEST_CACHE_MAX_SIZE, 0.0);
+        shardRequestCacheRca.setAppContext(appContext);
     }
 
     /**
@@ -83,71 +99,82 @@ public class ShardRequestCacheRcaTest {
         Clock constantClock = Clock.fixed(ofEpochMilli(0), ZoneId.systemDefault());
 
         // TimeWindow 1 of size 300sec
-        mockFlowUnits(0, 0, 0.0); //0.0
+        mockFlowUnits(0, 0, 0.0);
         shardRequestCacheRca.setClock(constantClock);
         flowUnit = shardRequestCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
-        mockFlowUnits(0, 0, 4.0); //3.0
+
+        appContext.getNodeConfigCache().put(new NodeKey(new InstanceDetails.Id("node1"), new InstanceDetails.Ip("127.0.0.1")),
+                SHARD_REQUEST_CACHE_MAX_SIZE,3.0);
+        mockFlowUnits(0, 0, 4.0);
         shardRequestCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(3)));
         flowUnit = shardRequestCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
-        mockFlowUnits(1, 0,4.0); //3.0
+        mockFlowUnits(1, 0,4.0);
         shardRequestCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(4)));
         flowUnit = shardRequestCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
         // TimeWindow 2 of size 300sec
-        mockFlowUnits(1, 1, 0.0); //0.0
+        appContext.getNodeConfigCache().put(new NodeKey(new InstanceDetails.Id("node1"), new InstanceDetails.Ip("127.0.0.1")),
+                SHARD_REQUEST_CACHE_MAX_SIZE,0.0);
+        mockFlowUnits(1, 1, 0.0);
         shardRequestCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(7)));
         flowUnit = shardRequestCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
-        mockFlowUnits(1, 1, 4.0); //3.0
+        appContext.getNodeConfigCache().put(new NodeKey(new InstanceDetails.Id("node1"), new InstanceDetails.Ip("127.0.0.1")),
+                SHARD_REQUEST_CACHE_MAX_SIZE,3.0);
+        mockFlowUnits(1, 1, 4.0);
         shardRequestCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(10)));
         flowUnit = shardRequestCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
         // TimeWindow 3 of size 300sec
-        mockFlowUnits(0, 0, 4.0); //3.0
+        mockFlowUnits(0, 0, 4.0);
         shardRequestCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(12)));
         flowUnit = shardRequestCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
-        mockFlowUnits(1, 0, 4.0); //3.0
+        mockFlowUnits(1, 0, 4.0);
         shardRequestCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(14)));
         flowUnit = shardRequestCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
-        mockFlowUnits(1, 0, 4.0); //3.0
+        mockFlowUnits(1, 0, 4.0);
         shardRequestCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(14)));
         flowUnit = shardRequestCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
         // TimeWindow 4 of size 300sec
-        mockFlowUnits(0, 1, 0.0); //0.0
+        appContext.getNodeConfigCache().put(new NodeKey(new InstanceDetails.Id("node1"), new InstanceDetails.Ip("127.0.0.1")),
+                SHARD_REQUEST_CACHE_MAX_SIZE,0.0);
+        mockFlowUnits(0, 1, 0.0);
         shardRequestCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(17)));
         flowUnit = shardRequestCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
-        mockFlowUnits(1, 1, 0.0); //0.0
+        mockFlowUnits(1, 1, 0.0);
         shardRequestCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(20)));
         flowUnit = shardRequestCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
-        mockFlowUnits(1, 1, 4.0); //3.0
+        appContext.getNodeConfigCache().put(new NodeKey(new InstanceDetails.Id("node1"), new InstanceDetails.Ip("127.0.0.1")),
+                SHARD_REQUEST_CACHE_MAX_SIZE,3.0);
+        mockFlowUnits(1, 1, 4.0);
         shardRequestCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(20)));
         flowUnit = shardRequestCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
         // TimeWindow 4 of size 300sec
-        mockFlowUnits(1, 1, 2.0); //3.0
+        mockFlowUnits(1, 1, 2.0);
         shardRequestCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(25)));
         flowUnit = shardRequestCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
-        mockFlowUnits(1, 1, 4.0); //3.0
+        mockFlowUnits(1, 1, 4.0);
         shardRequestCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(25)));
         flowUnit = shardRequestCacheRca.operate();
         Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
@@ -161,12 +188,12 @@ public class ShardRequestCacheRcaTest {
         Assert.assertEquals(0.01, 6.0, resourceSummary.getValue());
 
         // TimeWindow 5 of size 300sec
-        mockFlowUnits(0, 0, 4.0); //3.0
+        mockFlowUnits(0, 0, 4.0);
         shardRequestCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(27)));
         flowUnit = shardRequestCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
-        mockFlowUnits(0, 0, 2.0); //3.0
+        mockFlowUnits(0, 0, 2.0);
         shardRequestCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(27)));
         flowUnit = shardRequestCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());

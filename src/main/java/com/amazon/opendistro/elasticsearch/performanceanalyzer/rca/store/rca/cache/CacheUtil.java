@@ -15,9 +15,12 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,6 +59,10 @@ public class CacheUtil {
             sizeInKB = sizeinBytes / 1024.0;
         }
         return sizeInKB;
+    }
+
+    public static double getCacheMaxSize(AppContext appContext, NodeKey esNode, Resource cacheResource) {
+        return appContext.getNodeConfigCache().get(esNode, cacheResource);
     }
 
     public static Boolean isSizeThresholdExceeded(final Metric cacheSizeGroupByOperation,
