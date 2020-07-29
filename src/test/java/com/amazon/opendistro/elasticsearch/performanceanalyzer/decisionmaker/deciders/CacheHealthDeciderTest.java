@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.SEARCH_QUEUE_CAPACITY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -30,6 +31,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigClusterCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
@@ -50,6 +52,10 @@ public class CacheHealthDeciderTest {
 
   @Before
   public void setupCluster() throws SQLException, ClassNotFoundException {
+    final long heapMaxSizeInBytes = 12000 * 1_000_000L;
+    final long fieldDataCacheMaxSizeInBytes = 12000;
+    final long shardRequestCacheMaxSizeInBytes = 12000;
+
     ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
     ClusterDetailsEventProcessor.NodeDetails node1 =
         new ClusterDetailsEventProcessor.NodeDetails(NodeRole.DATA, "node1", "127.0.0.1", false);
@@ -73,6 +79,33 @@ public class CacheHealthDeciderTest {
 
     appContext = new AppContext();
     appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
+
+    for (final ClusterDetailsEventProcessor.NodeDetails node : nodes) {
+      appContext
+          .getNodeConfigCache()
+          .put(
+              new NodeKey(
+                  new InstanceDetails.Id(node.getId()),
+                  new InstanceDetails.Ip(node.getHostAddress())),
+              ResourceUtil.HEAP_MAX_SIZE,
+              heapMaxSizeInBytes);
+      appContext
+          .getNodeConfigCache()
+          .put(
+              new NodeKey(
+                  new InstanceDetails.Id(node.getId()),
+                  new InstanceDetails.Ip(node.getHostAddress())),
+              ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE,
+              fieldDataCacheMaxSizeInBytes);
+      appContext
+          .getNodeConfigCache()
+          .put(
+              new NodeKey(
+                  new InstanceDetails.Id(node.getId()),
+                  new InstanceDetails.Ip(node.getHostAddress())),
+              ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE,
+              shardRequestCacheMaxSizeInBytes);
+    }
   }
 
   @Test
@@ -130,6 +163,7 @@ public class CacheHealthDeciderTest {
 
     CacheHealthDecider decider =
         new CacheHealthDecider(5, 12, fieldDataCacheClusterRca, shardRequestCacheClusterRca);
+    decider.setAppContext(appContext);
 
     // Since deciderFrequency is 12, the first 11 invocations return empty decision
     for (int i = 0; i < 11; i++) {
@@ -138,8 +172,7 @@ public class CacheHealthDeciderTest {
     }
 
     Decision decision = decider.operate();
-    // TODO: Add flowunit for node configuration rca
-    assertEquals(0, decision.getActions().size());
+    assertEquals(4, decision.getActions().size());
 
     Map<String, Map<ResourceEnum, Integer>> nodeActionCounter = new HashMap<>();
     for (Action action : decision.getActions()) {
@@ -158,13 +191,13 @@ public class CacheHealthDeciderTest {
       }
     }
 
-    // assertEquals(2, nodeActionCounter.get("node1").size());
-    // assertEquals(1, (int) nodeActionCounter.get("node1").get(ResourceEnum.FIELD_DATA_CACHE));
-    // assertEquals(1, (int) nodeActionCounter.get("node1").get(ResourceEnum.SHARD_REQUEST_CACHE));
-    // assertEquals(1, nodeActionCounter.get("node2").size());
-    // assertEquals(1, (int) nodeActionCounter.get("node2").get(ResourceEnum.FIELD_DATA_CACHE));
-    // assertEquals(1, nodeActionCounter.get("node3").size());
-    // assertEquals(1, (int) nodeActionCounter.get("node3").get(ResourceEnum.SHARD_REQUEST_CACHE));
-    // assertFalse(nodeActionCounter.containsKey("node4"));
+    assertEquals(2, nodeActionCounter.get("node1").size());
+    assertEquals(1, (int) nodeActionCounter.get("node1").get(ResourceEnum.FIELD_DATA_CACHE));
+    assertEquals(1, (int) nodeActionCounter.get("node1").get(ResourceEnum.SHARD_REQUEST_CACHE));
+    assertEquals(1, nodeActionCounter.get("node2").size());
+    assertEquals(1, (int) nodeActionCounter.get("node2").get(ResourceEnum.FIELD_DATA_CACHE));
+    assertEquals(1, nodeActionCounter.get("node3").size());
+    assertEquals(1, (int) nodeActionCounter.get("node3").get(ResourceEnum.SHARD_REQUEST_CACHE));
+    assertFalse(nodeActionCounter.containsKey("node4"));
   }
 }
