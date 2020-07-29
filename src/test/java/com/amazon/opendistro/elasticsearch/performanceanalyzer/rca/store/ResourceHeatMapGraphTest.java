@@ -88,8 +88,8 @@ import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
-
 
 public class ResourceHeatMapGraphTest {
   private final int THREADS = 3;
@@ -190,7 +190,7 @@ public class ResourceHeatMapGraphTest {
             wireHopper,
             appContext);
 
-    RcaTestHelper.setMyIp(instanceDetails.getInstanceIp(), instanceDetails.getRole());
+    RcaTestHelper.setMyIp(instanceDetails.getInstanceIp().toString(), instanceDetails.getRole());
     rcaSchedulerTaskData.run();
     return connectedComponents;
   }
@@ -295,7 +295,7 @@ public class ResourceHeatMapGraphTest {
             wireHopper2,
             appContext);
     AllMetrics.NodeRole nodeRole2 = instanceDetails.getRole();
-    RcaTestHelper.setMyIp(instanceDetails.getInstanceIp(), nodeRole2);
+    RcaTestHelper.setMyIp(instanceDetails.getInstanceIp().toString(), nodeRole2);
     rcaSchedulerTaskMaster.run();
 
     testJsonResponse(makeRestRequest(
@@ -603,13 +603,13 @@ public class ResourceHeatMapGraphTest {
     JsonArray json = parser
         .parse(resp)
         .getAsJsonObject()
-        .getAsJsonArray(ALL_TEMPERATURE_DIMENSIONS)
-        .get(0)
-        .getAsJsonObject()
-        .getAsJsonArray(NodeLevelDimensionalSummary.SUMMARY_TABLE_NAME);
+        .getAsJsonArray(ALL_TEMPERATURE_DIMENSIONS);
+    System.out.println("ALL_TEMPERATURE_DIMENSIONS" + json);
 
-    for (JsonElement elem : json) {
+    for (JsonElement elem : json.get(0).getAsJsonObject().getAsJsonArray(NodeLevelDimensionalSummary.SUMMARY_TABLE_NAME)) {
       JsonObject object = elem.getAsJsonObject();
+      System.out.println(object);
+      System.out.println("dim obj: " + object.get("dimension"));
       switch (TemperatureDimension.valueOf(object.get("dimension").getAsString())) {
         case CPU_Utilization:
           verifyCpuDimension(object);
@@ -1087,7 +1087,7 @@ public class ResourceHeatMapGraphTest {
             wireHopper,
             appContext);
     AllMetrics.NodeRole nodeRole = dataInstance.getRole();
-    RcaTestHelper.setMyIp(dataInstance.getInstanceIp(), nodeRole);
+    RcaTestHelper.setMyIp(dataInstance.getInstanceIp().toString(), nodeRole);
     rcaSchedulerTaskData.run();
 
     String masterNodeRcaConf =
@@ -1116,7 +1116,7 @@ public class ResourceHeatMapGraphTest {
             wireHopper2,
             appContextMaster);
     AllMetrics.NodeRole nodeRole2 = masterInstance.getRole();
-    RcaTestHelper.setMyIp(masterInstance.getInstanceIp(), nodeRole2);
+    RcaTestHelper.setMyIp(masterInstance.getInstanceIp().toString(), nodeRole2);
     rcaSchedulerTaskMaster.run();
 
     URL url = null;

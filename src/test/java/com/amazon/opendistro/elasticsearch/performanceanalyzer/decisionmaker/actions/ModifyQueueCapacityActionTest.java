@@ -27,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Impact;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.Map;
 import org.junit.Test;
@@ -35,7 +36,7 @@ public class ModifyQueueCapacityActionTest {
 
   @Test
   public void testIncreaseCapacity() {
-    NodeKey node1 = new NodeKey("node-1", "1.2.3.4");
+    NodeKey node1 = new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
     ModifyQueueCapacityAction modifyQueueCapacityAction = new ModifyQueueCapacityAction(node1, ResourceEnum.WRITE_THREADPOOL, 300, true);
     assertTrue(modifyQueueCapacityAction.getDesiredCapacity() > modifyQueueCapacityAction.getCurrentCapacity());
     assertTrue(modifyQueueCapacityAction.isActionable());
@@ -54,7 +55,7 @@ public class ModifyQueueCapacityActionTest {
 
   @Test
   public void testDecreaseCapacity() {
-    NodeKey node1 = new NodeKey("node-1", "1.2.3.4");
+    NodeKey node1 = new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
     ModifyQueueCapacityAction modifyQueueCapacityAction = new ModifyQueueCapacityAction(node1, ResourceEnum.SEARCH_THREADPOOL, 1500, false);
     assertTrue(modifyQueueCapacityAction.getDesiredCapacity() < modifyQueueCapacityAction.getCurrentCapacity());
     assertTrue(modifyQueueCapacityAction.isActionable());
@@ -74,7 +75,7 @@ public class ModifyQueueCapacityActionTest {
   @Test
   public void testBounds() {
     // TODO: Move to work with test rcaConf when bounds moved to config
-    NodeKey node1 = new NodeKey("node-1", "1.2.3.4");
+    NodeKey node1 = new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
     ModifyQueueCapacityAction searchQueueIncrease = new ModifyQueueCapacityAction(node1, ResourceEnum.SEARCH_THREADPOOL, 3000, true);
     assertEquals(searchQueueIncrease.getDesiredCapacity(), searchQueueIncrease.getCurrentCapacity());
     assertFalse(searchQueueIncrease.isActionable());

@@ -1,18 +1,19 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import java.util.Map;
 
 public class UnicastIntentMsg extends IntentMsg {
 
-  private final String unicastDestinationHostAddress;
+  private final InstanceDetails unicastDestinationInstance;
 
   public UnicastIntentMsg(String requesterNode, String destinationNode,
-      Map<String, String> rcaConfTags, String unicastDestinationHostAddress) {
+      Map<String, String> rcaConfTags, InstanceDetails unicastDestinationInstance) {
     super(requesterNode, destinationNode, rcaConfTags);
-    this.unicastDestinationHostAddress = unicastDestinationHostAddress;
+    this.unicastDestinationInstance = unicastDestinationInstance;
   }
 
-  public String getUnicastDestinationHostAddress() {
-    return unicastDestinationHostAddress;
+  public InstanceDetails getUnicastDestinationInstance() {
+    return unicastDestinationInstance;
   }
 }

@@ -24,9 +24,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.PublishRespo
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.DataMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.util.ClusterUtils;
 import io.grpc.stub.StreamObserver;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -74,29 +74,25 @@ public class FlowUnitTxTask implements Runnable {
    */
   @Override
   public void run() {
-    final String sourceNode = dataMsg.getSourceNode();
-    final String esNode = appContext.getMyInstanceDetails().getInstanceIp();
+    final String sourceGraphNode = dataMsg.getSourceGraphNode();
+    final InstanceDetails esInstanceDetails = appContext.getMyInstanceDetails();
 
-    if (subscriptionManager.isNodeSubscribed(sourceNode)) {
-      final Set<String> downstreamHostAddresses = subscriptionManager
-          .getSubscribersFor(sourceNode);
-      LOG.debug("{} has downstream subscribers: {}", sourceNode, downstreamHostAddresses);
-      for (final String downstreamHostAddress : downstreamHostAddresses) {
+    if (subscriptionManager.isNodeSubscribed(sourceGraphNode)) {
+      final Set<InstanceDetails.Id> downstreamHostIds = subscriptionManager.getSubscribersFor(sourceGraphNode);
+      LOG.debug("{} has downstream subscribers: {}", sourceGraphNode, downstreamHostIds);
+      for (final InstanceDetails.Id downstreamHostId : downstreamHostIds) {
         for (final GenericFlowUnit flowUnit : dataMsg.getFlowUnits()) {
-          LOG.debug("rca: [pub-tx]: {} -> {}", sourceNode, downstreamHostAddress);
+          LOG.debug("rca: [pub-tx]: {} -> {}", sourceGraphNode, downstreamHostId);
           client.publish(
-              downstreamHostAddress,
-              flowUnit.buildFlowUnitMessage(sourceNode, esNode),
+              appContext.getInstanceById(downstreamHostId),
+              flowUnit.buildFlowUnitMessage(sourceGraphNode, esInstanceDetails.getInstanceId()),
               new StreamObserver<PublishResponse>() {
                 @Override
                 public void onNext(final PublishResponse value) {
-                  LOG.debug(
-                      "rca: Received acknowledgement from the server. status: {}",
-                      value.getDataStatus());
+                  LOG.debug("rca: Received acknowledgement from the server. status: {}", value.getDataStatus());
                   if (value.getDataStatus() == PublishResponseStatus.NODE_SHUTDOWN) {
-                    subscriptionManager
-                        .unsubscribeAndTerminateConnection(sourceNode, downstreamHostAddress);
-                    client.flushStream(downstreamHostAddress);
+                    subscriptionManager.unsubscribeAndTerminateConnection(sourceGraphNode, downstreamHostId);
+                    client.flushStream(downstreamHostId);
                   }
                 }
 
@@ -104,9 +100,8 @@ public class FlowUnitTxTask implements Runnable {
                 public void onError(final Throwable t) {
                   LOG.error("rca: Encountered an exception at the server: ", t);
                   StatsCollector.instance().logException(StatExceptionCode.RCA_NETWORK_ERROR);
-                  subscriptionManager
-                      .unsubscribeAndTerminateConnection(sourceNode, downstreamHostAddress);
-                  client.flushStream(downstreamHostAddress);
+                  subscriptionManager.unsubscribeAndTerminateConnection(sourceGraphNode, downstreamHostId);
+                  client.flushStream(downstreamHostId);
                 }
 
                 @Override
@@ -115,11 +110,11 @@ public class FlowUnitTxTask implements Runnable {
                 }
               });
           PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR
-              .updateStat(RcaGraphMetrics.RCA_NODES_FU_PUBLISH_COUNT, sourceNode, 1);
+              .updateStat(RcaGraphMetrics.RCA_NODES_FU_PUBLISH_COUNT, sourceGraphNode, 1);
         }
       }
     } else {
-      LOG.debug("No subscribers for {}.", sourceNode);
+      LOG.debug("No subscribers for {}.", sourceGraphNode);
     }
   }
 }

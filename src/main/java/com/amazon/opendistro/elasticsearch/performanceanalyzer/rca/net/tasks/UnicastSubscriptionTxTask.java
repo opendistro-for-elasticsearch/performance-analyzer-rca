@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.UnicastIntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
@@ -30,7 +31,7 @@ public class UnicastSubscriptionTxTask extends SubscriptionTxTask {
   /**
    * The host address of the destination node.
    */
-  private final String destinationHostAddress;
+  private final InstanceDetails destinationInstance;
 
   public UnicastSubscriptionTxTask(
       NetClient netClient,
@@ -39,7 +40,7 @@ public class UnicastSubscriptionTxTask extends SubscriptionTxTask {
       NodeStateManager nodeStateManager,
       final AppContext appContext) {
     super(netClient, intentMsg, subscriptionManager, nodeStateManager, appContext);
-    this.destinationHostAddress = intentMsg.getUnicastDestinationHostAddress();
+    this.destinationInstance = intentMsg.getUnicastDestinationInstance();
   }
 
   /**
@@ -48,10 +49,10 @@ public class UnicastSubscriptionTxTask extends SubscriptionTxTask {
    */
   @Override
   public void run() {
-    final String requesterVertex = intentMsg.getRequesterNode();
-    final String destinationVertex = intentMsg.getDestinationNode();
+    final String requesterVertex = intentMsg.getRequesterGraphNode();
+    final String destinationVertex = intentMsg.getDestinationGraphNode();
     final Map<String, String> tags = intentMsg.getRcaConfTags();
 
-    sendSubscribeRequest(destinationHostAddress, requesterVertex, destinationVertex, tags);
+    sendSubscribeRequest(destinationInstance, requesterVertex, destinationVertex, tags);
   }
 }

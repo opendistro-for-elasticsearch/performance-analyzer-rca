@@ -127,7 +127,7 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
   // to update the nodeMap whenever the ClusterDetailsEventProcessor is updated
   // so we don't have to keep polling the NodeDetails in every time window.
   private void removeInactiveNodeFromNodeMap() {
-    Set<String> nodeIdSet = new HashSet<>();
+    Set<InstanceDetails.Id> nodeIdSet = new HashSet<>();
     List<NodeKey> inactiveNodes = new ArrayList<>();
     for (InstanceDetails nodeDetail : getClusterNodesDetails()) {
       nodeIdSet.add(nodeDetail.getInstanceId());

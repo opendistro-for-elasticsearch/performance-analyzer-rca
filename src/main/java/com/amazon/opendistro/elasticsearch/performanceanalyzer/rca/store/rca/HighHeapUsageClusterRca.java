@@ -81,7 +81,7 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit<HotClusterSumm
     ConcurrentMap<String, ImmutableList<ResourceFlowUnit<HotNodeSummary>>> currentMap =
         this.nodeStateCache.asMap();
     for (InstanceDetails nodeDetails : getDataNodeInstances()) {
-      ImmutableList<ResourceFlowUnit<HotNodeSummary>> nodeStateList = currentMap.get(nodeDetails.getInstanceId());
+      ImmutableList<ResourceFlowUnit<HotNodeSummary>> nodeStateList = currentMap.get(nodeDetails.getInstanceId().toString());
       if (nodeStateList != null) {
         List<HotResourceSummary> oldGenSummaries = new ArrayList<>();
         List<HotResourceSummary> youngGenSummaries = new ArrayList<>();
@@ -134,7 +134,7 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit<HotClusterSumm
       if (hotNodeRcaFlowUnit.isEmpty()) {
         continue;
       }
-      String nodeId = hotNodeRcaFlowUnit.getSummary().getNodeID();
+      String nodeId = hotNodeRcaFlowUnit.getSummary().getNodeID().toString();
       try {
         readComputeWrite(nodeId, hotNodeRcaFlowUnit);
       } catch (ExecutionException e) {
