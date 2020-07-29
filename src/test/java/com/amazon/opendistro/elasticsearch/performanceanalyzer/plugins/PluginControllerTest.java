@@ -40,6 +40,7 @@ public class PluginControllerTest {
     Mockito.when(pluginControllerConfig.getFrameworkPlugins()).thenReturn(frameworkPlugins);
     Publisher publisher = Mockito.mock(Publisher.class);
     PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
+    pluginController.initPlugins();
 
     List<Plugin> plugins = pluginController.getPlugins();
     assertEquals(2, plugins.size());
@@ -58,6 +59,7 @@ public class PluginControllerTest {
     Mockito.when(pluginControllerConfig.getFrameworkPlugins()).thenReturn(frameworkPlugins);
     Publisher publisher = Mockito.mock(Publisher.class);
     PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
+    pluginController.initPlugins();
   }
 
   @Test(expected = IllegalStateException.class)
@@ -69,6 +71,7 @@ public class PluginControllerTest {
     Mockito.when(pluginControllerConfig.getFrameworkPlugins()).thenReturn(frameworkPlugins);
     Publisher publisher = Mockito.mock(Publisher.class);
     PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
+    pluginController.initPlugins();
   }
 
   @Test(expected = IllegalStateException.class)
@@ -80,6 +83,7 @@ public class PluginControllerTest {
     Mockito.when(pluginControllerConfig.getFrameworkPlugins()).thenReturn(frameworkPlugins);
     Publisher publisher = Mockito.mock(Publisher.class);
     PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
+    pluginController.initPlugins();
   }
 
   public static class TestActionListener extends Plugin implements ActionListener {

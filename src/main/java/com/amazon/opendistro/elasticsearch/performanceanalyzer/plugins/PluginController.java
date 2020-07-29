@@ -36,6 +36,9 @@ public class PluginController {
     this.pluginControllerConfig = pluginConfig;
     this.publisher = publisher;
     this.plugins = new ArrayList<>();
+  }
+
+  public void initPlugins() {
     loadFrameworkPlugins();
     registerActionListeners();
   }

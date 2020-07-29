@@ -220,6 +220,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     // TODO: Refactor using DI to move out of construct method
     PluginControllerConfig pluginControllerConfig = new PluginControllerConfig();
     PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
+    pluginController.initPlugins();
   }
 
   private void constructShardResourceUsageGraph() {
