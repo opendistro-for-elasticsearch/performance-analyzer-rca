@@ -43,7 +43,6 @@ public class FieldDataCacheRcaTest {
 
     private MetricTestHelper fieldDataCacheEvictions;
     private MetricTestHelper fieldDataCacheWeight;
-    private MetricTestHelper fieldDataCacheMaxWeight;
     private FieldDataCacheRca fieldDataCacheRca;
     private List<String> columnName;
 
@@ -51,8 +50,7 @@ public class FieldDataCacheRcaTest {
     public void init() throws Exception {
         fieldDataCacheEvictions = new MetricTestHelper(5);
         fieldDataCacheWeight = new MetricTestHelper(5);
-        fieldDataCacheMaxWeight = new MetricTestHelper(5);
-        fieldDataCacheRca = new FieldDataCacheRca(1, fieldDataCacheEvictions, fieldDataCacheWeight, fieldDataCacheMaxWeight);
+        fieldDataCacheRca = new FieldDataCacheRca(1, fieldDataCacheEvictions, fieldDataCacheWeight);
         columnName = Arrays.asList(INDEX_NAME.toString(), SHARD_ID.toString(), MetricsDB.SUM, MetricsDB.MAX);
         ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
         clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.0", false);
@@ -67,13 +65,11 @@ public class FieldDataCacheRcaTest {
      *       | .kibana_1 | 0       | 15.0 | 8.0 | 2.0 | 9.0 |
      *
      */
-    private void mockFlowUnits(int cacheEvictionCnt, double cacheWeight, double cacheMaxWeight) {
+    private void mockFlowUnits(int cacheEvictionCnt, double cacheWeight) {
         fieldDataCacheEvictions.createTestFlowUnits(columnName,
                 Arrays.asList("index_1", "0", String.valueOf(cacheEvictionCnt), String.valueOf(cacheEvictionCnt)));
         fieldDataCacheWeight.createTestFlowUnits(columnName,
                 Arrays.asList("index_1", "0", String.valueOf(cacheWeight), String.valueOf(cacheWeight)));
-        fieldDataCacheMaxWeight.createTestFlowUnits(columnName,
-                Arrays.asList("index_1", "0", String.valueOf(cacheMaxWeight), String.valueOf(cacheMaxWeight)));
     }
 
     @Test
@@ -82,34 +78,34 @@ public class FieldDataCacheRcaTest {
         Clock constantClock = Clock.fixed(ofEpochMilli(0), ZoneId.systemDefault());
 
         // TimeWindow 41of size 300sec
-        mockFlowUnits(0, 1.0, 5.0);
+        mockFlowUnits(0, 1.0);
         fieldDataCacheRca.setClock(constantClock);
         flowUnit = fieldDataCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
-        mockFlowUnits(0, 1.0, 5.0);
+        mockFlowUnits(0, 1.0);
         fieldDataCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(3)));
         flowUnit = fieldDataCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
-        mockFlowUnits(1, 1.0, 5.0);
+        mockFlowUnits(1, 1.0);
         fieldDataCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(4)));
         flowUnit = fieldDataCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
         // TimeWindow 2 of size 300sec
-        mockFlowUnits(1, 7.0, 5.0);
+        mockFlowUnits(1, 7.0);
         fieldDataCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(7)));
         flowUnit = fieldDataCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
-        mockFlowUnits(1, 1.0, 5.0);
+        mockFlowUnits(1, 1.0);
         fieldDataCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(10)));
         flowUnit = fieldDataCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
         // TimeWindow 3 of size 300sec
-        mockFlowUnits(1, 7.0, 5.0);
+        mockFlowUnits(1, 7.0);
         fieldDataCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(12)));
         flowUnit = fieldDataCacheRca.operate();
         Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
@@ -122,13 +118,13 @@ public class FieldDataCacheRcaTest {
         Assert.assertEquals(ResourceUtil.FIELD_DATA_CACHE_EVICTION, resourceSummary.getResource());
         Assert.assertEquals(0.01, 6.0, resourceSummary.getValue());
 
-        mockFlowUnits(0, 1.0, 5.0);
+        mockFlowUnits(0, 1.0);
         fieldDataCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(14)));
         flowUnit = fieldDataCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
         // TimeWindow 4 of size 300sec
-        mockFlowUnits(0, 7.0, 5.0);
+        mockFlowUnits(0, 7.0);
         fieldDataCacheRca.setClock(Clock.offset(constantClock, Duration.ofMinutes(17)));
         flowUnit = fieldDataCacheRca.operate();
         Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
