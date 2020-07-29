@@ -86,6 +86,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -93,6 +95,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 public class ResourceHeatMapGraphTest {
+  private final Logger LOG = LogManager.getLogger(this.getClass());
   private final int THREADS = 3;
   private static final String cwd = System.getProperty("user.dir");
   private static final Path sqliteFile =
@@ -249,7 +252,7 @@ public class ResourceHeatMapGraphTest {
         throw new IllegalStateException(ret.toString());
       }
     } catch (IOException e) {
-      e.printStackTrace();
+      LOG.error("Exception getting RCA query response for url {}", url.toString(), e);
       connection.disconnect();
       Assert.fail();
     }
@@ -1162,8 +1165,8 @@ public class ResourceHeatMapGraphTest {
         Assert.assertEquals(1, hotClusterSummary.get("number_of_unhealthy_nodes").getAsInt());
       }
       con.disconnect();
-    } catch (IOException e) {
-      e.printStackTrace();
+    } catch (Exception e) {
+      LOG.error("Exception getting HotShardClusterRca response", e);
       Assert.fail();
     }
   }
