@@ -18,11 +18,14 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheDeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.BaseClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
@@ -40,6 +43,9 @@ public class CacheHealthDecider extends Decider {
     private final FieldDataCacheClusterRca fieldDataCacheClusterRca;
     private final ShardRequestCacheClusterRca shardRequestCacheClusterRca;
 
+    private double fieldDataCacheSizeUpperBound;
+    private double shardRequestCacheSizeUpperBound;
+
     List<String> actionsByUserPriority = new ArrayList<>();
     private int counter = 0;
 
@@ -49,8 +55,12 @@ public class CacheHealthDecider extends Decider {
                               final ShardRequestCacheClusterRca shardRequestCacheClusterRca) {
         super(evalIntervalSeconds, decisionFrequency);
 
+
         this.fieldDataCacheClusterRca = fieldDataCacheClusterRca;
         this.shardRequestCacheClusterRca = shardRequestCacheClusterRca;
+
+        this.fieldDataCacheSizeUpperBound = CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND;
+        this.shardRequestCacheSizeUpperBound = CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND;
 
         configureActionPriority();
     }
@@ -150,7 +160,14 @@ public class CacheHealthDecider extends Decider {
             final long heapMaxSizeInBytes,
             final boolean increase) {
         final ModifyCacheMaxSizeAction action =
-                new ModifyCacheMaxSizeAction(esNode, cacheType, currentMaxSizeInBytes, heapMaxSizeInBytes, increase);
+                new ModifyCacheMaxSizeAction(
+                        esNode,
+                        cacheType,
+                        currentMaxSizeInBytes,
+                        heapMaxSizeInBytes,
+                        getFieldDataCacheUpperBound(),
+                        getShardRequestCacheUpperBound(),
+                        increase);
         if (action.isActionable()) {
             return action;
         }
@@ -181,4 +198,23 @@ public class CacheHealthDecider extends Decider {
       // No action will be triggered as this value was wiped out from the cache
       return -1;
   }
+
+    /**
+     * read threshold values from rca.conf
+     * @param conf RcaConf object
+     */
+    @Override
+    public void readRcaConf(RcaConf conf) {
+        CacheDeciderConfig configObj = conf.getCacheDeciderConfig();
+        fieldDataCacheSizeUpperBound = configObj.getFieldDataCacheUpperBound();
+        shardRequestCacheSizeUpperBound = configObj.getShardRequestCacheUpperBound();
+    }
+
+    private double getShardRequestCacheUpperBound() {
+        return fieldDataCacheSizeUpperBound;
+    }
+
+    private double getFieldDataCacheUpperBound() {
+        return shardRequestCacheSizeUpperBound;
+    }
 }

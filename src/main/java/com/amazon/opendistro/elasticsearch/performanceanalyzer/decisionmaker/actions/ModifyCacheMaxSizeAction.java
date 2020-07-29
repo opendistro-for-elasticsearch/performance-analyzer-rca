@@ -35,8 +35,10 @@ public class ModifyCacheMaxSizeAction implements Action {
     private long currentCacheMaxSizeInBytes;
     private long desiredCacheMaxSizeInBytes;
     private long heapMaxSizeInBytes;
+
     private double fieldDataCacheSizeUpperBound;
     private double shardRequestCacheSizeUpperBound;
+
     private ResourceEnum cacheType;
     private NodeKey esNode;
 
@@ -48,10 +50,11 @@ public class ModifyCacheMaxSizeAction implements Action {
             final ResourceEnum cacheType,
             final long currentCacheMaxSizeInBytes,
             final long heapMaxSizeInBytes,
+            final double fieldDataCacheSizeUpperBound,
+            final double shardRequestCacheSizeUpperBound,
             final boolean increase) {
-        // TODO: Consume from rca conf file
-        this.fieldDataCacheSizeUpperBound = CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND;
-        this.shardRequestCacheSizeUpperBound = CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND;
+        this.fieldDataCacheSizeUpperBound = fieldDataCacheSizeUpperBound;
+        this.shardRequestCacheSizeUpperBound = shardRequestCacheSizeUpperBound;
         this.heapMaxSizeInBytes = heapMaxSizeInBytes;
 
         setBounds();

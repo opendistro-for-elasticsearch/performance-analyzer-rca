@@ -173,8 +173,8 @@ public class NodeConfigClusterCollectorTest {
 
   @Test
   public void testHeapMaxSizeCollection() {
-    NodeKey nodeKey1 = new NodeKey("node1", "127.0.0.1");
-    NodeKey nodeKey2 = new NodeKey("node2", "127.0.0.2");
+    NodeKey nodeKey1 = new NodeKey(new InstanceDetails.Id("node1"), new InstanceDetails.Ip("127.0.0.1"));
+    NodeKey nodeKey2 = new NodeKey(new InstanceDetails.Id("node2"), new InstanceDetails.Ip("127.0.0.2"));
     NodeConfigFlowUnit flowUnit = new NodeConfigFlowUnit(0, nodeKey1);
     flowUnit.addConfig(ResourceUtil.HEAP_MAX_SIZE, 100000);
     collector.setLocalFlowUnit(flowUnit);

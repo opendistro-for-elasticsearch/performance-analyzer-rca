@@ -45,6 +45,8 @@ public class ModifyCacheMaxSizeActionTest {
                         ResourceEnum.FIELD_DATA_CACHE,
                         5000,
                         12000 * 1_000_000L,
+                        CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
+                        CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND,
                         true);
         assertTrue(
                 modifyCacheSizeAction.getDesiredCacheMaxSizeInBytes()
@@ -71,6 +73,8 @@ public class ModifyCacheMaxSizeActionTest {
                         ResourceEnum.FIELD_DATA_CACHE,
                         5000,
                         12000 * 1_000_000L,
+                        CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
+                        CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND,
                         false);
         assertEquals(
                 modifyCacheSizeAction.getDesiredCacheMaxSizeInBytes(),
@@ -99,6 +103,8 @@ public class ModifyCacheMaxSizeActionTest {
                         ResourceEnum.FIELD_DATA_CACHE,
                         (long) (maxSizeInBytes * CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND),
                         maxSizeInBytes,
+                        CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
+                        CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND,
                         true);
         assertEquals(
                 fieldCacheIncrease.getDesiredCacheMaxSizeInBytes(),
@@ -112,6 +118,8 @@ public class ModifyCacheMaxSizeActionTest {
                         ResourceEnum.SHARD_REQUEST_CACHE,
                         (long) (maxSizeInBytes * CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND),
                         maxSizeInBytes,
+                        CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
+                        CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND,
                         true);
         assertEquals(
                 shardRequestCacheIncrease.getDesiredCacheMaxSizeInBytes(),
