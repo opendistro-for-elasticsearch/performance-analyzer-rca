@@ -172,7 +172,8 @@ public class CacheHealthDeciderTest {
     }
 
     Decision decision = decider.operate();
-    assertEquals(4, decision.getActions().size());
+    // Only one resource will be tuned at a time
+    assertEquals(3, decision.getActions().size());
 
     Map<String, Map<ResourceEnum, Integer>> nodeActionCounter = new HashMap<>();
     for (Action action : decision.getActions()) {
@@ -191,8 +192,8 @@ public class CacheHealthDeciderTest {
       }
     }
 
-    assertEquals(2, nodeActionCounter.get("node1").size());
-    assertEquals(1, (int) nodeActionCounter.get("node1").get(ResourceEnum.FIELD_DATA_CACHE));
+    assertEquals(1, nodeActionCounter.get("node1").size());
+    // Based on priority the shard request cache gets tuned before the field data cache
     assertEquals(1, (int) nodeActionCounter.get("node1").get(ResourceEnum.SHARD_REQUEST_CACHE));
     assertEquals(1, nodeActionCounter.get("node2").size());
     assertEquals(1, (int) nodeActionCounter.get("node2").get(ResourceEnum.FIELD_DATA_CACHE));

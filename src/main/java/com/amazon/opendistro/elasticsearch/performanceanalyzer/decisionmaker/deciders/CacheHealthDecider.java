@@ -18,7 +18,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheDeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
@@ -26,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.BaseClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
@@ -77,6 +77,7 @@ public class CacheHealthDecider extends Decider {
                 .add(shardRequestCacheClusterRca)
                 .add(fieldDataCacheClusterRca)
                 .build();
+        List<InstanceDetails.Id> impactedNodes = new ArrayList<>();
 
         Decision decision = new Decision(System.currentTimeMillis(), NAME);
         counter += 1;
@@ -85,13 +86,14 @@ public class CacheHealthDecider extends Decider {
         }
         counter = 0;
 
-        // TODO: Tune only one resource at a time based on action priorities
-        cacheClusterRca.forEach(rca -> getActionsFromRca(rca, decision));
+        for (final BaseClusterRca rca : cacheClusterRca) {
+            getActionsFromRca(rca, decision, impactedNodes);
+        }
         return decision;
     }
 
     private <R extends BaseClusterRca> void getActionsFromRca(
-            final R cacheClusterRca, final Decision decision) {
+            final R cacheClusterRca, final Decision decision, final List<InstanceDetails.Id> impactedNodes) {
         if (!cacheClusterRca.getFlowUnits().isEmpty()) {
             final ResourceFlowUnit<HotClusterSummary> flowUnit = cacheClusterRca.getFlowUnits().get(0);
             if (!flowUnit.hasResourceSummary()) {
@@ -101,12 +103,19 @@ public class CacheHealthDecider extends Decider {
             final List<HotNodeSummary> clusterSummary = flowUnit.getSummary().getHotNodeSummaryList();
 
             for (final HotNodeSummary hotNodeSummary : clusterSummary) {
-                final NodeKey esNode = new NodeKey(hotNodeSummary.getNodeID(), hotNodeSummary.getHostAddress());
-                for (final HotResourceSummary resource : hotNodeSummary.getHotResourceSummaryList()) {
-                    decision.addAction(computeBestAction(esNode, resource.getResource().getResourceEnum()));
+                if (!impactedNodes.contains(hotNodeSummary.getNodeID())) {
+                    final NodeKey esNode = new NodeKey(hotNodeSummary.getNodeID(), hotNodeSummary.getHostAddress());
+                    for (final HotResourceSummary resource : hotNodeSummary.getHotResourceSummaryList()) {
+                        final Action action = computeBestAction(esNode, resource.getResource().getResourceEnum());
+                        if (action!= null) {
+                            decision.addAction(action);
+                            impactedNodes.add(hotNodeSummary.getNodeID());
+                        }
+                    }
                 }
             }
         }
+        return;
     }
 
     private void configureActionPriority() {
@@ -141,10 +150,10 @@ public class CacheHealthDecider extends Decider {
     private Action getAction(final String actionName,
                              final NodeKey esNode,
                              final ResourceEnum cacheType,
-                             final long currentMaxSizeInBytes,
-                             final long heapMaxSizeInBytes,
+                             final Long currentMaxSizeInBytes,
+                             final Long heapMaxSizeInBytes,
                              final boolean increase) {
-        if (currentMaxSizeInBytes == -1 || heapMaxSizeInBytes == -1) {
+        if (currentMaxSizeInBytes == null || heapMaxSizeInBytes == null) {
             return null;
         }
         if (ModifyCacheMaxSizeAction.NAME.equals(actionName)) {
@@ -174,7 +183,7 @@ public class CacheHealthDecider extends Decider {
         return null;
     }
 
-    private long getNodeCacheMaxSizeInBytes(final NodeKey esNode, final ResourceEnum cacheType) {
+    private Long getNodeCacheMaxSizeInBytes(final NodeKey esNode, final ResourceEnum cacheType) {
         try {
             if (cacheType.equals(ResourceEnum.FIELD_DATA_CACHE)) {
                 return (long) getAppContext().getNodeConfigCache().get(esNode, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE);
@@ -185,10 +194,10 @@ public class CacheHealthDecider extends Decider {
         }
         // No action if value not present in the cache.
         // No action will be triggered as this value was wiped out from the cache
-        return -1;
+        return null;
   }
 
-  private long getHeapMaxSizeInBytes(final NodeKey esNode) {
+  private Long getHeapMaxSizeInBytes(final NodeKey esNode) {
       try {
           return (long) getAppContext().getNodeConfigCache().get(esNode, ResourceUtil.HEAP_MAX_SIZE);
       } catch (final Exception e) {
@@ -196,7 +205,7 @@ public class CacheHealthDecider extends Decider {
       }
       // No action if value not present in the cache.
       // No action will be triggered as this value was wiped out from the cache
-      return -1;
+      return null;
   }
 
     /**
