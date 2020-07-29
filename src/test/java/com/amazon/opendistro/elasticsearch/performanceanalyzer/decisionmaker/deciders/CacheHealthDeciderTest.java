@@ -110,7 +110,8 @@ public class CacheHealthDeciderTest {
 
   @Test
   public void testHighEvictionRemediation() {
-    RcaTestHelper<HotNodeSummary> fieldDataCacheNodeRca = new RcaTestHelper<>("fieldDataCacheNodeRca");
+    RcaTestHelper<HotNodeSummary> fieldDataCacheNodeRca =
+        new RcaTestHelper<>("fieldDataCacheNodeRca");
     fieldDataCacheNodeRca.setAppContext(appContext);
 
     // node1: Field data and Shard request cache unhealthy
@@ -131,7 +132,8 @@ public class CacheHealthDeciderTest {
         RcaTestHelper.generateFlowUnit("node3", "127.0.0.3", Resources.State.HEALTHY),
         RcaTestHelper.generateFlowUnit("node4", "127.0.0.4", Resources.State.HEALTHY));
 
-    RcaTestHelper<HotNodeSummary> shardRequestCacheNodeRca = new RcaTestHelper<>("shardRequestCacheNodeRca");
+    RcaTestHelper<HotNodeSummary> shardRequestCacheNodeRca =
+        new RcaTestHelper<>("shardRequestCacheNodeRca");
     shardRequestCacheNodeRca.setAppContext(appContext);
 
     // node1: Field data and Shard request cache unhealthy
@@ -152,12 +154,13 @@ public class CacheHealthDeciderTest {
             ResourceUtil.SHARD_REQUEST_CACHE_EVICTION),
         RcaTestHelper.generateFlowUnit("node4", "127.0.0.4", Resources.State.HEALTHY));
 
-    FieldDataCacheClusterRca fieldDataCacheClusterRca = new FieldDataCacheClusterRca(1, fieldDataCacheNodeRca);
+    FieldDataCacheClusterRca fieldDataCacheClusterRca =
+        new FieldDataCacheClusterRca(1, fieldDataCacheNodeRca);
     fieldDataCacheClusterRca.setAppContext(appContext);
     fieldDataCacheClusterRca.generateFlowUnitListFromLocal(null);
 
     ShardRequestCacheClusterRca shardRequestCacheClusterRca =
-            new ShardRequestCacheClusterRca(1, shardRequestCacheNodeRca);
+        new ShardRequestCacheClusterRca(1, shardRequestCacheNodeRca);
     shardRequestCacheClusterRca.setAppContext(appContext);
     shardRequestCacheClusterRca.generateFlowUnitListFromLocal(null);
 
