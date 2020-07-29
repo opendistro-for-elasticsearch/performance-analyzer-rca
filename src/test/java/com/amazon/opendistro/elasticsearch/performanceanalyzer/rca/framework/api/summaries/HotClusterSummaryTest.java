@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary.SQL_SCHEMA_CONSTANTS;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.protobuf.GeneratedMessageV3;
@@ -87,7 +88,7 @@ public class HotClusterSummaryTest {
 
     @Test
     public void testToJson() {
-        HotNodeSummary nodeSummary = new HotNodeSummary(NODE_ID, NODE_ADDRESS);
+        HotNodeSummary nodeSummary = new HotNodeSummary(new InstanceDetails.Id(NODE_ID), new InstanceDetails.Ip(NODE_ADDRESS));
         uut.appendNestedSummary(nodeSummary);
         JsonElement elem = uut.toJson();
         Assert.assertTrue(elem.isJsonObject());

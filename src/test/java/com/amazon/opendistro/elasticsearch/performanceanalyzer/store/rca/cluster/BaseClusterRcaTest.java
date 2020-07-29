@@ -310,7 +310,10 @@ public class BaseClusterRcaTest {
   }
 
   private boolean compareNodeSummary(String nodeId, Resource resource, HotNodeSummary nodeSummary) {
-    if (!nodeId.equals(nodeSummary.getNodeID()) || nodeSummary.getHotResourceSummaryList().isEmpty()) {
+    if (!nodeId.equals(nodeSummary.getNodeID().toString())) {
+      return false;
+    }
+    if (nodeSummary.getHotResourceSummaryList().isEmpty()) {
       return false;
     }
     return compareResourceSummary(resource, nodeSummary.getHotResourceSummaryList().get(0));

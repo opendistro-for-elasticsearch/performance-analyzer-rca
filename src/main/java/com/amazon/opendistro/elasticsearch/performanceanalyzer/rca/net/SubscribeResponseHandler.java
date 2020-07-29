@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
@@ -42,9 +43,9 @@ public class SubscribeResponseHandler implements StreamObserver<SubscribeRespons
   private final NodeStateManager nodeStateManager;
 
   /**
-   * The host address of the remote host.
+   * The host ID of the remote host.
    */
-  private final String remoteHost;
+  private final InstanceDetails.Id remoteHostId;
 
   /**
    * The vertex that we want to subscribe to.
@@ -52,12 +53,12 @@ public class SubscribeResponseHandler implements StreamObserver<SubscribeRespons
   private final String graphNode;
 
   public SubscribeResponseHandler(final SubscriptionManager subscriptionManager,
-      final NodeStateManager nodeStateManager,
-      final String remoteHost, final String graphNode) {
+                                  final NodeStateManager nodeStateManager,
+                                  final InstanceDetails remoteHost, final String graphNode) {
     this.subscriptionManager = subscriptionManager;
     this.nodeStateManager = nodeStateManager;
     this.graphNode = graphNode;
-    this.remoteHost = remoteHost;
+    this.remoteHostId = remoteHost.getInstanceId();
   }
 
   /**
@@ -79,11 +80,10 @@ public class SubscribeResponseHandler implements StreamObserver<SubscribeRespons
   @Override
   public void onNext(SubscribeResponse subscribeResponse) {
     if (subscribeResponse.getSubscriptionStatus() == SubscriptionStatus.SUCCESS) {
-      subscriptionManager.addPublisher(graphNode, remoteHost);
-      nodeStateManager.updateSubscriptionState(graphNode, remoteHost, SubscriptionStatus.SUCCESS);
+      subscriptionManager.addPublisher(graphNode, remoteHostId);
+      nodeStateManager.updateSubscriptionState(graphNode, remoteHostId, SubscriptionStatus.SUCCESS);
     } else if (subscribeResponse.getSubscriptionStatus() == SubscriptionStatus.TAG_MISMATCH) {
-      nodeStateManager
-          .updateSubscriptionState(graphNode, remoteHost, SubscriptionStatus.TAG_MISMATCH);
+      nodeStateManager.updateSubscriptionState(graphNode, remoteHostId, SubscriptionStatus.TAG_MISMATCH);
     }
   }
 
@@ -118,6 +118,6 @@ public class SubscribeResponseHandler implements StreamObserver<SubscribeRespons
    */
   @Override
   public void onCompleted() {
-    LOG.info("Finished subscription request for {}. Closing stream.", remoteHost);
+    LOG.info("Finished subscription request for {}. Closing stream.", remoteHostId);
   }
 }

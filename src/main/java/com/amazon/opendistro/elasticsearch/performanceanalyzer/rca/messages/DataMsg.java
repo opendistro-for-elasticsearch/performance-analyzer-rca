@@ -19,23 +19,23 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import java.util.List;
 
 public class DataMsg {
-  String sourceNode;
-  List<String> destinationNodes;
+  String sourceGraphNode;
+  List<String> destinationGraphNodes;
   List<? extends GenericFlowUnit> flowUnits;
 
   public DataMsg(
-      String sourceNode, List<String> destinationNode, List<? extends GenericFlowUnit> flowUnits) {
-    this.sourceNode = sourceNode;
-    this.destinationNodes = destinationNode;
+          String sourceGraphNode, List<String> destinationNodes, List<? extends GenericFlowUnit> flowUnits) {
+    this.sourceGraphNode = sourceGraphNode;
+    this.destinationGraphNodes = destinationNodes;
     this.flowUnits = flowUnits;
   }
 
-  public String getSourceNode() {
-    return sourceNode;
+  public String getSourceGraphNode() {
+    return sourceGraphNode;
   }
 
-  public List<String> getDestinationNode() {
-    return destinationNodes;
+  public List<String> getDestinationGraphNodes() {
+    return destinationGraphNodes;
   }
 
   public List<? extends GenericFlowUnit> getFlowUnits() {
@@ -44,6 +44,6 @@ public class DataMsg {
 
   @Override
   public String toString() {
-    return String.format("Data::from: '%s', to: %s", sourceNode, destinationNodes);
+    return String.format("Data::from: '%s', to: %s", sourceGraphNode, destinationGraphNodes);
   }
 }

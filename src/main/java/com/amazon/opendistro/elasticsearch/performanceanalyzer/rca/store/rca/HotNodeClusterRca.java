@@ -81,9 +81,9 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> 
       }
       long timestamp = clock.millis();
       for (HotResourceSummary resourceSummary : nodeSummary.getHotResourceSummaryList()) {
-        NodeResourceUsage oldUsage = nodeTable.get(nodeSummary.getNodeID(), resourceSummary.getResource());
+        NodeResourceUsage oldUsage = nodeTable.get(nodeSummary.getNodeID().toString(), resourceSummary.getResource());
         if (oldUsage == null || oldUsage.timestamp < timestamp) {
-          nodeTable.put(nodeSummary.getNodeID(), resourceSummary.getResource(),
+          nodeTable.put(nodeSummary.getNodeID().toString(), resourceSummary.getResource(),
               new NodeResourceUsage(timestamp, resourceSummary));
         }
       }
@@ -111,14 +111,14 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> 
     for (Resource resourceType : resourceTypeColumnKeys) {
       List<NodeResourceUsage> resourceUsages = new ArrayList<>();
       for (InstanceDetails nodeDetail : dataNodesDetails) {
-        NodeResourceUsage currentUsage = nodeTable.get(nodeDetail.getInstanceId(), resourceType);
+        NodeResourceUsage currentUsage = nodeTable.get(nodeDetail.getInstanceId().toString(), resourceType);
         // some node does not has this resource type in table.
         if (currentUsage == null) {
           continue;
         }
         // drop the value if the timestamp expires
         if (currTimestamp - currentUsage.timestamp > TimeUnit.MINUTES.toMillis(TIMESTAMP_EXPIRATION_IN_MINS)) {
-          nodeTable.row(nodeDetail.getInstanceId()).remove(resourceType);
+          nodeTable.row(nodeDetail.getInstanceId().toString()).remove(resourceType);
           continue;
         }
         resourceUsages.add(currentUsage);
@@ -146,7 +146,7 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> 
 
       //iterate the nodeid list again and check if some node is unbalanced
       for (InstanceDetails nodeDetail : dataNodesDetails) {
-        NodeResourceUsage currentUsage = nodeTable.get(nodeDetail.getInstanceId(), resourceType);
+        NodeResourceUsage currentUsage = nodeTable.get(nodeDetail.getInstanceId().toString(), resourceType);
         if (currentUsage == null) {
           continue;
         }
@@ -156,11 +156,11 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> 
         if (currentUsage.resourceSummary.getValue() >= medium * (1 + unbalancedResourceThreshold)
             && currentUsage.resourceSummary.getValue()
                 >= currentUsage.resourceSummary.getThreshold() * resourceUsageLowerBoundThreshold) {
-          if (!nodeSummaryMap.containsKey(nodeDetail.getInstanceId())) {
-            nodeSummaryMap.put(nodeDetail.getInstanceId(),
+          if (!nodeSummaryMap.containsKey(nodeDetail.getInstanceId().toString())) {
+            nodeSummaryMap.put(nodeDetail.getInstanceId().toString(),
                 new HotNodeSummary(nodeDetail.getInstanceId(), nodeDetail.getInstanceIp()));
           }
-          nodeSummaryMap.get(nodeDetail.getInstanceId()).appendNestedSummary(currentUsage.resourceSummary);
+          nodeSummaryMap.get(nodeDetail.getInstanceId().toString()).appendNestedSummary(currentUsage.resourceSummary);
         }
       }
     }
@@ -186,7 +186,7 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> 
   private void removeInactiveNodeFromTable() {
     Set<String> nodeIdSet = new HashSet<>();
     for (InstanceDetails nodeDetail : dataNodesDetails) {
-      nodeIdSet.add(nodeDetail.getInstanceId());
+      nodeIdSet.add(nodeDetail.getInstanceId().toString());
     }
     for (String nodeId : nodeTable.rowKeySet()) {
       if (!nodeIdSet.contains(nodeId)) {

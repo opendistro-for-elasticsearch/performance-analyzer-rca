@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 
 // TODO: Doc comments and a description of each member.
 public abstract class GenericFlowUnit {
@@ -37,5 +38,5 @@ public abstract class GenericFlowUnit {
     return this.empty;
   }
 
-  public abstract FlowUnitMessage buildFlowUnitMessage(final String graphNode, final String esNode);
+  public abstract FlowUnitMessage buildFlowUnitMessage(final String graphNode, final InstanceDetails.Id esNode);
 }

@@ -19,10 +19,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.uti
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class NodeKey {
-  private final String nodeId;
-  private final String hostAddress;
+  private final InstanceDetails.Id nodeId;
+  private final InstanceDetails.Ip hostAddress;
 
-  public NodeKey(String nodeId, String hostAddress) {
+  public NodeKey(InstanceDetails.Id nodeId, InstanceDetails.Ip hostAddress) {
     this.nodeId = nodeId;
     this.hostAddress = hostAddress;
   }
@@ -31,11 +31,11 @@ public class NodeKey {
     this(instanceDetails.getInstanceId(), instanceDetails.getInstanceIp());
   }
 
-  public String getNodeId() {
+  public InstanceDetails.Id getNodeId() {
     return nodeId;
   }
 
-  public String getHostAddress() {
+  public InstanceDetails.Ip getHostAddress() {
     return hostAddress;
   }
 

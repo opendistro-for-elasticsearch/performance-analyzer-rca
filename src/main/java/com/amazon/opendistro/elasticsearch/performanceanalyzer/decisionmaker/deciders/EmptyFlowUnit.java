@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 
 public class EmptyFlowUnit extends GenericFlowUnit {
 
@@ -25,7 +26,7 @@ public class EmptyFlowUnit extends GenericFlowUnit {
   }
 
   @Override
-  public FlowUnitMessage buildFlowUnitMessage(String graphNode, String esNode) {
+  public FlowUnitMessage buildFlowUnitMessage(String graphNode, InstanceDetails.Id esNode) {
     throw new IllegalStateException(this.getClass().getSimpleName() + " not expected to be passed over wire");
   }
 }
