@@ -1,7 +1,12 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.net;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.SymptomFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.DataMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.ReceivedFlowUnitStore;
@@ -11,8 +16,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.handler.P
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.handler.SubscribeServerHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.WaitFor;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -57,8 +65,12 @@ public class TestMultipleNetServers {
         wireHopper1.shutdownAll();
         wireHopper2.shutdownAll();
 
-        netServer1.shutdown();
-        netServer2.shutdown();
+        try {
+            netServer1.shutdown();
+            netServer2.shutdown();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     private ClusterDetailsEventProcessor.NodeDetails createNodeDetails(int port, String instance) {
@@ -89,12 +101,6 @@ public class TestMultipleNetServers {
         SubscriptionManager subscriptionManager = new SubscriptionManager(connectionManager);
         ReceivedFlowUnitStore receivedFlowUnitStore = new ReceivedFlowUnitStore();
 
-        // netServer1.setSendDataHandler(new PublishRequestHandler(
-        //         nodeStateManager, receivedFlowUnitStore, networkThreadPoolReference));
-        // netServer.setSubscribeHandler(
-        //         new SubscribeServerHandler(subscriptionManager, networkThreadPoolReference));
-
-
         return new WireHopper(nodeStateManager, netClient, subscriptionManager, clientExecutor, receivedFlowUnitStore,
                 appContext);
     }
@@ -102,24 +108,53 @@ public class TestMultipleNetServers {
     @Before
     public void setUp() {
         wireHopper1 = setUpWireHopper("instance1", port1, "instance2", port2);
+        netServer1.setSendDataHandler(new PublishRequestHandler(
+                wireHopper1.getNodeStateManager(),
+                wireHopper1.getReceivedFlowUnitStore(),
+                wireHopper1.getExecutorReference()));
+        netServer1.setSubscribeHandler(
+                new SubscribeServerHandler(
+                        wireHopper1.getSubscriptionManager(),
+                        wireHopper1.getExecutorReference()));
+
         wireHopper2 = setUpWireHopper("instance2", port2, "instance1", port1);
+        netServer2.setSendDataHandler(new PublishRequestHandler(
+                wireHopper2.getNodeStateManager(),
+                wireHopper2.getReceivedFlowUnitStore(),
+                wireHopper2.getExecutorReference()));
+        netServer2.setSubscribeHandler(
+                new SubscribeServerHandler(
+                        wireHopper2.getSubscriptionManager(),
+                        wireHopper2.getExecutorReference()));
     }
 
     /**
      * This test tries to create multiple NetServers on the same host, each listening on a different port.
      */
     @Test
-    public void multipleNetServers() {
-        wireHopper1.sendIntent(
-                new IntentMsg(
-                        "node1", "node2", ImmutableMap.of("locus", "instance1")));
+    public void multipleNetServers() throws Exception {
+        String gNode1 = "graphNode1";
+        String gNode2 = "graphNode2";
 
-        System.out.println("Tests are done !!");
+        Map<String, String> rcaConfTags = new HashMap<>();
+        rcaConfTags.put("locus", RcaConsts.RcaTagConstants.LOCUS_DATA_NODE);
+        IntentMsg msg = new IntentMsg(gNode1, gNode2, rcaConfTags);
+        wireHopper2.getSubscriptionManager().setCurrentLocus(RcaConsts.RcaTagConstants.LOCUS_DATA_NODE);
 
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        wireHopper1.sendIntent(msg);
+
+        WaitFor.waitFor(() ->
+                        wireHopper2.getSubscriptionManager().getSubscribersFor(gNode2).size() == 1,
+                10,
+                TimeUnit.SECONDS);
+        GenericFlowUnit flowUnit = new SymptomFlowUnit(System.currentTimeMillis());
+        DataMsg dmsg = new DataMsg(gNode2, Lists.newArrayList(gNode1), Collections.singletonList(flowUnit));
+        wireHopper2.sendData(dmsg);
+        wireHopper1.getSubscriptionManager().setCurrentLocus(RcaConsts.RcaTagConstants.LOCUS_DATA_NODE);
+
+        WaitFor.waitFor(() -> {
+            List<FlowUnitMessage> receivedMags = wireHopper1.getReceivedFlowUnitStore().drainNode(gNode2);
+            return receivedMags.size() == 1;
+        }, 10, TimeUnit.SECONDS);
     }
 }

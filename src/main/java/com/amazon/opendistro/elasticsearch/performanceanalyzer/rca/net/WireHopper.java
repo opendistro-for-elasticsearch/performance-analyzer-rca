@@ -48,6 +48,7 @@ public class WireHopper {
   private final SubscriptionManager subscriptionManager;
   private final NodeStateManager nodeStateManager;
   private final AtomicReference<ExecutorService> executorReference;
+
   private final ReceivedFlowUnitStore receivedFlowUnitStore;
   private final AppContext appContext;
 
@@ -150,4 +151,25 @@ public class WireHopper {
     netClient.stop();
     netClient.getConnectionManager().shutdown();
   }
+
+  @VisibleForTesting
+  public SubscriptionManager getSubscriptionManager() {
+    return subscriptionManager;
+  }
+
+  @VisibleForTesting
+  public NodeStateManager getNodeStateManager() {
+    return nodeStateManager;
+  }
+
+  @VisibleForTesting
+  public AtomicReference<ExecutorService> getExecutorReference() {
+    return executorReference;
+  }
+
+  @VisibleForTesting
+  public ReceivedFlowUnitStore getReceivedFlowUnitStore() {
+    return receivedFlowUnitStore;
+  }
+
 }
