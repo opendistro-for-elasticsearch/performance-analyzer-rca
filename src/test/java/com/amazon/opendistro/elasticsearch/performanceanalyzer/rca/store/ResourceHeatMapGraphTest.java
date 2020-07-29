@@ -25,6 +25,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.ClientServers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
@@ -108,6 +109,8 @@ public class ResourceHeatMapGraphTest {
   private static SubscriptionManager subscriptionManager;
   private static AtomicReference<ExecutorService> networkThreadPoolReference;
 
+  private static boolean oldHttpsEnabled;
+
   @BeforeClass
   public static void init() {
     try {
@@ -132,6 +135,8 @@ public class ResourceHeatMapGraphTest {
     AllMetrics.NodeRole nodeRole2 = AllMetrics.NodeRole.ELECTED_MASTER;
     AppContext appContext = RcaTestHelper.setMyIp("192.168.0.2", nodeRole2);
     connectionManager = new GRPCConnectionManager(false);
+    oldHttpsEnabled = PluginSettings.instance().getHttpsEnabled();
+    PluginSettings.instance().setHttpsEnabled(false);
     clientServers = PerformanceAnalyzerApp.createClientServers(connectionManager, new AppContext());
 
     HttpServer httpServer = clientServers.getHttpServer();
@@ -151,6 +156,7 @@ public class ResourceHeatMapGraphTest {
     clientServers.getHttpServer().stop(0);
     clientServers.getNetServer().stop();
     clientServers.getNetClient().stop();
+    PluginSettings.instance().setHttpsEnabled(oldHttpsEnabled);
   }
 
   private static class AnalysisGraphX extends ElasticSearchAnalysisGraph {
