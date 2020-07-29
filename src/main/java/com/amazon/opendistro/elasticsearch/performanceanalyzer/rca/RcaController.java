@@ -466,4 +466,9 @@ public class RcaController {
   public void setDeliberateInterrupt() {
     deliberateInterrupt = true;
   }
+
+  public void setDbProvider(Queryable dbProvider) {
+    this.dbProvider = dbProvider;
+  }
+
 }

@@ -131,8 +131,8 @@ public class NodeTemperatureRca extends Rca<CompactNodeTemperatureFlowUnit> {
 
     InstanceDetails instanceDetails = getInstanceDetails();
     FullNodeTemperatureSummary nodeProfile = new FullNodeTemperatureSummary(
-        instanceDetails.getInstanceId(),
-        instanceDetails.getInstanceIp());
+        instanceDetails.getInstanceId().toString(),
+        instanceDetails.getInstanceIp().toString());
     for (NodeLevelDimensionalSummary profile : dimensionProfiles) {
       nodeProfile.updateNodeDimensionProfile(profile);
     }

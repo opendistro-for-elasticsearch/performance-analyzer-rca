@@ -154,7 +154,7 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
         final List<InstanceDetails> allNodes = appContext.getAllClusterInstances();
         String localNodeId = "local";
         if (allNodes.size() != 0) {
-          localNodeId = allNodes.get(0).getInstanceId();
+          localNodeId = allNodes.get(0).getInstanceId().toString();
         }
         nodeResponses.put(localNodeId, localResponseWithTimestamp);
         String response = metricsRestUtil.nodeJsonBuilder(nodeResponses);
@@ -233,7 +233,7 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
     ThreadSafeStreamObserver responseObserver =
         new ThreadSafeStreamObserver(node, nodeResponses, doneSignal);
     try {
-      this.netClient.getMetrics(node.getInstanceIp(), request, responseObserver);
+      this.netClient.getMetrics(node, request, responseObserver);
     } catch (Exception e) {
       LOG.error("Metrics : Exception occurred while getting Metrics {}", e.getCause());
     }
@@ -331,7 +331,7 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
     }
 
     public void onNext(MetricsResponse value) {
-      nodeResponses.putIfAbsent(node.getInstanceId(), value.getMetricsResult());
+      nodeResponses.putIfAbsent(node.getInstanceId().toString(), value.getMetricsResult());
     }
 
     @Override

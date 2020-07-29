@@ -23,6 +23,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -107,8 +108,8 @@ public class NodeConfigFlowUnit extends ResourceFlowUnit<HotNodeSummary> {
     NodeConfigFlowUnit nodeConfigFlowUnit;
     if (message.getSummaryOneofCase() == SummaryOneofCase.HOTNODESUMMARY) {
       HotNodeSummaryMessage nodeSummaryMessage = message.getHotNodeSummary();
-      NodeKey nodeKey = new NodeKey(nodeSummaryMessage.getNodeID(),
-          nodeSummaryMessage.getHostAddress());
+      NodeKey nodeKey = new NodeKey(new InstanceDetails.Id(nodeSummaryMessage.getNodeID()),
+          new InstanceDetails.Ip(nodeSummaryMessage.getHostAddress()));
       nodeConfigFlowUnit = new NodeConfigFlowUnit(message.getTimeStamp(), nodeKey);
       if (nodeSummaryMessage.hasHotResourceSummaryList()) {
         for (int i = 0;

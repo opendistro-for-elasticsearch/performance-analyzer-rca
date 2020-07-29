@@ -13,16 +13,17 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class ClusterUtilsTest {
-    private static final String HOST = "127.0.0.1";
-    private static final String HOST2 = "127.0.0.2";
+    private static final String HOST1 = "host1";
+    private static final String HOST2 = "host2";
     private static final ClusterDetailsEventProcessor.NodeDetails EMPTY_DETAILS =
             ClusterDetailsEventProcessorTestHelper.newNodeDetails("", "", false);
     private ClusterDetailsEventProcessor clusterDetailsEventProcessor;
 
     private List<InstanceDetails> getInstancesFromHost(List<String> hostIps) {
         List<InstanceDetails> instances = new ArrayList<>();
-        for (String ip: hostIps) {
-            InstanceDetails instance = new InstanceDetails(AllMetrics.NodeRole.UNKNOWN, "", ip, false);
+        for (String id: hostIps) {
+            InstanceDetails instance = new InstanceDetails(AllMetrics.NodeRole.UNKNOWN, new InstanceDetails.Id(id),
+                    new InstanceDetails.Ip("0.0.0.0"), false);
             instances.add(instance);
         }
         return instances;
@@ -37,17 +38,17 @@ public class ClusterUtilsTest {
     @Test
     public void testIsHostAddressInCluster() {
         // method should return false when there are no peers
-        Assert.assertFalse(ClusterUtils.isHostAddressInCluster(HOST, getInstancesFromHost(Collections.EMPTY_LIST)));
+        Assert.assertFalse(ClusterUtils.isHostIdInCluster(new InstanceDetails.Id(HOST1), getInstancesFromHost(Collections.EMPTY_LIST)));
         // method should properly recognize which hosts are peers and which aren't
         clusterDetailsEventProcessor.setNodesDetails(Lists.newArrayList(
-                ClusterDetailsEventProcessorTestHelper.newNodeDetails(null, HOST, false)
+                ClusterDetailsEventProcessorTestHelper.newNodeDetails(null, HOST1, false)
         ));
 
 
 
-        List<InstanceDetails> instances = getInstancesFromHost(Collections.singletonList(HOST));
+        List<InstanceDetails> instances = getInstancesFromHost(Collections.singletonList(HOST1));
 
-        Assert.assertTrue(ClusterUtils.isHostAddressInCluster(HOST, instances));
-        Assert.assertFalse(ClusterUtils.isHostAddressInCluster(HOST2, instances));
+        Assert.assertTrue(ClusterUtils.isHostIdInCluster(new InstanceDetails.Id(HOST1), instances));
+        Assert.assertFalse(ClusterUtils.isHostIdInCluster(new InstanceDetails.Id(HOST2), instances));
     }
 }

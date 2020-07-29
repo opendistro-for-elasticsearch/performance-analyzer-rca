@@ -25,8 +25,8 @@ service InterNodeRpcService {
  Structure that describes the subscription message.
 */
 message SubscribeMessage {
-    string requester_node = 1;
-    string destination_node = 2;
+    string requester_graph_node = 1;
+    string destination_graph_node = 2;
     map<string, string> tags = 3;
 }
 

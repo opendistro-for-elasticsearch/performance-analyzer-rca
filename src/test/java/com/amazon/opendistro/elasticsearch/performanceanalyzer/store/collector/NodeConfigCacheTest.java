@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.collector;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import org.junit.Assert;
@@ -34,8 +35,8 @@ public class NodeConfigCacheTest {
   @Before
   public void init() {
     this.nodeConfigCache = new NodeConfigCache();
-    this.nodeKey1 = new NodeKey("node1", "127.0.0.1");
-    this.nodeKey2 = new NodeKey("node2", "127.0.0.2");
+    this.nodeKey1 = new NodeKey(new InstanceDetails.Id("node1"), new InstanceDetails.Ip("127.0.0.1"));
+    this.nodeKey2 = new NodeKey(new InstanceDetails.Id("node2"), new InstanceDetails.Ip("127.0.0.2"));
   }
 
   @Test(expected = IllegalArgumentException.class)

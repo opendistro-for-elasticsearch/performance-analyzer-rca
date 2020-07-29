@@ -179,7 +179,7 @@ public class HotShardRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
                         || avgIoTotThroughput > ioTotThroughputThreshold
                         || avgIoTotSyscallRate > ioTotSysCallRateThreshold) {
                     HotShardSummary summary = new HotShardSummary(indexShardKey.getIndexName(),
-                            String.valueOf(indexShardKey.getShardId()), instanceDetails.getInstanceId(),
+                            String.valueOf(indexShardKey.getShardId()), instanceDetails.getInstanceId().toString(),
                         SLIDING_WINDOW_IN_SECONDS);
                     summary.setcpuUtilization(avgCpuUtilization);
                     summary.setCpuUtilizationThreshold(cpuUtilizationThreshold);

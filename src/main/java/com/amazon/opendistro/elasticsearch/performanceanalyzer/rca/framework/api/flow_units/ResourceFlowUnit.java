@@ -24,6 +24,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -106,10 +107,10 @@ public class ResourceFlowUnit<T extends GenericSummary> extends GenericFlowUnit 
   }
 
   @Override
-  public FlowUnitMessage buildFlowUnitMessage(final String graphNode, final String esNode) {
+  public FlowUnitMessage buildFlowUnitMessage(final String graphNode, final InstanceDetails.Id esNode) {
     final FlowUnitMessage.Builder messageBuilder = FlowUnitMessage.newBuilder();
     messageBuilder.setGraphNode(graphNode);
-    messageBuilder.setEsNode(esNode);
+    messageBuilder.setEsNode(esNode.toString());
     messageBuilder.setTimeStamp(System.currentTimeMillis());
     if (resourceContext != null) {
           messageBuilder.setResourceContext(resourceContext.buildContextMessage());

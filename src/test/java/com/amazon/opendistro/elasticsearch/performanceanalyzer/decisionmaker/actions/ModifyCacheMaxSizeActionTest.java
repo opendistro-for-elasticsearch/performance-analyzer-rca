@@ -28,6 +28,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Impact;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheDeciderConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.Map;
 import org.junit.Test;
@@ -36,7 +37,8 @@ public class ModifyCacheMaxSizeActionTest {
 
     @Test
     public void testIncreaseCapacity() {
-        NodeKey node1 = new NodeKey("node-1", "1.2.3.4");
+        NodeKey node1 = new NodeKey(new InstanceDetails.Id("node-1"),
+                new InstanceDetails.Ip("1.2.3.4"));
         ModifyCacheMaxSizeAction modifyCacheSizeAction =
                 new ModifyCacheMaxSizeAction(
                         node1,
@@ -62,7 +64,7 @@ public class ModifyCacheMaxSizeActionTest {
 
     @Test
     public void testNoIncreaseCapacity() {
-        NodeKey node1 = new NodeKey("node-1", "1.2.3.4");
+        NodeKey node1 = new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
         ModifyCacheMaxSizeAction modifyCacheSizeAction =
                 new ModifyCacheMaxSizeAction(
                         node1,
@@ -90,30 +92,30 @@ public class ModifyCacheMaxSizeActionTest {
     public void testBounds() {
         // TODO: Move to work with test rcaConf when bounds moved to nodeConfiguration rca
         final long maxSizeInBytes = 12000 * 1_000_000L;
-        NodeKey node1 = new NodeKey("node-1", "1.2.3.4");
+        NodeKey node1 = new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
         ModifyCacheMaxSizeAction fieldCacheIncrease =
-            new ModifyCacheMaxSizeAction(
-                    node1,
-                    ResourceEnum.FIELD_DATA_CACHE,
-                    (long) (maxSizeInBytes * CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND),
-                    maxSizeInBytes,
-                    true);
+                new ModifyCacheMaxSizeAction(
+                        node1,
+                        ResourceEnum.FIELD_DATA_CACHE,
+                        (long) (maxSizeInBytes * CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND),
+                        maxSizeInBytes,
+                        true);
         assertEquals(
-            fieldCacheIncrease.getDesiredCacheMaxSizeInBytes(),
-            fieldCacheIncrease.getCurrentCacheMaxSizeInBytes());
+                fieldCacheIncrease.getDesiredCacheMaxSizeInBytes(),
+                fieldCacheIncrease.getCurrentCacheMaxSizeInBytes());
         assertFalse(fieldCacheIncrease.isActionable());
         assertNoImpact(node1, fieldCacheIncrease);
 
         ModifyCacheMaxSizeAction shardRequestCacheIncrease =
-            new ModifyCacheMaxSizeAction(
-                    node1,
-                    ResourceEnum.SHARD_REQUEST_CACHE,
-                    (long) (maxSizeInBytes * CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND),
-                    maxSizeInBytes,
-                    true);
+                new ModifyCacheMaxSizeAction(
+                        node1,
+                        ResourceEnum.SHARD_REQUEST_CACHE,
+                        (long) (maxSizeInBytes * CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND),
+                        maxSizeInBytes,
+                        true);
         assertEquals(
-            shardRequestCacheIncrease.getDesiredCacheMaxSizeInBytes(),
-            shardRequestCacheIncrease.getCurrentCacheMaxSizeInBytes());
+                shardRequestCacheIncrease.getDesiredCacheMaxSizeInBytes(),
+                shardRequestCacheIncrease.getCurrentCacheMaxSizeInBytes());
         assertFalse(shardRequestCacheIncrease.isActionable());
         assertNoImpact(node1, shardRequestCacheIncrease);
     }

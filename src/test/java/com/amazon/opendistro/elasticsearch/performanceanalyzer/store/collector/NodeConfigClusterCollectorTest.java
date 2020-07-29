@@ -21,6 +21,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.NodeConfigFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigClusterCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
@@ -48,8 +49,8 @@ public class NodeConfigClusterCollectorTest {
 
   @Test
   public void testQueueCapacityCollection() {
-    NodeKey nodeKey1 = new NodeKey("node1", "127.0.0.1");
-    NodeKey nodeKey2 = new NodeKey("node2", "127.0.0.2");
+    NodeKey nodeKey1 = new NodeKey(new InstanceDetails.Id("node1"), new InstanceDetails.Ip("127.0.0.1"));
+    NodeKey nodeKey2 = new NodeKey(new InstanceDetails.Id("node2"), new InstanceDetails.Ip("127.0.0.2"));
     NodeConfigFlowUnit flowUnit = new NodeConfigFlowUnit(0, nodeKey1);
     flowUnit.addConfig(ResourceUtil.WRITE_QUEUE_CAPACITY, 100);
     collector.setLocalFlowUnit(flowUnit);
@@ -110,8 +111,8 @@ public class NodeConfigClusterCollectorTest {
 
   @Test
   public void testCacheMaxSizeCollection() {
-    NodeKey nodeKey1 = new NodeKey("node1", "127.0.0.1");
-    NodeKey nodeKey2 = new NodeKey("node2", "127.0.0.2");
+    NodeKey nodeKey1 = new NodeKey(new InstanceDetails.Id("node1"), new InstanceDetails.Ip("127.0.0.1"));
+    NodeKey nodeKey2 = new NodeKey(new InstanceDetails.Id("node2"), new InstanceDetails.Ip("127.0.0.2"));
     NodeConfigFlowUnit flowUnit = new NodeConfigFlowUnit(0, nodeKey1);
     flowUnit.addConfig(ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE, 100000);
     collector.setLocalFlowUnit(flowUnit);
