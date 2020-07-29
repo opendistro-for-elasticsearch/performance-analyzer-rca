@@ -95,7 +95,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 public class ResourceHeatMapGraphTest {
-  private final Logger LOG = LogManager.getLogger(this.getClass());
+  private static final Logger LOG = LogManager.getLogger(ResourceHeatMapGraphTest.class);
   private final int THREADS = 3;
   private static final String cwd = System.getProperty("user.dir");
   private static final Path sqliteFile =
@@ -253,6 +253,7 @@ public class ResourceHeatMapGraphTest {
       }
     } catch (IOException e) {
       LOG.error("Exception getting RCA query response for url {}", url.toString(), e);
+      System.out.println(e.getMessage() + e.getCause());
       connection.disconnect();
       Assert.fail();
     }
@@ -1167,6 +1168,7 @@ public class ResourceHeatMapGraphTest {
       con.disconnect();
     } catch (Exception e) {
       LOG.error("Exception getting HotShardClusterRca response", e);
+      System.out.println(e.getMessage() + e.getCause());
       Assert.fail();
     }
   }
