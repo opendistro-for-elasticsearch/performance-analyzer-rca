@@ -78,6 +78,7 @@ public class PublisherTest {
     publisher.operate();
     Mockito.verify(actionListener, Mockito.times(1)).actionPublished(action);
     Mockito.reset(action);
+    Mockito.reset(actionListener);
     // Verify that a publisher doesn't execute a previously executed action until the action's cool off period
     // has elapsed
     Mockito.when(action.coolOffPeriodInMillis()).thenReturn(3000L);
