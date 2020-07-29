@@ -107,7 +107,7 @@ public class CacheHealthDecider extends Decider {
                     final NodeKey esNode = new NodeKey(hotNodeSummary.getNodeID(), hotNodeSummary.getHostAddress());
                     for (final HotResourceSummary resource : hotNodeSummary.getHotResourceSummaryList()) {
                         final Action action = computeBestAction(esNode, resource.getResource().getResourceEnum());
-                        if (action!= null) {
+                        if (action != null) {
                             decision.addAction(action);
                             impactedNodes.add(hotNodeSummary.getNodeID());
                         }
@@ -115,7 +115,6 @@ public class CacheHealthDecider extends Decider {
                 }
             }
         }
-        return;
     }
 
     private void configureActionPriority() {
