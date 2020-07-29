@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.DBUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.model.MetricsModel;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.Removable;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -241,7 +242,12 @@ public class MetricsDB implements Removable {
   }
 
   public Result<Record> queryMetric(String metric, int limit) {
-    return create.select().from(DSL.table(metric)).limit(limit).fetch();
+    List<Field<?>> fields = DBUtils.getFieldsFromList(MetricsModel.ALL_METRICS.get(metric).dimensionNames);
+    fields.add(DSL.field(SUM, Double.class));
+    fields.add(DSL.field(AVG, Double.class));
+    fields.add(DSL.field(MIN, Double.class));
+    fields.add(DSL.field(MAX, Double.class));
+    return create.select(fields).from(DSL.table(metric)).limit(limit).fetch();
   }
 
   public void commit() throws Exception {
