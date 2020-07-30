@@ -88,7 +88,6 @@ import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class ResourceHeatMapGraphTest {
@@ -151,6 +150,12 @@ public class ResourceHeatMapGraphTest {
     clientServers.getHttpServer().stop(0);
     clientServers.getNetServer().stop();
     clientServers.getNetClient().stop();
+
+    try {
+      Thread.sleep(1000);
+    } catch (InterruptedException ie) {
+      ie.printStackTrace();
+    }
   }
 
   private static class AnalysisGraphX extends ElasticSearchAnalysisGraph {
