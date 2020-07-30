@@ -32,6 +32,7 @@ public class ModifyQueueCapacityAction implements Action {
   public static final String NAME = "modify_queue_capacity";
   public static final long COOL_OFF_PERIOD_IN_MILLIS = 300 * 1_000;
 
+  private static int STEP_SIZE = 50;
   private int currentCapacity;
   private int desiredCapacity;
   private ResourceEnum threadPool;
@@ -40,14 +41,23 @@ public class ModifyQueueCapacityAction implements Action {
   private Map<ResourceEnum, Integer> lowerBound = new HashMap<>();
   private Map<ResourceEnum, Integer> upperBound = new HashMap<>();
 
+  public ModifyQueueCapacityAction(NodeKey esNode, ResourceEnum threadPool, int currentCapacity, boolean increase, int step) {
+    this(esNode, threadPool, currentCapacity);
+    int desiredCapacity = increase ? currentCapacity + step * STEP_SIZE : currentCapacity - step * STEP_SIZE;
+    setDesiredCapacity(desiredCapacity);
+  }
+
   public ModifyQueueCapacityAction(NodeKey esNode, ResourceEnum threadPool, int currentCapacity, boolean increase) {
+    this(esNode, threadPool, currentCapacity);
+    int desiredCapacity = increase ? currentCapacity + STEP_SIZE : currentCapacity - STEP_SIZE;
+    setDesiredCapacity(desiredCapacity);
+  }
+
+  private ModifyQueueCapacityAction(NodeKey esNode, ResourceEnum threadPool, int currentCapacity) {
     setBounds();
-    int STEP_SIZE = 50;
     this.esNode = esNode;
     this.threadPool = threadPool;
     this.currentCapacity = currentCapacity;
-    int desiredCapacity = increase ? currentCapacity + STEP_SIZE : currentCapacity - STEP_SIZE;
-    setDesiredCapacity(desiredCapacity);
   }
 
   @Override
@@ -130,5 +140,13 @@ public class ModifyQueueCapacityAction implements Action {
 
   public ResourceEnum getThreadPool() {
     return threadPool;
+  }
+
+  public int getUpperBound() {
+    return upperBound.get(threadPool);
+  }
+
+  public int getLowerBound() {
+    return lowerBound.get(threadPool);
   }
 }

@@ -37,10 +37,33 @@ public class ModifyCacheCapacityAction implements Action {
     private Map<ResourceEnum, Long> upperBoundInBytes = new HashMap<>();
 
     public ModifyCacheCapacityAction(
+        final NodeKey esNode,
+        final ResourceEnum cacheType,
+        final long currentCapacityInBytes,
+        final boolean increase) {
+        this(esNode, cacheType, currentCapacityInBytes);
+        long desiredCapacity =
+            increase ? currentCapacityInBytes + getStepSize(cacheType) : currentCapacityInBytes;
+        setDesiredCapacity(desiredCapacity);
+    }
+
+    public ModifyCacheCapacityAction(
             final NodeKey esNode,
             final ResourceEnum cacheType,
             final long currentCapacityInBytes,
-            final boolean increase) {
+            final boolean increase,
+            int step) {
+        this(esNode, cacheType, currentCapacityInBytes);
+        long desiredCapacity =
+                increase ? currentCapacityInBytes + step * getStepSize(cacheType)
+                    : currentCapacityInBytes - step * getStepSize(cacheType);
+        setDesiredCapacity(desiredCapacity);
+    }
+
+    private ModifyCacheCapacityAction(
+        final NodeKey esNode,
+        final ResourceEnum cacheType,
+        final long currentCapacityInBytes) {
         // TODO: Also consume NodeConfigurationRca
         setBounds();
         setStepSize();
@@ -48,9 +71,16 @@ public class ModifyCacheCapacityAction implements Action {
         this.esNode = esNode;
         this.cacheType = cacheType;
         this.currentCapacityInBytes = currentCapacityInBytes;
-        long desiredCapacity =
-                increase ? currentCapacityInBytes + getStepSize(cacheType) : currentCapacityInBytes;
-        setDesiredCapacity(desiredCapacity);
+    }
+
+    public static ModifyCacheCapacityAction newMinimalCapacityAction(
+        final NodeKey esNode,
+        final ResourceEnum cacheType,
+        final long currentCapacityInBytes) {
+        ModifyCacheCapacityAction action = new ModifyCacheCapacityAction(esNode, cacheType, currentCapacityInBytes);
+        //TODO : set lower bound to 0 for now
+        action.setDesiredCapacity(0);
+        return action;
     }
 
     @Override
@@ -140,6 +170,10 @@ public class ModifyCacheCapacityAction implements Action {
 
     public long getDesiredCapacityInBytes() {
         return desiredCapacityInBytes;
+    }
+
+    public double getDesiredCapacityInPercent() {
+        return 0.1;
     }
 
     public ResourceEnum getCacheType() {
