@@ -81,23 +81,21 @@ enum MetricEnum {
   HEAP_USAGE = 0 [(additional_fields).name = "heap usage", (additional_fields).description = "memory usage in percentage"];
   PROMOTION_RATE = 1 [(additional_fields).name = "promotion rate", (additional_fields).description = "mb/s"];
   MINOR_GC = 2 [(additional_fields).name = "minor gc", (additional_fields).description = "time in percentage"];
+  HEAP_MAX = 3 [(additional_fields).name = "heap max", (additional_fields).description = "max heap size in bytes"];
 
   // hardware
-  CPU_USAGE = 3 [(additional_fields).name = "cpu usage", (additional_fields).description = "num of cores"];
-  TOTAL_THROUGHPUT = 4 [(additional_fields).name = "total throughput", (additional_fields).description = "number of bytes read/written per second"];
-  TOTAL_SYS_CALLRATE = 5 [(additional_fields).name = "total sys callrate", (additional_fields).description = "read and write system calls per second"];
+  CPU_USAGE = 4 [(additional_fields).name = "cpu usage", (additional_fields).description = "num of cores"];
+  TOTAL_THROUGHPUT = 5 [(additional_fields).name = "total throughput", (additional_fields).description = "number of bytes read/written per second"];
+  TOTAL_SYS_CALLRATE = 6 [(additional_fields).name = "total sys callrate", (additional_fields).description = "read and write system calls per second"];
 
   // threadpool
-  QUEUE_REJECTION = 6 [(additional_fields).name = "queue rejection", (additional_fields).description = "rejection period in second"];
-  QUEUE_CAPACITY = 7 [(additional_fields).name = "queue capacity", (additional_fields).description = "max capacity of the queue"];
+  QUEUE_REJECTION = 7 [(additional_fields).name = "queue rejection", (additional_fields).description = "rejection period in second"];
+  QUEUE_CAPACITY = 8 [(additional_fields).name = "queue capacity", (additional_fields).description = "max capacity of the queue"];
   
   // cache
-  CACHE_EVICTION = 10 [(additional_fields).name = "cache eviction", (additional_fields).description = "cache eviction count"];
-  CACHE_HIT = 11 [(additional_fields).name = "cache hit", (additional_fields).description = "cache hit count"];
-  CACHE_MAX_SIZE = 12 [(additional_fields).name = "cache max size", (additional_fields).description = "max cache size in bytes"];
-
-  // heap
-  HEAP_MAX = 13 [(additional_fields).name = "heap max", (additional_fields).description = "max heap size in bytes"];
+  CACHE_EVICTION = 9 [(additional_fields).name = "cache eviction", (additional_fields).description = "cache eviction count"];
+  CACHE_HIT = 10 [(additional_fields).name = "cache hit", (additional_fields).description = "cache hit count"];
+  CACHE_MAX_SIZE = 11 [(additional_fields).name = "cache max size", (additional_fields).description = "max cache size in bytes"];
 }
 
 /*

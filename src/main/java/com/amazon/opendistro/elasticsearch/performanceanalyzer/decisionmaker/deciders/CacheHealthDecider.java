@@ -158,7 +158,10 @@ public class CacheHealthDecider extends Decider {
       final Long currentMaxSizeInBytes,
       final Long heapMaxSizeInBytes,
       final boolean increase) {
-    if (currentMaxSizeInBytes == null || heapMaxSizeInBytes == null) {
+    if (currentMaxSizeInBytes == null
+        || currentMaxSizeInBytes == 0
+        || heapMaxSizeInBytes == null
+        || heapMaxSizeInBytes == 0) {
       return null;
     }
     if (ModifyCacheMaxSizeAction.NAME.equals(actionName)) {
@@ -201,7 +204,7 @@ public class CacheHealthDecider extends Decider {
           getAppContext()
               .getNodeConfigCache()
               .get(esNode, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE);
-    } catch (final Exception e) {
+    } catch (final IllegalArgumentException e) {
       LOG.error("Exception while reading cache max size from Node Config Cache", e);
     }
     // No action if value not present in the cache.
@@ -212,7 +215,7 @@ public class CacheHealthDecider extends Decider {
   private Long getHeapMaxSizeInBytes(final NodeKey esNode) {
     try {
       return (long) getAppContext().getNodeConfigCache().get(esNode, ResourceUtil.HEAP_MAX_SIZE);
-    } catch (final Exception e) {
+    } catch (final IllegalArgumentException e) {
       LOG.error("Exception while reading heap max size from Node Config Cache", e);
     }
     // No action if value not present in the cache.

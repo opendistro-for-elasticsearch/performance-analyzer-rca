@@ -27,6 +27,11 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Action class is used to modify the cache's max size. It is used by cache decider and other
+ * deciders to implement actions like increasing the cache's size. Presently, it acts on field data
+ * cache and shard request cache.
+ */
 public class ModifyCacheMaxSizeAction implements Action {
   private static final Logger LOG = LogManager.getLogger(ModifyCacheMaxSizeAction.class);
   public static final String NAME = "modifyCacheCapacity";
@@ -53,6 +58,7 @@ public class ModifyCacheMaxSizeAction implements Action {
       final double fieldDataCacheSizeUpperBound,
       final double shardRequestCacheSizeUpperBound,
       final boolean increase) {
+    // TODO: Add lower bound for caches
     this.fieldDataCacheSizeUpperBound = fieldDataCacheSizeUpperBound;
     this.shardRequestCacheSizeUpperBound = shardRequestCacheSizeUpperBound;
     this.heapMaxSizeInBytes = heapMaxSizeInBytes;
@@ -63,6 +69,7 @@ public class ModifyCacheMaxSizeAction implements Action {
     this.esNode = esNode;
     this.cacheType = cacheType;
     this.currentCacheMaxSizeInBytes = currentCacheMaxSizeInBytes;
+    // TODO: Address cache scaling down  when JVM decider is available
     long desiredCapacity =
         increase ? currentCacheMaxSizeInBytes + getStepSize(cacheType) : currentCacheMaxSizeInBytes;
     setDesiredCacheMaxSize(desiredCapacity);

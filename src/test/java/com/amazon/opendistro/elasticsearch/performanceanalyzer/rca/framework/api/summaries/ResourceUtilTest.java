@@ -24,7 +24,7 @@ public class ResourceUtilTest {
     public void testBuildResourceType() {
         Resource oldGen = ResourceUtil.buildResource(0, 0);
         Assert.assertEquals(oldGen, ResourceUtil.OLD_GEN_HEAP_USAGE);
-        Resource cpuResource = ResourceUtil.buildResource(2, 3);
+        Resource cpuResource = ResourceUtil.buildResource(2, 4);
         Assert.assertEquals(cpuResource, ResourceUtil.CPU_USAGE);
     }
 }
