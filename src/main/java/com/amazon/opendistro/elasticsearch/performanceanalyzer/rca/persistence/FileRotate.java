@@ -20,6 +20,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.text.DateFormat;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -57,7 +58,7 @@ public class FileRotate {
    * @return null if the file was not rotated because it is not old enough, or the name of the file
    *     after rotation.
    */
-  Path tryRotate(long currentTimeMillis) throws IOException {
+  synchronized Path tryRotate(long currentTimeMillis) throws IOException {
     if (shouldRotate(currentTimeMillis)) {
       return rotate(currentTimeMillis);
     }
@@ -72,7 +73,7 @@ public class FileRotate {
    *
    * @return Path to the file after it is rotated or null if it ran into a problem trying to do so.
    */
-  Path forceRotate(long currentTimeMillis) throws IOException {
+  synchronized Path forceRotate(long currentTimeMillis) throws IOException {
     return rotate(currentTimeMillis);
   }
 
@@ -98,7 +99,7 @@ public class FileRotate {
    *
    * @return Returns the path to the file after it was rotated.
    */
-  protected Path rotate(long currentMillis) throws IOException {
+  protected synchronized Path rotate(long currentMillis) throws IOException {
     if (!FILE_TO_ROTATE.toFile().exists()) {
       return null;
     }
@@ -115,7 +116,14 @@ public class FileRotate {
       Files.move(FILE_TO_ROTATE, targetFilePath);
       lastRotatedMillis = System.currentTimeMillis();
     } catch (FileAlreadyExistsException fae) {
-      LOG.error(fae);
+      if (!Files.deleteIfExists(targetFilePath)) {
+        LOG.error("Could not delete file: " + targetFilePath);
+      }
+      try {
+        Files.move(FILE_TO_ROTATE, targetFilePath, StandardCopyOption.REPLACE_EXISTING);
+      } catch (Exception ex) {
+        LOG.error(ex);
+      }
     } catch (IOException e) {
       LOG.error(
           "Could not RENAME file '{}' to '{}'. Error: {}", FILENAME, targetFileName, e.getCause());

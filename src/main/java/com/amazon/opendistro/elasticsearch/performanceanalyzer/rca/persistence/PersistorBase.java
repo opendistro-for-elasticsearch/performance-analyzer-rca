@@ -115,7 +115,7 @@ public abstract class PersistorBase implements Persistable {
 
   // Not required for now.
   @Override
-  public List<ResourceFlowUnit> read(Node<?> node) {
+  public synchronized List<ResourceFlowUnit> read(Node<?> node) {
     return null;
   }
 
@@ -139,7 +139,7 @@ public abstract class PersistorBase implements Persistable {
     return rcaJson;
   }
 
-  public synchronized void openNewDBFile() throws SQLException {
+  private synchronized void openNewDBFile() throws SQLException {
     this.fileCreateTime = new Date(System.currentTimeMillis());
     this.filename = Paths.get(dir, filenameParam).toString();
     this.tableNames = new HashSet<>();
@@ -182,7 +182,7 @@ public abstract class PersistorBase implements Persistable {
     }
   }
 
-  private void rotateRegisterGarbageThenCreateNewDB(RotationType type) throws IOException, SQLException {
+  private synchronized void rotateRegisterGarbageThenCreateNewDB(RotationType type) throws IOException, SQLException {
     Path rotatedFile = null;
     switch (type) {
       case FORCE_ROTATE:
