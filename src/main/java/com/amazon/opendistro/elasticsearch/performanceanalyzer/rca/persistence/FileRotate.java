@@ -113,14 +113,14 @@ public class FileRotate {
 
     Path targetFilePath = Paths.get(dir, targetFileName.toString());
     try {
-      Files.move(FILE_TO_ROTATE, targetFilePath);
+      Files.move(FILE_TO_ROTATE, targetFilePath, StandardCopyOption.ATOMIC_MOVE);
       lastRotatedMillis = System.currentTimeMillis();
     } catch (FileAlreadyExistsException fae) {
       if (!Files.deleteIfExists(targetFilePath)) {
         LOG.error("Could not delete file: " + targetFilePath);
       }
       try {
-        Files.move(FILE_TO_ROTATE, targetFilePath, StandardCopyOption.REPLACE_EXISTING);
+        Files.move(FILE_TO_ROTATE, targetFilePath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
       } catch (Exception ex) {
         LOG.error(ex);
       }

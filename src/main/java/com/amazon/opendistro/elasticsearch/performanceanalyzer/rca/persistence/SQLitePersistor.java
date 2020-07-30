@@ -90,7 +90,9 @@ class SQLitePersistor extends PersistorBase {
       LOG.debug("table created: {}", constraintStep.toString());
     } catch (DataAccessException ex) {
       String msg = "table " + tableName + " already exists";
-      if (!ex.getMessage().contains(msg)) {
+      if (ex.getMessage().contains(msg)) {
+        LOG.debug(ex.getMessage());
+      } else {
         LOG.error(ex);
         throw ex;
       }
@@ -119,7 +121,9 @@ class SQLitePersistor extends PersistorBase {
       jooqTableColumns.put(tableName, columns);
     } catch (DataAccessException e) {
       String msg = "table " + tableName + " already exists";
-      if (!e.getMessage().contains(msg)) {
+      if (e.getMessage().contains(msg)) {
+        LOG.debug(e.getMessage());
+      } else {
         LOG.error(e);
         throw new SQLException(e);
       }
