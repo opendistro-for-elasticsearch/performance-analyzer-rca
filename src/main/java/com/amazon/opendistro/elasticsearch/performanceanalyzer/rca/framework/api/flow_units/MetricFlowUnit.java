@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import java.util.List;
 import org.jooq.Field;
 import org.jooq.Record;
@@ -53,7 +54,7 @@ public class MetricFlowUnit extends GenericFlowUnit {
    * never be called. so return null in case we run into it.
    */
   @Override
-  public FlowUnitMessage buildFlowUnitMessage(final String graphNode, final String esNode) {
+  public FlowUnitMessage buildFlowUnitMessage(final String graphNode, final InstanceDetails.Id esNode) {
     return null;
   }
 

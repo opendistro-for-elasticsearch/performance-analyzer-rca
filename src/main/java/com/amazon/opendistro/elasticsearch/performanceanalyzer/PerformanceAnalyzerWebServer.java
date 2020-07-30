@@ -16,22 +16,25 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
+import com.google.common.annotations.VisibleForTesting;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpsConfigurator;
+import com.sun.net.httpserver.HttpsParameters;
 import com.sun.net.httpserver.HttpsServer;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.security.KeyStore;
 import java.security.Security;
-import java.security.cert.X509Certificate;
 import java.util.concurrent.Executors;
+
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -40,20 +43,22 @@ public class PerformanceAnalyzerWebServer {
 
   private static final Logger LOG = LogManager.getLogger(PerformanceAnalyzerWebServer.class);
   private static final int WEBSERVICE_DEFAULT_PORT = 9650;
-  private static final String WEBSERVICE_PORT_CONF_NAME = "webservice-listener-port";
-  private static final String WEBSERVICE_BIND_HOST_NAME = "webservice-bind-host";
+  @VisibleForTesting
+  public static final String WEBSERVICE_BIND_HOST_NAME = "webservice-bind-host";
+  @VisibleForTesting
+  public static final String WEBSERVICE_PORT_CONF_NAME = "webservice-listener-port";
   // Use system default for max backlog.
   private static final int INCOMING_QUEUE_LENGTH = 1;
 
-  public static HttpServer createInternalServer(PluginSettings settings) {
-    int internalPort = getPortNumber();
+  public static HttpServer createInternalServer(String portFromSetting, String hostFromSetting, boolean httpsEnabled) {
+    int internalPort = getPortNumber(portFromSetting);
     try {
       Security.addProvider(new BouncyCastleProvider());
       HttpServer server;
-      if (settings.getHttpsEnabled()) {
-        server = createHttpsServer(internalPort);
+      if (httpsEnabled) {
+        server = createHttpsServer(internalPort, hostFromSetting);
       } else {
-        server = createHttpServer(internalPort);
+        server = createHttpServer(internalPort, hostFromSetting);
       }
       server.setExecutor(Executors.newCachedThreadPool());
       return server;
@@ -63,13 +68,37 @@ public class PerformanceAnalyzerWebServer {
       ex.printStackTrace();
       Runtime.getRuntime().halt(1);
     }
-
     return null;
   }
 
-  private static HttpServer createHttpsServer(int readerPort) throws Exception {
-    HttpsServer server = null;
-    String bindHost = getBindHost();
+  /**
+   * ClientAuthConfigurator makes the server perform client authentication if the user has set up a
+   * certificate authority
+   */
+  private static  class ClientAuthConfigurator extends HttpsConfigurator {
+    public ClientAuthConfigurator(SSLContext sslContext) {
+      super(sslContext);
+    }
+
+    @Override
+    public  void configure(HttpsParameters params) {
+      final SSLParameters sslParams = getSSLContext().getDefaultSSLParameters();
+      if (CertificateUtils.getTrustedCasFile() != null) {
+        LOG.debug("Enabling client auth");
+        final SSLEngine sslEngine = getSSLContext().createSSLEngine();
+        sslParams.setNeedClientAuth(true);
+        sslParams.setCipherSuites(sslEngine.getEnabledCipherSuites());
+        sslParams.setProtocols(sslEngine.getEnabledProtocols());
+        params.setSSLParameters(sslParams);
+      } else {
+        LOG.debug("Not enabling client auth");
+        super.configure(params);
+      }
+    }
+  }
+
+  private static HttpServer createHttpsServer(int readerPort, String bindHost) throws Exception {
+    HttpsServer server;
     if (bindHost != null && !bindHost.trim().isEmpty()) {
       LOG.info("Binding to Interface: {}", bindHost);
       server =
@@ -83,44 +112,35 @@ public class PerformanceAnalyzerWebServer {
       server = HttpsServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), readerPort), INCOMING_QUEUE_LENGTH);
     }
 
-    TrustManager[] trustAllCerts =
-        new TrustManager[] {
-            new X509TrustManager() {
-
-              public X509Certificate[] getAcceptedIssuers() {
-                return null;
-              }
-
-              public void checkClientTrusted(X509Certificate[] certs, String authType) {}
-
-              public void checkServerTrusted(X509Certificate[] certs, String authType) {}
-            }
-        };
-
-    HostnameVerifier allHostsValid =
-        new HostnameVerifier() {
-          public boolean verify(String hostname, SSLSession session) {
-            return true;
-          }
-        };
-
     // Install the all-trusting trust manager
     SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
 
     KeyStore ks = CertificateUtils.createKeyStore();
     KeyManagerFactory kmf = KeyManagerFactory.getInstance("NewSunX509");
     kmf.init(ks, CertificateUtils.IN_MEMORY_PWD.toCharArray());
-    sslContext.init(kmf.getKeyManagers(), trustAllCerts, null);
+    sslContext.init(kmf.getKeyManagers(), CertificateUtils.getTrustManagers(true), null);
+    server.setHttpsConfigurator(new ClientAuthConfigurator(sslContext));
 
-    HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
-    HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
-    server.setHttpsConfigurator(new HttpsConfigurator(sslContext));
+
+    // TODO ask ktkrg why this is necessary
+    // Try to set HttpsURLConnection defaults, our webserver can still run even if this block fails
+    try {
+      LOG.debug("Setting default SSLSocketFactory...");
+      HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
+      LOG.debug("Default SSLSocketFactory set successfully");
+      HostnameVerifier allHostsValid = (hostname, session) -> true;
+      LOG.debug("Setting default HostnameVerifier...");
+      HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+      LOG.debug("Default HostnameVerifier set successfully");
+    } catch (Exception e) { // Usually AccessControlException
+      LOG.warn("Exception while trying to set URLConnection defaults", e);
+    }
+
     return server;
   }
 
-  private static HttpServer createHttpServer(int readerPort) throws Exception {
+  private static HttpServer createHttpServer(int readerPort, String bindHost) throws Exception {
     HttpServer server = null;
-    String bindHost = getBindHost();
     if (bindHost != null && !bindHost.trim().isEmpty()) {
       LOG.info("Binding to Interface: {}", bindHost);
       server =
@@ -137,11 +157,8 @@ public class PerformanceAnalyzerWebServer {
     return server;
   }
 
-  private static int getPortNumber() {
-    String readerPortValue;
+  private static int getPortNumber(String readerPortValue) {
     try {
-      readerPortValue = PluginSettings.instance().getSettingValue(WEBSERVICE_PORT_CONF_NAME);
-
       if (readerPortValue == null) {
         LOG.info(
             "{} not configured; using default value: {}",
@@ -159,9 +176,5 @@ public class PerformanceAnalyzerWebServer {
           ex.toString());
       return WEBSERVICE_DEFAULT_PORT;
     }
-  }
-
-  private static String getBindHost() {
-    return PluginSettings.instance().getSettingValue(WEBSERVICE_BIND_HOST_NAME);
   }
 }

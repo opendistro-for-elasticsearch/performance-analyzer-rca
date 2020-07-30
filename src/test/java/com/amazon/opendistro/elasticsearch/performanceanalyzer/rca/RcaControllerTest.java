@@ -2,6 +2,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaTestHelper.updateConfFileForMutedRcas;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.ClientServers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerThreads;
@@ -14,6 +15,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCAScheduler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RcaSchedulerState;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.MetricsDBProviderTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
@@ -38,6 +40,7 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import javax.swing.JSeparator;
 import org.jooq.tools.json.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
@@ -71,11 +74,24 @@ public class RcaControllerTest {
             3, new ThreadFactoryBuilder().setNameFormat("test-network-thread-%d").build());
     boolean useHttps = PluginSettings.instance().getHttpsEnabled();
     connectionManager = new GRPCConnectionManager(useHttps);
-    clientServers = PerformanceAnalyzerApp.createClientServers(connectionManager);
+
+
+    ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
+    clusterDetailsEventProcessor.setNodesDetails(
+            Collections.singletonList(new ClusterDetailsEventProcessor.NodeDetails(
+                    AllMetrics.NodeRole.UNKNOWN,
+                    "node1",
+                    "127.0.0.1",
+                    false))
+    );
+    AppContext appContext = new AppContext();
+    appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
+
+    clientServers = PerformanceAnalyzerApp.createClientServers(connectionManager, appContext);
     clientServers.getHttpServer().start();
 
     URI uri = URI.create(RcaController.getCatMasterUrl());
-    masterIP = "";
+    masterIP = "127.0.0.4";
 
     dummyEsServer =
         HttpServer.create(
@@ -112,8 +128,10 @@ public class RcaControllerTest {
             clientServers,
             rcaEnabledFileLoc.toString(),
             100,
-            200
+            200,
+            appContext
         );
+    rcaController.setDbProvider(new MetricsDBProviderTestHelper());
 
     setMyIp(masterIP, AllMetrics.NodeRole.UNKNOWN);
 
@@ -163,11 +181,11 @@ public class RcaControllerTest {
   public void readRcaEnabledFromConf() throws IOException {
     changeRcaRunState(RcaState.STOP);
     Assert.assertTrue(check(new RcaEnabledEval(rcaController), false));
-    Assert.assertFalse(RcaController.isRcaEnabled());
+    Assert.assertFalse(rcaController.isRcaEnabled());
 
     changeRcaRunState(RcaState.RUN);
     Assert.assertTrue(check(new RcaEnabledEval(rcaController), true));
-    Assert.assertTrue(RcaController.isRcaEnabled());
+    Assert.assertTrue(rcaController.isRcaEnabled());
   }
 
   @Test
@@ -358,17 +376,32 @@ public class RcaControllerTest {
   }
 
   private void setMyIp(String ip, AllMetrics.NodeRole nodeRole) {
+    final String separator = System.lineSeparator();
     JSONObject jtime = new JSONObject();
     jtime.put("current_time", 1566414001749L);
+
+    JSONObject jOverrides = new JSONObject();
+    JSONObject jOverridesTimeStamp = new JSONObject();
 
     JSONObject jNode = new JSONObject();
     jNode.put(AllMetrics.NodeDetailColumns.ID.toString(), "4sqG_APMQuaQwEW17_6zwg");
     jNode.put(AllMetrics.NodeDetailColumns.HOST_ADDRESS.toString(), ip);
     jNode.put(AllMetrics.NodeDetailColumns.ROLE.toString(), nodeRole);
+    jNode.put(AllMetrics.NodeDetailColumns.IS_MASTER_NODE,
+            nodeRole == AllMetrics.NodeRole.ELECTED_MASTER ? true : false);
 
     ClusterDetailsEventProcessor eventProcessor = new ClusterDetailsEventProcessor();
+    StringBuilder nodeDetails = new StringBuilder();
+    nodeDetails.append(jtime);
+    nodeDetails.append(separator);
+    nodeDetails.append(jOverrides);
+    nodeDetails.append(separator);
+    nodeDetails.append(jOverridesTimeStamp);
+    nodeDetails.append(separator);
+    nodeDetails.append(jNode.toString());
     eventProcessor.processEvent(
-        new Event("", jtime.toString() + System.lineSeparator() + jNode.toString(), 0));
+        new Event("", nodeDetails.toString(), 0));
+    rcaController.getAppContext().setClusterDetailsEventProcessor(eventProcessor);
   }
 
   enum RcaState {
@@ -392,7 +425,7 @@ public class RcaControllerTest {
   private <T> boolean check(IEval eval, T expected) {
     final long SLEEP_TIME_MILLIS = 1000;
 
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 10; i++) {
       if (eval.evaluateAndCheck(expected)) {
         return true;
       }
@@ -420,7 +453,7 @@ public class RcaControllerTest {
 
     @Override
     public boolean evaluateAndCheck(Boolean t) {
-      return RcaController.isRcaEnabled() == t;
+      return rcaController.isRcaEnabled() == t;
     }
   }
 

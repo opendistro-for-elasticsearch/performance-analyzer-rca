@@ -15,7 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
@@ -24,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ClusterDetailsEventProcessorTestHelper extends AbstractReaderTests {
+
+  private static final String SEPARATOR = System.getProperty("line.separator");
   List<String> nodeDetails;
 
   public ClusterDetailsEventProcessorTestHelper() throws SQLException, ClassNotFoundException {
@@ -44,19 +45,25 @@ public class ClusterDetailsEventProcessorTestHelper extends AbstractReaderTests 
     return createNodeDetails(nodeId, address, isMasterNode);
   }
 
-  public void generateClusterDetailsEvent() {
+  public ClusterDetailsEventProcessor generateClusterDetailsEvent() {
     if (nodeDetails.isEmpty()) {
-      return;
+      return new ClusterDetailsEventProcessor();
     }
     StringBuilder stringBuilder = new StringBuilder().append(PerformanceAnalyzerMetrics.getJsonCurrentMilliSeconds());
+    stringBuilder.append(SEPARATOR);
+    // TODO: @ktkrg - Change this in the PR for #291
+    stringBuilder.append("RESERVED FOR CONFIG OVERRIDES");
+    stringBuilder.append(SEPARATOR);
+    stringBuilder.append("RESERVED FOR CONFIG OVERRIDES");
     nodeDetails.stream().forEach(
         node -> {
-          stringBuilder.append(System.getProperty("line.separator"))
+          stringBuilder.append(SEPARATOR)
               .append(node);
         }
     );
     Event testEvent = new Event("", stringBuilder.toString(), 0);
     ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
     clusterDetailsEventProcessor.processEvent(testEvent);
+    return clusterDetailsEventProcessor;
   }
 }

@@ -9,6 +9,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMes
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.requests.CompositeSubscribeRequest;
 import io.grpc.stub.StreamObserver;
@@ -49,7 +50,7 @@ public class SubscriptionRxTaskTest {
   @Test
   public void testSubscribeSuccess() {
     when(mockRequest.getSubscribeMessage()).thenReturn(buildTestSubscribeMessage());
-    when(mockSubscriptionManager.addSubscriber(TEST_GRAPH_NODE, TEST_HOST_ADDRESS, TEST_LOCUS))
+    when(mockSubscriptionManager.addSubscriber(TEST_GRAPH_NODE, new InstanceDetails.Id(TEST_HOST_ADDRESS), TEST_LOCUS))
         .thenReturn(SubscriptionStatus.SUCCESS);
     when(mockRequest.getSubscribeResponseStream()).thenReturn(mockResponseStream);
 
@@ -62,7 +63,7 @@ public class SubscriptionRxTaskTest {
 
   private SubscribeMessage buildTestSubscribeMessage() {
     return SubscribeMessage.newBuilder()
-                           .setDestinationNode(TEST_GRAPH_NODE)
+                           .setDestinationGraphNode(TEST_GRAPH_NODE)
                            .putTags("locus", TEST_LOCUS)
                            .putTags("requester", TEST_HOST_ADDRESS)
                            .build();

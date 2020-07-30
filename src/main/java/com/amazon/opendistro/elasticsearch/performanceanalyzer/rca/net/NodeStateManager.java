@@ -15,7 +15,9 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.util.ClusterUtils;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -34,15 +36,21 @@ public class NodeStateManager {
   private static final String SEPARATOR = ".";
 
   /**
-   * Map of host address of a remote node to the last time we received a flow unit from that node.
+   * Map of hostID of a remote node to the last time we received a flow unit from that node.
    */
   private final ConcurrentMap<String, Long> lastReceivedTimestampMap = new ConcurrentHashMap<>();
 
   /**
-   * Map of host address to the current subscription status of that host.
+   * Map of hostId to the current subscription status of that host.
    */
   private final ConcurrentMap<String, AtomicReference<SubscriptionStatus>> subscriptionStatusMap =
       new ConcurrentHashMap<>();
+
+  private final AppContext appContext;
+
+  public NodeStateManager(final AppContext appContext) {
+    this.appContext = appContext;
+  }
 
   /**
    * Updates the timestamp for the composite key: (host, vertex) marking when the last successful
@@ -52,7 +60,7 @@ public class NodeStateManager {
    * @param graphNode The vertex for which the flow unit was sent for.
    * @param timestamp The timestamp at which we received.
    */
-  public void updateReceiveTime(final String host, final String graphNode, final long timestamp) {
+  public void updateReceiveTime(final InstanceDetails.Id host, final String graphNode, final long timestamp) {
     final String compositeKey = graphNode + SEPARATOR + host;
     lastReceivedTimestampMap.put(compositeKey, timestamp);
   }
@@ -66,14 +74,14 @@ public class NodeStateManager {
    * @return The timestamp at which we received a flow unit from the host for the vertex if present,
    *         a timestamp in the distant past(0) otherwise.
    */
-  public long getLastReceivedTimestamp(String graphNode, String host) {
+  public long getLastReceivedTimestamp(String graphNode, InstanceDetails.Id host) {
     final String compositeKey = graphNode + SEPARATOR + host;
     // Return the last received value or a value that is in the distant past.
     return lastReceivedTimestampMap.getOrDefault(compositeKey, 0L);
   }
 
   @VisibleForTesting
-  SubscriptionStatus getSubscriptionStatus(String graphNode, String host) {
+  SubscriptionStatus getSubscriptionStatus(String graphNode, InstanceDetails.Id host) {
     final String compositeKey = graphNode + SEPARATOR + host;
     // Return the last received value or a value that is in the distant past.
     AtomicReference<SubscriptionStatus> ref = subscriptionStatusMap.get(compositeKey);
@@ -90,7 +98,7 @@ public class NodeStateManager {
    * @param host      The host.
    * @param status    The subscription status.
    */
-  public synchronized void updateSubscriptionState(final String graphNode, final String host, final
+  public synchronized void updateSubscriptionState(final String graphNode, final InstanceDetails.Id host, final
   SubscriptionStatus status) {
     final String compositeKey = graphNode + SEPARATOR + host;
     subscriptionStatusMap.putIfAbsent(compositeKey, new AtomicReference<>());
@@ -107,22 +115,31 @@ public class NodeStateManager {
    * @param publishers      A set of known publishers for the current vertex.
    * @return a list of hosts that we need to subscribe to.
    */
-  public ImmutableList<String> getStaleOrNotSubscribedNodes(final String graphNode,
-      final long maxIdleDuration, Set<String> publishers) {
+  public ImmutableList<InstanceDetails> getStaleOrNotSubscribedNodes(final String graphNode,
+      final long maxIdleDuration, Set<InstanceDetails.Id> publishers) {
     final long currentTime = System.currentTimeMillis();
-    final Set<String> hostsToSubscribeTo = new HashSet<>();
-    for (final String publisher : publishers) {
+    final Set<InstanceDetails> hostsToSubscribeTo = new HashSet<>();
+
+    for (final InstanceDetails.Id publisher : publishers) {
       long lastRxTimestamp = getLastReceivedTimestamp(graphNode, publisher);
-      if (lastRxTimestamp > 0 && currentTime - lastRxTimestamp > maxIdleDuration && ClusterUtils
-          .isHostAddressInCluster(publisher)) {
-        hostsToSubscribeTo.add(publisher);
+
+      // If we haven't received FlowUnits from the Instance for a certain amount of time (enough to consider it stale)
+      // and the node is still part of the cluster, we better re-send subscription. The node might have restarted or
+      // something and forgot that we want to subscribe to its data.
+      if (lastRxTimestamp > 0
+              && currentTime - lastRxTimestamp > maxIdleDuration
+              && ClusterUtils.isHostIdInCluster(publisher, appContext.getAllClusterInstances())) {
+        hostsToSubscribeTo.add(appContext.getInstanceById(publisher));
       }
     }
 
-    final List<String> peers = ClusterUtils.getAllPeerHostAddresses();
+    // Then we go over all the nodes in the cluster once more. There might be new nodes that have joined the cluster
+    // that are evaluating the graph nodes whose data we are interested in. So, we want to send them a subscription
+    // message as well.
+    final Set<InstanceDetails> peers = appContext.getPeerInstances();
     if (peers != null) {
-      for (final String peerHost : peers) {
-        String compositeKey = graphNode + SEPARATOR + peerHost;
+      for (final InstanceDetails peerHost : peers) {
+        String compositeKey = graphNode + SEPARATOR + peerHost.getInstanceId();
         if (!subscriptionStatusMap.containsKey(compositeKey)) {
           hostsToSubscribeTo.add(peerHost);
         }
@@ -130,5 +147,10 @@ public class NodeStateManager {
     }
 
     return ImmutableList.copyOf(hostsToSubscribeTo);
+  }
+
+  @VisibleForTesting
+  public AppContext getAppContext() {
+    return appContext;
   }
 }

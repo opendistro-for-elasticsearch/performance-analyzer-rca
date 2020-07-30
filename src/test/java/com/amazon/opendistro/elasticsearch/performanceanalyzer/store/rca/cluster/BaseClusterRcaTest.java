@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca.cluste
 
 import static java.time.Instant.ofEpochMilli;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
@@ -28,11 +29,14 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.BaseClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Before;
@@ -47,23 +51,41 @@ public class BaseClusterRcaTest {
   private Resource type1;
   private Resource type2;
   private Resource invalidType;
-
-  @Before
-  public void setupCluster() throws SQLException, ClassNotFoundException {
-    ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
-    clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.0", false);
-    clusterDetailsEventProcessorTestHelper.addNodeDetails("node2", "127.0.0.1", false);
-    clusterDetailsEventProcessorTestHelper.addNodeDetails("node3", "127.0.0.2", false);
-    clusterDetailsEventProcessorTestHelper.addNodeDetails("master", "127.0.0.9", NodeRole.ELECTED_MASTER, true);
-    clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
-  }
+  private AppContext appContext;
 
   @Before
   public void init() {
+    ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
+    ClusterDetailsEventProcessor.NodeDetails node1 =
+        new ClusterDetailsEventProcessor.NodeDetails(NodeRole.DATA, "node1", "127.0.0.0", false);
+    ClusterDetailsEventProcessor.NodeDetails node2 =
+        new ClusterDetailsEventProcessor.NodeDetails(NodeRole.DATA, "node2", "127.0.0.1", false);
+    ClusterDetailsEventProcessor.NodeDetails node3 =
+        new ClusterDetailsEventProcessor.NodeDetails(NodeRole.DATA, "node3", "127.0.0.2", false);
+    ClusterDetailsEventProcessor.NodeDetails master =
+        new ClusterDetailsEventProcessor.NodeDetails(NodeRole.ELECTED_MASTER, "master", "127.0.0.9", true);
+
+    List<ClusterDetailsEventProcessor.NodeDetails> nodes = new ArrayList<>();
+    nodes.add(node1);
+    nodes.add(node2);
+    nodes.add(node3);
+    nodes.add(master);
+    clusterDetailsEventProcessor.setNodesDetails(nodes);
+
+    appContext = new AppContext();
+    appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
+
     nodeRca = new RcaTestHelper<>("RCA1");
+    nodeRca.setAppContext(appContext);
+
     nodeRca2 = new RcaTestHelper<>("RCA2");
+    nodeRca2.setAppContext(appContext);
+
     invalidType = ResourceUtil.OLD_GEN_HEAP_USAGE;
+
     clusterRca = new BaseClusterRca(1, nodeRca, nodeRca2);
+    clusterRca.setAppContext(appContext);
+
     type1 = ResourceUtil.OLD_GEN_HEAP_USAGE;
     type2 = ResourceUtil.CPU_USAGE;
   }
@@ -224,7 +246,8 @@ public class BaseClusterRcaTest {
     Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
     Assert.assertEquals(2, flowUnit.getSummary().getNumOfUnhealthyNodes());
 
-    removeNodeFromCluster();
+    ClusterDetailsEventProcessor clusterDetailsEventProcessor = removeNodeFromCluster();
+    appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
 
     nodeRca.mockFlowUnit();
     flowUnit = clusterRca.operate();
@@ -246,9 +269,10 @@ public class BaseClusterRcaTest {
     Assert.assertEquals(1, flowUnit.getSummary().getNumOfUnhealthyNodes());
     Assert.assertTrue(compareNodeSummary("node1", type1, flowUnit.getSummary().getHotNodeSummaryList().get(0)));
 
-    addNewNodeIntoCluster();
+    ClusterDetailsEventProcessor clusterDetailsEventProcessor = addNewNodeIntoCluster();
 
     nodeRca.mockFlowUnit();
+    appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
     flowUnit = clusterRca.operate();
     Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
     Assert.assertEquals(1, flowUnit.getSummary().getNumOfUnhealthyNodes());
@@ -263,22 +287,22 @@ public class BaseClusterRcaTest {
     Assert.assertTrue(compareNodeSummary("node4", type2, clusterSummary.getHotNodeSummaryList().get(1)));
   }
 
-   private void removeNodeFromCluster() throws SQLException, ClassNotFoundException {
+   private ClusterDetailsEventProcessor removeNodeFromCluster() throws SQLException, ClassNotFoundException {
     ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
     clusterDetailsEventProcessorTestHelper.addNodeDetails("node2", "127.0.0.1", false);
     clusterDetailsEventProcessorTestHelper.addNodeDetails("node3", "127.0.0.2", false);
     clusterDetailsEventProcessorTestHelper.addNodeDetails("master", "127.0.0.9", NodeRole.ELECTED_MASTER, true);
-    clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
+    return clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
   }
 
-  private void addNewNodeIntoCluster() throws SQLException, ClassNotFoundException {
+  private ClusterDetailsEventProcessor addNewNodeIntoCluster() throws SQLException, ClassNotFoundException {
     ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
     clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.0", false);
     clusterDetailsEventProcessorTestHelper.addNodeDetails("node2", "127.0.0.1", false);
     clusterDetailsEventProcessorTestHelper.addNodeDetails("node3", "127.0.0.2", false);
     clusterDetailsEventProcessorTestHelper.addNodeDetails("node4", "127.0.0.3", false);
     clusterDetailsEventProcessorTestHelper.addNodeDetails("master", "127.0.0.9", NodeRole.ELECTED_MASTER, true);
-    clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
+    return clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
   }
 
   private boolean compareResourceSummary(Resource resource, HotResourceSummary resourceSummary) {
@@ -286,7 +310,10 @@ public class BaseClusterRcaTest {
   }
 
   private boolean compareNodeSummary(String nodeId, Resource resource, HotNodeSummary nodeSummary) {
-    if (!nodeId.equals(nodeSummary.getNodeID()) || nodeSummary.getHotResourceSummaryList().isEmpty()) {
+    if (!nodeId.equals(nodeSummary.getNodeID().toString())) {
+      return false;
+    }
+    if (nodeSummary.getHotResourceSummaryList().isEmpty()) {
       return false;
     }
     return compareResourceSummary(resource, nodeSummary.getHotResourceSummaryList().get(0));

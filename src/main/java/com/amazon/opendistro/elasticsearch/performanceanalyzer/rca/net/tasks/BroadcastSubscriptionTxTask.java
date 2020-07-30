@@ -15,24 +15,25 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.tasks;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.util.ClusterUtils;
 import java.util.Map;
 
 /**
  * Task that broadcasts a subscription request to the current node's peers.
  */
 public class BroadcastSubscriptionTxTask extends SubscriptionTxTask {
-
   public BroadcastSubscriptionTxTask(
       NetClient netClient,
       IntentMsg intentMsg,
       SubscriptionManager subscriptionManager,
-      NodeStateManager nodeStateManager) {
-    super(netClient, intentMsg, subscriptionManager, nodeStateManager);
+      NodeStateManager nodeStateManager,
+      final AppContext appContext) {
+    super(netClient, intentMsg, subscriptionManager, nodeStateManager, appContext);
   }
 
   /**
@@ -42,11 +43,11 @@ public class BroadcastSubscriptionTxTask extends SubscriptionTxTask {
    */
   @Override
   public void run() {
-    final String requesterVertex = intentMsg.getRequesterNode();
-    final String destinationVertex = intentMsg.getDestinationNode();
+    final String requesterVertex = intentMsg.getRequesterGraphNode();
+    final String destinationVertex = intentMsg.getDestinationGraphNode();
     final Map<String, String> tags = intentMsg.getRcaConfTags();
 
-    for (final String remoteHost : ClusterUtils.getAllPeerHostAddresses()) {
+    for (final InstanceDetails remoteHost : getPeerInstances()) {
       sendSubscribeRequest(remoteHost, requesterVertex, destinationVertex, tags);
     }
   }

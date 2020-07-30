@@ -15,11 +15,13 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaControllerHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.JsonConverter;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,7 +39,19 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
   /**
    * keep a volatile immutable list to make the read/write to this list thread safe.
    */
-  private static volatile ImmutableList<NodeDetails> nodesDetails = null;
+  private volatile ImmutableList<NodeDetails> nodesDetails = null;
+
+  public ClusterDetailsEventProcessor() {}
+
+  public ClusterDetailsEventProcessor(final ClusterDetailsEventProcessor other) {
+    if (other.nodesDetails != null) {
+      ImmutableList.Builder builder = new ImmutableList.Builder<NodeDetails>();
+      for (final NodeDetails oldDetails : other.nodesDetails) {
+        builder.add(new NodeDetails(oldDetails));
+      }
+      this.nodesDetails = builder.build();
+    }
+  }
 
   @Override
   public void initializeProcessing(long startTime, long endTime) {}
@@ -48,27 +62,35 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
   @Override
   public void processEvent(Event event) {
     String[] lines = event.value.split(System.lineSeparator());
-    if (lines.length < 2) {
-      // We expect at-least 2 lines as the first line is always timestamp
+    if (lines.length < 4) {
+      // We expect at-least 4 lines as the first line is always timestamp,
+      // the second line is the list of overridden rca conf values,
+      // the third line is the timestamp of when the last override was set,
       // and there must be at least one ElasticSearch node in a cluster.
       LOG.error(
-          "ClusterDetails contain less items than expected. " + "Expected 2, found: {}",
+          "ClusterDetails contain less items than expected. " + "Expected 4, found: {}",
           event.value);
       return;
     }
+
     // An example node_metrics data is something like this for a two node cluster:
     // {"current_time":1566414001749}
+    // {"overrides": {"enabled": {}, "disabled": {}}
+    // {"lastOverrideTimestamp":1566414001749}
     // {"ID":"4sqG_APMQuaQwEW17_6zwg","HOST_ADDRESS":"10.212.73.121"}
     // {"ID":"OVH94mKXT5ibeqvDoAyTeg","HOST_ADDRESS":"10.212.78.83"}
     //
     // The line 0 is timestamp that can be skipped. So we allocated size of
     // the array is one less than the list.
+
+
+
     final List<NodeDetails> tmpNodesDetails = new ArrayList<>();
 
     // Just to keep track of duplicate node ids.
     Set<String> ids = new HashSet<>();
 
-    for (int i = 1; i < lines.length; ++i) {
+    for (int i = 3; i < lines.length; ++i) {
       NodeDetails nodeDetails = new NodeDetails(lines[i]);
 
       // Include nodeIds we haven't seen so far.
@@ -91,11 +113,11 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
 
   }
 
-  public static void setNodesDetails(List<NodeDetails> nodesDetails) {
-    ClusterDetailsEventProcessor.nodesDetails = ImmutableList.copyOf(nodesDetails);
+  public void setNodesDetails(final List<NodeDetails> nodesDetails) {
+    this.nodesDetails = ImmutableList.copyOf(nodesDetails);
   }
 
-  public static List<NodeDetails> getNodesDetails() {
+  public List<NodeDetails> getNodesDetails() {
     if (nodesDetails != null) {
       return nodesDetails.asList();
     } else {
@@ -103,7 +125,7 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
     }
   }
 
-  public static List<NodeDetails> getDataNodesDetails() {
+  public List<NodeDetails> getDataNodesDetails() {
     List<NodeDetails> allNodes = getNodesDetails();
     if (allNodes.size() > 0) {
       return allNodes.stream()
@@ -114,7 +136,7 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
     }
   }
 
-  public static NodeDetails getCurrentNodeDetails() {
+  public NodeDetails getCurrentNodeDetails() {
     List<NodeDetails> allNodes = getNodesDetails();
     if (allNodes.size() > 0) {
       return allNodes.get(0);
@@ -129,6 +151,7 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
     private String hostAddress;
     private String role;
     private Boolean isMasterNode;
+    private int grpcPort = Util.RPC_PORT;
 
     NodeDetails(String stringifiedMetrics) {
       Map<String, Object> map = JsonConverter
@@ -138,6 +161,27 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
       role = (String) map.get(AllMetrics.NodeDetailColumns.ROLE.toString());
       Object isMasterNodeObject = map.get(AllMetrics.NodeDetailColumns.IS_MASTER_NODE.toString());
       isMasterNode = isMasterNodeObject != null ? (Boolean) isMasterNodeObject : null;
+    }
+
+    public NodeDetails(AllMetrics.NodeRole role, String id, String hostAddress, boolean isMaster) {
+      this(role, id, hostAddress, isMaster, Util.RPC_PORT);
+    }
+
+    public NodeDetails(AllMetrics.NodeRole role, String id, String hostAddress, boolean isMaster, int grpcPort) {
+      this.id = id;
+      this.hostAddress = hostAddress;
+      this.isMasterNode = isMaster;
+      this.role = role.toString();
+      this.grpcPort = grpcPort;
+    }
+
+    public NodeDetails(final NodeDetails other) {
+      if (other != null) {
+        this.id = other.id;
+        this.hostAddress = other.hostAddress;
+        this.isMasterNode = other.isMasterNode;
+        this.role = other.role;
+      }
     }
 
     @Override
@@ -180,6 +224,10 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
         isMasterNode = this.hostAddress.equalsIgnoreCase(electedMasterHostAddress);
       }
       return isMasterNode;
+    }
+
+    public int getGrpcPort() {
+      return grpcPort;
     }
   }
 }

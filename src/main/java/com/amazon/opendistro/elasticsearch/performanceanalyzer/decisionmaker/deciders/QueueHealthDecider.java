@@ -17,22 +17,26 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 // This is a sample decider implementation to finalize decision maker interfaces.
 // TODO: 1. Read action priorities from a configurable yml
-// TODO: 2. Read current queue capacity from NodeConfigurationRca (PR #252)
 
 public class QueueHealthDecider extends Decider {
 
+  private static final Logger LOG = LogManager.getLogger(Decider.class);
   public static final String NAME = "queue_health";
 
   private QueueRejectionClusterRca queueRejectionRca;
@@ -40,7 +44,6 @@ public class QueueHealthDecider extends Decider {
   private int counter = 0;
 
   public QueueHealthDecider(long evalIntervalSeconds, int decisionFrequency, QueueRejectionClusterRca queueRejectionClusterRca) {
-    // TODO: Also consume NodeConfigurationRca
     super(evalIntervalSeconds, decisionFrequency);
     this.queueRejectionRca = queueRejectionClusterRca;
     configureActionPriority();
@@ -64,7 +67,11 @@ public class QueueHealthDecider extends Decider {
       return decision;
     }
 
-    HotClusterSummary clusterSummary = queueRejectionRca.getFlowUnits().get(0).getSummary();
+    ResourceFlowUnit<HotClusterSummary> flowUnit = queueRejectionRca.getFlowUnits().get(0);
+    if (!flowUnit.hasResourceSummary()) {
+      return decision;
+    }
+    HotClusterSummary clusterSummary = flowUnit.getSummary();
     for (HotNodeSummary nodeSummary : clusterSummary.getHotNodeSummaryList()) {
       NodeKey esNode = new NodeKey(nodeSummary.getNodeID(), nodeSummary.getHostAddress());
       for (HotResourceSummary resource : nodeSummary.getHotResourceSummaryList()) {
@@ -88,9 +95,20 @@ public class QueueHealthDecider extends Decider {
    */
   private Action computeBestAction(NodeKey esNode, ResourceEnum threadPool) {
     Action action = null;
+    int currQueueCapacity;
+    try {
+        currQueueCapacity = getNodeQueueCapacity(esNode, threadPool);
+    } catch (Exception e) {
+      // No action if value not present in the cache.
+      // Assumption here is the cache has been wiped off due to
+      // unforeseen events and we dont want to trigger any action.
+      LOG.error("Exception while reading values from Node Config Cache", e);
+      return null;
+    }
+
     for (String actionName : actionsByUserPriority) {
       action =
-          getAction(actionName, esNode, threadPool, getNodeQueueCapacity(esNode, threadPool), true);
+        getAction(actionName, esNode, threadPool, currQueueCapacity, true);
       if (action != null) {
         break;
       }
@@ -116,10 +134,8 @@ public class QueueHealthDecider extends Decider {
   }
 
   private int getNodeQueueCapacity(NodeKey esNode, ResourceEnum threadPool) {
-    // TODO: use NodeConfigurationRca to return capacity, for now returning defaults
-    if (threadPool.equals(ResourceEnum.SEARCH_THREADPOOL)) {
-      return 1000;
-    }
-    return 100;
+      return (int) getAppContext().getNodeConfigCache().get(esNode, Resource.newBuilder()
+              .setResourceEnum(threadPool)
+              .setMetricEnum(MetricEnum.QUEUE_CAPACITY).build());
   }
 }

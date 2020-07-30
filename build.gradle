@@ -229,12 +229,12 @@ dependencies {
     }
 
     compile 'org.jooq:jooq:3.10.8'
-    compile 'org.bouncycastle:bcprov-jdk15on:1.60'
-    compile 'org.bouncycastle:bcpkix-jdk15on:1.60'
+    compile 'org.bouncycastle:bcprov-jdk15on:1.66'
+    compile 'org.bouncycastle:bcpkix-jdk15on:1.66'
     compile 'org.xerial:sqlite-jdbc:3.8.11.2'
     compile 'com.google.guava:guava:28.1-jre'
-    compile 'com.fasterxml.jackson.core:jackson-annotations:2.8.11'
-    compile 'com.fasterxml.jackson.core:jackson-databind:2.8.11'
+    compile 'com.fasterxml.jackson.core:jackson-annotations:2.11.1'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.11.1'
     compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.13.0'
     compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.13.0'
     compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.9'

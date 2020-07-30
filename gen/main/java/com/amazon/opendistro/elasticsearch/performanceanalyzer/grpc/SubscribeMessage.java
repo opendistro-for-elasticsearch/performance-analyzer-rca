@@ -20,8 +20,8 @@ private static final long serialVersionUID = 0L;
     super(builder);
   }
   private SubscribeMessage() {
-    requesterNode_ = "";
-    destinationNode_ = "";
+    requesterGraphNode_ = "";
+    destinationGraphNode_ = "";
   }
 
   @java.lang.Override
@@ -51,13 +51,13 @@ private static final long serialVersionUID = 0L;
           case 10: {
             java.lang.String s = input.readStringRequireUtf8();
 
-            requesterNode_ = s;
+            requesterGraphNode_ = s;
             break;
           }
           case 18: {
             java.lang.String s = input.readStringRequireUtf8();
 
-            destinationNode_ = s;
+            destinationGraphNode_ = s;
             break;
           }
           case 26: {
@@ -118,68 +118,68 @@ private static final long serialVersionUID = 0L;
   }
 
   private int bitField0_;
-  public static final int REQUESTER_NODE_FIELD_NUMBER = 1;
-  private volatile java.lang.Object requesterNode_;
+  public static final int REQUESTER_GRAPH_NODE_FIELD_NUMBER = 1;
+  private volatile java.lang.Object requesterGraphNode_;
   /**
-   * <code>string requester_node = 1;</code>
+   * <code>string requester_graph_node = 1;</code>
    */
-  public java.lang.String getRequesterNode() {
-    java.lang.Object ref = requesterNode_;
+  public java.lang.String getRequesterGraphNode() {
+    java.lang.Object ref = requesterGraphNode_;
     if (ref instanceof java.lang.String) {
       return (java.lang.String) ref;
     } else {
       com.google.protobuf.ByteString bs = 
           (com.google.protobuf.ByteString) ref;
       java.lang.String s = bs.toStringUtf8();
-      requesterNode_ = s;
+      requesterGraphNode_ = s;
       return s;
     }
   }
   /**
-   * <code>string requester_node = 1;</code>
+   * <code>string requester_graph_node = 1;</code>
    */
   public com.google.protobuf.ByteString
-      getRequesterNodeBytes() {
-    java.lang.Object ref = requesterNode_;
+      getRequesterGraphNodeBytes() {
+    java.lang.Object ref = requesterGraphNode_;
     if (ref instanceof java.lang.String) {
       com.google.protobuf.ByteString b = 
           com.google.protobuf.ByteString.copyFromUtf8(
               (java.lang.String) ref);
-      requesterNode_ = b;
+      requesterGraphNode_ = b;
       return b;
     } else {
       return (com.google.protobuf.ByteString) ref;
     }
   }
 
-  public static final int DESTINATION_NODE_FIELD_NUMBER = 2;
-  private volatile java.lang.Object destinationNode_;
+  public static final int DESTINATION_GRAPH_NODE_FIELD_NUMBER = 2;
+  private volatile java.lang.Object destinationGraphNode_;
   /**
-   * <code>string destination_node = 2;</code>
+   * <code>string destination_graph_node = 2;</code>
    */
-  public java.lang.String getDestinationNode() {
-    java.lang.Object ref = destinationNode_;
+  public java.lang.String getDestinationGraphNode() {
+    java.lang.Object ref = destinationGraphNode_;
     if (ref instanceof java.lang.String) {
       return (java.lang.String) ref;
     } else {
       com.google.protobuf.ByteString bs = 
           (com.google.protobuf.ByteString) ref;
       java.lang.String s = bs.toStringUtf8();
-      destinationNode_ = s;
+      destinationGraphNode_ = s;
       return s;
     }
   }
   /**
-   * <code>string destination_node = 2;</code>
+   * <code>string destination_graph_node = 2;</code>
    */
   public com.google.protobuf.ByteString
-      getDestinationNodeBytes() {
-    java.lang.Object ref = destinationNode_;
+      getDestinationGraphNodeBytes() {
+    java.lang.Object ref = destinationGraphNode_;
     if (ref instanceof java.lang.String) {
       com.google.protobuf.ByteString b = 
           com.google.protobuf.ByteString.copyFromUtf8(
               (java.lang.String) ref);
-      destinationNode_ = b;
+      destinationGraphNode_ = b;
       return b;
     } else {
       return (com.google.protobuf.ByteString) ref;
@@ -276,11 +276,11 @@ private static final long serialVersionUID = 0L;
   @java.lang.Override
   public void writeTo(com.google.protobuf.CodedOutputStream output)
                       throws java.io.IOException {
-    if (!getRequesterNodeBytes().isEmpty()) {
-      com.google.protobuf.GeneratedMessageV3.writeString(output, 1, requesterNode_);
+    if (!getRequesterGraphNodeBytes().isEmpty()) {
+      com.google.protobuf.GeneratedMessageV3.writeString(output, 1, requesterGraphNode_);
     }
-    if (!getDestinationNodeBytes().isEmpty()) {
-      com.google.protobuf.GeneratedMessageV3.writeString(output, 2, destinationNode_);
+    if (!getDestinationGraphNodeBytes().isEmpty()) {
+      com.google.protobuf.GeneratedMessageV3.writeString(output, 2, destinationGraphNode_);
     }
     com.google.protobuf.GeneratedMessageV3
       .serializeStringMapTo(
@@ -297,11 +297,11 @@ private static final long serialVersionUID = 0L;
     if (size != -1) return size;
 
     size = 0;
-    if (!getRequesterNodeBytes().isEmpty()) {
-      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(1, requesterNode_);
+    if (!getRequesterGraphNodeBytes().isEmpty()) {
+      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(1, requesterGraphNode_);
     }
-    if (!getDestinationNodeBytes().isEmpty()) {
-      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(2, destinationNode_);
+    if (!getDestinationGraphNodeBytes().isEmpty()) {
+      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(2, destinationGraphNode_);
     }
     for (java.util.Map.Entry<java.lang.String, java.lang.String> entry
          : internalGetTags().getMap().entrySet()) {
@@ -328,10 +328,10 @@ private static final long serialVersionUID = 0L;
     }
     com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage other = (com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage) obj;
 
-    if (!getRequesterNode()
-        .equals(other.getRequesterNode())) return false;
-    if (!getDestinationNode()
-        .equals(other.getDestinationNode())) return false;
+    if (!getRequesterGraphNode()
+        .equals(other.getRequesterGraphNode())) return false;
+    if (!getDestinationGraphNode()
+        .equals(other.getDestinationGraphNode())) return false;
     if (!internalGetTags().equals(
         other.internalGetTags())) return false;
     if (!unknownFields.equals(other.unknownFields)) return false;
@@ -345,10 +345,10 @@ private static final long serialVersionUID = 0L;
     }
     int hash = 41;
     hash = (19 * hash) + getDescriptor().hashCode();
-    hash = (37 * hash) + REQUESTER_NODE_FIELD_NUMBER;
-    hash = (53 * hash) + getRequesterNode().hashCode();
-    hash = (37 * hash) + DESTINATION_NODE_FIELD_NUMBER;
-    hash = (53 * hash) + getDestinationNode().hashCode();
+    hash = (37 * hash) + REQUESTER_GRAPH_NODE_FIELD_NUMBER;
+    hash = (53 * hash) + getRequesterGraphNode().hashCode();
+    hash = (37 * hash) + DESTINATION_GRAPH_NODE_FIELD_NUMBER;
+    hash = (53 * hash) + getDestinationGraphNode().hashCode();
     if (!internalGetTags().getMap().isEmpty()) {
       hash = (37 * hash) + TAGS_FIELD_NUMBER;
       hash = (53 * hash) + internalGetTags().hashCode();
@@ -512,9 +512,9 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public Builder clear() {
       super.clear();
-      requesterNode_ = "";
+      requesterGraphNode_ = "";
 
-      destinationNode_ = "";
+      destinationGraphNode_ = "";
 
       internalGetMutableTags().clear();
       return this;
@@ -545,8 +545,8 @@ private static final long serialVersionUID = 0L;
       com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage result = new com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage(this);
       int from_bitField0_ = bitField0_;
       int to_bitField0_ = 0;
-      result.requesterNode_ = requesterNode_;
-      result.destinationNode_ = destinationNode_;
+      result.requesterGraphNode_ = requesterGraphNode_;
+      result.destinationGraphNode_ = destinationGraphNode_;
       result.tags_ = internalGetTags();
       result.tags_.makeImmutable();
       result.bitField0_ = to_bitField0_;
@@ -598,12 +598,12 @@ private static final long serialVersionUID = 0L;
 
     public Builder mergeFrom(com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage other) {
       if (other == com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage.getDefaultInstance()) return this;
-      if (!other.getRequesterNode().isEmpty()) {
-        requesterNode_ = other.requesterNode_;
+      if (!other.getRequesterGraphNode().isEmpty()) {
+        requesterGraphNode_ = other.requesterGraphNode_;
         onChanged();
       }
-      if (!other.getDestinationNode().isEmpty()) {
-        destinationNode_ = other.destinationNode_;
+      if (!other.getDestinationGraphNode().isEmpty()) {
+        destinationGraphNode_ = other.destinationGraphNode_;
         onChanged();
       }
       internalGetMutableTags().mergeFrom(
@@ -638,140 +638,140 @@ private static final long serialVersionUID = 0L;
     }
     private int bitField0_;
 
-    private java.lang.Object requesterNode_ = "";
+    private java.lang.Object requesterGraphNode_ = "";
     /**
-     * <code>string requester_node = 1;</code>
+     * <code>string requester_graph_node = 1;</code>
      */
-    public java.lang.String getRequesterNode() {
-      java.lang.Object ref = requesterNode_;
+    public java.lang.String getRequesterGraphNode() {
+      java.lang.Object ref = requesterGraphNode_;
       if (!(ref instanceof java.lang.String)) {
         com.google.protobuf.ByteString bs =
             (com.google.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
-        requesterNode_ = s;
+        requesterGraphNode_ = s;
         return s;
       } else {
         return (java.lang.String) ref;
       }
     }
     /**
-     * <code>string requester_node = 1;</code>
+     * <code>string requester_graph_node = 1;</code>
      */
     public com.google.protobuf.ByteString
-        getRequesterNodeBytes() {
-      java.lang.Object ref = requesterNode_;
+        getRequesterGraphNodeBytes() {
+      java.lang.Object ref = requesterGraphNode_;
       if (ref instanceof String) {
         com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
-        requesterNode_ = b;
+        requesterGraphNode_ = b;
         return b;
       } else {
         return (com.google.protobuf.ByteString) ref;
       }
     }
     /**
-     * <code>string requester_node = 1;</code>
+     * <code>string requester_graph_node = 1;</code>
      */
-    public Builder setRequesterNode(
+    public Builder setRequesterGraphNode(
         java.lang.String value) {
       if (value == null) {
     throw new NullPointerException();
   }
   
-      requesterNode_ = value;
+      requesterGraphNode_ = value;
       onChanged();
       return this;
     }
     /**
-     * <code>string requester_node = 1;</code>
+     * <code>string requester_graph_node = 1;</code>
      */
-    public Builder clearRequesterNode() {
+    public Builder clearRequesterGraphNode() {
       
-      requesterNode_ = getDefaultInstance().getRequesterNode();
+      requesterGraphNode_ = getDefaultInstance().getRequesterGraphNode();
       onChanged();
       return this;
     }
     /**
-     * <code>string requester_node = 1;</code>
+     * <code>string requester_graph_node = 1;</code>
      */
-    public Builder setRequesterNodeBytes(
+    public Builder setRequesterGraphNodeBytes(
         com.google.protobuf.ByteString value) {
       if (value == null) {
     throw new NullPointerException();
   }
   checkByteStringIsUtf8(value);
       
-      requesterNode_ = value;
+      requesterGraphNode_ = value;
       onChanged();
       return this;
     }
 
-    private java.lang.Object destinationNode_ = "";
+    private java.lang.Object destinationGraphNode_ = "";
     /**
-     * <code>string destination_node = 2;</code>
+     * <code>string destination_graph_node = 2;</code>
      */
-    public java.lang.String getDestinationNode() {
-      java.lang.Object ref = destinationNode_;
+    public java.lang.String getDestinationGraphNode() {
+      java.lang.Object ref = destinationGraphNode_;
       if (!(ref instanceof java.lang.String)) {
         com.google.protobuf.ByteString bs =
             (com.google.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
-        destinationNode_ = s;
+        destinationGraphNode_ = s;
         return s;
       } else {
         return (java.lang.String) ref;
       }
     }
     /**
-     * <code>string destination_node = 2;</code>
+     * <code>string destination_graph_node = 2;</code>
      */
     public com.google.protobuf.ByteString
-        getDestinationNodeBytes() {
-      java.lang.Object ref = destinationNode_;
+        getDestinationGraphNodeBytes() {
+      java.lang.Object ref = destinationGraphNode_;
       if (ref instanceof String) {
         com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
-        destinationNode_ = b;
+        destinationGraphNode_ = b;
         return b;
       } else {
         return (com.google.protobuf.ByteString) ref;
       }
     }
     /**
-     * <code>string destination_node = 2;</code>
+     * <code>string destination_graph_node = 2;</code>
      */
-    public Builder setDestinationNode(
+    public Builder setDestinationGraphNode(
         java.lang.String value) {
       if (value == null) {
     throw new NullPointerException();
   }
   
-      destinationNode_ = value;
+      destinationGraphNode_ = value;
       onChanged();
       return this;
     }
     /**
-     * <code>string destination_node = 2;</code>
+     * <code>string destination_graph_node = 2;</code>
      */
-    public Builder clearDestinationNode() {
+    public Builder clearDestinationGraphNode() {
       
-      destinationNode_ = getDefaultInstance().getDestinationNode();
+      destinationGraphNode_ = getDefaultInstance().getDestinationGraphNode();
       onChanged();
       return this;
     }
     /**
-     * <code>string destination_node = 2;</code>
+     * <code>string destination_graph_node = 2;</code>
      */
-    public Builder setDestinationNodeBytes(
+    public Builder setDestinationGraphNodeBytes(
         com.google.protobuf.ByteString value) {
       if (value == null) {
     throw new NullPointerException();
   }
   checkByteStringIsUtf8(value);
       
-      destinationNode_ = value;
+      destinationGraphNode_ = value;
       onChanged();
       return this;
     }

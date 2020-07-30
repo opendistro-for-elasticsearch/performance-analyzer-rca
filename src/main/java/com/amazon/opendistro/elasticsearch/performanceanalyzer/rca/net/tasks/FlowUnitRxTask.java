@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyz
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.ReceivedFlowUnitStore;
@@ -62,7 +63,7 @@ public class FlowUnitRxTask implements Runnable {
    */
   @Override
   public void run() {
-    final String host = flowUnitMessage.getEsNode();
+    final InstanceDetails.Id host = new InstanceDetails.Id(flowUnitMessage.getEsNode());
     final String vertex = flowUnitMessage.getGraphNode();
 
     nodeStateManager.updateReceiveTime(host, vertex, System.currentTimeMillis());

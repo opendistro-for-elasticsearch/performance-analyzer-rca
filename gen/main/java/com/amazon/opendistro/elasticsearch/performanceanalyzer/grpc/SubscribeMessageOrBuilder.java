@@ -8,24 +8,24 @@ public interface SubscribeMessageOrBuilder extends
     com.google.protobuf.MessageOrBuilder {
 
   /**
-   * <code>string requester_node = 1;</code>
+   * <code>string requester_graph_node = 1;</code>
    */
-  java.lang.String getRequesterNode();
+  java.lang.String getRequesterGraphNode();
   /**
-   * <code>string requester_node = 1;</code>
+   * <code>string requester_graph_node = 1;</code>
    */
   com.google.protobuf.ByteString
-      getRequesterNodeBytes();
+      getRequesterGraphNodeBytes();
 
   /**
-   * <code>string destination_node = 2;</code>
+   * <code>string destination_graph_node = 2;</code>
    */
-  java.lang.String getDestinationNode();
+  java.lang.String getDestinationGraphNode();
   /**
-   * <code>string destination_node = 2;</code>
+   * <code>string destination_graph_node = 2;</code>
    */
   com.google.protobuf.ByteString
-      getDestinationNodeBytes();
+      getDestinationGraphNodeBytes();
 
   /**
    * <code>map&lt;string, string&gt; tags = 3;</code>

@@ -15,13 +15,16 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ThresholdMain;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.sql.SQLException;
 import java.util.List;
@@ -48,7 +51,9 @@ public class RCAScheduler {
   private WireHopper net;
   private boolean shutdownRequested;
   private volatile RcaSchedulerState schedulerState = RcaSchedulerState.STATE_NOT_STARTED;
-  private NodeRole role = NodeRole.UNKNOWN;
+  private final NodeRole role;
+  private final AppContext appContext;
+
   final ThreadFactory schedThreadFactory =
       new ThreadFactoryBuilder().setNameFormat("sched-%d").setDaemon(true).build();
 
@@ -66,7 +71,6 @@ public class RCAScheduler {
   Persistable persistable;
   static final int PERIODICITY_SECONDS = 1;
   static final int PERIODICITY_IN_MS = PERIODICITY_SECONDS * 1000;
-  ScheduledFuture<?> futureHandle;
 
   private static final Logger LOG = LogManager.getLogger(RCAScheduler.class);
 
@@ -76,7 +80,8 @@ public class RCAScheduler {
       RcaConf rcaConf,
       ThresholdMain thresholdMain,
       Persistable persistable,
-      WireHopper net) {
+      WireHopper net,
+      final AppContext appContext) {
     this.connectedComponents = connectedComponents;
     this.db = db;
     this.rcaConf = rcaConf;
@@ -84,6 +89,8 @@ public class RCAScheduler {
     this.persistable = persistable;
     this.net = net;
     this.shutdownRequested = false;
+    this.appContext = appContext;
+    this.role = this.appContext.getMyInstanceDetails().getRole();
   }
 
   public void start() {
@@ -92,28 +99,43 @@ public class RCAScheduler {
     LOG.info("RCA: Starting RCA scheduler ...........");
     createExecutorPools();
 
-    if (scheduledPool != null && role != NodeRole.UNKNOWN) {
-      schedulerState = RcaSchedulerState.STATE_STARTED;
-
-      final RCASchedulerTask task = new RCASchedulerTask(
-          10000, rcaSchedulerPeriodicExecutor, connectedComponents, db, persistable, rcaConf, net);
-      while (schedulerState == RcaSchedulerState.STATE_STARTED) {
-        try {
-          long startTime = System.currentTimeMillis();
-          task.run();
-          long duration = System.currentTimeMillis() - startTime;
-          if (duration < PERIODICITY_IN_MS) {
-            Thread.sleep(PERIODICITY_IN_MS - duration);
-          }
-        } catch (InterruptedException ie) {
-          LOG.error("Rca scheduler thread sleep interrupted. Reason: {}", ie.getMessage());
-          LOG.error(ie);
-          shutdown();
-          schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
-        }
-      }
-    } else {
+    if (scheduledPool == null) {
       LOG.error("Couldn't start RCA scheduler. Executor pool is not set.");
+      return;
+    }
+    if (role == NodeRole.UNKNOWN) {
+      LOG.error("Couldn't start RCA scheduler as the node role is UNKNOWN.");
+      return;
+    }
+
+    final RCASchedulerTask task = new RCASchedulerTask(
+        10000,
+        rcaSchedulerPeriodicExecutor,
+        connectedComponents,
+        db,
+        persistable,
+        rcaConf,
+        net,
+        appContext);
+
+    schedulerState = RcaSchedulerState.STATE_STARTED;
+    LOG.info("RCA scheduler thread started successfully.");
+
+    while (schedulerState == RcaSchedulerState.STATE_STARTED) {
+      try {
+        long startTime = System.currentTimeMillis();
+        task.run();
+        long duration = System.currentTimeMillis() - startTime;
+        if (duration < PERIODICITY_IN_MS) {
+          Thread.sleep(PERIODICITY_IN_MS - duration);
+        }
+      } catch (InterruptedException ie) {
+        LOG.error("**ERR: Rca scheduler thread sleep interrupted.", ie);
+        shutdown();
+        schedulerState = RcaSchedulerState.STATE_STOPPED_DUE_TO_EXCEPTION;
+      } catch (Exception ex) {
+        LOG.error("**ERR Scheduler failed: ", ex);
+      }
     }
   }
 
@@ -162,7 +184,8 @@ public class RCAScheduler {
     return role;
   }
 
-  public void setRole(NodeRole role) {
-    this.role = role;
+  @VisibleForTesting
+  public void setQueryable(Queryable queryable) {
+    this.db = queryable;
   }
 }

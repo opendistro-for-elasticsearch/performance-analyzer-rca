@@ -58,6 +58,29 @@ public class ResourceUtil {
   public static final Resource SEARCH_QUEUE_REJECTION = Resource.newBuilder()
       .setResourceEnum(ResourceEnum.SEARCH_THREADPOOL)
       .setMetricEnum(MetricEnum.QUEUE_REJECTION).build();
+  public static final Resource WRITE_QUEUE_CAPACITY = Resource.newBuilder()
+      .setResourceEnum(ResourceEnum.WRITE_THREADPOOL)
+      .setMetricEnum(MetricEnum.QUEUE_CAPACITY).build();
+  public static final Resource SEARCH_QUEUE_CAPACITY = Resource.newBuilder()
+      .setResourceEnum(ResourceEnum.SEARCH_THREADPOOL)
+      .setMetricEnum(MetricEnum.QUEUE_CAPACITY).build();
+
+  // cache
+  public static final Resource FIELD_DATA_CACHE_EVICTION = Resource.newBuilder()
+          .setResourceEnum(ResourceEnum.FIELD_DATA_CACHE)
+          .setMetricEnum(MetricEnum.CACHE_EVICTION).build();
+  public static final Resource FIELD_DATA_CACHE_MAX_SIZE = Resource.newBuilder()
+          .setResourceEnum(ResourceEnum.FIELD_DATA_CACHE)
+          .setMetricEnum(MetricEnum.CACHE_MAX_SIZE).build();
+  public static final Resource SHARD_REQUEST_CACHE_EVICTION = Resource.newBuilder()
+          .setResourceEnum(ResourceEnum.SHARD_REQUEST_CACHE)
+          .setMetricEnum(MetricEnum.CACHE_EVICTION).build();
+  public static final Resource SHARD_REQUEST_CACHE_HIT = Resource.newBuilder()
+          .setResourceEnum(ResourceEnum.SHARD_REQUEST_CACHE)
+          .setMetricEnum(MetricEnum.CACHE_HIT).build();
+  public static final Resource SHARD_REQUEST_CACHE_MAX_SIZE = Resource.newBuilder()
+          .setResourceEnum(ResourceEnum.SHARD_REQUEST_CACHE)
+          .setMetricEnum(MetricEnum.CACHE_MAX_SIZE).build();
 
   /**
    * Read the resourceType name from the ResourceType object

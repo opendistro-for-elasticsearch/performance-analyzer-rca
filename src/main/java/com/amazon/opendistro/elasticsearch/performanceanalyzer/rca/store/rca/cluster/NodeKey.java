@@ -15,22 +15,27 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class NodeKey {
-  private final String nodeId;
-  private final String hostAddress;
+  private final InstanceDetails.Id nodeId;
+  private final InstanceDetails.Ip hostAddress;
 
-  public NodeKey(String nodeId, String hostAddress) {
+  public NodeKey(InstanceDetails.Id nodeId, InstanceDetails.Ip hostAddress) {
     this.nodeId = nodeId;
     this.hostAddress = hostAddress;
   }
 
-  public String getNodeId() {
+  public NodeKey(InstanceDetails instanceDetails) {
+    this(instanceDetails.getInstanceId(), instanceDetails.getInstanceIp());
+  }
+
+  public InstanceDetails.Id getNodeId() {
     return nodeId;
   }
 
-  public String getHostAddress() {
+  public InstanceDetails.Ip getHostAddress() {
     return hostAddress;
   }
 

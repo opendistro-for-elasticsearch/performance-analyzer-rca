@@ -44,6 +44,22 @@ public enum ResourceEnum
    * <code>SEARCH_THREADPOOL = 5 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
    */
   SEARCH_THREADPOOL(5),
+  /**
+   * <pre>
+   * Cache
+   * </pre>
+   *
+   * <code>FIELD_DATA_CACHE = 10 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
+   */
+  FIELD_DATA_CACHE(10),
+  /**
+   * <code>SHARD_REQUEST_CACHE = 11 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
+   */
+  SHARD_REQUEST_CACHE(11),
+  /**
+   * <code>NODE_QUERY_CACHE = 12 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
+   */
+  NODE_QUERY_CACHE(12),
   UNRECOGNIZED(-1),
   ;
 
@@ -83,6 +99,22 @@ public enum ResourceEnum
    * <code>SEARCH_THREADPOOL = 5 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
    */
   public static final int SEARCH_THREADPOOL_VALUE = 5;
+  /**
+   * <pre>
+   * Cache
+   * </pre>
+   *
+   * <code>FIELD_DATA_CACHE = 10 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
+   */
+  public static final int FIELD_DATA_CACHE_VALUE = 10;
+  /**
+   * <code>SHARD_REQUEST_CACHE = 11 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
+   */
+  public static final int SHARD_REQUEST_CACHE_VALUE = 11;
+  /**
+   * <code>NODE_QUERY_CACHE = 12 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
+   */
+  public static final int NODE_QUERY_CACHE_VALUE = 12;
 
 
   public final int getNumber() {
@@ -109,6 +141,9 @@ public enum ResourceEnum
       case 3: return IO;
       case 4: return WRITE_THREADPOOL;
       case 5: return SEARCH_THREADPOOL;
+      case 10: return FIELD_DATA_CACHE;
+      case 11: return SHARD_REQUEST_CACHE;
+      case 12: return NODE_QUERY_CACHE;
       default: return null;
     }
   }

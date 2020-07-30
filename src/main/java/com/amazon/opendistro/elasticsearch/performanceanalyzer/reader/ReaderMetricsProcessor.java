@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
@@ -66,6 +67,8 @@ public class ReaderMetricsProcessor implements Runnable {
   private static final Map<String, Double> TIMING_STATS = new HashMap<>();
   private static final Map<String, String> STATS_DATA = new HashMap<>();
 
+  private final AppContext appContext;
+
   static {
     STATS_DATA.put("MethodName", "ProcessMetrics");
   }
@@ -83,10 +86,10 @@ public class ReaderMetricsProcessor implements Runnable {
   }
 
   public ReaderMetricsProcessor(String rootLocation) throws Exception {
-    this(rootLocation, false);
+    this(rootLocation, false, null);
   }
 
-  public ReaderMetricsProcessor(String rootLocation, boolean processNewFormat) throws Exception {
+  public ReaderMetricsProcessor(String rootLocation, boolean processNewFormat, final AppContext appContext) throws Exception {
     conn = DriverManager.getConnection(DB_URL);
     create = DSL.using(conn, SQLDialect.SQLITE);
     metricsDBMap = new ConcurrentSkipListMap<>();
@@ -103,6 +106,7 @@ public class ReaderMetricsProcessor implements Runnable {
     }
     eventLogFileHandler = new EventLogFileHandler(new EventLog(), rootLocation);
     this.processNewFormat = processNewFormat;
+    this.appContext = appContext;
   }
 
   @Override
@@ -432,7 +436,7 @@ public class ReaderMetricsProcessor implements Runnable {
     EventProcessor nodeEventsProcessor =
         NodeMetricsEventProcessor.buildNodeMetricEventsProcessor(
             currWindowStartTime, conn, nodeMetricsMap);
-    EventProcessor clusterDetailsEventsProcessor = new ClusterDetailsEventProcessor();
+    ClusterDetailsEventProcessor clusterDetailsEventsProcessor = new ClusterDetailsEventProcessor();
 
     // The event dispatcher dispatches events to each of the registered event processors.
     // In addition to event processing each processor has an initialize/finalize function that is
@@ -458,6 +462,15 @@ public class ReaderMetricsProcessor implements Runnable {
     eventDispatcher.finalizeProcessing();
 
     emitMetrics(currWindowStartTime);
+
+    // There are cases, such as tests where appContext may not be initialized.
+    // We always create a new ClusterDetailsEventsProcessor object above but we may not always
+    // process the writer file, in which case the recently initialized
+    // ClusterDetailsEventsProcessor does not contain valid values. Therefore, the empty check
+    // for nodeDetails is required.
+    if (appContext != null && !clusterDetailsEventsProcessor.getNodesDetails().isEmpty()) {
+      appContext.setClusterDetailsEventProcessor(clusterDetailsEventsProcessor);
+    }
 
     StatsCollector.instance()
         .logStatsRecord(null, STATS_DATA, TIMING_STATS, start, System.currentTimeMillis());

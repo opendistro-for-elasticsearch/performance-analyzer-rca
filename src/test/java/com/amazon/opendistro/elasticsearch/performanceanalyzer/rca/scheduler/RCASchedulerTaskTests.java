@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 
 import static org.junit.Assert.assertEquals;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
@@ -39,7 +40,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -218,23 +218,23 @@ public class RCASchedulerTaskTests {
       }
 
       private WireHopperDerived(List<IntentMsg> intentMsg, DataMsg dataMsg) {
-        super(null, null, null, null, null);
+        super(null, null, null, null, null, new AppContext());
         this.intentMsgs = intentMsg;
         this.dataMsg = dataMsg;
       }
 
       @Override
       public void sendData(DataMsg msg) {
-        assertEquals(msg.getSourceNode(), this.dataMsg.getSourceNode());
-        AssertHelper.compareLists(msg.getDestinationNode(), this.dataMsg.getDestinationNode());
+        assertEquals(msg.getSourceGraphNode(), this.dataMsg.getSourceGraphNode());
+        AssertHelper.compareLists(msg.getDestinationGraphNodes(), this.dataMsg.getDestinationGraphNodes());
       }
 
       @Override
       public void sendIntent(IntentMsg intentMsg) {
         assertEquals(
-            intentMsg.getRequesterNode(), this.intentMsgs.get(intextIdx).getRequesterNode());
+            intentMsg.getRequesterGraphNode(), this.intentMsgs.get(intextIdx).getRequesterGraphNode());
         assertEquals(
-            intentMsg.getDestinationNode(), this.intentMsgs.get(intextIdx).getDestinationNode());
+            intentMsg.getDestinationGraphNode(), this.intentMsgs.get(intextIdx).getDestinationGraphNode());
         intextIdx++;
       }
     }
@@ -250,7 +250,8 @@ public class RCASchedulerTaskTests {
             null,
             null,
             conf,
-            wireHopper);
+            wireHopper,
+            new AppContext());
       }
     }
 

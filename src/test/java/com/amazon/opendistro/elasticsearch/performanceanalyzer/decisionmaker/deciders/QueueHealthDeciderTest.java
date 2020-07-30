@@ -15,10 +15,13 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.SEARCH_QUEUE_CAPACITY;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.WRITE_QUEUE_CAPACITY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
@@ -26,30 +29,50 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
-import java.sql.SQLException;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
 public class QueueHealthDeciderTest {
+  AppContext appContext;
 
   @Before
-  public void setupCluster() throws SQLException, ClassNotFoundException {
-    ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
-    clusterDetailsEventProcessorTestHelper.addNodeDetails("node1", "127.0.0.1", false);
-    clusterDetailsEventProcessorTestHelper.addNodeDetails("node2", "127.0.0.2", false);
-    clusterDetailsEventProcessorTestHelper.addNodeDetails("node3", "127.0.0.3", false);
-    clusterDetailsEventProcessorTestHelper.addNodeDetails("node4", "127.0.0.4", false);
-    clusterDetailsEventProcessorTestHelper.addNodeDetails("master", "127.0.0.9", NodeRole.ELECTED_MASTER, true);
-    clusterDetailsEventProcessorTestHelper.generateClusterDetailsEvent();
+  public void setupCluster() {
+    ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
+    ClusterDetailsEventProcessor.NodeDetails node1 =
+        new ClusterDetailsEventProcessor.NodeDetails(NodeRole.DATA, "node1", "127.0.0.1", false);
+    ClusterDetailsEventProcessor.NodeDetails node2 =
+        new ClusterDetailsEventProcessor.NodeDetails(NodeRole.DATA, "node2", "127.0.0.2", false);
+    ClusterDetailsEventProcessor.NodeDetails node3 =
+        new ClusterDetailsEventProcessor.NodeDetails(NodeRole.DATA, "node3", "127.0.0.3", false);
+    ClusterDetailsEventProcessor.NodeDetails node4 =
+        new ClusterDetailsEventProcessor.NodeDetails(NodeRole.DATA, "node3", "127.0.0.4", false);
+    ClusterDetailsEventProcessor.NodeDetails master =
+        new ClusterDetailsEventProcessor.NodeDetails(NodeRole.ELECTED_MASTER, "master", "127.0.0.9", true);
+
+    List<ClusterDetailsEventProcessor.NodeDetails> nodes = new ArrayList<>();
+    nodes.add(node1);
+    nodes.add(node2);
+    nodes.add(node3);
+    nodes.add(node4);
+    nodes.add(master);
+    clusterDetailsEventProcessor.setNodesDetails(nodes);
+
+    appContext = new AppContext();
+    appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
   }
 
   @Test
   public void testHighRejectionRemediation() {
     RcaTestHelper<HotNodeSummary> nodeRca = new RcaTestHelper<>("QueueRejectionNodeRca");
+    nodeRca.setAppContext(appContext);
     // node1: Both write and search queues unhealthy
     // node2: Only write unhealthy
     // node3: Only search unhealthy
@@ -62,9 +85,20 @@ public class QueueHealthDeciderTest {
         RcaTestHelper.generateFlowUnit("node4", "127.0.0.4", Resources.State.HEALTHY)
     );
 
+    appContext.getNodeConfigCache().put(new NodeKey(new InstanceDetails.Id("node1"),
+            new InstanceDetails.Ip("127.0.0.1")), SEARCH_QUEUE_CAPACITY,5000);
+    appContext.getNodeConfigCache().put(new NodeKey(new InstanceDetails.Id("node1"),
+            new InstanceDetails.Ip("127.0.0.1")), WRITE_QUEUE_CAPACITY,5000);
+    appContext.getNodeConfigCache().put(new NodeKey(new InstanceDetails.Id("node2"),
+            new InstanceDetails.Ip("127.0.0.2")), WRITE_QUEUE_CAPACITY,5000);
+    appContext.getNodeConfigCache().put(new NodeKey(new InstanceDetails.Id("node3"),
+            new InstanceDetails.Ip("127.0.0.3")), SEARCH_QUEUE_CAPACITY,5000);
+
     QueueRejectionClusterRca queueClusterRca = new QueueRejectionClusterRca(1, nodeRca);
+    queueClusterRca.setAppContext(appContext);
     queueClusterRca.generateFlowUnitListFromLocal(null);
     QueueHealthDecider decider = new QueueHealthDecider(5, 12, queueClusterRca);
+    decider.setAppContext(appContext);
 
     // Since deciderFrequency is 12, the first 11 invocations return empty decision
     for (int i = 0; i < 11; i++) {
@@ -78,7 +112,7 @@ public class QueueHealthDeciderTest {
     Map<String, Map<ResourceEnum, Integer>> nodeActionCounter = new HashMap<>();
     for (Action action: decision.getActions()) {
       assertEquals(1, action.impactedNodes().size());
-      String nodeId = action.impactedNodes().get(0).getNodeId();
+      String nodeId = action.impactedNodes().get(0).getNodeId().toString();
       String summary = action.summary();
       if (summary.contains(ResourceEnum.WRITE_THREADPOOL.toString())) {
         nodeActionCounter.computeIfAbsent(nodeId, k -> new HashMap<>()).merge(ResourceEnum.WRITE_THREADPOOL, 1, Integer::sum);

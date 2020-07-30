@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rest;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
@@ -25,7 +26,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metrics
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.model.MetricAttributes;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.model.MetricsModel;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.JsonConverter;
 import com.sun.net.httpserver.HttpExchange;
@@ -62,10 +63,12 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
   private static final TimeUnit TIME_OUT_UNIT = TimeUnit.SECONDS;
   private NetClient netClient;
   MetricsRestUtil metricsRestUtil;
+  private final AppContext appContext;
 
-  public QueryMetricsRequestHandler(NetClient netClient, MetricsRestUtil metricsRestUtil) {
+  public QueryMetricsRequestHandler(NetClient netClient, MetricsRestUtil metricsRestUtil, final AppContext appContext) {
     this.netClient = netClient;
     this.metricsRestUtil = metricsRestUtil;
+    this.appContext = appContext;
   }
 
   @Override
@@ -148,11 +151,10 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
         String localResponseWithTimestamp =
             String.format("{\"timestamp\": %d, \"data\": %s}", dbTimestamp, localResponse);
         ConcurrentHashMap<String, String> nodeResponses = new ConcurrentHashMap<>();
-        final List<ClusterDetailsEventProcessor.NodeDetails> allNodes = ClusterDetailsEventProcessor
-            .getNodesDetails();
+        final List<InstanceDetails> allNodes = appContext.getAllClusterInstances();
         String localNodeId = "local";
         if (allNodes.size() != 0) {
-          localNodeId = allNodes.get(0).getId();
+          localNodeId = allNodes.get(0).getInstanceId().toString();
         }
         nodeResponses.put(localNodeId, localResponseWithTimestamp);
         String response = metricsRestUtil.nodeJsonBuilder(nodeResponses);
@@ -162,14 +164,14 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
         } else if (nodes.equals("all")) {
           CountDownLatch doneSignal = new CountDownLatch(allNodes.size() - 1);
           for (int i = 1; i < allNodes.size(); i++) {
-            ClusterDetailsEventProcessor.NodeDetails node = allNodes.get(i);
+            InstanceDetails node = allNodes.get(i);
             LOG.debug("Collecting remote stats");
             try {
               collectRemoteStats(node, metricList, aggList, dimList, nodeResponses, doneSignal);
             } catch (Exception e) {
               LOG.error(
                   "Unable to collect stats for node, addr:{}, exception: {} ExceptionCode: {}",
-                  node.getHostAddress(),
+                  node.getInstanceIp(),
                   e,
                   StatExceptionCode.REQUEST_REMOTE_ERROR.toString());
               StatsCollector.instance().logException(StatExceptionCode.REQUEST_REMOTE_ERROR);
@@ -216,14 +218,12 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
   }
 
   void collectRemoteStats(
-      ClusterDetailsEventProcessor.NodeDetails node,
+      InstanceDetails node,
       List<String> metricList,
       List<String> aggList,
       List<String> dimList,
       final ConcurrentHashMap<String, String> nodeResponses,
-      final CountDownLatch doneSignal)
-      throws Exception {
-    // create a request
+      final CountDownLatch doneSignal) {
     MetricsRequest request =
         MetricsRequest.newBuilder()
             .addAllMetricList(metricList)
@@ -233,7 +233,7 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
     ThreadSafeStreamObserver responseObserver =
         new ThreadSafeStreamObserver(node, nodeResponses, doneSignal);
     try {
-      this.netClient.getMetrics(node.getHostAddress(), request, responseObserver);
+      this.netClient.getMetrics(node, request, responseObserver);
     } catch (Exception e) {
       LOG.error("Metrics : Exception occurred while getting Metrics {}", e.getCause());
     }
@@ -319,10 +319,10 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
   private static class ThreadSafeStreamObserver implements StreamObserver<MetricsResponse> {
     private final CountDownLatch doneSignal;
     private final ConcurrentHashMap<String, String> nodeResponses;
-    private final ClusterDetailsEventProcessor.NodeDetails node;
+    private final InstanceDetails node;
 
     ThreadSafeStreamObserver(
-        ClusterDetailsEventProcessor.NodeDetails node,
+        InstanceDetails node,
         ConcurrentHashMap<String, String> nodeResponses,
         CountDownLatch doneSignal) {
       this.node = node;
@@ -331,12 +331,12 @@ public class QueryMetricsRequestHandler extends MetricsHandler implements HttpHa
     }
 
     public void onNext(MetricsResponse value) {
-      nodeResponses.putIfAbsent(node.getId(), value.getMetricsResult());
+      nodeResponses.putIfAbsent(node.getInstanceId().toString(), value.getMetricsResult());
     }
 
     @Override
     public void onError(Throwable t) {
-      LOG.info("Metrics : Error occurred while getting Metrics for " + node.getHostAddress());
+      LOG.info("Metrics : Error occurred while getting Metrics for " + node.getInstanceIp());
       doneSignal.countDown();
     }
 

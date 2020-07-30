@@ -15,6 +15,9 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
@@ -65,6 +68,11 @@ public abstract class Node<T extends GenericFlowUnit> {
    * location.
    */
   private Map<String, String> tags;
+
+  /**
+   * A view of the instanceDetails that the RCAs can have access to.
+   */
+  private AppContext appContext;
 
   Node(int level, long evaluationIntervalSeconds) {
     this.downStreams = new ArrayList<>();
@@ -186,5 +194,38 @@ public abstract class Node<T extends GenericFlowUnit> {
    */
   public void readRcaConf(RcaConf conf) {
     return;
+  }
+
+  public void setAppContext(final AppContext appContext) {
+    this.appContext = appContext;
+  }
+
+  protected AppContext getAppContext() {
+    return this.appContext;
+  }
+
+  public InstanceDetails getInstanceDetails() {
+    InstanceDetails ret = new InstanceDetails(AllMetrics.NodeRole.UNKNOWN);
+    if (this.appContext != null) {
+      ret = this.appContext.getMyInstanceDetails();
+    }
+    return ret;
+  }
+
+  public List<InstanceDetails> getAllClusterInstances() {
+    List<InstanceDetails> ret = Collections.EMPTY_LIST;
+
+    if (this.appContext != null) {
+      ret = this.appContext.getAllClusterInstances();
+    }
+    return ret;
+  }
+
+  public List<InstanceDetails> getDataNodeInstances() {
+    List<InstanceDetails> ret = Collections.EMPTY_LIST;
+    if (this.appContext != null) {
+      return this.appContext.getDataNodeInstances();
+    }
+    return ret;
   }
 }

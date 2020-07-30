@@ -22,7 +22,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotShardSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collections;
@@ -59,6 +62,11 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
     this.flowUnits = flowUnitList;
   }
 
+  public double readConfig(NodeKey nodeKey, Resource resource) throws IllegalArgumentException {
+    NodeConfigCache nodeConfigCache = getAppContext().getNodeConfigCache();
+    return nodeConfigCache.get(nodeKey, resource);
+  }
+
   public void setClock(Clock clock) {
     this.clock = clock;
   }
@@ -80,7 +88,7 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
   public static ResourceFlowUnit<HotNodeSummary> generateFlowUnit(Resource type, String nodeID, Resources.State healthy) {
     HotResourceSummary resourceSummary = new HotResourceSummary(type,
         10, 5, 60);
-    HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, "127.0.0.0");
+    HotNodeSummary nodeSummary = new HotNodeSummary(new InstanceDetails.Id(nodeID), new InstanceDetails.Ip("127.0.0.0"));
     nodeSummary.appendNestedSummary(resourceSummary);
     return new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(healthy), nodeSummary);
   }
@@ -89,7 +97,7 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
       String hostAddress, Resources.State healthy) {
     HotResourceSummary resourceSummary = new HotResourceSummary(type,
         10, 5, 60);
-    HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, hostAddress);
+    HotNodeSummary nodeSummary = new HotNodeSummary(new InstanceDetails.Id(nodeID), new InstanceDetails.Ip(hostAddress));
     nodeSummary.appendNestedSummary(resourceSummary);
     return new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(healthy), nodeSummary);
   }
@@ -98,7 +106,7 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
       String hostAddress, Resources.State healthy, long timestamp) {
     HotResourceSummary resourceSummary = new HotResourceSummary(type,
         10, 5, 60);
-    HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, hostAddress);
+    HotNodeSummary nodeSummary = new HotNodeSummary(new InstanceDetails.Id(nodeID), new InstanceDetails.Ip(hostAddress));
     nodeSummary.appendNestedSummary(resourceSummary);
     return new ResourceFlowUnit<>(timestamp, new ResourceContext(healthy), nodeSummary);
   }
@@ -106,7 +114,7 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
   /** Create HotNodeSummary flow unit with multiple unhealthy resources */
   public static ResourceFlowUnit<HotNodeSummary> generateFlowUnit(String nodeID, String hostAddress,
       Resources.State healthy, Resource... resources) {
-    HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, hostAddress);
+    HotNodeSummary nodeSummary = new HotNodeSummary(new InstanceDetails.Id(nodeID), new InstanceDetails.Ip(hostAddress));
     for (Resource resource: resources) {
       HotResourceSummary resourceSummary = new HotResourceSummary(resource, 10, 5, 60);
       nodeSummary.appendNestedSummary(resourceSummary);
@@ -123,7 +131,7 @@ public class RcaTestHelper<T extends GenericSummary> extends Rca<ResourceFlowUni
     hotShardSummary.setIoThroughputThreshold(500000);
     hotShardSummary.setIoSysCallrate(io_sys_callrate);
     hotShardSummary.setIoSysCallrateThreshold(0.50);
-    HotNodeSummary nodeSummary = new HotNodeSummary(nodeID, "127.0.0.0");
+    HotNodeSummary nodeSummary = new HotNodeSummary(new InstanceDetails.Id(nodeID), new InstanceDetails.Ip("127.0.0.0"));
     nodeSummary.appendNestedSummary(hotShardSummary);
     return new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(health), nodeSummary);
   }

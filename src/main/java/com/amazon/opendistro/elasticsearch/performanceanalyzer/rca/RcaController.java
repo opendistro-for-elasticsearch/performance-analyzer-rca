@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RCA_MUTE_ERROR_METRIC;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.ClientServers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerThreads;
@@ -36,6 +37,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ThresholdMain;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaRuntimeMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
@@ -49,10 +51,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.P
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.PersistenceFactory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCAScheduler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RcaSchedulerState;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryRcaRequestHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
+import com.google.common.annotations.VisibleForTesting;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -61,13 +62,13 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -81,7 +82,7 @@ public class RcaController {
 
   private static final Logger LOG = LogManager.getLogger(RcaController.class);
 
-  private static final String RCA_ENABLED_CONF_FILE = "rca_enabled.conf";
+  public static final String RCA_ENABLED_CONF_FILE = "rca_enabled.conf";
 
   private final ScheduledExecutorService netOpsExecutorService;
   private final boolean useHttps;
@@ -89,13 +90,13 @@ public class RcaController {
   private boolean rcaEnabledDefaultValue = false;
 
   // This needs to be volatile as the RcaConfPoller writes it but the Nanny reads it.
-  private static volatile boolean rcaEnabled = false;
+  private volatile boolean rcaEnabled = false;
 
   // This needs to be volatile as the RcaConfPoller writes it but the Nanny reads it.
-  private static volatile long lastModifiedTimeInMillisInMemory = 0;
+  private volatile long lastModifiedTimeInMillisInMemory = 0;
 
   // This needs to be volatile as the NodeRolePoller writes it but the Nanny reads it.
-  private volatile NodeRole currentRole = NodeRole.UNKNOWN;
+  protected volatile NodeRole currentRole = NodeRole.UNKNOWN;
 
   private final ThreadProvider threadProvider;
   private RCAScheduler rcaScheduler;
@@ -115,11 +116,17 @@ public class RcaController {
   private final long rcaStateCheckIntervalMillis;
   private final long roleCheckPeriodicity;
 
+  private volatile boolean deliberateInterrupt;
+
   // Atomic reference to the networking threadpool as it is used by multiple threads. When we
   // replace the threadpool instance, we want the update to be visible to all others holding a
   // reference.
   private AtomicReference<ExecutorService> networkThreadPoolReference = new AtomicReference<>();
   private ReceivedFlowUnitStore receivedFlowUnitStore;
+
+  private final AppContext appContext;
+
+  protected Queryable dbProvider = null;
 
   public RcaController(
       final ThreadProvider threadProvider,
@@ -128,8 +135,10 @@ public class RcaController {
       final ClientServers clientServers,
       final String rca_enabled_conf_location,
       final long rcaStateCheckIntervalMillis,
-      final long nodeRoleCheckPeriodicityMillis) {
+      final long nodeRoleCheckPeriodicityMillis,
+      final AppContext appContext) {
     this.threadProvider = threadProvider;
+    this.appContext = appContext;
     this.netOpsExecutorService = netOpsExecutorService;
     this.rcaNetClient = clientServers.getNetClient();
     this.rcaNetServer = clientServers.getNetServer();
@@ -138,41 +147,80 @@ public class RcaController {
     netPersistor = new NetPersistor();
     this.useHttps = PluginSettings.instance().getHttpsEnabled();
     subscriptionManager = new SubscriptionManager(grpcConnectionManager);
-    nodeStateManager = new NodeStateManager();
-    queryRcaRequestHandler = new QueryRcaRequestHandler();
+    nodeStateManager = new NodeStateManager(this.appContext);
+    queryRcaRequestHandler = new QueryRcaRequestHandler(this.appContext);
     this.rcaScheduler = null;
     this.rcaStateCheckIntervalMillis = rcaStateCheckIntervalMillis;
     this.roleCheckPeriodicity = nodeRoleCheckPeriodicityMillis;
+    this.deliberateInterrupt = false;
+  }
+
+  @VisibleForTesting
+  public RcaController() {
+    netOpsExecutorService = null;
+    useHttps = false;
+    threadProvider = null;
+    RCA_ENABLED_CONF_LOCATION = "";
+    rcaStateCheckIntervalMillis = 0;
+    roleCheckPeriodicity = 0;
+    appContext = null;
+  }
+
+  protected List<ConnectedComponent> getRcaGraphComponents(
+      RcaConf rcaConf) throws ClassNotFoundException,
+      NoSuchMethodException,
+      InstantiationException,
+      IllegalAccessException,
+      InvocationTargetException {
+    return RcaUtil.getAnalysisGraphComponents(rcaConf);
   }
 
   private void start() {
     try {
+      Objects.requireNonNull(subscriptionManager);
+      Objects.requireNonNull(rcaConf);
+
       subscriptionManager.setCurrentLocus(rcaConf.getTagMap().get("locus"));
-      List<ConnectedComponent> connectedComponents = RcaUtil.getAnalysisGraphComponents(rcaConf);
+      List<ConnectedComponent> connectedComponents = getRcaGraphComponents(rcaConf);
 
       // Mute the rca nodes after the graph creation and before the scheduler start
       readAndUpdateMutesRcasDuringStart();
 
-      Queryable db = new MetricsDBProvider();
+      Queryable db;
+      if (dbProvider == null) {
+        db = new MetricsDBProvider();
+      } else {
+        db = dbProvider;
+      }
       ThresholdMain thresholdMain = new ThresholdMain(RcaConsts.THRESHOLDS_PATH, rcaConf);
       Persistable persistable = PersistenceFactory.create(rcaConf);
-      networkThreadPoolReference
-          .set(RcaControllerHelper.buildNetworkThreadPool(rcaConf.getNetworkQueueLength()));
+      networkThreadPoolReference.set(RcaControllerHelper.buildNetworkThreadPool(rcaConf.getNetworkQueueLength()));
       addRcaRequestHandler();
       queryRcaRequestHandler.setPersistable(persistable);
       receivedFlowUnitStore = new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength());
       WireHopper net =
           new WireHopper(nodeStateManager, rcaNetClient, subscriptionManager,
-              networkThreadPoolReference, receivedFlowUnitStore);
+              networkThreadPoolReference, receivedFlowUnitStore, appContext);
+
+      // RcaScheduler should be started with a snapshot of the AppContext as RcaController
+      // monitors it for stale state and always restarts the scheduler if it finds its state
+      // stale.
+      AppContext copyAppContext = new AppContext(this.appContext);
+
       this.rcaScheduler =
-          new RCAScheduler(connectedComponents, db, rcaConf, thresholdMain, persistable, net);
+          new RCAScheduler(connectedComponents,
+              db,
+              rcaConf,
+              thresholdMain,
+              persistable,
+              net,
+              copyAppContext);
 
       rcaNetServer.setSendDataHandler(new PublishRequestHandler(
           nodeStateManager, receivedFlowUnitStore, networkThreadPoolReference));
       rcaNetServer.setSubscribeHandler(
           new SubscribeServerHandler(subscriptionManager, networkThreadPoolReference));
 
-      rcaScheduler.setRole(currentRole);
       Thread rcaSchedulerThread = threadProvider.createThreadForRunnable(() -> rcaScheduler.start(),
           PerformanceAnalyzerThreads.RCA_SCHEDULER);
 
@@ -216,7 +264,7 @@ public class RcaController {
   }
 
   public void run() {
-    long tick = 1;
+    long tick = 0;
     long nodeRoleCheckInTicks = roleCheckPeriodicity / rcaStateCheckIntervalMillis;
     while (true) {
       try {
@@ -224,8 +272,8 @@ public class RcaController {
         readRcaEnabledFromConf();
         if (rcaEnabled && tick % nodeRoleCheckInTicks == 0) {
           tick = 0;
-          final NodeDetails nodeDetails = ClusterDetailsEventProcessor.getCurrentNodeDetails();
-          if (nodeDetails != null) {
+          final InstanceDetails nodeDetails = appContext.getMyInstanceDetails();
+          if (nodeDetails.getRole() !=  NodeRole.UNKNOWN) {
             checkUpdateNodeRole(nodeDetails);
           }
         }
@@ -243,17 +291,19 @@ public class RcaController {
           Thread.sleep(rcaStateCheckIntervalMillis - duration);
         }
       } catch (InterruptedException ie) {
-        LOG.error("RCA controller thread was interrupted. Reason: {}", ie.getMessage());
-        LOG.error(ie);
+        if (!deliberateInterrupt) {
+          LOG.error("RCA controller thread was interrupted. Reason: {}", ie.getMessage());
+          LOG.error(ie);
+        }
         break;
       }
       tick++;
     }
   }
 
-  private void checkUpdateNodeRole(final NodeDetails currentNode) {
-    final NodeRole currentNodeRole = NodeRole.valueOf(currentNode.getRole());
-    boolean isMasterNode = currentNode.getIsMasterNode();
+  private void checkUpdateNodeRole(final InstanceDetails currentNode) {
+    final NodeRole currentNodeRole = currentNode.getRole();
+    boolean isMasterNode = currentNode.getIsMaster();
     currentRole = isMasterNode ? NodeRole.ELECTED_MASTER : currentNodeRole;
   }
 
@@ -393,12 +443,17 @@ public class RcaController {
     return RCA_ENABLED_CONF_FILE;
   }
 
-  public static boolean isRcaEnabled() {
+  public boolean isRcaEnabled() {
     return rcaEnabled;
   }
 
   public NodeRole getCurrentRole() {
     return currentRole;
+  }
+
+  @VisibleForTesting
+  public AppContext getAppContext() {
+    return this.appContext;
   }
 
   public RCAScheduler getRcaScheduler() {
@@ -408,4 +463,13 @@ public class RcaController {
   private void addRcaRequestHandler() {
     httpServer.createContext(Util.RCA_QUERY_URL, queryRcaRequestHandler);
   }
+
+  public void setDeliberateInterrupt() {
+    deliberateInterrupt = true;
+  }
+
+  public void setDbProvider(Queryable dbProvider) {
+    this.dbProvider = dbProvider;
+  }
+
 }

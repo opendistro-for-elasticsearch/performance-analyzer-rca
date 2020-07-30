@@ -32,6 +32,7 @@ public class AllMetrics {
   // metric name (not complete, only metrics use the json format and contains
   // numeric values. Will add more when needed)
   public enum MetricName {
+    CACHE_CONFIG,
     CIRCUIT_BREAKER,
     HEAP_METRICS,
     DISK_METRICS,
@@ -126,6 +127,86 @@ public class AllMetrics {
       public static final String EDEN_VALUE = "Eden";
       public static final String NON_HEAP_VALUE = "NonHeap";
       public static final String HEAP_VALUE = "Heap";
+    }
+  }
+
+  /*
+   * column names of Cache_MaxSize table
+   * cache type | sum | avg | max | min |
+   *
+   * <p>Example:
+   * Field Data Cache|26214400.0|26214400.0|26214400.0|26214400.0
+   * Shard Request Cache|80181985.0|80181985.0|80181985.0|80181985.0
+   */
+  public enum CacheConfigDimension implements MetricDimension, JooqFieldValue {
+    CACHE_TYPE(Constants.TYPE_VALUE);
+
+    private final String value;
+
+    CacheConfigDimension(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    @Override
+    public Field<String> getField() {
+      return DSL.field(DSL.name(this.value), String.class);
+    }
+
+    @Override
+    public String getName() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String TYPE_VALUE = "CacheType";
+    }
+  }
+
+  public enum CacheConfigValue implements MetricValue {
+    CACHE_MAX_SIZE(Constants.CACHE_MAX_SIZE_VALUE);
+
+    private final String value;
+
+    CacheConfigValue(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String CACHE_MAX_SIZE_VALUE = "Cache_MaxSize";
+    }
+  }
+
+  //list of caches
+  public enum CacheType {
+    FIELD_DATA_CACHE(Constants.FIELD_DATA_CACHE_NAME),
+    SHARD_REQUEST_CACHE(Constants.SHARD_REQUEST_CACHE_NAME),
+    NODE_QUERY_CACHE(Constants.NODE_QUERY_CACHE_NAME);
+
+    private final String value;
+
+    CacheType(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String FIELD_DATA_CACHE_NAME = "field_data_cache";
+      public static final String SHARD_REQUEST_CACHE_NAME = "shard_request_cache";
+      public static final String NODE_QUERY_CACHE_NAME = "node_query_cache";
     }
   }
 

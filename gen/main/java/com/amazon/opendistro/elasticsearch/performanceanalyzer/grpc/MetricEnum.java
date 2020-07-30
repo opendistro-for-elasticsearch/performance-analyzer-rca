@@ -48,6 +48,26 @@ public enum MetricEnum
    * <code>QUEUE_REJECTION = 6 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
    */
   QUEUE_REJECTION(6),
+  /**
+   * <code>QUEUE_CAPACITY = 7 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
+   */
+  QUEUE_CAPACITY(7),
+  /**
+   * <pre>
+   * cache
+   * </pre>
+   *
+   * <code>CACHE_EVICTION = 10 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
+   */
+  CACHE_EVICTION(10),
+  /**
+   * <code>CACHE_HIT = 11 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
+   */
+  CACHE_HIT(11),
+  /**
+   * <code>CACHE_MAX_SIZE = 12 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
+   */
+  CACHE_MAX_SIZE(12),
   UNRECOGNIZED(-1),
   ;
 
@@ -91,6 +111,26 @@ public enum MetricEnum
    * <code>QUEUE_REJECTION = 6 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
    */
   public static final int QUEUE_REJECTION_VALUE = 6;
+  /**
+   * <code>QUEUE_CAPACITY = 7 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
+   */
+  public static final int QUEUE_CAPACITY_VALUE = 7;
+  /**
+   * <pre>
+   * cache
+   * </pre>
+   *
+   * <code>CACHE_EVICTION = 10 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
+   */
+  public static final int CACHE_EVICTION_VALUE = 10;
+  /**
+   * <code>CACHE_HIT = 11 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
+   */
+  public static final int CACHE_HIT_VALUE = 11;
+  /**
+   * <code>CACHE_MAX_SIZE = 12 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
+   */
+  public static final int CACHE_MAX_SIZE_VALUE = 12;
 
 
   public final int getNumber() {
@@ -118,6 +158,10 @@ public enum MetricEnum
       case 4: return TOTAL_THROUGHPUT;
       case 5: return TOTAL_SYS_CALLRATE;
       case 6: return QUEUE_REJECTION;
+      case 7: return QUEUE_CAPACITY;
+      case 10: return CACHE_EVICTION;
+      case 11: return CACHE_HIT;
+      case 12: return CACHE_MAX_SIZE;
       default: return null;
     }
   }

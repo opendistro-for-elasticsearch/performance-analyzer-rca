@@ -73,7 +73,7 @@ public class SQLParsingUtil {
     double ret = Double.NaN;
     try {
       Record record = getRecordByName(result, matchedField, matchedFieldName);
-      ret = record.getValue(MetricsDB.MAX, Double.class);
+      ret = record.getValue(dataField, Double.class);
     }
     catch (IllegalArgumentException ie) {
       LOG.error("{} fails to match any row in field {}.", matchedFieldName, matchedField.getName());
