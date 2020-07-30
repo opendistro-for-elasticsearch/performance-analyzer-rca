@@ -29,7 +29,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaTestHelper;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.exceptions.MalformedConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.CPU_Utilization;
@@ -67,15 +66,11 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.sun.net.httpserver.HttpServer;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -88,7 +83,6 @@ import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class ResourceHeatMapGraphTest {
@@ -109,25 +103,9 @@ public class ResourceHeatMapGraphTest {
   private static AtomicReference<ExecutorService> networkThreadPoolReference;
 
   @BeforeClass
-  public static void init() {
-    try {
-      persistable = PersistenceFactory.create(rcaConf);
-    } catch (MalformedConfig malformedConfig) {
-      malformedConfig.printStackTrace();
-      Assert.fail();
-    } catch (SQLException e) {
-      e.printStackTrace();
-      Assert.fail();
-    } catch (IOException e) {
-      e.printStackTrace();
-      Assert.fail();
-    }
-    try {
-      reader = new SQLiteReader(sqliteFile.toString());
-    } catch (SQLException e) {
-      e.printStackTrace();
-      Assert.fail();
-    }
+  public static void init() throws Exception {
+    persistable = PersistenceFactory.create(rcaConf);
+    reader = new SQLiteReader(sqliteFile.toString());
 
     AllMetrics.NodeRole nodeRole2 = AllMetrics.NodeRole.ELECTED_MASTER;
     AppContext appContext = RcaTestHelper.setMyIp("192.168.0.2", nodeRole2);
@@ -151,6 +129,12 @@ public class ResourceHeatMapGraphTest {
     clientServers.getHttpServer().stop(0);
     clientServers.getNetServer().stop();
     clientServers.getNetClient().stop();
+
+    try {
+      Thread.sleep(1000);
+    } catch (InterruptedException ie) {
+      ie.printStackTrace();
+    }
   }
 
   private static class AnalysisGraphX extends ElasticSearchAnalysisGraph {
@@ -195,7 +179,7 @@ public class ResourceHeatMapGraphTest {
     return connectedComponents;
   }
 
-  private String makeRestRequest(final String[] params) {
+  private String makeRestRequest(final String[] params) throws Exception {
     // The params are key/value pairs and therefore there should be even numbers of them.
     Assert.assertEquals(0, params.length % 2);
     StringBuilder queryString = new StringBuilder();
@@ -209,63 +193,31 @@ public class ResourceHeatMapGraphTest {
     uri.append("?").append(queryString);
 
 
-    URL url = null;
-    try {
-      url = new URL(uri.toString());
-    } catch (MalformedURLException e) {
-      e.printStackTrace();
-      Assert.fail();
-    }
+    URL url = new URL(uri.toString());
 
     String response = "";
-    HttpURLConnection connection = null;
-
-    try {
-      connection = (HttpURLConnection) url.openConnection();
-    } catch (IOException e) {
-      e.printStackTrace();
-      Assert.fail();
+    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+    connection.setRequestMethod("GET");
+    int status = connection.getResponseCode();
+    if (status != 200) {
+      List<String> ret =
+          new BufferedReader(new InputStreamReader(connection.getErrorStream())).lines().collect(Collectors.toList());
+      throw new IllegalStateException(ret.toString());
     }
 
-    try {
-      connection.setRequestMethod("GET");
-    } catch (ProtocolException e) {
-      e.printStackTrace();
-      connection.disconnect();
-      Assert.fail();
+    BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+    String inputLine;
+    StringBuffer content = new StringBuffer();
+    while ((inputLine = in.readLine()) != null) {
+      content.append(inputLine);
     }
-
-    try {
-      int status = connection.getResponseCode();
-      if (status != 200) {
-        List<String> ret =
-            new BufferedReader(new InputStreamReader(connection.getErrorStream())).lines().collect(Collectors.toList());
-        throw new IllegalStateException(ret.toString());
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
-      connection.disconnect();
-      Assert.fail();
-    }
-
-    try (BufferedReader in = new BufferedReader(
-        new InputStreamReader(connection.getInputStream()))) {
-      String inputLine;
-      StringBuffer content = new StringBuffer();
-      while ((inputLine = in.readLine()) != null) {
-        content.append(inputLine);
-      }
-      response = content.toString();
-    } catch (IOException e) {
-      e.printStackTrace();
-      connection.disconnect();
-      Assert.fail();
-    }
+    response = content.toString();
+    in.close();
     return response;
   }
 
   @Test
-  public void clusterTemperatureProfile() {
+  public void clusterTemperatureProfile() throws Exception {
     AppContext appContext = RcaTestHelper.setMyIp("192.168.0.2", AllMetrics.NodeRole.ELECTED_MASTER);
 
     List<ConnectedComponent> connectedComponents = createAndExecuteRcaGraph(appContext);
@@ -303,7 +255,7 @@ public class ResourceHeatMapGraphTest {
   }
 
   @Test
-  public void fullNodeTemperatureProfile() {
+  public void fullNodeTemperatureProfile() throws Exception {
     AppContext appContext = RcaTestHelper.setMyIp("192.168.0.3", AllMetrics.NodeRole.DATA);
     createAndExecuteRcaGraph(appContext);
     verifyFullNodeTemperatureProfile(makeRestRequest(
@@ -1056,7 +1008,7 @@ public class ResourceHeatMapGraphTest {
   }
 
   @Test
-  public void testHotShardClusterApiResponse() {
+  public void testHotShardClusterApiResponse() throws Exception {
     AnalysisGraph analysisGraph = new AnalysisGraphHotShard();
     List<ConnectedComponent> connectedComponents =
         RcaUtil.getAnalysisGraphComponents(analysisGraph);
@@ -1120,45 +1072,36 @@ public class ResourceHeatMapGraphTest {
     rcaSchedulerTaskMaster.run();
 
     URL url = null;
-    try {
-      url = new URL("http://localhost:9600" + Util.RCA_QUERY_URL + "?name=" + HotShardClusterRca.RCA_TABLE_NAME);
-    } catch (MalformedURLException e) {
-      e.printStackTrace();
-      Assert.fail();
-    }
+    url = new URL("http://localhost:9600" + Util.RCA_QUERY_URL + "?name="
+        + HotShardClusterRca.RCA_TABLE_NAME);
 
-    try {
-      HttpURLConnection con = (HttpURLConnection) url.openConnection();
-      con.setRequestMethod("GET");
+    HttpURLConnection con = (HttpURLConnection) url.openConnection();
+    con.setRequestMethod("GET");
 
-      int status = con.getResponseCode();
-      System.out.println("Response status: " + status);
-      try (BufferedReader in = new BufferedReader(
-          new InputStreamReader(con.getInputStream()))) {
-        String inputLine;
-        StringBuffer content = new StringBuffer();
-        while ((inputLine = in.readLine()) != null) {
-          content.append(inputLine);
-        }
-        final String hotShardClusterRcaName = HotShardClusterRca.RCA_TABLE_NAME;
-        final String hotClusterSummaryName = HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE;
-
-        JsonParser parser = new JsonParser();
-        JsonElement jsonElement = parser.parse(content.toString());
-        JsonObject hotShardClusterRca =
-            jsonElement.getAsJsonObject().get(hotShardClusterRcaName).getAsJsonArray().get(0).getAsJsonObject();
-
-        Assert.assertEquals(hotShardClusterRcaName, hotShardClusterRca.get("rca_name").getAsString());
-        Assert.assertEquals("unhealthy", hotShardClusterRca.get("state").getAsString());
-
-        JsonObject hotClusterSummary =
-            hotShardClusterRca.get(hotClusterSummaryName).getAsJsonArray().get(0).getAsJsonObject();
-        Assert.assertEquals(1, hotClusterSummary.get("number_of_unhealthy_nodes").getAsInt());
+    int status = con.getResponseCode();
+    System.out.println("Response status: " + status);
+    try (BufferedReader in = new BufferedReader(
+        new InputStreamReader(con.getInputStream()))) {
+      String inputLine;
+      StringBuffer content = new StringBuffer();
+      while ((inputLine = in.readLine()) != null) {
+        content.append(inputLine);
       }
-      con.disconnect();
-    } catch (IOException e) {
-      e.printStackTrace();
-      Assert.fail();
+      final String hotShardClusterRcaName = HotShardClusterRca.RCA_TABLE_NAME;
+      final String hotClusterSummaryName = HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE;
+
+      JsonParser parser = new JsonParser();
+      JsonElement jsonElement = parser.parse(content.toString());
+      JsonObject hotShardClusterRca =
+          jsonElement.getAsJsonObject().get(hotShardClusterRcaName).getAsJsonArray().get(0).getAsJsonObject();
+
+      Assert.assertEquals(hotShardClusterRcaName, hotShardClusterRca.get("rca_name").getAsString());
+      Assert.assertEquals("unhealthy", hotShardClusterRca.get("state").getAsString());
+
+      JsonObject hotClusterSummary =
+          hotShardClusterRca.get(hotClusterSummaryName).getAsJsonArray().get(0).getAsJsonObject();
+      Assert.assertEquals(1, hotClusterSummary.get("number_of_unhealthy_nodes").getAsInt());
     }
+    con.disconnect();
   }
 }
