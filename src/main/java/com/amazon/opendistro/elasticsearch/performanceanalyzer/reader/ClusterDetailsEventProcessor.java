@@ -62,27 +62,35 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
   @Override
   public void processEvent(Event event) {
     String[] lines = event.value.split(System.lineSeparator());
-    if (lines.length < 2) {
-      // We expect at-least 2 lines as the first line is always timestamp
+    if (lines.length < 4) {
+      // We expect at-least 4 lines as the first line is always timestamp,
+      // the second line is the list of overridden rca conf values,
+      // the third line is the timestamp of when the last override was set,
       // and there must be at least one ElasticSearch node in a cluster.
       LOG.error(
-          "ClusterDetails contain less items than expected. " + "Expected 2, found: {}",
+          "ClusterDetails contain less items than expected. " + "Expected 4, found: {}",
           event.value);
       return;
     }
+
     // An example node_metrics data is something like this for a two node cluster:
     // {"current_time":1566414001749}
+    // {"overrides": {"enabled": {}, "disabled": {}}
+    // {"lastOverrideTimestamp":1566414001749}
     // {"ID":"4sqG_APMQuaQwEW17_6zwg","HOST_ADDRESS":"10.212.73.121"}
     // {"ID":"OVH94mKXT5ibeqvDoAyTeg","HOST_ADDRESS":"10.212.78.83"}
     //
     // The line 0 is timestamp that can be skipped. So we allocated size of
     // the array is one less than the list.
+
+
+
     final List<NodeDetails> tmpNodesDetails = new ArrayList<>();
 
     // Just to keep track of duplicate node ids.
     Set<String> ids = new HashSet<>();
 
-    for (int i = 1; i < lines.length; ++i) {
+    for (int i = 3; i < lines.length; ++i) {
       NodeDetails nodeDetails = new NodeDetails(lines[i]);
 
       // Include nodeIds we haven't seen so far.
