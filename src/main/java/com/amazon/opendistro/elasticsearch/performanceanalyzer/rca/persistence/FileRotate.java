@@ -100,6 +100,7 @@ public class FileRotate {
       throw ioException;
     }
   }
+
   /**
    * Rotate the file.
    *
@@ -107,9 +108,9 @@ public class FileRotate {
    * cases the file could not be renamed, we attempt to delete the file. If the file could not be
    * deleted either, we throw an IOException for the caller to handle or take the necessary action.
    *
-   * @throws IOException when it can't even delete the current file.
-   *
    * @return Returns the path to the file after it was rotated, this is so that the GC can add it to the list.
+   *
+   * @throws IOException when it can't even delete the current file.
    */
   protected synchronized Path rotate(long currentMillis) throws IOException {
     if (!FILE_TO_ROTATE.toFile().exists()) {
