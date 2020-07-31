@@ -43,7 +43,7 @@ public class CacheUtil {
             if (flowUnit.getData().size() > 0) {
                 Result<Record> records = flowUnit.getData();
                 double size = records.stream().mapToDouble(
-                        record -> record.getValue(MetricsDB.SUgM, Double.class)).sum();
+                        record -> record.getValue(MetricsDB.SUM, Double.class)).sum();
                 totalSizeInKB += getSizeInKB(size);
             }
         }

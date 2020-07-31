@@ -140,35 +140,9 @@ public class PublisherTest {
       assert true;
     }
 
-<<<<<<< HEAD
-    @Test
-    public void testRejectsFlipFlops() throws Exception {
-        // Setup testing objects
-        NodeKey nodeKey = new NodeKey(new InstanceDetails.Id("A"), new InstanceDetails.Ip("127.0.0.1"));
-        ImpactVector allDecrease = new ImpactVector();
-        allDecrease.decreasesPressure(Dimension.values());
-        Map<NodeKey, ImpactVector> impactVectorMap = new HashMap<>();
-        impactVectorMap.put(nodeKey, allDecrease);
-        Mockito.when(action.name()).thenReturn("testIsCooledOffAction");
-        Mockito.when(action.coolOffPeriodInMillis()).thenReturn(500L);
-        Mockito.when(action.impact()).thenReturn(impactVectorMap);
-        // Record a flip flopping action
-        publisher.getFlipFlopDetector().recordAction(action);
-        ImpactVector allIncrease = new ImpactVector();
-        allIncrease.increasesPressure(Dimension.values());
-        Map<NodeKey, ImpactVector> increaseMap = new HashMap<>();
-        increaseMap.put(nodeKey, allIncrease);
-        Mockito.when(action.impact()).thenReturn(increaseMap);
-        Thread.sleep(1000L);
-        // Even though our action has cooled off, it will flip flop, so the publisher shouldn't
-        // execute it
-        publisher.operate();
-        Mockito.verify(action, Mockito.times(0)).execute();
-=======
     @Override
     public String name() {
       return "Test_Plugin";
->>>>>>> master
     }
   }
 }
