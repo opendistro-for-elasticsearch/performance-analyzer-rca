@@ -194,8 +194,11 @@ public abstract class PersistorBase implements Persistable {
     }
     if (rotatedFile != null) {
       fileGC.eligibleForGc(rotatedFile.toFile().getName());
-      openNewDBFile();
     }
+
+    // If we are here that means the tryRotate or the forceRotate didn't throw exception and therefore,
+    // the current DBFile does not exist anymore. We therefore should create a new one.
+    openNewDBFile();
   }
 
   /**
