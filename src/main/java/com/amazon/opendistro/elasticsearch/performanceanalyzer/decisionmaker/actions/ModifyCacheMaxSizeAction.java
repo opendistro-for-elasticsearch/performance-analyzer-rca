@@ -70,7 +70,6 @@ public class ModifyCacheMaxSizeAction implements Action {
 
     long desiredCapacity;
     if (validateAndSetNodeConfigValues(esNode, cacheType)) {
-
       setBounds();
       desiredCapacity =
           increase
@@ -172,10 +171,10 @@ public class ModifyCacheMaxSizeAction implements Action {
   private void setStepSize() {
     // TODO: Update the step size to also include percentage of heap size along with absolute value
     // Field data cache having step size of 512MB
-    stepSizeInBytes.put(ResourceEnum.FIELD_DATA_CACHE, 512 * 1_000_000L);
+    stepSizeInBytes.put(ResourceEnum.FIELD_DATA_CACHE, 512 * 1_024L * 1_024L);
 
     // Shard request cache step size of 512KB
-    stepSizeInBytes.put(ResourceEnum.SHARD_REQUEST_CACHE, 512 * 1_000L);
+    stepSizeInBytes.put(ResourceEnum.SHARD_REQUEST_CACHE, 512 * 1_024L);
   }
 
   private long getStepSize(final ResourceEnum cacheType) {
