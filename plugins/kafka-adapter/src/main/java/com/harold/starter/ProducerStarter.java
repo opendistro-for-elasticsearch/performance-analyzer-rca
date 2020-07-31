@@ -21,8 +21,6 @@ import java.util.TimerTask;
 public class ProducerStarter {
 
     private static ObjectMapper mapper = new ObjectMapper();
-    private static final String config_name= "config.properties";
-
     public static void writeToKafkaQueue(Target target, ProducerConfiguration producerConfig, int count){
         Timer timer = new Timer();
         KafkaProducer<String, JsonNode> producer = producerConfig.CreateProducer();
@@ -33,7 +31,7 @@ public class ProducerStarter {
                 try{
                     String resp = Helper.makeRequest(target);
                     JsonNode jsonNode = mapper.readTree(resp);
-                    System.out.println("counter: "+counter+", data: "+jsonNode);
+//                    System.out.println("counter: "+counter+", data: "+jsonNode);
                     ProducerRecord<String, JsonNode> record = new ProducerRecord<String, JsonNode>(producerConfig.getTopic(), jsonNode);
                     producer.send(record);
                     counter ++;
@@ -50,17 +48,7 @@ public class ProducerStarter {
         }, 0, producerConfig.getInterval());
     }
 
-    public static void startProducer() {
-        Properties props = new Properties();
-        try{
-            ClassLoader classLoader = ProducerStarter.class.getClassLoader();
-            URL res = Objects.requireNonNull(classLoader.getResource(config_name), "Can't find configuration file app.config");
-            InputStream inputStream = new FileInputStream(res.getFile());
-            props.load(inputStream);
-        }catch (IOException e){
-            e.printStackTrace();
-        }
-
+    public static void startProducer(Properties props) {
         String bootstrapServer = props.getProperty("bootstrap_server");
         String topic = props.getProperty("topic");
         int interval = Integer.parseInt(props.getProperty("kafka_producer_interval"));

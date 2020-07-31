@@ -10,7 +10,6 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 
 public class Helper {
-    private static String WEBHOOK_URL = "https://hooks.slack.com/services/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";
     private static HttpsURLConnection httpsConnection;
     private static HttpURLConnection httpConnection;
 
@@ -59,14 +58,14 @@ public class Helper {
         }
     }
 
-    public static void postToSlackWebHook(JsonNode node){
+    public static void postToSlackWebHook(JsonNode node, String webhook_url){
         String val = convertJsonNodeToString(node);
         assert val != null;
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("text", val);
         byte[] postBody = val.getBytes(StandardCharsets.UTF_8);
         try {
-            httpsConnection = (HttpsURLConnection) new URL(WEBHOOK_URL).openConnection();
+            httpsConnection = (HttpsURLConnection) new URL(webhook_url).openConnection();
             httpsConnection.setDoOutput(true);
             httpsConnection.setRequestMethod("POST");
             httpsConnection.setRequestProperty("User-Agent", "Java client");
