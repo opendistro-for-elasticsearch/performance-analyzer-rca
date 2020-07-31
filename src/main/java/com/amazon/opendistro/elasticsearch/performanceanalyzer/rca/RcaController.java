@@ -360,8 +360,8 @@ public class RcaController {
 
       // If rcasForMute post validation is empty but neither rcaConf.getMutedRcaList() nor
       // rcaConf.getMutedDeciderList() are empty all the input RCAs/deciders are incorrect.
-      if (graphNodesForMute.isEmpty() &&
-          (!rcaConf.getMutedRcaList().isEmpty() || !rcaConf.getMutedDeciderList().isEmpty())) {
+      if (graphNodesForMute.isEmpty()
+          && (!rcaConf.getMutedRcaList().isEmpty() || !rcaConf.getMutedDeciderList().isEmpty())) {
         if (lastModifiedTimeInMillisInMemory == 0) {
           LOG.error(
               "Removing Incorrect RCA(s): {} provided before RCA Scheduler start. Valid RCAs: {}.",

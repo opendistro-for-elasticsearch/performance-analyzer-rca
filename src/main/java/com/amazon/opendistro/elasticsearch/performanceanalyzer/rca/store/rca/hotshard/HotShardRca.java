@@ -152,7 +152,6 @@ public class HotShardRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
      */
     @Override
     public ResourceFlowUnit<HotNodeSummary> operate() {
-        LOG.error("============= HOT SHARD RCA =================");
         counter += 1;
 
         // Populate the Resource HashMaps

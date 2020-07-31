@@ -191,7 +191,7 @@ public class RcaControllerTest {
   @Test
   public void readAndUpdateMutedRcasBeforeGraphCreation() throws Exception {
     Method readAndUpdateMutesRcas = rcaController.getClass()
-            .getDeclaredMethod("readAndUpdateMutesRcas", null);
+            .getDeclaredMethod("readAndUpdateMutedComponents", null);
     readAndUpdateMutesRcas.setAccessible(true);
 
     String rcaConfPath = Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_muted.conf").toString();

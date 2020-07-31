@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,6 +24,12 @@ public class ConfigOverridesApplier {
   private volatile long lastAppliedTimestamp;
 
   public void applyOverride(final String overridesJson, final String lastUpdatedTimestampString) {
+    if (!valid(overridesJson, lastUpdatedTimestampString)) {
+      LOG.warn("Received invalid overrides or timestamp. Overrides json: {}, last updated "
+          + "timestamp: {}", overridesJson, lastAppliedTimestamp);
+      return;
+    }
+
     try {
       long lastUpdatedTimestamp = Long.parseLong(lastUpdatedTimestampString);
       LOG.info("Last updated(writer): {}, Last applied(reader): {}", lastUpdatedTimestamp,
@@ -42,7 +49,6 @@ public class ConfigOverridesApplier {
     if (PerformanceAnalyzerApp.getRcaController() != null && PerformanceAnalyzerApp.getRcaController().isRcaEnabled()) {
       LOG.error("Applying overrides: {}", overrides.getEnable().getRcas());
       RcaConf rcaConf = PerformanceAnalyzerApp.getRcaController().getRcaConf();
-      LOG.error("rcaConf is null = " + (rcaConf == null));
       if (rcaConf != null) {
         Set<String> currentMutedRcaSet = new HashSet<>(rcaConf.getMutedRcaList());
         Set<String> currentMutedDeciderSet = new HashSet<>(rcaConf.getMutedDeciderList());
@@ -76,6 +82,18 @@ public class ConfigOverridesApplier {
         setLastAppliedTimestamp(System.currentTimeMillis());
       }
     }
+  }
+
+  private boolean valid(final String overridesJson, final String timestamp) {
+    if (overridesJson == null || timestamp == null) {
+      return false;
+    }
+
+    if (overridesJson.isEmpty() || timestamp.isEmpty()) {
+      return false;
+    }
+
+    return NumberUtils.isCreatable(timestamp);
   }
 
   public long getLastAppliedTimestamp() {

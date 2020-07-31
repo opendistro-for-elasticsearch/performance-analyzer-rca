@@ -51,20 +51,29 @@ public class ClusterDetailsEventProcessorTestHelper extends AbstractReaderTests 
     if (nodeDetails.isEmpty()) {
       return new ClusterDetailsEventProcessor();
     }
-    StringBuilder stringBuilder = new StringBuilder().append(PerformanceAnalyzerMetrics.getJsonCurrentMilliSeconds());
+    Event testEvent = generateTestEvent();
+    ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
+    clusterDetailsEventProcessor.processEvent(testEvent);
+    return clusterDetailsEventProcessor;
+  }
+
+  public Event generateTestEvent() {
+    return generateTestEventWithOverrides(new ConfigOverrides());
+  }
+
+  public Event generateTestEventWithOverrides(ConfigOverrides overrides) {
+    StringBuilder stringBuilder = new StringBuilder()
+        .append(PerformanceAnalyzerMetrics.getJsonCurrentMilliSeconds());
     stringBuilder.append(SEPARATOR);
-    stringBuilder.append(JsonConverter.writeValueAsString(new ConfigOverrides()));
+    stringBuilder.append(JsonConverter.writeValueAsString(overrides));
     stringBuilder.append(SEPARATOR);
     stringBuilder.append(System.currentTimeMillis());
     nodeDetails.stream().forEach(
         node -> {
           stringBuilder.append(SEPARATOR)
-              .append(node);
+                       .append(node);
         }
     );
-    Event testEvent = new Event("", stringBuilder.toString(), 0);
-    ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
-    clusterDetailsEventProcessor.processEvent(testEvent);
-    return clusterDetailsEventProcessor;
+    return new Event("", stringBuilder.toString(), 0);
   }
 }

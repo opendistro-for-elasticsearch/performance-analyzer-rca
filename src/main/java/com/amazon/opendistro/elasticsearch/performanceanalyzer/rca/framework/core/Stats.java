@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.co
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +43,7 @@ public class Stats {
     this.leafNodesCount = 0;
     this.leavesAddedToAnalysisFlowField = 0;
     this.graphs = new HashMap<>();
+    this.mutedActions = new HashSet<>();
   }
 
   public static Stats getInstance() {

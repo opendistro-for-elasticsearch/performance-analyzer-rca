@@ -25,7 +25,6 @@ import org.junit.experimental.categories.Category;
  * GRPCTest tests that our gRPC servers and clients perform mutual authentication when TLS is enabled
  */
 @Category(GradleTaskForRca.class)
-@Ignore
 public class GRPCTest {
     private static final Logger LOG = LogManager.getLogger(GRPCTest.class);
     private static final int TEST_PORT = 13231;
