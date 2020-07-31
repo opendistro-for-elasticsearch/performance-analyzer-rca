@@ -52,7 +52,10 @@ public class ProducerStarter {
         String bootstrapServer = props.getProperty("bootstrap_server");
         String topic = props.getProperty("topic");
         int interval = Integer.parseInt(props.getProperty("kafka_producer_interval"));
-        Target target = new Target("localhost:9600/_opendistro/_performanceanalyzer/rca");
+        String params = props.getProperty("params");
+
+        String url = "localhost:9600/_opendistro/_performanceanalyzer/rca" + (params.equals("all") ? "" : "?name=" + params);
+        Target target = new Target(url);
         ProducerConfiguration producerConfig = new ProducerConfiguration( bootstrapServer, topic, interval);
         writeToKafkaQueue(target, producerConfig, 2); // write to Kafka Queue every 5 seconds
     }

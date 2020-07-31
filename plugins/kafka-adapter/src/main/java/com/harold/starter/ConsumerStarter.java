@@ -16,12 +16,11 @@ import java.util.Properties;
 public class ConsumerStarter {
     public static void runConsumer(ConsumerConfiguration consumerConfig, int max_no_found, String webhook_url) {
         int noMessageFound = 0;
-        int counter = 0;
         KafkaConsumer<String, JsonNode> consumer = consumerConfig.createConsumer();
         consumer.subscribe(Collections.singletonList(consumerConfig.getTopic()));
         try{
             while (true) {
-                ConsumerRecords<String, JsonNode> consumerRecords = consumer.poll(Duration.ofMillis(consumerConfig.getInterval())); // setting 5 seconds as waiting interval
+                ConsumerRecords<String, JsonNode> consumerRecords = consumer.poll(Duration.ofMillis(consumerConfig.getInterval())); // setting seconds as waiting interval
                 if (consumerRecords.count() == 0) {
                     noMessageFound++;
                     if (noMessageFound > max_no_found) { // if no response lasting 5 times, the consumer will terminate
