@@ -72,6 +72,7 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
   protected boolean collectFromMasterNode;
   protected long expirationTimeWindow;
   protected boolean computeUsageBuckets;
+  protected UsageBucketThresholds usageBucketThresholds;
 
 
   @SafeVarargs
@@ -87,6 +88,7 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
     this.computeUsageBuckets = false;
     this.expirationTimeWindow = TIMESTAMP_EXPIRATION_IN_MILLIS;
     this.nodeRcas = Arrays.asList(nodeRca);
+    this.usageBucketThresholds = new StaticBucketThresholds();
   }
 
   @VisibleForTesting
@@ -157,6 +159,10 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
     List<HotNodeSummary> unhealthyNodeSummaries = new ArrayList<>();
     long timestamp = clock.millis();
     List<InstanceDetails> clusterNodesDetails = getClusterNodesDetails();
+    UsageBucketThresholds usageBucketThresholds = null;
+    if (computeUsageBuckets) {
+      usageBucketThresholds = getBucketThresholds();
+    }
     // iterate through this table
     for (InstanceDetails nodeDetails : clusterNodesDetails) {
       NodeKey nodeKey = new NodeKey(nodeDetails.getInstanceId(), nodeDetails.getInstanceIp());
@@ -168,7 +174,7 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
       if (newNodeSummary != null) {
         if (computeUsageBuckets) {
           for (HotResourceSummary hotResourceSummary : newNodeSummary.getHotResourceSummaryList()) {
-            UsageBucket bucket = getBucketThresholds().computeBucket(hotResourceSummary);
+            UsageBucket bucket = usageBucketThresholds.computeBucket(hotResourceSummary);
             hotResourceSummary.setUsageBucket(bucket);
           }
         }
@@ -188,7 +194,7 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
   }
 
   protected UsageBucketThresholds getBucketThresholds() {
-    return new StaticBucketThresholds();
+    return usageBucketThresholds;
   }
 
   /**

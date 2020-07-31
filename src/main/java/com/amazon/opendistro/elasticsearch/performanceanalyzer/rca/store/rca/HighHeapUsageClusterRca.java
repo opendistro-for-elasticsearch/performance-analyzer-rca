@@ -27,10 +27,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.JvmUsageBucketThresholds;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.StaticBucketThresholds;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.UsageBucketThresholds;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaVerticesMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.BaseClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,8 +46,19 @@ import java.util.List;
  */
 public class HighHeapUsageClusterRca extends BaseClusterRca {
   private static final int UNHEALTHY_FLOWUNIT_THRESHOLD = 3;
+  private List<Double> youngGenHeapPromotionRateThresholds = Lists.newArrayList(20.0, 40.0, 75.0);
+  private List<Double> oldGenHeapUsageThresholds = Lists.newArrayList(20.0, 40.0, 75.0);
 
   public static final String RCA_TABLE_NAME = HighHeapUsageClusterRca.class.getSimpleName();
+
+  @Override
+  public void readRcaConf(RcaConf conf) {
+    youngGenHeapPromotionRateThresholds = conf.getUsageBucketThresholds(
+        UsageBucketThresholds.YOUNG_GEN_PROMOTION_RATE);
+    oldGenHeapUsageThresholds = conf.getUsageBucketThresholds(
+        UsageBucketThresholds.OLD_GEN_HEAP_USAGE);
+    super.readRcaConf(conf);
+  }
 
   public <R extends Rca<ResourceFlowUnit<HotNodeSummary>>> HighHeapUsageClusterRca(
       final int rcaPeriod,
@@ -59,10 +72,17 @@ public class HighHeapUsageClusterRca extends BaseClusterRca {
   @Override
   protected UsageBucketThresholds getBucketThresholds() {
     StaticBucketThresholds youngGenHeapPromotionRateThresholds =
-        new StaticBucketThresholds(100, 250, 400);
-    StaticBucketThresholds oldGenHeapUsageThresholds = new StaticBucketThresholds();
-    return new JvmUsageBucketThresholds(youngGenHeapPromotionRateThresholds,
+        new StaticBucketThresholds(this.youngGenHeapPromotionRateThresholds.get(0),
+            this.youngGenHeapPromotionRateThresholds.get(1),
+            this.youngGenHeapPromotionRateThresholds.get(2));
+    StaticBucketThresholds oldGenHeapUsageThresholds =
+        new StaticBucketThresholds(this.oldGenHeapUsageThresholds.get(0),
+            this.oldGenHeapUsageThresholds.get(1),
+            this.oldGenHeapUsageThresholds.get(2)
+        );
+    this.usageBucketThresholds = new JvmUsageBucketThresholds(youngGenHeapPromotionRateThresholds,
         oldGenHeapUsageThresholds);
+    return usageBucketThresholds;
   }
 
   @Override

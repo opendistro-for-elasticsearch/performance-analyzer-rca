@@ -86,6 +86,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.Hot
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.FieldDataCacheRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.ShardRequestCacheRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.HighCpuClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.ShardRequestCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hot_node.HighCpuRca;
@@ -270,6 +271,10 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     cacheHealthDecider.addAllUpstreams(Arrays.asList(fieldDataCacheClusterRca, shardRequestCacheClusterRca));
 
     constructShardResourceUsageGraph();
+
+    HighCpuClusterRca highCpuClusterRca = new HighCpuClusterRca(RCA_PERIOD, new HotNodeRca(RCA_PERIOD, highCpuRca));
+    highCpuClusterRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    highCpuClusterRca.addAllUpstreams(Collections.singletonList(highCpuRca));
 
     //constructResourceHeatMapGraph();
 
