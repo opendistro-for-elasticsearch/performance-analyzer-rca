@@ -117,7 +117,6 @@ public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
             InstanceDetails instanceDetails = getInstanceDetails();
             double fieldDataCacheMaxSizeInBytes = getCacheMaxSize(
                     getAppContext(), new NodeKey(instanceDetails), ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE);
-            LOG.info("MOCHI, fieldDataCacheMaxSizeInBytes: {}", fieldDataCacheMaxSizeInBytes);
             Boolean exceedsSizeThreshold = isSizeThresholdExceeded(
                     fieldDataCacheSizeGroupByOperation, fieldDataCacheMaxSizeInBytes, cacheSizeThreshold);
             if (cacheEvictionCollector.isUnhealthy(currTimestamp) && exceedsSizeThreshold) {

@@ -129,7 +129,6 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
             InstanceDetails instanceDetails = getInstanceDetails();
             double shardRequestCacheMaxSizeInBytes = getCacheMaxSize(
                     getAppContext(), new NodeKey(instanceDetails), ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE);
-            LOG.info("MOCHI, fieldDataCacheMaxSizeInBytes: {}", shardRequestCacheMaxSizeInBytes);
             Boolean exceedsSizeThreshold = isSizeThresholdExceeded(
                     shardRequestCacheSizeGroupByOperation, shardRequestCacheMaxSizeInBytes, cacheSizeThreshold);
 
@@ -148,8 +147,7 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
 
             counter = 0;
             return new ResourceFlowUnit<>(currTimestamp, context, nodeSummary, !instanceDetails.getIsMaster());
-        }
-        else {
+        } else {
             return new ResourceFlowUnit<>(currTimestamp);
         }
     }

@@ -23,6 +23,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jooq.Record;
+import org.jooq.Result;
 
 public class CacheUtil {
     private static final Logger LOG = LogManager.getLogger(CacheUtil.class);
@@ -33,21 +35,18 @@ public class CacheUtil {
         if (cacheSizeGroupByOperation.getFlowUnits().size() > 0) {
             // we expect the Metric to have single flow unit since it is consumed locally
             MetricFlowUnit flowUnit = cacheSizeGroupByOperation.getFlowUnits().get(0);
-
-            LOG.info("MOCHI, inside getTotalSizeInKB(). flowUnit: {}", flowUnit);
             if (flowUnit.isEmpty() || flowUnit.getData() == null) {
                 return totalSizeInKB;
             }
 
-            // since the flow unit data is aggregated, we should have a single value
+            // since the flow unit data is aggregated by index, summing the size across indices
             if (flowUnit.getData().size() > 0) {
-                LOG.info("MOCHI, flowUnit.getData().get(0): {}", flowUnit.getData().get(0));
-                double size = flowUnit.getData().get(0).getValue(MetricsDB.SUM, Double.class);
-                LOG.info("MOCHI, sizeInKB: {}", getSizeInKB(size));
+                Result<Record> records = flowUnit.getData();
+                double size = records.stream().mapToDouble(
+                        record -> record.getValue(MetricsDB.SUgM, Double.class)).sum();
                 totalSizeInKB += getSizeInKB(size);
             }
         }
-        LOG.info("MOCHI, totalSizeInKB: {}", totalSizeInKB);
         return totalSizeInKB;
     }
 
@@ -62,16 +61,18 @@ public class CacheUtil {
     }
 
     public static double getCacheMaxSize(AppContext appContext, NodeKey esNode, Resource cacheResource) {
-        return appContext.getNodeConfigCache().get(esNode, cacheResource);
+        try {
+            return appContext.getNodeConfigCache().get(esNode, cacheResource);
+        } catch (IllegalArgumentException e) {
+            return 0;
+        }
     }
 
     public static Boolean isSizeThresholdExceeded(final Metric cacheSizeGroupByOperation,
                                                   double cacheMaxSizeinBytes,
                                                   double threshold_percentage) {
-        LOG.info("MOCHI, Checking for cacheSize Metric");
         double cacheSizeInKB = getTotalSizeInKB(cacheSizeGroupByOperation);
         double cacheMaxSizeInKB = getSizeInKB(cacheMaxSizeinBytes);
         return cacheSizeInKB != 0 && cacheMaxSizeInKB != 0 && (cacheSizeInKB > cacheMaxSizeInKB * threshold_percentage);
     }
 }
-
