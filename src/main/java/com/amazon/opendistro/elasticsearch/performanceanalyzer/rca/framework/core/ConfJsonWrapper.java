@@ -22,8 +22,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 // TODO: There should be a validation for the expected fields.
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -43,6 +41,7 @@ class ConfJsonWrapper {
   public static final String MUTED_DECIDERS = "muted-deciders";
   public static final String MUTED_ACTIONS = "muted-actions";
   public static final String DECIDER_CONFIG_SETTINGS = "decider-config-settings";
+  public static final String USAGE_BUCKET_THRESHOLDS = "usage-bucket-thresholds";
 
   private final String rcaStoreLoc;
   private final String thresholdStoreLoc;
@@ -60,6 +59,7 @@ class ConfJsonWrapper {
   private final List<String> mutedRcaList;
   private final List<String> mutedDeciderList;
   private final List<String> mutedActionList;
+  private final Map<String, List<Double>> usageBucketThresholds;
 
   String getRcaStoreLoc() {
     return rcaStoreLoc;
@@ -125,6 +125,10 @@ class ConfJsonWrapper {
     return deciderConfigSettings;
   }
 
+  Map<String, List<Double>> getUsageBucketThresholds() {
+    return usageBucketThresholds;
+  }
+
   ConfJsonWrapper(
       @JsonProperty(RCA_STORE_LOC) String rcaStoreLoc,
       @JsonProperty(THRESHOLD_STORE_LOC) String thresholdStoreLoc,
@@ -140,7 +144,8 @@ class ConfJsonWrapper {
       @JsonProperty(MUTED_RCAS) List<String> mutedRcas,
       @JsonProperty(MUTED_DECIDERS) List<String> mutedDeciders,
       @JsonProperty(MUTED_ACTIONS) List<String> mutedActions,
-      @JsonProperty(DECIDER_CONFIG_SETTINGS) Map<String, Object> deciderConfigSettings) {
+      @JsonProperty(DECIDER_CONFIG_SETTINGS) Map<String, Object> deciderConfigSettings,
+      @JsonProperty(USAGE_BUCKET_THRESHOLDS) Map<String, List<Double>> usageBucketThresholds) {
     this.creationTime = System.currentTimeMillis();
     this.rcaStoreLoc = rcaStoreLoc;
     this.thresholdStoreLoc = thresholdStoreLoc;
@@ -157,5 +162,6 @@ class ConfJsonWrapper {
     this.mutedDeciderList = ImmutableList.copyOf(mutedDeciders);
     this.mutedActionList = ImmutableList.copyOf(mutedActions);
     this.deciderConfigSettings = deciderConfigSettings;
+    this.usageBucketThresholds = usageBucketThresholds;
   }
 }

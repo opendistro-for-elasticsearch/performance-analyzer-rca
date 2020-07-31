@@ -22,6 +22,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary.UsageBucket;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.StaticBucketThresholds;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.UsageBucketThresholds;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.google.common.annotations.VisibleForTesting;
@@ -67,6 +71,7 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
   protected int numOfFlowUnitsInMap;
   protected boolean collectFromMasterNode;
   protected long expirationTimeWindow;
+  protected boolean computeUsageBuckets;
 
 
   @SafeVarargs
@@ -79,6 +84,7 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
     this.numOfFlowUnitsInMap = DEFAULT_NUM_OF_FLOWUNITS;
     this.nodeTable = HashBasedTable.create();
     this.collectFromMasterNode = false;
+    this.computeUsageBuckets = false;
     this.expirationTimeWindow = TIMESTAMP_EXPIRATION_IN_MILLIS;
     this.nodeRcas = Arrays.asList(nodeRca);
   }
@@ -160,6 +166,12 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
       }
       HotNodeSummary newNodeSummary = generateNodeSummary(nodeKey);
       if (newNodeSummary != null) {
+        if (computeUsageBuckets) {
+          for (HotResourceSummary hotResourceSummary : newNodeSummary.getHotResourceSummaryList()) {
+            UsageBucket bucket = getBucketThresholds().computeBucket(hotResourceSummary);
+            hotResourceSummary.setUsageBucket(bucket);
+          }
+        }
         unhealthyNodeSummaries.add(newNodeSummary);
       }
     }
@@ -173,6 +185,10 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
     else {
       return new ResourceFlowUnit<>(timestamp, new ResourceContext(State.HEALTHY), null);
     }
+  }
+
+  protected UsageBucketThresholds getBucketThresholds() {
+    return new StaticBucketThresholds();
   }
 
   /**

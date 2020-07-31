@@ -60,6 +60,16 @@ public class HotResourceSummary extends GenericSummary {
   private String metaData;
   private List<TopConsumerSummary> topConsumerSummaryList;
 
+  private UsageBucket usageBucket;
+
+  public enum UsageBucket {
+    UNKNOWN,
+    UNDER_PROVISIONED,
+    HEALTHY_WITH_BUFFER,
+    HEALTHY,
+    UNHEALTHY
+  }
+
   public HotResourceSummary(Resource resource, double threshold,
       double value, int timePeriod) {
     super();
@@ -114,6 +124,15 @@ public class HotResourceSummary extends GenericSummary {
 
   public String getMetaData() {
     return this.metaData;
+  }
+
+  public UsageBucket getUsageBucket() {
+    return usageBucket;
+  }
+
+  public void setUsageBucket(
+      UsageBucket usageBucket) {
+    this.usageBucket = usageBucket;
   }
 
   public List<TopConsumerSummary> getTopConsumerSummaryList() {

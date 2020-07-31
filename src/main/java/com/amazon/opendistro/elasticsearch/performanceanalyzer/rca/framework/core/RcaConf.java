@@ -285,4 +285,8 @@ public class RcaConf {
     }
     return setting;
   }
+
+  public List<Double> getUsageBucketThresholds(String resourceName) {
+    return conf.getUsageBucketThresholds().get(resourceName);
+  }
 }

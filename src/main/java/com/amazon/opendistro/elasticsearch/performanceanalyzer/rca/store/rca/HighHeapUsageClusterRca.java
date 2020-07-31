@@ -24,6 +24,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.JvmUsageBucketThresholds;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.StaticBucketThresholds;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.UsageBucketThresholds;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaVerticesMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.BaseClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
@@ -50,6 +53,16 @@ public class HighHeapUsageClusterRca extends BaseClusterRca {
     super(rcaPeriod, hotNodeRca);
     this.numOfFlowUnitsInMap = UNHEALTHY_FLOWUNIT_THRESHOLD;
     this.setCollectFromMasterNode(false);
+    this.computeUsageBuckets = true;
+  }
+
+  @Override
+  protected UsageBucketThresholds getBucketThresholds() {
+    StaticBucketThresholds youngGenHeapPromotionRateThresholds =
+        new StaticBucketThresholds(100, 250, 400);
+    StaticBucketThresholds oldGenHeapUsageThresholds = new StaticBucketThresholds();
+    return new JvmUsageBucketThresholds(youngGenHeapPromotionRateThresholds,
+        oldGenHeapUsageThresholds);
   }
 
   @Override

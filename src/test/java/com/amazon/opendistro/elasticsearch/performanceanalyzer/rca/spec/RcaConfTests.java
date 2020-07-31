@@ -16,16 +16,18 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec;
 
 import static com.google.common.collect.Maps.newHashMap;
-import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -52,5 +54,16 @@ public class RcaConfTests {
       assertEquals(expectedValue, tag.getValue());
     }
     assertEquals(Collections.EMPTY_LIST, rcaConf.getMutedRcaList());
+  }
+
+  @Test
+  public void testGetUsageBucketThresholds() {
+    RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_master.conf").toString());
+    List<Double> thresholds = rcaConf.getUsageBucketThresholds("young-gen-heap-promotion-rate");
+    ResourceUtil.getResourceTypeName(ResourceUtil.YOUNG_GEN_PROMOTION_RATE);
+    ResourceUtil.getResourceTypeName(ResourceUtil.OLD_GEN_HEAP_USAGE);
+    Assert.assertEquals((Double) 100.0, thresholds.get(0));
+    Assert.assertEquals((Double) 250.0, thresholds.get(1));
+    Assert.assertEquals((Double) 400.0, thresholds.get(2));
   }
 }
