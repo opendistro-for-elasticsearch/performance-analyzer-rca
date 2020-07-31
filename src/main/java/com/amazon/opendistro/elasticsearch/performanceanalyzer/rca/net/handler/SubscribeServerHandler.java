@@ -55,7 +55,7 @@ public class SubscribeServerHandler {
       try {
         executorService.execute(new SubscriptionRxTask(subscriptionManager, subscribeRequest));
         PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(RcaGraphMetrics.NET_BYTES_IN,
-            subscribeRequest.getSubscribeMessage().getRequesterNode(),
+            subscribeRequest.getSubscribeMessage().getRequesterGraphNode(),
             subscribeRequest.getSubscribeMessage().getSerializedSize());
       } catch (final RejectedExecutionException ree) {
         LOG.warn("Dropped processing subscription request because the network threadpool is full");

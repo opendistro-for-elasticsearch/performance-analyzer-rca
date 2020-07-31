@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageYoungGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNodeClusterRcaConfig;
@@ -154,6 +155,10 @@ public class RcaConf {
 
   public HotShardClusterRcaConfig getHotShardClusterRcaConfig() {
     return new HotShardClusterRcaConfig(this);
+  }
+
+  public CacheConfig getCacheConfig() {
+    return new CacheConfig(this);
   }
 
   public List<String> getMutedRcaList() {

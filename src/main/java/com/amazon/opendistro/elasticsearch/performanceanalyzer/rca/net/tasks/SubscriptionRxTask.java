@@ -20,6 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMes
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeResponse.SubscriptionStatus;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscriptionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.requests.CompositeSubscribeRequest;
 import io.grpc.stub.StreamObserver;
@@ -60,14 +61,13 @@ public class SubscriptionRxTask implements Runnable {
   public void run() {
     final SubscribeMessage request = compositeSubscribeRequest.getSubscribeMessage();
     final Map<String, String> tags = request.getTagsMap();
-    final String requesterHostAddress = tags.getOrDefault("requester", "");
+    final InstanceDetails.Id requesterHostId = new InstanceDetails.Id(tags.getOrDefault("requester", ""));
     final String locus = tags.getOrDefault("locus", "");
     final SubscriptionStatus subscriptionStatus =
-        subscriptionManager
-            .addSubscriber(request.getDestinationNode(), requesterHostAddress, locus);
+        subscriptionManager.addSubscriber(request.getDestinationGraphNode(), requesterHostId, locus);
 
-    LOG.debug("rca: [sub-rx]: {} <- {} from {} Result: {}", request.getDestinationNode(),
-        request.getRequesterNode(), requesterHostAddress, subscriptionStatus);
+    LOG.debug("rca: [sub-rx]: {} <- {} from {} Result: {}", request.getDestinationGraphNode(),
+        request.getRequesterGraphNode(), requesterHostId, subscriptionStatus);
 
     final StreamObserver<SubscribeResponse> responseStream = compositeSubscribeRequest
         .getSubscribeResponseStream();
@@ -78,6 +78,6 @@ public class SubscriptionRxTask implements Runnable {
     responseStream.onCompleted();
     PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR
         .updateStat(RcaGraphMetrics.RCA_NODES_SUB_ACK_COUNT,
-            request.getRequesterNode() + ":" + request.getDestinationNode(), 1);
+            request.getRequesterGraphNode() + ":" + request.getDestinationGraphNode(), 1);
   }
 }

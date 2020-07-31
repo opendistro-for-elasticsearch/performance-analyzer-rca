@@ -15,6 +15,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCAScheduler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RcaSchedulerState;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.MetricsDBProviderTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
@@ -73,11 +74,24 @@ public class RcaControllerTest {
             3, new ThreadFactoryBuilder().setNameFormat("test-network-thread-%d").build());
     boolean useHttps = PluginSettings.instance().getHttpsEnabled();
     connectionManager = new GRPCConnectionManager(useHttps);
-    clientServers = PerformanceAnalyzerApp.createClientServers(connectionManager, new AppContext());
+
+
+    ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
+    clusterDetailsEventProcessor.setNodesDetails(
+            Collections.singletonList(new ClusterDetailsEventProcessor.NodeDetails(
+                    AllMetrics.NodeRole.UNKNOWN,
+                    "node1",
+                    "127.0.0.1",
+                    false))
+    );
+    AppContext appContext = new AppContext();
+    appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
+
+    clientServers = PerformanceAnalyzerApp.createClientServers(connectionManager, appContext);
     clientServers.getHttpServer().start();
 
     URI uri = URI.create(RcaController.getCatMasterUrl());
-    masterIP = "";
+    masterIP = "127.0.0.4";
 
     dummyEsServer =
         HttpServer.create(
@@ -115,8 +129,9 @@ public class RcaControllerTest {
             rcaEnabledFileLoc.toString(),
             100,
             200,
-            new AppContext()
+            appContext
         );
+    rcaController.setDbProvider(new MetricsDBProviderTestHelper());
 
     setMyIp(masterIP, AllMetrics.NodeRole.UNKNOWN);
 
@@ -371,6 +386,8 @@ public class RcaControllerTest {
     jNode.put(AllMetrics.NodeDetailColumns.ID.toString(), "4sqG_APMQuaQwEW17_6zwg");
     jNode.put(AllMetrics.NodeDetailColumns.HOST_ADDRESS.toString(), ip);
     jNode.put(AllMetrics.NodeDetailColumns.ROLE.toString(), nodeRole);
+    jNode.put(AllMetrics.NodeDetailColumns.IS_MASTER_NODE,
+        nodeRole == AllMetrics.NodeRole.ELECTED_MASTER);
 
     ClusterDetailsEventProcessor eventProcessor = new ClusterDetailsEventProcessor();
     StringBuilder nodeDetails = new StringBuilder();

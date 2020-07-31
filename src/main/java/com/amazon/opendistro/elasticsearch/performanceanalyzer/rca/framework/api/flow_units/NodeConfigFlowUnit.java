@@ -23,8 +23,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * a flowunit type to carry ES node configurations (queue/cache capacities, etc.)
@@ -84,6 +88,14 @@ public class NodeConfigFlowUnit extends ResourceFlowUnit<HotNodeSummary> {
     return configSummary.getValue();
   }
 
+  /**
+   * get list of config settings that this flowunit contains
+   * @return list of config settings
+   */
+  public List<Resource> getConfigList() {
+    return new ArrayList<>(configMap.keySet());
+  }
+
   @Override
   public boolean isEmpty() {
     return configMap.isEmpty();
@@ -96,8 +108,8 @@ public class NodeConfigFlowUnit extends ResourceFlowUnit<HotNodeSummary> {
     NodeConfigFlowUnit nodeConfigFlowUnit;
     if (message.getSummaryOneofCase() == SummaryOneofCase.HOTNODESUMMARY) {
       HotNodeSummaryMessage nodeSummaryMessage = message.getHotNodeSummary();
-      NodeKey nodeKey = new NodeKey(nodeSummaryMessage.getNodeID(),
-          nodeSummaryMessage.getHostAddress());
+      NodeKey nodeKey = new NodeKey(new InstanceDetails.Id(nodeSummaryMessage.getNodeID()),
+          new InstanceDetails.Ip(nodeSummaryMessage.getHostAddress()));
       nodeConfigFlowUnit = new NodeConfigFlowUnit(message.getTimeStamp(), nodeKey);
       if (nodeSummaryMessage.hasHotResourceSummaryList()) {
         for (int i = 0;

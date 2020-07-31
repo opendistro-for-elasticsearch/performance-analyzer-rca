@@ -200,6 +200,10 @@ public abstract class Node<T extends GenericFlowUnit> {
     this.appContext = appContext;
   }
 
+  protected AppContext getAppContext() {
+    return this.appContext;
+  }
+
   public InstanceDetails getInstanceDetails() {
     InstanceDetails ret = new InstanceDetails(AllMetrics.NodeRole.UNKNOWN);
     if (this.appContext != null) {

@@ -26,6 +26,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.dec
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.QueueHealthDecider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.PluginController;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.PluginControllerConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
@@ -33,6 +35,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Bitset_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.CPU_Utilization;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_FieldData_Size;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Max_Size;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Query_Size;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Size;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.DocValues_Memory;
@@ -49,6 +52,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.StoredFields_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.TermVectors_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Terms_Memory;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_QueueCapacity;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_RejectedReqs;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.VersionMap_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
@@ -56,6 +60,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigClusterCollector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric.AggregateFunction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.byShard.AvgCpuUtilByShardsMetricBasedTemperatureCalculator;
@@ -180,8 +186,26 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     queueHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     queueHealthDecider.addAllUpstreams(Collections.singletonList(queueRejectionClusterRca));
 
+    // Node Config Collector
+    ThreadPool_QueueCapacity queueCapacity = new ThreadPool_QueueCapacity();
+    queueCapacity.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    addLeaf(queueCapacity);
+
+    Cache_Max_Size cacheMaxSize =  new Cache_Max_Size(EVALUATION_INTERVAL_SECONDS);
+    cacheMaxSize.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    addLeaf(cacheMaxSize);
+
+    NodeConfigCollector nodeConfigCollector = new NodeConfigCollector(RCA_PERIOD, queueCapacity, cacheMaxSize);
+    nodeConfigCollector.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    nodeConfigCollector.addAllUpstreams(Arrays.asList(threadpool_RejectedReqs, cacheMaxSize));
+    NodeConfigClusterCollector nodeConfigClusterCollector = new NodeConfigClusterCollector(nodeConfigCollector);
+    nodeConfigClusterCollector.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    nodeConfigClusterCollector.addAllUpstreams(Collections.singletonList(nodeConfigCollector));
+    nodeConfigClusterCollector.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
+
     constructShardResourceUsageGraph();
-    constructResourceHeatMapGraph();
+
+    //constructResourceHeatMapGraph();
 
     // Collator - Collects actions from all deciders and aligns impact vectors
     Collator collator = new Collator(EVALUATION_INTERVAL_SECONDS, queueHealthDecider);
@@ -192,6 +216,11 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     Publisher publisher = new Publisher(EVALUATION_INTERVAL_SECONDS, collator);
     publisher.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     publisher.addAllUpstreams(Collections.singletonList(collator));
+
+    // TODO: Refactor using DI to move out of construct method
+    PluginControllerConfig pluginControllerConfig = new PluginControllerConfig();
+    PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
+    pluginController.initPlugins();
   }
 
   private void constructShardResourceUsageGraph() {

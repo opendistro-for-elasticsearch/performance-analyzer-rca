@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMess
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.NodeLevelDimensionalSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 
 /**
  * This is the FlowUnit wrapper over the summary of the given node across all the tracked
@@ -42,7 +43,7 @@ public class DimensionalTemperatureFlowUnit extends ResourceFlowUnit<NodeLevelDi
 
     // A dimension flow unit never leaves a node. So, we don't need to generate protobuf messages.
     @Override
-    public FlowUnitMessage buildFlowUnitMessage(String graphNode, String esNode) {
+    public FlowUnitMessage buildFlowUnitMessage(String graphNode, InstanceDetails.Id esNode) {
         throw new IllegalStateException(this.getClass().getSimpleName() + " should not be passed "
                 + "over the wire.");
     }

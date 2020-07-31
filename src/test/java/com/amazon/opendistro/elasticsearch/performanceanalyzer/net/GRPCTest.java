@@ -2,19 +2,17 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.net;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.CertificateUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsRequest;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.WaitFor;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.AfterClass;
@@ -83,7 +81,10 @@ public class GRPCTest {
         NetClient validClient = new NetClient(new GRPCConnectionManager(true, TEST_PORT));
         // Make getMetrics request to server
         ResponseObserver observer = new ResponseObserver();
-        validClient.getMetrics("127.0.0.1", METRICS_REQUEST, observer);
+
+        InstanceDetails remoteInstance = new InstanceDetails(new InstanceDetails.Id("host1"),
+                new InstanceDetails.Ip("127.0.0.1"), TEST_PORT);
+        validClient.getMetrics(remoteInstance, METRICS_REQUEST, observer);
         // Wait for the expected response from the server
         WaitFor.waitFor(() -> {
             return observer.responses[0] != null && observer.responses[0].getMetricsResult().equals("metrics");
@@ -106,7 +107,9 @@ public class GRPCTest {
         NetClient invalidClient = new NetClient(new GRPCConnectionManager(true, TEST_PORT));
         // Make invalid getMetrics request to server
         ErrorObserver<MetricsResponse> observer = new ErrorObserver<>();
-        invalidClient.getMetrics("127.0.0.1", METRICS_REQUEST, observer);
+        InstanceDetails remoteInstance = new InstanceDetails(new InstanceDetails.Id("host1"),
+                new InstanceDetails.Ip("127.0.0.1"), TEST_PORT);
+        invalidClient.getMetrics(remoteInstance, METRICS_REQUEST, observer);
         // Wait for the client to fail
         WaitFor.waitFor(() -> observer.errors[0] != null && observer.errors[0] instanceof StatusRuntimeException,
                 15, TimeUnit.SECONDS);
@@ -123,7 +126,9 @@ public class GRPCTest {
         NetClient insecureClient = new NetClient(new GRPCConnectionManager(false, TEST_PORT));
         // Make invalid getMetrics request to server
         ErrorObserver<MetricsResponse> observer = new ErrorObserver<>();
-        insecureClient.getMetrics("127.0.0.1", METRICS_REQUEST, observer);
+        InstanceDetails remoteInstance = new InstanceDetails(new InstanceDetails.Id("host1"), new InstanceDetails.Ip("127.0.0.1"),
+                TEST_PORT);
+        insecureClient.getMetrics(remoteInstance, METRICS_REQUEST, observer);
         // Wait for the client to fail
         WaitFor.waitFor(() -> observer.errors[0] != null && observer.errors[0] instanceof StatusRuntimeException,
                 1, TimeUnit.MINUTES);
@@ -147,7 +152,10 @@ public class GRPCTest {
         NetClient client = new NetClient(new GRPCConnectionManager(true, TEST_PORT));
         // Make valid getMetrics request to server
         ErrorObserver<MetricsResponse> observer = new ErrorObserver<>();
-        client.getMetrics("127.0.0.1", METRICS_REQUEST, observer);
+
+        InstanceDetails remoteInstance = new InstanceDetails(new InstanceDetails.Id("host1"), new InstanceDetails.Ip("127.0.0.1"),
+                TEST_PORT);
+        client.getMetrics(remoteInstance, METRICS_REQUEST, observer);
         // Client should fail because the server cert isn't signed by the client CA
         WaitFor.waitFor(() -> observer.errors[0] != null && observer.errors[0] instanceof StatusRuntimeException,
                 15, TimeUnit.SECONDS);

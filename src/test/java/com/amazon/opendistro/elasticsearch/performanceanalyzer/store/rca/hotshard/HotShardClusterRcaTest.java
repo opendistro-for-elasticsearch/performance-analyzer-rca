@@ -66,7 +66,7 @@ public class HotShardClusterRcaTest {
             hotShardClusterRca = new HotShardClusterRca(1, hotShardRca);
 
             InstanceDetails instanceDetails =
-                new InstanceDetails(AllMetrics.NodeRole.DATA, "node1", "127.0.0.1", false);
+                new InstanceDetails(AllMetrics.NodeRole.DATA, new InstanceDetails.Id("node1"), new InstanceDetails.Ip("127.0.0.1"), false);
             ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
             clusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(
                 new ClusterDetailsEventProcessor.NodeDetails(

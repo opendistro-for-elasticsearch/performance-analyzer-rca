@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMess
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 
 public class ClusterTemperatureFlowUnit extends ResourceFlowUnit<ClusterTemperatureSummary> {
     private final ClusterTemperatureSummary clusterTemperatureSummary;
@@ -30,7 +31,7 @@ public class ClusterTemperatureFlowUnit extends ResourceFlowUnit<ClusterTemperat
     }
 
     @Override
-    public FlowUnitMessage buildFlowUnitMessage(String graphNode, String esNode) {
+    public FlowUnitMessage buildFlowUnitMessage(String graphNode, InstanceDetails.Id esNode) {
         throw new IllegalStateException(this.getClass().getSimpleName() + " should not be passed "
                 + "over the wire.");
     }

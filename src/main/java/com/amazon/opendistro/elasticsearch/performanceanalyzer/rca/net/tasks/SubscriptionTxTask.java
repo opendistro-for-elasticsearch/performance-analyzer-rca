@@ -20,6 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyz
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.SubscribeMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.SubscribeResponseHandler;
@@ -27,6 +28,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.Subscript
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.util.ClusterUtils;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -72,16 +74,16 @@ public abstract class SubscriptionTxTask implements Runnable {
     this.appContext = appContext;
   }
 
-  protected void sendSubscribeRequest(final String remoteHost, final String requesterVertex,
+  protected void sendSubscribeRequest(final InstanceDetails remoteHost, final String requesterVertex,
       final String destinationVertex, final Map<String, String> tags) {
     LOG.debug("rca: [sub-tx]: {} -> {} to {}", requesterVertex, destinationVertex, remoteHost);
     final SubscribeMessage subscribeMessage = SubscribeMessage.newBuilder()
-                                                              .setDestinationNode(destinationVertex)
-                                                              .setRequesterNode(requesterVertex)
+                                                              .setDestinationGraphNode(destinationVertex)
+                                                              .setRequesterGraphNode(requesterVertex)
                                                               .putTags("locus", tags.get("locus"))
                                                               .putTags(
                                                                   "requester",
-                                                                  appContext.getMyInstanceDetails().getInstanceIp())
+                                                                  appContext.getMyInstanceDetails().getInstanceId().toString())
                                                               .build();
     netClient.subscribe(remoteHost, subscribeMessage,
         new SubscribeResponseHandler(subscriptionManager, nodeStateManager, remoteHost,
@@ -91,7 +93,7 @@ public abstract class SubscriptionTxTask implements Runnable {
             requesterVertex + ":" + destinationVertex, 1);
   }
 
-  public List<String> getPeerIps() {
-    return appContext.getPeerInstanceIps();
+  protected Set<InstanceDetails> getPeerInstances() {
+    return appContext.getPeerInstances();
   }
 }

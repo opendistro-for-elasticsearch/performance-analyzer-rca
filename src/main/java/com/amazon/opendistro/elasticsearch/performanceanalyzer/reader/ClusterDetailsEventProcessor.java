@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.overrides.ConfigOverridesApplier;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaControllerHelper;
@@ -49,6 +50,19 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
 
   public ClusterDetailsEventProcessor(final ConfigOverridesApplier overridesApplier) {
     this.overridesApplier = overridesApplier;
+  }
+
+  public ClusterDetailsEventProcessor(final ClusterDetailsEventProcessor other) {
+    if (other.nodesDetails != null) {
+      ImmutableList.Builder builder = new ImmutableList.Builder<NodeDetails>();
+      for (final NodeDetails oldDetails : other.nodesDetails) {
+        builder.add(new NodeDetails(oldDetails));
+      }
+      this.nodesDetails = builder.build();
+      this.overridesApplier = other.getOverridesApplier();
+    } else {
+      this.overridesApplier = new ConfigOverridesApplier();
+    }
   }
 
   @Override
@@ -126,6 +140,10 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
     }
   }
 
+  public ConfigOverridesApplier getOverridesApplier() {
+    return this.overridesApplier;
+  }
+
   public List<NodeDetails> getDataNodesDetails() {
     List<NodeDetails> allNodes = getNodesDetails();
     if (allNodes.size() > 0) {
@@ -152,6 +170,7 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
     private String hostAddress;
     private String role;
     private Boolean isMasterNode;
+    private int grpcPort = Util.RPC_PORT;
 
     NodeDetails(String stringifiedMetrics) {
       Map<String, Object> map = JsonConverter
@@ -164,10 +183,24 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
     }
 
     public NodeDetails(AllMetrics.NodeRole role, String id, String hostAddress, boolean isMaster) {
+      this(role, id, hostAddress, isMaster, Util.RPC_PORT);
+    }
+
+    public NodeDetails(AllMetrics.NodeRole role, String id, String hostAddress, boolean isMaster, int grpcPort) {
       this.id = id;
       this.hostAddress = hostAddress;
       this.isMasterNode = isMaster;
       this.role = role.toString();
+      this.grpcPort = grpcPort;
+    }
+
+    public NodeDetails(final NodeDetails other) {
+      if (other != null) {
+        this.id = other.id;
+        this.hostAddress = other.hostAddress;
+        this.isMasterNode = other.isMasterNode;
+        this.role = other.role;
+      }
     }
 
     @Override
@@ -210,6 +243,10 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
         isMasterNode = this.hostAddress.equalsIgnoreCase(electedMasterHostAddress);
       }
       return isMasterNode;
+    }
+
+    public int getGrpcPort() {
+      return grpcPort;
     }
   }
 }
