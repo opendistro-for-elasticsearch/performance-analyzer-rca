@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import java.util.Map;
 
 public class CacheDeciderConfig {
     public static final String CONFIG_NAME = "cache-decider-config";
@@ -27,9 +28,9 @@ public class CacheDeciderConfig {
     public static final double DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND = 0.05;
 
     public CacheDeciderConfig(final RcaConf rcaConf) {
-        fieldDataCacheUpperBound = rcaConf.readRcaConfig(CONFIG_NAME,
+        fieldDataCacheUpperBound = rcaConf.readDeciderConfig(CONFIG_NAME,
                 RCA_CONF_KEY_CONSTANTS.FIELD_DATA_CACHE_UPPER_BOUND, Double.class);
-        shardRequestCacheUpperBound = rcaConf.readRcaConfig(CONFIG_NAME,
+        shardRequestCacheUpperBound = rcaConf.readDeciderConfig(CONFIG_NAME,
                 RCA_CONF_KEY_CONSTANTS.SHARD_REQUEST_CACHE_UPPER_BOUND, Double.class);
         if (fieldDataCacheUpperBound == null) {
             fieldDataCacheUpperBound = DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND;

@@ -24,16 +24,50 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Impact;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheDeciderConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.Map;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ModifyCacheMaxSizeActionTest {
+  private final long heapMaxSizeInBytes = 12000 * 1_000_000L;
+
+  private AppContext appContext;
+
+  @Before
+  public void setUp() {
+    final long fieldDataCacheMaxSizeInBytes = 12000;
+    final long shardRequestCacheMaxSizeInBytes = 12000;
+
+    appContext = new AppContext();
+
+    appContext
+        .getNodeConfigCache()
+        .put(
+            new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4")),
+            ResourceUtil.HEAP_MAX_SIZE,
+            heapMaxSizeInBytes);
+    appContext
+        .getNodeConfigCache()
+        .put(
+            new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4")),
+            ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE,
+            fieldDataCacheMaxSizeInBytes);
+    appContext
+        .getNodeConfigCache()
+        .put(
+            new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4")),
+            ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE,
+            shardRequestCacheMaxSizeInBytes);
+  }
 
   @Test
   public void testIncreaseCapacity() {
@@ -43,10 +77,8 @@ public class ModifyCacheMaxSizeActionTest {
         new ModifyCacheMaxSizeAction(
             node1,
             ResourceEnum.FIELD_DATA_CACHE,
-            5000,
-            12000 * 1_000_000L,
+            appContext.getNodeConfigCache(),
             CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
-            CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND,
             true);
     assertTrue(
         modifyCacheSizeAction.getDesiredCacheMaxSizeInBytes()
@@ -72,10 +104,8 @@ public class ModifyCacheMaxSizeActionTest {
         new ModifyCacheMaxSizeAction(
             node1,
             ResourceEnum.FIELD_DATA_CACHE,
-            5000,
-            12000 * 1_000_000L,
+            appContext.getNodeConfigCache(),
             CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
-            CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND,
             false);
     assertEquals(
         modifyCacheSizeAction.getDesiredCacheMaxSizeInBytes(),
@@ -96,17 +126,17 @@ public class ModifyCacheMaxSizeActionTest {
   @Test
   public void testBounds() {
     // TODO: Move to work with test rcaConf when bounds moved to nodeConfiguration rca
-    final long maxSizeInBytes = 12000 * 1_000_000L;
+    long maxSizeInBytes = (long) (heapMaxSizeInBytes * CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND);
+    setNodeConfigCache(ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE, maxSizeInBytes);
+
     NodeKey node1 =
         new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
     ModifyCacheMaxSizeAction fieldCacheIncrease =
         new ModifyCacheMaxSizeAction(
             node1,
             ResourceEnum.FIELD_DATA_CACHE,
-            (long) (maxSizeInBytes * CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND),
-            maxSizeInBytes,
+            appContext.getNodeConfigCache(),
             CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
-            CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND,
             true);
     assertEquals(
         fieldCacheIncrease.getDesiredCacheMaxSizeInBytes(),
@@ -114,13 +144,14 @@ public class ModifyCacheMaxSizeActionTest {
     assertFalse(fieldCacheIncrease.isActionable());
     assertNoImpact(node1, fieldCacheIncrease);
 
+    maxSizeInBytes = (long) (heapMaxSizeInBytes * CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND);
+    setNodeConfigCache(ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE, maxSizeInBytes);
+
     ModifyCacheMaxSizeAction shardRequestCacheIncrease =
         new ModifyCacheMaxSizeAction(
             node1,
             ResourceEnum.SHARD_REQUEST_CACHE,
-            (long) (maxSizeInBytes * CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND),
-            maxSizeInBytes,
-            CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
+            appContext.getNodeConfigCache(),
             CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND,
             true);
     assertEquals(
@@ -137,5 +168,14 @@ public class ModifyCacheMaxSizeActionTest {
     assertEquals(Impact.NO_IMPACT, impact.get(NETWORK));
     assertEquals(Impact.NO_IMPACT, impact.get(RAM));
     assertEquals(Impact.NO_IMPACT, impact.get(DISK));
+  }
+
+  private void setNodeConfigCache(final Resource resource, final long maxSizeInBytes) {
+    appContext
+        .getNodeConfigCache()
+        .put(
+            new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4")),
+            resource,
+            maxSizeInBytes);
   }
 }

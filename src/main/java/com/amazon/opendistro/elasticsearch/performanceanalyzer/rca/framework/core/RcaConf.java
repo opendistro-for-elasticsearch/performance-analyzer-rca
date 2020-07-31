@@ -169,4 +169,27 @@ public class RcaConf {
     }
     return setting;
   }
+
+  @SuppressWarnings("unchecked")
+  public <T> T readDeciderConfig(String deciderName, String key, Class<? extends T> clazz) {
+    T setting = null;
+    try {
+      Map<String, Object> deciderObj = null;
+      if (conf.getDeciderConfigSettings() != null
+              && conf.getDeciderConfigSettings().containsKey(deciderName)
+              && conf.getDeciderConfigSettings().get(deciderName) != null) {
+        deciderObj = (Map<String, Object>)conf.getDeciderConfigSettings().get(deciderName);
+      }
+
+      if (deciderObj != null
+              && deciderObj.containsKey(key)
+              && deciderObj.get(key) != null) {
+        setting = clazz.cast(deciderObj.get(key));
+      }
+    }
+    catch (ClassCastException ne) {
+      LOG.error("rca.conf contains value in invalid format, trace : {}", ne.getMessage());
+    }
+    return setting;
+  }
 }
