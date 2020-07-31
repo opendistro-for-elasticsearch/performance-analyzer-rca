@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.SEARCH_QUEUE_CAPACITY;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.WRITE_QUEUE_CAPACITY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -27,6 +29,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.util.ArrayList;
@@ -81,10 +85,20 @@ public class QueueHealthDeciderTest {
         RcaTestHelper.generateFlowUnit("node4", "127.0.0.4", Resources.State.HEALTHY)
     );
 
+    appContext.getNodeConfigCache().put(new NodeKey(new InstanceDetails.Id("node1"),
+            new InstanceDetails.Ip("127.0.0.1")), SEARCH_QUEUE_CAPACITY,5000);
+    appContext.getNodeConfigCache().put(new NodeKey(new InstanceDetails.Id("node1"),
+            new InstanceDetails.Ip("127.0.0.1")), WRITE_QUEUE_CAPACITY,5000);
+    appContext.getNodeConfigCache().put(new NodeKey(new InstanceDetails.Id("node2"),
+            new InstanceDetails.Ip("127.0.0.2")), WRITE_QUEUE_CAPACITY,5000);
+    appContext.getNodeConfigCache().put(new NodeKey(new InstanceDetails.Id("node3"),
+            new InstanceDetails.Ip("127.0.0.3")), SEARCH_QUEUE_CAPACITY,5000);
+
     QueueRejectionClusterRca queueClusterRca = new QueueRejectionClusterRca(1, nodeRca);
     queueClusterRca.setAppContext(appContext);
     queueClusterRca.generateFlowUnitListFromLocal(null);
     QueueHealthDecider decider = new QueueHealthDecider(5, 12, queueClusterRca);
+    decider.setAppContext(appContext);
 
     // Since deciderFrequency is 12, the first 11 invocations return empty decision
     for (int i = 0; i < 11; i++) {

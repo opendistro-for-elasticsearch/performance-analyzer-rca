@@ -28,6 +28,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardStatsDerivedDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.PluginController;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.PluginControllerConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
@@ -275,6 +277,11 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     Publisher publisher = new Publisher(EVALUATION_INTERVAL_SECONDS, collator);
     publisher.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     publisher.addAllUpstreams(Collections.singletonList(collator));
+
+    // TODO: Refactor using DI to move out of construct method
+    PluginControllerConfig pluginControllerConfig = new PluginControllerConfig();
+    PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
+    pluginController.initPlugins();
   }
 
   private void constructShardResourceUsageGraph() {
