@@ -113,7 +113,7 @@ public class FileRotateTest {
     Assert.assertTrue(fileToRotate.toFile().exists());
     fileRotate.rotate(currentMillis);
     Assert.assertTrue("File should not rotate if the rotation target already exists",
-            lastRotatedMillis != fileRotate.lastRotatedMillis);
+            currentMillis == fileRotate.lastRotatedMillis);
   }
 
   @Test

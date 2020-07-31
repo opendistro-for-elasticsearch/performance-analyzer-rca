@@ -135,7 +135,6 @@ public class FileRotate {
     // try 4: If the delete fails, all bets are off, throw an exception and let the caller decide.
     try {
       ret = Files.move(FILE_TO_ROTATE, targetFilePath, StandardCopyOption.ATOMIC_MOVE);
-      lastRotatedMillis = System.currentTimeMillis();
     } catch (FileAlreadyExistsException fae) {
       LOG.error("Deleting file '{}' or else we cannot rotate the current {}", targetFilePath, FILE_TO_ROTATE);
       if (!Files.deleteIfExists(targetFilePath)) {
@@ -143,7 +142,6 @@ public class FileRotate {
       }
       try {
         ret = Files.move(FILE_TO_ROTATE, targetFilePath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-        lastRotatedMillis = System.currentTimeMillis();
       } catch (Exception ex) {
         LOG.error(ex);
         LOG.error("Deleting file: {}", FILE_TO_ROTATE);
@@ -163,7 +161,11 @@ public class FileRotate {
     // If we are here then we have successfully rotated or deleted the FILE_TO_ROTATE.
     // In both the cases a new file will be created by the caller and that file should exist
     // for the ROTATION_PERIOD.
-    lastRotatedMillis = System.currentTimeMillis();
+    lastRotatedMillis = currentMillis;
     return ret;
+  }
+
+  public long getLastRotatedMillis() {
+    return lastRotatedMillis;
   }
 }

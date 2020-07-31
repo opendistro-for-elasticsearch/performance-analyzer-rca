@@ -37,6 +37,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -79,7 +80,7 @@ class SQLitePersistor extends PersistorBase {
   }
 
   @Override
-  synchronized void createTable(String tableName, List<Field<?>> columns) {
+  synchronized void createTable(String tableName, List<Field<?>> columns) throws SQLException {
     CreateTableConstraintStep constraintStep = create.createTable(tableName)
         //sqlite does not support identity. use plain sql string instead.
         .column(DSL.field(getPrimaryKeyColumnName(tableName) + PRIMARY_KEY_AUTOINCREMENT_POSTFIX))
@@ -87,17 +88,19 @@ class SQLitePersistor extends PersistorBase {
 
     try {
       constraintStep.execute();
-      LOG.debug("table created: {}", constraintStep.toString());
+      LOG.debug("Successfully created table: {}", tableName);
     } catch (DataAccessException ex) {
       String msg = "table " + tableName + " already exists";
       if (ex.getMessage().contains(msg)) {
         LOG.debug(ex.getMessage());
       } else {
         LOG.error(ex);
-        throw ex;
+        throw new SQLException(ex);
       }
     }
+    tableNames.add(tableName);
     jooqTableColumns.put(tableName, columns);
+    LOG.debug("Added table '{}' and its columns: '{}' to in-memory registry.", tableName, columns);
   }
 
   /**
@@ -110,6 +113,7 @@ class SQLitePersistor extends PersistorBase {
     columns.add(foreignKeyField);
 
     try {
+      LOG.debug("Trying to create a summary table: {} that references {}", tableName, referenceTableName);
       Table referenceTable = DSL.table(referenceTableName);
       CreateTableConstraintStep constraintStep = create.createTable(tableName)
           .column(DSL.field(getPrimaryKeyColumnName(tableName) + PRIMARY_KEY_AUTOINCREMENT_POSTFIX))
@@ -118,25 +122,36 @@ class SQLitePersistor extends PersistorBase {
               .references(referenceTable, DSL.field(referenceTablePrimaryKeyFieldName)));
       constraintStep.execute();
       LOG.debug("table with fk created: {}", constraintStep.toString());
-      jooqTableColumns.put(tableName, columns);
     } catch (DataAccessException e) {
       String msg = "table " + tableName + " already exists";
       if (e.getMessage().contains(msg)) {
         LOG.debug(e.getMessage());
       } else {
-        LOG.error(e);
+        LOG.error("Error creating table: {}", tableName, e);
         throw new SQLException(e);
       }
     }
+    tableNames.add(tableName);
+    jooqTableColumns.put(tableName, columns);
   }
 
   @Override
   synchronized int insertRow(String tableName, List<Object> row) throws SQLException {
     int lastPrimaryKey = -1;
     String sqlQuery = "SELECT " + LAST_INSERT_ROWID;
+
+    Objects.requireNonNull(create, "DSLContext cannot be null");
+    Table<Record> table = DSL.table(tableName);
+    List<Field<?>> columnsForTable = jooqTableColumns.get(tableName);
+    if (columnsForTable == null) {
+      LOG.error("NO columns found for table: {}. Tables: {}, columns: {}", tableName, tableNames, jooqTableColumns);
+      throw new SQLException("No columns exist for table.");
+    }
+
     try {
-      InsertValuesStepN insertValuesStepN = create.insertInto(DSL.table(tableName))
-          .columns(jooqTableColumns.get(tableName))
+      InsertValuesStepN insertValuesStepN = create
+          .insertInto(table)
+          .columns(columnsForTable)
           .values(row);
       insertValuesStepN.execute();
       LOG.debug("sql insert: {}", insertValuesStepN.toString());
