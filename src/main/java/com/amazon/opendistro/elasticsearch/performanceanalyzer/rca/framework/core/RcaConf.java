@@ -31,12 +31,9 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -96,7 +93,7 @@ public class RcaConf {
     return conf.getThresholdStoreLoc();
   }
 
-  public long getNewRcaCheckPeriocicityMins() {
+  public long getNewRcaCheckPeriodicityMins() {
     return conf.getNewRcaCheckPeriodicityMins();
   }
 
@@ -185,7 +182,7 @@ public class RcaConf {
       if (conf.getRcaConfigSettings() != null
           && conf.getRcaConfigSettings().containsKey(rcaName)
           && conf.getRcaConfigSettings().get(rcaName) != null) {
-        rcaObj = (Map<String, Object>)conf.getRcaConfigSettings().get(rcaName);
+        rcaObj = (Map<String, Object>) conf.getRcaConfigSettings().get(rcaName);
       }
 
       if (rcaObj != null
@@ -193,8 +190,7 @@ public class RcaConf {
           && rcaObj.get(key) != null) {
         setting = clazz.cast(rcaObj.get(key));
       }
-    }
-    catch (ClassCastException ne) {
+    } catch (ClassCastException ne) {
       LOG.error("rca.conf contains value in invalid format, trace : {}", ne.getMessage());
     }
     return setting;
@@ -203,24 +199,25 @@ public class RcaConf {
   public void updateRcaConf(final Set<String> mutedRcas, final Set<String> mutedDeciders,
       final Set<String> mutedActions) {
     String updatedPath = this.configFileLoc + ".updated";
-    try {
+    try (final FileInputStream originalFileInputStream = new FileInputStream(this.configFileLoc);
+        final Scanner scanner = new Scanner(originalFileInputStream, StandardCharsets.UTF_8.name());
+        final FileOutputStream updatedFileOutputStream = new FileOutputStream(updatedPath)
+    ) {
       // create the config json Object from rca config file
-      Scanner scanner = new Scanner(new FileInputStream(this.configFileLoc), StandardCharsets.UTF_8.name());
       String jsonText = scanner.useDelimiter("\\A").next();
       ObjectMapper mapper = new ObjectMapper();
       mapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
       mapper.enable(SerializationFeature.INDENT_OUTPUT);
       JsonNode configObject = mapper.readTree(jsonText);
 
-      // update the `MUTED_RCAS_CONFIG` value in config Object
       ArrayNode mutedRcasArray = mapper.valueToTree(mutedRcas);
       ArrayNode mutedDecidersArray = mapper.valueToTree(mutedDeciders);
       ArrayNode mutedActionsArray = mapper.valueToTree(mutedActions);
-      ((ObjectNode) configObject).putArray("muted-rcas").addAll(mutedRcasArray)
+      ((ObjectNode) configObject).putArray("muted-rcas").addAll(mutedRcasArray);
       ((ObjectNode) configObject).putArray("muted-deciders").addAll(mutedDecidersArray);
       ((ObjectNode) configObject).putArray("muted-actions").addAll(mutedActionsArray);
 
-      mapper.writeValue(new FileOutputStream(updatedPath), configObject);
+      mapper.writeValue(updatedFileOutputStream, configObject);
     } catch (IOException e) {
       LOG.error("Unable to copy rca conf to a temp file", e);
       return;
@@ -230,33 +227,6 @@ public class RcaConf {
       LOG.error("Writing new file: {}", Paths.get(updatedPath));
       Files.move(Paths.get(updatedPath), Paths.get(configFileLoc), StandardCopyOption.ATOMIC_MOVE,
           StandardCopyOption.REPLACE_EXISTING);
-    } catch (IOException e) {
-      LOG.error("Unable to move and replace the old conf file with updated conf file.", e);
-    }
-  }
-
-  /**
-   * Re-writes the contents of the rca[_idle][_master].conf
-   * @param confJsonWrapper The structure/content that will overwrite the current contents of the
-   *                        file.
-   */
-  public void writeRcaConf(final ConfJsonWrapper confJsonWrapper) {
-    String updatedPath = this.configFileLoc + ".updated";
-    try (FileOutputStream dos = new FileOutputStream(updatedPath, false)) {
-      dos.write(mapper.writeValueAsBytes(confJsonWrapper));
-      dos.flush();
-    } catch (IOException e) {
-      LOG.error("unable to write the updated rca conf. Dropping the update.", e);
-      return;
-    }
-
-    try {
-      LOG.error("Writing new file: {}", Paths.get(updatedPath));
-      Files.move(Paths.get(updatedPath), Paths.get(configFileLoc), StandardCopyOption.ATOMIC_MOVE,
-          StandardCopyOption.REPLACE_EXISTING);
-      File newConfFile = new File(this.configFileLoc);
-      this.lastModifiedTime = newConfFile.lastModified();
-      this.conf = confJsonWrapper;
     } catch (IOException e) {
       LOG.error("Unable to move and replace the old conf file with updated conf file.", e);
     }

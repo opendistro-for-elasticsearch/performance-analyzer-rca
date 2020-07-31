@@ -56,6 +56,7 @@ public class QueueHealthDecider extends Decider {
 
   @Override
   public Decision operate() {
+    LOG.error("~~~~~~~~~~~~~~~~ QUEUE HEALTH DECIDER ~~~~~~~~~~~~~~~~~");
     Decision decision = new Decision(System.currentTimeMillis(), NAME);
     counter += 1;
     if (counter < decisionFrequency) {

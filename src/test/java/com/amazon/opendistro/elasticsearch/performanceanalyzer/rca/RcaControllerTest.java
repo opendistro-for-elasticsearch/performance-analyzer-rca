@@ -393,9 +393,9 @@ public class RcaControllerTest {
     StringBuilder nodeDetails = new StringBuilder();
     nodeDetails.append(jtime);
     nodeDetails.append(separator);
-    nodeDetails.append(overridesTimestamp);
-    nodeDetails.append(separator);
     nodeDetails.append(jOverrides);
+    nodeDetails.append(separator);
+    nodeDetails.append(overridesTimestamp);
     nodeDetails.append(separator);
     nodeDetails.append(jNode.toString());
     eventProcessor.processEvent(

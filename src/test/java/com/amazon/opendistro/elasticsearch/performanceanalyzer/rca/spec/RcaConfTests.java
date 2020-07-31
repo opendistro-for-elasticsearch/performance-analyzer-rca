@@ -15,7 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaTestHelper.updateConfFileForMutedRcas;
 import static com.google.common.collect.Maps.newHashMap;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
@@ -26,7 +25,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.uti
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -40,7 +38,7 @@ public class RcaConfTests {
 
     assertEquals("s3://sifi-store/rcas/", rcaConf.getRcaStoreLoc());
     assertEquals("s3://sifi-store/thresholds/", rcaConf.getThresholdStoreLoc());
-    assertEquals(60, rcaConf.getNewRcaCheckPeriocicityMins());
+    assertEquals(60, rcaConf.getNewRcaCheckPeriodicityMins());
     assertEquals(30, rcaConf.getNewThresholdCheckPeriodicityMins());
     assertEquals(Arrays.asList("ip1", "ip2", "ip3"), rcaConf.getPeerIpList());
     Map<String, String> tagMap = newHashMap();

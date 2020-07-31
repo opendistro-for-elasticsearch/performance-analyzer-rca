@@ -35,8 +35,8 @@ $
 {"CBType":"parent","CB_EstimatedSize":14142616,"CB_TrippedEvents":0,"CB_ConfiguredSize":12001502822}$
 ^node_metrics
 {"current_time":1566413936488}
-1566413936488
 {"overrides": {"enabled": [], "disabled": []}}
+1566413936488
 {"ID":"4sqG_APMQuaQwEW17_6zwg","HOST_ADDRESS":"10.212.73.121"}
 {"ID":"OVH94mKXT5ibeqvDoAyTeg","HOST_ADDRESS":"10.212.78.83"}
 $

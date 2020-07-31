@@ -95,8 +95,8 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
     // The line 0 is timestamp that can be skipped. So we allocated size of
     // the array is one less than the list.
 
-    String overridesJson = lines[2];
-    String overrideUpdatedTimestamp = lines[1];
+    String overridesJson = lines[1];
+    String overrideUpdatedTimestamp = lines[2];
 
     overridesApplier.applyOverride(overridesJson, overrideUpdatedTimestamp);
 

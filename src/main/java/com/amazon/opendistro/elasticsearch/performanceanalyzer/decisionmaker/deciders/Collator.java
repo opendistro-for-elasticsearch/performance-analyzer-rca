@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Collator collects and prunes the candidate decisions from each decider so that their impacts are
@@ -62,7 +63,10 @@ public class Collator extends Decider {
     Decision finalDecision = new Decision(System.currentTimeMillis(), NAME);
     for (Decider decider : deciders) {
       Decision decision = decider.getFlowUnits().get(0);
-      finalDecision.addAllActions(decision.getActions());
+      finalDecision.addAllActions(decision.getActions()
+                                          .stream()
+                                          .filter(action -> !action.isMuted())
+                                          .collect(Collectors.toList()));
     }
     return finalDecision;
   }

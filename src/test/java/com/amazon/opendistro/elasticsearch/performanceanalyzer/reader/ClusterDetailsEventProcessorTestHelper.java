@@ -53,9 +53,9 @@ public class ClusterDetailsEventProcessorTestHelper extends AbstractReaderTests 
     }
     StringBuilder stringBuilder = new StringBuilder().append(PerformanceAnalyzerMetrics.getJsonCurrentMilliSeconds());
     stringBuilder.append(SEPARATOR);
-    stringBuilder.append(System.currentTimeMillis());
-    stringBuilder.append(SEPARATOR);
     stringBuilder.append(JsonConverter.writeValueAsString(new ConfigOverrides()));
+    stringBuilder.append(SEPARATOR);
+    stringBuilder.append(System.currentTimeMillis());
     nodeDetails.stream().forEach(
         node -> {
           stringBuilder.append(SEPARATOR)

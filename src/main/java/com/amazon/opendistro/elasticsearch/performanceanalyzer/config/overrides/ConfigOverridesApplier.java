@@ -25,7 +25,8 @@ public class ConfigOverridesApplier {
   public void applyOverride(final String overridesJson, final String lastUpdatedTimestampString) {
     try {
       long lastUpdatedTimestamp = Long.parseLong(lastUpdatedTimestampString);
-      LOG.error("LUT: {}, LAT: {}", lastUpdatedTimestamp, lastAppliedTimestamp);
+      LOG.info("Last updated(writer): {}, Last applied(reader): {}", lastUpdatedTimestamp,
+          lastAppliedTimestamp);
       if (lastUpdatedTimestamp > lastAppliedTimestamp) {
         apply(ConfigOverridesHelper.deserialize(overridesJson));
       } else {
