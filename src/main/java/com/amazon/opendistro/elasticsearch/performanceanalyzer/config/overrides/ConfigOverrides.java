@@ -19,12 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
-<<<<<<< HEAD
- * POJO for config overrides.
-=======
  * POJO for config overrides. The class contains two sets of overrides, one for enabling and one
  * for disabling.
->>>>>>> master
  */
 public class ConfigOverrides {
     private Overrides enable;
