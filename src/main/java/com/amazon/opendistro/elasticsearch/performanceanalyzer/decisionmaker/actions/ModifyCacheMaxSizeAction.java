@@ -130,8 +130,8 @@ public class ModifyCacheMaxSizeAction implements Action {
     return summary();
   }
 
-  public void setStepSizeForCache(final long stepSize) {
-    stepSizeInBytes.put(cacheType, stepSize);
+  public void setStepSizeForCache(final long stepSizeInBytes) {
+    this.stepSizeInBytes.put(cacheType, stepSizeInBytes);
   }
 
   public Long getCurrentCacheMaxSizeInBytes() {
