@@ -208,14 +208,10 @@ public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
         }
 
         private HotResourceSummary generateSummary(final long currTimestamp) {
-            HotResourceSummary resourceSummary = null;
-            if (isUnhealthy(currTimestamp)) {
-                resourceSummary = new HotResourceSummary(cache,
-                        TimeUnit.MILLISECONDS.toSeconds(evictionTimePeriodThreshold),
-                        TimeUnit.MILLISECONDS.toSeconds(currTimestamp - evictionTimestamp),
-                        0);
-            }
-            return resourceSummary;
+            return new HotResourceSummary(cache,
+                    TimeUnit.MILLISECONDS.toSeconds(evictionTimePeriodThreshold),
+                    TimeUnit.MILLISECONDS.toSeconds(currTimestamp - evictionTimestamp),
+                    0);
         }
     }
 }

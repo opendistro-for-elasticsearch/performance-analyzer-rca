@@ -134,8 +134,8 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
 
             // if eviction and hit counts persists in last 5 minutes and cache size exceeds max cache size * threshold percentage,
             // the cache is considered as unhealthy
-            if (cacheEvictionCollector.isMetricPresentForThresholdTime(currTimestamp)
-                    && cacheHitCollector.isMetricPresentForThresholdTime(currTimestamp)
+            if (cacheEvictionCollector.isUnhealthy(currTimestamp)
+                    && cacheHitCollector.isUnhealthy(currTimestamp)
                     && exceedsSizeThreshold) {
                 context = new ResourceContext(Resources.State.UNHEALTHY);
                 nodeSummary = new HotNodeSummary(instanceDetails.getInstanceId(), instanceDetails.getInstanceIp());
@@ -218,19 +218,15 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
             }
         }
 
-        public boolean isMetricPresentForThresholdTime(final long currTimestamp) {
+        public boolean isUnhealthy(final long currTimestamp) {
             return hasMetric && (currTimestamp - metricTimestamp) >= metricTimePeriodThreshold;
         }
 
         private HotResourceSummary generateSummary(final long currTimestamp) {
-            HotResourceSummary resourceSummary = null;
-            if (isMetricPresentForThresholdTime(currTimestamp)) {
-                resourceSummary = new HotResourceSummary(cache,
-                        TimeUnit.MILLISECONDS.toSeconds(metricTimePeriodThreshold),
-                        TimeUnit.MILLISECONDS.toSeconds(currTimestamp - metricTimestamp),
-                        0);
-            }
-            return resourceSummary;
+            return new HotResourceSummary(cache,
+                    TimeUnit.MILLISECONDS.toSeconds(metricTimePeriodThreshold),
+                    TimeUnit.MILLISECONDS.toSeconds(currTimestamp - metricTimestamp),
+                    0);
         }
     }
 }
