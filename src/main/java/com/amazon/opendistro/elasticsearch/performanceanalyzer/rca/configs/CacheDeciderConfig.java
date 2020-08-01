@@ -16,7 +16,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
-import java.util.Map;
 
 public class CacheDeciderConfig {
     public static final String CONFIG_NAME = "cache-decider-config";

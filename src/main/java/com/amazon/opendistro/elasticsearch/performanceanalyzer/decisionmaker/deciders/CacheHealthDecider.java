@@ -37,6 +37,8 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+// TODO: 1. Create separate ActionConfig objects for different actions
+
 public class CacheHealthDecider extends Decider {
   private static final Logger LOG = LogManager.getLogger(CacheHealthDecider.class);
   public static final String NAME = "cacheHealthDecider";
@@ -78,7 +80,7 @@ public class CacheHealthDecider extends Decider {
 
   @Override
   public Decision operate() {
-    Set<InstanceDetails.Id> impactedNodes = new HashSet<>();
+    final Set<InstanceDetails.Id> impactedNodes = new HashSet<>();
 
     Decision decision = new Decision(System.currentTimeMillis(), NAME);
     counter += 1;
@@ -88,8 +90,7 @@ public class CacheHealthDecider extends Decider {
     counter = 0;
 
     for (final ResourceEnum cacheType : modifyCacheActionPriorityList) {
-      getActionsFromRca(cacheTypeBaseClusterRcaMap.get(cacheType), impactedNodes)
-          .forEach(decision::addAction);
+      getActionsFromRca(cacheTypeBaseClusterRcaMap.get(cacheType), impactedNodes).forEach(decision::addAction);
     }
     return decision;
   }
@@ -97,7 +98,7 @@ public class CacheHealthDecider extends Decider {
   private <R extends BaseClusterRca> List<Action> getActionsFromRca(
       final R cacheClusterRca,
       final Set<InstanceDetails.Id> impactedNodes) {
-    List<Action> actions = new ArrayList<>();
+    final List<Action> actions = new ArrayList<>();
 
     if (!cacheClusterRca.getFlowUnits().isEmpty()) {
       final ResourceFlowUnit<HotClusterSummary> flowUnit = cacheClusterRca.getFlowUnits().get(0);
@@ -141,33 +142,21 @@ public class CacheHealthDecider extends Decider {
   }
 
   private Action getAction(
-      final String actionName,
-      final NodeKey esNode,
-      final ResourceEnum cacheType,
-      final boolean increase) {
+      final String actionName, final NodeKey esNode, final ResourceEnum cacheType, final boolean increase) {
     if (ModifyCacheMaxSizeAction.NAME.equals(actionName)) {
-      return configureCacheMaxSize(
-          esNode, cacheType, increase);
+      return configureCacheMaxSize(esNode, cacheType, increase);
     }
     return null;
   }
 
   private ModifyCacheMaxSizeAction configureCacheMaxSize(
-      final NodeKey esNode,
-      final ResourceEnum cacheType,
-      final boolean increase) {
+      final NodeKey esNode, final ResourceEnum cacheType, final boolean increase) {
     final double cacheUpperBound = getCacheUpperBound(cacheType);
-    if (cacheUpperBound != -1) {
-      final ModifyCacheMaxSizeAction action =
-          new ModifyCacheMaxSizeAction(
-              esNode,
-              cacheType,
-              getAppContext().getNodeConfigCache(),
-              cacheUpperBound,
-              increase);
-      if (action.isActionable()) {
-        return action;
-      }
+    final ModifyCacheMaxSizeAction action =
+        new ModifyCacheMaxSizeAction(
+            esNode, cacheType, getAppContext().getNodeConfigCache(), cacheUpperBound, increase);
+    if (action.isActionable()) {
+      return action;
     }
     return null;
   }
@@ -178,14 +167,15 @@ public class CacheHealthDecider extends Decider {
     } else if (cacheType.equals(ResourceEnum.SHARD_REQUEST_CACHE)) {
       return getShardRequestCacheUpperBound();
     }
-    return -1;
-  }
-
-  private double getShardRequestCacheUpperBound() {
-    return fieldDataCacheSizeUpperBound;
+    throw new IllegalArgumentException(
+        String.format("Unable to get cache upper bound for cacheType=[%s]", cacheType.toString()));
   }
 
   private double getFieldDataCacheUpperBound() {
+    return fieldDataCacheSizeUpperBound;
+  }
+
+  private double getShardRequestCacheUpperBound() {
     return shardRequestCacheSizeUpperBound;
   }
 
@@ -196,7 +186,7 @@ public class CacheHealthDecider extends Decider {
    */
   @Override
   public void readRcaConf(RcaConf conf) {
-    CacheDeciderConfig configObj = conf.getCacheDeciderConfig();
+    final CacheDeciderConfig configObj = conf.getCacheDeciderConfig();
     fieldDataCacheSizeUpperBound = configObj.getFieldDataCacheUpperBound();
     shardRequestCacheSizeUpperBound = configObj.getShardRequestCacheUpperBound();
   }
