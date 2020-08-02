@@ -27,12 +27,14 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum
  * Both Enum types are defined in protobuf (src/main/proto/inter_node_rpc_service.proto)
  * <p></p>
  * ResourceEnum : different resource type on instance : CPU, IO, CACHE, etc.
- * MetricEnum : metrics of each resource type, i.e. IO can have metrics
+ * MetricEnum : metrics of each resource type, i.eZ. IO can have metrics
  * such as TOTAL_THROUGHPUT and SYS_CALL_RATE
  */
 public class ResourceUtil {
-
   // JVM resource
+  public static final Resource HEAP_MAX_SIZE = Resource.newBuilder()
+          .setResourceEnum(ResourceEnum.HEAP)
+          .setMetricEnum(MetricEnum.HEAP_MAX).build();
   public static final Resource OLD_GEN_HEAP_USAGE = Resource.newBuilder()
       .setResourceEnum(ResourceEnum.OLD_GEN)
       .setMetricEnum(MetricEnum.HEAP_USAGE).build();
