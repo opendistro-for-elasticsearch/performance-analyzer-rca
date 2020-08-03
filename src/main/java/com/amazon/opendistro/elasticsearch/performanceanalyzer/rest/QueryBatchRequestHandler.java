@@ -155,13 +155,12 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
 
         long samplingPeriod = defaultSamplingPeriod;
         if (samplingPeriodParam != null && !samplingPeriodParam.isEmpty()) {
-          try {
-            samplingPeriod = (long) Integer.parseUnsignedInt(samplingPeriodParam);
-            if (samplingPeriod < 5 || samplingPeriod % 5 != 0) {
-              throw new NumberFormatException();
-            }
-          } catch (NumberFormatException e) {
+          samplingPeriod = Long.parseLong(samplingPeriodParam);
+          if (samplingPeriod < 5 || samplingPeriod % 5 != 0) {
             throw new InvalidParameterException(String.format("%s is an invalid sampling period", samplingPeriodParam));
+          }
+          if (samplingPeriod >= PluginSettings.instance().getBatchMetricsRetentionPeriod()*60) {
+            throw new InvalidParameterException("sampling period must be less than the retention period");
           }
           samplingPeriod *= 1000;
         }
