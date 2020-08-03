@@ -125,7 +125,6 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
         String startTimeParam = params.get("starttime");
         String endTimeParam = params.get("endtime");
         String samplingPeriodParam = params.get("samplingperiod");
-        String maxDatapointsParam = params.get("maxdatapoints");
 
         for (String metric : metricsList) {
           if (!MetricsModel.ALL_METRICS.containsKey(metric)) {
