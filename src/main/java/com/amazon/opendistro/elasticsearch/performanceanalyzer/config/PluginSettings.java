@@ -46,7 +46,7 @@ public class PluginSettings {
   private static final String HTTPS_ENABLED = "https-enabled";
   private static final String WRITER_QUEUE_SIZE = "writer-queue-size";
   private static final String BATCH_METRICS_RETENTION_PERIOD = "batch-metrics-retention-period";
-  private static final int BATCH_METRICS_RETENTION_PERIOD_DEFAULT = 12;  // 1 minute (12*5s) of metrics
+  private static final int BATCH_METRICS_RETENTION_PERIOD_DEFAULT = 7;  // 7 minutes of metrics
 
   /** Determines whether the metricsdb files should be cleaned up. */
   public static final String DB_FILE_CLEANUP_CONF_NAME = "cleanup-metrics-db-files";
@@ -84,7 +84,9 @@ public class PluginSettings {
     return writerQueueSize;
   }
 
-  public int getBatchMetricsRetentionPeriod() { return batchMetricsRetentionPeriod; }
+  public int getBatchMetricsRetentionPeriod() {
+    return batchMetricsRetentionPeriod;
+  }
 
   public String getSettingValue(String settingName) {
     return settings.getProperty(settingName);
@@ -293,7 +295,7 @@ public class PluginSettings {
       if (parsedRetentionPeriod == 0) {
         throw new InvalidParameterException();
       }
-      batchMetricsRetentionPeriod = Math.multiplyExact(parsedRetentionPeriod, 12);
+      batchMetricsRetentionPeriod = parsedRetentionPeriod;
     } catch (NumberFormatException | InvalidParameterException | ArithmeticException e) {
       LOG.error(
               (Supplier<?>)

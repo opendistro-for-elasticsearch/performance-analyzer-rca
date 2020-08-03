@@ -164,8 +164,8 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
           period *= 1000;
         }
 
-        if (startTime <= endTime) {
-          throw new InvalidParameterException("starttime must be greater than the endtime");
+        if (startTime >= endTime) {
+          throw new InvalidParameterException("starttime must be less than the endtime");
         }
         startTime -= startTime % period;
         endTime -= endTime % period;
