@@ -46,7 +46,8 @@ public class PluginSettings {
   private static final String HTTPS_ENABLED = "https-enabled";
   private static final String WRITER_QUEUE_SIZE = "writer-queue-size";
   private static final String BATCH_METRICS_RETENTION_PERIOD = "batch-metrics-retention-period";
-  private static final int BATCH_METRICS_RETENTION_PERIOD_DEFAULT = 7;  // 7 minutes of metrics
+  private static final long BATCH_METRICS_RETENTION_PERIOD_DEFAULT = 7;  // 7 minutes of metrics
+  private static final long BATCH_METRICS_RETENTION_PERIOD_LIMIT = 60;
 
   /** Determines whether the metricsdb files should be cleaned up. */
   public static final String DB_FILE_CLEANUP_CONF_NAME = "cleanup-metrics-db-files";
@@ -62,7 +63,7 @@ public class PluginSettings {
   private Properties settings;
   private final String configFilePath;
 
-  private int batchMetricsRetentionPeriod;
+  private long batchMetricsRetentionPeriod;
 
   static {
     Util.invokePrivilegedAndLogError(() -> createInstance());
@@ -84,7 +85,7 @@ public class PluginSettings {
     return writerQueueSize;
   }
 
-  public int getBatchMetricsRetentionPeriod() {
+  public long getBatchMetricsRetentionPeriod() {
     return batchMetricsRetentionPeriod;
   }
 
@@ -289,10 +290,10 @@ public class PluginSettings {
       return;
     }
 
-    int parsedRetentionPeriod;
+    long parsedRetentionPeriod;
     try {
-      parsedRetentionPeriod = Integer.parseUnsignedInt(settings.getProperty(BATCH_METRICS_RETENTION_PERIOD));
-      if (parsedRetentionPeriod == 0) {
+      parsedRetentionPeriod = Long.parseLong(settings.getProperty(BATCH_METRICS_RETENTION_PERIOD));
+      if (parsedRetentionPeriod <= 0 || parsedRetentionPeriod > BATCH_METRICS_RETENTION_PERIOD_LIMIT) {
         throw new InvalidParameterException();
       }
       batchMetricsRetentionPeriod = parsedRetentionPeriod;
