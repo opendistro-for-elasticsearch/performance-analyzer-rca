@@ -181,14 +181,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
           throw new InvalidParameterException("starttime must be within the retention period");
         }
 
-        int maxDatapoints = defaultMaxDatapoints;
-        if (maxDatapointsParam != null && !maxDatapointsParam.isEmpty()) {
-          try {
-            maxDatapoints = Integer.parseUnsignedInt(maxDatapointsParam);
-          } catch (NumberFormatException e) {
-            throw new InvalidParameterException(String.format("%s is an invalid maxdatapoints value", maxDatapointsParam));
-          }
-        }
+        int maxDatapoints = defaultMaxDatapoints + 1;
 
         // Handle the query
         StringBuilder responseJson = new StringBuilder();
@@ -197,7 +190,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
         int numMetrics = metricsList.size();
         MetricsDB metrics;
         Result<Record> results;
-        if (metricsTimestamp != null && metricsTimestamp < endTime && maxDatapoints > 0) {
+        if (metricsTimestamp != null && metricsTimestamp < endTime) {
           responseJson.append("\"");
           responseJson.append(metricsTimestamp);
           responseJson.append("\":{\"");
@@ -205,21 +198,27 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
           responseJson.append("\":");
           metrics = MetricsDB.fetchExisting(metricsTimestamp);
           results = metrics.queryMetric(metricsList.get(0), maxDatapoints);
-          responseJson.append(results.formatJSON());
           maxDatapoints -= results.size();
-          for (int i = 1; i < numMetrics && maxDatapoints > 0; i++) {
+          if (maxDatapoints == 0) {
+            throw new InvalidParameterException("requested data exceeds the 100,800 datapoints limit");
+          }
+          responseJson.append(results.formatJSON());
+          for (int i = 1; i < numMetrics; i++) {
             responseJson.append(",\"");
             responseJson.append(metricsList.get(i));
             responseJson.append("\":");
             results = metrics.queryMetric(metricsList.get(i), maxDatapoints);
-            responseJson.append(results.formatJSON());
             maxDatapoints -= results.size();
+            if (maxDatapoints == 0) {
+              throw new InvalidParameterException("requested data exceeds the 100,800 datapoints limit");
+            }
+            responseJson.append(results.formatJSON());
           }
           responseJson.append("}");
           metrics.close();
           metricsTimestamp = metricsTimestamp - metricsTimestamp % samplingPeriod + samplingPeriod;
           metricsTimestamp = batchMetrics.ceiling(metricsTimestamp);
-          while (metricsTimestamp != null && metricsTimestamp < endTime && maxDatapoints > 0) {
+          while (metricsTimestamp != null && metricsTimestamp < endTime) {
             responseJson.append(",\"");
             responseJson.append(metricsTimestamp);
             responseJson.append("\":{\"");
@@ -227,15 +226,21 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
             responseJson.append("\":");
             metrics = MetricsDB.fetchExisting(metricsTimestamp);
             results = metrics.queryMetric(metricsList.get(0), maxDatapoints);
-            responseJson.append(results.formatJSON());
             maxDatapoints -= results.size();
-            for (int i = 1; i < numMetrics && maxDatapoints > 0; i++) {
+            if (maxDatapoints == 0) {
+              throw new InvalidParameterException("requested data exceeds the 100,800 datapoints limit");
+            }
+            responseJson.append(results.formatJSON());
+            for (int i = 1; i < numMetrics; i++) {
               responseJson.append(",\"");
               responseJson.append(metricsList.get(i));
               responseJson.append("\":");
               results = metrics.queryMetric(metricsList.get(i), maxDatapoints);
-              responseJson.append(results.formatJSON());
               maxDatapoints -= results.size();
+              if (maxDatapoints == 0) {
+                throw new InvalidParameterException("requested data exceeds the 100,800 datapoints limit");
+              }
+              responseJson.append(results.formatJSON());
             }
             responseJson.append("}");
             metrics.close();
