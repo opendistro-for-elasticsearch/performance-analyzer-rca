@@ -130,6 +130,9 @@ class SQLitePersistor extends PersistorBase {
         LOG.error("Error creating table: {}", tableName, e);
         throw new SQLException(e);
       }
+    } catch (Exception ex) {
+      LOG.error(ex);
+      throw new SQLException(ex);
     }
     tableNames.add(tableName);
     jooqTableColumns.put(tableName, columns);
@@ -148,11 +151,12 @@ class SQLitePersistor extends PersistorBase {
       throw new SQLException("No columns exist for table.");
     }
 
+    InsertValuesStepN insertValuesStepN = create
+        .insertInto(table)
+        .columns(columnsForTable)
+        .values(row);
+    
     try {
-      InsertValuesStepN insertValuesStepN = create
-          .insertInto(table)
-          .columns(columnsForTable)
-          .values(row);
       insertValuesStepN.execute();
       LOG.debug("sql insert: {}", insertValuesStepN.toString());
       lastPrimaryKey = create.fetch(sqlQuery).get(0).get(LAST_INSERT_ROWID, Integer.class);
