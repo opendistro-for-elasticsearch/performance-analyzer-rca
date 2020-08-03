@@ -65,7 +65,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
   MetricsRestUtil metricsRestUtil;
 
   private static final int defaultMaxDatapoints = 100800;
-  private static final long defaultPeriod = 5000;  // Must be a multiple of 5000
+  private static final long defaultSamplingPeriod = 5000;  // Must be a multiple of 5000
 
   public QueryBatchRequestHandler(NetClient netClient, MetricsRestUtil metricsRestUtil) {
     this.netClient = netClient;
@@ -113,7 +113,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
 
       try {
         // Parse and validate parameters
-        String[] validParamsTmp = {"metrics", "starttime", "endtime", "period", "maxdatapoints"};
+        String[] validParamsTmp = {"metrics", "starttime", "endtime", "samplingperiod", "maxdatapoints"};
         Set<String> validParams = new HashSet<>(Arrays.asList(validParamsTmp));
         for (String param : params.keySet()) {
           if (!validParams.contains(param)) {
@@ -124,7 +124,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
         List<String> metricsList = metricsRestUtil.parseArrayParam(params, "metrics", false);
         String startTimeParam = params.get("starttime");
         String endTimeParam = params.get("endtime");
-        String periodParam = params.get("period");
+        String samplingPeriodParam = params.get("samplingperiod");
         String maxDatapointsParam = params.get("maxdatapoints");
 
         for (String metric : metricsList) {
@@ -153,26 +153,26 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
           throw new InvalidParameterException(String.format("%s is an invalid endtime", endTimeParam));
         }
 
-        long period = defaultPeriod;
-        if (periodParam != null && !periodParam.isEmpty()) {
+        long samplingPeriod = defaultSamplingPeriod;
+        if (samplingPeriodParam != null && !samplingPeriodParam.isEmpty()) {
           try {
-            period = (long) Integer.parseUnsignedInt(periodParam);
-            if (period < 5 || period % 5 != 0) {
+            samplingPeriod = (long) Integer.parseUnsignedInt(samplingPeriodParam);
+            if (samplingPeriod < 5 || samplingPeriod % 5 != 0) {
               throw new NumberFormatException();
             }
           } catch (NumberFormatException e) {
-            throw new InvalidParameterException(String.format("%s is an invalid period", periodParam));
+            throw new InvalidParameterException(String.format("%s is an invalid sampling period", samplingPeriodParam));
           }
-          period *= 1000;
+          samplingPeriod *= 1000;
         }
 
         if (startTime >= endTime) {
           throw new InvalidParameterException("starttime must be less than the endtime");
         }
-        startTime -= startTime % period;
-        endTime -= endTime % period;
+        startTime -= startTime % samplingPeriod;
+        endTime -= endTime % samplingPeriod;
         if (startTime == endTime) {
-          throw new InvalidParameterException("starttime and endtime cannot be equal when rounded down to the nearest period");
+          throw new InvalidParameterException("starttime and endtime cannot be equal when rounded down to the nearest sampling period");
         }
         if (endTime > currentTime) {
           throw new InvalidParameterException("endtime can be no greater than the system time at the node");
@@ -217,7 +217,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
           }
           responseJson.append("}");
           metrics.close();
-          metricsTimestamp = metricsTimestamp - metricsTimestamp % period + period;
+          metricsTimestamp = metricsTimestamp - metricsTimestamp % samplingPeriod + samplingPeriod;
           metricsTimestamp = batchMetrics.ceiling(metricsTimestamp);
           while (metricsTimestamp != null && metricsTimestamp < endTime && maxDatapoints > 0) {
             responseJson.append(",\"");
@@ -239,7 +239,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
             }
             responseJson.append("}");
             metrics.close();
-            metricsTimestamp = metricsTimestamp - metricsTimestamp % period + period;
+            metricsTimestamp = metricsTimestamp - metricsTimestamp % samplingPeriod + samplingPeriod;
             metricsTimestamp = batchMetrics.ceiling(metricsTimestamp);
           }
         }
