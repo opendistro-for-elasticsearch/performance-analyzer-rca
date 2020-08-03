@@ -47,23 +47,28 @@ public class CacheUtil {
                 totalSizeInKB += getSizeInKB(size);
             }
         }
-        return totalSizeInKB;
+
+        if (!Double.isNaN(totalSizeInKB)) {
+            return totalSizeInKB;
+        } else {
+            throw new IllegalArgumentException("invalid value: {} in getTotalSizeInKB" + Float.NaN);
+        }
     }
 
     public static Double getSizeInKB(double sizeinBytes) {
-        double sizeInKB = 0;
-        if (Double.isNaN(sizeinBytes)) {
-            LOG.error("getSizeInKB called with NaN value");
+        if (!Double.isNaN(sizeinBytes)) {
+            return sizeinBytes / 1024.0;
         } else {
-            sizeInKB = sizeinBytes / 1024.0;
+            throw new IllegalArgumentException("invalid value: {} in getSizeInKB" + Float.NaN);
         }
-        return sizeInKB;
     }
 
     public static double getCacheMaxSize(AppContext appContext, NodeKey esNode, Resource cacheResource) {
         try {
             return appContext.getNodeConfigCache().get(esNode, cacheResource);
         } catch (IllegalArgumentException e) {
+            LOG.error("error in fetching: {} from Node Config Cache. "
+                    + "Possibly the resource hasn't been added to cache yet.", cacheResource.toString());
             return 0;
         }
     }
@@ -71,8 +76,13 @@ public class CacheUtil {
     public static Boolean isSizeThresholdExceeded(final Metric cacheSizeGroupByOperation,
                                                   double cacheMaxSizeinBytes,
                                                   double threshold_percentage) {
-        double cacheSizeInKB = getTotalSizeInKB(cacheSizeGroupByOperation);
-        double cacheMaxSizeInKB = getSizeInKB(cacheMaxSizeinBytes);
-        return cacheSizeInKB != 0 && cacheMaxSizeInKB != 0 && (cacheSizeInKB > cacheMaxSizeInKB * threshold_percentage);
+        try {
+            double cacheSizeInKB = getTotalSizeInKB(cacheSizeGroupByOperation);
+            double cacheMaxSizeInKB = getSizeInKB(cacheMaxSizeinBytes);
+            return cacheSizeInKB != 0 && cacheMaxSizeInKB != 0 && (cacheSizeInKB > cacheMaxSizeInKB * threshold_percentage);
+        } catch (Exception e) {
+            LOG.error("error in calculating isSizeThresholdExceeded");
+            return Boolean.FALSE;
+        }
     }
 }

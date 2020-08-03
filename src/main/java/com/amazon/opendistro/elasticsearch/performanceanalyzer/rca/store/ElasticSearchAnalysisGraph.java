@@ -24,7 +24,6 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Collator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Publisher;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.QueueHealthDecider;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheConfigDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardStatsDerivedDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -228,7 +227,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
             fieldDataCacheEvictions,
             fieldDataCacheSizeGroupByOperation);
     fieldDataCacheNodeRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    fieldDataCacheNodeRca.addAllUpstreams(Collections.singletonList(fieldDataCacheEvictions));
+    fieldDataCacheNodeRca.addAllUpstreams(Arrays.asList(fieldDataCacheEvictions, fieldDataCacheSizeGroupByOperation));
 
     FieldDataCacheClusterRca fieldDataCacheClusterRca = new FieldDataCacheClusterRca(RCA_PERIOD, fieldDataCacheNodeRca);
     fieldDataCacheClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
@@ -255,7 +254,8 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
             shardRequestHits,
             shardRequestCacheSizeGroupByOperation);
     shardRequestCacheNodeRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    shardRequestCacheNodeRca.addAllUpstreams(Collections.singletonList(shardRequestHits));
+    shardRequestCacheNodeRca.addAllUpstreams(Arrays.asList(
+            shardRequestCacheEvictions, shardRequestHits, shardRequestCacheSizeGroupByOperation));
 
     ShardRequestCacheClusterRca shardRequestCacheClusterRca = new ShardRequestCacheClusterRca(RCA_PERIOD, shardRequestCacheNodeRca);
     shardRequestCacheClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
