@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary.SQL_SCHEMA_CONSTANTS;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -38,7 +39,7 @@ public class HotNodeSummaryTest {
 
     @BeforeClass
     public static void setup() {
-        uut = new HotNodeSummary(NODE_ID, HOST_ADDRESS);
+        uut = new HotNodeSummary(new InstanceDetails.Id(NODE_ID), new InstanceDetails.Ip(HOST_ADDRESS));
         uut.appendNestedSummary(new HotResourceSummary(ResourceUtil.YOUNG_GEN_PROMOTION_RATE, THRESHOLD, VALUE, 0));
     }
 
@@ -82,8 +83,8 @@ public class HotNodeSummaryTest {
     public void testGetSqlValue() {
         List<Object> rows = uut.getSqlValue();
         Assert.assertEquals(2, rows.size());
-        Assert.assertEquals(NODE_ID, rows.get(0));
-        Assert.assertEquals(HOST_ADDRESS, rows.get(1));
+        Assert.assertEquals(NODE_ID, rows.get(0).toString());
+        Assert.assertEquals(HOST_ADDRESS, rows.get(1).toString());
     }
 
     @Test
@@ -109,7 +110,7 @@ public class HotNodeSummaryTest {
                 .thenReturn(HOST_ADDRESS);
         HotNodeSummary summary = HotNodeSummary.buildSummary(testRecord);
         Assert.assertNotNull(summary);
-        Assert.assertEquals(NODE_ID, summary.getNodeID());
-        Assert.assertEquals(HOST_ADDRESS, summary.getHostAddress());
+        Assert.assertEquals(NODE_ID, summary.getNodeID().toString());
+        Assert.assertEquals(HOST_ADDRESS, summary.getHostAddress().toString());
     }
 }

@@ -93,7 +93,7 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>>
 
     private void consumeFlowUnit(ResourceFlowUnit<HotNodeSummary> resourceFlowUnit) {
         HotNodeSummary hotNodeSummary = resourceFlowUnit.getSummary();
-        String nodeId = hotNodeSummary.getNodeID();
+        String nodeId = hotNodeSummary.getNodeID().toString();
         for (GenericSummary summary : hotNodeSummary.getNestedSummaryList()) {
             if (summary instanceof HotShardSummary) {
                 HotShardSummary hotShardSummary = (HotShardSummary) summary;
@@ -175,7 +175,7 @@ public class HotShardClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>>
             }
 
             if (resourceFlowUnit.getResourceContext().isUnhealthy()) {
-                unhealthyNodes.add(resourceFlowUnit.getSummary().getNodeID());
+                unhealthyNodes.add(resourceFlowUnit.getSummary().getNodeID().toString());
                 consumeFlowUnit(resourceFlowUnit);
             }
         }

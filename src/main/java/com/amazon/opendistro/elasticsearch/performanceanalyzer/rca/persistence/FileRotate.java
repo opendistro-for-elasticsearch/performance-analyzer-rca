@@ -20,6 +20,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.text.DateFormat;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -57,7 +58,7 @@ public class FileRotate {
    * @return null if the file was not rotated because it is not old enough, or the name of the file
    *     after rotation.
    */
-  Path tryRotate(long currentTimeMillis) throws IOException {
+  synchronized Path tryRotate(long currentTimeMillis) throws IOException {
     if (shouldRotate(currentTimeMillis)) {
       return rotate(currentTimeMillis);
     }
@@ -72,7 +73,7 @@ public class FileRotate {
    *
    * @return Path to the file after it is rotated or null if it ran into a problem trying to do so.
    */
-  Path forceRotate(long currentTimeMillis) throws IOException {
+  synchronized Path forceRotate(long currentTimeMillis) throws IOException {
     return rotate(currentTimeMillis);
   }
 
@@ -89,6 +90,17 @@ public class FileRotate {
     return timeUnitsPassed >= ROTATION_PERIOD;
   }
 
+  private void tryDelete(Path file) throws IOException {
+    try {
+      if (!Files.deleteIfExists(file)) {
+        LOG.warn("The file to delete didn't exist: {}", file);
+      }
+    } catch (IOException ioException) {
+      LOG.error(ioException);
+      throw ioException;
+    }
+  }
+
   /**
    * Rotate the file.
    *
@@ -96,9 +108,11 @@ public class FileRotate {
    * cases the file could not be renamed, we attempt to delete the file. If the file could not be
    * deleted either, we throw an IOException for the caller to handle or take the necessary action.
    *
-   * @return Returns the path to the file after it was rotated.
+   * @return Returns the path to the file after it was rotated, this is so that the GC can add it to the list.
+   *
+   * @throws IOException when it can't even delete the current file.
    */
-  protected Path rotate(long currentMillis) throws IOException {
+  protected synchronized Path rotate(long currentMillis) throws IOException {
     if (!FILE_TO_ROTATE.toFile().exists()) {
       return null;
     }
@@ -111,23 +125,47 @@ public class FileRotate {
     targetFileName.append(FILE_PART_SEPARATOR).append(ROTATED_FILE_FORMAT.format(currentMillis));
 
     Path targetFilePath = Paths.get(dir, targetFileName.toString());
+
+    Path ret;
+
+    // Fallback in rotating a file:
+    // try 1. Rotate the file, don't try to replace the destination file if one exists.
+    // try 2: Rotate the file now with replacement and add a log saying the destination file will be deleted.
+    // try 3: Delete the file, don't rotate. The caller will create a new file and start over.
+    // try 4: If the delete fails, all bets are off, throw an exception and let the caller decide.
     try {
-      Files.move(FILE_TO_ROTATE, targetFilePath);
-      lastRotatedMillis = System.currentTimeMillis();
+      ret = Files.move(FILE_TO_ROTATE, targetFilePath, StandardCopyOption.ATOMIC_MOVE);
     } catch (FileAlreadyExistsException fae) {
-      LOG.error(fae);
-    } catch (IOException e) {
-      LOG.error(
-          "Could not RENAME file '{}' to '{}'. Error: {}", FILENAME, targetFileName, e.getCause());
-      try {
-        LOG.info("Attempting to delete file '{}'", FILENAME);
-        Files.deleteIfExists(FILE_TO_ROTATE);
-      } catch (IOException ex) {
-        LOG.error("Could not DELETE file '{}'. Error: {}", FILENAME, ex.getCause());
-        throw ex;
+      LOG.error("Deleting file '{}' or else we cannot rotate the current {}", targetFilePath, FILE_TO_ROTATE);
+      if (!Files.deleteIfExists(targetFilePath)) {
+        LOG.error("Could not delete file: " + targetFilePath);
       }
-      return null;
+      try {
+        ret = Files.move(FILE_TO_ROTATE, targetFilePath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+      } catch (Exception ex) {
+        LOG.error(ex);
+        LOG.error("Deleting file: {}", FILE_TO_ROTATE);
+        tryDelete(FILE_TO_ROTATE);
+
+        // Because we are deleting the current file, there is nothing for the GC to add.
+        ret = null;
+      }
+    } catch (IOException e) {
+      LOG.error("Could not RENAME file '{}' to '{}'. Error: {}", FILE_TO_ROTATE, targetFilePath, e);
+      tryDelete(FILE_TO_ROTATE);
+
+      // Because we are deleting the current file, there is nothing for the GC to add.
+      ret = null;
     }
-    return targetFilePath;
+
+    // If we are here then we have successfully rotated or deleted the FILE_TO_ROTATE.
+    // In both the cases a new file will be created by the caller and that file should exist
+    // for the ROTATION_PERIOD.
+    lastRotatedMillis = currentMillis;
+    return ret;
+  }
+
+  public long getLastRotatedMillis() {
+    return lastRotatedMillis;
   }
 }

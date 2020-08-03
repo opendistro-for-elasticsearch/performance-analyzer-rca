@@ -31,6 +31,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
@@ -118,7 +119,7 @@ public class HotNodeClusterRcaTest {
     Assert.assertTrue(clusterSummary.getNestedSummaryList().size() > 0);
 
     HotNodeSummary nodeSummary = (HotNodeSummary) clusterSummary.getNestedSummaryList().get(0);
-    Assert.assertTrue(nodeSummary.getNodeID().equals("node1"));
+    Assert.assertTrue(nodeSummary.getNodeID().toString().equals("node1"));
     Assert.assertTrue(nodeSummary.getNestedSummaryList().size() > 0);
 
     HotResourceSummary resourceSummary = (HotResourceSummary) nodeSummary.getNestedSummaryList().get(0);
@@ -157,7 +158,7 @@ public class HotNodeClusterRcaTest {
   private ResourceFlowUnit generateFlowUnit(Resource type, double val, String nodeId) {
     HotResourceSummary resourceSummary = new HotResourceSummary(type,
         10, val, 60);
-    HotNodeSummary nodeSummary = new HotNodeSummary(nodeId, "127.0.0.0");
+    HotNodeSummary nodeSummary = new HotNodeSummary(new InstanceDetails.Id(nodeId), new InstanceDetails.Ip("127.0.0.0"));
     nodeSummary.appendNestedSummary(resourceSummary);
     return new ResourceFlowUnit(System.currentTimeMillis(), new ResourceContext(Resources.State.HEALTHY), nodeSummary);
   }

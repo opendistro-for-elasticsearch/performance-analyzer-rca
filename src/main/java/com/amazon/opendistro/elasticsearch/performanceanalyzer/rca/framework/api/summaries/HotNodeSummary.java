@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMess
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.HotNodeSummaryMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.JooqFieldValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
@@ -48,12 +49,12 @@ public class HotNodeSummary extends GenericSummary {
 
   public static final String HOT_NODE_SUMMARY_TABLE = HotNodeSummary.class.getSimpleName();
   private static final Logger LOG = LogManager.getLogger(HotNodeSummary.class);
-  private final String nodeID;
-  private final String hostAddress;
+  private final InstanceDetails.Id nodeID;
+  private final InstanceDetails.Ip hostAddress;
   private List<HotResourceSummary> hotResourceSummaryList;
   private List<HotShardSummary> hotShardSummaryList;
 
-  public HotNodeSummary(String nodeID, String hostAddress) {
+  public HotNodeSummary(InstanceDetails.Id nodeID, InstanceDetails.Ip hostAddress) {
     super();
     this.nodeID = nodeID;
     this.hostAddress = hostAddress;
@@ -61,11 +62,11 @@ public class HotNodeSummary extends GenericSummary {
     this.hotShardSummaryList = new ArrayList<>();
   }
 
-  public String getNodeID() {
+  public InstanceDetails.Id getNodeID() {
     return this.nodeID;
   }
 
-  public String getHostAddress() {
+  public InstanceDetails.Ip getHostAddress() {
     return this.hostAddress;
   }
 
@@ -90,8 +91,8 @@ public class HotNodeSummary extends GenericSummary {
   @Override
   public HotNodeSummaryMessage buildSummaryMessage() {
     final HotNodeSummaryMessage.Builder summaryMessageBuilder = HotNodeSummaryMessage.newBuilder();
-    summaryMessageBuilder.setNodeID(this.nodeID);
-    summaryMessageBuilder.setHostAddress(this.hostAddress);
+    summaryMessageBuilder.setNodeID(this.nodeID.toString());
+    summaryMessageBuilder.setHostAddress(this.hostAddress.toString());
     for (HotResourceSummary hotResourceSummary : hotResourceSummaryList) {
       summaryMessageBuilder.getHotResourceSummaryListBuilder()
           .addHotResourceSummary(hotResourceSummary.buildSummaryMessage());
@@ -109,7 +110,9 @@ public class HotNodeSummary extends GenericSummary {
   }
 
   public static HotNodeSummary buildHotNodeSummaryFromMessage(HotNodeSummaryMessage message) {
-    HotNodeSummary newSummary = new HotNodeSummary(message.getNodeID(), message.getHostAddress());
+    HotNodeSummary newSummary = new HotNodeSummary(
+            new InstanceDetails.Id(message.getNodeID()),
+            new InstanceDetails.Ip(message.getHostAddress()));
     if (message.hasHotResourceSummaryList()) {
       for (int i = 0; i < message.getHotResourceSummaryList().getHotResourceSummaryCount(); i++) {
         newSummary.appendNestedSummary(HotResourceSummary.buildHotResourceSummaryFromMessage(
@@ -159,8 +162,8 @@ public class HotNodeSummary extends GenericSummary {
   @Override
   public JsonElement toJson() {
     JsonObject summaryObj = new JsonObject();
-    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME, this.nodeID);
-    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME, this.hostAddress);
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME, this.nodeID.toString());
+    summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME, this.hostAddress.toString());
     if (!getNestedSummaryList().isEmpty()) {
       String tableName = getNestedSummaryList().get(0).getTableName();
       summaryObj.add(tableName, this.nestedSummaryListToJson());
@@ -254,7 +257,7 @@ public class HotNodeSummary extends GenericSummary {
     try {
       String nodeId = record.get(NodeSummaryField.NODE_ID_FIELD.getField(), String.class);
       String ipAddress = record.get(NodeSummaryField.HOST_IP_ADDRESS_FIELD.getField(), String.class);
-      summary = new HotNodeSummary(nodeId, ipAddress);
+      summary = new HotNodeSummary(new InstanceDetails.Id(nodeId), new InstanceDetails.Ip(ipAddress));
     }
     catch (IllegalArgumentException ie) {
       LOG.error("Some fields might not be found in record, cause : {}", ie.getMessage());

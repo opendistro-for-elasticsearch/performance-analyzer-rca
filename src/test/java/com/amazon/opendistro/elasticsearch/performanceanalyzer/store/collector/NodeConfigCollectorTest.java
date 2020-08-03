@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.collector;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapValue.HEAP_MAX;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolDimension.THREAD_POOL_TYPE;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
@@ -24,6 +26,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metrics
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.NodeConfigFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Max_Size;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_QueueCapacity;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.flow_units.MetricFlowUnitTestHelper;
@@ -40,12 +44,16 @@ import org.junit.experimental.categories.Category;
 public class NodeConfigCollectorTest {
 
   private ThreadPool_QueueCapacity threadPool_QueueCapacity;
+  private Cache_Max_Size cacheMaxSize;
+  private Heap_Max heapMax;
   private NodeConfigCollector nodeConfigCollector;
 
   @Before
   public void init() {
     threadPool_QueueCapacity = new ThreadPool_QueueCapacity();
-    nodeConfigCollector = new NodeConfigCollector(1, threadPool_QueueCapacity);
+    cacheMaxSize = new Cache_Max_Size(5);
+    heapMax = new Heap_Max(5);
+    nodeConfigCollector = new NodeConfigCollector(1, threadPool_QueueCapacity, cacheMaxSize, heapMax);
 
     ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
     ClusterDetailsEventProcessor.NodeDetails node1 =
@@ -60,7 +68,7 @@ public class NodeConfigCollectorTest {
    * generate flowunit and bind the flowunits it generate to metrics
    */
   @SuppressWarnings("unchecked")
-  private void mockFlowUnits(int writeQueueCapacity, int searchQueueCapacity) {
+  private void mockQueueFlowUnits(int writeQueueCapacity, int searchQueueCapacity) {
     MetricFlowUnit flowUnit = MetricFlowUnitTestHelper.createFlowUnit(
         Arrays.asList(THREAD_POOL_TYPE.toString(), MetricsDB.MAX),
         Arrays.asList(ThreadPoolType.WRITE.toString(), String.valueOf(writeQueueCapacity)),
@@ -69,8 +77,20 @@ public class NodeConfigCollectorTest {
     threadPool_QueueCapacity.setLocalFlowUnit(flowUnit);
   }
 
+  /**
+   * generate flowunit and bind the flowunits it generate to metrics
+   */
+  @SuppressWarnings("unchecked")
+  private void mockHeapMaxSizeFlowUnits(int heapMaxSize) {
+    MetricFlowUnit flowUnit =
+        MetricFlowUnitTestHelper.createFlowUnit(
+            Arrays.asList(MEM_TYPE.toString(), MetricsDB.MAX),
+            Arrays.asList(HEAP_MAX.toString(), String.valueOf(heapMaxSize)));
+    heapMax.setLocalFlowUnit(flowUnit);
+  }
+
   @Test
-  public void testCapacityMetricNotExist() {
+  public void testQueueCapacityMetricNotExist() {
     threadPool_QueueCapacity.setLocalFlowUnit(MetricFlowUnit.generic());
     NodeConfigFlowUnit flowUnit = nodeConfigCollector.operate();
     Assert.assertTrue(flowUnit.isEmpty());
@@ -79,13 +99,39 @@ public class NodeConfigCollectorTest {
   }
 
   @Test
-  public void testCapacityCollection() {
-    mockFlowUnits(100, 200);
+  public void testCacheMaxSizeMetricNotExist() {
+    cacheMaxSize.setLocalFlowUnit(MetricFlowUnit.generic());
+    NodeConfigFlowUnit flowUnit = nodeConfigCollector.operate();
+    Assert.assertTrue(flowUnit.isEmpty());
+    Assert.assertFalse(flowUnit.hasConfig(ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE));
+    Assert.assertFalse(flowUnit.hasConfig(ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE));
+  }
+
+  @Test
+  public void testHeapMaxSizeMetricNotExist() {
+    heapMax.setLocalFlowUnit(MetricFlowUnit.generic());
+    NodeConfigFlowUnit flowUnit = nodeConfigCollector.operate();
+    Assert.assertTrue(flowUnit.isEmpty());
+    Assert.assertFalse(flowUnit.hasConfig(ResourceUtil.HEAP_MAX_SIZE));
+  }
+
+  @Test
+  public void testQueueCapacityCollection() {
+    mockQueueFlowUnits(100, 200);
     NodeConfigFlowUnit flowUnit = nodeConfigCollector.operate();
     Assert.assertFalse(flowUnit.isEmpty());
     Assert.assertTrue(flowUnit.hasConfig(ResourceUtil.SEARCH_QUEUE_CAPACITY));
     Assert.assertEquals(200, flowUnit.readConfig(ResourceUtil.SEARCH_QUEUE_CAPACITY), 0.01);
     Assert.assertTrue(flowUnit.hasConfig(ResourceUtil.WRITE_QUEUE_CAPACITY));
     Assert.assertEquals(100, flowUnit.readConfig(ResourceUtil.WRITE_QUEUE_CAPACITY), 0.01);
+  }
+
+  @Test
+  public void testHeapMaxSizeCollection() {
+    mockHeapMaxSizeFlowUnits(10000);
+    NodeConfigFlowUnit flowUnit = nodeConfigCollector.operate();
+    Assert.assertFalse(flowUnit.isEmpty());
+    Assert.assertTrue(flowUnit.hasConfig(ResourceUtil.HEAP_MAX_SIZE));
+    Assert.assertEquals(10000, flowUnit.readConfig(ResourceUtil.HEAP_MAX_SIZE), 0.01);
   }
 }

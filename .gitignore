@@ -9,3 +9,5 @@
 /bin/
 /coverage-error.log
 gradle.properties
+/src/test/resources/tmp/file_gc/
+/src/test/resources/tmp/file_rotate/

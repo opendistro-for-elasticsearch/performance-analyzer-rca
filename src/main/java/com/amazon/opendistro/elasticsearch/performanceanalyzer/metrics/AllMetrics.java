@@ -138,7 +138,7 @@ public class AllMetrics {
    * Field Data Cache|26214400.0|26214400.0|26214400.0|26214400.0
    * Shard Request Cache|80181985.0|80181985.0|80181985.0|80181985.0
    */
-  public enum CacheConfigDimension implements MetricDimension {
+  public enum CacheConfigDimension implements MetricDimension, JooqFieldValue {
     CACHE_TYPE(Constants.TYPE_VALUE);
 
     private final String value;
@@ -149,6 +149,16 @@ public class AllMetrics {
 
     @Override
     public String toString() {
+      return value;
+    }
+
+    @Override
+    public Field<String> getField() {
+      return DSL.field(DSL.name(this.value), String.class);
+    }
+
+    @Override
+    public String getName() {
       return value;
     }
 
@@ -194,9 +204,9 @@ public class AllMetrics {
     }
 
     public static class Constants {
-      public static final String FIELD_DATA_CACHE_NAME = "Field_Data_Cache";
-      public static final String SHARD_REQUEST_CACHE_NAME = "Shard_Request_Cache";
-      public static final String NODE_QUERY_CACHE_NAME = "Node_Query_Cache";
+      public static final String FIELD_DATA_CACHE_NAME = "field_data_cache";
+      public static final String SHARD_REQUEST_CACHE_NAME = "shard_request_cache";
+      public static final String NODE_QUERY_CACHE_NAME = "node_query_cache";
     }
   }
 

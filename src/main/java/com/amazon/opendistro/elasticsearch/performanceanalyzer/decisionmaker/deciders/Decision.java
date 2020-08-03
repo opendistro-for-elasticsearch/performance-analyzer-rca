@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericFlowUnit;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,7 +66,7 @@ public class Decision extends GenericFlowUnit {
   }
 
   @Override
-  public FlowUnitMessage buildFlowUnitMessage(String graphNode, String esNode) {
+  public FlowUnitMessage buildFlowUnitMessage(String graphNode, InstanceDetails.Id esNode) {
     // All deciders run on the master node, (in initial versions), so we dont expect Decisions
     // to be passed over wire.
     throw new IllegalStateException(

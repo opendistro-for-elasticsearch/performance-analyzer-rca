@@ -21,9 +21,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collect
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -59,11 +61,7 @@ public class AppContext {
 
     if (clusterDetailsEventProcessor != null && clusterDetailsEventProcessor.getCurrentNodeDetails() != null) {
       ClusterDetailsEventProcessor.NodeDetails nodeDetails = clusterDetailsEventProcessor.getCurrentNodeDetails();
-      ret = new InstanceDetails(
-          AllMetrics.NodeRole.valueOf(nodeDetails.getRole()),
-          nodeDetails.getId(),
-          nodeDetails.getHostAddress(),
-          nodeDetails.getIsMasterNode());
+      ret = new InstanceDetails(nodeDetails);
     }
     return ret;
   }
@@ -93,14 +91,11 @@ public class AppContext {
 
   private static List<InstanceDetails> getInstanceDetailsFromNodeDetails(
       final List<ClusterDetailsEventProcessor.NodeDetails> nodeDetails) {
-    List<InstanceDetails> instances = new ArrayList<>();
-
+    ImmutableList.Builder<InstanceDetails> instanceDetails = ImmutableList.builder();
     for (ClusterDetailsEventProcessor.NodeDetails node : nodeDetails) {
-      InstanceDetails instanceDetails = new InstanceDetails(
-          AllMetrics.NodeRole.valueOf(node.getRole()), node.getId(), node.getHostAddress(), node.getIsMasterNode());
-      instances.add(instanceDetails);
+      instanceDetails.add(new InstanceDetails(node));
     }
-    return ImmutableList.copyOf(instances);
+    return instanceDetails.build();
   }
 
   @VisibleForTesting
@@ -108,16 +103,24 @@ public class AppContext {
     return clusterDetailsEventProcessor;
   }
 
-  public List<String> getPeerInstanceIps() {
-    return ImmutableList.copyOf(
-        getAllClusterInstances()
-            .stream()
-            .skip(1)  // Skipping the first instance as it is self.
-            .map(InstanceDetails::getInstanceIp)
-            .collect(Collectors.toList()));
+  public Set<InstanceDetails> getPeerInstances() {
+    return ImmutableSet.copyOf(
+            getAllClusterInstances()
+                    .stream()
+                    .skip(1)  // Skipping the first instance as it is self.
+                    .collect(Collectors.toSet()));
   }
 
   public NodeConfigCache getNodeConfigCache() {
     return this.nodeConfigCache;
+  }
+
+  public InstanceDetails getInstanceById(InstanceDetails.Id instanceIdKey) {
+    return getPeerInstances()
+            .stream()
+            .filter(
+                    x -> x.getInstanceId().equals(instanceIdKey))
+            .findFirst()
+            .orElse(new InstanceDetails(AllMetrics.NodeRole.UNKNOWN));
   }
 }

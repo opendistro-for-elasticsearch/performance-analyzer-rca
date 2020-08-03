@@ -27,12 +27,14 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum
  * Both Enum types are defined in protobuf (src/main/proto/inter_node_rpc_service.proto)
  * <p></p>
  * ResourceEnum : different resource type on instance : CPU, IO, CACHE, etc.
- * MetricEnum : metrics of each resource type, i.e. IO can have metrics
+ * MetricEnum : metrics of each resource type, i.eZ. IO can have metrics
  * such as TOTAL_THROUGHPUT and SYS_CALL_RATE
  */
 public class ResourceUtil {
-
   // JVM resource
+  public static final Resource HEAP_MAX_SIZE = Resource.newBuilder()
+          .setResourceEnum(ResourceEnum.HEAP)
+          .setMetricEnum(MetricEnum.HEAP_MAX).build();
   public static final Resource OLD_GEN_HEAP_USAGE = Resource.newBuilder()
       .setResourceEnum(ResourceEnum.OLD_GEN)
       .setMetricEnum(MetricEnum.HEAP_USAGE).build();
@@ -69,12 +71,18 @@ public class ResourceUtil {
   public static final Resource FIELD_DATA_CACHE_EVICTION = Resource.newBuilder()
           .setResourceEnum(ResourceEnum.FIELD_DATA_CACHE)
           .setMetricEnum(MetricEnum.CACHE_EVICTION).build();
+  public static final Resource FIELD_DATA_CACHE_MAX_SIZE = Resource.newBuilder()
+          .setResourceEnum(ResourceEnum.FIELD_DATA_CACHE)
+          .setMetricEnum(MetricEnum.CACHE_MAX_SIZE).build();
   public static final Resource SHARD_REQUEST_CACHE_EVICTION = Resource.newBuilder()
           .setResourceEnum(ResourceEnum.SHARD_REQUEST_CACHE)
           .setMetricEnum(MetricEnum.CACHE_EVICTION).build();
   public static final Resource SHARD_REQUEST_CACHE_HIT = Resource.newBuilder()
           .setResourceEnum(ResourceEnum.SHARD_REQUEST_CACHE)
           .setMetricEnum(MetricEnum.CACHE_HIT).build();
+  public static final Resource SHARD_REQUEST_CACHE_MAX_SIZE = Resource.newBuilder()
+          .setResourceEnum(ResourceEnum.SHARD_REQUEST_CACHE)
+          .setMetricEnum(MetricEnum.CACHE_MAX_SIZE).build();
 
   /**
    * Read the resourceType name from the ResourceType object

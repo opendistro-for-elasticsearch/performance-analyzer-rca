@@ -18,13 +18,22 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.collator.Collator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ActionListener;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.FlipFlopDetector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.TimedFlipFlopDetector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import com.google.common.annotations.VisibleForTesting;
+
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,21 +43,26 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
   private final long initTime;
 
   private Collator collator;
+  private FlipFlopDetector flipFlopDetector;
   private boolean isMuted = false;
   private Map<String, Long> actionToExecutionTime;
+  private List<ActionListener> actionListeners;
 
   public Publisher(int evalIntervalSeconds, Collator collator) {
     super(0, evalIntervalSeconds);
     this.collator = collator;
+    this.actionListeners = new ArrayList<>();
     this.actionToExecutionTime = new HashMap<>();
+    // TODO please bring in guice so we can configure this with DI
+    this.flipFlopDetector = new TimedFlipFlopDetector(1, TimeUnit.HOURS);
     initTime = Instant.now().toEpochMilli();
   }
 
   /**
    * Returns true if a given {@link Action}'s last execution time was >= {@link Action#coolOffPeriodInMillis()} ago
    *
-   * <p>If this Publisher has never executed the action, the last execution time is defined as the time that the publisher
-   * object was constructed.
+   * <p>If this Publisher has never executed the action, the last execution time is defined as the time that the
+   * publisher object was constructed.
    *
    * @param action The {@link Action} to test
    * @return true if a given {@link Action}'s last execution time was >= {@link Action#coolOffPeriodInMillis()} ago
@@ -61,21 +75,22 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
     } else {
       LOG.debug("Publisher: Action {} still has {} ms left in its cool off period",
           action.name(),
-              action.coolOffPeriodInMillis() - elapsed);
+          action.coolOffPeriodInMillis() - elapsed);
       return false;
     }
   }
 
   @Override
   public EmptyFlowUnit operate() {
-    // TODO: Pass through implementation, need to add dampening, action flip-flop
-    // avoidance, state persistence etc.
+    // TODO: Need to add dampening, avoidance, state persistence etc.
     Decision decision = collator.getFlowUnits().get(0);
     for (Action action : decision.getActions()) {
-      if (isCooledOff(action)) { // Only execute actions which have passed their cool off period
-        LOG.info("Publisher: Executing action: [{}]", action.name());
-        action.execute();
+      if (isCooledOff(action) && !flipFlopDetector.isFlipFlop(action)) {
+        flipFlopDetector.recordAction(action);
         actionToExecutionTime.put(action.name(), Instant.now().toEpochMilli());
+        for (ActionListener listener : actionListeners) {
+          listener.actionPublished(action);
+        }
       }
     }
     return new EmptyFlowUnit(Instant.now().toEpochMilli());
@@ -100,6 +115,15 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
   }
 
   /**
+   * Register an action listener with Publisher
+   *
+   * <p>The listener is notified whenever an action is published
+   */
+  public void addActionListener(ActionListener listener) {
+    actionListeners.add(listener);
+  }
+
+  /**
    * Publisher does not have downstream nodes and does not emit flow units
    */
   @Override
@@ -119,5 +143,10 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
 
   public long getInitTime() {
     return this.initTime;
+  }
+
+  @VisibleForTesting
+  protected FlipFlopDetector getFlipFlopDetector() {
+    return this.flipFlopDetector;
   }
 }

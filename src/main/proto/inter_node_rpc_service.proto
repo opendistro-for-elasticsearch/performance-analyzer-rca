@@ -25,8 +25,8 @@ service InterNodeRpcService {
  Structure that describes the subscription message.
 */
 message SubscribeMessage {
-    string requester_node = 1;
-    string destination_node = 2;
+    string requester_graph_node = 1;
+    string destination_graph_node = 2;
     map<string, string> tags = 3;
 }
 
@@ -74,6 +74,9 @@ enum ResourceEnum {
   FIELD_DATA_CACHE = 10 [(additional_fields).name = "field data cache"];
   SHARD_REQUEST_CACHE = 11 [(additional_fields).name = "shard request cache"];
   NODE_QUERY_CACHE = 12 [(additional_fields).name = "node query cache"];
+
+  // Heap
+  HEAP = 20 [(additional_fields).name = "heap"];
 }
 
 enum MetricEnum {
@@ -94,6 +97,10 @@ enum MetricEnum {
   // cache
   CACHE_EVICTION = 10 [(additional_fields).name = "cache eviction", (additional_fields).description = "cache eviction count"];
   CACHE_HIT = 11 [(additional_fields).name = "cache hit", (additional_fields).description = "cache hit count"];
+  CACHE_MAX_SIZE = 12 [(additional_fields).name = "cache max size", (additional_fields).description = "max cache size in bytes"];
+
+  // Heap
+  HEAP_MAX = 16 [(additional_fields).name = "heap max", (additional_fields).description = "max heap size in bytes"];
 }
 
 /*

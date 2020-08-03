@@ -29,6 +29,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
@@ -80,7 +82,8 @@ public class SQLitePersistorTest {
     }
 
     @Override
-    public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {}
+    public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
+    }
   }
 
   @Test
@@ -104,7 +107,7 @@ public class SQLitePersistorTest {
     // The first write, this should create only one file as there is nothing to rotate.
     sqlite.write(rca, rfu);
     Assert.assertEquals(1,
-            testLocation.toFile().list(new WildcardFileFilter(baseFilename + "*")).length);
+        testLocation.toFile().list(new WildcardFileFilter(baseFilename + "*")).length);
     Assert.assertTrue(Paths.get(testLocation.toString(), baseFilename).toFile().exists());
     Thread.sleep(1000);
 
@@ -125,5 +128,48 @@ public class SQLitePersistorTest {
     String readTableStr = sqlite.readTables();
     Assert.assertTrue(readTableStr.contains("TestRca"));
     Assert.assertTrue(readTableStr.contains("HotResourceSummary"));
+  }
+
+  @Test
+  public void concurrentWriteAndRotate() throws IOException, SQLException {
+    ResourceContext context = new ResourceContext(Resources.State.UNHEALTHY);
+    HotResourceSummary summary =
+        new HotResourceSummary(
+            ResourceUtil.OLD_GEN_HEAP_USAGE,
+            70,
+            71,
+            60);
+    ResourceFlowUnit rfu = new ResourceFlowUnit(System.currentTimeMillis(), context, summary, true);
+    Node rca = new TestRca();
+    SQLitePersistor sqlite =
+        new SQLitePersistor(
+            testLocation.toString(), baseFilename, String.valueOf(1), TimeUnit.MICROSECONDS, 0);
+
+
+    int numThreads = 100;
+    int numWrites = 50;
+
+    List<Thread> threads = new ArrayList<>();
+
+    for (int i = 0; i < numThreads; i++) {
+      threads.add(new Thread(() -> {
+        for (int j = 0; j < numWrites; j++) {
+          try {
+            sqlite.write(rca, rfu);
+          } catch (SQLException | IOException throwables) {
+            throwables.printStackTrace();
+          }
+        }
+      }));
+    }
+
+    for (Thread th : threads) {
+      th.start();
+      try {
+        th.join();
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+    }
   }
 }
