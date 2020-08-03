@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rest;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsRequest;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsResponse;
@@ -86,6 +87,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
     }
 
     NavigableSet<Long> batchMetrics = mp.getBatchMetrics();
+    long currentTime = System.currentTimeMillis();
     if (batchMetrics == null) {
       sendResponse(
               exchange,
@@ -172,6 +174,12 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
         if (startTime == endTime) {
           throw new InvalidParameterException("starttime and endtime cannot be equal when rounded down to the nearest period");
         }
+        if (endTime > currentTime) {
+          throw new InvalidParameterException("endtime can be no greater than the system time at the node");
+        }
+        if (startTime < currentTime - PluginSettings.instance().getBatchMetricsRetentionPeriod()*60*1000) {
+          throw new InvalidParameterException("starttime must be within the retention period");
+        }
 
         int maxDatapoints = defaultMaxDatapoints;
         if (maxDatapointsParam != null && !maxDatapointsParam.isEmpty()) {
@@ -185,12 +193,11 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
         // Handle the query
         StringBuilder responseJson = new StringBuilder();
         responseJson.append("{");
-        Long metricsTimestamp = batchMetrics.floor(startTime);
-        long timestampRemainder = 0;
+        Long metricsTimestamp = batchMetrics.ceiling(startTime);
         int numMetrics = metricsList.size();
         MetricsDB metrics;
         Result<Record> results;
-        if (metricsTimestamp != null && metricsTimestamp > endTime && maxDatapoints > 0) {
+        if (metricsTimestamp != null && metricsTimestamp < endTime && maxDatapoints > 0) {
           responseJson.append("\"");
           responseJson.append(metricsTimestamp);
           responseJson.append("\":{\"");
@@ -210,10 +217,9 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
           }
           responseJson.append("}");
           metrics.close();
-          timestampRemainder = metricsTimestamp % period;
-          metricsTimestamp = metricsTimestamp - (timestampRemainder == 0 ? period : timestampRemainder);
-          metricsTimestamp = batchMetrics.floor(metricsTimestamp);
-          while (metricsTimestamp != null && metricsTimestamp > endTime && maxDatapoints > 0) {
+          metricsTimestamp = metricsTimestamp - metricsTimestamp % period + period;
+          metricsTimestamp = batchMetrics.ceiling(metricsTimestamp);
+          while (metricsTimestamp != null && metricsTimestamp < endTime && maxDatapoints > 0) {
             responseJson.append(",\"");
             responseJson.append(metricsTimestamp);
             responseJson.append("\":{\"");
@@ -233,9 +239,8 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
             }
             responseJson.append("}");
             metrics.close();
-            timestampRemainder = metricsTimestamp % period;
-            metricsTimestamp = metricsTimestamp - (timestampRemainder == 0 ? period : timestampRemainder);
-            metricsTimestamp = batchMetrics.floor(metricsTimestamp);
+            metricsTimestamp = metricsTimestamp - metricsTimestamp % period + period;
+            metricsTimestamp = batchMetrics.ceiling(metricsTimestamp);
           }
         }
         responseJson.append("}");
