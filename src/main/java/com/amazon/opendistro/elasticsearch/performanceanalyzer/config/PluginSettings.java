@@ -297,7 +297,7 @@ public class PluginSettings {
         throw new InvalidParameterException();
       }
       batchMetricsRetentionPeriod = parsedRetentionPeriod;
-    } catch (NumberFormatException | InvalidParameterException | ArithmeticException e) {
+    } catch (NumberFormatException | InvalidParameterException e) {
       LOG.error(
               (Supplier<?>)
                       () ->
