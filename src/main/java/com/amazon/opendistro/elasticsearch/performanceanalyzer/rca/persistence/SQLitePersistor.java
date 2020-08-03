@@ -37,6 +37,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -79,15 +80,27 @@ class SQLitePersistor extends PersistorBase {
   }
 
   @Override
-  synchronized void createTable(String tableName, List<Field<?>> columns) {
+  synchronized void createTable(String tableName, List<Field<?>> columns) throws SQLException {
     CreateTableConstraintStep constraintStep = create.createTable(tableName)
         //sqlite does not support identity. use plain sql string instead.
         .column(DSL.field(getPrimaryKeyColumnName(tableName) + PRIMARY_KEY_AUTOINCREMENT_POSTFIX))
         .columns(columns);
 
-    LOG.debug("table created: {}", constraintStep.toString());
-    constraintStep.execute();
+    try {
+      constraintStep.execute();
+      LOG.debug("Successfully created table: {}", tableName);
+    } catch (DataAccessException ex) {
+      String msg = "table " + tableName + " already exists";
+      if (ex.getMessage().contains(msg)) {
+        LOG.debug(ex.getMessage());
+      } else {
+        LOG.error(ex);
+        throw new SQLException(ex);
+      }
+    }
+    tableNames.add(tableName);
     jooqTableColumns.put(tableName, columns);
+    LOG.debug("Added table '{}' and its columns: '{}' to in-memory registry.", tableName, columns);
   }
 
   /**
@@ -98,37 +111,58 @@ class SQLitePersistor extends PersistorBase {
                                 String referenceTablePrimaryKeyFieldName) throws SQLException {
     Field foreignKeyField = DSL.field(referenceTablePrimaryKeyFieldName, Integer.class);
     columns.add(foreignKeyField);
-    Table referenceTable = DSL.table(referenceTableName);
-    CreateTableConstraintStep constraintStep = create.createTable(tableName)
-        .column(DSL.field(getPrimaryKeyColumnName(tableName) + PRIMARY_KEY_AUTOINCREMENT_POSTFIX))
-        .columns(columns)
-        .constraints(DSL.constraint(foreignKeyField.getName() + "_FK").foreignKey(foreignKeyField)
-            .references(referenceTable, DSL.field(referenceTablePrimaryKeyFieldName)));
 
-    LOG.debug("table with fk created: {}", constraintStep.toString());
     try {
+      LOG.debug("Trying to create a summary table: {} that references {}", tableName, referenceTableName);
+      Table referenceTable = DSL.table(referenceTableName);
+      CreateTableConstraintStep constraintStep = create.createTable(tableName)
+          .column(DSL.field(getPrimaryKeyColumnName(tableName) + PRIMARY_KEY_AUTOINCREMENT_POSTFIX))
+          .columns(columns)
+          .constraints(DSL.constraint(foreignKeyField.getName() + "_FK").foreignKey(foreignKeyField)
+              .references(referenceTable, DSL.field(referenceTablePrimaryKeyFieldName)));
       constraintStep.execute();
-      jooqTableColumns.put(tableName, columns);
-    } catch (Exception e) {
-      LOG.error("Failed to create table {}", tableName);
-      throw new SQLException();
+      LOG.debug("table with fk created: {}", constraintStep.toString());
+    } catch (DataAccessException e) {
+      String msg = "table " + tableName + " already exists";
+      if (e.getMessage().contains(msg)) {
+        LOG.debug(e.getMessage());
+      } else {
+        LOG.error("Error creating table: {}", tableName, e);
+        throw new SQLException(e);
+      }
+    } catch (Exception ex) {
+      LOG.error(ex);
+      throw new SQLException(ex);
     }
+    tableNames.add(tableName);
+    jooqTableColumns.put(tableName, columns);
   }
 
   @Override
   synchronized int insertRow(String tableName, List<Object> row) throws SQLException {
     int lastPrimaryKey = -1;
     String sqlQuery = "SELECT " + LAST_INSERT_ROWID;
-    InsertValuesStepN insertValuesStepN = create.insertInto(DSL.table(tableName))
-        .columns(jooqTableColumns.get(tableName))
+
+    Objects.requireNonNull(create, "DSLContext cannot be null");
+    Table<Record> table = DSL.table(tableName);
+    List<Field<?>> columnsForTable = jooqTableColumns.get(tableName);
+    if (columnsForTable == null) {
+      LOG.error("NO columns found for table: {}. Tables: {}, columns: {}", tableName, tableNames, jooqTableColumns);
+      throw new SQLException("No columns exist for table.");
+    }
+
+    InsertValuesStepN insertValuesStepN = create
+        .insertInto(table)
+        .columns(columnsForTable)
         .values(row);
-    LOG.debug("sql insert: {}", insertValuesStepN.toString());
+    
     try {
       insertValuesStepN.execute();
+      LOG.debug("sql insert: {}", insertValuesStepN.toString());
       lastPrimaryKey = create.fetch(sqlQuery).get(0).get(LAST_INSERT_ROWID, Integer.class);
     } catch (Exception e) {
-      LOG.error("Failed to insert into the table {}", tableName);
-      throw new SQLException();
+      LOG.error("Failed to insert into the table {}", tableName, e);
+      throw new SQLException(e);
     }
     LOG.debug("most recently inserted primary key = {}", lastPrimaryKey);
     return lastPrimaryKey;
@@ -227,7 +261,7 @@ class SQLitePersistor extends PersistorBase {
     return rcaResponseJson;
   }
 
-  private void readSummary(GenericSummary upperLevelSummary, int upperLevelPrimaryKey) {
+  private synchronized void readSummary(GenericSummary upperLevelSummary, int upperLevelPrimaryKey) {
     String upperLevelTable = upperLevelSummary.getTableName();
 
     // stop the recursion here if the summary does not have any nested summary table.
@@ -260,7 +294,7 @@ class SQLitePersistor extends PersistorBase {
     }
   }
 
-  private JsonElement getTemperatureRca(String rca) {
+  private synchronized JsonElement getTemperatureRca(String rca) {
     JsonElement temperatureRcaJson;
     switch (rca) {
       case SQLiteQueryUtils.ALL_TEMPERATURE_DIMENSIONS:
@@ -272,7 +306,7 @@ class SQLitePersistor extends PersistorBase {
     return temperatureRcaJson;
   }
 
-  private JsonElement getNonTemperatureRcas(String rca) {
+  private synchronized JsonElement getNonTemperatureRcas(String rca) {
     RcaResponse response = null;
     Field<Integer> primaryKeyField = DSL.field(
         SQLiteQueryUtils.getPrimaryKeyColumnName(ResourceFlowUnit.RCA_TABLE_NAME), Integer.class);
@@ -310,7 +344,7 @@ class SQLitePersistor extends PersistorBase {
     return json;
   }
 
-  private JsonElement readTemperatureProfileRca(String rca) {
+  private synchronized JsonElement readTemperatureProfileRca(String rca) {
     RcaResponse response = null;
     Field<Integer> primaryKeyField = DSL.field(
         SQLiteQueryUtils.getPrimaryKeyColumnName(ResourceFlowUnit.RCA_TABLE_NAME), Integer.class);
