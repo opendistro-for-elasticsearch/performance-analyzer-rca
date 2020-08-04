@@ -63,10 +63,7 @@ public class Collator extends Decider {
     Decision finalDecision = new Decision(System.currentTimeMillis(), NAME);
     for (Decider decider : deciders) {
       Decision decision = decider.getFlowUnits().get(0);
-      finalDecision.addAllActions(decision.getActions()
-                                          .stream()
-                                          .filter(action -> !action.isMuted())
-                                          .collect(Collectors.toList()));
+      finalDecision.addAllActions(decision.getActions());
     }
     return finalDecision;
   }

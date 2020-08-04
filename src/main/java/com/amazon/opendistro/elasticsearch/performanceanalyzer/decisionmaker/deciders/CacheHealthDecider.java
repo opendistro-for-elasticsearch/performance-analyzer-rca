@@ -145,7 +145,7 @@ public class CacheHealthDecider extends Decider {
             final boolean increase) {
         final ModifyCacheCapacityAction action =
                 new ModifyCacheCapacityAction(esNode, cacheType, currentCapacityInBytes, increase);
-        if (action.isActionable()) {
+        if (isActionable(action)) {
             return action;
         }
         return null;
