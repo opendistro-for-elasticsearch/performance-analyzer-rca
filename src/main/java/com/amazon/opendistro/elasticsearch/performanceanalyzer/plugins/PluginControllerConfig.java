@@ -25,6 +25,7 @@ public class PluginControllerConfig {
   public PluginControllerConfig() {
     frameworkPlugins = new ArrayList<>();
     frameworkPlugins.add(PublisherEventsLogger.class);
+    frameworkPlugins.add(DecisionToKafkaPlugin.class); //Add kafka plugins
   }
 
   /**

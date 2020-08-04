@@ -80,7 +80,7 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
   }
 
   @Override
-  public EmptyFlowUnit operate() {
+  public EmptyFlowUnit operate() { //operate action is listened by action listener
     // TODO: Need to add dampening, avoidance, state persistence etc.
     Decision decision = collator.getFlowUnits().get(0);
     for (Action action : decision.getActions()) {
