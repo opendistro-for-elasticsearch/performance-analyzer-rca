@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.reaction_wheel.ReactionWheelHandler;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,6 +26,7 @@ public class PluginControllerConfig {
   public PluginControllerConfig() {
     frameworkPlugins = new ArrayList<>();
     frameworkPlugins.add(PublisherEventsLogger.class);
+    frameworkPlugins.add(ReactionWheelHandler.class);
   }
 
   /**
