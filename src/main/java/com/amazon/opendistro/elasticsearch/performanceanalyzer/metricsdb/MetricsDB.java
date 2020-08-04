@@ -86,6 +86,16 @@ public class MetricsDB implements Removable {
     create = DSL.using(conn, SQLDialect.SQLITE);
   }
 
+  public static MetricsDB fetchExisting(long windowStartTime) throws Exception {
+    String filePath = PluginSettings.instance()
+            .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT)
+            + Long.toString(windowStartTime);
+    if (!(new File(filePath)).exists()) {
+      throw new FileNotFoundException(String.format("MetricsDB file %s could not be found.", filePath));
+    }
+    return new MetricsDB(windowStartTime);
+  }
+
   public void close() throws Exception {
     conn.close();
   }
@@ -270,14 +280,6 @@ public class MetricsDB implements Removable {
     }
   }
 
-  public DSLContext getDSLContext() {
-    return create;
-  }
-
-  public boolean metricExists(String metric) {
-    return DBUtils.checkIfTableExists(create, metric);
-  }
-
   public static void deleteOnDiskFile(long windowStartTime) {
     String dbFilePath = PluginSettings.instance()
             .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT)
@@ -292,13 +294,11 @@ public class MetricsDB implements Removable {
     }
   }
 
-  public static MetricsDB fetchExisting(long windowStartTime) throws Exception {
-    String filePath = PluginSettings.instance()
-            .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT)
-            + Long.toString(windowStartTime);
-    if (!(new File(filePath)).exists()) {
-      throw new FileNotFoundException(String.format("MetricsDB file %s could not be found.", filePath));
-    }
-    return new MetricsDB(windowStartTime);
+  public DSLContext getDSLContext() {
+    return create;
+  }
+
+  public boolean metricExists(String metric) {
+    return DBUtils.checkIfTableExists(create, metric);
   }
 }

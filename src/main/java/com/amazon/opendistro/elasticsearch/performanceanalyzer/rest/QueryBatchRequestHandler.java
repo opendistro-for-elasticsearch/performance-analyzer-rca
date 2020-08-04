@@ -18,35 +18,30 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rest;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsRequest;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsRestUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.model.MetricAttributes;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.model.MetricsModel;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.JsonConverter;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import io.grpc.stub.StreamObserver;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.security.InvalidParameterException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
 import org.apache.logging.log4j.util.Supplier;
 import org.jooq.Record;
 import org.jooq.Result;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.security.InvalidParameterException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Request handler that supports querying MetricsDB on every EC2 instance. Example query –
@@ -158,7 +153,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
           if (samplingPeriod < 5 || samplingPeriod % 5 != 0) {
             throw new InvalidParameterException(String.format("%s is an invalid sampling period", samplingPeriodParam));
           }
-          if (samplingPeriod >= PluginSettings.instance().getBatchMetricsRetentionPeriod()*60) {
+          if (samplingPeriod >= PluginSettings.instance().getBatchMetricsRetentionPeriod() * 60) {
             throw new InvalidParameterException("sampling period must be less than the retention period");
           }
           samplingPeriod *= 1000;
@@ -175,7 +170,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
         if (endTime > currentTime) {
           throw new InvalidParameterException("endtime can be no greater than the system time at the node");
         }
-        if (startTime < currentTime - PluginSettings.instance().getBatchMetricsRetentionPeriod()*60*1000) {
+        if (startTime < currentTime - PluginSettings.instance().getBatchMetricsRetentionPeriod() * 60 * 1000) {
           throw new InvalidParameterException("starttime must be within the retention period");
         }
 
