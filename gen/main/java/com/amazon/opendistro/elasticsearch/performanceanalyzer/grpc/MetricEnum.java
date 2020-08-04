@@ -68,6 +68,14 @@ public enum MetricEnum
    * <code>CACHE_MAX_SIZE = 12 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
    */
   CACHE_MAX_SIZE(12),
+  /**
+   * <pre>
+   * Heap
+   * </pre>
+   *
+   * <code>HEAP_MAX = 16 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
+   */
+  HEAP_MAX(16),
   UNRECOGNIZED(-1),
   ;
 
@@ -131,6 +139,14 @@ public enum MetricEnum
    * <code>CACHE_MAX_SIZE = 12 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
    */
   public static final int CACHE_MAX_SIZE_VALUE = 12;
+  /**
+   * <pre>
+   * Heap
+   * </pre>
+   *
+   * <code>HEAP_MAX = 16 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
+   */
+  public static final int HEAP_MAX_VALUE = 16;
 
 
   public final int getNumber() {
@@ -162,6 +178,7 @@ public enum MetricEnum
       case 10: return CACHE_EVICTION;
       case 11: return CACHE_HIT;
       case 12: return CACHE_MAX_SIZE;
+      case 16: return HEAP_MAX;
       default: return null;
     }
   }

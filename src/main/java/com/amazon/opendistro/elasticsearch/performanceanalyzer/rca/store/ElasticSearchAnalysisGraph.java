@@ -21,20 +21,27 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_AGGREGATE_UPSTREAM;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_LOCUS;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.CacheHealthDecider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Collator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Publisher;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.QueueHealthDecider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardStatsDerivedDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.PluginController;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.PluginControllerConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Bitset_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.CPU_Utilization;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_FieldData_Eviction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_FieldData_Size;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Max_Size;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Query_Size;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Eviction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Hit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Size;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.DocValues_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.GC_Collection_Event;
@@ -76,7 +83,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.FieldDataCacheRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.ShardRequestCacheRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.ShardRequestCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hot_node.HighCpuRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageOldGenRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageYoungGenRca;
@@ -193,7 +204,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     cacheMaxSize.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     addLeaf(cacheMaxSize);
 
-    NodeConfigCollector nodeConfigCollector = new NodeConfigCollector(RCA_PERIOD, queueCapacity, cacheMaxSize);
+    NodeConfigCollector nodeConfigCollector = new NodeConfigCollector(RCA_PERIOD, queueCapacity, cacheMaxSize, (Heap_Max) heapMax);
     nodeConfigCollector.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     nodeConfigCollector.addAllUpstreams(Arrays.asList(threadpool_RejectedReqs, cacheMaxSize));
     NodeConfigClusterCollector nodeConfigClusterCollector = new NodeConfigClusterCollector(nodeConfigCollector);
@@ -201,19 +212,81 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     nodeConfigClusterCollector.addAllUpstreams(Collections.singletonList(nodeConfigCollector));
     nodeConfigClusterCollector.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
+    // Field Data Cache RCA
+    Metric fieldDataCacheEvictions = new Cache_FieldData_Eviction(EVALUATION_INTERVAL_SECONDS);
+    fieldDataCacheEvictions.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    addLeaf(fieldDataCacheEvictions);
+
+    Metric fieldDataCacheSizeGroupByOperation = new AggregateMetric(EVALUATION_INTERVAL_SECONDS,
+            Cache_FieldData_Size.NAME,
+            AggregateFunction.SUM,
+            MetricsDB.MAX, ShardStatsDerivedDimension.INDEX_NAME.toString());
+    fieldDataCacheSizeGroupByOperation.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    addLeaf(fieldDataCacheSizeGroupByOperation);
+
+    FieldDataCacheRca fieldDataCacheNodeRca = new FieldDataCacheRca(RCA_PERIOD,
+            fieldDataCacheEvictions,
+            fieldDataCacheSizeGroupByOperation);
+    fieldDataCacheNodeRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    fieldDataCacheNodeRca.addAllUpstreams(Arrays.asList(fieldDataCacheEvictions, fieldDataCacheSizeGroupByOperation));
+
+    FieldDataCacheClusterRca fieldDataCacheClusterRca = new FieldDataCacheClusterRca(RCA_PERIOD, fieldDataCacheNodeRca);
+    fieldDataCacheClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    fieldDataCacheClusterRca.addAllUpstreams(Collections.singletonList(fieldDataCacheNodeRca));
+    fieldDataCacheClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
+
+    // Shard Request Cache RCA
+    Metric shardRequestCacheEvictions = new Cache_Request_Eviction(EVALUATION_INTERVAL_SECONDS);
+    shardRequestCacheEvictions.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    addLeaf(shardRequestCacheEvictions);
+    Metric shardRequestHits = new Cache_Request_Hit(EVALUATION_INTERVAL_SECONDS);
+    shardRequestHits.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    addLeaf(shardRequestHits);
+
+    Metric shardRequestCacheSizeGroupByOperation = new AggregateMetric(EVALUATION_INTERVAL_SECONDS,
+            Cache_Request_Size.NAME,
+            AggregateFunction.SUM,
+            MetricsDB.MAX, ShardStatsDerivedDimension.INDEX_NAME.toString());
+    shardRequestCacheSizeGroupByOperation.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    addLeaf(shardRequestCacheSizeGroupByOperation);
+
+    ShardRequestCacheRca shardRequestCacheNodeRca = new ShardRequestCacheRca(RCA_PERIOD,
+            shardRequestCacheEvictions,
+            shardRequestHits,
+            shardRequestCacheSizeGroupByOperation);
+    shardRequestCacheNodeRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    shardRequestCacheNodeRca.addAllUpstreams(Arrays.asList(
+            shardRequestCacheEvictions, shardRequestHits, shardRequestCacheSizeGroupByOperation));
+
+    ShardRequestCacheClusterRca shardRequestCacheClusterRca = new ShardRequestCacheClusterRca(RCA_PERIOD, shardRequestCacheNodeRca);
+    shardRequestCacheClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    shardRequestCacheClusterRca.addAllUpstreams(Collections.singletonList(shardRequestCacheNodeRca));
+    shardRequestCacheClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
+
+    // Cache Health Decider
+    CacheHealthDecider cacheHealthDecider = new CacheHealthDecider(
+            EVALUATION_INTERVAL_SECONDS, 12, fieldDataCacheClusterRca, shardRequestCacheClusterRca);
+    cacheHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    cacheHealthDecider.addAllUpstreams(Arrays.asList(fieldDataCacheClusterRca, shardRequestCacheClusterRca));
+
     constructShardResourceUsageGraph();
 
     //constructResourceHeatMapGraph();
 
     // Collator - Collects actions from all deciders and aligns impact vectors
-    Collator collator = new Collator(EVALUATION_INTERVAL_SECONDS, queueHealthDecider);
+    Collator collator = new Collator(EVALUATION_INTERVAL_SECONDS, queueHealthDecider, cacheHealthDecider);
     collator.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    collator.addAllUpstreams(Arrays.asList(queueHealthDecider));
+    collator.addAllUpstreams(Arrays.asList(queueHealthDecider, cacheHealthDecider));
 
     // Publisher - Executes decisions output from collator
     Publisher publisher = new Publisher(EVALUATION_INTERVAL_SECONDS, collator);
     publisher.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     publisher.addAllUpstreams(Collections.singletonList(collator));
+
+    // TODO: Refactor using DI to move out of construct method
+    PluginControllerConfig pluginControllerConfig = new PluginControllerConfig();
+    PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
+    pluginController.initPlugins();
   }
 
   private void constructShardResourceUsageGraph() {

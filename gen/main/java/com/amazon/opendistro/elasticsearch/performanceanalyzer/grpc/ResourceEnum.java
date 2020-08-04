@@ -60,6 +60,14 @@ public enum ResourceEnum
    * <code>NODE_QUERY_CACHE = 12 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
    */
   NODE_QUERY_CACHE(12),
+  /**
+   * <pre>
+   * Heap
+   * </pre>
+   *
+   * <code>HEAP = 20 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
+   */
+  HEAP(20),
   UNRECOGNIZED(-1),
   ;
 
@@ -115,6 +123,14 @@ public enum ResourceEnum
    * <code>NODE_QUERY_CACHE = 12 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
    */
   public static final int NODE_QUERY_CACHE_VALUE = 12;
+  /**
+   * <pre>
+   * Heap
+   * </pre>
+   *
+   * <code>HEAP = 20 [(.com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.additional_fields) = { ... }</code>
+   */
+  public static final int HEAP_VALUE = 20;
 
 
   public final int getNumber() {
@@ -144,6 +160,7 @@ public enum ResourceEnum
       case 10: return FIELD_DATA_CACHE;
       case 11: return SHARD_REQUEST_CACHE;
       case 12: return NODE_QUERY_CACHE;
+      case 20: return HEAP;
       default: return null;
     }
   }

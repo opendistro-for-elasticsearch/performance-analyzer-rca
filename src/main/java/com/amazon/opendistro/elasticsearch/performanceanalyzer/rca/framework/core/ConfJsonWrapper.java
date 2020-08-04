@@ -42,6 +42,7 @@ class ConfJsonWrapper {
   private final int perVertexBufferLength;
   private final Map<String, Object> rcaConfigSettings;
   private final List<String> mutedRcaList;
+  private final Map<String, Object> deciderConfigSettings;
 
   String getRcaStoreLoc() {
     return rcaStoreLoc;
@@ -95,6 +96,10 @@ class ConfJsonWrapper {
     return rcaConfigSettings;
   }
 
+  Map<String, Object> getDeciderConfigSettings() {
+    return deciderConfigSettings;
+  }
+
   ConfJsonWrapper(
       @JsonProperty("rca-store-location") String rcaStoreLoc,
       @JsonProperty("threshold-store-location") String thresholdStoreLoc,
@@ -107,7 +112,8 @@ class ConfJsonWrapper {
       @JsonProperty("network-queue-length") int networkQueueLength,
       @JsonProperty("max-flow-units-per-vertex-buffer") int perVertexBufferLength,
       @JsonProperty("rca-config-settings") Map<String, Object> rcaConfigSettings,
-      @JsonProperty("muted-rcas") List<String> mutedRcas) {
+      @JsonProperty("muted-rcas") List<String> mutedRcas,
+      @JsonProperty("decider-config-settings") Map<String, Object> deciderConfigSettings) {
     this.creationTime = System.currentTimeMillis();
     this.rcaStoreLoc = rcaStoreLoc;
     this.thresholdStoreLoc = thresholdStoreLoc;
@@ -121,5 +127,6 @@ class ConfJsonWrapper {
     this.perVertexBufferLength = perVertexBufferLength;
     this.rcaConfigSettings = rcaConfigSettings;
     this.mutedRcaList = mutedRcas;
+    this.deciderConfigSettings = deciderConfigSettings;
   }
 }

@@ -21,7 +21,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ClusterTemperatureSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.ShardRequestCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
@@ -62,6 +64,8 @@ public class SQLiteQueryUtils {
     rcaSet.add(HotNodeClusterRca.RCA_TABLE_NAME);
     rcaSet.add(HotShardClusterRca.RCA_TABLE_NAME);
     rcaSet.add(QueueRejectionClusterRca.RCA_TABLE_NAME);
+    rcaSet.add(FieldDataCacheClusterRca.RCA_TABLE_NAME);
+    rcaSet.add(ShardRequestCacheClusterRca.RCA_TABLE_NAME);
     clusterLevelRCA = Collections.unmodifiableSet(rcaSet);
   }
 

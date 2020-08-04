@@ -72,9 +72,13 @@ public class PerformanceAnalyzerWebServerTest {
         // Unset all SSL settings
         if (oldBindHost != null) {
             PluginSettings.instance().overrideProperty(PerformanceAnalyzerWebServer.WEBSERVICE_BIND_HOST_NAME, oldBindHost);
+        } else {
+            PluginSettings.instance().overrideProperty(PerformanceAnalyzerWebServer.WEBSERVICE_BIND_HOST_NAME, "localhost");
         }
         if (oldPort != null) {
             PluginSettings.instance().overrideProperty(PerformanceAnalyzerWebServer.WEBSERVICE_PORT_CONF_NAME, oldPort);
+        } else {
+            PluginSettings.instance().overrideProperty(PerformanceAnalyzerWebServer.WEBSERVICE_PORT_CONF_NAME, "9600");
         }
         if (oldCertificateFilePath != null) {
             PluginSettings.instance().overrideProperty(CertificateUtils.CERTIFICATE_FILE_PATH, oldCertificateFilePath);
@@ -84,6 +88,8 @@ public class PerformanceAnalyzerWebServerTest {
         }
         if (oldTrustedCasFilePath != null) {
             PluginSettings.instance().overrideProperty(CertificateUtils.TRUSTED_CAS_FILE_PATH, oldTrustedCasFilePath);
+        } else {
+            PluginSettings.instance().overrideProperty(CertificateUtils.TRUSTED_CAS_FILE_PATH, "");
         }
         if (oldClientCertificateFilePath != null) {
             PluginSettings.instance().overrideProperty(CertificateUtils.CLIENT_CERTIFICATE_FILE_PATH, oldClientCertificateFilePath);
@@ -93,6 +99,8 @@ public class PerformanceAnalyzerWebServerTest {
         }
         if (oldClientTrustedCasFilePath != null) {
             PluginSettings.instance().overrideProperty(CertificateUtils.CLIENT_TRUSTED_CAS_FILE_PATH, oldClientTrustedCasFilePath);
+        } else {
+            PluginSettings.instance().overrideProperty(CertificateUtils.CLIENT_TRUSTED_CAS_FILE_PATH, "");
         }
         PluginSettings.instance().setHttpsEnabled(oldHttpsEnabled);
 

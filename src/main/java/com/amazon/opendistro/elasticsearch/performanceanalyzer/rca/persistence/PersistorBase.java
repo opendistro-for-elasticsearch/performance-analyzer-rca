@@ -97,7 +97,7 @@ public abstract class PersistorBase implements Persistable {
     }
   }
 
-  abstract void createTable(String tableName, List<Field<?>> columns);
+  abstract void createTable(String tableName, List<Field<?>> columns) throws SQLException;
 
   abstract void createTable(
       String tableName,
@@ -115,7 +115,7 @@ public abstract class PersistorBase implements Persistable {
 
   // Not required for now.
   @Override
-  public List<ResourceFlowUnit> read(Node<?> node) {
+  public synchronized List<ResourceFlowUnit> read(Node<?> node) {
     return null;
   }
 
@@ -139,7 +139,7 @@ public abstract class PersistorBase implements Persistable {
     return rcaJson;
   }
 
-  public synchronized void openNewDBFile() throws SQLException {
+  private synchronized void openNewDBFile() throws SQLException {
     this.fileCreateTime = new Date(System.currentTimeMillis());
     this.filename = Paths.get(dir, filenameParam).toString();
     this.tableNames = new HashSet<>();
@@ -182,18 +182,24 @@ public abstract class PersistorBase implements Persistable {
     }
   }
 
-  private void rotateRegisterGarbageThenCreateNewDB(RotationType type) throws IOException, SQLException {
+  private synchronized void rotateRegisterGarbageThenCreateNewDB(RotationType type) throws IOException, SQLException {
     Path rotatedFile = null;
+    long currTime = System.currentTimeMillis();
     switch (type) {
       case FORCE_ROTATE:
-        rotatedFile = fileRotate.forceRotate(System.currentTimeMillis());
+        rotatedFile = fileRotate.forceRotate(currTime);
         break;
       case TRY_ROTATE:
-        rotatedFile = fileRotate.tryRotate(System.currentTimeMillis());
+        rotatedFile = fileRotate.tryRotate(currTime);
         break;
     }
     if (rotatedFile != null) {
       fileGC.eligibleForGc(rotatedFile.toFile().getName());
+    }
+
+    // If we are here that means the tryRotate or the forceRotate didn't throw exception and therefore,
+    // the current DBFile does not exist anymore. We therefore should create a new one.
+    if (fileRotate.getLastRotatedMillis() == currTime) {
       openNewDBFile();
     }
   }
@@ -224,12 +230,8 @@ public abstract class PersistorBase implements Persistable {
           T flowUnit, String nodeName) throws SQLException, DataAccessException {
     String tableName = ResourceFlowUnit.RCA_TABLE_NAME;
     if (!tableNames.contains(tableName)) {
-      LOG.info(
-              "RCA: Table '{}' does not exist. Creating one with columns: {}",
-              tableName,
-              flowUnit.getSqlSchema());
+      LOG.info("RCA: Table '{}' does not exist. Creating one with columns: {}", tableName, flowUnit.getSqlSchema());
       createTable(tableName, flowUnit.getSqlSchema());
-      tableNames.add(tableName);
     }
     int lastPrimaryKey = insertRow(tableName, flowUnit.getSqlValue(nodeName));
 
@@ -250,13 +252,8 @@ public abstract class PersistorBase implements Persistable {
       int referenceTablePrimaryKeyFieldValue) throws SQLException {
     String tableName = summary.getClass().getSimpleName();
     if (!tableNames.contains(tableName)) {
-      LOG.info(
-          "RCA: Table '{}' does not exist. Creating one with columns: {}",
-          tableName,
-          summary.getSqlSchema());
-      createTable(
-          tableName, summary.getSqlSchema(), referenceTable, referenceTablePrimaryKeyFieldName);
-      tableNames.add(tableName);
+      LOG.info("RCA: Table '{}' does not exist. Creating one with columns: {}", tableName, summary.getSqlSchema());
+      createTable(tableName, summary.getSqlSchema(), referenceTable, referenceTablePrimaryKeyFieldName);
     }
     List<Object> values = summary.getSqlValue();
     values.add(Integer.valueOf(referenceTablePrimaryKeyFieldValue));

@@ -238,7 +238,7 @@ public final class PANetworking {
       "s\022\013\n\007SUCCESS\020\000\022\021\n\rNODE_SHUTDOWN\020\001\"I\n\016Met" +
       "ricsRequest\022\023\n\013metric_list\030\001 \003(\t\022\020\n\010agg_" +
       "list\030\002 \003(\t\022\020\n\010dim_list\030\003 \003(\t\")\n\017MetricsR" +
-      "esponse\022\026\n\016metrics_result\030\001 \001(\t*\344\002\n\014Reso" +
+      "esponse\022\026\n\016metrics_result\030\001 \001(\t*\372\002\n\014Reso" +
       "urceEnum\022\032\n\007OLD_GEN\020\000\032\r\202\265\030\t\n\007old gen\022\036\n\t" +
       "YOUNG_GEN\020\001\032\017\202\265\030\013\n\tyoung gen\022\030\n\003CPU\020\002\032\017\202" +
       "\265\030\013\n\tcpu usage\022\020\n\002IO\020\003\032\010\202\265\030\004\n\002IO\022,\n\020WRIT" +
@@ -247,26 +247,28 @@ public final class PANetworking {
       "adpool\022,\n\020FIELD_DATA_CACHE\020\n\032\026\202\265\030\022\n\020fiel" +
       "d data cache\0222\n\023SHARD_REQUEST_CACHE\020\013\032\031\202" +
       "\265\030\025\n\023shard request cache\022,\n\020NODE_QUERY_C" +
-      "ACHE\020\014\032\026\202\265\030\022\n\020node query cache*\370\005\n\nMetri" +
-      "cEnum\022@\n\nHEAP_USAGE\020\000\0320\202\265\030\014\n\nheap usage\202" +
-      "\265\030\034\022\032memory usage in percentage\0222\n\016PROMO" +
-      "TION_RATE\020\001\032\036\202\265\030\020\n\016promotion rate\202\265\030\006\022\004m" +
-      "b/s\0224\n\010MINOR_GC\020\002\032&\202\265\030\n\n\010minor gc\202\265\030\024\022\022t" +
-      "ime in percentage\0220\n\tCPU_USAGE\020\003\032!\202\265\030\013\n\t" +
-      "cpu usage\202\265\030\016\022\014num of cores\022Y\n\020TOTAL_THR" +
-      "OUGHPUT\020\004\032C\202\265\030\022\n\020total throughput\202\265\030)\022\'n" +
-      "umber of bytes read/written per second\022\\" +
-      "\n\022TOTAL_SYS_CALLRATE\020\005\032D\202\265\030\024\n\022total sys " +
-      "callrate\202\265\030(\022&read and write system call" +
-      "s per second\022J\n\017QUEUE_REJECTION\020\006\0325\202\265\030\021\n" +
-      "\017queue rejection\202\265\030\034\022\032rejection period i" +
-      "n second\022G\n\016QUEUE_CAPACITY\020\007\0323\202\265\030\020\n\016queu" +
-      "e capacity\202\265\030\033\022\031max capacity of the queu" +
-      "e\022B\n\016CACHE_EVICTION\020\n\032.\202\265\030\020\n\016cache evict" +
-      "ion\202\265\030\026\022\024cache eviction count\0223\n\tCACHE_H" +
-      "IT\020\013\032$\202\265\030\013\n\tcache hit\202\265\030\021\022\017cache hit cou" +
-      "nt\022E\n\016CACHE_MAX_SIZE\020\014\0321\202\265\030\020\n\016cache max " +
-      "size\202\265\030\031\022\027max cache size in bytes2\242\004\n\023In" +
+      "ACHE\020\014\032\026\202\265\030\022\n\020node query cache\022\024\n\004HEAP\020\024" +
+      "\032\n\202\265\030\006\n\004heap*\262\006\n\nMetricEnum\022@\n\nHEAP_USAG" +
+      "E\020\000\0320\202\265\030\014\n\nheap usage\202\265\030\034\022\032memory usage " +
+      "in percentage\0222\n\016PROMOTION_RATE\020\001\032\036\202\265\030\020\n" +
+      "\016promotion rate\202\265\030\006\022\004mb/s\0224\n\010MINOR_GC\020\002\032" +
+      "&\202\265\030\n\n\010minor gc\202\265\030\024\022\022time in percentage\022" +
+      "0\n\tCPU_USAGE\020\003\032!\202\265\030\013\n\tcpu usage\202\265\030\016\022\014num" +
+      " of cores\022Y\n\020TOTAL_THROUGHPUT\020\004\032C\202\265\030\022\n\020t" +
+      "otal throughput\202\265\030)\022\'number of bytes rea" +
+      "d/written per second\022\\\n\022TOTAL_SYS_CALLRA" +
+      "TE\020\005\032D\202\265\030\024\n\022total sys callrate\202\265\030(\022&read" +
+      " and write system calls per second\022J\n\017QU" +
+      "EUE_REJECTION\020\006\0325\202\265\030\021\n\017queue rejection\202\265" +
+      "\030\034\022\032rejection period in second\022G\n\016QUEUE_" +
+      "CAPACITY\020\007\0323\202\265\030\020\n\016queue capacity\202\265\030\033\022\031ma" +
+      "x capacity of the queue\022B\n\016CACHE_EVICTIO" +
+      "N\020\n\032.\202\265\030\020\n\016cache eviction\202\265\030\026\022\024cache evi" +
+      "ction count\0223\n\tCACHE_HIT\020\013\032$\202\265\030\013\n\tcache " +
+      "hit\202\265\030\021\022\017cache hit count\022E\n\016CACHE_MAX_SI" +
+      "ZE\020\014\0321\202\265\030\020\n\016cache max size\202\265\030\031\022\027max cach" +
+      "e size in bytes\0228\n\010HEAP_MAX\020\020\032*\202\265\030\n\n\010hea" +
+      "p max\202\265\030\030\022\026max heap size in bytes2\242\004\n\023In" +
       "terNodeRpcService\022\253\001\n\007Publish\022M.com.amaz" +
       "on.opendistro.elasticsearch.performancea" +
       "nalyzer.grpc.FlowUnitMessage\032M.com.amazo" +
