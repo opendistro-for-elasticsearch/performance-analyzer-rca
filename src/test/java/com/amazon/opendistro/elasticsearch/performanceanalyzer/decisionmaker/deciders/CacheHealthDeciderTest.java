@@ -15,9 +15,11 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.SEARCH_QUEUE_CAPACITY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.MockitoAnnotations.initMocks;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
@@ -25,9 +27,15 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.RcaTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.NodeConfigFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigClusterCollector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.ShardRequestCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.sql.SQLException;
@@ -37,12 +45,17 @@ import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class CacheHealthDeciderTest {
-  AppContext appContext;
+  private AppContext appContext;
 
   @Before
   public void setupCluster() throws SQLException, ClassNotFoundException {
+    final long heapMaxSizeInBytes = 12000 * 1_000_000L;
+    final long fieldDataCacheMaxSizeInBytes = 12000;
+    final long shardRequestCacheMaxSizeInBytes = 12000;
+
     ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
     ClusterDetailsEventProcessor.NodeDetails node1 =
         new ClusterDetailsEventProcessor.NodeDetails(NodeRole.DATA, "node1", "127.0.0.1", false);
@@ -66,11 +79,39 @@ public class CacheHealthDeciderTest {
 
     appContext = new AppContext();
     appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
+
+    for (final ClusterDetailsEventProcessor.NodeDetails node : nodes) {
+      appContext
+          .getNodeConfigCache()
+          .put(
+              new NodeKey(
+                  new InstanceDetails.Id(node.getId()),
+                  new InstanceDetails.Ip(node.getHostAddress())),
+              ResourceUtil.HEAP_MAX_SIZE,
+              heapMaxSizeInBytes);
+      appContext
+          .getNodeConfigCache()
+          .put(
+              new NodeKey(
+                  new InstanceDetails.Id(node.getId()),
+                  new InstanceDetails.Ip(node.getHostAddress())),
+              ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE,
+              fieldDataCacheMaxSizeInBytes);
+      appContext
+          .getNodeConfigCache()
+          .put(
+              new NodeKey(
+                  new InstanceDetails.Id(node.getId()),
+                  new InstanceDetails.Ip(node.getHostAddress())),
+              ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE,
+              shardRequestCacheMaxSizeInBytes);
+    }
   }
 
   @Test
   public void testHighEvictionRemediation() {
-    RcaTestHelper<HotNodeSummary> fieldDataCacheNodeRca = new RcaTestHelper<>("fieldDataCacheNodeRca");
+    RcaTestHelper<HotNodeSummary> fieldDataCacheNodeRca =
+        new RcaTestHelper<>("fieldDataCacheNodeRca");
     fieldDataCacheNodeRca.setAppContext(appContext);
 
     // node1: Field data and Shard request cache unhealthy
@@ -91,7 +132,8 @@ public class CacheHealthDeciderTest {
         RcaTestHelper.generateFlowUnit("node3", "127.0.0.3", Resources.State.HEALTHY),
         RcaTestHelper.generateFlowUnit("node4", "127.0.0.4", Resources.State.HEALTHY));
 
-    RcaTestHelper<HotNodeSummary> shardRequestCacheNodeRca = new RcaTestHelper<>("shardRequestCacheNodeRca");
+    RcaTestHelper<HotNodeSummary> shardRequestCacheNodeRca =
+        new RcaTestHelper<>("shardRequestCacheNodeRca");
     shardRequestCacheNodeRca.setAppContext(appContext);
 
     // node1: Field data and Shard request cache unhealthy
@@ -112,17 +154,19 @@ public class CacheHealthDeciderTest {
             ResourceUtil.SHARD_REQUEST_CACHE_EVICTION),
         RcaTestHelper.generateFlowUnit("node4", "127.0.0.4", Resources.State.HEALTHY));
 
-    FieldDataCacheClusterRca fieldDataCacheClusterRca = new FieldDataCacheClusterRca(1, fieldDataCacheNodeRca);
+    FieldDataCacheClusterRca fieldDataCacheClusterRca =
+        new FieldDataCacheClusterRca(1, fieldDataCacheNodeRca);
     fieldDataCacheClusterRca.setAppContext(appContext);
     fieldDataCacheClusterRca.generateFlowUnitListFromLocal(null);
 
     ShardRequestCacheClusterRca shardRequestCacheClusterRca =
-            new ShardRequestCacheClusterRca(1, shardRequestCacheNodeRca);
+        new ShardRequestCacheClusterRca(1, shardRequestCacheNodeRca);
     shardRequestCacheClusterRca.setAppContext(appContext);
     shardRequestCacheClusterRca.generateFlowUnitListFromLocal(null);
 
     CacheHealthDecider decider =
         new CacheHealthDecider(5, 12, fieldDataCacheClusterRca, shardRequestCacheClusterRca);
+    decider.setAppContext(appContext);
 
     // Since deciderFrequency is 12, the first 11 invocations return empty decision
     for (int i = 0; i < 11; i++) {
@@ -131,7 +175,8 @@ public class CacheHealthDeciderTest {
     }
 
     Decision decision = decider.operate();
-    assertEquals(4, decision.getActions().size());
+    // Only one resource will be tuned at a time
+    assertEquals(3, decision.getActions().size());
 
     Map<String, Map<ResourceEnum, Integer>> nodeActionCounter = new HashMap<>();
     for (Action action : decision.getActions()) {
@@ -150,8 +195,8 @@ public class CacheHealthDeciderTest {
       }
     }
 
-    assertEquals(2, nodeActionCounter.get("node1").size());
-    assertEquals(1, (int) nodeActionCounter.get("node1").get(ResourceEnum.FIELD_DATA_CACHE));
+    assertEquals(1, nodeActionCounter.get("node1").size());
+    // Based on priority the shard request cache gets tuned before the field data cache
     assertEquals(1, (int) nodeActionCounter.get("node1").get(ResourceEnum.SHARD_REQUEST_CACHE));
     assertEquals(1, nodeActionCounter.get("node2").size());
     assertEquals(1, (int) nodeActionCounter.get("node2").get(ResourceEnum.FIELD_DATA_CACHE));

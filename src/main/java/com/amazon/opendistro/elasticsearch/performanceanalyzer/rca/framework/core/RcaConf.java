@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.co
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheDeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageYoungGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNodeClusterRcaConfig;
@@ -158,6 +159,10 @@ public class RcaConf {
     return new CacheConfig(this);
   }
 
+  public CacheDeciderConfig getCacheDeciderConfig() {
+    return new CacheDeciderConfig(this);
+  }
+
   public List<String> getMutedRcaList() {
     return conf.getMutedRcaList();
   }
@@ -230,5 +235,28 @@ public class RcaConf {
     } catch (IOException e) {
       LOG.error("Unable to move and replace the old conf file with updated conf file.", e);
     }
+  }
+
+  @SuppressWarnings("unchecked")
+  public <T> T readDeciderConfig(String deciderName, String key, Class<? extends T> clazz) {
+    T setting = null;
+    try {
+      Map<String, Object> deciderObj = null;
+      if (conf.getDeciderConfigSettings() != null
+              && conf.getDeciderConfigSettings().containsKey(deciderName)
+              && conf.getDeciderConfigSettings().get(deciderName) != null) {
+        deciderObj = (Map<String, Object>)conf.getDeciderConfigSettings().get(deciderName);
+      }
+
+      if (deciderObj != null
+              && deciderObj.containsKey(key)
+              && deciderObj.get(key) != null) {
+        setting = clazz.cast(deciderObj.get(key));
+      }
+    }
+    catch (ClassCastException ne) {
+      LOG.error("rca.conf contains value in invalid format, trace : {}", ne.getMessage());
+    }
+    return setting;
   }
 }

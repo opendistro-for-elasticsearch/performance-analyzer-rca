@@ -16,146 +16,178 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheCapacityAction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheDeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.BaseClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.ShardRequestCacheClusterRca;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-// TODO: 1. Read current cache capacity, total cache capacity, upper bound, lower bound from NodeConfigurationRca
+// TODO: 1. Create separate ActionConfig objects for different actions
+
 public class CacheHealthDecider extends Decider {
+  private static final Logger LOG = LogManager.getLogger(CacheHealthDecider.class);
+  public static final String NAME = "cacheHealthDecider";
 
-    public static final String NAME = "cacheHealthDecider";
+  private final FieldDataCacheClusterRca fieldDataCacheClusterRca;
+  private final ShardRequestCacheClusterRca shardRequestCacheClusterRca;
+  private final ImmutableMap<ResourceEnum, BaseClusterRca> cacheTypeBaseClusterRcaMap;
 
-    private final FieldDataCacheClusterRca fieldDataCacheClusterRca;
-    private final ShardRequestCacheClusterRca shardRequestCacheClusterRca;
+  private double fieldDataCacheSizeUpperBound;
+  private double shardRequestCacheSizeUpperBound;
 
-    List<String> actionsByUserPriority = new ArrayList<>();
-    private int counter = 0;
+  List<ResourceEnum> modifyCacheActionPriorityList = new ArrayList<>();
+  private int counter = 0;
 
-    public CacheHealthDecider(final long evalIntervalSeconds,
-                              final int decisionFrequency,
-                              final FieldDataCacheClusterRca fieldDataCacheClusterRca,
-                              final ShardRequestCacheClusterRca shardRequestCacheClusterRca) {
-        // TODO: Also consume NodeConfigurationRca
-        super(evalIntervalSeconds, decisionFrequency);
+  public CacheHealthDecider(
+      final long evalIntervalSeconds,
+      final int decisionFrequency,
+      final FieldDataCacheClusterRca fieldDataCacheClusterRca,
+      final ShardRequestCacheClusterRca shardRequestCacheClusterRca) {
+    super(evalIntervalSeconds, decisionFrequency);
+    configureModifyCacheActionPriority();
 
-        this.fieldDataCacheClusterRca = fieldDataCacheClusterRca;
-        this.shardRequestCacheClusterRca = shardRequestCacheClusterRca;
+    this.fieldDataCacheClusterRca = fieldDataCacheClusterRca;
+    this.shardRequestCacheClusterRca = shardRequestCacheClusterRca;
+    this.cacheTypeBaseClusterRcaMap =
+        ImmutableMap.<ResourceEnum, BaseClusterRca>builder()
+            .put(ResourceEnum.SHARD_REQUEST_CACHE, shardRequestCacheClusterRca)
+            .put(ResourceEnum.FIELD_DATA_CACHE, fieldDataCacheClusterRca)
+            .build();
 
-        configureActionPriority();
+    this.fieldDataCacheSizeUpperBound = CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND;
+    this.shardRequestCacheSizeUpperBound = CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND;
+  }
+
+  @Override
+  public String name() {
+    return NAME;
+  }
+
+  @Override
+  public Decision operate() {
+    final Set<InstanceDetails.Id> impactedNodes = new HashSet<>();
+
+    Decision decision = new Decision(System.currentTimeMillis(), NAME);
+    counter += 1;
+    if (counter < decisionFrequency) {
+      return decision;
     }
+    counter = 0;
 
-    @Override
-    public String name() {
-        return NAME;
+    for (final ResourceEnum cacheType : modifyCacheActionPriorityList) {
+      getActionsFromRca(cacheTypeBaseClusterRcaMap.get(cacheType), impactedNodes).forEach(decision::addAction);
     }
+    return decision;
+  }
 
-    @Override
-    public Decision operate() {
-        final ImmutableList<BaseClusterRca> cacheClusterRca =
-            ImmutableList.<BaseClusterRca>builder()
-                .add(shardRequestCacheClusterRca)
-                .add(fieldDataCacheClusterRca)
-                .build();
+  private <R extends BaseClusterRca> List<Action> getActionsFromRca(
+      final R cacheClusterRca,
+      final Set<InstanceDetails.Id> impactedNodes) {
+    final List<Action> actions = new ArrayList<>();
 
-        Decision decision = new Decision(System.currentTimeMillis(), NAME);
-        counter += 1;
-        if (counter < decisionFrequency) {
-            return decision;
-        }
-        counter = 0;
+    if (!cacheClusterRca.getFlowUnits().isEmpty()) {
+      final ResourceFlowUnit<HotClusterSummary> flowUnit = cacheClusterRca.getFlowUnits().get(0);
+      if (!flowUnit.hasResourceSummary()) {
+        return actions;
+      }
 
-        // TODO: Tune only one resource at a time based on action priorities
-        cacheClusterRca.forEach(rca -> getActionsFromRca(rca, decision));
-        return decision;
-    }
+      final List<HotNodeSummary> clusterSummary = flowUnit.getSummary().getHotNodeSummaryList();
 
-    private <R extends BaseClusterRca> void getActionsFromRca(
-            final R cacheClusterRca, final Decision decision) {
-        if (!cacheClusterRca.getFlowUnits().isEmpty()) {
-            final ResourceFlowUnit<HotClusterSummary> flowUnit = cacheClusterRca.getFlowUnits().get(0);
-            if (!flowUnit.hasResourceSummary()) {
-                return;
-            }
-
-            final HotClusterSummary clusterSummary = flowUnit.getSummary();
-
-            clusterSummary
-                    .getHotNodeSummaryList()
-                    .forEach(
-                            hotNodeSummary -> {
-                                final NodeKey esNode =
-                                        new NodeKey(hotNodeSummary.getNodeID(), hotNodeSummary.getHostAddress());
-                                for (final HotResourceSummary resource :
-                                        hotNodeSummary.getHotResourceSummaryList()) {
-                                    decision.addAction(
-                                            computeBestAction(esNode, resource.getResource().getResourceEnum()));
-                                }
-                            });
-        }
-    }
-
-    private void configureActionPriority() {
-        // TODO: Input from user configured yml
-        this.actionsByUserPriority.add(ModifyCacheCapacityAction.NAME);
-    }
-
-    /**
-     * Evaluate the most relevant action for a node
-     *
-     * <p>Action relevance decided based on user configured priorities for now, this can be modified
-     * to consume better signals going forward.
-     */
-    private Action computeBestAction(final NodeKey esNode, final ResourceEnum cacheType) {
-        Action action = null;
-        for (String actionName : actionsByUserPriority) {
-            action =
-                    getAction(actionName, esNode, cacheType, getNodeCacheCapacityInBytes(esNode, cacheType), true);
+      for (final HotNodeSummary hotNodeSummary : clusterSummary) {
+        if (!impactedNodes.contains(hotNodeSummary.getNodeID())) {
+          final NodeKey esNode = new NodeKey(hotNodeSummary.getNodeID(), hotNodeSummary.getHostAddress());
+          for (final HotResourceSummary resource : hotNodeSummary.getHotResourceSummaryList()) {
+            final Action action = computeBestAction(esNode, resource.getResource().getResourceEnum());
             if (action != null) {
-                break;
+              actions.add(action);
+              impactedNodes.add(hotNodeSummary.getNodeID());
             }
+          }
         }
-        return action;
+      }
     }
+    return actions;
+  }
 
-    private Action getAction(final String actionName,
-                             final NodeKey esNode,
-                             final ResourceEnum cacheType,
-                             final long currentCapacityInBytes,
-                             final boolean increase) {
-        if (ModifyCacheCapacityAction.NAME.equals(actionName)) {
-            return configureCacheCapacity(esNode, cacheType, currentCapacityInBytes, increase);
-        }
-        return null;
-    }
+  private void configureModifyCacheActionPriority() {
+    // Assigning shard request cache higher priority over field data cache
+    // TODO: Modify as per the performance test results
+    this.modifyCacheActionPriorityList.add(ResourceEnum.SHARD_REQUEST_CACHE);
+    this.modifyCacheActionPriorityList.add(ResourceEnum.FIELD_DATA_CACHE);
+  }
 
-    private ModifyCacheCapacityAction configureCacheCapacity(
-            final NodeKey esNode,
-            final ResourceEnum cacheType,
-            final long currentCapacityInBytes,
-            final boolean increase) {
-        final ModifyCacheCapacityAction action =
-                new ModifyCacheCapacityAction(esNode, cacheType, currentCapacityInBytes, increase);
-        if (isActionable(action)) {
-            return action;
-        }
-        return null;
-    }
+  /**
+   * Evaluate the most relevant action for a node for the specific cache type
+   *
+   * <p>Only ModifyCacheMaxSize Action is used for now, this can be modified to consume better
+   * signals going forward.
+   */
+  private Action computeBestAction(final NodeKey esNode, final ResourceEnum cacheType) {
+    return getAction(ModifyCacheMaxSizeAction.NAME, esNode, cacheType, true);
+  }
 
-    private long getNodeCacheCapacityInBytes(final NodeKey esNode, final ResourceEnum cacheType) {
-        // TODO: use NodeConfigurationRca to return capacity, for now returning random value in Bytes
-        if (cacheType.equals(ResourceEnum.FIELD_DATA_CACHE)) {
-            return 1000L;
-        }
-        return 1000L;
+  private Action getAction(
+      final String actionName, final NodeKey esNode, final ResourceEnum cacheType, final boolean increase) {
+    if (ModifyCacheMaxSizeAction.NAME.equals(actionName)) {
+      return configureCacheMaxSize(esNode, cacheType, increase);
     }
+    return null;
+  }
+
+  private ModifyCacheMaxSizeAction configureCacheMaxSize(
+      final NodeKey esNode, final ResourceEnum cacheType, final boolean increase) {
+    final double cacheUpperBound = getCacheUpperBound(cacheType);
+    final ModifyCacheMaxSizeAction action =
+        new ModifyCacheMaxSizeAction(
+            esNode, cacheType, getAppContext().getNodeConfigCache(), cacheUpperBound, increase);
+    if (isActionable(action)) {
+      return action;
+    }
+    return null;
+  }
+
+  private double getCacheUpperBound(final ResourceEnum cacheType) {
+    if (cacheType.equals(ResourceEnum.FIELD_DATA_CACHE)) {
+      return getFieldDataCacheUpperBound();
+    } else if (cacheType.equals(ResourceEnum.SHARD_REQUEST_CACHE)) {
+      return getShardRequestCacheUpperBound();
+    }
+    throw new IllegalArgumentException(
+        String.format("Unable to get cache upper bound for cacheType=[%s]", cacheType.toString()));
+  }
+
+  private double getFieldDataCacheUpperBound() {
+    return fieldDataCacheSizeUpperBound;
+  }
+
+  private double getShardRequestCacheUpperBound() {
+    return shardRequestCacheSizeUpperBound;
+  }
+
+  /**
+   * read threshold values from rca.conf
+   *
+   * @param conf RcaConf object
+   */
+  @Override
+  public void readRcaConf(RcaConf conf) {
+    final CacheDeciderConfig configObj = conf.getCacheDeciderConfig();
+    fieldDataCacheSizeUpperBound = configObj.getFieldDataCacheUpperBound();
+    shardRequestCacheSizeUpperBound = configObj.getShardRequestCacheUpperBound();
+  }
 }

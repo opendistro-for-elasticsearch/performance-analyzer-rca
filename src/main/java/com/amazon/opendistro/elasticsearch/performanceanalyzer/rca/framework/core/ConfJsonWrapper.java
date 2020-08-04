@@ -43,6 +43,7 @@ public class ConfJsonWrapper {
   private final int perVertexBufferLength;
   private final Map<String, Object> rcaConfigSettings;
   private final List<String> mutedRcaList;
+  private final Map<String, Object> deciderConfigSettings;
 
   private final List<String> mutedDeciderList;
 
@@ -108,7 +109,11 @@ public class ConfJsonWrapper {
     return rcaConfigSettings;
   }
 
-  public ConfJsonWrapper(
+  Map<String, Object> getDeciderConfigSettings() {
+    return deciderConfigSettings;
+  }
+
+  ConfJsonWrapper(
       @JsonProperty("rca-store-location") String rcaStoreLoc,
       @JsonProperty("threshold-store-location") String thresholdStoreLoc,
       @JsonProperty("new-rca-check-minutes") long newRcaCheckPeriodicityMins,
@@ -122,7 +127,8 @@ public class ConfJsonWrapper {
       @JsonProperty("rca-config-settings") Map<String, Object> rcaConfigSettings,
       @JsonProperty("muted-rcas") List<String> mutedRcas,
       @JsonProperty("muted-deciders") List<String> mutedDeciders,
-      @JsonProperty("muted-actions") List<String> mutedActions) {
+      @JsonProperty("muted-actions") List<String> mutedActions,
+      @JsonProperty("decider-config-settings") Map<String, Object> deciderConfigSettings) {
     this.creationTime = System.currentTimeMillis();
     this.rcaStoreLoc = rcaStoreLoc;
     this.thresholdStoreLoc = thresholdStoreLoc;
@@ -138,5 +144,6 @@ public class ConfJsonWrapper {
     this.mutedRcaList = ImmutableList.copyOf(mutedRcas);
     this.mutedDeciderList = ImmutableList.copyOf(mutedDeciders);
     this.mutedActionList = ImmutableList.copyOf(mutedActions);
+    this.deciderConfigSettings = deciderConfigSettings;
   }
 }

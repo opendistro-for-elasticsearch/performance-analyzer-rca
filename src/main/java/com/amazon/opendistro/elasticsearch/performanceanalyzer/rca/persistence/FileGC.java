@@ -144,7 +144,7 @@ public class FileGC {
   private void delete(File file) throws IOException {
     Path path = Paths.get(file.toURI());
     try {
-      Files.delete(path);
+      Files.deleteIfExists(path);
     } catch (IOException e) {
       LOG.error("Could not delete file: {}. Error: {}", file, e);
       throw e;
