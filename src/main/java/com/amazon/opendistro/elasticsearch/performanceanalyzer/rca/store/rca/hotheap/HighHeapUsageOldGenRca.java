@@ -55,10 +55,10 @@ import org.apache.logging.log4j.Logger;
  * of gc event and the min heap usage in O(1) time complexity. To check whether the old gen is
  * healthy, we first check the sum of gc event. if it is a non zero value, it means there is at
  * least one full GC during the entire sliding window and then compare the usage with the threshold.
- * To git rid of false positive from sampling, we keep the sliding window big enough to keep at
+ * To get rid of false positive from sampling, we keep the sliding window big enough to keep at
  * least a couple of such minimum samples to make the min value more accurate.
  <p>
- * This RCA read the following node stats from metric and sort them to get the list of top consumers
+ * This RCA reads the following node stats from metric and sort them to get the list of top consumers
  * cache :
  * Cache_FieldData_Size / Cache_Request_Size / Cache_Query_Size
  * Lucene memory :
@@ -188,7 +188,6 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit<HotResourceSumm
 
     if (counter == this.rcaPeriod) {
       ResourceContext context = null;
-      HotResourceSummary summary = null;
       // reset the variables
       counter = 0;
 
@@ -207,12 +206,13 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit<HotResourceSumm
         context = new ResourceContext(Resources.State.HEALTHY);
       }
 
+      HotResourceSummary summary = new HotResourceSummary(OLD_GEN_HEAP_USAGE,
+          OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE, currentMinOldGenUsage / maxOldGenHeapSize, SLIDING_WINDOW_SIZE_IN_MINS * 60);
+
       //check to see if the value is above lower bound thres
       if (gcEventSlidingWindow.readSum() >= OLD_GEN_GC_THRESHOLD
           && !Double.isNaN(currentMinOldGenUsage)
           && currentMinOldGenUsage / maxOldGenHeapSize > OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE * this.lowerBoundThreshold) {
-        summary = new HotResourceSummary(OLD_GEN_HEAP_USAGE,
-            OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE, currentMinOldGenUsage / maxOldGenHeapSize, SLIDING_WINDOW_SIZE_IN_MINS * 60);
         addTopConsumers(summary);
       }
 

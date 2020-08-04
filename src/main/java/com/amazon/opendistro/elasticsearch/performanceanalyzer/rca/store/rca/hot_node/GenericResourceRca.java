@@ -149,18 +149,20 @@ public class GenericResourceRca extends Rca<ResourceFlowUnit<HotResourceSummary>
       // reset the variables
       counter = 0;
 
-      double avgCpuUsage = slidingWindow.readAvg();
-      if (!Double.isNaN(avgCpuUsage) && avgCpuUsage > threshold) {
+      double avgUsage = slidingWindow.readAvg();
+      if (!Double.isNaN(avgUsage) && avgUsage > threshold) {
         context = new ResourceContext(Resources.State.CONTENDED);
       } else {
         context = new ResourceContext(Resources.State.HEALTHY);
       }
 
       //check to see if the value is above lower bound thres
-      if (!Double.isNaN(avgCpuUsage) && avgCpuUsage >= lowerBoundThreshold) {
+      if (!Double.isNaN(avgUsage)) {
         summary = new HotResourceSummary(this.resource, threshold,
-            avgCpuUsage, SLIDING_WINDOW_IN_MIN * 60);
-        addTopConsumerSummary(summary);
+            avgUsage, SLIDING_WINDOW_IN_MIN * 60);
+        if (avgUsage >= lowerBoundThreshold) {
+          addTopConsumerSummary(summary);
+        }
       }
       return new ResourceFlowUnit<>(clock.millis(), context, summary);
     } else {

@@ -16,16 +16,16 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources.State;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ClusterResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.AnyClusterSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.AnyNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary.UsageBucket;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.StaticBucketThresholds;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.UsageBucketThresholds;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.google.common.annotations.VisibleForTesting;
@@ -57,8 +57,7 @@ import org.apache.logging.log4j.Logger;
  * method that can be overriden :
  * generateNodeSummary(NodeKey) : how do we want to parse the table and generate summary for one node.
  */
-public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
-
+public class BaseClusterRca extends Rca<ClusterResourceFlowUnit> {
   private static final Logger LOG = LogManager.getLogger(BaseClusterRca.class);
   private static final int DEFAULT_NUM_OF_FLOWUNITS = 1;
   private static final long TIMESTAMP_EXPIRATION_IN_MILLIS = TimeUnit.MINUTES.toMillis(10);
@@ -71,9 +70,8 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
   protected int numOfFlowUnitsInMap;
   protected boolean collectFromMasterNode;
   protected long expirationTimeWindow;
-  protected boolean computeUsageBuckets;
-  protected UsageBucketThresholds usageBucketThresholds;
-
+  protected boolean sendHealthyFlowUnits;
+  protected RcaConf rcaConf;
 
   @SafeVarargs
   public <R extends Rca<ResourceFlowUnit<HotNodeSummary>>> BaseClusterRca(final int rcaPeriod,
@@ -85,10 +83,9 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
     this.numOfFlowUnitsInMap = DEFAULT_NUM_OF_FLOWUNITS;
     this.nodeTable = HashBasedTable.create();
     this.collectFromMasterNode = false;
-    this.computeUsageBuckets = false;
     this.expirationTimeWindow = TIMESTAMP_EXPIRATION_IN_MILLIS;
     this.nodeRcas = Arrays.asList(nodeRca);
-    this.usageBucketThresholds = new StaticBucketThresholds();
+    this.sendHealthyFlowUnits = false;
   }
 
   @VisibleForTesting
@@ -149,20 +146,9 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
     inactiveNodes.forEach(nodeKey -> nodeTable.row(nodeKey).clear());
   }
 
-  /**
-   * generate flowunit for downstream based on the flowunits this RCA collects in hashmap
-   * flowunits with timestamp beyond expirationTimeWindow time frame are  considered
-   * as stale and ignored by this RCA.
-   * @return flowunit for downstream vertices
-   */
-  private ResourceFlowUnit<HotClusterSummary> generateFlowUnit() {
-    List<HotNodeSummary> unhealthyNodeSummaries = new ArrayList<>();
-    long timestamp = clock.millis();
+  protected AnyClusterSummary generateClusterSummary() {
+    List<AnyNodeSummary> nodeSummaries = new ArrayList<>();
     List<InstanceDetails> clusterNodesDetails = getClusterNodesDetails();
-    UsageBucketThresholds usageBucketThresholds = null;
-    if (computeUsageBuckets) {
-      usageBucketThresholds = getBucketThresholds();
-    }
     // iterate through this table
     for (InstanceDetails nodeDetails : clusterNodesDetails) {
       NodeKey nodeKey = new NodeKey(nodeDetails.getInstanceId(), nodeDetails.getInstanceIp());
@@ -170,31 +156,39 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
       if (!nodeTable.containsRow(nodeKey)) {
         continue;
       }
-      HotNodeSummary newNodeSummary = generateNodeSummary(nodeKey);
+      AnyNodeSummary newNodeSummary = generateNodeSummary(nodeKey);
       if (newNodeSummary != null) {
-        if (computeUsageBuckets) {
-          for (HotResourceSummary hotResourceSummary : newNodeSummary.getHotResourceSummaryList()) {
-            UsageBucket bucket = usageBucketThresholds.computeBucket(hotResourceSummary);
-            hotResourceSummary.setUsageBucket(bucket);
-          }
-        }
-        unhealthyNodeSummaries.add(newNodeSummary);
+        nodeSummaries.add(newNodeSummary);
       }
     }
-    if (!unhealthyNodeSummaries.isEmpty()) {
-      HotClusterSummary clusterSummary = new HotClusterSummary(clusterNodesDetails.size(), unhealthyNodeSummaries.size());
-      for (HotNodeSummary nodeSummary : unhealthyNodeSummaries) {
+    AnyClusterSummary clusterSummary = null;
+    if (!nodeSummaries.isEmpty()) {
+      int numUnhealthyNodes = 0;
+      clusterSummary = new AnyClusterSummary(clusterNodesDetails.size(), numUnhealthyNodes, false);
+      for (AnyNodeSummary nodeSummary : nodeSummaries) {
         clusterSummary.appendNestedSummary(nodeSummary);
+        if (nodeSummary.isHot()) {
+          numUnhealthyNodes++;
+          clusterSummary.setHot(true);
+        }
       }
-      return new ResourceFlowUnit<>(timestamp, new ResourceContext(Resources.State.UNHEALTHY), clusterSummary, true);
+      clusterSummary.setNumOfUnhealthyNodes(numUnhealthyNodes);
     }
-    else {
-      return new ResourceFlowUnit<>(timestamp, new ResourceContext(State.HEALTHY), null);
-    }
+    return clusterSummary;
   }
 
-  protected UsageBucketThresholds getBucketThresholds() {
-    return usageBucketThresholds;
+  /**
+   * generate flowunit for downstream based on the flowunits this RCA collects in hashmap
+   * flowunits with timestamp beyond expirationTimeWindow time frame are  considered
+   * as stale and ignored by this RCA.
+   * @return flowunit for downstream vertices
+   */
+  protected ClusterResourceFlowUnit generateFlowUnit(HotClusterSummary clusterSummary,
+      ResourceContext context) {
+    if (clusterSummary == null && context == null) {
+      return new ClusterResourceFlowUnit(clock.millis());
+    }
+    return new ClusterResourceFlowUnit(clock.millis(), context, clusterSummary, null, true);
   }
 
   /**
@@ -207,8 +201,8 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
    * @param nodeKey NodeKey of the node that we want to generate node summary for
    * @return node summary for this node
    */
-  protected HotNodeSummary generateNodeSummary(NodeKey nodeKey) {
-    HotNodeSummary nodeSummary = null;
+  protected AnyNodeSummary generateNodeSummary(NodeKey nodeKey) {
+    AnyNodeSummary nodeSummary = null;
     long timestamp = clock.millis();
     // for each RCA type this cluster RCA subscribes, read its most recent flowunit and if it is
     // unhealthy, append this flowunit to output node summary
@@ -220,33 +214,52 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
       ResourceFlowUnit<HotNodeSummary> flowUnit = nodeTable.get(nodeKey, nodeRca.name()).getLast();
       // skip this flowunit if :
       // 1. the timestamp of this flowunit expires
-      // 2. flowunit is healthy
-      // 3. flowunit does not have summary attached to it
+      // 2. flowunit does not have summary attached to it
       if (timestamp - flowUnit.getTimeStamp() > TIMESTAMP_EXPIRATION_IN_MILLIS
-          || flowUnit.getResourceContext().isHealthy()
           || flowUnit.getSummary() == null) {
         continue;
       }
-      if (nodeSummary == null) {
-        nodeSummary = new HotNodeSummary(nodeKey.getNodeId(), nodeKey.getHostAddress());
+      for (HotResourceSummary hotResourceSummary : flowUnit.getSummary().getHotResourceSummaryList()) {
+        if (hotResourceSummary == null) {
+          continue;
+        }
+        // Only send healthy flowunits as part of the summary if a flag is set
+        if (flowUnit.getResourceContext().getState().equals(State.UNHEALTHY) || sendHealthyFlowUnits) {
+          if (nodeSummary == null) {
+            nodeSummary = new AnyNodeSummary(nodeKey.getNodeId(), nodeKey.getHostAddress(), false);
+          }
+          nodeSummary.appendNestedSummary(hotResourceSummary);
+        }
+        if (flowUnit.getResourceContext().getState().equals(State.UNHEALTHY)) {
+          nodeSummary.setHot(true);
+        }
       }
-      // append all resource summaries into this
-      flowUnit.getSummary().getHotResourceSummaryList().forEach(nodeSummary::appendNestedSummary);
     }
     return nodeSummary;
   }
 
   @Override
-  public ResourceFlowUnit<HotClusterSummary> operate() {
+  public void readRcaConf(RcaConf conf) {
+    this.rcaConf = conf;
+  }
+
+  @Override
+  public ClusterResourceFlowUnit operate() {
     counter += 1;
     nodeRcas.forEach(this::addUpstreamFlowUnits);
-
     if (counter >= rcaPeriod) {
       counter = 0;
       removeInactiveNodeFromNodeMap();
-      return generateFlowUnit();
-    } else {
-      return new ResourceFlowUnit<>(System.currentTimeMillis());
+      AnyClusterSummary clusterSummary = generateClusterSummary();
+      ResourceContext context;
+      if (clusterSummary == null || !clusterSummary.isHot()) { // healthy
+        context = new ResourceContext(State.HEALTHY);
+      } else {
+        context = new ResourceContext(State.UNHEALTHY);
+      }
+      return generateFlowUnit(clusterSummary, context);
+    } else { // Generate an empty flowunit
+      return generateFlowUnit(null, null);
     }
   }
 

@@ -155,7 +155,6 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
 
     if (counter == rcaPeriod) {
       ResourceContext context = null;
-      HotResourceSummary summary = null;
       // reset the variables
       counter = 0;
 
@@ -173,15 +172,9 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
       } else {
         context = new ResourceContext(Resources.State.HEALTHY);
       }
-
-      //check to see if the value is above lower bound thres
-      if (!Double.isNaN(avgPromotionRate)
-          && avgPromotionRate > promotionRateThreshold * this.lowerBoundThreshold) {
-        summary = new HotResourceSummary(YOUNG_GEN_PROMOTION_RATE,
-            promotionRateThreshold, avgPromotionRate,
-            PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
-      }
-
+      HotResourceSummary summary = new HotResourceSummary(YOUNG_GEN_PROMOTION_RATE,
+          promotionRateThreshold, avgPromotionRate,
+          PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
       LOG.debug("@@: Young Gen RCA Context = " + context.toString());
       return new ResourceFlowUnit<>(this.clock.millis(), context, summary);
     } else {

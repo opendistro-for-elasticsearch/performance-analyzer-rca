@@ -59,6 +59,10 @@ public class HotClusterSummary extends GenericSummary {
     this.hotNodeSummaryList = new ArrayList<>();
   }
 
+  public void setNumOfUnhealthyNodes(int numOfUnhealthyNodes) {
+    this.numOfUnhealthyNodes = numOfUnhealthyNodes;
+  }
+
   /**
    * HotClusterSummary is supposed to be created on elected master node only. and we do not expect
    * it to be sent via gRPC. Return null in all the methods below. and we should not define the gRPC

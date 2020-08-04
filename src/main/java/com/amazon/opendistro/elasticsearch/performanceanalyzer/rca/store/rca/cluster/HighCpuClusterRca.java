@@ -1,36 +1,44 @@
+/*
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ *  permissions and limitations under the License.
+ */
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.CPUClusterResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.StaticBucketThresholds;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.UsageBucketThresholds;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
-import com.google.common.collect.Lists;
-import java.util.List;
 
 public class HighCpuClusterRca extends BaseClusterRca {
   public static final String RCA_TABLE_NAME = HighCpuClusterRca.class.getSimpleName();
-
-  private List<Double> cpuUsageThresholds = Lists.newArrayList(20.0, 40.0, 75.0);
-
 
   @SafeVarargs
   public <R extends Rca<ResourceFlowUnit<HotNodeSummary>>> HighCpuClusterRca(
       int rcaPeriod, R... nodeRca) {
     super(rcaPeriod, nodeRca);
-    this.computeUsageBuckets = true;
-    this.collectFromMasterNode = true;
+    setCollectFromMasterNode(true);
+    this.sendHealthyFlowUnits = true;
   }
 
   @Override
-  public void readRcaConf(RcaConf conf) {
-    cpuUsageThresholds = conf.getUsageBucketThresholds(UsageBucketThresholds.CPU_USAGE);
-  }
-
-  @Override
-  protected UsageBucketThresholds getBucketThresholds() {
-    return new StaticBucketThresholds(cpuUsageThresholds.get(0), cpuUsageThresholds.get(1),
-        cpuUsageThresholds.get(2));
+  protected CPUClusterResourceFlowUnit generateFlowUnit(HotClusterSummary clusterSummary,
+      ResourceContext context) {
+    if (clusterSummary == null && context == null) {
+      return new CPUClusterResourceFlowUnit(clock.millis());
+    }
+    return new CPUClusterResourceFlowUnit(clock.millis(), context, clusterSummary, rcaConf,true);
   }
 }
