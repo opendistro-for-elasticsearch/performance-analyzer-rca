@@ -70,4 +70,9 @@ public class CompactClusterLevelNodeSummary extends CompactNodeSummary {
         }
         return summary;
     }
+
+    @Override
+    public String getTableName() {
+        return TABLE_NAME;
+    }
 }
