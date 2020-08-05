@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMess
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.SymptomContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericFlowUnit;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import java.util.List;
 
 public class SymptomFlowUnit extends GenericFlowUnit {
@@ -54,10 +55,10 @@ public class SymptomFlowUnit extends GenericFlowUnit {
     return new SymptomFlowUnit(System.currentTimeMillis());
   }
 
-  public FlowUnitMessage buildFlowUnitMessage(final String graphNode, final String esNode) {
+  public FlowUnitMessage buildFlowUnitMessage(final String graphNode, final InstanceDetails.Id esNode) {
     final FlowUnitMessage.Builder messageBuilder = FlowUnitMessage.newBuilder();
     messageBuilder.setGraphNode(graphNode);
-    messageBuilder.setEsNode(esNode);
+    messageBuilder.setEsNode(esNode.toString());
 
     messageBuilder.setTimeStamp(System.currentTimeMillis());
 

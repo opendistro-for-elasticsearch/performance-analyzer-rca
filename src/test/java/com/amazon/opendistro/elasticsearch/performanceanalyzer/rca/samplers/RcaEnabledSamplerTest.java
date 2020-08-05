@@ -39,14 +39,14 @@ public class RcaEnabledSamplerTest {
 
         assertFalse(uut.isRcaEnabled());
         ClusterDetailsEventProcessor.NodeDetails details =
-                ClusterDetailsEventProcessorTestHelper.newNodeDetails("", "", false);
+                ClusterDetailsEventProcessorTestHelper.newNodeDetails("nodex", "127.0.0.1", false);
 
         ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
         clusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(details));
         appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
 
         assertFalse(uut.isRcaEnabled());
-        details = ClusterDetailsEventProcessorTestHelper.newNodeDetails("", "", true);
+        details = ClusterDetailsEventProcessorTestHelper.newNodeDetails("nodey", "127.0.0.2", true);
         clusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(details));
         assertEquals(rcaController.isRcaEnabled(), uut.isRcaEnabled());
     }

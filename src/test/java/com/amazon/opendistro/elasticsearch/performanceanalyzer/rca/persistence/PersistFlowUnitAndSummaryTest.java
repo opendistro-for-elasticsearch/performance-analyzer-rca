@@ -17,7 +17,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerThreads;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
@@ -34,7 +33,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ThresholdMain;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
@@ -45,7 +43,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec.MetricsD
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessorTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.WaitFor;
 import java.nio.file.Paths;
@@ -54,7 +51,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -188,8 +184,8 @@ public class PersistFlowUnitAndSummaryTest {
     RcaConf masterRcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_elected_master.conf").toString());
     Persistable persistable = PersistenceFactory.create(rcaConf);
     testPersistSummaryOnDataNode(rcaConf, persistable);
+    persistable = PersistenceFactory.create(rcaConf);
     testPersistSummaryOnMasterNode(masterRcaConf, persistable);
-    persistable.close();
   }
 
   private void testPersistSummaryOnDataNode(RcaConf rcaConf, Persistable persistable) throws Exception {
@@ -210,7 +206,6 @@ public class PersistFlowUnitAndSummaryTest {
       return false;
     }, 1, TimeUnit.MINUTES);
     scheduler.shutdown();
-    persistable.close();
   }
 
   private void testPersistSummaryOnMasterNode(RcaConf rcaConf, Persistable persistable) throws Exception {
@@ -228,7 +223,6 @@ public class PersistFlowUnitAndSummaryTest {
       return false;
     }, 1, TimeUnit.MINUTES);
     scheduler.shutdown();
-    persistable.close();
   }
 
   @After

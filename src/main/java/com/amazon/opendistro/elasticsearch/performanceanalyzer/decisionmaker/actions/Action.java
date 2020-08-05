@@ -33,13 +33,6 @@ public interface Action {
   /** Time to wait since last recommendation, before suggesting this action again */
   long coolOffPeriodInMillis();
 
-  /**
-   * Called when the action is invoked.
-   *
-   * <p>Specific implementation may include executing the action, or invoking downstream APIs
-   */
-  void execute();
-
   /** Returns a list of Elasticsearch nodes impacted by this action. */
   List<NodeKey> impactedNodes();
 

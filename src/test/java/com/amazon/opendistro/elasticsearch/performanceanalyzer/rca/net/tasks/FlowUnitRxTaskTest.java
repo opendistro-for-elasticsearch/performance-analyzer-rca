@@ -8,6 +8,7 @@ import static org.mockito.MockitoAnnotations.initMocks;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.NodeStateManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.ReceivedFlowUnitStore;
 import org.junit.Before;
@@ -46,7 +47,7 @@ public class FlowUnitRxTaskTest {
 
     testFlowUnitRxTask.run();
 
-    verify(mockNodeStateManager).updateReceiveTime(eq(TEST_ES_NODE), eq(TEST_GRAPH_NODE),
+    verify(mockNodeStateManager).updateReceiveTime(eq(new InstanceDetails.Id(TEST_ES_NODE)), eq(TEST_GRAPH_NODE),
         anyLong());
   }
 }

@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Impact;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.HashMap;
 import java.util.Map;
@@ -97,7 +98,7 @@ public class TimedFlipFlopDetectorTest {
   @Test
   public void testIsFlipFlop() throws Exception {
     // Setup mock actions, action followed by flipFlopAction is a flip flop
-    NodeKey nodeKey = new NodeKey("A", "localhost");
+    NodeKey nodeKey = new NodeKey(new InstanceDetails.Id("A"), new InstanceDetails.Ip("127.0.0.1"));
     Action action = mockAction(nodeKey, decreaseAll);
     Action flipflopAction = mockAction(nodeKey, increaseAll);
     // Update the flipFlopDetector so that the last "executed" action is action
@@ -120,7 +121,7 @@ public class TimedFlipFlopDetectorTest {
   @Test
   public void testMultipleActionFlipFlop() throws Exception {
     // Setup test objects, flip flops are (b, c) and (a, d)
-    NodeKey nodeKey = new NodeKey("A", "localhost");
+    NodeKey nodeKey = new NodeKey(new InstanceDetails.Id("A"), new InstanceDetails.Ip("127.0.0.1"));
     ImpactVector aVector = new ImpactVector();
     aVector.decreasesPressure(Dimension.HEAP);
     Action a = mockAction(nodeKey, aVector);
@@ -156,7 +157,7 @@ public class TimedFlipFlopDetectorTest {
    */
   @Test
   public void testFlipFlopRefresh() throws Exception {
-    NodeKey nodeKey = new NodeKey("A", "localhost");
+    NodeKey nodeKey = new NodeKey(new InstanceDetails.Id("A"), new InstanceDetails.Ip("127.0.0.1"));
     Action action = mockAction(nodeKey, decreaseAll);
     Action flipflopAction = mockAction(nodeKey, increaseAll);
     flipFlopDetector.recordAction(action);
