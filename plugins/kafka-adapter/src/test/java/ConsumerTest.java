@@ -1,4 +1,4 @@
-import com.harold.configuration.ConsumerConfiguration;
+import com.opendestro.kafkaAdapter.configuration.ConsumerConfiguration;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.junit.Before;

@@ -1,4 +1,4 @@
-package com.harold.tool;
+package com.opendestro.kafkaAdapter.util;
 
 public class Target {
     private String endpoint;

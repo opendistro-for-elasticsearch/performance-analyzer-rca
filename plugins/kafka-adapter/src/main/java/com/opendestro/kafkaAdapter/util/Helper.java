@@ -1,4 +1,4 @@
-package com.harold.tool;
+package com.opendestro.kafkaAdapter.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -93,5 +93,4 @@ public class Helper {
             httpsConnection.disconnect();
         }
     }
-
 }

@@ -1,6 +1,6 @@
-import com.harold.configuration.ProducerConfiguration;
+import com.opendestro.kafkaAdapter.configuration.ProducerConfiguration;
 import com.harold.tool.Helper;
-import com.harold.starter.ProducerStarter;
+import com.opendestro.kafkaAdapter.starter.ProducerStarter;
 import com.harold.tool.Target;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.kafka.clients.producer.KafkaProducer;

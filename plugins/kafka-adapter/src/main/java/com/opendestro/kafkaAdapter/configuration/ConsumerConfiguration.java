@@ -1,4 +1,4 @@
-package com.harold.configuration;
+package com.opendestro.kafkaAdapter.configuration;
 
 import java.util.Properties;
 
@@ -9,21 +9,22 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 public class ConsumerConfiguration {
     private String bootstrap_server;
     private String topic;
-    private int interval;
+    private long interval;
 
-    public ConsumerConfiguration(String bootstrap_server, String topic, int interval){
+    public ConsumerConfiguration(String bootstrap_server, String topic, long interval){
         this.bootstrap_server = bootstrap_server;
         this.topic = topic;
         this.setInterval(interval);
     }
 
-    public int getInterval() {
+    public long getInterval() {
         return interval;
     }
 
-    public void setInterval(int interval) {
-        if(interval <= 0 || interval > 20000){
-            this.interval = 5000;
+    // set minimum receive periodicity as 10 seconds
+    public void setInterval(long interval) {
+        if(interval < 10000){
+            this.interval = 10000;
         }else{
             this.interval = interval;
         }
@@ -51,6 +52,6 @@ public class ConsumerConfiguration {
         configProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringDeserializer");
         configProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.connect.json.JsonDeserializer");
         configProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "consumer_group_1");
-        return new KafkaConsumer<String, JsonNode>(configProperties);
+        return new KafkaConsumer<>(configProperties);
     }
 }

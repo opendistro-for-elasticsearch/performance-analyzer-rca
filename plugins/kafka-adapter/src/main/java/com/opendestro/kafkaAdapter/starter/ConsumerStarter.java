@@ -1,20 +1,24 @@
-package com.harold.starter;
+package com.opendestro.kafkaAdapter.starter;
 
-import com.harold.configuration.ConsumerConfiguration;
+import com.opendestro.kafkaAdapter.configuration.ConsumerConfiguration;
+import com.opendestro.kafkaAdapter.configuration.KafkaAdapterConf;
+import com.opendestro.kafkaAdapter.util.KafkaAdapterConsts;
+import com.opendestro.kafkaAdapter.util.Helper;
+
 import com.fasterxml.jackson.databind.JsonNode;
-
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.WakeupException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import com.harold.tool.Helper;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.Properties;
 
 
 public class ConsumerStarter {
-    public static void runConsumer(ConsumerConfiguration consumerConfig, int max_no_found, String webhook_url) {
+    private static final Logger LOG = LogManager.getLogger(ProducerStarter.class);
+    public static void runConsumer(ConsumerConfiguration consumerConfig, int max_no_found, String webhooks_url) {
         int noMessageFound = 0;
         KafkaConsumer<String, JsonNode> consumer = consumerConfig.createConsumer();
         consumer.subscribe(Collections.singletonList(consumerConfig.getTopic()));
@@ -32,8 +36,7 @@ public class ConsumerStarter {
                 }
                 //print each record.
                 consumerRecords.forEach(record -> {
-                    Helper.postToSlackWebHook(record.value(), webhook_url);
-                    System.out.println("Record" + record.value());
+                    Helper.postToSlackWebHook(record.value(), webhooks_url);
                 });
                 // commits the offset of record to broker.
                 consumer.commitAsync();
@@ -42,17 +45,18 @@ public class ConsumerStarter {
             // ignore shutdown
         } finally {
             consumer.close();
-            System.out.println("Shutting down the consumer");
+            LOG.info("Shutting down the consumer");
         }
     }
 
-    public static void startConsumer(Properties props) {
-        String bootstrapServer = props.getProperty("bootstrap_server");
-        String topic = props.getProperty("topic");
-        String webhook_url = props.getProperty("webhook_url");
-        int interval = Integer.parseInt(props.getProperty("kafka_consumer_interval"));
-        int max_no_found = Integer.parseInt(props.getProperty("max_no_message_found_count"));
+    public static void startConsumer() {
+        KafkaAdapterConf conf = new KafkaAdapterConf(KafkaAdapterConsts.KAFKA_ADAPTER_FILENAME);
+        String bootstrapServer = conf.getKafkaBootstrapServer();
+        String topic = conf.getKafkaTopicName();
+        String webhooks_url = conf.getWebhooksUrl();
+        long interval = conf.getReceivePeriodicityMillis();
+        int max_no_found = conf.getMaxNoMessageFoundCountOnConsumer();
         ConsumerConfiguration consumerConfig = new ConsumerConfiguration(bootstrapServer, topic, interval);
-        runConsumer(consumerConfig, max_no_found, webhook_url);
+        runConsumer(consumerConfig, max_no_found, webhooks_url);
     }
 }
