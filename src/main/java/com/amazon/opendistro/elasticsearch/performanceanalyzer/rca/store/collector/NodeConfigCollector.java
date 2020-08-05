@@ -105,7 +105,7 @@ public class NodeConfigCollector extends EsConfigNode {
 
   private void collectHeapMaxSize(MetricFlowUnit heapMax) {
     double heapMaxSize = SQLParsingUtil.readDataFromSqlResult(heapMax.getData(),
-            MEM_TYPE.getField(), AllMetrics.HeapValue.HEAP_MAX.toString(), MetricsDB.MAX);
+            MEM_TYPE.getField(), AllMetrics.GCType.HEAP.toString(), MetricsDB.MAX);
     if (!Double.isNaN(heapMaxSize)) {
       configResult.put(ResourceUtil.HEAP_MAX_SIZE, heapMaxSize);
     }
