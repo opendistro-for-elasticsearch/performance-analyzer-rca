@@ -22,36 +22,33 @@ public class DecisionToKafkaPlugin extends Plugin implements ActionListener {
     public void actionPublished(Action action) {
         LOG.info("Action: [{}] published by decision maker publisher.", action.name());
         //TODO: Write into kakfa queue.
-        HashMap<String, String> messages = (HashMap<String, String>) getMessagesForNodes(action);
-
+        String summary = action.summary();
 
     }
 
-
-
-    public Map<String, String> getMessagesForNodes(Action action){ //To generate MessageMap including decisions for each node
-        List<NodeKey> NodeKeyList = action.impactedNodes(); //List of node involved in the action
-        Map<NodeKey, ImpactVector> map = action.impact();
-        Map<String, StringBuilder> messageMap = new HashMap<>(); // Map to store the decision within each NodeKey
-        for(NodeKey node : NodeKeyList){
-            String nodeID = node.getNodeId().toString();
-            ImpactVector impactVector = map.get(node); // Get the impact vector of the node
-            if(impactVector == null) continue;
-            Map<ImpactVector.Dimension, ImpactVector.Impact> dimensionMap = impactVector.getImpact();
-            for(Map.Entry<ImpactVector.Dimension, ImpactVector.Impact> entry: dimensionMap.entrySet()){
-                if(!entry.getValue().equals(ImpactVector.Impact.NO_IMPACT)){
-                    StringBuilder sb = messageMap.getOrDefault(nodeID, new StringBuilder());
-                    sb.append(String.format("Dimension: %s, is made for decision: %s, ",entry.getKey(), entry.getValue()));
-                    messageMap.put(nodeID, sb);
-                }
-            }
-        }
-
-        return messageMap.entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getKey,
-                entry -> entry.getValue().toString())
-        );
-    }
+//    public Map<String, String> getMessagesForNodes(Action action){ //To generate MessageMap including decisions for each node
+//        List<NodeKey> NodeKeyList = action.impactedNodes(); //List of node involved in the action
+//        Map<NodeKey, ImpactVector> map = action.impact();
+//        Map<String, StringBuilder> messageMap = new HashMap<>(); // Map to store the decision within each NodeKey
+//        for(NodeKey node : NodeKeyList){
+//            String nodeID = node.getNodeId().toString();
+//            ImpactVector impactVector = map.get(node); // Get the impact vector of the node
+//            if(impactVector == null) continue;
+//            Map<ImpactVector.Dimension, ImpactVector.Impact> dimensionMap = impactVector.getImpact();
+//            for(Map.Entry<ImpactVector.Dimension, ImpactVector.Impact> entry: dimensionMap.entrySet()){
+//                if(!entry.getValue().equals(ImpactVector.Impact.NO_IMPACT)){
+//                    StringBuilder sb = messageMap.getOrDefault(nodeID, new StringBuilder());
+//                    sb.append(String.format("Dimension: %s, is made for decision: %s, ",entry.getKey(), entry.getValue()));
+//                    messageMap.put(nodeID, sb);
+//                }
+//            }
+//        }
+//
+//        return messageMap.entrySet().stream().collect(Collectors.toMap(
+//                Map.Entry::getKey,
+//                entry -> entry.getValue().toString())
+//        );
+//    }
 
 
     public void publishToKafkaQueue(){
