@@ -15,14 +15,20 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.CacheHealthDecider;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheDeciderConfig;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig.getDefaultCachePriority;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig.getDefaultFieldDataCacheUpperBound;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig.getDefaultShardRequestCacheUpperBound;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig.getDefaultWorkloadPriority;
+
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig.RCA_CONF_KEY_CONSTANTS;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageYoungGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNodeClusterRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import java.nio.file.Paths;
+import java.util.Arrays;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -63,20 +69,14 @@ public class RcaConfTest {
 
   @Test
   public void testReadDeciderConfig() {
-    final Double fieldDataCacheUpperBound =
-        rcaConf.readDeciderConfig(
-            CacheDeciderConfig.CONFIG_NAME,
-            CacheDeciderConfig.RCA_CONF_KEY_CONSTANTS.FIELD_DATA_CACHE_UPPER_BOUND,
-            Double.class);
-    Assert.assertNotNull(fieldDataCacheUpperBound);
-    Assert.assertEquals(CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND, fieldDataCacheUpperBound, 0.01);
-
-    final Double shardRequestCacheUpperBound =
-        rcaConf.readDeciderConfig(
-            CacheDeciderConfig.CONFIG_NAME,
-            CacheDeciderConfig.RCA_CONF_KEY_CONSTANTS.SHARD_REQUEST_CACHE_UPPER_BOUND,
-            Double.class);
-    Assert.assertNotNull(shardRequestCacheUpperBound);
-    Assert.assertEquals(CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND, shardRequestCacheUpperBound, 0.01);
+    DeciderConfig configObj = new DeciderConfig(rcaConf);
+    Assert.assertNotNull(configObj.getCachePriorityOrder());
+    Assert.assertNotNull(configObj.getWorkloadPriorityOrder());
+    Assert.assertNotNull(configObj.getFieldDataCacheUpperBound());
+    Assert.assertNotNull(configObj.getShardRequestCacheUpperBound());
+    Assert.assertEquals(Arrays.asList("test-read-heavy", "test-write-heavy"), configObj.getCachePriorityOrder());
+    Assert.assertEquals(10.4, configObj.getFieldDataCacheUpperBound(), 0.01);
+    Assert.assertEquals(10.05, configObj.getShardRequestCacheUpperBound(), 0.01);
+    Assert.assertEquals(Arrays.asList("test-ingest", "test-search"), configObj.getWorkloadPriorityOrder());
   }
 }
