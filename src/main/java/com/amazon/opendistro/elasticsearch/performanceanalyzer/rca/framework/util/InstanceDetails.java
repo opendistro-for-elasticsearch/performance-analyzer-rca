@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ut
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
@@ -129,7 +130,7 @@ public class InstanceDetails {
   }
 
   public AllMetrics.NodeRole getRole() {
-    return role;
+    return isMaster ? NodeRole.ELECTED_MASTER : role;
   }
 
   public Id getInstanceId() {
