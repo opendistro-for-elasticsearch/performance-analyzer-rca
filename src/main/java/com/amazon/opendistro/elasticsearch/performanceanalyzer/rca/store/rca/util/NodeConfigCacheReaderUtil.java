@@ -64,4 +64,10 @@ public class NodeConfigCacheReaderUtil {
     }
     return null;
   }
+
+  //TODO : placeholder function, add RCA to read queue size(in EWMA)
+  public static Integer readQueueEWMASize(
+      final NodeConfigCache nodeConfigCache, NodeKey esNode, ResourceEnum resourceEnum) {
+    return 100;
+  }
 }

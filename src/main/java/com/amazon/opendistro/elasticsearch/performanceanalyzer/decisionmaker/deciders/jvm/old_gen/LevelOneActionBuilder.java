@@ -15,17 +15,11 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.old_gen;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheCapacityAction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCacheUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
 
 /**
  * build actions if old gen falls into level one bucket
@@ -40,34 +34,23 @@ import java.util.Map;
  * to free up excessive heap used by fielddata cache or query cache because JVM decider favors stability
  * over performance.
  */
-public class LevelOneActionBuilder {
-  private final NodeKey esNode;
-  private final NodeConfigCache nodeConfigCache;
-  private Map<ResourceEnum, ModifyCacheCapacityAction> cacheActionMap;
-  private Map<ResourceEnum, Boolean> actionFilter;
-  private static final List<ResourceEnum> targetCaches;
+public class LevelOneActionBuilder extends BaseActionBuilder {
 
-  static {
-    List<ResourceEnum> caches = new ArrayList<>();
-    caches.add(ResourceEnum.FIELD_DATA_CACHE);
-    caches.add(ResourceEnum.SHARD_REQUEST_CACHE);
-    targetCaches = Collections.unmodifiableList(caches);
+  private LevelOneActionBuilder(final NodeKey esNode, final NodeConfigCache nodeConfigCache) {
+    super(esNode, nodeConfigCache);
   }
 
-  public LevelOneActionBuilder(final NodeKey esNode, final NodeConfigCache nodeConfigCache) {
-    this.esNode = esNode;
-    this.nodeConfigCache = nodeConfigCache;
-    this.cacheActionMap = new HashMap<>();
-    actionFilter = new HashMap<>();
-    targetCaches.forEach(r -> actionFilter.put(r, false));
+  public static LevelOneActionBuilder newBuilder(final NodeKey esNode, final NodeConfigCache nodeConfigCache) {
+    return new LevelOneActionBuilder(esNode, nodeConfigCache);
   }
 
   private void addFieldDataCacheAction() {
-    Long capacity = NodeConfigCacheUtil.readCacheSize(esNode, nodeConfigCache, ResourceEnum.FIELD_DATA_CACHE);
+    Long capacity = NodeConfigCacheReaderUtil
+        .readCacheMaxSizeInBytes(nodeConfigCache, esNode, ResourceEnum.FIELD_DATA_CACHE);
     if (capacity == null) {
       return;
     }
-    ModifyCacheCapacityAction action = new ModifyCacheCapacityAction(esNode, ResourceEnum.FIELD_DATA_CACHE,
+    ModifyCacheMaxSizeAction action = new ModifyCacheMaxSizeAction(esNode, ResourceEnum.FIELD_DATA_CACHE, nodeConfigCache,
         capacity, false, LEVEL_ONE_CONST.CACHE_ACTION_STEP_COUNT);
     if (action.isActionable()
         && action.getDesiredCapacityInPercent() >= LEVEL_ONE_CONST.FIELD_DATA_CACHE_LOWER_BOUND) {
@@ -76,16 +59,23 @@ public class LevelOneActionBuilder {
   }
 
   private void addShardRequestCacheAction() {
-    Long capacity = NodeConfigCacheUtil.readCacheSize(esNode, nodeConfigCache, ResourceEnum.SHARD_REQUEST_CACHE);
+    Long capacity = NodeConfigCacheReaderUtil
+        .readCacheMaxSizeInBytes(nodeConfigCache, esNode, ResourceEnum.SHARD_REQUEST_CACHE);
     if (capacity == null) {
       return;
     }
-    ModifyCacheCapacityAction action = new ModifyCacheCapacityAction(esNode, ResourceEnum.SHARD_REQUEST_CACHE,
+    ModifyCacheMaxSizeAction action = new ModifyCacheMaxSizeAction(esNode, ResourceEnum.SHARD_REQUEST_CACHE, nodeConfigCache,
         capacity, false, LEVEL_ONE_CONST.CACHE_ACTION_STEP_COUNT);
     if (action.isActionable()
         && action.getDesiredCapacityInPercent() >= LEVEL_ONE_CONST.SHARD_REQUEST_CACHE_LOWER_BOUND) {
       cacheActionMap.put(ResourceEnum.SHARD_REQUEST_CACHE, action);
     }
+  }
+
+  @Override
+  protected void registerActions() {
+    addFieldDataCacheAction();
+    addShardRequestCacheAction();
   }
 
   /**
@@ -95,26 +85,10 @@ public class LevelOneActionBuilder {
    * @return final action list based on action priority
    */
   // TODO : read priority from yml if customer wants to override default ordering
-  private void actionPriorityFilter() {
+  @Override
+  protected void actionPriorityFilter() {
     actionFilter.put(ResourceEnum.FIELD_DATA_CACHE, true);
     actionFilter.put(ResourceEnum.SHARD_REQUEST_CACHE, true);
-  }
-
-  /**
-   * build actions for level 1 bucket.
-   * @return List of actions
-   */
-  public List<Action> buildActions() {
-    addFieldDataCacheAction();
-    addShardRequestCacheAction();
-    actionPriorityFilter();
-    List<Action> actions = new ArrayList<>();
-    targetCaches.forEach(cache -> {
-      if (cacheActionMap.containsKey(cache) && actionFilter.get(cache)) {
-        actions.add(cacheActionMap.get(cache));
-      }
-    });
-    return actions;
   }
 
   //TODO : read consts from rca.conf

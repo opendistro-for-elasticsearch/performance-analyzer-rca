@@ -40,16 +40,13 @@ public class OldGenDecisionPolicy {
 
   public List<Action> actions(final NodeKey esNode, double oldGenUsage) {
     if (oldGenUsage >= OLD_GEN_THRESHOLD_LEVEL_THREE) {
-      LevelThreeActionBuilder levelThreeActionBuilder = new LevelThreeActionBuilder(esNode, nodeConfigCache);
-      return levelThreeActionBuilder.buildActions();
+      return LevelThreeActionBuilder.newBuilder(esNode, nodeConfigCache).build();
     }
     else if (oldGenUsage >= OLD_GEN_THRESHOLD_LEVEL_TWO) {
-      LevelTwoActionBuilder levelTwoActionBuilder = new LevelTwoActionBuilder(esNode, nodeConfigCache);
-      return levelTwoActionBuilder.buildActions();
+      return LevelTwoActionBuilder.newBuilder(esNode, nodeConfigCache).build();
     }
     else if (oldGenUsage >= OLD_GEN_THRESHOLD_LEVEL_ONE) {
-      LevelOneActionBuilder levelOneActionBuilder = new LevelOneActionBuilder(esNode, nodeConfigCache);
-      return levelOneActionBuilder.buildActions();
+      return LevelOneActionBuilder.newBuilder(esNode, nodeConfigCache).build();
     }
     // old gen jvm is healthy. return empty action list.
     else {
