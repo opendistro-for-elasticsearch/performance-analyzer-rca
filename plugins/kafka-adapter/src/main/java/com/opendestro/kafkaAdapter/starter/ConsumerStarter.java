@@ -9,15 +9,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.WakeupException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Collections;
 
 
 public class ConsumerStarter {
-    private static final Logger LOG = LogManager.getLogger(ProducerStarter.class);
     public static void runConsumer(ConsumerConfiguration consumerConfig, int max_no_found, String webhooks_url) {
         int noMessageFound = 0;
         KafkaConsumer<String, JsonNode> consumer = consumerConfig.createConsumer();
@@ -45,12 +43,13 @@ public class ConsumerStarter {
             // ignore shutdown
         } finally {
             consumer.close();
-            LOG.info("Shutting down the consumer");
+            System.out.println("Shutting down the consumer");
         }
     }
 
     public static void startConsumer() {
-        KafkaAdapterConf conf = new KafkaAdapterConf(KafkaAdapterConsts.KAFKA_ADAPTER_FILENAME);
+        String kafkaAdapterConfPath = Paths.get(KafkaAdapterConsts.CONFIG_DIR_PATH, KafkaAdapterConsts.KAFKA_ADAPTER_FILENAME).toString();
+        KafkaAdapterConf conf = new KafkaAdapterConf(kafkaAdapterConfPath);
         String bootstrapServer = conf.getKafkaBootstrapServer();
         String topic = conf.getKafkaTopicName();
         String webhooks_url = conf.getWebhooksUrl();

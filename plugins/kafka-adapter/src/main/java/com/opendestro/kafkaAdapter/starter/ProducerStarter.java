@@ -12,17 +12,14 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import com.opendestro.kafkaAdapter.util.Helper;
 import com.opendestro.kafkaAdapter.util.Target;
 import org.apache.kafka.common.KafkaException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+import java.nio.file.Paths;
 import java.util.Timer;
 import java.util.TimerTask;
 
 
 public class ProducerStarter {
-
     private static ObjectMapper mapper = new ObjectMapper();
-    private static final Logger LOG = LogManager.getLogger(ProducerStarter.class);
     public static void writeToKafkaQueue(Target target, ProducerConfiguration producerConfig){
         Timer timer = new Timer();
         KafkaProducer<String, JsonNode> producer = producerConfig.CreateProducer();
@@ -33,30 +30,30 @@ public class ProducerStarter {
                     String resp = Helper.makeRequest(target);
                     JsonNode jsonNode = mapper.readTree(resp);
                     ProducerRecord<String, JsonNode> record = new ProducerRecord<String, JsonNode>(producerConfig.getTopic(), jsonNode);
+                    System.out.println("Sending to consumer: "+record);
                     producer.send(record);
                     producer.flush();
                 } catch (JsonProcessingException e){
-                    LOG.error("Exception Found On Processing Json: " + e.getMessage());
+                    System.out.println("Exception Found On Processing Json: " + e.getMessage());
                 } catch (KafkaException e){
-                    LOG.error("Exception Found on Kafka: " + e.getMessage());
+                    System.out.println("Exception Found on Kafka: " + e.getMessage());
                     producer.close();
-                } finally {
-                    this.cancel();
                 }
             }
         }, 0, producerConfig.getInterval());
     }
 
     public static void startProducer() {
-        KafkaAdapterConf conf = new KafkaAdapterConf(KafkaAdapterConsts.KAFKA_ADAPTER_FILENAME);
+        String kafkaAdapterConfPath = Paths.get(KafkaAdapterConsts.CONFIG_DIR_PATH, KafkaAdapterConsts.KAFKA_ADAPTER_FILENAME).toString();
+        KafkaAdapterConf conf = new KafkaAdapterConf(kafkaAdapterConfPath);
         String bootstrapServer = conf.getKafkaBootstrapServer();
         String topic = conf.getKafkaTopicName();
         long interval = conf.getSendPeriodicityMillis();
         String params = conf.getQueryParams();
 
-        String url = "localhost:9600/_opendistro/_performanceanalyzer/rca" + (params.equals("all") ? "" : "?name=" + params);
+        String url = KafkaAdapterConsts.PA_RCA_QUERY_ENDPOINT + (params.equals("all") ? "" : "?name=" + params);
         Target target = new Target(url);
-        ProducerConfiguration producerConfig = new ProducerConfiguration( bootstrapServer, topic, interval);
+        ProducerConfiguration producerConfig = new ProducerConfiguration(bootstrapServer, topic, interval);
         writeToKafkaQueue(target, producerConfig);
     }
 }

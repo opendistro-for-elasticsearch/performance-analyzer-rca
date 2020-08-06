@@ -3,6 +3,7 @@ package com.opendestro.kafkaAdapter.configuration;
 import java.util.Properties;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.opendestro.kafkaAdapter.util.KafkaAdapterConsts;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 
@@ -22,29 +23,16 @@ public class ProducerConfiguration {
         return topic;
     }
 
-    public void setTopic(String topic) {
-        this.topic = topic;
-    }
-
     public long getInterval() {
         return interval;
     }
 
-    // set minimum send periodicity as 10 seconds
-    public void setInterval(long interval) {
-        if(interval < 10000 ){
-            this.interval = 10000;
-        }else{
-            this.interval = interval;
-        }
+    private void setInterval(long interval) { ;
+        this.interval = Math.max(KafkaAdapterConsts.KAFKA_MINIMAL_SEND_PERIODICITY, interval);
     }
 
     public String getBootstrap_server() {
         return bootstrap_server;
-    }
-
-    public void setBootstrap_server(String bootstrap_server) {
-        this.bootstrap_server = bootstrap_server;
     }
 
     public KafkaProducer<String, JsonNode> CreateProducer(){
@@ -55,4 +43,3 @@ public class ProducerConfiguration {
         return new KafkaProducer<>(configProperties);
     }
 }
-

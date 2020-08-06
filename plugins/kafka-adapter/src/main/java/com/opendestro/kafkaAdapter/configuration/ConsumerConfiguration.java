@@ -3,6 +3,7 @@ package com.opendestro.kafkaAdapter.configuration;
 import java.util.Properties;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.opendestro.kafkaAdapter.util.KafkaAdapterConsts;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 
@@ -21,29 +22,16 @@ public class ConsumerConfiguration {
         return interval;
     }
 
-    // set minimum receive periodicity as 10 seconds
-    public void setInterval(long interval) {
-        if(interval < 10000){
-            this.interval = 10000;
-        }else{
-            this.interval = interval;
-        }
+    private void setInterval(long interval) {
+        this.interval = Math.max(KafkaAdapterConsts.KAFKA_MINIMAL_RECEIVE_PERIODICITY,interval);
     }
 
     public String getTopic() {
         return topic;
     }
 
-    public void setTopic(String topic) {
-        this.topic = topic;
-    }
-
     public String getBootstrap_server() {
         return bootstrap_server;
-    }
-
-    public void setBootstrap_server(String bootstrap_server) {
-        this.bootstrap_server = bootstrap_server;
     }
 
     public KafkaConsumer<String, JsonNode> createConsumer(){
@@ -51,7 +39,7 @@ public class ConsumerConfiguration {
         configProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bootstrap_server);
         configProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringDeserializer");
         configProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.connect.json.JsonDeserializer");
-        configProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "consumer_group_1");
+        configProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "consumer_group");
         return new KafkaConsumer<>(configProperties);
     }
 }

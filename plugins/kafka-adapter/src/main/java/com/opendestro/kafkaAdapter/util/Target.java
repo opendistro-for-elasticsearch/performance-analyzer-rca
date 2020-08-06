@@ -3,7 +3,6 @@ package com.opendestro.kafkaAdapter.util;
 public class Target {
     private String endpoint;
     private String parameter;
-    private String bootstrapServer;
     private String url;
 
     public Target(String endpoint, String parameter){
