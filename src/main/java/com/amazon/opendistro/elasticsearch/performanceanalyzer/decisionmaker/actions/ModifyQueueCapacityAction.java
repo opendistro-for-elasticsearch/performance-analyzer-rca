@@ -48,9 +48,7 @@ public class ModifyQueueCapacityAction implements Action {
   }
 
   public ModifyQueueCapacityAction(NodeKey esNode, ResourceEnum threadPool, int currentCapacity, boolean increase) {
-    this(esNode, threadPool, currentCapacity);
-    int desiredCapacity = increase ? currentCapacity + STEP_SIZE : currentCapacity - STEP_SIZE;
-    setDesiredCapacity(desiredCapacity);
+    this(esNode, threadPool, currentCapacity, increase, 1);
   }
 
   private ModifyQueueCapacityAction(NodeKey esNode, ResourceEnum threadPool, int currentCapacity) {
@@ -120,6 +118,8 @@ public class ModifyQueueCapacityAction implements Action {
   }
 
   private void setDesiredCapacity(int desiredCapacity) {
+    assert upperBound.containsKey(threadPool) : "queue " + threadPool.name() + "'s upper bound is missing";
+    assert lowerBound.containsKey(threadPool) : "queue " + threadPool.name() + "'s lower bound is missing";
     this.desiredCapacity = Math.max(Math.min(desiredCapacity, upperBound.get(threadPool)), lowerBound.get(threadPool));
   }
 
@@ -136,10 +136,12 @@ public class ModifyQueueCapacityAction implements Action {
   }
 
   public int getUpperBound() {
+    assert upperBound.containsKey(threadPool) : "queue " + threadPool.name() + "'s upper bound is missing";
     return upperBound.get(threadPool);
   }
 
   public int getLowerBound() {
+    assert lowerBound.containsKey(threadPool) : "queue " + threadPool.name() + "'s lower bound is missing";
     return lowerBound.get(threadPool);
   }
 }

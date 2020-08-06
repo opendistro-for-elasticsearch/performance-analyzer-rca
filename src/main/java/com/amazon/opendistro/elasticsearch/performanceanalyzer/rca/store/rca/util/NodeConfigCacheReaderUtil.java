@@ -65,9 +65,18 @@ public class NodeConfigCacheReaderUtil {
     return null;
   }
 
-  //TODO : placeholder function, add RCA to read queue size(in EWMA)
   public static Integer readQueueEWMASize(
       final NodeConfigCache nodeConfigCache, NodeKey esNode, ResourceEnum resourceEnum) {
-    return 100;
+    final Resource resource =
+        Resource.newBuilder()
+            .setResourceEnum(resourceEnum)
+            .setMetricEnum(MetricEnum.QUEUE_SIZE)
+            .build();
+    try {
+      return (int) nodeConfigCache.get(esNode, resource);
+    } catch (final IllegalArgumentException e) {
+      LOG.error("Exception while reading queue size from Node Config Cache", e);
+    }
+    return null;
   }
 }

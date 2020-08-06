@@ -79,7 +79,8 @@ public class ModifyCacheMaxSizeAction implements Action {
     this(esNode, cacheType, nodeConfigCache, cacheSizeUpperBound);
     if (validateAndSetConfigValues()) {
       long desiredCapacity =
-              increase ? currentCacheMaxSizeInBytes + getStepSize(cacheType) : currentCacheMaxSizeInBytes;
+              increase ? currentCacheMaxSizeInBytes + getStepSize(cacheType) :
+                         currentCacheMaxSizeInBytes - getStepSize(cacheType);
       setDesiredCacheMaxSize(desiredCapacity);
     }
   }
@@ -94,7 +95,8 @@ public class ModifyCacheMaxSizeAction implements Action {
     this(esNode, cacheType, nodeConfigCache, cacheSizeUpperBound);
     if (validateAndSetConfigValues()) {
       long desiredCapacity =
-          increase ? currentCacheMaxSizeInBytes + step * getStepSize(cacheType) : currentCacheMaxSizeInBytes;
+          increase ? currentCacheMaxSizeInBytes + step * getStepSize(cacheType) :
+                     currentCacheMaxSizeInBytes - step * getStepSize(cacheType);
       setDesiredCacheMaxSize(desiredCapacity);
     }
   }
@@ -103,10 +105,12 @@ public class ModifyCacheMaxSizeAction implements Action {
       final NodeKey esNode,
       final ResourceEnum cacheType,
       final NodeConfigCache nodeConfigCache,
-      final long cacheSizeUpperBound) {
+      final double cacheSizeUpperBound) {
     ModifyCacheMaxSizeAction action = new ModifyCacheMaxSizeAction(esNode, cacheType, nodeConfigCache, cacheSizeUpperBound);
-    //TODO : set lower bound to 0 for now
-    action.setDesiredCacheMaxSize(0);
+    if (validateAndSetConfigValues()) {
+      //TODO : set lower bound to 0 for now
+      action.setDesiredCacheMaxSize(0);
+    }
     return action;
   }
 

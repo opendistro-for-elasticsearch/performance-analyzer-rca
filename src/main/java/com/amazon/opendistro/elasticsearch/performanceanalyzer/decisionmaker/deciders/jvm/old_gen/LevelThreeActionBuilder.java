@@ -42,13 +42,8 @@ public class LevelThreeActionBuilder extends BaseActionBuilder {
 
   //downsize field data cache to its lower bound in one shot
   public void addFieldDataCacheAction() {
-    Long capacity = NodeConfigCacheReaderUtil
-        .readCacheMaxSizeInBytes(nodeConfigCache, esNode, ResourceEnum.FIELD_DATA_CACHE);
-    if (capacity == null) {
-      return;
-    }
     ModifyCacheMaxSizeAction action = ModifyCacheMaxSizeAction.newMinimalCapacityAction(esNode,
-        ResourceEnum.FIELD_DATA_CACHE, nodeConfigCache, capacity);
+        ResourceEnum.FIELD_DATA_CACHE, nodeConfigCache, 1.0);
     if (action.isActionable()) {
       cacheActionMap.put(ResourceEnum.FIELD_DATA_CACHE, action);
     }
@@ -56,13 +51,8 @@ public class LevelThreeActionBuilder extends BaseActionBuilder {
 
   //downsize shard request cache to its lower bound in one shot
   public void addShardRequestCacheAction() {
-    Long capacity = NodeConfigCacheReaderUtil
-        .readCacheMaxSizeInBytes(nodeConfigCache, esNode, ResourceEnum.SHARD_REQUEST_CACHE);
-    if (capacity == null) {
-      return;
-    }
     ModifyCacheMaxSizeAction action =  ModifyCacheMaxSizeAction.newMinimalCapacityAction(esNode,
-        ResourceEnum.SHARD_REQUEST_CACHE, nodeConfigCache, capacity);
+        ResourceEnum.SHARD_REQUEST_CACHE, nodeConfigCache, 1.0);
     if (action.isActionable()) {
       cacheActionMap.put(ResourceEnum.SHARD_REQUEST_CACHE, action);
     }

@@ -54,12 +54,12 @@ public abstract class BaseActionBuilder {
   public List<Action> build() {
     List<Action> actions = new ArrayList<>();
     cacheActionMap.forEach((cache, action) -> {
-      if (actionFilter.containsKey(cache) && actionFilter.get(cache)) {
+      if (actionFilter.getOrDefault(cache, false)) {
         actions.add(action);
       }
     });
     queueActionMap.forEach((queue, action) -> {
-      if (actionFilter.containsKey(queue) && actionFilter.get(queue)) {
+      if (actionFilter.getOrDefault(queue, false)) {
         actions.add(action);
       }
     });

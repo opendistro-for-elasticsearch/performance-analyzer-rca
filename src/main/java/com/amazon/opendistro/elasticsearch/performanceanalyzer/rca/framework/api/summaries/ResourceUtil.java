@@ -66,6 +66,12 @@ public class ResourceUtil {
   public static final Resource SEARCH_QUEUE_CAPACITY = Resource.newBuilder()
       .setResourceEnum(ResourceEnum.SEARCH_THREADPOOL)
       .setMetricEnum(MetricEnum.QUEUE_CAPACITY).build();
+  public static final Resource WRITE_QUEUE_SIZE = Resource.newBuilder()
+      .setResourceEnum(ResourceEnum.WRITE_THREADPOOL)
+      .setMetricEnum(MetricEnum.QUEUE_SIZE).build();
+  public static final Resource SEARCH_QUEUE_SIZE = Resource.newBuilder()
+      .setResourceEnum(ResourceEnum.SEARCH_THREADPOOL)
+      .setMetricEnum(MetricEnum.QUEUE_SIZE).build();
 
   // cache
   public static final Resource FIELD_DATA_CACHE_EVICTION = Resource.newBuilder()
