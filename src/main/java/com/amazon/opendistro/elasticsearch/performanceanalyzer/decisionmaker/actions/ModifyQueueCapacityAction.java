@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ModifyQueueCapacityAction implements Action {
+public class ModifyQueueCapacityAction extends SuppressibleAction {
 
   public static final String NAME = "modify_queue_capacity";
   public static final long COOL_OFF_PERIOD_IN_MILLIS = 300 * 1_000;
@@ -56,7 +56,7 @@ public class ModifyQueueCapacityAction implements Action {
   }
 
   @Override
-  public boolean isActionable() {
+  public boolean isValid() {
     return desiredCapacity != currentCapacity;
   }
 

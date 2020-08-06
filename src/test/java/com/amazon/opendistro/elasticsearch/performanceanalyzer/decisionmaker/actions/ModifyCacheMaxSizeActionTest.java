@@ -31,9 +31,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheDeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
+import com.google.common.collect.ImmutableSet;
 import java.util.Map;
+import org.checkerframework.checker.units.qual.Temperature;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -159,6 +162,23 @@ public class ModifyCacheMaxSizeActionTest {
         shardRequestCacheIncrease.getCurrentCacheMaxSizeInBytes());
     assertFalse(shardRequestCacheIncrease.isActionable());
     assertNoImpact(node1, shardRequestCacheIncrease);
+  }
+
+  @Test
+  public void testMutedAction() {
+    NodeKey node1 =
+        new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
+    ModifyCacheMaxSizeAction modifyCacheSizeAction =
+        new ModifyCacheMaxSizeAction(
+            node1,
+            ResourceEnum.FIELD_DATA_CACHE,
+            appContext.getNodeConfigCache(),
+            CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
+            false);
+
+    Stats.getInstance().updateMutedActions(ImmutableSet.of(modifyCacheSizeAction.name()));
+
+    assertFalse(modifyCacheSizeAction.isActionable());
   }
 
   private void assertNoImpact(NodeKey node, ModifyCacheMaxSizeAction modifyCacheSizeAction) {

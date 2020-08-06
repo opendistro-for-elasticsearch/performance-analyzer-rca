@@ -91,8 +91,4 @@ public abstract class Decider extends NonLeafNode<Decision> {
 
   @Override
   public abstract Decision operate();
-
-  public boolean isActionable(final Action action) {
-    return !action.isMuted() && action.isActionable();
-  }
 }

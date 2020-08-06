@@ -27,8 +27,10 @@ import static org.junit.Assert.assertTrue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Impact;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
+import com.google.common.collect.ImmutableSet;
 import java.util.Map;
 import org.junit.Test;
 
@@ -95,6 +97,16 @@ public class ModifyQueueCapacityActionTest {
     assertEquals(writeQueueDecrease.getDesiredCapacity(), writeQueueDecrease.getCurrentCapacity());
     assertFalse(writeQueueDecrease.isActionable());
     assertNoImpact(node1, writeQueueDecrease);
+  }
+
+  @Test
+  public void testMutedAction() {
+    NodeKey node1 = new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
+    ModifyQueueCapacityAction modifyQueueCapacityAction = new ModifyQueueCapacityAction(node1, ResourceEnum.SEARCH_THREADPOOL, 3000, true);
+
+    Stats.getInstance().updateMutedActions(ImmutableSet.of(modifyQueueCapacityAction.name()));
+
+    assertFalse(modifyQueueCapacityAction.isActionable());
   }
 
   private void assertNoImpact(NodeKey node, ModifyQueueCapacityAction modifyQueueCapacityAction) {

@@ -36,7 +36,7 @@ import org.apache.logging.log4j.Logger;
 
 // TODO: Split the cache action into separate actions for different caches.
 
-public class ModifyCacheMaxSizeAction implements Action {
+public class ModifyCacheMaxSizeAction extends SuppressibleAction {
   private static final Logger LOG = LogManager.getLogger(ModifyCacheMaxSizeAction.class);
   public static final String NAME = "modifyCacheCapacity";
   public static final long COOL_OFF_PERIOD_IN_MILLIS = 300 * 1_000;
@@ -82,7 +82,7 @@ public class ModifyCacheMaxSizeAction implements Action {
   }
 
   @Override
-  public boolean isActionable() {
+  public boolean isValid() {
     if (currentCacheMaxSizeInBytes == null) {
       return false;
     }
