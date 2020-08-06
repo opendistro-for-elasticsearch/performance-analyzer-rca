@@ -274,7 +274,7 @@ public class RcaController {
           tick = 0;
           final InstanceDetails nodeDetails = appContext.getMyInstanceDetails();
           if (nodeDetails.getRole() !=  NodeRole.UNKNOWN) {
-            checkUpdateNodeRole(nodeDetails);
+            currentRole = nodeDetails.getRole();
           }
         }
 
@@ -299,12 +299,6 @@ public class RcaController {
       }
       tick++;
     }
-  }
-
-  private void checkUpdateNodeRole(final InstanceDetails currentNode) {
-    final NodeRole currentNodeRole = currentNode.getRole();
-    boolean isMasterNode = currentNode.getIsMaster();
-    currentRole = isMasterNode ? NodeRole.ELECTED_MASTER : currentNodeRole;
   }
 
   /**
