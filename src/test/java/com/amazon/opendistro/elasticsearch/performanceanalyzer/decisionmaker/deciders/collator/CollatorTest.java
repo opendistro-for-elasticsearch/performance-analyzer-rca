@@ -10,6 +10,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Decider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Decision;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Id;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Ip;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -20,8 +22,8 @@ import org.mockito.Mock;
 
 public class CollatorTest {
   private static final long TEST_INTERVAL = 1;
-  private static final String TEST_NODE_ID = "test node id";
-  private static final String TEST_HOST_ADDRESS = "test host address";
+  private static final String TEST_NODE_ID = "node1";
+  private static final String TEST_HOST_ADDRESS = "5.6.7.8";
   private Collator testCollator;
   private NodeKey nodeKey;
   private ImpactVector increasingPressure;
@@ -52,7 +54,7 @@ public class CollatorTest {
   public void setup() {
     initMocks(this);
     this.testCollator = new Collator(TEST_INTERVAL, mockActionGrouper, mockDecider1, mockDecider2);
-    this.nodeKey = new NodeKey(TEST_NODE_ID, TEST_HOST_ADDRESS);
+    this.nodeKey = new NodeKey(new Id(TEST_NODE_ID), new Ip(TEST_HOST_ADDRESS));
     this.increasingPressure = new ImpactVector();
     this.increasingPressure.increasesPressure(Dimension.CPU);
     this.decreasingPressure = new ImpactVector();

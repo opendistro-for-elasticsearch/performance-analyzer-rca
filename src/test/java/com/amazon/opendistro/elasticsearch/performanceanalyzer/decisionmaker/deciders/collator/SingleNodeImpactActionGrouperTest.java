@@ -7,6 +7,8 @@ import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Id;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Ip;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
@@ -33,8 +35,8 @@ public class SingleNodeImpactActionGrouperTest {
   @Before
   public void setup() {
     initMocks(this);
-    this.nodeKey1 = new NodeKey("node1", "host1");
-    this.nodeKey2 = new NodeKey("node2", "host2");
+    this.nodeKey1 = new NodeKey(new Id("node1"), new Ip("5.6.7.8"));
+    this.nodeKey2 = new NodeKey(new Id("node2"), new Ip("5.6.7.9"));
     when(singleNodeImpactAction1.impactedNodes()).thenReturn(ImmutableList.of(nodeKey1));
     when(singleNodeImpactAction2.impactedNodes()).thenReturn(ImmutableList.of(nodeKey2));
     when(multiNodeImpactAction1.impactedNodes()).thenReturn(ImmutableList.of(nodeKey1, nodeKey2));
