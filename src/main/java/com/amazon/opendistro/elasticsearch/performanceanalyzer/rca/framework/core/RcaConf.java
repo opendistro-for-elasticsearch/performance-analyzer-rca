@@ -40,7 +40,7 @@ public class RcaConf {
   protected ConfJsonWrapper conf;
 
   protected static RcaConf instance;
-  private static final Logger LOG = LogManager.getLogger(PerformanceAnalyzerApp.class);
+  private static final Logger LOG = LogManager.getLogger(RcaConf.class);
 
   public RcaConf(String configPath) {
     this.configFileLoc = configPath;

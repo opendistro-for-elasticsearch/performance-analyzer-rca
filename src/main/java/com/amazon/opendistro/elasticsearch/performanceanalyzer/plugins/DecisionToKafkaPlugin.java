@@ -1,62 +1,66 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins;
-
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ActionListener;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config.PluginConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugis.config.ConfConsts;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.KafkaException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
+import java.util.Properties;
+
 
 public class DecisionToKafkaPlugin extends Plugin implements ActionListener {
 
-    public final String NAME = "DecisionToKafkaPlugin";
+    public static final String NAME = "DecisionToKafkaPlugin";
     private static final Logger LOG = LogManager.getLogger(PublisherEventsLogger.class);
+
+    public static PluginConfig pluginConfig = null;
+    private static KafkaProducer<String,String> kafkaProducerInstance = null;
+
 
     @Override
     public void actionPublished(Action action) {
         LOG.info("Action: [{}] published by decision maker publisher.", action.name());
-        //TODO: Write into kakfa queue.
+        if(pluginConfig == null){
+            pluginConfig = makeSingletonPluginConfig();
+        }
+        if(kafkaProducerInstance == null){
+            kafkaProducerInstance = makeSingletonKafkaProducer();
+        }
         String summary = action.summary();
-
+    sendSummaryToKafkaQueue(summary);
     }
 
-//    public Map<String, String> getMessagesForNodes(Action action){ //To generate MessageMap including decisions for each node
-//        List<NodeKey> NodeKeyList = action.impactedNodes(); //List of node involved in the action
-//        Map<NodeKey, ImpactVector> map = action.impact();
-//        Map<String, StringBuilder> messageMap = new HashMap<>(); // Map to store the decision within each NodeKey
-//        for(NodeKey node : NodeKeyList){
-//            String nodeID = node.getNodeId().toString();
-//            ImpactVector impactVector = map.get(node); // Get the impact vector of the node
-//            if(impactVector == null) continue;
-//            Map<ImpactVector.Dimension, ImpactVector.Impact> dimensionMap = impactVector.getImpact();
-//            for(Map.Entry<ImpactVector.Dimension, ImpactVector.Impact> entry: dimensionMap.entrySet()){
-//                if(!entry.getValue().equals(ImpactVector.Impact.NO_IMPACT)){
-//                    StringBuilder sb = messageMap.getOrDefault(nodeID, new StringBuilder());
-//                    sb.append(String.format("Dimension: %s, is made for decision: %s, ",entry.getKey(), entry.getValue()));
-//                    messageMap.put(nodeID, sb);
-//                }
-//            }
-//        }
-//
-//        return messageMap.entrySet().stream().collect(Collectors.toMap(
-//                Map.Entry::getKey,
-//                entry -> entry.getValue().toString())
-//        );
-//    }
+    private PluginConfig makeSingletonPluginConfig() {
+        return new PluginConfig(ConfConsts.PLUGIN_CONF_FILENAME);
+    }
 
+    // TODO: make kafka producer shared by multiple plugins
+    public KafkaProducer<String, String> makeSingletonKafkaProducer(){
+        Properties configProperties = new Properties();
+        configProperties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, pluginConfig.getKafkaDecisionListenerConfig(ConfConsts.KAFKA_BOOTSTRAP_SERVER_KEY));
+        configProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringSerializer");
+        configProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringSerializer");
+        return new KafkaProducer<>(configProperties);
+    }
 
-    public void publishToKafkaQueue(){
-        assert true;
+    public void sendSummaryToKafkaQueue(String msg){
+        try{
+            ProducerRecord<String, String> record = new ProducerRecord<String, String>(pluginConfig.getKafkaDecisionListenerConfig(ConfConsts.KAFKA_TOPIC_KEY), msg);
+            kafkaProducerInstance.send(record);
+        } catch (KafkaException e){
+            LOG.error("Exception Found on Kafka: " + e.getMessage());
+        }
+        kafkaProducerInstance.close();
     }
 
     @Override
     public String name() {
         return NAME;
     }
+
 }
