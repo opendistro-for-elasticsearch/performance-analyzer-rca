@@ -25,8 +25,20 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class SingleNodeImpactActionGrouper implements ActionGrouper {
 
+  /**
+   * Groups actions by instance they impact. This grouping method considers only those actions that
+   * impact a single node as valid candidates for grouping and as a result it filters out actions
+   * that impact multiple nodes.
+   *
+   * <p>Any action that impacts more than one node will need a more involved handling logic and
+   * this method is not to be used for grouping such actions.</p>
+   *
+   * @param actions The list of actions that need to be grouped.
+   * @return A map of actions grouped by instance they impact.
+   */
   @Override
-  @NonNull public Map<NodeKey, List<Action>> groupByNodeId(@NonNull List<Action> actions) {
+  @NonNull
+  public Map<NodeKey, List<Action>> groupByInstanceId(@NonNull List<Action> actions) {
     final Map<NodeKey, List<Action>> actionsByNodeId = new HashMap<>();
     actions.stream()
            .filter(action -> action.impactedNodes().size() == 1)

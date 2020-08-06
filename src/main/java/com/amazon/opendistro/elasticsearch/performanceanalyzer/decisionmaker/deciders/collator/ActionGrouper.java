@@ -28,10 +28,10 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 public interface ActionGrouper {
 
   /**
-   * Groups the given list of actions by the nodes they impact..
+   * Groups the given list of actions by the nodes they impact.
    *
    * @param actions The list of actions that need to be grouped.
    * @return A map of actions grouped by nodes they impact.
    */
-  @NonNull Map<NodeKey, List<Action>> groupByNodeId(@NonNull final List<Action> actions);
+  @NonNull Map<NodeKey, List<Action>> groupByInstanceId(@NonNull final List<Action> actions);
 }

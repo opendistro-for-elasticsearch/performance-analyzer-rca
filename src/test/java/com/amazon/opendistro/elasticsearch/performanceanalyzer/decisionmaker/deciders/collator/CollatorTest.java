@@ -60,7 +60,7 @@ public class CollatorTest {
     this.decreasingPressure = new ImpactVector();
     this.decreasingPressure.decreasesPressure(Dimension.CPU);
 
-    when(mockActionGrouper.groupByNodeId(any())).thenReturn(ImmutableMap.of(nodeKey,
+    when(mockActionGrouper.groupByInstanceId(any())).thenReturn(ImmutableMap.of(nodeKey,
         ImmutableList.of(mockPressureDecreasingAction, mockPressureIncreasingAction)));
     when(mockPressureIncreasingAction.impactedNodes())
         .thenReturn(Collections.singletonList(nodeKey));
@@ -86,7 +86,7 @@ public class CollatorTest {
 
   @Test
   public void testCollatorIncreasingPressurePolarization() {
-    when(mockActionGrouper.groupByNodeId(any())).thenReturn(ImmutableMap.of(this.nodeKey,
+    when(mockActionGrouper.groupByInstanceId(any())).thenReturn(ImmutableMap.of(this.nodeKey,
         Collections.singletonList(mockPressureIncreasingAction)));
 
     final Decision collatorDecision = testCollator.operate();

@@ -47,7 +47,7 @@ public class SingleNodeImpactActionGrouperTest {
   public void testAllSingleNodeImpactActions() {
     Map<NodeKey, List<Action>> groupedActions =
         testActionGrouper
-            .groupByNodeId(ImmutableList.of(singleNodeImpactAction1, singleNodeImpactAction2));
+            .groupByInstanceId(ImmutableList.of(singleNodeImpactAction1, singleNodeImpactAction2));
 
     assertEquals(2, groupedActions.keySet().size());
     assertTrue(groupedActions.containsKey(nodeKey1));
@@ -62,7 +62,7 @@ public class SingleNodeImpactActionGrouperTest {
   public void testSingleAndMultiNodeImpactActions() {
     Map<NodeKey, List<Action>> groupedActions =
         testActionGrouper
-            .groupByNodeId(ImmutableList.of(singleNodeImpactAction1, multiNodeImpactAction1));
+            .groupByInstanceId(ImmutableList.of(singleNodeImpactAction1, multiNodeImpactAction1));
 
     assertEquals(1, groupedActions.keySet().size());
     assertTrue(groupedActions.containsKey(nodeKey1));
