@@ -273,7 +273,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     //constructResourceHeatMapGraph();
 
     // Collator - Collects actions from all deciders and aligns impact vectors
-    Collator collator = new Collator(EVALUATION_INTERVAL_SECONDS, queueHealthDecider, cacheHealthDecider);
+    Collator collator = new Collator(queueHealthDecider, cacheHealthDecider);
     collator.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     collator.addAllUpstreams(Arrays.asList(queueHealthDecider, cacheHealthDecider));
 

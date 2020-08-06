@@ -53,7 +53,7 @@ public class CollatorTest {
   @Before
   public void setup() {
     initMocks(this);
-    this.testCollator = new Collator(TEST_INTERVAL, mockActionGrouper, mockDecider1, mockDecider2);
+    this.testCollator = new Collator(mockActionGrouper, mockDecider1, mockDecider2);
     this.nodeKey = new NodeKey(new Id(TEST_NODE_ID), new Ip(TEST_HOST_ADDRESS));
     this.increasingPressure = new ImpactVector();
     this.increasingPressure.increasesPressure(Dimension.CPU);

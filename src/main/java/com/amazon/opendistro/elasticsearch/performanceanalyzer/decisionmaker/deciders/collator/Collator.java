@@ -52,15 +52,17 @@ public class Collator extends Decider {
    */
   private static final int collatorFrequency = 1; // Measured in terms of number of evaluationIntervalPeriods
 
+  private static final int evalIntervalSeconds = 5;
+
   private final List<Decider> deciders;
 
   private final ActionGrouper actionGrouper;
 
-  public Collator(long evalIntervalSeconds, Decider... deciders) {
-    this(evalIntervalSeconds, new SingleNodeImpactActionGrouper(), deciders);
+  public Collator(Decider... deciders) {
+    this(new SingleNodeImpactActionGrouper(), deciders);
   }
 
-  public Collator(long evalIntervalSeconds, ActionGrouper actionGrouper, Decider... deciders) {
+  public Collator(ActionGrouper actionGrouper, Decider... deciders) {
     super(evalIntervalSeconds, collatorFrequency);
     this.deciders = Arrays.asList(deciders);
     this.actionGrouper = actionGrouper;
