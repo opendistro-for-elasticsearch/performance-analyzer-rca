@@ -301,11 +301,13 @@ public class RcaControllerTest {
     setMyIp(masterIP, AllMetrics.NodeRole.ELECTED_MASTER);
     Assert.assertTrue(check(new NodeRoleEval(rcaController), AllMetrics.NodeRole.ELECTED_MASTER));
     Assert.assertEquals(rcaController.getCurrentRole(), AllMetrics.NodeRole.ELECTED_MASTER);
+    Assert.assertEquals(rcaController.getCurrentRole(), rcaController.getRcaScheduler().getRole());
 
     AllMetrics.NodeRole nodeRole = AllMetrics.NodeRole.MASTER;
     setMyIp("10.10.192.200", nodeRole);
     Assert.assertTrue(check(new NodeRoleEval(rcaController), nodeRole));
     Assert.assertEquals(rcaController.getCurrentRole(), nodeRole);
+    Assert.assertEquals(rcaController.getCurrentRole(), rcaController.getRcaScheduler().getRole());
   }
 
   /**

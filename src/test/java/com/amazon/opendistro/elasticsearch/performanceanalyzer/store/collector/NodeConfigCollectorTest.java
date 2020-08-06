@@ -16,7 +16,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.collector;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapValue.HEAP_MAX;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolDimension.THREAD_POOL_TYPE;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
@@ -85,7 +84,7 @@ public class NodeConfigCollectorTest {
     MetricFlowUnit flowUnit =
         MetricFlowUnitTestHelper.createFlowUnit(
             Arrays.asList(MEM_TYPE.toString(), MetricsDB.MAX),
-            Arrays.asList(HEAP_MAX.toString(), String.valueOf(heapMaxSize)));
+            Arrays.asList(AllMetrics.GCType.HEAP.toString(), String.valueOf(heapMaxSize)));
     heapMax.setLocalFlowUnit(flowUnit);
   }
 
