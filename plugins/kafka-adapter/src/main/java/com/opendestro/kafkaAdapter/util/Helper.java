@@ -28,10 +28,9 @@ public class Helper {
             URL url = new URL(target.getUrl());
             httpConnection = (HttpURLConnection) url.openConnection();
 
-            //setup
             httpConnection.setRequestMethod("GET");
-            httpConnection.setConnectTimeout(5000);
-            httpConnection.setReadTimeout(5000);
+            httpConnection.setConnectTimeout(10000);
+            httpConnection.setReadTimeout(10000);
 
             int status = httpConnection.getResponseCode();
             reader = (status != 200) ? new BufferedReader(new InputStreamReader(httpConnection.getErrorStream())) : new BufferedReader(new InputStreamReader(httpConnection.getInputStream()));
