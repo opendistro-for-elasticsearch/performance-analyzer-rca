@@ -124,7 +124,7 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
         cacheHitCollector.collect(currTimestamp);
         if (counter >= rcaPeriod) {
             ResourceContext context;
-            HotNodeSummary nodeSummary;
+            HotNodeSummary nodeSummary = new HotNodeSummary(instanceDetails.getInstanceId(), instanceDetails.getInstanceIp());
 
             InstanceDetails instanceDetails = getInstanceDetails();
             double shardRequestCacheMaxSizeInBytes = getCacheMaxSize(
@@ -138,11 +138,9 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
                     && cacheHitCollector.isUnhealthy(currTimestamp)
                     && exceedsSizeThreshold) {
                 context = new ResourceContext(Resources.State.UNHEALTHY);
-                nodeSummary = new HotNodeSummary(instanceDetails.getInstanceId(), instanceDetails.getInstanceIp());
                 nodeSummary.appendNestedSummary(cacheEvictionCollector.generateSummary(currTimestamp));
             } else {
                 context = new ResourceContext(Resources.State.HEALTHY);
-                nodeSummary = null;
             }
 
             counter = 0;
