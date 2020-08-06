@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.ca
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.SHARD_REQUEST_CACHE_EVICTION;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.SHARD_REQUEST_CACHE_HIT;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.CacheUtil.getCacheMaxSize;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.CacheUtil.isSizeThresholdExceeded;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
@@ -31,9 +32,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.google.common.annotations.VisibleForTesting;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -70,7 +73,7 @@ import org.jooq.Result;
  * scheduled cleanup for entries which had timed-out during execution.
  *
  * <p>This RCA reads 'shardRequestCacheEvictions', 'shardRequestCacheHits', 'shardRequestCacheSizeGroupByOperation' and
- * 'shardRequestCacheMaxSizeGroupByOperation' from upstream metrics and maintains collectors which keep track of time
+ * 'shardRequestCacheMaxSizeInBytes' from upstream metrics and maintains collectors which keep track of time
  * window period(tp) where we repeatedly see evictions and hits for the last tp duration. This RCA is marked as unhealthy
  * if tp we find tp is above the threshold(300 seconds) and cache size exceeds the max cache size configured.
  *
@@ -82,7 +85,6 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
     private final Metric shardRequestCacheEvictions;
     private final Metric shardRequestCacheHits;
     private final Metric shardRequestCacheSizeGroupByOperation;
-    private final Metric shardRequestCacheMaxSizeGroupByOperation;
     private final int rcaPeriod;
     private int counter;
     private double cacheSizeThreshold;
@@ -90,15 +92,15 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
     private final CacheCollector cacheEvictionCollector;
     private final CacheCollector cacheHitCollector;
 
-    public <M extends Metric> ShardRequestCacheRca(final int rcaPeriod, final M shardRequestCacheEvictions,
-                                                   final M shardRequestCacheHits, final M shardRequestCacheSizeGroupByOperation,
-                                                   final M shardRequestCacheMaxSizeGroupByOperation) {
+    public <M extends Metric> ShardRequestCacheRca(final int rcaPeriod,
+                                                   final M shardRequestCacheEvictions,
+                                                   final M shardRequestCacheHits,
+                                                   final M shardRequestCacheSizeGroupByOperation) {
         super(5);
         this.rcaPeriod = rcaPeriod;
         this.shardRequestCacheEvictions = shardRequestCacheEvictions;
         this.shardRequestCacheHits = shardRequestCacheHits;
         this.shardRequestCacheSizeGroupByOperation = shardRequestCacheSizeGroupByOperation;
-        this.shardRequestCacheMaxSizeGroupByOperation = shardRequestCacheMaxSizeGroupByOperation;
         this.counter = 0;
         this.cacheSizeThreshold = CacheConfig.DEFAULT_SHARD_REQUEST_CACHE_SIZE_THRESHOLD;
         this.clock = Clock.systemUTC();
@@ -125,13 +127,15 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
             HotNodeSummary nodeSummary;
 
             InstanceDetails instanceDetails = getInstanceDetails();
+            double shardRequestCacheMaxSizeInBytes = getCacheMaxSize(
+                    getAppContext(), new NodeKey(instanceDetails), ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE);
             Boolean exceedsSizeThreshold = isSizeThresholdExceeded(
-                    shardRequestCacheSizeGroupByOperation, shardRequestCacheMaxSizeGroupByOperation, cacheSizeThreshold);
+                    shardRequestCacheSizeGroupByOperation, shardRequestCacheMaxSizeInBytes, cacheSizeThreshold);
 
             // if eviction and hit counts persists in last 5 minutes and cache size exceeds max cache size * threshold percentage,
             // the cache is considered as unhealthy
-            if (cacheEvictionCollector.isMetricPresentForThresholdTime(currTimestamp)
-                    && cacheHitCollector.isMetricPresentForThresholdTime(currTimestamp)
+            if (cacheEvictionCollector.isUnhealthy(currTimestamp)
+                    && cacheHitCollector.isUnhealthy(currTimestamp)
                     && exceedsSizeThreshold) {
                 context = new ResourceContext(Resources.State.UNHEALTHY);
                 nodeSummary = new HotNodeSummary(instanceDetails.getInstanceId(), instanceDetails.getInstanceIp());
@@ -143,8 +147,7 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
 
             counter = 0;
             return new ResourceFlowUnit<>(currTimestamp, context, nodeSummary, !instanceDetails.getIsMaster());
-        }
-        else {
+        } else {
             return new ResourceFlowUnit<>(currTimestamp);
         }
     }
@@ -215,19 +218,15 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
             }
         }
 
-        public boolean isMetricPresentForThresholdTime(final long currTimestamp) {
+        public boolean isUnhealthy(final long currTimestamp) {
             return hasMetric && (currTimestamp - metricTimestamp) >= metricTimePeriodThreshold;
         }
 
         private HotResourceSummary generateSummary(final long currTimestamp) {
-            HotResourceSummary resourceSummary = null;
-            if (isMetricPresentForThresholdTime(currTimestamp)) {
-                resourceSummary = new HotResourceSummary(cache,
-                        TimeUnit.MILLISECONDS.toSeconds(metricTimePeriodThreshold),
-                        TimeUnit.MILLISECONDS.toSeconds(currTimestamp - metricTimestamp),
-                        0);
-            }
-            return resourceSummary;
+            return new HotResourceSummary(cache,
+                    TimeUnit.MILLISECONDS.toSeconds(metricTimePeriodThreshold),
+                    TimeUnit.MILLISECONDS.toSeconds(currTimestamp - metricTimestamp),
+                    0);
         }
     }
 }
