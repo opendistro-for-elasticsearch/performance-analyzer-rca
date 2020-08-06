@@ -43,7 +43,7 @@ public class ConfigOverridesApplier {
 
     try {
       long lastUpdatedTimestamp = Long.parseLong(lastUpdatedTimestampString);
-      LOG.info("Last updated(writer): {}, Last applied(reader): {}", lastUpdatedTimestamp,
+      LOG.debug("Last updated(writer): {}, Last applied(reader): {}", lastUpdatedTimestamp,
           lastAppliedTimestamp);
       if (lastUpdatedTimestamp > lastAppliedTimestamp) {
         apply(ConfigOverridesHelper.deserialize(overridesJson));
@@ -58,7 +58,7 @@ public class ConfigOverridesApplier {
 
   private void apply(final ConfigOverrides overrides) {
     if (PerformanceAnalyzerApp.getRcaController() != null && PerformanceAnalyzerApp.getRcaController().isRcaEnabled()) {
-      LOG.error("Applying overrides: {}", overrides.getEnable().getRcas());
+      LOG.info("Applying overrides: {}", overrides.getEnable().getRcas());
       RcaConf rcaConf = PerformanceAnalyzerApp.getRcaController().getRcaConf();
       if (rcaConf != null) {
         Set<String> currentMutedRcaSet = new HashSet<>(rcaConf.getMutedRcaList());

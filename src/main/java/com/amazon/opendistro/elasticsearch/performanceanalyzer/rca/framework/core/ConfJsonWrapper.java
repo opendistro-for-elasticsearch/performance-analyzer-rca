@@ -27,7 +27,7 @@ import org.apache.logging.log4j.Logger;
 
 // TODO: There should be a validation for the expected fields.
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ConfJsonWrapper {
+class ConfJsonWrapper {
 
   private static final Logger LOG = LogManager.getLogger(ConfJsonWrapper.class);
   private final String rcaStoreLoc;

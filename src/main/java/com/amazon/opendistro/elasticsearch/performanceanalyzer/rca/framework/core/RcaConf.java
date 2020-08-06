@@ -229,7 +229,7 @@ public class RcaConf {
     }
 
     try {
-      LOG.error("Writing new file: {}", Paths.get(updatedPath));
+      LOG.info("Writing new file: {}", Paths.get(updatedPath));
       Files.move(Paths.get(updatedPath), Paths.get(configFileLoc), StandardCopyOption.ATOMIC_MOVE,
           StandardCopyOption.REPLACE_EXISTING);
     } catch (IOException e) {
