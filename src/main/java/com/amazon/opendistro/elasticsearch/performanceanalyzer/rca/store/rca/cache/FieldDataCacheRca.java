@@ -112,21 +112,19 @@ public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
         cacheEvictionCollector.collect(currTimestamp);
         if (counter >= rcaPeriod) {
             ResourceContext context;
-            HotNodeSummary nodeSummary;
-
             InstanceDetails instanceDetails = getInstanceDetails();
+            HotNodeSummary nodeSummary = new HotNodeSummary(instanceDetails.getInstanceId(), instanceDetails.getInstanceIp());
+
             double fieldDataCacheMaxSizeInBytes = getCacheMaxSize(
                     getAppContext(), new NodeKey(instanceDetails), ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE);
             Boolean exceedsSizeThreshold = isSizeThresholdExceeded(
                     fieldDataCacheSizeGroupByOperation, fieldDataCacheMaxSizeInBytes, cacheSizeThreshold);
             if (cacheEvictionCollector.isUnhealthy(currTimestamp) && exceedsSizeThreshold) {
                 context = new ResourceContext(Resources.State.UNHEALTHY);
-                nodeSummary = new HotNodeSummary(instanceDetails.getInstanceId(), instanceDetails.getInstanceIp());
                 nodeSummary.appendNestedSummary(cacheEvictionCollector.generateSummary(currTimestamp));
             }
             else {
                 context = new ResourceContext(Resources.State.HEALTHY);
-                nodeSummary = null;
             }
 
             counter = 0;
