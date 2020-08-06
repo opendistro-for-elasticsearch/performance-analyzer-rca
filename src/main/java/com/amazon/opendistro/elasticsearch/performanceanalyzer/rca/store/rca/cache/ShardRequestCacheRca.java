@@ -124,9 +124,9 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
         cacheHitCollector.collect(currTimestamp);
         if (counter >= rcaPeriod) {
             ResourceContext context;
+            InstanceDetails instanceDetails = getInstanceDetails();
             HotNodeSummary nodeSummary = new HotNodeSummary(instanceDetails.getInstanceId(), instanceDetails.getInstanceIp());
 
-            InstanceDetails instanceDetails = getInstanceDetails();
             double shardRequestCacheMaxSizeInBytes = getCacheMaxSize(
                     getAppContext(), new NodeKey(instanceDetails), ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE);
             Boolean exceedsSizeThreshold = isSizeThresholdExceeded(
