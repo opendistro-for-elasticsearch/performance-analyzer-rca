@@ -82,7 +82,7 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
   }
 
   @Override
-  public boolean isValid() {
+  public boolean canUpdate() {
     if (currentCacheMaxSizeInBytes == null) {
       return false;
     }

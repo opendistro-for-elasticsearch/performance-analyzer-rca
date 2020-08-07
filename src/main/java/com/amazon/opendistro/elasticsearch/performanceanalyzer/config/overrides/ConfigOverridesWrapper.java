@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.config.overrides;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * Class responsible for holding the latest config overrides across the cluster.
@@ -34,6 +35,7 @@ public class ConfigOverridesWrapper {
      * Ctor used only for unit test purposes.
      * @param mapper The object mapper instance.
      */
+    @VisibleForTesting
     public ConfigOverridesWrapper(final ObjectMapper mapper) {
         this.currentClusterConfigOverrides = new ConfigOverrides();
         this.mapper = mapper;

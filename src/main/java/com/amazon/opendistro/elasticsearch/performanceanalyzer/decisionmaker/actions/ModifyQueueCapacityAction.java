@@ -56,7 +56,7 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
   }
 
   @Override
-  public boolean isValid() {
+  public boolean canUpdate() {
     return desiredCapacity != currentCapacity;
   }
 

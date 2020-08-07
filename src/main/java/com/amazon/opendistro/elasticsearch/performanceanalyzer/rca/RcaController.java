@@ -15,7 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RCA_MUTE_ERROR_METRIC;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.MUTE_ERROR_METRIC;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.ClientServers;
@@ -182,7 +182,7 @@ public class RcaController {
       List<ConnectedComponent> connectedComponents = getRcaGraphComponents(rcaConf);
 
       // Mute the rca nodes after the graph creation and before the scheduler start
-      readAndUpdateMutedRcasDuringStart();
+      readAndUpdateMutedComponentsDuringStart();
 
       Queryable db;
       if (dbProvider == null) {
@@ -319,12 +319,12 @@ public class RcaController {
         });
   }
 
-  private void readAndUpdateMutedRcasDuringStart() {
-    /* We have an edge case where both `readAndUpdateMutedComponents()` and `readAndUpdateMutedRcasDuringStart()`
+  private void readAndUpdateMutedComponentsDuringStart() {
+    /* We have an edge case where both `readAndUpdateMutedComponents()` and `readAndUpdateMutedComponentsDuringStart()`
      * can try to update the muted Rca list back to back, reading rca.conf twice. This will happen when rca
      * was turned off and then on.
      *
-     * <p> `readAndUpdateMutedRcasDuringStart()` should only be read at the start of the process, when
+     * <p> `readAndUpdateMutedComponentsDuringStart()` should only be read at the start of the process, when
      * RCA graph is not constructed and we cannot validate the new new muted RCAs. For any other update
      * to the muted list, the periodic rca.conf update checker will take care of it.
      *
@@ -374,7 +374,7 @@ public class RcaController {
       Stats.getInstance().updateMutedActions(actionsForMute);
     } catch (Exception e) {
       LOG.error("Couldn't read/update the muted RCAs", e);
-      StatsCollector.instance().logMetric(RCA_MUTE_ERROR_METRIC);
+      StatsCollector.instance().logMetric(MUTE_ERROR_METRIC);
       return false;
     }
 

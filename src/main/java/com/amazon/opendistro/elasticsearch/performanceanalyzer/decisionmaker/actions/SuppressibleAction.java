@@ -20,7 +20,7 @@ public abstract class SuppressibleAction implements Action {
    */
   @Override
   public final boolean isActionable() {
-    return !isMuted() && isValid();
+    return !isMuted() && canUpdate();
   }
 
   /**
@@ -31,5 +31,5 @@ public abstract class SuppressibleAction implements Action {
    *
    * @return true if valid, false otherwise.
    */
-  public abstract boolean isValid();
+  public abstract boolean canUpdate();
 }

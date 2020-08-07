@@ -89,6 +89,10 @@ public class ConfigOverridesApplier {
             currentMutedActionSet.addAll(overrides.getDisable().getActions());
           }
         }
+
+        LOG.debug("New set of muted rcas: {}", currentMutedRcaSet);
+        LOG.debug("New set of muted deciders: {}", currentMutedDeciderSet);
+        LOG.debug("New set of muted actions: {}", currentMutedActionSet);
         rcaConf.updateRcaConf(currentMutedRcaSet, currentMutedDeciderSet, currentMutedActionSet);
         setLastAppliedTimestamp(System.currentTimeMillis());
       }

@@ -42,11 +42,9 @@ class ConfJsonWrapper {
   private final int networkQueueLength;
   private final int perVertexBufferLength;
   private final Map<String, Object> rcaConfigSettings;
-  private final List<String> mutedRcaList;
   private final Map<String, Object> deciderConfigSettings;
-
+  private final List<String> mutedRcaList;
   private final List<String> mutedDeciderList;
-
   private final List<String> mutedActionList;
 
   String getRcaStoreLoc() {
