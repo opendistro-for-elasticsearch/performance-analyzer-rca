@@ -1,4 +1,6 @@
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugis.config;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config;
+
+import java.nio.file.Paths;
 
 public class ConfConsts {
     // The configuration file name
@@ -13,4 +15,9 @@ public class ConfConsts {
 
     public static final String WEBHOOKS_URL_KEY = "kafka-topic";
 
+    public static final String CONFIG_DIR_PATH = Paths.get(System.getProperty("user.dir"), "pa_config").toString();
+
+    public static final String DECISION_LISTENER_CONF_FILENAME = "plugins.conf";
+
 }
+

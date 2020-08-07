@@ -1,7 +1,5 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.DecisionToKafkaPlugin;
-
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,7 +12,6 @@ import java.util.Map;
 
 public class PluginConfig {
     protected String configFilePath;
-    protected long lastModifiedTime;
     protected PluginConfJsonWrapper conf;
     private static final Logger LOG = LogManager.getLogger(PluginConfig.class);
 
@@ -22,10 +19,9 @@ public class PluginConfig {
         this.configFilePath = configPath;
         JsonFactory factory = new JsonFactory();
         factory.enable(JsonParser.Feature.ALLOW_COMMENTS);
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper(factory);
         try{
             File configFile = new File(this.configFilePath);
-            this.lastModifiedTime = configFile.lastModified();
             this.conf = mapper.readValue(configFile, PluginConfJsonWrapper.class);
         } catch(IOException e){
             LOG.error(e.getMessage());
@@ -38,10 +34,6 @@ public class PluginConfig {
 
     public String getKafkaDecisionListenerConfig(String key){
         return getKafkaDecisionListenerSettings().get(key);
-    }
-
-    public long getLastModifiedTime() {
-        return lastModifiedTime;
     }
 }
 
