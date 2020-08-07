@@ -30,7 +30,7 @@ public class ProducerStarter {
                     String resp = Helper.makeRequest(target);
                     JsonNode jsonNode = mapper.readTree(resp);
                     ProducerRecord<String, JsonNode> record = new ProducerRecord<String, JsonNode>(producerConfig.getTopic(), jsonNode);
-                    System.out.println("Sending to consumer: "+record);
+                    System.out.println("Sending to kafka queue: " + producerConfig.getTopic() + ", record: " + record);
                     producer.send(record);
                     producer.flush();
                 } catch (JsonProcessingException e){
