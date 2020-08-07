@@ -23,6 +23,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighH
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNodeClusterRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardClusterRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardRcaConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.QueueRejectionRcaConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.threadpool.QueueRejectionRca;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -121,6 +123,10 @@ public class RcaConf {
 
   public HighHeapUsageYoungGenRcaConfig getHighHeapUsageYoungGenRcaConfig() {
     return new HighHeapUsageYoungGenRcaConfig(this);
+  }
+
+  public QueueRejectionRcaConfig getQueueRejectionRcaConfig() {
+    return new QueueRejectionRcaConfig(this);
   }
 
   public HotNodeClusterRcaConfig getHotNodeClusterRcaConfig() {
