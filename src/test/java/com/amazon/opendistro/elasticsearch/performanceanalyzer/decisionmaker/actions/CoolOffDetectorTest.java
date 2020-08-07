@@ -162,5 +162,10 @@ public class CoolOffDetectorTest {
     public String summary() {
       return "Test";
     }
+
+    @Override
+    public boolean isMuted() {
+      return false;
+    }
   }
 }
