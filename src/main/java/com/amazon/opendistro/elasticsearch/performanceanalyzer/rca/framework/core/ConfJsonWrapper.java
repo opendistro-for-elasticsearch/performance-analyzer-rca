@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.co
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +32,7 @@ class ConfJsonWrapper {
   private static final Logger LOG = LogManager.getLogger(ConfJsonWrapper.class);
   private final String rcaStoreLoc;
   private final String thresholdStoreLoc;
-  private final long newRcaCheckPeriocicityMins;
+  private final long newRcaCheckPeriodicityMins;
   private final long newThresholdCheckPeriodicityMins;
   private final List<String> peerIpList;
   private final Map<String, String> tagMap;
@@ -41,8 +42,10 @@ class ConfJsonWrapper {
   private final int networkQueueLength;
   private final int perVertexBufferLength;
   private final Map<String, Object> rcaConfigSettings;
-  private final List<String> mutedRcaList;
   private final Map<String, Object> deciderConfigSettings;
+  private final List<String> mutedRcaList;
+  private final List<String> mutedDeciderList;
+  private final List<String> mutedActionList;
 
   String getRcaStoreLoc() {
     return rcaStoreLoc;
@@ -52,8 +55,8 @@ class ConfJsonWrapper {
     return thresholdStoreLoc;
   }
 
-  long getNewRcaCheckPeriocicityMins() {
-    return newRcaCheckPeriocicityMins;
+  long getNewRcaCheckPeriodicityMins() {
+    return newRcaCheckPeriodicityMins;
   }
 
   long getNewThresholdCheckPeriodicityMins() {
@@ -88,6 +91,14 @@ class ConfJsonWrapper {
     return mutedRcaList;
   }
 
+  public List<String> getMutedDeciderList() {
+    return mutedDeciderList;
+  }
+
+  public List<String> getMutedActionList() {
+    return mutedActionList;
+  }
+
   public void setDatastoreRcaLogDirectory(String rcaLogLocation) {
     this.datastore.put(RcaConsts.DATASTORE_LOC_KEY, rcaLogLocation);
   }
@@ -103,7 +114,7 @@ class ConfJsonWrapper {
   ConfJsonWrapper(
       @JsonProperty("rca-store-location") String rcaStoreLoc,
       @JsonProperty("threshold-store-location") String thresholdStoreLoc,
-      @JsonProperty("new-rca-check-minutes") long newRcaCheckPeriocicityMins,
+      @JsonProperty("new-rca-check-minutes") long newRcaCheckPeriodicityMins,
       @JsonProperty("new-threshold-check-minutes") long newThresholdCheckPeriodicityMins,
       @JsonProperty("tags") Map<String, String> tags,
       @JsonProperty("remote-peers") List<String> peers,
@@ -113,11 +124,13 @@ class ConfJsonWrapper {
       @JsonProperty("max-flow-units-per-vertex-buffer") int perVertexBufferLength,
       @JsonProperty("rca-config-settings") Map<String, Object> rcaConfigSettings,
       @JsonProperty("muted-rcas") List<String> mutedRcas,
+      @JsonProperty("muted-deciders") List<String> mutedDeciders,
+      @JsonProperty("muted-actions") List<String> mutedActions,
       @JsonProperty("decider-config-settings") Map<String, Object> deciderConfigSettings) {
     this.creationTime = System.currentTimeMillis();
     this.rcaStoreLoc = rcaStoreLoc;
     this.thresholdStoreLoc = thresholdStoreLoc;
-    this.newRcaCheckPeriocicityMins = newRcaCheckPeriocicityMins;
+    this.newRcaCheckPeriodicityMins = newRcaCheckPeriodicityMins;
     this.newThresholdCheckPeriodicityMins = newThresholdCheckPeriodicityMins;
     this.peerIpList = peers;
     this.tagMap = tags;
@@ -126,7 +139,9 @@ class ConfJsonWrapper {
     this.networkQueueLength = networkQueueLength;
     this.perVertexBufferLength = perVertexBufferLength;
     this.rcaConfigSettings = rcaConfigSettings;
-    this.mutedRcaList = mutedRcas;
+    this.mutedRcaList = ImmutableList.copyOf(mutedRcas);
+    this.mutedDeciderList = ImmutableList.copyOf(mutedDeciders);
+    this.mutedActionList = ImmutableList.copyOf(mutedActions);
     this.deciderConfigSettings = deciderConfigSettings;
   }
 }

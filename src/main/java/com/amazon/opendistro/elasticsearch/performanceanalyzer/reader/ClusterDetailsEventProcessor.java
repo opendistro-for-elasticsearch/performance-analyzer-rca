@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.overrides.ConfigOverridesApplier;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
@@ -41,7 +42,15 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
    */
   private volatile ImmutableList<NodeDetails> nodesDetails = null;
 
-  public ClusterDetailsEventProcessor() {}
+  private final ConfigOverridesApplier overridesApplier;
+
+  public ClusterDetailsEventProcessor() {
+    this(new ConfigOverridesApplier());
+  }
+
+  public ClusterDetailsEventProcessor(final ConfigOverridesApplier overridesApplier) {
+    this.overridesApplier = overridesApplier;
+  }
 
   public ClusterDetailsEventProcessor(final ClusterDetailsEventProcessor other) {
     if (other.nodesDetails != null) {
@@ -50,6 +59,9 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
         builder.add(new NodeDetails(oldDetails));
       }
       this.nodesDetails = builder.build();
+      this.overridesApplier = other.getOverridesApplier();
+    } else {
+      this.overridesApplier = new ConfigOverridesApplier();
     }
   }
 
@@ -75,15 +87,18 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
 
     // An example node_metrics data is something like this for a two node cluster:
     // {"current_time":1566414001749}
-    // {"overrides": {"enabled": {}, "disabled": {}}
-    // {"lastOverrideTimestamp":1566414001749}
+    // {"overrides": {"enabled": {}, "disabled": {}}}
+    // 1566414001749
     // {"ID":"4sqG_APMQuaQwEW17_6zwg","HOST_ADDRESS":"10.212.73.121"}
     // {"ID":"OVH94mKXT5ibeqvDoAyTeg","HOST_ADDRESS":"10.212.78.83"}
     //
     // The line 0 is timestamp that can be skipped. So we allocated size of
     // the array is one less than the list.
 
+    String overridesJson = lines[1];
+    String overrideUpdatedTimestamp = lines[2];
 
+    overridesApplier.applyOverride(overridesJson, overrideUpdatedTimestamp);
 
     final List<NodeDetails> tmpNodesDetails = new ArrayList<>();
 
@@ -123,6 +138,10 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
     } else {
       return Collections.emptyList();
     }
+  }
+
+  public ConfigOverridesApplier getOverridesApplier() {
+    return this.overridesApplier;
   }
 
   public List<NodeDetails> getDataNodesDetails() {

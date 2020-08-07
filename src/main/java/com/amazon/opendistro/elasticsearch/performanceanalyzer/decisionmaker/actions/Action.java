@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 
 import java.util.List;
@@ -44,4 +45,7 @@ public interface Action {
 
   /** Returns a summary for the configured action */
   String summary();
+
+  /** Returns if this action is explicitly muted through configuration */
+  boolean isMuted();
 }
