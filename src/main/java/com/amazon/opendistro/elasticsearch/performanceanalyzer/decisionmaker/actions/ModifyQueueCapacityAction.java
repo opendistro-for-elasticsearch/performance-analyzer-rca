@@ -19,6 +19,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionma
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.HEAP;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.NETWORK;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 
@@ -40,7 +41,9 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
   private Map<ResourceEnum, Integer> lowerBound = new HashMap<>();
   private Map<ResourceEnum, Integer> upperBound = new HashMap<>();
 
-  public ModifyQueueCapacityAction(NodeKey esNode, ResourceEnum threadPool, int currentCapacity, boolean increase) {
+  public ModifyQueueCapacityAction(NodeKey esNode, ResourceEnum threadPool, int currentCapacity,
+      boolean increase, AppContext appContext) {
+    super(appContext);
     setBounds();
     int STEP_SIZE = 50;
     this.esNode = esNode;

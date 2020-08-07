@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,10 +40,12 @@ public class AppContext {
   // initiate a node config cache within each AppContext space
   // to store node config settings from ES
   private final NodeConfigCache nodeConfigCache;
+  private Set<String> mutedActions;
 
   public AppContext() {
     this.clusterDetailsEventProcessor = null;
     this.nodeConfigCache = new NodeConfigCache();
+    this.mutedActions = ImmutableSet.of();
   }
 
   public AppContext(AppContext other) {
@@ -122,5 +125,13 @@ public class AppContext {
                     x -> x.getInstanceId().equals(instanceIdKey))
             .findFirst()
             .orElse(new InstanceDetails(AllMetrics.NodeRole.UNKNOWN));
+  }
+
+  public boolean isActionMuted(final String action) {
+    return this.mutedActions.contains(action);
+  }
+
+  public void updateMutedActions(final Set<String> mutedActions) {
+    this.mutedActions = ImmutableSet.copyOf(mutedActions);
   }
 }

@@ -371,7 +371,7 @@ public class RcaController {
 
       LOG.info("Updating the muted graph nodes to : {}", graphNodesForMute);
       Stats.getInstance().updateMutedGraphNodes(graphNodesForMute);
-      Stats.getInstance().updateMutedActions(actionsForMute);
+      appContext.updateMutedActions(actionsForMute);
     } catch (Exception e) {
       LOG.error("Couldn't read/update the muted RCAs", e);
       StatsCollector.instance().logMetric(MUTE_ERROR_METRIC);

@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaControllerHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheDeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
@@ -201,13 +202,23 @@ public class RcaConf {
     return setting;
   }
 
-  public void updateRcaConf(final Set<String> mutedRcas, final Set<String> mutedDeciders,
+  public void updateAllRcaConfFiles(final Set<String> mutedRcas, final Set<String> mutedDeciders,
       final Set<String> mutedActions) {
-    String updatedPath = this.configFileLoc + ".updated";
+    // update all rca.conf files
+    List<String> rcaConfFiles = RcaControllerHelper.getAllConfFilePaths();
+
+    for (String confFilePath : rcaConfFiles) {
+      updateRcaConf(confFilePath, mutedRcas, mutedDeciders, mutedActions);
+    }
+  }
+
+  private void updateRcaConf(String originalFilePath, final Set<String> mutedRcas,
+      final Set<String> mutedDeciders, final Set<String> mutedActions) {
+
+    String updatedPath = originalFilePath + ".updated";
     try (final FileInputStream originalFileInputStream = new FileInputStream(this.configFileLoc);
         final Scanner scanner = new Scanner(originalFileInputStream, StandardCharsets.UTF_8.name());
-        final FileOutputStream updatedFileOutputStream = new FileOutputStream(updatedPath)
-    ) {
+        final FileOutputStream updatedFileOutputStream = new FileOutputStream(updatedPath)) {
       // create the config json Object from rca config file
       String jsonText = scanner.useDelimiter("\\A").next();
       ObjectMapper mapper = new ObjectMapper();
@@ -230,7 +241,7 @@ public class RcaConf {
 
     try {
       LOG.info("Writing new file: {}", Paths.get(updatedPath));
-      Files.move(Paths.get(updatedPath), Paths.get(configFileLoc), StandardCopyOption.ATOMIC_MOVE,
+      Files.move(Paths.get(updatedPath), Paths.get(originalFilePath), StandardCopyOption.ATOMIC_MOVE,
           StandardCopyOption.REPLACE_EXISTING);
     } catch (IOException e) {
       LOG.error("Unable to move and replace the old conf file with updated conf file.", e);

@@ -24,6 +24,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Impact;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
@@ -36,10 +37,13 @@ import org.junit.Test;
 
 public class ModifyQueueCapacityActionTest {
 
+  private AppContext testAppContext = new AppContext();
+
   @Test
   public void testIncreaseCapacity() {
     NodeKey node1 = new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
-    ModifyQueueCapacityAction modifyQueueCapacityAction = new ModifyQueueCapacityAction(node1, ResourceEnum.WRITE_THREADPOOL, 300, true);
+    ModifyQueueCapacityAction modifyQueueCapacityAction = new ModifyQueueCapacityAction(node1,
+        ResourceEnum.WRITE_THREADPOOL, 300, true, testAppContext);
     assertTrue(modifyQueueCapacityAction.getDesiredCapacity() > modifyQueueCapacityAction.getCurrentCapacity());
     assertTrue(modifyQueueCapacityAction.isActionable());
     assertEquals(ModifyQueueCapacityAction.COOL_OFF_PERIOD_IN_MILLIS,
@@ -58,7 +62,8 @@ public class ModifyQueueCapacityActionTest {
   @Test
   public void testDecreaseCapacity() {
     NodeKey node1 = new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
-    ModifyQueueCapacityAction modifyQueueCapacityAction = new ModifyQueueCapacityAction(node1, ResourceEnum.SEARCH_THREADPOOL, 1500, false);
+    ModifyQueueCapacityAction modifyQueueCapacityAction = new ModifyQueueCapacityAction(node1,
+        ResourceEnum.SEARCH_THREADPOOL, 1500, false, testAppContext);
     assertTrue(modifyQueueCapacityAction.getDesiredCapacity() < modifyQueueCapacityAction.getCurrentCapacity());
     assertTrue(modifyQueueCapacityAction.isActionable());
     assertEquals(ModifyQueueCapacityAction.COOL_OFF_PERIOD_IN_MILLIS,
@@ -78,22 +83,26 @@ public class ModifyQueueCapacityActionTest {
   public void testBounds() {
     // TODO: Move to work with test rcaConf when bounds moved to config
     NodeKey node1 = new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
-    ModifyQueueCapacityAction searchQueueIncrease = new ModifyQueueCapacityAction(node1, ResourceEnum.SEARCH_THREADPOOL, 3000, true);
+    ModifyQueueCapacityAction searchQueueIncrease = new ModifyQueueCapacityAction(node1,
+        ResourceEnum.SEARCH_THREADPOOL, 3000, true, testAppContext);
     assertEquals(searchQueueIncrease.getDesiredCapacity(), searchQueueIncrease.getCurrentCapacity());
     assertFalse(searchQueueIncrease.isActionable());
     assertNoImpact(node1, searchQueueIncrease);
 
-    ModifyQueueCapacityAction searchQueueDecrease = new ModifyQueueCapacityAction(node1, ResourceEnum.SEARCH_THREADPOOL, 1000, false);
+    ModifyQueueCapacityAction searchQueueDecrease = new ModifyQueueCapacityAction(node1,
+        ResourceEnum.SEARCH_THREADPOOL, 1000, false, testAppContext);
     assertEquals(searchQueueIncrease.getDesiredCapacity(), searchQueueIncrease.getCurrentCapacity());
     assertFalse(searchQueueIncrease.isActionable());
     assertNoImpact(node1, searchQueueDecrease);
 
-    ModifyQueueCapacityAction writeQueueIncrease = new ModifyQueueCapacityAction(node1, ResourceEnum.WRITE_THREADPOOL, 1000, true);
+    ModifyQueueCapacityAction writeQueueIncrease = new ModifyQueueCapacityAction(node1,
+        ResourceEnum.WRITE_THREADPOOL, 1000, true, testAppContext);
     assertEquals(writeQueueIncrease.getDesiredCapacity(), writeQueueIncrease.getCurrentCapacity());
     assertFalse(writeQueueIncrease.isActionable());
     assertNoImpact(node1, writeQueueIncrease);
 
-    ModifyQueueCapacityAction writeQueueDecrease = new ModifyQueueCapacityAction(node1, ResourceEnum.WRITE_THREADPOOL, 100, false);
+    ModifyQueueCapacityAction writeQueueDecrease = new ModifyQueueCapacityAction(node1,
+        ResourceEnum.WRITE_THREADPOOL, 100, false, testAppContext);
     assertEquals(writeQueueDecrease.getDesiredCapacity(), writeQueueDecrease.getCurrentCapacity());
     assertFalse(writeQueueDecrease.isActionable());
     assertNoImpact(node1, writeQueueDecrease);
@@ -102,9 +111,10 @@ public class ModifyQueueCapacityActionTest {
   @Test
   public void testMutedAction() {
     NodeKey node1 = new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
-    ModifyQueueCapacityAction modifyQueueCapacityAction = new ModifyQueueCapacityAction(node1, ResourceEnum.SEARCH_THREADPOOL, 3000, true);
+    ModifyQueueCapacityAction modifyQueueCapacityAction = new ModifyQueueCapacityAction(node1,
+        ResourceEnum.SEARCH_THREADPOOL, 3000, true, testAppContext);
 
-    Stats.getInstance().updateMutedActions(ImmutableSet.of(modifyQueueCapacityAction.name()));
+    testAppContext.updateMutedActions(ImmutableSet.of(modifyQueueCapacityAction.name()));
 
     assertFalse(modifyQueueCapacityAction.isActionable());
   }

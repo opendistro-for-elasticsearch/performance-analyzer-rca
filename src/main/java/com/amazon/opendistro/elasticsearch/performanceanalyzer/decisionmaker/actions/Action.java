@@ -47,7 +47,5 @@ public interface Action {
   String summary();
 
   /** Returns if this action is explicitly muted through configuration */
-  default boolean isMuted() {
-    return Stats.getInstance().isActionMuted(name());
-  }
+  boolean isMuted();
 }

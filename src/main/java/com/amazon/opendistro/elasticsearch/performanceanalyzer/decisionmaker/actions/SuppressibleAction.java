@@ -1,9 +1,25 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+
 /**
  * Actions that can be suppressed through a config.
  */
 public abstract class SuppressibleAction implements Action {
+
+  private final AppContext appContext;
+
+  public SuppressibleAction(final AppContext appContext) {
+    this.appContext = appContext;
+  }
+
+  /**
+   * Returns if this action is explicitly muted through configuration
+   */
+  @Override
+  public boolean isMuted() {
+    return appContext.isActionMuted(name());
+  }
 
   /**
    * Returns true if the configured action is actionable, false otherwise.

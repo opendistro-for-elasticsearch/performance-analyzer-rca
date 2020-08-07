@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.config.overrides
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -32,7 +33,7 @@ import org.apache.logging.log4j.Logger;
 public class ConfigOverridesApplier {
 
   private static final Logger LOG = LogManager.getLogger(ConfigOverridesApplier.class);
-  private volatile long lastAppliedTimestamp;
+  private long lastAppliedTimestamp;
 
   public void applyOverride(final String overridesJson, final String lastUpdatedTimestampString) {
     if (!valid(overridesJson, lastUpdatedTimestampString)) {
@@ -53,6 +54,9 @@ public class ConfigOverridesApplier {
       }
     } catch (IOException ioe) {
       LOG.error("Unable to deserialize overrides JSON:" + overridesJson, ioe);
+    } catch (NumberFormatException nfe) {
+      LOG.error("Unable to parse the lastUpdatedTimestamp {} string as a number.",
+          lastUpdatedTimestampString, nfe);
     }
   }
 
@@ -93,8 +97,8 @@ public class ConfigOverridesApplier {
         LOG.debug("New set of muted rcas: {}", currentMutedRcaSet);
         LOG.debug("New set of muted deciders: {}", currentMutedDeciderSet);
         LOG.debug("New set of muted actions: {}", currentMutedActionSet);
-        rcaConf.updateRcaConf(currentMutedRcaSet, currentMutedDeciderSet, currentMutedActionSet);
-        setLastAppliedTimestamp(System.currentTimeMillis());
+        rcaConf.updateAllRcaConfFiles(currentMutedRcaSet, currentMutedDeciderSet, currentMutedActionSet);
+        this.lastAppliedTimestamp = System.currentTimeMillis();
       }
     }
   }
@@ -111,10 +115,12 @@ public class ConfigOverridesApplier {
     return NumberUtils.isCreatable(timestamp);
   }
 
+  @VisibleForTesting
   public long getLastAppliedTimestamp() {
     return lastAppliedTimestamp;
   }
 
+  @VisibleForTesting
   public void setLastAppliedTimestamp(final long lastAppliedTimestamp) {
     this.lastAppliedTimestamp = lastAppliedTimestamp;
   }

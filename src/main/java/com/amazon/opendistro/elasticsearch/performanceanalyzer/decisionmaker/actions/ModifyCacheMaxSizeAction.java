@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.ac
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.HEAP;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
@@ -58,10 +59,12 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
       final ResourceEnum cacheType,
       final NodeConfigCache nodeConfigCache,
       final double cacheSizeUpperBound,
-      final boolean increase) {
+      final boolean increase,
+      final AppContext appContext) {
     // TODO: Add lower bound for caches
     // TODO: Address cache scaling down  when JVM decider is available
 
+    super(appContext);
     this.esNode = esNode;
     this.cacheType = cacheType;
     this.nodeConfigCache = nodeConfigCache;

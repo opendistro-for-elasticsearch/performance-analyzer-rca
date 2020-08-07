@@ -87,8 +87,8 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
 
     // An example node_metrics data is something like this for a two node cluster:
     // {"current_time":1566414001749}
+    // {"overrides": {"enabled": {}, "disabled": {}}}
     // 1566414001749
-    // {"overrides": {"enabled": {}, "disabled": {}}
     // {"ID":"4sqG_APMQuaQwEW17_6zwg","HOST_ADDRESS":"10.212.73.121"}
     // {"ID":"OVH94mKXT5ibeqvDoAyTeg","HOST_ADDRESS":"10.212.78.83"}
     //

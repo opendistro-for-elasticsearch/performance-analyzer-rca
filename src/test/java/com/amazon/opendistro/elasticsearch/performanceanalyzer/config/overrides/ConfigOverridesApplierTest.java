@@ -28,7 +28,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -143,7 +142,7 @@ public class ConfigOverridesApplierTest {
 
     testOverridesApplier.applyOverride(overridesJson, Long.toString(lastAppliedTimestamp + 300));
 
-    verify(mockRcaConf).updateRcaConf(newMutedRcas.capture(), newMutedDeciders.capture(),
+    verify(mockRcaConf).updateAllRcaConfFiles(newMutedRcas.capture(), newMutedDeciders.capture(),
         newMutedActions.capture());
 
     // Previously only rca2 was muted, now we disabled rca1, and rca3 as well.

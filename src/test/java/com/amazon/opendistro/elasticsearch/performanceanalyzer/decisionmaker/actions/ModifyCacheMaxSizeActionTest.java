@@ -82,7 +82,8 @@ public class ModifyCacheMaxSizeActionTest {
             ResourceEnum.FIELD_DATA_CACHE,
             appContext.getNodeConfigCache(),
             CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
-            true);
+            true,
+            appContext);
     assertTrue(
         modifyCacheSizeAction.getDesiredCacheMaxSizeInBytes()
             > modifyCacheSizeAction.getCurrentCacheMaxSizeInBytes());
@@ -109,7 +110,8 @@ public class ModifyCacheMaxSizeActionTest {
             ResourceEnum.FIELD_DATA_CACHE,
             appContext.getNodeConfigCache(),
             CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
-            false);
+            false,
+            appContext);
     assertEquals(
         modifyCacheSizeAction.getDesiredCacheMaxSizeInBytes(),
         modifyCacheSizeAction.getCurrentCacheMaxSizeInBytes());
@@ -140,7 +142,8 @@ public class ModifyCacheMaxSizeActionTest {
             ResourceEnum.FIELD_DATA_CACHE,
             appContext.getNodeConfigCache(),
             CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
-            true);
+            true,
+            appContext);
     assertEquals(
         fieldCacheIncrease.getDesiredCacheMaxSizeInBytes(),
         fieldCacheIncrease.getCurrentCacheMaxSizeInBytes());
@@ -156,7 +159,8 @@ public class ModifyCacheMaxSizeActionTest {
             ResourceEnum.SHARD_REQUEST_CACHE,
             appContext.getNodeConfigCache(),
             CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND,
-            true);
+            true,
+            appContext);
     assertEquals(
         shardRequestCacheIncrease.getDesiredCacheMaxSizeInBytes(),
         shardRequestCacheIncrease.getCurrentCacheMaxSizeInBytes());
@@ -174,9 +178,10 @@ public class ModifyCacheMaxSizeActionTest {
             ResourceEnum.FIELD_DATA_CACHE,
             appContext.getNodeConfigCache(),
             CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
-            false);
+            false,
+            appContext);
 
-    Stats.getInstance().updateMutedActions(ImmutableSet.of(modifyCacheSizeAction.name()));
+    appContext.updateMutedActions(ImmutableSet.of(modifyCacheSizeAction.name()));
 
     assertFalse(modifyCacheSizeAction.isActionable());
   }
