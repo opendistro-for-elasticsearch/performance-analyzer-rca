@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.config.overrides;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -27,6 +28,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
@@ -159,6 +161,18 @@ public class ConfigOverridesApplierTest {
     Set<String> combinedMutedActions = newMutedActions.getValue();
     assertEquals(1, combinedMutedActions.size());
     assertEquals(ImmutableSet.of(ACT2), combinedMutedActions);
+  }
+
+  @Test
+  public void testUpdateRcaConfFailure() throws IOException {
+    long lastAppliedTimestamp = System.currentTimeMillis();
+    testOverridesApplier.setLastAppliedTimestamp(lastAppliedTimestamp);
+    String overridesJson = new ObjectMapper().writeValueAsString(buildTestOverrides());
+    when(mockRcaConf.updateAllRcaConfFiles(any(), any(), any())).thenReturn(false);
+
+    testOverridesApplier.applyOverride(overridesJson, Long.toString(lastAppliedTimestamp + 300));
+
+    assertEquals(lastAppliedTimestamp, testOverridesApplier.getLastAppliedTimestamp());
   }
 
   private ConfigOverrides buildTestOverrides() {

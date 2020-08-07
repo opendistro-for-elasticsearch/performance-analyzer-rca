@@ -40,7 +40,7 @@ public class AppContext {
   // initiate a node config cache within each AppContext space
   // to store node config settings from ES
   private final NodeConfigCache nodeConfigCache;
-  private Set<String> mutedActions;
+  private volatile Set<String> mutedActions;
 
   public AppContext() {
     this.clusterDetailsEventProcessor = null;

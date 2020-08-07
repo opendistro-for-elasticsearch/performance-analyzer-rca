@@ -48,6 +48,7 @@ public class RcaConsts {
       Paths.get(CONFIG_DIR_PATH, THRESHOLDS_DIR_NAME).toString();
   public static final String MUTE_ERROR_METRIC = "MuteError";
   public static final String HOT_SHARD_RCA_ERROR_METRIC = "HotShardError";
+  public static final String WRITE_UPDATED_RCA_CONF_ERROR = "WriteUpdatedRcaConfError";
 
   static final String dir = System.getProperty("user.dir");
   public static final String TEST_CONFIG_PATH =

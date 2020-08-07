@@ -94,11 +94,14 @@ public class ConfigOverridesApplier {
           }
         }
 
-        LOG.debug("New set of muted rcas: {}", currentMutedRcaSet);
-        LOG.debug("New set of muted deciders: {}", currentMutedDeciderSet);
-        LOG.debug("New set of muted actions: {}", currentMutedActionSet);
-        rcaConf.updateAllRcaConfFiles(currentMutedRcaSet, currentMutedDeciderSet, currentMutedActionSet);
-        this.lastAppliedTimestamp = System.currentTimeMillis();
+        LOG.info("New set of muted rcas: {}", currentMutedRcaSet);
+        LOG.info("New set of muted deciders: {}", currentMutedDeciderSet);
+        LOG.info("New set of muted actions: {}", currentMutedActionSet);
+        boolean updateSuccess = rcaConf.updateAllRcaConfFiles(currentMutedRcaSet,
+            currentMutedDeciderSet, currentMutedActionSet);
+        if (updateSuccess) {
+          this.lastAppliedTimestamp = System.currentTimeMillis();
+        }
       }
     }
   }

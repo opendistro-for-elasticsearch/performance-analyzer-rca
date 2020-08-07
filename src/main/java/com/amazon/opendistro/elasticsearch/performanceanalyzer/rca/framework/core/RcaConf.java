@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaControllerHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheDeciderConfig;
@@ -24,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighH
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNodeClusterRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardClusterRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardRcaConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -42,7 +44,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -202,17 +203,24 @@ public class RcaConf {
     return setting;
   }
 
-  public void updateAllRcaConfFiles(final Set<String> mutedRcas, final Set<String> mutedDeciders,
+  public boolean updateAllRcaConfFiles(final Set<String> mutedRcas, final Set<String> mutedDeciders,
       final Set<String> mutedActions) {
+    boolean updateStatus = true;
     // update all rca.conf files
     List<String> rcaConfFiles = RcaControllerHelper.getAllConfFilePaths();
-
     for (String confFilePath : rcaConfFiles) {
-      updateRcaConf(confFilePath, mutedRcas, mutedDeciders, mutedActions);
+      updateStatus = updateRcaConf(confFilePath, mutedRcas, mutedDeciders,
+        mutedActions);
+      if (!updateStatus) {
+        LOG.error("Failed to update the conf file at path: {}", confFilePath);
+        StatsCollector.instance().logMetric(RcaConsts.WRITE_UPDATED_RCA_CONF_ERROR);
+        break;
+      }
     }
+      return updateStatus;
   }
 
-  private void updateRcaConf(String originalFilePath, final Set<String> mutedRcas,
+  private boolean updateRcaConf(String originalFilePath, final Set<String> mutedRcas,
       final Set<String> mutedDeciders, final Set<String> mutedActions) {
 
     String updatedPath = originalFilePath + ".updated";
@@ -236,16 +244,19 @@ public class RcaConf {
       mapper.writeValue(updatedFileOutputStream, configObject);
     } catch (IOException e) {
       LOG.error("Unable to copy rca conf to a temp file", e);
-      return;
+      return false;
     }
 
     try {
       LOG.info("Writing new file: {}", Paths.get(updatedPath));
-      Files.move(Paths.get(updatedPath), Paths.get(originalFilePath), StandardCopyOption.ATOMIC_MOVE,
-          StandardCopyOption.REPLACE_EXISTING);
+      Files
+          .move(Paths.get(updatedPath), Paths.get(originalFilePath), StandardCopyOption.ATOMIC_MOVE,
+              StandardCopyOption.REPLACE_EXISTING);
     } catch (IOException e) {
       LOG.error("Unable to move and replace the old conf file with updated conf file.", e);
+      return false;
     }
+    return true;
   }
 
   @SuppressWarnings("unchecked")
@@ -254,18 +265,17 @@ public class RcaConf {
     try {
       Map<String, Object> deciderObj = null;
       if (conf.getDeciderConfigSettings() != null
-              && conf.getDeciderConfigSettings().containsKey(deciderName)
-              && conf.getDeciderConfigSettings().get(deciderName) != null) {
-        deciderObj = (Map<String, Object>)conf.getDeciderConfigSettings().get(deciderName);
+          && conf.getDeciderConfigSettings().containsKey(deciderName)
+          && conf.getDeciderConfigSettings().get(deciderName) != null) {
+        deciderObj = (Map<String, Object>) conf.getDeciderConfigSettings().get(deciderName);
       }
 
       if (deciderObj != null
-              && deciderObj.containsKey(key)
-              && deciderObj.get(key) != null) {
+          && deciderObj.containsKey(key)
+          && deciderObj.get(key) != null) {
         setting = clazz.cast(deciderObj.get(key));
       }
-    }
-    catch (ClassCastException ne) {
+    } catch (ClassCastException ne) {
       LOG.error("rca.conf contains value in invalid format, trace : {}", ne.getMessage());
     }
     return setting;
