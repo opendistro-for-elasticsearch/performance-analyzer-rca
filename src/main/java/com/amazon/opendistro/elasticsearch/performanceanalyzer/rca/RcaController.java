@@ -15,7 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RCA_MUTE_ERROR_METRIC;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.MUTE_ERROR_METRIC;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.ClientServers;
@@ -108,8 +108,7 @@ public class RcaController {
   private QueryRcaRequestHandler queryRcaRequestHandler;
 
   private SubscriptionManager subscriptionManager;
-
-  private RcaConf rcaConf;
+  private volatile RcaConf rcaConf;
 
   private final String RCA_ENABLED_CONF_LOCATION;
   private final long rcaStateCheckIntervalMillis;
@@ -183,7 +182,7 @@ public class RcaController {
       List<ConnectedComponent> connectedComponents = getRcaGraphComponents(rcaConf);
 
       // Mute the rca nodes after the graph creation and before the scheduler start
-      readAndUpdateMutesRcasDuringStart();
+      readAndUpdateMutedComponentsDuringStart();
 
       Queryable db;
       if (dbProvider == null) {
@@ -193,7 +192,8 @@ public class RcaController {
       }
       ThresholdMain thresholdMain = new ThresholdMain(RcaConsts.THRESHOLDS_PATH, rcaConf);
       Persistable persistable = PersistenceFactory.create(rcaConf);
-      networkThreadPoolReference.set(RcaControllerHelper.buildNetworkThreadPool(rcaConf.getNetworkQueueLength()));
+      networkThreadPoolReference
+          .set(RcaControllerHelper.buildNetworkThreadPool(rcaConf.getNetworkQueueLength()));
       addRcaRequestHandler();
       queryRcaRequestHandler.setPersistable(persistable);
       receivedFlowUnitStore = new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength());
@@ -272,7 +272,7 @@ public class RcaController {
         if (rcaEnabled && tick % nodeRoleCheckInTicks == 0) {
           tick = 0;
           final InstanceDetails nodeDetails = appContext.getMyInstanceDetails();
-          if (nodeDetails.getRole() !=  NodeRole.UNKNOWN) {
+          if (nodeDetails.getRole() != NodeRole.UNKNOWN) {
             currentRole = nodeDetails.getRole();
           }
         }
@@ -281,7 +281,7 @@ public class RcaController {
         if (rcaEnabled) {
           rcaConf = RcaControllerHelper.pickRcaConfForRole(currentRole);
           LOG.debug("Updating Analysis Graph with Muted RCAs");
-          readAndUpdateMutesRcas();
+          readAndUpdateMutedComponents();
         }
         updateRcaState();
 
@@ -319,26 +319,66 @@ public class RcaController {
         });
   }
 
-  private void readAndUpdateMutesRcasDuringStart() {
-    try {
-      /* We have an edge case where both `readAndUpdateMutesRcas()` and `readAndUpdateMutesRcasDuringStart()`
-       * can try to update the muted Rca list back to back, reading rca.conf twice. This will happen when rca
-       * was turned off and then on.
-       *
-       * <p> `readAndUpdateMutesRcasDuringStart()` should only be read at the start of the process, when
-       * RCA graph is not constructed and we cannot validate the new new muted RCAs. For any other update
-       * to the muted list, the periodic rca.conf update checker will take care of it.
-       *
-       */
-      if (lastModifiedTimeInMillisInMemory == 0) {
-        Set<String> rcasForMute = new HashSet<>(rcaConf.getMutedRcaList());
-        Stats.getInstance().updateMutedGraphNodes(rcasForMute);
-        LOG.info("Updated the muted RCA Graph to : {}", rcaConf.getMutedRcaList());
-      }
-    } catch (Exception e) {
-      LOG.error("Couldn't read/update the muted RCAs during start()", e);
-      StatsCollector.instance().logMetric(RCA_MUTE_ERROR_METRIC);
+  private void readAndUpdateMutedComponentsDuringStart() {
+    /* We have an edge case where both `readAndUpdateMutedComponents()` and `readAndUpdateMutedComponentsDuringStart()`
+     * can try to update the muted Rca list back to back, reading rca.conf twice. This will happen when rca
+     * was turned off and then on.
+     *
+     * <p> `readAndUpdateMutedComponentsDuringStart()` should only be read at the start of the process, when
+     * RCA graph is not constructed and we cannot validate the new new muted RCAs. For any other update
+     * to the muted list, the periodic rca.conf update checker will take care of it.
+     *
+     */
+    if (lastModifiedTimeInMillisInMemory == 0) {
+      updateMutedComponents();
     }
+  }
+
+  private boolean updateMutedComponents() {
+    try {
+      if (ConnectedComponent.getNodeNames().isEmpty()) {
+        LOG.info("Analysis graph not initialized/has been reset; returning.");
+        return false;
+      }
+
+      Set<String> actionsForMute = new HashSet<>(rcaConf.getMutedActionList());
+
+      Set<String> graphNodesForMute = new HashSet<>();
+      graphNodesForMute.addAll(rcaConf.getMutedRcaList());
+      graphNodesForMute.addAll(rcaConf.getMutedDeciderList());
+      LOG.info("Graph nodes provided for muting : {}", graphNodesForMute);
+      LOG.info("Actions provided for muting: {}", actionsForMute);
+
+      // Update rcasForMute to retain only valid RCAs
+      graphNodesForMute.retainAll(ConnectedComponent.getNodeNames());
+
+      // If rcasForMute post validation is empty but neither rcaConf.getMutedRcaList() nor
+      // rcaConf.getMutedDeciderList() are empty all the input RCAs/deciders are incorrect.
+      if (graphNodesForMute.isEmpty()
+          && (!rcaConf.getMutedRcaList().isEmpty() || !rcaConf.getMutedDeciderList().isEmpty())) {
+        if (lastModifiedTimeInMillisInMemory == 0) {
+          LOG.error(
+              "Removing Incorrect RCA(s): {} provided before RCA Scheduler start. Valid RCAs: {}.",
+              rcaConf.getMutedRcaList(), ConnectedComponent.getNodeNames());
+
+        } else {
+          LOG.error("Incorrect RCA(s): {}, cannot be muted. Valid RCAs: {}, Muted RCAs: {}",
+              rcaConf.getMutedRcaList(), ConnectedComponent.getNodeNames(),
+              Stats.getInstance().getMutedGraphNodes());
+          return false;
+        }
+      }
+
+      LOG.info("Updating the muted graph nodes to : {}", graphNodesForMute);
+      Stats.getInstance().updateMutedGraphNodes(graphNodesForMute);
+      appContext.updateMutedActions(actionsForMute);
+    } catch (Exception e) {
+      LOG.error("Couldn't read/update the muted RCAs", e);
+      StatsCollector.instance().logMetric(MUTE_ERROR_METRIC);
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -347,45 +387,16 @@ public class RcaController {
    *
    * <p>In case all the RCAs in param value are incorrect, return without any update.
    */
-  private void readAndUpdateMutesRcas() {
-    try {
-      if (ConnectedComponent.getNodeNames().isEmpty()) {
-        LOG.info("Analysis graph not initialized/has been reset; returning.");
-        return;
-      }
-
-      // If the rca config file has been updated since the lastModifiedTimeInMillisInMemory in memory,
-      // refresh the `muted-rcas` value from rca config file.
-      long lastModifiedTimeInMillisOnDisk = rcaConf.getLastModifiedTime();
-      if (lastModifiedTimeInMillisOnDisk > lastModifiedTimeInMillisInMemory) {
-        Set<String> rcasForMute = new HashSet<>(rcaConf.getMutedRcaList());
-        LOG.info("RCAs provided for muting : {}", rcasForMute);
-
-        // Update rcasForMute to retain only valid RCAs
-        rcasForMute.retainAll(ConnectedComponent.getNodeNames());
-
-        // If rcasForMute post validation is empty but rcaConf.getMutedRcaList() is not empty
-        // all the input RCAs are incorrect.
-        if (rcasForMute.isEmpty() && !rcaConf.getMutedRcaList().isEmpty()) {
-          if (lastModifiedTimeInMillisInMemory == 0) {
-            LOG.error("Removing Incorrect RCA(s): {} provided before RCA Scheduler start. Valid RCAs: {}.",
-                    rcaConf.getMutedRcaList(), ConnectedComponent.getNodeNames());
-
-          } else {
-            LOG.error("Incorrect RCA(s): {}, cannot be muted. Valid RCAs: {}, Muted RCAs: {}",
-                    rcaConf.getMutedRcaList(), ConnectedComponent.getNodeNames(), Stats.getInstance().getMutedGraphNodes());
-            return;
-          }
-        }
-
-        LOG.info("Updating the muted RCA Graph to : {}", rcasForMute);
-        Stats.getInstance().updateMutedGraphNodes(rcasForMute);
+  private void readAndUpdateMutedComponents() {
+    // If the rca config file has been updated since the lastModifiedTimeInMillisInMemory in memory,
+    // refresh the `muted-rcas` value from rca config file.
+    long lastModifiedTimeInMillisOnDisk = rcaConf.getLastModifiedTime();
+    if (lastModifiedTimeInMillisOnDisk > lastModifiedTimeInMillisInMemory) {
+      if (updateMutedComponents()) {
         lastModifiedTimeInMillisInMemory = lastModifiedTimeInMillisOnDisk;
       }
-    } catch (Exception e) {
-      LOG.error("Couldn't read/update the muted RCAs", e);
-      StatsCollector.instance().logMetric(RCA_MUTE_ERROR_METRIC);
     }
+
   }
 
   /**
@@ -459,6 +470,10 @@ public class RcaController {
 
   public void setDeliberateInterrupt() {
     deliberateInterrupt = true;
+  }
+
+  public RcaConf getRcaConf() {
+    return rcaConf;
   }
 
   public void setDbProvider(Queryable dbProvider) {

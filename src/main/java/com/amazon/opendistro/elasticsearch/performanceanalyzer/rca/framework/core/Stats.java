@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.co
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,6 +30,7 @@ public class Stats {
   private Map<Integer, ConnectedComponent> graphs;
 
   private Set<String> mutedGraphNodes;
+  private Set<String> mutedActions;
 
   private static volatile Stats instance = null;
 
@@ -41,6 +43,7 @@ public class Stats {
     this.leafNodesCount = 0;
     this.leavesAddedToAnalysisFlowField = 0;
     this.graphs = new HashMap<>();
+    this.mutedActions = new HashSet<>();
   }
 
   public static Stats getInstance() {
@@ -100,12 +103,21 @@ public class Stats {
     mutedGraphNodes.addAll(nodeNames);
   }
 
+  public void updateMutedActions(final Set<String> actions) {
+    mutedActions.clear();
+    mutedActions.addAll(actions);
+  }
+
   public boolean addToMutedGraphNodes(String nodeName) {
     return mutedGraphNodes.add(nodeName);
   }
 
   public boolean isNodeMuted(String nodeName) {
     return mutedGraphNodes.contains(nodeName);
+  }
+
+  public boolean isActionMuted(String actionName) {
+    return mutedActions.contains(actionName);
   }
 
   public Set<String> getMutedGraphNodes() {

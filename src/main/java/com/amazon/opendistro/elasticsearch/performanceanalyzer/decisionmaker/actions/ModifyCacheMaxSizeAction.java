@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.ac
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.HEAP;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
@@ -36,7 +37,7 @@ import org.apache.logging.log4j.Logger;
 
 // TODO: Split the cache action into separate actions for different caches.
 
-public class ModifyCacheMaxSizeAction implements Action {
+public class ModifyCacheMaxSizeAction extends SuppressibleAction {
   private static final Logger LOG = LogManager.getLogger(ModifyCacheMaxSizeAction.class);
   public static final String NAME = "modifyCacheCapacity";
   public static final long COOL_OFF_PERIOD_IN_MILLIS = 300 * 1_000;
@@ -58,10 +59,12 @@ public class ModifyCacheMaxSizeAction implements Action {
       final ResourceEnum cacheType,
       final NodeConfigCache nodeConfigCache,
       final double cacheSizeUpperBound,
-      final boolean increase) {
+      final boolean increase,
+      final AppContext appContext) {
     // TODO: Add lower bound for caches
     // TODO: Address cache scaling down  when JVM decider is available
 
+    super(appContext);
     this.esNode = esNode;
     this.cacheType = cacheType;
     this.nodeConfigCache = nodeConfigCache;
@@ -82,7 +85,7 @@ public class ModifyCacheMaxSizeAction implements Action {
   }
 
   @Override
-  public boolean isActionable() {
+  public boolean canUpdate() {
     if (currentCacheMaxSizeInBytes == null) {
       return false;
     }
