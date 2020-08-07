@@ -60,9 +60,8 @@ public class PluginController {
       }
 
       try {
-        plugins.add((Plugin) constructors[0].newInstance()); //require default constructor without parameter
-//        System.out.println("loaded new plugin: "+plugins.get(plugins.size() - 1).name());
-        LOG.info("loaded plugin: [{}]", plugins.get(plugins.size() - 1).name()); //instantiate the final plugin in plugins
+        plugins.add((Plugin) constructors[0].newInstance());
+        LOG.info("loaded plugin: [{}]", plugins.get(plugins.size() - 1).name());
       } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
         LOG.error("Failed to instantiate plugin", e);
         throw new IllegalStateException("Failed to instantiate plugin: [" + pluginClass.getName() + "]", e);
@@ -70,10 +69,9 @@ public class PluginController {
     }
   }
 
-  private void registerActionListeners() { //add action listeners for all plugins
+  private void registerActionListeners() {
     for (Plugin plugin: plugins) {
       if (ActionListener.class.isAssignableFrom(plugin.getClass())) {
-//        System.out.println("action: " + plugin.name());
         publisher.addActionListener((ActionListener)plugin);
       }
     }
