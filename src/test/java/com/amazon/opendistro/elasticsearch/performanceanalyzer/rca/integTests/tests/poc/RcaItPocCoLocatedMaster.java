@@ -49,7 +49,7 @@ import org.junit.runner.RunWith;
         )
     }
 )
-public class RcaItPoc {
+public class RcaItPocCoLocatedMaster {
   private TestApi api;
 
   @Test

@@ -54,7 +54,11 @@ public class PocValidator implements IValidator {
       return false;
     }
 
-    JsonArray array = object.get("HotClusterSummary").getAsJsonArray();
+    JsonElement elem = object.get("HotClusterSummary");
+    if (elem == null) {
+      return false;
+    }
+    JsonArray array = elem.getAsJsonArray();
 
     Assert.assertEquals(1, array.size());
     Assert.assertEquals(1, array.get(0).getAsJsonObject().get("number_of_unhealthy_nodes").getAsInt());

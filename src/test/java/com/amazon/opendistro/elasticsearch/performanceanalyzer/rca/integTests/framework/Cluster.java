@@ -95,7 +95,9 @@ public class Cluster {
     this.hostList = new ArrayList<>();
     this.roleToHostMap = new HashMap<>();
     this.clusterDir = clusterDir;
-    this.rcaEnabled = true;
+    // We start off with the RCA turned off and turn it on only right before we
+    // invoke a test method.
+    this.rcaEnabled = false;
     this.useHttps = useHttps;
     this.threadProvider = new ThreadProvider();
     this.exceptionQueue = new ArrayBlockingQueue<>(1);
@@ -186,7 +188,7 @@ public class Cluster {
     throw new IllegalStateException("No cluster type matches");
   }
 
-  public void createServersAndThreads() throws Exception {
+  public void createServersAndThreads() {
     this.errorHandlingThread = PerformanceAnalyzerApp.startErrorHandlingThread(threadProvider, exceptionQueue);
     for (Host host : hostList) {
       host.createServersAndThreads(threadProvider);

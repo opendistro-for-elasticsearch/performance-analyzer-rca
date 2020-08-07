@@ -33,6 +33,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -80,6 +82,9 @@ class SQLitePersistor extends PersistorBase {
   // It is needed during SQLite file rotation
   @Override
   synchronized void createNewDSLContext() {
+    if (create != null) {
+      create.close();
+    }
     create = DSL.using(super.conn, SQLDialect.SQLITE);
     jooqTableColumns = new HashMap<>();
   }
@@ -201,13 +206,12 @@ class SQLitePersistor extends PersistorBase {
   }
 
   @Override
-  public Result<Record> getRecordsForTable(String tableName) {
+  public synchronized Result<Record> getRecordsForTable(String tableName) {
     return getRecords(tableName);
   }
 
-
   @Override
-  public List<String> getAllPersistedRcas() {
+  public synchronized List<String> getAllPersistedRcas() {
     List<String> tables = new ArrayList<>();
     try {
           tables =
@@ -219,7 +223,6 @@ class SQLitePersistor extends PersistorBase {
     }
     return tables;
   }
-
 
   //read table content and convert it into JSON format
   private synchronized String readTable(String tableName) {
@@ -373,8 +376,10 @@ class SQLitePersistor extends PersistorBase {
         }
       }
     } catch (DataAccessException de) {
-      // it is totally fine if we fail to read some certain tables.
-      LOG.warn("Fail to read RCA : {}, query = {},  exceptions : {}", rca, rcaQuery.toString(), de);
+      if (!de.getMessage().contains("no such table")) {
+        // it is totally fine if we fail to read some certain tables.
+        LOG.warn("Fail to read RCA : {}.", rca, de);
+      }
     }
     JsonElement ret = null;
     if (response != null) {

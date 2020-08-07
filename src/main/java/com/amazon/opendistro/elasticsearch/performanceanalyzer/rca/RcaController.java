@@ -64,6 +64,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -87,6 +88,8 @@ public class RcaController {
   private final boolean useHttps;
 
   private boolean rcaEnabledDefaultValue = false;
+
+  private final int WAIT_FOR_SCHED_START_SECS = 10;
 
   // This needs to be volatile as the RcaConfPoller writes it but the Nanny reads it.
   private volatile boolean rcaEnabled = false;
@@ -226,9 +229,17 @@ public class RcaController {
           new SubscribeServerHandler(subscriptionManager, networkThreadPoolReference));
 
       Thread rcaSchedulerThread = threadProvider.createThreadForRunnable(() -> rcaScheduler.start(),
-          PerformanceAnalyzerThreads.RCA_SCHEDULER);
+          PerformanceAnalyzerThreads.RCA_SCHEDULER,
+          copyAppContext.getMyInstanceDetails().getInstanceId().toString());
 
+      CountDownLatch schedulerStartLatch = new CountDownLatch(1);
+      rcaScheduler.setSchedulerTrackingLatch(schedulerStartLatch);
       rcaSchedulerThread.start();
+      schedulerStartLatch.await(WAIT_FOR_SCHED_START_SECS, TimeUnit.SECONDS);
+
+      if (rcaScheduler.getState() != RcaSchedulerState.STATE_STARTED) {
+        LOG.error("RCA scheduler didn't start within {} seconds", WAIT_FOR_SCHED_START_SECS);
+      }
     } catch (ClassNotFoundException
         | NoSuchMethodException
         | InvocationTargetException
@@ -310,7 +321,7 @@ public class RcaController {
       }
       tick++;
     }
-    LOG.info("RcaController exits..");
+    LOG.error("RcaController exits..");
   }
 
   /**

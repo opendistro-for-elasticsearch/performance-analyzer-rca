@@ -84,8 +84,6 @@ public abstract class PersistorBase implements Persistable {
 
     Path path = Paths.get(dir, filenameParam);
     fileRotate = new FileRotate(path, fileRotationTimeUnit, fileRotationPeriod, dateFormat);
-
-    LOG.info("Force Rotating DB file during startup.");
     fileRotate.forceRotate(System.currentTimeMillis());
 
     fileGC =  new FileGC(Paths.get(dir), filenameParam, fileRotationTimeUnit, fileRotationPeriod,
@@ -205,8 +203,8 @@ public abstract class PersistorBase implements Persistable {
     // If we are here that means the tryRotate or the forceRotate didn't throw exception and therefore,
     // the current DBFile does not exist anymore. We therefore should create a new one.
     if (fileRotate.getLastRotatedMillis() == currTime) {
-      LOG.info("Periodic file rotation type: {}", type.toString());
       openNewDBFile();
+      LOG.info("Created a new DB file.");
     }
   }
 
@@ -220,19 +218,19 @@ public abstract class PersistorBase implements Persistable {
    *     corrupted.
    * @throws IOException This is thrown if the attempt to create a new DB file fails.
    */
-  private <T extends ResourceFlowUnit> void writeFlowUnit(
+  private synchronized <T extends ResourceFlowUnit> void writeFlowUnit(
       T flowUnit, String tableName) throws SQLException, IOException {
     try {
         tryWriteFlowUnit(flowUnit, tableName);
     } catch (SQLException | DataAccessException e) {
       LOG.info(
-          "RCA: Fail to write to table '{}', creating a new DB file and retrying write/create operation", tableName);
+          "RCA: Fail to write to table '{}', creating a new DB file and retrying write/create operation", tableName, e);
       rotateRegisterGarbageThenCreateNewDB(RotationType.FORCE_ROTATE);
       tryWriteFlowUnit(flowUnit, tableName);
     }
   }
 
-  private <T extends ResourceFlowUnit> void tryWriteFlowUnit(
+  private synchronized <T extends ResourceFlowUnit> void tryWriteFlowUnit(
           T flowUnit, String nodeName) throws SQLException, DataAccessException {
     String tableName = ResourceFlowUnit.RCA_TABLE_NAME;
     if (!tableNames.contains(tableName)) {
@@ -251,14 +249,14 @@ public abstract class PersistorBase implements Persistable {
   }
 
   /** recursively insert nested summary to sql tables */
-  private void writeSummary(
+  private synchronized void writeSummary(
       GenericSummary summary,
       String referenceTable,
       String referenceTablePrimaryKeyFieldName,
       int referenceTablePrimaryKeyFieldValue) throws SQLException {
     String tableName = summary.getClass().getSimpleName();
     if (!tableNames.contains(tableName)) {
-      LOG.info("RCA: Table '{}' does not exist. Creating one with columns: {}", tableName, summary.getSqlSchema());
+      LOG.info("RCA: Summary table '{}' does not exist. Creating one with columns: {}", tableName, summary.getSqlSchema());
       createTable(tableName, summary.getSqlSchema(), referenceTable, referenceTablePrimaryKeyFieldName);
     }
     List<Object> values = summary.getSqlValue();

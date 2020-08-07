@@ -53,6 +53,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -139,14 +140,14 @@ public class Host {
     return hostFile;
   }
 
-  public void createServersAndThreads(final ThreadProvider threadProvider) throws Exception {
+  public void createServersAndThreads(final ThreadProvider threadProvider) {
     this.threadProvider = threadProvider;
     Objects.requireNonNull(appContext.getClusterDetailsEventProcessor(),
         "ClusterDetailsEventProcessor cannot be null in the AppContext");
 
     rcaEnabledFile = Paths.get(hostDir.getAbsolutePath(), RcaController.RCA_ENABLED_CONF_FILE);
     RcaSchedulerState state = rcaEnabled ? RcaSchedulerState.STATE_STARTED : RcaSchedulerState.STATE_STOPPED;
-    setRcaState(state);
+    setExpectedRcaState(state);
 
     this.connectionManager = new GRPCConnectionManager(useHttps);
     this.clientServers = PerformanceAnalyzerApp.createClientServers(connectionManager,
@@ -179,7 +180,7 @@ public class Host {
   }
 
   // We create a temporary file and then swap it for the rca.enabled file.
-  public void setRcaState(RcaSchedulerState rcaState) {
+  public void setExpectedRcaState(RcaSchedulerState rcaState) {
     Path rcaEnabledTmp = Paths.get(rcaEnabledFile + ".tmp");
     try (FileWriter f2 = new FileWriter(rcaEnabledTmp.toFile(), false /*To create a new file*/)) {
       boolean value = true;
@@ -282,19 +283,29 @@ public class Host {
   }
 
   public void stopRcaScheduler() throws Exception {
-    setRcaState(RcaSchedulerState.STATE_STOPPED);
-    rcaController.waitForRcaState(RcaSchedulerState.STATE_STOPPED);
-    LOG.info("RCA Scheduler STOPPED");
+    RCAScheduler sched = rcaController.getRcaScheduler();
+    CountDownLatch shutdownLatch = null;
+    if (sched != null) {
+      shutdownLatch = new CountDownLatch(1);
+      sched.setSchedulerTrackingLatch(shutdownLatch);
+    }
+    setExpectedRcaState(RcaSchedulerState.STATE_STOPPED);
+    if (shutdownLatch != null) {
+      shutdownLatch.await(10, TimeUnit.SECONDS);
+    }
+    LOG.info("RCA Scheduler is STOPPED by TestRunner on node: {}", myTag);
   }
 
   public void startRcaControllerThread() {
-    this.rcaControllerThread = PerformanceAnalyzerApp.startRcaTopLevelThread(rcaController, threadProvider);
+    this.rcaControllerThread = PerformanceAnalyzerApp.startRcaTopLevelThread(
+        rcaController,
+        threadProvider,
+        appContext.getMyInstanceDetails().getInstanceId().toString());
   }
 
   public void startRcaScheduler() throws Exception {
-    setRcaState(RcaSchedulerState.STATE_STARTED);
+    setExpectedRcaState(RcaSchedulerState.STATE_STARTED);
     rcaController.waitForRcaState(RcaSchedulerState.STATE_STARTED);
-    LOG.info("RCA scheduler STARTED successfully on host: {}.", myTag);
   }
 
   public void updateRcaGraph(final Class rcaGraphClass)

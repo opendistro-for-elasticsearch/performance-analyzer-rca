@@ -28,6 +28,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -72,6 +73,8 @@ public class RCAScheduler {
 
   private static final Logger LOG = LogManager.getLogger(RCAScheduler.class);
 
+  private CountDownLatch schedulerTrackingLatch;
+
   public RCAScheduler(
       List<ConnectedComponent> connectedComponents,
       Queryable db,
@@ -111,10 +114,16 @@ public class RCAScheduler {
 
     if (scheduledPool == null) {
       LOG.error("Couldn't start RCA scheduler. Executor pool is not set.");
+      if (schedulerTrackingLatch != null) {
+        schedulerTrackingLatch.countDown();
+      }
       return;
     }
     if (role == NodeRole.UNKNOWN) {
       LOG.error("Couldn't start RCA scheduler as the node role is UNKNOWN.");
+      if (schedulerTrackingLatch != null) {
+        schedulerTrackingLatch.countDown();
+      }
       return;
     }
 
@@ -130,6 +139,9 @@ public class RCAScheduler {
 
     schedulerState = RcaSchedulerState.STATE_STARTED;
     LOG.info("RCA scheduler thread started successfully on node: {}", appContext.getMyInstanceDetails().getInstanceId());
+    if (schedulerTrackingLatch != null) {
+      schedulerTrackingLatch.countDown();
+    }
 
     while (schedulerState == RcaSchedulerState.STATE_STARTED) {
       try {
@@ -159,6 +171,7 @@ public class RCAScheduler {
     LOG.info("Shutting down the scheduler..");
     shutdownRequested = true;
     scheduledPool.shutdown();
+    waitForShutdown(scheduledPool);
     rcaSchedulerPeriodicExecutor.shutdown();
     waitForShutdown(rcaSchedulerPeriodicExecutor);
     try {
@@ -168,6 +181,9 @@ public class RCAScheduler {
           "RCA: Error while closing the DB connection: {}::{}", e.getErrorCode(), e.getCause());
     }
     schedulerState = RcaSchedulerState.STATE_STOPPED;
+    if (schedulerTrackingLatch != null) {
+      schedulerTrackingLatch.countDown();
+    }
   }
 
   private void waitForShutdown(ExecutorService execPool) {
@@ -192,6 +208,10 @@ public class RCAScheduler {
 
   public NodeRole getRole() {
     return role;
+  }
+
+  public void setSchedulerTrackingLatch(final CountDownLatch schedulerTrackingLatch) {
+    this.schedulerTrackingLatch = schedulerTrackingLatch;
   }
 
   @VisibleForTesting

@@ -128,8 +128,6 @@ public class FileRotate {
 
     Path ret;
 
-    LOG.info("About to rotate file: {} to {}", FILE_TO_ROTATE, targetFilePath);
-
     // Fallback in rotating a file:
     // try 1. Rotate the file, don't try to replace the destination file if one exists.
     // try 2: Rotate the file now with replacement and add a log saying the destination file will be deleted.

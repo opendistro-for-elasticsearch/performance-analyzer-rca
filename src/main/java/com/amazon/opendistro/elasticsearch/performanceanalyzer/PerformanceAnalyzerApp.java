@@ -144,8 +144,14 @@ public class PerformanceAnalyzerApp {
 
   public static Thread startRcaTopLevelThread(final RcaController rcaController1,
                                               final ThreadProvider threadProvider) {
+    return startRcaTopLevelThread(rcaController1, threadProvider, "");
+  }
+
+  public static Thread startRcaTopLevelThread(final RcaController rcaController1,
+                                              final ThreadProvider threadProvider,
+                                              String nodeName) {
     Thread rcaControllerThread = threadProvider.createThreadForRunnable(() -> rcaController1.run(),
-        PerformanceAnalyzerThreads.RCA_CONTROLLER);
+        PerformanceAnalyzerThreads.RCA_CONTROLLER, nodeName);
     rcaControllerThread.start();
     return rcaControllerThread;
   }
