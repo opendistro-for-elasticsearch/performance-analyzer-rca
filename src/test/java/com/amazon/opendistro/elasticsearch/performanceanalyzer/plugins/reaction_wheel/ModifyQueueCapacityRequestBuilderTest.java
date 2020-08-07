@@ -20,7 +20,8 @@ public class ModifyQueueCapacityRequestBuilderTest {
 
   @Test
   public void testBuilder() {
-    ModifyQueueCapacityAction action = new ModifyQueueCapacityAction(nodeKey, ResourceEnum.SEARCH_THREADPOOL, 1000, true);
+    ModifyQueueCapacityAction action =
+        new ModifyQueueCapacityAction(nodeKey, ResourceEnum.SEARCH_THREADPOOL, 1000, true);
     BatchStartControlRequest request = ModifyQueueCapacityRequestBuilder.newBuilder(action).build();
     Assert.assertEquals(1, request.getActionsCount());
     ReactionWheel.Action requestAction = request.getActions(0);
@@ -28,7 +29,9 @@ public class ModifyQueueCapacityRequestBuilderTest {
     //control
     Assert.assertTrue(requestAction.hasControl());
     ReactionWheel.Control control = requestAction.getControl();
-    ReactionWheel.Control expectedControl = ReactionWheelUtil.buildControl(ControlType.SEARCH_QUEUE_TUNING, ReactionWheelTestUtil.generateTestPayload(action));
+    ReactionWheel.Control expectedControl =
+        ReactionWheelUtil.buildControl(
+            ControlType.SEARCH_QUEUE_TUNING, ReactionWheelTestUtil.generateTestPayload(action));
     Assert.assertEquals(expectedControl, control);
 
     //target
@@ -38,3 +41,4 @@ public class ModifyQueueCapacityRequestBuilderTest {
     Assert.assertEquals(expectedTarget, target);
   }
 }
+

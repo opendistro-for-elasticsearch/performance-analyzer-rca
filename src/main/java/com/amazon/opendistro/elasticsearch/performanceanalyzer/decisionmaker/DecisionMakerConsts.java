@@ -18,5 +18,5 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker;
 public class DecisionMakerConsts {
     public static final String CACHE_MAX_WEIGHT = "maximumWeight";
 
-    public final static String QUEUE_MAX_CAPACITY = "maximumCapacity";
+    public static final String QUEUE_MAX_CAPACITY = "maximumCapacity";
 }

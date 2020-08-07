@@ -42,7 +42,8 @@ public class ReactionWheelHandlerTest {
 
   @Test
   public void testPublishQueueAction() {
-    ModifyQueueCapacityAction action = new ModifyQueueCapacityAction(nodeKey, ResourceEnum.WRITE_THREADPOOL, 100, true);
+    ModifyQueueCapacityAction action =
+        new ModifyQueueCapacityAction(nodeKey, ResourceEnum.WRITE_THREADPOOL, 100, true);
     reactionWheelHandler.actionPublished(action);
     BatchStartControlResult result = reactionWheelDummyService.getAndClearResult();
     Assert.assertNotNull(result);
@@ -51,7 +52,9 @@ public class ReactionWheelHandlerTest {
     ReactionWheel.ControlResult controlResult = result.getResults(0);
 
     ReactionWheel.Control control = controlResult.getControl();
-    ReactionWheel.Control expectedControl = ReactionWheelUtil.buildControl(ControlType.WRITE_QUEUE_TUNING, ReactionWheelTestUtil.generateTestPayload(action));
+    ReactionWheel.Control expectedControl =
+        ReactionWheelUtil.buildControl(
+            ControlType.WRITE_QUEUE_TUNING, ReactionWheelTestUtil.generateTestPayload(action));
     Assert.assertEquals(expectedControl, control);
 
     ReactionWheel.Target target = controlResult.getTarget();
@@ -61,7 +64,8 @@ public class ReactionWheelHandlerTest {
 
   @Test
   public void testPublishInvalidAction() {
-    InvalidAction invalidAction = new InvalidAction(nodeKey, ResourceEnum.WRITE_THREADPOOL, 100, true);
+    InvalidAction invalidAction =
+        new InvalidAction(nodeKey, ResourceEnum.WRITE_THREADPOOL, 100, true);
     reactionWheelHandler.actionPublished(invalidAction);
     BatchStartControlResult result = reactionWheelDummyService.getAndClearResult();
     Assert.assertNull(result);
@@ -79,3 +83,4 @@ public class ReactionWheelHandlerTest {
     }
   }
 }
+

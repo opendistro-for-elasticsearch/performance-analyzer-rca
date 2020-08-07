@@ -2,6 +2,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.reaction
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ActionListener;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.Plugin;
 import com.amazon.searchservices.reactionwheel.controller.ControllerGrpc;
@@ -36,6 +37,8 @@ public class ReactionWheelHandler extends Plugin implements ActionListener {
     Map<String, Function<Action, BatchStartControlRequest>> map = new HashMap<>();
     map.put(ModifyQueueCapacityAction.NAME,
         action -> ModifyQueueCapacityRequestBuilder.newBuilder((ModifyQueueCapacityAction) action).build());
+    map.put(ModifyCacheMaxSizeAction.NAME,
+            action -> ModifyCacheMaxSizeRequestBuilder.newBuilder((ModifyCacheMaxSizeAction) action).build());
     return Collections.unmodifiableMap(map);
   }
 
