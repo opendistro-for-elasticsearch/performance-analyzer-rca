@@ -16,7 +16,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.FIELD_DATA_CACHE_EVICTION;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.CacheUtil.getCacheMaxSize;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.CacheUtil.isSizeThresholdExceeded;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
@@ -36,6 +35,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
 import com.google.common.annotations.VisibleForTesting;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -115,8 +115,9 @@ public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
             InstanceDetails instanceDetails = getInstanceDetails();
             HotNodeSummary nodeSummary = new HotNodeSummary(instanceDetails.getInstanceId(), instanceDetails.getInstanceIp());
 
-            double fieldDataCacheMaxSizeInBytes = getCacheMaxSize(
-                    getAppContext(), new NodeKey(instanceDetails), ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE);
+            final Long fieldDataCacheMaxSizeInBytes = NodeConfigCacheReaderUtil.readCacheMaxSizeInBytes(
+                    getAppContext().getNodeConfigCache(), new NodeKey(instanceDetails),
+                    ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE.getResourceEnum());
             Boolean exceedsSizeThreshold = isSizeThresholdExceeded(
                     fieldDataCacheSizeGroupByOperation, fieldDataCacheMaxSizeInBytes, cacheSizeThreshold);
             if (cacheEvictionCollector.isUnhealthy(currTimestamp) && exceedsSizeThreshold) {

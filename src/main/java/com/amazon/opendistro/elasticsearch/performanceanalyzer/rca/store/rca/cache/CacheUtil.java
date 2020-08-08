@@ -63,22 +63,15 @@ public class CacheUtil {
         }
     }
 
-    public static double getCacheMaxSize(AppContext appContext, NodeKey esNode, Resource cacheResource) {
-        try {
-            return appContext.getNodeConfigCache().get(esNode, cacheResource);
-        } catch (IllegalArgumentException e) {
-            LOG.error("error in fetching: {} from Node Config Cache. "
-                    + "Possibly the resource hasn't been added to cache yet.", cacheResource.toString());
-            return 0;
-        }
-    }
-
     public static Boolean isSizeThresholdExceeded(final Metric cacheSizeGroupByOperation,
-                                                  double cacheMaxSizeinBytes,
+                                                  long cacheMaxSizeinBytes,
                                                   double threshold_percentage) {
         try {
             double cacheSizeInKB = getTotalSizeInKB(cacheSizeGroupByOperation);
+            LOG.info("MOCHI, cacheSizeInKB: {}", cacheSizeInKB);
             double cacheMaxSizeInKB = getSizeInKB(cacheMaxSizeinBytes);
+            LOG.info("MOCHI, cacheMaxSizeinBytes: {}, cacheMaxSizeInKB: {}", cacheMaxSizeinBytes, cacheMaxSizeInKB);
+            LOG.info("MOCHI, threshold_percentage: {}", threshold_percentage);
             return cacheSizeInKB != 0 && cacheMaxSizeInKB != 0 && (cacheSizeInKB > cacheMaxSizeInKB * threshold_percentage);
         } catch (Exception e) {
             LOG.error("error in calculating isSizeThresholdExceeded");

@@ -86,6 +86,7 @@ public class NodeConfigCollector extends EsConfigNode {
   private void collectCacheMaxSize(MetricFlowUnit cacheMaxSize) {
     double fieldDataCacheMaxSize = SQLParsingUtil.readDataFromSqlResult(cacheMaxSize.getData(),
             CACHE_TYPE.getField(), CacheType.FIELD_DATA_CACHE.toString(), MetricsDB.MAX);
+    LOG.info("MOCHI, inside collectCacheMaxSize. fieldDataCacheMaxSize: {}", fieldDataCacheMaxSize);
     if (!Double.isNaN(fieldDataCacheMaxSize)) {
       configResult.put(ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE, fieldDataCacheMaxSize);
     }
@@ -95,6 +96,7 @@ public class NodeConfigCollector extends EsConfigNode {
 
     double shardRequestCacheMaxSize = SQLParsingUtil.readDataFromSqlResult(cacheMaxSize.getData(),
             CACHE_TYPE.getField(), CacheType.SHARD_REQUEST_CACHE.toString(), MetricsDB.MAX);
+    LOG.info("MOCHI, inside collectCacheMaxSize. shardRequestCacheMaxSize: {}", shardRequestCacheMaxSize);
     if (!Double.isNaN(shardRequestCacheMaxSize)) {
       configResult.put(ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE, shardRequestCacheMaxSize);
     }
