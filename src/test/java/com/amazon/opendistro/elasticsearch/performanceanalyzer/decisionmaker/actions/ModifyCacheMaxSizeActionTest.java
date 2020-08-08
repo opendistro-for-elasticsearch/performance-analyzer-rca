@@ -31,12 +31,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheDeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.google.common.collect.ImmutableSet;
 import java.util.Map;
-import org.checkerframework.checker.units.qual.Temperature;
 import org.junit.Before;
 import org.junit.Test;
 
