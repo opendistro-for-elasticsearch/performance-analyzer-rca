@@ -22,7 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -115,7 +115,7 @@ public class ConfigOverridesApplier {
       return false;
     }
 
-    return NumberUtils.isCreatable(timestamp);
+    return StringUtils.isNumeric(timestamp);
   }
 
   @VisibleForTesting
