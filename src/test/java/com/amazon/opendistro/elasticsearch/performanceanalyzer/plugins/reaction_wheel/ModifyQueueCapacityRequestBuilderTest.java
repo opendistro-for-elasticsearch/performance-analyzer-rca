@@ -1,5 +1,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.reaction_wheel;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.reaction_wheel.ReactionWheelUtil.ControlType;
@@ -20,8 +21,9 @@ public class ModifyQueueCapacityRequestBuilderTest {
 
   @Test
   public void testBuilder() {
+    AppContext appContext = new AppContext();  
     ModifyQueueCapacityAction action =
-        new ModifyQueueCapacityAction(nodeKey, ResourceEnum.SEARCH_THREADPOOL, 1000, true);
+        new ModifyQueueCapacityAction(nodeKey, ResourceEnum.SEARCH_THREADPOOL, 1000, true, appContext);
     BatchStartControlRequest request = ModifyQueueCapacityRequestBuilder.newBuilder(action).build();
     Assert.assertEquals(1, request.getActionsCount());
     ReactionWheel.Action requestAction = request.getActions(0);
