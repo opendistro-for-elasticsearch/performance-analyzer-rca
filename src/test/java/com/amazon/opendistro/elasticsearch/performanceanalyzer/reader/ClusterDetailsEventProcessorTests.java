@@ -17,25 +17,61 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
+import static org.mockito.MockitoAnnotations.initMocks;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.overrides.ConfigOverrides;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.overrides.ConfigOverrides.Overrides;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.overrides.ConfigOverridesApplier;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
-
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Collections;
 import java.util.List;
-
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
 
 public class ClusterDetailsEventProcessorTests {
+
+  @Mock
+  ConfigOverridesApplier mockOverridesApplier;
+
+  @Captor
+  ArgumentCaptor<String> overridesCaptor;
+
+  private ClusterDetailsEventProcessor testClusterDetailsEventProcessor;
+  private ConfigOverrides testOverrides;
+  private String nodeId1 = "s7gDCVnCSiuBgHoYLji1gw";
+  private String address1 = "10.212.49.140";
+
+  private String nodeId2 = "Zn1QcSUGT--DciD1Em5wRg";
+  private String address2 = "10.212.52.241";
+
+  private String disabledDecider = "disabled decider";
+
+  @Before
+  public void setup() {
+    initMocks(this);
+
+    testOverrides = new ConfigOverrides();
+    ConfigOverrides.Overrides disabled = new Overrides();
+    disabled.setDeciders(Collections.singletonList(disabledDecider));
+    testOverrides.setDisable(disabled);
+
+    testClusterDetailsEventProcessor = new ClusterDetailsEventProcessor(mockOverridesApplier);
+  }
 
   @Test
   public void testProcessEvent() throws Exception {
 
-    String nodeId1 = "s7gDCVnCSiuBgHoYLji1gw";
-    String address1 = "10.212.49.140";
     boolean isMasterNode1 = true;
 
-    String nodeId2 = "Zn1QcSUGT--DciD1Em5wRg";
-    String address2 = "10.212.52.241";
     boolean isMasterNode2 = false;
 
     ClusterDetailsEventProcessor clusterDetailsEventProcessor;
@@ -58,5 +94,30 @@ public class ClusterDetailsEventProcessorTests {
     assertEquals(nodeId2, nodes.get(1).getId());
     assertEquals(address2, nodes.get(1).getHostAddress());
     assertEquals(isMasterNode2, nodes.get(1).getIsMasterNode());
+  }
+
+  @Test
+  public void testApplyOverrides()
+      throws Exception {
+    ClusterDetailsEventProcessorTestHelper clusterDetailsEventProcessorTestHelper = new ClusterDetailsEventProcessorTestHelper();
+    clusterDetailsEventProcessorTestHelper.addNodeDetails(nodeId1, address1, true);
+    clusterDetailsEventProcessorTestHelper.addNodeDetails(nodeId2, address2, false);
+
+    Event testEvent = clusterDetailsEventProcessorTestHelper
+        .generateTestEventWithOverrides(testOverrides);
+
+    testClusterDetailsEventProcessor.processEvent(testEvent);
+
+    verify(mockOverridesApplier).applyOverride(overridesCaptor.capture(), anyString());
+
+    ObjectMapper mapper = new ObjectMapper();
+    ConfigOverrides capturedOverride = mapper.readValue(overridesCaptor.getValue(),
+        ConfigOverrides.class);
+
+    assertNotNull(capturedOverride.getDisable());
+    assertNotNull(capturedOverride.getDisable().getDeciders());
+    assertEquals(testOverrides.getDisable().getDeciders().size(),
+        capturedOverride.getDisable().getDeciders().size());
+    assertEquals(disabledDecider, capturedOverride.getDisable().getDeciders().get(0));
   }
 }

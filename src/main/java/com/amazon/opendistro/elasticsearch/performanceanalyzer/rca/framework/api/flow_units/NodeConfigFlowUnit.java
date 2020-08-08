@@ -28,7 +28,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.clu
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * a flowunit type to carry ES node configurations (queue/cache capacities, etc.)
@@ -99,6 +98,21 @@ public class NodeConfigFlowUnit extends ResourceFlowUnit<HotNodeSummary> {
   @Override
   public boolean isEmpty() {
     return configMap.isEmpty();
+  }
+
+  /**
+   * convert NodeConfigFlowUnit into ResourceFlowUnit {@link ResourceFlowUnit} before
+   * serializing the flowunit object to gRPC protobuf message
+   * @param graphNode vertex name in RCA graph
+   * @param esNode es node ID
+   * @return gRPC protobuf message
+   */
+  @Override
+  public FlowUnitMessage buildFlowUnitMessage(final String graphNode, final InstanceDetails.Id esNode) {
+    //append resources stored in configMap to HotNodeSummary
+    this.configMap.values().forEach(resourceSummary
+        -> this.getSummary().appendNestedSummary(resourceSummary));
+    return super.buildFlowUnitMessage(graphNode, esNode);
   }
 
   /**

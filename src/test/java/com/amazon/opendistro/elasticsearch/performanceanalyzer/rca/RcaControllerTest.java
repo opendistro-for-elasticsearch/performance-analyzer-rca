@@ -193,7 +193,7 @@ public class RcaControllerTest {
   @Test
   public void readAndUpdateMutedRcasBeforeGraphCreation() throws Exception {
     Method readAndUpdateMutesRcas = rcaController.getClass()
-            .getDeclaredMethod("readAndUpdateMutesRcas", null);
+            .getDeclaredMethod("readAndUpdateMutedComponents", null);
     readAndUpdateMutesRcas.setAccessible(true);
 
     String rcaConfPath = Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_muted.conf").toString();
@@ -385,14 +385,14 @@ public class RcaControllerTest {
     jtime.put("current_time", 1566414001749L);
 
     JSONObject jOverrides = new JSONObject();
-    JSONObject jOverridesTimeStamp = new JSONObject();
+    long overridesTimestamp = System.currentTimeMillis();
 
     JSONObject jNode = new JSONObject();
     jNode.put(AllMetrics.NodeDetailColumns.ID.toString(), "4sqG_APMQuaQwEW17_6zwg");
     jNode.put(AllMetrics.NodeDetailColumns.HOST_ADDRESS.toString(), ip);
     jNode.put(AllMetrics.NodeDetailColumns.ROLE.toString(), nodeRole);
     jNode.put(AllMetrics.NodeDetailColumns.IS_MASTER_NODE,
-            nodeRole == AllMetrics.NodeRole.ELECTED_MASTER ? true : false);
+        nodeRole == AllMetrics.NodeRole.ELECTED_MASTER);
 
     ClusterDetailsEventProcessor eventProcessor = new ClusterDetailsEventProcessor();
     StringBuilder nodeDetails = new StringBuilder();
@@ -400,7 +400,7 @@ public class RcaControllerTest {
     nodeDetails.append(separator);
     nodeDetails.append(jOverrides);
     nodeDetails.append(separator);
-    nodeDetails.append(jOverridesTimeStamp);
+    nodeDetails.append(overridesTimestamp);
     nodeDetails.append(separator);
     nodeDetails.append(jNode.toString());
     eventProcessor.processEvent(
@@ -410,7 +410,7 @@ public class RcaControllerTest {
 
   enum RcaState {
     RUN,
-    STOP;
+    STOP
   }
 
   private void changeRcaRunState(RcaState state) throws IOException {

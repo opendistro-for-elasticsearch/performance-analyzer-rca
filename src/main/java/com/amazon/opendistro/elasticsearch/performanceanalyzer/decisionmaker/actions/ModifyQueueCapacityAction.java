@@ -19,6 +19,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionma
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.HEAP;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.NETWORK;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 
@@ -27,7 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ModifyQueueCapacityAction implements Action {
+public class ModifyQueueCapacityAction extends SuppressibleAction {
 
   public static final String NAME = "modify_queue_capacity";
   public static final long COOL_OFF_PERIOD_IN_MILLIS = 300 * 1_000;
@@ -40,7 +41,9 @@ public class ModifyQueueCapacityAction implements Action {
   private Map<ResourceEnum, Integer> lowerBound = new HashMap<>();
   private Map<ResourceEnum, Integer> upperBound = new HashMap<>();
 
-  public ModifyQueueCapacityAction(NodeKey esNode, ResourceEnum threadPool, int currentCapacity, boolean increase) {
+  public ModifyQueueCapacityAction(NodeKey esNode, ResourceEnum threadPool, int currentCapacity,
+      boolean increase, AppContext appContext) {
+    super(appContext);
     setBounds();
     int STEP_SIZE = 50;
     this.esNode = esNode;
@@ -56,7 +59,7 @@ public class ModifyQueueCapacityAction implements Action {
   }
 
   @Override
-  public boolean isActionable() {
+  public boolean canUpdate() {
     return desiredCapacity != currentCapacity;
   }
 
