@@ -49,7 +49,8 @@ public class ModifyCacheMaxSizeRequestBuilderTest {
             ResourceEnum.FIELD_DATA_CACHE,
             appContext.getNodeConfigCache(),
             CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
-            true);
+            true,
+            appContext);
     BatchStartControlRequest request = ModifyCacheMaxSizeRequestBuilder.newBuilder(action).build();
     Assert.assertEquals(1, request.getActionsCount());
     ReactionWheel.Action requestAction = request.getActions(0);

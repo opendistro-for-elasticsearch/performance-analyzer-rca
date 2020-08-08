@@ -2,6 +2,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.reaction
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.reaction_wheel.ReactionWheelDummyService.SERVER_PORT;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.reaction_wheel.ReactionWheelUtil.ControlType;
@@ -23,6 +24,7 @@ public class ReactionWheelHandlerTest {
   private Server server;
   private ReactionWheelDummyService reactionWheelDummyService;
   private ReactionWheelHandler reactionWheelHandler;
+  private AppContext appContext;
   InstanceDetails.Id id = new Id("node1");
   InstanceDetails.Ip ip = new Ip("127.0.0.1");
   NodeKey nodeKey = new NodeKey(id, ip);
@@ -32,6 +34,7 @@ public class ReactionWheelHandlerTest {
     reactionWheelDummyService = new ReactionWheelDummyService();
     server = ServerBuilder.forPort(SERVER_PORT).addService(reactionWheelDummyService).build().start();
     reactionWheelHandler = new ReactionWheelHandler();
+    appContext = new AppContext();
   }
 
   @After
@@ -43,7 +46,7 @@ public class ReactionWheelHandlerTest {
   @Test
   public void testPublishQueueAction() {
     ModifyQueueCapacityAction action =
-        new ModifyQueueCapacityAction(nodeKey, ResourceEnum.WRITE_THREADPOOL, 100, true);
+        new ModifyQueueCapacityAction(nodeKey, ResourceEnum.WRITE_THREADPOOL, 100, true, appContext);
     reactionWheelHandler.actionPublished(action);
     BatchStartControlResult result = reactionWheelDummyService.getAndClearResult();
     Assert.assertNotNull(result);
@@ -65,7 +68,7 @@ public class ReactionWheelHandlerTest {
   @Test
   public void testPublishInvalidAction() {
     InvalidAction invalidAction =
-        new InvalidAction(nodeKey, ResourceEnum.WRITE_THREADPOOL, 100, true);
+        new InvalidAction(nodeKey, ResourceEnum.WRITE_THREADPOOL, 100, true, appContext);
     reactionWheelHandler.actionPublished(invalidAction);
     BatchStartControlResult result = reactionWheelDummyService.getAndClearResult();
     Assert.assertNull(result);
@@ -73,8 +76,9 @@ public class ReactionWheelHandlerTest {
 
   private static class InvalidAction extends ModifyQueueCapacityAction {
 
-    public InvalidAction(NodeKey esNode, ResourceEnum threadPool, int currentCapacity, boolean increase) {
-      super(esNode, threadPool, currentCapacity, increase);
+    public InvalidAction
+        (NodeKey esNode, ResourceEnum threadPool, int currentCapacity, boolean increase, AppContext appContext) {
+      super(esNode, threadPool, currentCapacity, increase, appContext);
     }
 
     @Override
