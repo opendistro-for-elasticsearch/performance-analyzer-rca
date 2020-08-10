@@ -53,6 +53,7 @@ public class AppContext {
 
     // Initializing this as we don't want to copy the entire cache.
     this.nodeConfigCache = new NodeConfigCache();
+    this.mutedActions = ImmutableSet.copyOf(other.getMutedActions());
   }
 
   public void setClusterDetailsEventProcessor(final ClusterDetailsEventProcessor clusterDetailsEventProcessor) {
@@ -133,5 +134,9 @@ public class AppContext {
 
   public void updateMutedActions(final Set<String> mutedActions) {
     this.mutedActions = ImmutableSet.copyOf(mutedActions);
+  }
+
+  public Set<String> getMutedActions() {
+    return this.mutedActions;
   }
 }
