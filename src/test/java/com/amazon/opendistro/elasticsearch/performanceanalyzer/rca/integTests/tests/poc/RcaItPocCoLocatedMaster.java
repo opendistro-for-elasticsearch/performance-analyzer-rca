@@ -23,7 +23,7 @@ import org.junit.runner.RunWith;
 @RunWith(RcaItNotEncryptedRunner.class)
 
 @AClusterType(ClusterType.MULTI_NODE_CO_LOCATED_MASTER)
-@ARcaGraph(SimpleAnalysisGraph.class)
+@ARcaGraph(RcaItPocSingleNode.SimpleAnalysisGraphForCoLocated.class)
 @AMetric(name = CPU_Utilization.class,
     dimensionNames = {SHARDID_VALUE, INDEX_NAME_VALUE, OPERATION_VALUE, SHARD_ROLE_VALUE},
     tables = {
@@ -55,9 +55,9 @@ public class RcaItPocCoLocatedMaster {
   @Test
   @AExpect(
       what = AExpect.Type.REST_API,
-      on = HostTag.DATA_0,
+      on = HostTag.ELECTED_MASTER,
       validator = PocValidator.class,
-      forRca = SimpleAnalysisGraph.ClusterRca.class)
+      forRca = RcaItPocSingleNode.SimpleAnalysisGraphForCoLocated.ClusterRca.class)
   public void simple() {
   }
 

@@ -235,7 +235,11 @@ public class RcaController {
       CountDownLatch schedulerStartLatch = new CountDownLatch(1);
       rcaScheduler.setSchedulerTrackingLatch(schedulerStartLatch);
       rcaSchedulerThread.start();
-      schedulerStartLatch.await(WAIT_FOR_SCHED_START_SECS, TimeUnit.SECONDS);
+      if (!schedulerStartLatch.await(WAIT_FOR_SCHED_START_SECS, TimeUnit.SECONDS)) {
+        LOG.error("Failed to start RcaScheduler.");
+        throw new IllegalStateException(
+            "Failed to start RcaScheduler within " + WAIT_FOR_SCHED_START_SECS + " seconds.");
+      }
 
       if (rcaScheduler.getState() != RcaSchedulerState.STATE_STARTED) {
         LOG.error("RCA scheduler didn't start within {} seconds", WAIT_FOR_SCHED_START_SECS);

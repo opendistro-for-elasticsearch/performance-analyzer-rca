@@ -6,6 +6,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.Al
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension.Constants.SHARD_ROLE_VALUE;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.LOCUS_DATA_MASTER_NODE;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.LOCUS_DATA_NODE;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.LOCUS_MASTER_NODE;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_AGGREGATE_UPSTREAM;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_LOCUS;
 
@@ -29,7 +30,7 @@ import org.junit.runner.RunWith;
 @RunWith(RcaItNotEncryptedRunner.class)
 
 @AClusterType(ClusterType.SINGLE_NODE)
-@ARcaGraph(RcaItPocSingleNode.SimpleAnalysisGraphForSingle.class)
+@ARcaGraph(RcaItPocSingleNode.SimpleAnalysisGraphForCoLocated.class)
 @AMetric(name = CPU_Utilization.class,
     dimensionNames = {SHARDID_VALUE, INDEX_NAME_VALUE, OPERATION_VALUE, SHARD_ROLE_VALUE},
     tables = {
@@ -53,7 +54,7 @@ public class RcaItPocSingleNode {
       what = AExpect.Type.REST_API,
       on = HostTag.DATA_0,
       validator = PocValidator.class,
-      forRca = SimpleAnalysisGraph.ClusterRca.class)
+      forRca = SimpleAnalysisGraphForCoLocated.ClusterRca.class)
   public void simple() {
   }
 
@@ -62,7 +63,7 @@ public class RcaItPocSingleNode {
   }
 
 
-  public static class SimpleAnalysisGraphForSingle extends SimpleAnalysisGraph {
+  public static class SimpleAnalysisGraphForCoLocated extends SimpleAnalysisGraph {
 
     @Override
     public void construct() {
@@ -75,7 +76,7 @@ public class RcaItPocSingleNode {
       nodeRca.addAllUpstreams(Arrays.asList(cpuUtilization));
 
       SimpleAnalysisGraph.ClusterRca clusterRca = new SimpleAnalysisGraph.ClusterRca(nodeRca);
-      clusterRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+      clusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
       clusterRca.addAllUpstreams(Collections.singletonList(nodeRca));
       clusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
     }

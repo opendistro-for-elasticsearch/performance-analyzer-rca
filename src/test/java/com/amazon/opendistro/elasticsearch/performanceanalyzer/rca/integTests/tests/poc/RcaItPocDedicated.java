@@ -28,8 +28,8 @@ import org.junit.runner.RunWith;
 
 @RunWith(RcaItNotEncryptedRunner.class)
 
-@AClusterType(ClusterType.SINGLE_NODE)
-@ARcaGraph(RcaItPocSingleNode.SimpleAnalysisGraphForSingle.class)
+@AClusterType(ClusterType.MULTI_NODE_DEDICATED_MASTER)
+@ARcaGraph(RcaItPocDedicated.SimpleAnalysisGraphForDedicated.class)
 @AMetric(name = CPU_Utilization.class,
     dimensionNames = {SHARDID_VALUE, INDEX_NAME_VALUE, OPERATION_VALUE, SHARD_ROLE_VALUE},
     tables = {
@@ -61,9 +61,9 @@ public class RcaItPocDedicated {
   @Test
   @AExpect(
       what = AExpect.Type.REST_API,
-      on = HostTag.DATA_0,
+      on = HostTag.ELECTED_MASTER,
       validator = PocValidator.class,
-      forRca = SimpleAnalysisGraph.ClusterRca.class)
+      forRca = SimpleAnalysisGraphForDedicated.ClusterRca.class)
   public void simple() {
   }
 
@@ -72,7 +72,7 @@ public class RcaItPocDedicated {
   }
 
 
-  public static class SimpleAnalysisGraphForSingle extends SimpleAnalysisGraph {
+  public static class SimpleAnalysisGraphForDedicated extends SimpleAnalysisGraph {
 
     @Override
     public void construct() {
