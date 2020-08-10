@@ -25,9 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.HostTag;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.exceptions.PAThreadException;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -38,8 +36,6 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import org.apache.commons.io.FileUtils;
-import org.jooq.Record;
-import org.jooq.Result;
 
 public class Cluster {
   // A cluster can have 0 (single node) to 5 (multi node with dedicated masters) hosts. The following three
@@ -271,44 +267,8 @@ public class Cluster {
     }
   }
 
-  public JsonArray getAllRcaData() {
-    JsonArray arr = new JsonArray();
-    for (Host host : hostList) {
-      arr.add(host.getAllRcaData());
-    }
-    return arr;
-  }
-
-  public JsonObject getAllRcaDataOnHost(HostTag hostTag) {
-    return tagToHostMapping.get(hostTag).getAllRcaData();
-  }
-
   public JsonElement getAllRcaDataOnHost(HostTag hostTag, String rcaName) {
     return tagToHostMapping.get(hostTag).getDataForRca(rcaName);
-  }
-
-  public JsonArray getDataForRca(String rcaName) {
-    JsonArray arr = new JsonArray();
-    for (Host host : hostList) {
-      arr.add(host.getDataForRca(rcaName));
-    }
-    return arr;
-  }
-
-  public Map<HostTag, List<Result<Record>>> getRecordsForAllTables() {
-    Map<HostTag, List<Result<Record>>> map = new HashMap<>();
-    for (Host host : hostList) {
-      map.put(host.getMyTag(), host.getRecordsForAllTables());
-    }
-    return map;
-  }
-
-  public List<Result<Record>> getRecordsForAllTables(HostTag hostTag) {
-    return verifyTag(hostTag).getRecordsForAllTables();
-  }
-
-  public Result<Record> getRecordsForAllTables(HostTag hostTag, String rcaName) {
-    return verifyTag(hostTag).getRecordsForTable(rcaName);
   }
 
   public String getRcaRestResponse(final Map<String, String> params, HostTag hostByTag) {

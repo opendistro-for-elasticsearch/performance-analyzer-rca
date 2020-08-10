@@ -41,11 +41,6 @@ public class PocValidator implements IValidator {
     return false;
   }
 
-  @Override
-  public boolean check(Result<Record> resultForAllTables) {
-    return false;
-  }
-
   /**
    * "HotClusterSummary":[{"number_of_nodes":1,"number_of_unhealthy_nodes":1}]
    */

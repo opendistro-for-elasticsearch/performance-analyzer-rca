@@ -174,9 +174,6 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner {
             case REST_API:
               successful = validator.check(testApi.getRcaDataOnHost(expect.on(), rca.getSimpleName()));
               break;
-            case RCA_SQLITE:
-              successful = validator.check(testApi.getRecordsForAllTables(expect.on(), rca.getSimpleName()));
-              break;
           }
           if (successful) {
             passedCount += 1;

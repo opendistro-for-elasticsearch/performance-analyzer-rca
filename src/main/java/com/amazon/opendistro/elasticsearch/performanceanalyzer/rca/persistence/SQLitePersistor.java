@@ -206,11 +206,6 @@ class SQLitePersistor extends PersistorBase {
   }
 
   @Override
-  public synchronized Result<Record> getRecordsForTable(String tableName) {
-    return getRecords(tableName);
-  }
-
-  @Override
   public synchronized List<String> getAllPersistedRcas() {
     List<String> tables = new ArrayList<>();
     try {
@@ -378,7 +373,7 @@ class SQLitePersistor extends PersistorBase {
     } catch (DataAccessException de) {
       if (!de.getMessage().contains("no such table")) {
         // it is totally fine if we fail to read some certain tables.
-        LOG.warn("Fail to read RCA : {}.", rca, de);
+        LOG.error("Fail to read RCA : {}.", rca, de);
       }
     }
     JsonElement ret = null;

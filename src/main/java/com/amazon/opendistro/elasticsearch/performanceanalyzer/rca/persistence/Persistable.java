@@ -57,9 +57,5 @@ public interface Persistable {
 
   void close() throws SQLException;
 
-  List<Result<Record>> getRecordsForAllTables();
-
-  Result<Record> getRecordsForTable(String tableName);
-
   List<String> getAllPersistedRcas();
 }

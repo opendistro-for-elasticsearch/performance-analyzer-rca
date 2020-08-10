@@ -359,16 +359,6 @@ public class Host {
     rcaController.setDbProvider(dbProvider);
   }
 
-  public JsonObject getAllRcaData() {
-    JsonParser parser = new JsonParser();
-    JsonElement data = parser.parse(this.rcaController.getPersistenceProvider().read());
-    JsonObject obj = new JsonObject();
-    obj.addProperty(Consts.HOST_ID_KEY, myTag.toString());
-    obj.addProperty(Consts.HOST_ROLE_KEY, role.toString());
-    obj.add(Consts.DATA_KEY, data);
-    return obj;
-  }
-
   public JsonElement getDataForRca(String rcaName) {
     JsonElement data = this.rcaController.getPersistenceProvider().read(rcaName);
     JsonObject obj = new JsonObject();
@@ -376,14 +366,6 @@ public class Host {
     obj.addProperty(Consts.HOST_ROLE_KEY, role.toString());
     obj.add(Consts.DATA_KEY, data);
     return obj;
-  }
-
-  public List<Result<Record>> getRecordsForAllTables() {
-    return this.rcaController.getPersistenceProvider().getRecordsForAllTables();
-  }
-
-  Result<Record> getRecordsForTable(String tableName) {
-    return this.rcaController.getPersistenceProvider().getRecordsForTable(tableName);
   }
 
   public String makeRestRequest(final Map<String, String> kvRequestParams) {

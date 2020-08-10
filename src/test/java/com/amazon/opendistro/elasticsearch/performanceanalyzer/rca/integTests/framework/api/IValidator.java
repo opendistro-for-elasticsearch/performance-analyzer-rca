@@ -17,12 +17,4 @@ public interface IValidator {
    * @return true, if this matches expectation.
    */
   boolean check(JsonElement response);
-
-  /**
-   * Based on what querying the rca.sqlite tables.
-   *
-   * @param result The result returned from querying for a particular RCA.
-   * @return true, if this matches the expectations.
-   */
-  boolean check(Result<Record> result);
 }
