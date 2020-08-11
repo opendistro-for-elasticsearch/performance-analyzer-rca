@@ -15,17 +15,22 @@ public class PluginConfig {
     protected PluginConfJsonWrapper conf;
     private static final Logger LOG = LogManager.getLogger(PluginConfig.class);
 
-    public PluginConfig(String configPath){
+    public PluginConfig(String configPath) {
         this.configFilePath = configPath;
         JsonFactory factory = new JsonFactory();
         factory.enable(JsonParser.Feature.ALLOW_COMMENTS);
         ObjectMapper mapper = new ObjectMapper(factory);
-        try{
+        try {
             File configFile = new File(this.configFilePath);
             this.conf = mapper.readValue(configFile, PluginConfJsonWrapper.class);
-        } catch(IOException e){
+        } catch (IOException e) {
             LOG.error(e.getMessage());
         }
+    }
+
+    //for test
+    public PluginConfig(PluginConfJsonWrapper conf){
+        this.conf = conf;
     }
 
     public Map<String, String> getKafkaDecisionListenerSettings(){
