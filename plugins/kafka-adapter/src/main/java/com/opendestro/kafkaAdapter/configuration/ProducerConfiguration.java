@@ -42,7 +42,7 @@ public class ProducerConfiguration {
         return interval;
     }
 
-    private void setInterval(long interval) { ;
+    private void setInterval(long interval) {
         this.interval = Math.max(KafkaAdapterConsts.KAFKA_MINIMAL_SEND_PERIODICITY, interval);
     }
 
@@ -50,7 +50,7 @@ public class ProducerConfiguration {
         return bootstrap_server;
     }
 
-    public KafkaProducer<String, JsonNode> CreateProducer(){
+    public KafkaProducer<String, JsonNode> createProducer(){
         Properties configProperties = new Properties();
         configProperties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bootstrap_server);
         configProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringSerializer");

@@ -37,7 +37,7 @@ public class ProducerStarter {
     private static ObjectMapper mapper = new ObjectMapper();
     public static void writeToKafkaQueue(Target target, ProducerConfiguration producerConfig){
         Timer timer = new Timer();
-        KafkaProducer<String, JsonNode> producer = producerConfig.CreateProducer();
+        KafkaProducer<String, JsonNode> producer = producerConfig.createProducer();
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -45,7 +45,6 @@ public class ProducerStarter {
                     String resp = Helper.makeRequest(target);
                     JsonNode jsonNode = mapper.readTree(resp);
                     ProducerRecord<String, JsonNode> record = new ProducerRecord<String, JsonNode>(producerConfig.getTopic(), jsonNode);
-                    System.out.println("Sending to kafka queue: " + producerConfig.getTopic() + ", record: " + record);
                     producer.send(record);
                     producer.flush();
                 } catch (JsonProcessingException e){

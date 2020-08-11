@@ -23,10 +23,6 @@ public class UtilTest {
     public void targetSetup (){
         target1 = new Target(KafkaAdapterConsts.PA_RCA_QUERY_ENDPOINT,"ClusterTemperatureRca");
         target2 = new Target(KafkaAdapterConsts.PA_RCA_QUERY_ENDPOINT);
-    }
-
-    @Test
-    public void getUrlTest() {
         Assert.assertEquals("http://localhost:9600/_opendistro/_performanceanalyzer/rca?name=ClusterTemperatureRca",target1.getUrl());
         Assert.assertEquals("http://localhost:9600/_opendistro/_performanceanalyzer/rca", target2.getUrl());
     }
@@ -46,6 +42,13 @@ public class UtilTest {
         Assert.assertEquals("HighHeapUsageClusterRca", target2.getParameter());
     }
 
+    @Test
+    public void testJsonToString() throws Exception{
+        String testContext = "{\"sample key\": \"sample value\"}";
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode node = mapper.readTree(testContext);
+        Assert.assertNotNull(Helper.convertJsonNodeToString(node));
+    }
 
     @Test
     public void testHttpConnection() throws Exception {

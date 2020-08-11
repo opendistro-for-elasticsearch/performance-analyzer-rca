@@ -23,7 +23,7 @@ public class ProducerTest {
 
 
     @Test
-    public void producerTestSetup() {
+    public void producerConfigTest() {
         String kafkaAdapterConfPath = Paths.get(KafkaAdapterConsts.CONFIG_DIR_TEST_PATH, KafkaAdapterConsts.KAFKA_ADAPTER_TEST_FILENAME).toString();
         KafkaAdapterConf conf = new KafkaAdapterConf(kafkaAdapterConfPath);
         target1 = new Target(KafkaAdapterConsts.PA_RCA_QUERY_ENDPOINT);
@@ -33,12 +33,8 @@ public class ProducerTest {
         Assert.assertEquals(KafkaAdapterConsts.KAFKA_MINIMAL_SEND_PERIODICITY, config1.getInterval());
         Assert.assertEquals(15000, config2.getInterval());
         Assert.assertEquals(KafkaAdapterConsts.DEFAULT_BOOTSTRAP_SERVER, config1.getBootstrap_server());
-        KafkaProducer<String, JsonNode> producer = config1.CreateProducer();
+        KafkaProducer<String, JsonNode> producer = config1.createProducer();
         Assert.assertNotNull(producer);
         Assert.assertNotNull(Helper.makeRequest(target1));
-    }
-
-    @Test //TODO: Test Kafka Producer Connectivity
-    public void kafkaProducerTest(){
     }
 }

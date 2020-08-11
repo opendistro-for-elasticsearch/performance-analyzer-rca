@@ -14,7 +14,7 @@ import java.nio.file.Paths;
 public class ConsumerTest {
     private ConsumerConfiguration consumerConfig;
     @Test
-    public void consumerTestSetup(){
+    public void consumerConfigTest(){
         String kafkaAdapterConfPath = Paths.get(KafkaAdapterConsts.CONFIG_DIR_TEST_PATH, KafkaAdapterConsts.KAFKA_ADAPTER_TEST_FILENAME).toString();
         KafkaAdapterConf conf = new KafkaAdapterConf(kafkaAdapterConfPath);
         consumerConfig = new ConsumerConfiguration(conf.getKafkaBootstrapServer(), conf.getKafkaTopicName(), 5000);
@@ -23,9 +23,5 @@ public class ConsumerTest {
         Assert.assertEquals("test_rca", consumerConfig.getTopic());
         Assert.assertEquals(KafkaAdapterConsts.KAFKA_MINIMAL_RECEIVE_PERIODICITY, consumerConfig.getInterval());
         Assert.assertEquals(KafkaAdapterConsts.DEFAULT_BOOTSTRAP_SERVER, consumerConfig.getBootstrap_server());
-    }
-
-    @Test //TODO: Test kafka consumer test
-    public void kafkaConsumerTest(){
     }
 }

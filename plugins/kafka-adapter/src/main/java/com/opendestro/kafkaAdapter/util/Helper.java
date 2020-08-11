@@ -105,10 +105,4 @@ public class Helper {
         }
         return responseCode == 200;
     }
-
-    public static void main(String[] args) throws JsonProcessingException {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode jsonNode = mapper.readTree( "{\"sample key\": \"sample value\"}");
-        System.out.println(convertJsonNodeToString(jsonNode));
-    }
 }
