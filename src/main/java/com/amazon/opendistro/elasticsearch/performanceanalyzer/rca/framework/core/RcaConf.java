@@ -148,14 +148,14 @@ public class RcaConf {
     try {
       Map<String, Object> rcaObj = null;
       if (conf.getRcaConfigSettings() != null
-              && conf.getRcaConfigSettings().containsKey(rcaName)
-              && conf.getRcaConfigSettings().get(rcaName) != null) {
+          && conf.getRcaConfigSettings().containsKey(rcaName)
+          && conf.getRcaConfigSettings().get(rcaName) != null) {
         rcaObj = (Map<String, Object>)conf.getRcaConfigSettings().get(rcaName);
       }
 
       if (rcaObj != null
-              && rcaObj.containsKey(key)
-              && rcaObj.get(key) != null) {
+          && rcaObj.containsKey(key)
+          && rcaObj.get(key) != null) {
         setting = clazz.cast(rcaObj.get(key));
       }
     }
