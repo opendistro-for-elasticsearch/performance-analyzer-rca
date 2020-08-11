@@ -42,7 +42,11 @@ public class PocValidator implements IValidator {
   }
 
   /**
-   * "HotClusterSummary":[{"number_of_nodes":1,"number_of_unhealthy_nodes":1}]
+   * {"rca_name":"ClusterRca",
+   *  "timestamp":1597167456322,
+   *  "state":"unhealthy",
+   *  "HotClusterSummary":[{"number_of_nodes":1,"number_of_unhealthy_nodes":1}]
+   * }
    */
   boolean checkClusterRca(JsonObject object) {
     if (!"unhealthy".equals(object.get("state").getAsString())) {

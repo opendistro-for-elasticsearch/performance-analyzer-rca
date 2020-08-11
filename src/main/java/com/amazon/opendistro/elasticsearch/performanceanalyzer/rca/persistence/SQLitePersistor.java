@@ -207,16 +207,16 @@ class SQLitePersistor extends PersistorBase {
 
   @Override
   public synchronized List<String> getAllPersistedRcas() {
-    List<String> tables = new ArrayList<>();
+    List<String> uniquePersistedRcas = new ArrayList<>();
     try {
-          tables =
+          uniquePersistedRcas =
                   (List<String>) create.selectDistinct(ResourceFlowUnitFieldValue.RCA_NAME_FILELD.getField())
           .from(ResourceFlowUnit.RCA_TABLE_NAME)
           .fetch(0).stream().collect(Collectors.toList());
     } catch (DataAccessException dex) {
 
     }
-    return tables;
+    return uniquePersistedRcas;
   }
 
   //read table content and convert it into JSON format
@@ -336,8 +336,7 @@ class SQLitePersistor extends PersistorBase {
         }
       } catch (DataAccessException de) {
         // it is totally fine if we fail to read some certain tables as some types of summaries might be missing
-        LOG.warn("Fail to read Summary table : {}, query = {},  exceptions : {}",
-            nestedTableName, rcaQuery.toString(), de);
+        LOG.warn("Fail to read Summary table : {}, query = {}", nestedTableName, rcaQuery.toString(), de);
       } catch (IllegalArgumentException ie) {
         LOG.error("Reading nested summary from wrong table, message : {}", ie.getMessage());
       }

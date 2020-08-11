@@ -198,7 +198,6 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner {
         }
       }
     }
-    // The test writer asked for no validations to be performed by the framework. So, we return success.
     return failedValidations;
   }
 }

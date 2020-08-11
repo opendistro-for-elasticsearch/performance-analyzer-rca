@@ -57,5 +57,9 @@ public interface Persistable {
 
   void close() throws SQLException;
 
+  /**
+   * Get a list of all the distinct RCAs persisted in the current DB file.
+   * @return A list of RCAs.
+   */
   List<String> getAllPersistedRcas();
 }
