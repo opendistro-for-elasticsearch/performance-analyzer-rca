@@ -186,14 +186,6 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
       this(role, id, hostAddress, isMaster, Util.RPC_PORT);
     }
 
-    public NodeDetails(AllMetrics.NodeRole role, String id, String hostAddress, boolean isMaster, int grpcPort) {
-      this.id = id;
-      this.hostAddress = hostAddress;
-      this.isMasterNode = isMaster;
-      this.role = role.toString();
-      this.grpcPort = grpcPort;
-    }
-
     public NodeDetails(final NodeDetails other) {
       if (other != null) {
         this.id = other.id;
@@ -201,6 +193,14 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
         this.isMasterNode = other.isMasterNode;
         this.role = other.role;
       }
+    }
+
+    public NodeDetails(AllMetrics.NodeRole role, String id, String hostAddress, boolean isMaster, int grpcPort) {
+      this.role = role.toString();
+      this.id = id;
+      this.hostAddress = hostAddress;
+      this.isMasterNode = isMaster;
+      this.grpcPort = grpcPort;
     }
 
     @Override

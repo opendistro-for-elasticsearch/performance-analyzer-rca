@@ -64,6 +64,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -88,6 +89,8 @@ public class RcaController {
 
   private boolean rcaEnabledDefaultValue = false;
 
+  private final int WAIT_FOR_SCHED_START_SECS = 10;
+
   // This needs to be volatile as the RcaConfPoller writes it but the Nanny reads it.
   private volatile boolean rcaEnabled = false;
 
@@ -96,6 +99,7 @@ public class RcaController {
 
   // This needs to be volatile as the NodeRolePoller writes it but the Nanny reads it.
   protected volatile NodeRole currentRole = NodeRole.UNKNOWN;
+  private volatile List<ConnectedComponent> connectedComponents;
 
   private final ThreadProvider threadProvider;
   private RCAScheduler rcaScheduler;
@@ -124,7 +128,9 @@ public class RcaController {
 
   private final AppContext appContext;
 
-  protected Queryable dbProvider = null;
+  protected volatile Queryable dbProvider = null;
+
+  private volatile Persistable persistenceProvider;
 
   public RcaController(
       final ThreadProvider threadProvider,
@@ -134,7 +140,8 @@ public class RcaController {
       final String rca_enabled_conf_location,
       final long rcaStateCheckIntervalMillis,
       final long nodeRoleCheckPeriodicityMillis,
-      final AppContext appContext) {
+      final AppContext appContext,
+      final Queryable dbProvider) {
     this.threadProvider = threadProvider;
     this.appContext = appContext;
     this.netOpsExecutorService = netOpsExecutorService;
@@ -151,6 +158,9 @@ public class RcaController {
     this.rcaStateCheckIntervalMillis = rcaStateCheckIntervalMillis;
     this.roleCheckPeriodicity = nodeRoleCheckPeriodicityMillis;
     this.deliberateInterrupt = false;
+    this.connectedComponents = null;
+    this.dbProvider = dbProvider;
+    this.persistenceProvider = null;
   }
 
   @VisibleForTesting
@@ -162,6 +172,7 @@ public class RcaController {
     rcaStateCheckIntervalMillis = 0;
     roleCheckPeriodicity = 0;
     appContext = null;
+    this.persistenceProvider = null;
   }
 
   protected List<ConnectedComponent> getRcaGraphComponents(
@@ -177,25 +188,22 @@ public class RcaController {
     try {
       Objects.requireNonNull(subscriptionManager);
       Objects.requireNonNull(rcaConf);
+      if (dbProvider == null) {
+        return;
+      }
 
       subscriptionManager.setCurrentLocus(rcaConf.getTagMap().get("locus"));
-      List<ConnectedComponent> connectedComponents = getRcaGraphComponents(rcaConf);
+      this.connectedComponents = getRcaGraphComponents(rcaConf);
 
       // Mute the rca nodes after the graph creation and before the scheduler start
       readAndUpdateMutedComponentsDuringStart();
 
-      Queryable db;
-      if (dbProvider == null) {
-        db = new MetricsDBProvider();
-      } else {
-        db = dbProvider;
-      }
       ThresholdMain thresholdMain = new ThresholdMain(RcaConsts.THRESHOLDS_PATH, rcaConf);
-      Persistable persistable = PersistenceFactory.create(rcaConf);
+      persistenceProvider = PersistenceFactory.create(rcaConf);
       networkThreadPoolReference
           .set(RcaControllerHelper.buildNetworkThreadPool(rcaConf.getNetworkQueueLength()));
       addRcaRequestHandler();
-      queryRcaRequestHandler.setPersistable(persistable);
+      queryRcaRequestHandler.setPersistable(persistenceProvider);
       receivedFlowUnitStore = new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength());
       WireHopper net =
           new WireHopper(nodeStateManager, rcaNetClient, subscriptionManager,
@@ -208,10 +216,10 @@ public class RcaController {
 
       this.rcaScheduler =
           new RCAScheduler(connectedComponents,
-              db,
+              dbProvider,
               rcaConf,
               thresholdMain,
-              persistable,
+              persistenceProvider,
               net,
               copyAppContext);
 
@@ -221,9 +229,21 @@ public class RcaController {
           new SubscribeServerHandler(subscriptionManager, networkThreadPoolReference));
 
       Thread rcaSchedulerThread = threadProvider.createThreadForRunnable(() -> rcaScheduler.start(),
-          PerformanceAnalyzerThreads.RCA_SCHEDULER);
+          PerformanceAnalyzerThreads.RCA_SCHEDULER,
+          copyAppContext.getMyInstanceDetails().getInstanceId().toString());
 
+      CountDownLatch schedulerStartLatch = new CountDownLatch(1);
+      rcaScheduler.setSchedulerTrackingLatch(schedulerStartLatch);
       rcaSchedulerThread.start();
+      if (!schedulerStartLatch.await(WAIT_FOR_SCHED_START_SECS, TimeUnit.SECONDS)) {
+        LOG.error("Failed to start RcaScheduler.");
+        throw new IllegalStateException(
+            "Failed to start RcaScheduler within " + WAIT_FOR_SCHED_START_SECS + " seconds.");
+      }
+
+      if (rcaScheduler.getState() != RcaSchedulerState.STATE_STARTED) {
+        LOG.error("RCA scheduler didn't start within {} seconds", WAIT_FOR_SCHED_START_SECS);
+      }
     } catch (ClassNotFoundException
         | NoSuchMethodException
         | InvocationTargetException
@@ -232,8 +252,9 @@ public class RcaController {
         | MalformedConfig
         | SQLException
         | IOException e) {
-      LOG.error("Couldn't build connected components or persistable.. Ran into {}", e.getMessage());
-      e.printStackTrace();
+      LOG.error("Couldn't build connected components or persistable..", e);
+    } catch (Exception ex) {
+      LOG.error("Couldn't start RcaController", ex);
     }
   }
 
@@ -262,6 +283,10 @@ public class RcaController {
     StatsCollector.instance().logMetric(RcaConsts.RCA_SCHEDULER_RESTART_METRIC);
   }
 
+  protected RcaConf getRcaConfForMyRole(NodeRole role) {
+    return RcaControllerHelper.pickRcaConfForRole(role);
+  }
+
   public void run() {
     long tick = 0;
     long nodeRoleCheckInTicks = roleCheckPeriodicity / rcaStateCheckIntervalMillis;
@@ -279,7 +304,7 @@ public class RcaController {
 
         // If RCA is enabled, update Analysis graph with Muted RCAs value
         if (rcaEnabled) {
-          rcaConf = RcaControllerHelper.pickRcaConfForRole(currentRole);
+          rcaConf = getRcaConfForMyRole(currentRole);
           LOG.debug("Updating Analysis Graph with Muted RCAs");
           readAndUpdateMutedComponents();
         }
@@ -290,14 +315,17 @@ public class RcaController {
           Thread.sleep(rcaStateCheckIntervalMillis - duration);
         }
       } catch (InterruptedException ie) {
-        if (!deliberateInterrupt) {
-          LOG.error("RCA controller thread was interrupted. Reason: {}", ie.getMessage());
-          LOG.error(ie);
+        if (deliberateInterrupt) {
+          // This should only happen in case of tests. So, its okay for this log level to be info.
+          LOG.info("RcaController thread interrupted..");
+        } else {
+          LOG.error("RCA controller thread was interrupted.", ie);
         }
         break;
       }
       tick++;
     }
+    LOG.error("RcaController exits..");
   }
 
   /**
@@ -310,7 +338,12 @@ public class RcaController {
         () -> {
           try (Scanner sc = new Scanner(filePath)) {
             String nextLine = sc.nextLine();
-            rcaEnabled = Boolean.parseBoolean(nextLine);
+            boolean oldVal = rcaEnabled;
+            boolean newVal = Boolean.parseBoolean(nextLine);
+            if (oldVal != newVal) {
+              rcaEnabled = newVal;
+              LOG.info("RCA enabled changed from {} to {}", oldVal, newVal);
+            }
           } catch (IOException e) {
             LOG.error("Error reading file '{}': {}", filePath.toString(), e);
             e.printStackTrace();
@@ -336,7 +369,8 @@ public class RcaController {
 
   private boolean updateMutedComponents() {
     try {
-      if (ConnectedComponent.getNodeNames().isEmpty()) {
+      Set<String> allNodes = ConnectedComponent.getNodesForAllComponents(this.connectedComponents);
+      if (allNodes.isEmpty()) {
         LOG.info("Analysis graph not initialized/has been reset; returning.");
         return false;
       }
@@ -350,7 +384,7 @@ public class RcaController {
       LOG.info("Actions provided for muting: {}", actionsForMute);
 
       // Update rcasForMute to retain only valid RCAs
-      graphNodesForMute.retainAll(ConnectedComponent.getNodeNames());
+      graphNodesForMute.retainAll(allNodes);
 
       // If rcasForMute post validation is empty but neither rcaConf.getMutedRcaList() nor
       // rcaConf.getMutedDeciderList() are empty all the input RCAs/deciders are incorrect.
@@ -359,11 +393,11 @@ public class RcaController {
         if (lastModifiedTimeInMillisInMemory == 0) {
           LOG.error(
               "Removing Incorrect RCA(s): {} provided before RCA Scheduler start. Valid RCAs: {}.",
-              rcaConf.getMutedRcaList(), ConnectedComponent.getNodeNames());
+              rcaConf.getMutedRcaList(), allNodes);
 
         } else {
           LOG.error("Incorrect RCA(s): {}, cannot be muted. Valid RCAs: {}, Muted RCAs: {}",
-              rcaConf.getMutedRcaList(), ConnectedComponent.getNodeNames(),
+              rcaConf.getMutedRcaList(), allNodes,
               Stats.getInstance().getMutedGraphNodes());
           return false;
         }
@@ -480,4 +514,13 @@ public class RcaController {
     this.dbProvider = dbProvider;
   }
 
+  @VisibleForTesting
+  public List<ConnectedComponent> getConnectedComponents() {
+    return connectedComponents;
+  }
+
+  @VisibleForTesting
+  public Persistable getPersistenceProvider() {
+    return persistenceProvider;
+  }
 }

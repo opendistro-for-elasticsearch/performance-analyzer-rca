@@ -28,6 +28,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectio
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetServer;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.MetricsDBProvider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.JvmMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
@@ -136,14 +137,21 @@ public class PerformanceAnalyzerApp {
             Util.DATA_DIR,
             RcaConsts.RCA_STATE_CHECK_INTERVAL_IN_MS,
             RcaConsts.nodeRolePollerPeriodicityInSeconds * 1000,
-            appContext
+            appContext, new MetricsDBProvider()
         );
     startRcaTopLevelThread(rcaController, threadProvider);
   }
 
-  public static Thread startRcaTopLevelThread(final RcaController rcaController1, final ThreadProvider threadProvider) {
+  public static Thread startRcaTopLevelThread(final RcaController rcaController1,
+                                              final ThreadProvider threadProvider) {
+    return startRcaTopLevelThread(rcaController1, threadProvider, "");
+  }
+
+  public static Thread startRcaTopLevelThread(final RcaController rcaController1,
+                                              final ThreadProvider threadProvider,
+                                              String nodeName) {
     Thread rcaControllerThread = threadProvider.createThreadForRunnable(() -> rcaController1.run(),
-        PerformanceAnalyzerThreads.RCA_CONTROLLER);
+        PerformanceAnalyzerThreads.RCA_CONTROLLER, nodeName);
     rcaControllerThread.start();
     return rcaControllerThread;
   }

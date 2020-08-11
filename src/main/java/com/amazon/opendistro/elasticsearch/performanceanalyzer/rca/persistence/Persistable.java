@@ -22,6 +22,8 @@ import com.google.gson.JsonElement;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import org.jooq.Record;
+import org.jooq.Result;
 
 public interface Persistable {
   /**
@@ -54,4 +56,10 @@ public interface Persistable {
   <T extends ResourceFlowUnit> void write(Node<?> node, T flowUnit) throws SQLException, IOException;
 
   void close() throws SQLException;
+
+  /**
+   * Get a list of all the distinct RCAs persisted in the current DB file.
+   * @return A list of RCAs.
+   */
+  List<String> getAllPersistedRcas();
 }
