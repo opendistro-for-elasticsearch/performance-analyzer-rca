@@ -15,6 +15,7 @@
 
 package com.opendestro.kafkaAdapter.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONObject;
@@ -32,7 +33,6 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 
 public class Helper {
-    private static HttpsURLConnection httpsConnection;
     private static HttpURLConnection httpConnection;
 
     public static String makeRequest(Target target) {
@@ -79,37 +79,36 @@ public class Helper {
         }
     }
 
-    public static void postToSlackWebHook(JsonNode node, String webhook_url){
+    public static boolean postToSlackWebHook(JsonNode node, String webhook_url){
         String val = convertJsonNodeToString(node);
         assert val != null;
         byte[] postBody = val.getBytes(StandardCharsets.UTF_8);
+        int responseCode = -1;
         try {
-            httpsConnection = (HttpsURLConnection) new URL(webhook_url).openConnection();
-            httpsConnection.setDoOutput(true);
-            httpsConnection.setRequestMethod("POST");
-            httpsConnection.setRequestProperty("User-Agent", "Java client");
-            httpsConnection.setRequestProperty("Content-Type", "application/json");
+            httpConnection = (HttpURLConnection) new URL(webhook_url).openConnection();
+            httpConnection.setDoOutput(true);
+            httpConnection.setRequestMethod("POST");
+            httpConnection.setRequestProperty("User-Agent", "Java client");
+            httpConnection.setRequestProperty("Content-Type", "application/json");
 
-            try (DataOutputStream wr = new DataOutputStream(httpsConnection.getOutputStream())) {
+            try (DataOutputStream wr = new DataOutputStream(httpConnection.getOutputStream())) {
                 wr.write(postBody);
                 wr.flush();
+            } catch (IOException e){
+                e.printStackTrace();
             }
-
-            try (BufferedReader br = new BufferedReader(
-                    new InputStreamReader(httpsConnection.getInputStream()))) {
-
-                String line;
-                StringBuilder response = new StringBuilder();
-
-                while ((line = br.readLine()) != null) {
-                    response.append(line);
-                    response.append(System.lineSeparator());
-                }
-            }
+            responseCode = httpConnection.getResponseCode();
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            httpsConnection.disconnect();
+            httpConnection.disconnect();
         }
+        return responseCode == 200;
+    }
+
+    public static void main(String[] args) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode jsonNode = mapper.readTree( "{\"sample key\": \"sample value\"}");
+        System.out.println(convertJsonNodeToString(jsonNode));
     }
 }
