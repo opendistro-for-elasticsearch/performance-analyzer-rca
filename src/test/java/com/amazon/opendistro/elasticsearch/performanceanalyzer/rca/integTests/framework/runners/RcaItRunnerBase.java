@@ -10,6 +10,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -103,12 +105,18 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner {
 
           try {
             method.invoke(testObject);
+            List<Class> failedChecks = validate(method);
 
-            if (!validate(method)) {
+            if (!failedChecks.isEmpty()) {
+              StringBuilder sb = new StringBuilder("Failed validations for:");
+              for (Class failed: failedChecks) {
+                sb.append(System.lineSeparator()).append(failed);
+              }
+
               notifier.fireTestFailure(
                   new Failure(
                       Description.createTestDescription(testClass.getClass(), method.getName()),
-                      new AssertionError()));
+                      new AssertionError(sb.toString())));
             }
           } catch (Exception exception) {
             LOG.error("** ERR: While running method: '{}'", method.getName(), exception);
@@ -135,8 +143,9 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner {
     }
   }
 
-  private boolean validate(Method method)
+  private List<Class> validate(Method method)
       throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+    List<Class> failedValidations = new ArrayList<>();
     if (method.isAnnotationPresent(AExpect.Expectations.class) || method.isAnnotationPresent(AExpect.class)) {
       AExpect[] expectations = method.getDeclaredAnnotationsByType(AExpect.class);
 
@@ -156,8 +165,9 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner {
       long startMillis = System.currentTimeMillis();
       long endTimeMillis = startMillis + maxWaitMillis;
 
-      boolean allChecksPassed = false;
+
       while (System.currentTimeMillis() <= endTimeMillis) {
+        failedValidations.clear();
         int passedCount = 0;
         // All checks must pass for one run for the validations to succeed. It's not valid if
         // different checks pass for different runs.
@@ -173,6 +183,9 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner {
           switch (what) {
             case REST_API:
               successful = validator.check(testApi.getRcaDataOnHost(expect.on(), rca.getSimpleName()));
+              if (!successful) {
+                failedValidations.add(validator.getClass());
+              }
               break;
           }
           if (successful) {
@@ -181,13 +194,11 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner {
         }
 
         if (passedCount == expectations.length) {
-          allChecksPassed = true;
           break;
         }
       }
-      return allChecksPassed;
     }
     // The test writer asked for no validations to be performed by the framework. So, we return success.
-    return true;
+    return failedValidations;
   }
 }
