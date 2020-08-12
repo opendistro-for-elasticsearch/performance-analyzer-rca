@@ -41,7 +41,13 @@ public class ThreadProvider {
    * @return The thread with the wrapped runnable.
    */
   public Thread createThreadForRunnable(final Runnable innerRunnable,
-      final PerformanceAnalyzerThreads paThread) {
+      final PerformanceAnalyzerThreads paThread, String threadNameAppender) {
+    StringBuilder threadName = new StringBuilder(paThread.toString());
+    if (!threadNameAppender.isEmpty()) {
+      threadName.append("-").append(threadNameAppender);
+    }
+    String threadNameStr = threadName.toString();
+
     Thread t = new Thread(() -> {
       try {
         innerRunnable.run();
@@ -56,11 +62,16 @@ public class ThreadProvider {
         }
       }
       StatsCollector.instance().logMetric(PA_THREADS_ENDED_METRIC_NAME);
-      LOG.info("Thread: {} completed.", paThread.toString());
-    }, paThread.toString());
+      LOG.info("Thread: {} completed.", threadNameStr);
+    }, threadNameStr);
 
-    LOG.info("Spun up a thread with name: {}", paThread.toString());
+    LOG.info("Spun up a thread with name: {}", threadNameStr);
     StatsCollector.instance().logMetric(PA_THREADS_STARTED_METRIC_NAME);
     return t;
+  }
+
+  public Thread createThreadForRunnable(final Runnable innerRunnable,
+                                        final PerformanceAnalyzerThreads paThread) {
+    return createThreadForRunnable(innerRunnable, paThread, "");
   }
 }

@@ -28,8 +28,22 @@ import org.apache.logging.log4j.Logger;
 // TODO: There should be a validation for the expected fields.
 @JsonIgnoreProperties(ignoreUnknown = true)
 class ConfJsonWrapper {
+  public static final String RCA_STORE_LOC = "rca-store-location";
+  public static final String THRESHOLD_STORE_LOC = "threshold-store-location";
+  public static final String NEW_RCA_CHECK_MINS = "new-rca-check-minutes";
+  public static final String NEW_THRESHOLDS_CHECK_MINS = "new-threshold-check-minutes";
+  public static final String TAGS = "tags";
+  public static final String REMOTE_PEERS = "remote-peers";
+  public static final String DATASTORE = "datastore";
+  public static final String ANALYSIS_GRAPH_IMPL = "analysis-graph-implementor";
+  public static final String NETWORK_QUEUE_LEN = "network-queue-length";
+  public static final String MAX_FLOW_UNIT_PER_VERTEX = "max-flow-units-per-vertex-buffer";
+  public static final String RCA_CONFIG_SETTINGS = "rca-config-settings";
+  public static final String MUTED_RCAS = "muted-rcas";
+  public static final String MUTED_DECIDERS = "muted-deciders";
+  public static final String MUTED_ACTIONS = "muted-actions";
+  public static final String DECIDER_CONFIG_SETTINGS = "decider-config-settings";
 
-  private static final Logger LOG = LogManager.getLogger(ConfJsonWrapper.class);
   private final String rcaStoreLoc;
   private final String thresholdStoreLoc;
   private final long newRcaCheckPeriodicityMins;
@@ -112,21 +126,21 @@ class ConfJsonWrapper {
   }
 
   ConfJsonWrapper(
-      @JsonProperty("rca-store-location") String rcaStoreLoc,
-      @JsonProperty("threshold-store-location") String thresholdStoreLoc,
-      @JsonProperty("new-rca-check-minutes") long newRcaCheckPeriodicityMins,
-      @JsonProperty("new-threshold-check-minutes") long newThresholdCheckPeriodicityMins,
-      @JsonProperty("tags") Map<String, String> tags,
-      @JsonProperty("remote-peers") List<String> peers,
-      @JsonProperty("datastore") Map<String, String> datastore,
-      @JsonProperty("analysis-graph-implementor") String analysisGraphEntryPoint,
-      @JsonProperty("network-queue-length") int networkQueueLength,
-      @JsonProperty("max-flow-units-per-vertex-buffer") int perVertexBufferLength,
-      @JsonProperty("rca-config-settings") Map<String, Object> rcaConfigSettings,
-      @JsonProperty("muted-rcas") List<String> mutedRcas,
-      @JsonProperty("muted-deciders") List<String> mutedDeciders,
-      @JsonProperty("muted-actions") List<String> mutedActions,
-      @JsonProperty("decider-config-settings") Map<String, Object> deciderConfigSettings) {
+      @JsonProperty(RCA_STORE_LOC) String rcaStoreLoc,
+      @JsonProperty(THRESHOLD_STORE_LOC) String thresholdStoreLoc,
+      @JsonProperty(NEW_RCA_CHECK_MINS) long newRcaCheckPeriodicityMins,
+      @JsonProperty(NEW_THRESHOLDS_CHECK_MINS) long newThresholdCheckPeriodicityMins,
+      @JsonProperty(TAGS) Map<String, String> tags,
+      @JsonProperty(REMOTE_PEERS) List<String> peers,
+      @JsonProperty(DATASTORE) Map<String, String> datastore,
+      @JsonProperty(ANALYSIS_GRAPH_IMPL) String analysisGraphEntryPoint,
+      @JsonProperty(NETWORK_QUEUE_LEN) int networkQueueLength,
+      @JsonProperty(MAX_FLOW_UNIT_PER_VERTEX) int perVertexBufferLength,
+      @JsonProperty(RCA_CONFIG_SETTINGS) Map<String, Object> rcaConfigSettings,
+      @JsonProperty(MUTED_RCAS) List<String> mutedRcas,
+      @JsonProperty(MUTED_DECIDERS) List<String> mutedDeciders,
+      @JsonProperty(MUTED_ACTIONS) List<String> mutedActions,
+      @JsonProperty(DECIDER_CONFIG_SETTINGS) Map<String, Object> deciderConfigSettings) {
     this.creationTime = System.currentTimeMillis();
     this.rcaStoreLoc = rcaStoreLoc;
     this.thresholdStoreLoc = thresholdStoreLoc;

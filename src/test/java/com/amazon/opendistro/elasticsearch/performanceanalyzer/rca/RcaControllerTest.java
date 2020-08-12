@@ -34,7 +34,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -48,7 +47,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.powermock.reflect.Whitebox;
 
 @Ignore
 @Category(GradleTaskForRca.class)
@@ -131,7 +129,8 @@ public class RcaControllerTest {
             rcaEnabledFileLoc.toString(),
             100,
             200,
-            appContext
+            appContext,
+                new MetricsDBProviderTestHelper()
         );
     rcaController.setDbProvider(new MetricsDBProviderTestHelper());
 
@@ -205,14 +204,14 @@ public class RcaControllerTest {
     Field mutedGraphNodesField = Stats.class.getDeclaredField("mutedGraphNodes");
     mutedGraphNodesField.setAccessible(true);
     mutedGraphNodesField.set(Stats.getInstance(), null);
-    Set<String> initialComponentSet = ConnectedComponent.getNodeNames();
-    Whitebox.setInternalState(ConnectedComponent.class, "nodeNames", new HashSet<>());
+    Set<String> initialComponentSet = ConnectedComponent.getNodesForAllComponents(rcaController.getConnectedComponents());
+    // Whitebox.setInternalState(ConnectedComponent.class, "nodeNames", new HashSet<>());
 
     readAndUpdateMutesRcas.invoke(rcaController);
     Assert.assertNull(Stats.getInstance().getMutedGraphNodes());
 
     // Re-set back to initialComponentSet
-    Whitebox.setInternalState(ConnectedComponent.class, "nodeNames", initialComponentSet);
+    // Whitebox.setInternalState(ConnectedComponent.class, "nodeNames", initialComponentSet);
   }
 
   @Test

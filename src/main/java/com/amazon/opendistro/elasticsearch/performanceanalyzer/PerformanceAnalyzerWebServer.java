@@ -63,6 +63,7 @@ public class PerformanceAnalyzerWebServer {
       server.setExecutor(Executors.newCachedThreadPool());
       return server;
     } catch (java.net.BindException ex) {
+      LOG.error("Could not create HttpServer on port {}", internalPort, ex);
       Runtime.getRuntime().halt(1);
     } catch (Exception ex) {
       ex.printStackTrace();

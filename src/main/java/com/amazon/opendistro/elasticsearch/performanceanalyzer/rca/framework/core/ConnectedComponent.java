@@ -29,7 +29,7 @@ public class ConnectedComponent {
 
   /* The elements in the inner list can be executed in parallel. Two inner lists have to be executed in order. */
   private List<List<Node<?>>> dependencyOrderedNodes;
-  private static Set<String> nodeNames = new HashSet<>();
+  private Set<String> nodeNames = new HashSet<>();
   private int graphId;
 
   public Set<Node<?>> getAllNodes() {
@@ -117,8 +117,18 @@ public class ConnectedComponent {
     return dependencyOrderedNodes;
   }
 
-  public static Set<String> getNodeNames() {
+  public Set<String> getNodeNames() {
     return nodeNames;
   }
 
+  public static Set<String> getNodesForAllComponents(List<ConnectedComponent> connectedComponentList) {
+    Set<String> allNodes = new HashSet<>();
+
+    if (connectedComponentList != null) {
+      for (ConnectedComponent connectedComponent : connectedComponentList) {
+        allNodes.addAll(connectedComponent.getNodeNames());
+      }
+    }
+    return allNodes;
+  }
 }

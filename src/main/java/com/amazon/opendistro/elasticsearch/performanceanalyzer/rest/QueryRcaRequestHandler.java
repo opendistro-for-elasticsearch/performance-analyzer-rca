@@ -162,26 +162,25 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
 
   private void handleClusterRcaRequest(Map<String, String> params, HttpExchange exchange)
       throws IOException {
+    //check if we are querying from elected master
+    if (!validNodeRole()) {
+      JsonObject errResponse = new JsonObject();
+      errResponse.addProperty("error", "Node being queried is not elected master.");
+      sendResponse(exchange, errResponse.toString(),
+              HttpURLConnection.HTTP_BAD_REQUEST);
+      return;
+    }
     List<String> rcaList = metricsRestUtil.parseArrayParam(params, NAME_PARAM, true);
     // query all cluster level RCAs if no RCA is specified in name.
     if (rcaList.isEmpty()) {
-      rcaList = SQLiteQueryUtils.getClusterLevelRca();
-    }
-    //check if RCA is valid
-    if (!validParams(rcaList)) {
+      // rcaList = SQLiteQueryUtils.getClusterLevelRca();
+      rcaList = persistable.getAllPersistedRcas();
+    } else if (!validParams(rcaList)) {
       JsonObject errResponse = new JsonObject();
       JsonArray errReason = new JsonArray();
       SQLiteQueryUtils.getClusterLevelRca().forEach(errReason::add);
       errResponse.addProperty("error", "Invalid RCA.");
       errResponse.add("valid_cluster_rca", errReason);
-      sendResponse(exchange, errResponse.toString(),
-          HttpURLConnection.HTTP_BAD_REQUEST);
-      return;
-    }
-    //check if we are querying from elected master
-    if (!validNodeRole()) {
-      JsonObject errResponse = new JsonObject();
-      errResponse.addProperty("error", "Node being queried is not elected master.");
       sendResponse(exchange, errResponse.toString(),
           HttpURLConnection.HTTP_BAD_REQUEST);
       return;
