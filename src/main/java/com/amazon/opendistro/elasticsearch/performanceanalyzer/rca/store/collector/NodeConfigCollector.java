@@ -16,7 +16,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheConfigDimension.CACHE_TYPE;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.HEAP;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolDimension.THREAD_POOL_TYPE;
 
@@ -114,6 +113,12 @@ public class NodeConfigCollector extends EsConfigNode {
     }
   }
 
+  private void addConfigToNodeCache() {
+    final NodeKey nodeKey = new NodeKey(getInstanceDetails());
+    final NodeConfigCache nodeConfigCache = getAppContext().getNodeConfigCache();
+    configResult.forEach((resource, value) -> nodeConfigCache.put(nodeKey, resource, value));
+  }
+
   /**
    * collect config settings from the upstream metric flowunits and set them into the protobuf
    * message PerformanceControllerConfiguration. This will allow us to serialize / de-serialize
@@ -141,6 +146,8 @@ public class NodeConfigCollector extends EsConfigNode {
       }
       collectHeapMaxSize(flowUnit);
     }
+
+    addConfigToNodeCache();
     if (counter == rcaPeriod) {
       counter = 0;
       NodeConfigFlowUnit flowUnits = new NodeConfigFlowUnit(System.currentTimeMillis(), new NodeKey(getInstanceDetails()));
