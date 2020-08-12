@@ -21,6 +21,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMess
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.QueueRejectionRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
@@ -31,6 +33,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.google.common.annotations.VisibleForTesting;
@@ -51,7 +54,6 @@ import org.apache.logging.log4j.Logger;
  */
 public class QueueRejectionRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
   private static final Logger LOG = LogManager.getLogger(QueueRejectionRca.class);
-  private static final long REJECTION_TIME_PERIOD_IN_MILLISECOND = TimeUnit.SECONDS.toMillis(300);
   private final int rcaPeriod;
   private final List<QueueRejectionCollector> queueRejectionCollectors;
   private int counter;
@@ -64,9 +66,9 @@ public class QueueRejectionRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
     clock = Clock.systemUTC();
     queueRejectionCollectors = Collections.unmodifiableList(Arrays.asList(
         new QueueRejectionCollector(ResourceUtil.WRITE_QUEUE_REJECTION, ThreadPoolType.WRITE,
-            threadPool_RejectedReqs, REJECTION_TIME_PERIOD_IN_MILLISECOND),
+            threadPool_RejectedReqs),
         new QueueRejectionCollector(ResourceUtil.SEARCH_QUEUE_REJECTION, ThreadPoolType.SEARCH,
-            threadPool_RejectedReqs, REJECTION_TIME_PERIOD_IN_MILLISECOND)
+            threadPool_RejectedReqs)
     ));
   }
 
@@ -124,6 +126,18 @@ public class QueueRejectionRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
   }
 
   /**
+   * read rejection-time-period-in-seconds from rca.conf
+   * @param conf RcaConf object
+   */
+  @Override
+  public void readRcaConf(RcaConf conf) {
+    QueueRejectionRcaConfig configObj = conf.getQueueRejectionRcaConfig();
+    long rejectedTimePeriod = TimeUnit.SECONDS.toMillis(configObj.getRejectionTimePeriodInSeconds());
+    queueRejectionCollectors.forEach(
+        collector -> collector.setRejectionTimePeriod(rejectedTimePeriod));
+  }
+
+  /**
    * A collector class to collect rejection from each queue type
    */
   private static class QueueRejectionCollector {
@@ -132,16 +146,21 @@ public class QueueRejectionRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
     private final Metric threadPool_RejectedReqs;
     private boolean hasRejection;
     private long rejectionTimestamp;
-    private long rejectionTimePeriodThreshold;
+    private long rejectionTimePeriodInMillis;
 
     public QueueRejectionCollector(final Resource threadPool, final ThreadPoolType threadPoolMetric,
-        final Metric threadPool_RejectedReqs, final long threshold) {
+        final Metric threadPool_RejectedReqs) {
       this.threadPool = threadPool;
       this.threadPoolMetric = threadPoolMetric;
       this.threadPool_RejectedReqs = threadPool_RejectedReqs;
       this.hasRejection = false;
       this.rejectionTimestamp = 0;
-      this.rejectionTimePeriodThreshold = threshold;
+      this.rejectionTimePeriodInMillis =
+          TimeUnit.SECONDS.toMillis(QueueRejectionRcaConfig.DEFAULT_REJECTION_TIME_PERIOD_IN_SECONDS);
+    }
+
+    public void setRejectionTimePeriod(long rejectionTimePeriodInMillis) {
+      this.rejectionTimePeriodInMillis = rejectionTimePeriodInMillis;
     }
 
     public void collect(final long currTimestamp) {
@@ -169,14 +188,14 @@ public class QueueRejectionRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
     }
 
     public boolean isUnhealthy(final long currTimestamp) {
-      return hasRejection && (currTimestamp - rejectionTimestamp) >= rejectionTimePeriodThreshold;
+      return hasRejection && (currTimestamp - rejectionTimestamp) >= rejectionTimePeriodInMillis;
     }
 
     public HotResourceSummary generateSummary(final long currTimestamp) {
       HotResourceSummary resourceSummary = null;
       if (isUnhealthy(currTimestamp)) {
         resourceSummary = new HotResourceSummary(threadPool,
-            TimeUnit.MILLISECONDS.toSeconds(rejectionTimePeriodThreshold),
+            TimeUnit.MILLISECONDS.toSeconds(rejectionTimePeriodInMillis),
             TimeUnit.MILLISECONDS.toSeconds(currTimestamp - rejectionTimestamp),
             0);
       }
