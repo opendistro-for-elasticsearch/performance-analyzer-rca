@@ -16,13 +16,16 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Decision;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config.ConfConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config.PluginConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.junit.MockitoRule;
 import org.powermock.api.mockito.PowerMockito;
 
 
@@ -37,30 +40,28 @@ import static org.mockito.Mockito.when;
 
 
 public class DecisionListenerPluginTest {
-    private static DecisionListenerPlugin plugin;
+    static PluginConfig pluginConfig;
+    static DecisionListenerPlugin plugin;
 
-    @Before
-    public void setup (){
+    @Test
+    public void testSetup (){
         plugin = new DecisionListenerPlugin();
         Assert.assertNull(plugin.getPluginConfig());
         Assert.assertNull(plugin.getKafkaProducer());
-    }
 
-    @Test
-    public void testInit(){
         String pluginConfPath = Paths.get(ConfConsts.CONFIG_DIR_TEST_PATH, ConfConsts.PLUGINS_CONF_TEST_FILENAMES).toString();
-        PluginConfig pluginConfig = new PluginConfig(pluginConfPath);
+        pluginConfig = new PluginConfig(pluginConfPath);
         Assert.assertEquals("localhost:9092", pluginConfig.getKafkaDecisionListenerConfig(ConfConsts.KAFKA_BOOTSTRAP_SERVER_KEY));
         Assert.assertEquals("test", pluginConfig.getKafkaDecisionListenerConfig(ConfConsts.KAFKA_TOPIC_KEY));
-        Assert.assertEquals("test_url", pluginConfig.getKafkaDecisionListenerConfig(ConfConsts.WEBHOOKS_URL_KEY));
+        Assert.assertEquals("http://www.example.com", pluginConfig.getKafkaDecisionListenerConfig(ConfConsts.WEBHOOKS_URL_KEY));
     }
 
     @Test
-    public void testAction(){
-        Action action = Mockito.mock(Action.class);
-        DecisionListenerPlugin plugin = Mockito.mock(DecisionListenerPlugin.class);
-        plugin.actionPublished(action);
-        Mockito.verify(plugin, times(1)).actionPublished(action);
+    public void testInit() {
+        DecisionListenerPlugin plugin = new DecisionListenerPlugin();
+        plugin.initialize();
+        Assert.assertNotNull(plugin.getKafkaProducer());
+        Assert.assertNotNull(plugin.getPluginConfig());
     }
 
     @Test
@@ -76,26 +77,11 @@ public class DecisionListenerPluginTest {
         }
         UrlWrapper u = PowerMockito.mock(UrlWrapper.class);
         String summary = "test";
-        String urlStr = "http://www.example.com";
+        String urlStr = pluginConfig.getKafkaDecisionListenerConfig(ConfConsts.WEBHOOKS_URL_KEY);
         PowerMockito.whenNew(URL.class).withArguments(urlStr).thenReturn(u.url);
         HttpURLConnection con = PowerMockito.mock(HttpURLConnection.class);
         PowerMockito.when(u.openConnection()).thenReturn(con);
         PowerMockito.when(con.getResponseCode()).thenReturn(200);
         Assert.assertTrue(DecisionListenerPlugin.sendHttpPostRequest(summary, urlStr));
     }
-
-//    @Test
-//    public void testActionPublished() throws Exception {
-//        Action action = Mockito.mock(Action.class);
-//        Mockito.when(action.summary()).thenReturn("testAction");
-//        PluginConfig pluginConfig = Mockito.mock(PluginConfig.class);
-//        KafkaProducer<String, String> kafkaProducer = Mockito.mock(KafkaProducer.class);
-//        PowerMockito.whenNew(PluginConfig.class).withNoArguments().thenReturn(pluginConfig);
-//        PowerMockito.whenNew(KafkaProducer.class).withNoArguments().thenReturn(kafkaProducer);
-//        plugin.actionPublished(action);
-//        Mockito.verify(plugin, times(1)).makeSingletonKafkaProducer();
-//        Mockito.verify(plugin, times(1)).makeSingletonPluginConfig();
-//
-//    }
 }
-

@@ -35,17 +35,22 @@ public class DecisionListenerPlugin extends Plugin implements ActionListener {
 
     @Override
     public void actionPublished(Action action) {
+        initialize();
         LOG.info("Action: [{}] published by decision maker publisher.", action.name());
+        String summary = action.summary();
+        sendSummaryToKafkaQueue(summary);
+        sendHttpPostRequest(summary, pluginConfig.getKafkaDecisionListenerConfig(ConfConsts.WEBHOOKS_URL_KEY));
+    }
+
+    public void initialize(){
         if(pluginConfig == null){
             pluginConfig = makeSingletonPluginConfig();
         }
         if(kafkaProducerInstance == null){
             kafkaProducerInstance = makeSingletonKafkaProducer();
         }
-        String summary = action.summary();
-        sendSummaryToKafkaQueue(summary);
-        sendHttpPostRequest(summary, pluginConfig.getKafkaDecisionListenerConfig(ConfConsts.WEBHOOKS_URL_KEY));
     }
+
 
     public PluginConfig makeSingletonPluginConfig() {
         String pluginConfPath = Paths.get(ConfConsts.CONFIG_DIR_PATH, ConfConsts.PLUGINS_CONF_FILENAMES).toString();
@@ -72,7 +77,7 @@ public class DecisionListenerPlugin extends Plugin implements ActionListener {
         kafkaProducerInstance.close();
     }
 
-    public static boolean sendHttpPostRequest(String summary, String webhook_url){
+    public static boolean sendHttpPostRequest(String summary, String webhook_url){ //TODO: Use seperate Kafka Consumer to read decision data
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("text", summary);
         String body = jsonObject.toString();
