@@ -176,7 +176,7 @@ public class ModifyCacheMaxSizeActionTest {
             node1,
             ResourceEnum.FIELD_DATA_CACHE,
             appContext.getNodeConfigCache(),
-            CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
+            getDefaultFieldDataCacheUpperBound(),
             false,
             appContext);
 
