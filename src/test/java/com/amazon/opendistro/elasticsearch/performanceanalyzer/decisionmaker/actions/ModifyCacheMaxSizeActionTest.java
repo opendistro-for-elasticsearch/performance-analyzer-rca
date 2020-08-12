@@ -82,7 +82,7 @@ public class ModifyCacheMaxSizeActionTest {
             appContext.getNodeConfigCache(),
             getDefaultFieldDataCacheUpperBound(),
             true,
-            appContext););
+            appContext);
     assertTrue(
         modifyCacheSizeAction.getDesiredCacheMaxSizeInBytes()
             > modifyCacheSizeAction.getCurrentCacheMaxSizeInBytes());
