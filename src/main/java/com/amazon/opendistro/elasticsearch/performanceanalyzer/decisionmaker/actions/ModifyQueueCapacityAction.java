@@ -27,9 +27,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.uti
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class ModifyQueueCapacityAction extends SuppressibleAction {
 
+  private static final Logger LOG = LogManager.getLogger(ModifyQueueCapacityAction.class);
   public static final String NAME = "ModifyQueueCapacity";
 
   private final ResourceEnum threadPool;
@@ -204,6 +207,7 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
       // fail to read capacity from node config cache
       // return an empty non-actionable action object
       if (currentCapacity == null) {
+        LOG.error("Action: Fail to read queue capacity from node config cache. Return an non-actionable action");
         return new ModifyQueueCapacityAction(esNode, threadPool, appContext,
             -1, -1, coolOffPeriodInMillis, lowerBound, upperBound, false);
       }
