@@ -49,7 +49,7 @@ public class ModifyQueueCapacityActionTest {
     dummyCache.put(node1, ResourceUtil.WRITE_QUEUE_CAPACITY, 500);
     ModifyQueueCapacityAction.Builder builder =
         ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.WRITE_THREADPOOL, testAppContext);
-    ModifyQueueCapacityAction modifyQueueCapacityAction = builder.setIncrease(true).build();
+    ModifyQueueCapacityAction modifyQueueCapacityAction = builder.increase(true).build();
     Assert.assertNotNull(modifyQueueCapacityAction);
     assertTrue(modifyQueueCapacityAction.getDesiredCapacity() > modifyQueueCapacityAction.getCurrentCapacity());
     assertTrue(modifyQueueCapacityAction.isActionable());
@@ -72,7 +72,7 @@ public class ModifyQueueCapacityActionTest {
     dummyCache.put(node1, ResourceUtil.SEARCH_QUEUE_CAPACITY, 1500);
     ModifyQueueCapacityAction.Builder builder =
         ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.SEARCH_THREADPOOL, testAppContext);
-    ModifyQueueCapacityAction modifyQueueCapacityAction = builder.setIncrease(false).build();
+    ModifyQueueCapacityAction modifyQueueCapacityAction = builder.increase(false).build();
     Assert.assertNotNull(modifyQueueCapacityAction);
     assertTrue(modifyQueueCapacityAction.getDesiredCapacity() < modifyQueueCapacityAction.getCurrentCapacity());
     assertTrue(modifyQueueCapacityAction.isActionable());
@@ -96,28 +96,28 @@ public class ModifyQueueCapacityActionTest {
     dummyCache.put(node1, ResourceUtil.SEARCH_QUEUE_CAPACITY, 3000);
     ModifyQueueCapacityAction.Builder builder =
         ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.SEARCH_THREADPOOL, testAppContext);
-    ModifyQueueCapacityAction searchQueueIncrease = builder.setIncrease(true).build();
+    ModifyQueueCapacityAction searchQueueIncrease = builder.increase(true).build();
     assertEquals(searchQueueIncrease.getDesiredCapacity(), searchQueueIncrease.getCurrentCapacity());
     assertFalse(searchQueueIncrease.isActionable());
     assertNoImpact(node1, searchQueueIncrease);
 
     dummyCache.put(node1, ResourceUtil.SEARCH_QUEUE_CAPACITY, 1000);
     builder = ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.SEARCH_THREADPOOL, testAppContext);
-    ModifyQueueCapacityAction searchQueueDecrease = builder.setIncrease(false).build();
+    ModifyQueueCapacityAction searchQueueDecrease = builder.increase(false).build();
     assertEquals(searchQueueDecrease.getDesiredCapacity(), searchQueueDecrease.getCurrentCapacity());
     assertFalse(searchQueueDecrease.isActionable());
     assertNoImpact(node1, searchQueueDecrease);
 
     dummyCache.put(node1, ResourceUtil.WRITE_QUEUE_CAPACITY, 1000);
     builder = ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.WRITE_THREADPOOL, testAppContext);
-    ModifyQueueCapacityAction writeQueueIncrease = builder.setIncrease(true).build();
+    ModifyQueueCapacityAction writeQueueIncrease = builder.increase(true).build();
     assertEquals(writeQueueIncrease.getDesiredCapacity(), writeQueueIncrease.getCurrentCapacity());
     assertFalse(writeQueueIncrease.isActionable());
     assertNoImpact(node1, writeQueueIncrease);
 
     dummyCache.put(node1, ResourceUtil.WRITE_QUEUE_CAPACITY, 100);
     builder = ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.WRITE_THREADPOOL, testAppContext);
-    ModifyQueueCapacityAction writeQueueDecrease = builder.setIncrease(false).build();
+    ModifyQueueCapacityAction writeQueueDecrease = builder.increase(false).build();
     assertEquals(writeQueueDecrease.getDesiredCapacity(), writeQueueDecrease.getCurrentCapacity());
     assertFalse(writeQueueDecrease.isActionable());
     assertNoImpact(node1, writeQueueDecrease);
@@ -129,7 +129,7 @@ public class ModifyQueueCapacityActionTest {
     dummyCache.put(node1, ResourceUtil.SEARCH_QUEUE_CAPACITY, 2000);
     ModifyQueueCapacityAction.Builder builder =
         ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.SEARCH_THREADPOOL, testAppContext);
-    ModifyQueueCapacityAction modifyQueueCapacityAction = builder.setIncrease(true).build();
+    ModifyQueueCapacityAction modifyQueueCapacityAction = builder.increase(true).build();
 
     testAppContext.updateMutedActions(ImmutableSet.of(modifyQueueCapacityAction.name()));
 

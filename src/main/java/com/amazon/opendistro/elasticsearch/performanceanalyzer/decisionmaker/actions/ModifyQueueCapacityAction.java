@@ -39,9 +39,11 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
   private final int lowerBound;
   private final int upperBound;
   private final long coolOffPeriodInMillis;
+  private final boolean canUpdate;
 
   private ModifyQueueCapacityAction(NodeKey esNode, ResourceEnum threadPool, AppContext appContext,
-      int desiredCapacity, int currentCapacity, long coolOffPeriodInMillis, int lowerBound, int upperBound) {
+      int desiredCapacity, int currentCapacity, long coolOffPeriodInMillis,
+      int lowerBound, int upperBound, boolean canUpdate) {
     super(appContext);
     this.esNode = esNode;
     this.threadPool = threadPool;
@@ -50,6 +52,7 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
     this.coolOffPeriodInMillis = coolOffPeriodInMillis;
     this.lowerBound = lowerBound;
     this.upperBound = upperBound;
+    this.canUpdate = canUpdate;
   }
 
   public static Builder newBuilder(NodeKey esNode, ResourceEnum threadPool, AppContext appContext) {
@@ -63,7 +66,7 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
 
   @Override
   public boolean canUpdate() {
-    return desiredCapacity != currentCapacity;
+    return canUpdate && (desiredCapacity != currentCapacity);
   }
 
   @Override
@@ -117,9 +120,11 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
     public static final long DEFAULT_COOL_OFF_PERIOD_IN_MILLIS = 300 * 1_000;
     public static final int DEFAULT_STEP_SIZE = 50;
     public static final boolean DEFAULT_IS_INCREASE = true;
+    public static final boolean DEFAULT_CAN_UPDATE = true;
 
     private int stepSize;
     private boolean isIncrease;
+    private boolean canUpdate;
     private long coolOffPeriodInMillis;
     private int upperBound;
     private int lowerBound;
@@ -137,6 +142,7 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
       this.coolOffPeriodInMillis = DEFAULT_COOL_OFF_PERIOD_IN_MILLIS;
       this.stepSize = DEFAULT_STEP_SIZE;
       this.isIncrease = DEFAULT_IS_INCREASE;
+      this.canUpdate = DEFAULT_CAN_UPDATE;
       this.desiredCapacity = null;
       this.currentCapacity =
           NodeConfigCacheReaderUtil.readQueueCapacity(appContext.getNodeConfigCache(), esNode, threadPool);
@@ -159,56 +165,57 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
       }
     }
 
-    public Builder setCoolOffPeriod(long coolOffPeriodInMillis) {
+    public Builder coolOffPeriod(long coolOffPeriodInMillis) {
       this.coolOffPeriodInMillis = coolOffPeriodInMillis;
       return this;
     }
 
-    public Builder setIncrease(boolean isInrease) {
+    public Builder increase(boolean isInrease) {
       this.isIncrease = isInrease;
       return this;
     }
 
-    public Builder setDesiredCapacity(int desiredCapacity) {
+    public Builder desiredCapacity(int desiredCapacity) {
       this.desiredCapacity = desiredCapacity;
       return this;
     }
 
-    public Builder setDesiredCapacityToMinimal() {
+    public Builder minimalDesiredCapacity() {
       this.desiredCapacity = this.lowerBound;
       return this;
     }
 
-    public Builder setStepSize(int stepSize) {
+    public Builder stepSize(int stepSize) {
       this.stepSize = stepSize;
       return this;
     }
 
-    public Builder setUpperBound(int upperBound) {
+    public Builder upperBound(int upperBound) {
       this.upperBound = upperBound;
       return this;
     }
 
-    public Builder setLowerBound(int lowerBound) {
+    public Builder lowerBound(int lowerBound) {
       this.lowerBound = lowerBound;
       return this;
     }
 
     public ModifyQueueCapacityAction build() {
-      //fail to read capacity from node config cache
-      // return null action
+      // fail to read capacity from node config cache
+      // return an empty non-actionable action object
       if (currentCapacity == null) {
-        return null;
+        return new ModifyQueueCapacityAction(esNode, threadPool, appContext,
+            -1, -1, coolOffPeriodInMillis, lowerBound, upperBound, false);
       }
       // skip the step size bound check if we set desiredCapacity
       // explicitly in action builder
       if (desiredCapacity == null) {
         desiredCapacity = isIncrease ? currentCapacity + stepSize : currentCapacity - stepSize;
-        desiredCapacity = Math.min(desiredCapacity, upperBound);
-        desiredCapacity = Math.max(desiredCapacity, lowerBound);
       }
+      desiredCapacity = Math.min(desiredCapacity, upperBound);
+      desiredCapacity = Math.max(desiredCapacity, lowerBound);
       return new ModifyQueueCapacityAction(esNode, threadPool, appContext,
-          desiredCapacity, currentCapacity, coolOffPeriodInMillis, lowerBound, upperBound);
+          desiredCapacity, currentCapacity, coolOffPeriodInMillis, lowerBound, upperBound, canUpdate);
     }
   }
 }
