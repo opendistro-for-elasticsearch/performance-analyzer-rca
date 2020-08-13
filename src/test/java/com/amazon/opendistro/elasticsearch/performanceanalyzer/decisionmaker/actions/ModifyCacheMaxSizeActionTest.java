@@ -74,23 +74,46 @@ public class ModifyCacheMaxSizeActionTest {
   public void testIncreaseCapacity() {
     NodeKey node1 =
         new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
-    ModifyCacheMaxSizeAction modifyCacheSizeAction =
-        new ModifyCacheMaxSizeAction(
+    ModifyCacheMaxSizeAction.Builder builder =
+        ModifyCacheMaxSizeAction.newBuilder(
             node1,
             ResourceEnum.FIELD_DATA_CACHE,
-            appContext.getNodeConfigCache(),
-            CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
-            true,
-            appContext);
-    assertTrue(
-        modifyCacheSizeAction.getDesiredCacheMaxSizeInBytes()
-            > modifyCacheSizeAction.getCurrentCacheMaxSizeInBytes());
-    assertTrue(modifyCacheSizeAction.isActionable());
-    assertEquals(300 * 1_000, modifyCacheSizeAction.coolOffPeriodInMillis());
-    assertEquals(ResourceEnum.FIELD_DATA_CACHE, modifyCacheSizeAction.getCacheType());
-    assertEquals(1, modifyCacheSizeAction.impactedNodes().size());
+            appContext,
+            CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND);
+    ModifyCacheMaxSizeAction fieldDataCacheIncrease = builder.increase(true).build();
 
-    Map<Dimension, Impact> impact = modifyCacheSizeAction.impact().get(node1).getImpact();
+    assertTrue(
+        fieldDataCacheIncrease.getDesiredCacheMaxSizeInBytes()
+            > fieldDataCacheIncrease.getCurrentCacheMaxSizeInBytes());
+    assertTrue(fieldDataCacheIncrease.isActionable());
+    assertEquals(300 * 1_000, fieldDataCacheIncrease.coolOffPeriodInMillis());
+    assertEquals(ResourceEnum.FIELD_DATA_CACHE, fieldDataCacheIncrease.getCacheType());
+    assertEquals(1, fieldDataCacheIncrease.impactedNodes().size());
+
+    Map<Dimension, Impact> impact = fieldDataCacheIncrease.impact().get(node1).getImpact();
+    assertEquals(Impact.INCREASES_PRESSURE, impact.get(HEAP));
+    assertEquals(Impact.NO_IMPACT, impact.get(CPU));
+    assertEquals(Impact.NO_IMPACT, impact.get(NETWORK));
+    assertEquals(Impact.NO_IMPACT, impact.get(RAM));
+    assertEquals(Impact.NO_IMPACT, impact.get(DISK));
+
+    builder =
+        ModifyCacheMaxSizeAction.newBuilder(
+            node1,
+            ResourceEnum.SHARD_REQUEST_CACHE,
+            appContext,
+            CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND);
+    ModifyCacheMaxSizeAction shardRequestCacheIncrease = builder.increase(true).build();
+
+    assertTrue(
+        shardRequestCacheIncrease.getDesiredCacheMaxSizeInBytes()
+            > shardRequestCacheIncrease.getCurrentCacheMaxSizeInBytes());
+    assertTrue(shardRequestCacheIncrease.isActionable());
+    assertEquals(300 * 1_000, shardRequestCacheIncrease.coolOffPeriodInMillis());
+    assertEquals(ResourceEnum.SHARD_REQUEST_CACHE, shardRequestCacheIncrease.getCacheType());
+    assertEquals(1, shardRequestCacheIncrease.impactedNodes().size());
+
+    impact = shardRequestCacheIncrease.impact().get(node1).getImpact();
     assertEquals(Impact.INCREASES_PRESSURE, impact.get(HEAP));
     assertEquals(Impact.NO_IMPACT, impact.get(CPU));
     assertEquals(Impact.NO_IMPACT, impact.get(NETWORK));
@@ -102,23 +125,22 @@ public class ModifyCacheMaxSizeActionTest {
   public void testNoIncreaseCapacity() {
     NodeKey node1 =
         new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
-    ModifyCacheMaxSizeAction modifyCacheSizeAction =
-        new ModifyCacheMaxSizeAction(
+    ModifyCacheMaxSizeAction.Builder builder =
+        ModifyCacheMaxSizeAction.newBuilder(
             node1,
             ResourceEnum.FIELD_DATA_CACHE,
-            appContext.getNodeConfigCache(),
-            CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
-            false,
-            appContext);
+            appContext,
+            CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND);
+    ModifyCacheMaxSizeAction fieldDataCacheNoIncrease = builder.increase(false).build();
     assertEquals(
-        modifyCacheSizeAction.getDesiredCacheMaxSizeInBytes(),
-        modifyCacheSizeAction.getCurrentCacheMaxSizeInBytes());
-    assertFalse(modifyCacheSizeAction.isActionable());
-    assertEquals(300 * 1_000, modifyCacheSizeAction.coolOffPeriodInMillis());
-    assertEquals(ResourceEnum.FIELD_DATA_CACHE, modifyCacheSizeAction.getCacheType());
-    assertEquals(1, modifyCacheSizeAction.impactedNodes().size());
+        fieldDataCacheNoIncrease.getDesiredCacheMaxSizeInBytes(),
+        fieldDataCacheNoIncrease.getCurrentCacheMaxSizeInBytes());
+    assertFalse(fieldDataCacheNoIncrease.isActionable());
+    assertEquals(300 * 1_000, fieldDataCacheNoIncrease.coolOffPeriodInMillis());
+    assertEquals(ResourceEnum.FIELD_DATA_CACHE, fieldDataCacheNoIncrease.getCacheType());
+    assertEquals(1, fieldDataCacheNoIncrease.impactedNodes().size());
 
-    Map<Dimension, Impact> impact = modifyCacheSizeAction.impact().get(node1).getImpact();
+    Map<Dimension, Impact> impact = fieldDataCacheNoIncrease.impact().get(node1).getImpact();
     assertEquals(Impact.NO_IMPACT, impact.get(HEAP));
     assertEquals(Impact.NO_IMPACT, impact.get(CPU));
     assertEquals(Impact.NO_IMPACT, impact.get(NETWORK));
@@ -129,36 +151,37 @@ public class ModifyCacheMaxSizeActionTest {
   @Test
   public void testBounds() {
     // TODO: Move to work with test rcaConf when bounds moved to nodeConfiguration rca
-    long maxSizeInBytes = (long) (heapMaxSizeInBytes * CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND);
+    long maxSizeInBytes =
+        (long) (heapMaxSizeInBytes * CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND);
     setNodeConfigCache(ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE, maxSizeInBytes);
 
     NodeKey node1 =
         new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
-    ModifyCacheMaxSizeAction fieldCacheIncrease =
-        new ModifyCacheMaxSizeAction(
+    ModifyCacheMaxSizeAction.Builder builder =
+        ModifyCacheMaxSizeAction.newBuilder(
             node1,
             ResourceEnum.FIELD_DATA_CACHE,
-            appContext.getNodeConfigCache(),
-            CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
-            true,
-            appContext);
+            appContext,
+            CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND);
+    ModifyCacheMaxSizeAction fieldCacheIncrease = builder.increase(true).build();
+
     assertEquals(
         fieldCacheIncrease.getDesiredCacheMaxSizeInBytes(),
         fieldCacheIncrease.getCurrentCacheMaxSizeInBytes());
     assertFalse(fieldCacheIncrease.isActionable());
     assertNoImpact(node1, fieldCacheIncrease);
 
-    maxSizeInBytes = (long) (heapMaxSizeInBytes * CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND);
+    maxSizeInBytes =
+        (long) (heapMaxSizeInBytes * CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND);
     setNodeConfigCache(ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE, maxSizeInBytes);
 
-    ModifyCacheMaxSizeAction shardRequestCacheIncrease =
-        new ModifyCacheMaxSizeAction(
+    builder =
+        ModifyCacheMaxSizeAction.newBuilder(
             node1,
             ResourceEnum.SHARD_REQUEST_CACHE,
-            appContext.getNodeConfigCache(),
-            CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND,
-            true,
-            appContext);
+            appContext,
+            CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND);
+    ModifyCacheMaxSizeAction shardRequestCacheIncrease = builder.increase(true).build();
     assertEquals(
         shardRequestCacheIncrease.getDesiredCacheMaxSizeInBytes(),
         shardRequestCacheIncrease.getCurrentCacheMaxSizeInBytes());
@@ -170,14 +193,13 @@ public class ModifyCacheMaxSizeActionTest {
   public void testMutedAction() {
     NodeKey node1 =
         new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
-    ModifyCacheMaxSizeAction modifyCacheSizeAction =
-        new ModifyCacheMaxSizeAction(
+    ModifyCacheMaxSizeAction.Builder builder =
+        ModifyCacheMaxSizeAction.newBuilder(
             node1,
             ResourceEnum.FIELD_DATA_CACHE,
-            appContext.getNodeConfigCache(),
-            CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
-            false,
-            appContext);
+            appContext,
+            CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND);
+    ModifyCacheMaxSizeAction modifyCacheSizeAction = builder.increase(true).build();
 
     appContext.updateMutedActions(ImmutableSet.of(modifyCacheSizeAction.name()));
 

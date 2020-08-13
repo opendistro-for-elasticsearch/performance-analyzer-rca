@@ -151,11 +151,10 @@ public class CacheHealthDecider extends Decider {
 
   private ModifyCacheMaxSizeAction configureCacheMaxSize(
       final NodeKey esNode, final ResourceEnum cacheType, final boolean increase) {
-    final double cacheUpperBound = getCacheUpperBound(cacheType);
-    final ModifyCacheMaxSizeAction action =
-        new ModifyCacheMaxSizeAction(
-            esNode, cacheType, getAppContext().getNodeConfigCache(), cacheUpperBound, increase,
-            getAppContext());
+    final ModifyCacheMaxSizeAction action = ModifyCacheMaxSizeAction
+            .newBuilder(esNode, cacheType, getAppContext(), getCacheUpperBound(cacheType))
+            .increase(increase)
+            .build();
     if (action.isActionable()) {
       return action;
     }
@@ -169,7 +168,7 @@ public class CacheHealthDecider extends Decider {
       return getShardRequestCacheUpperBound();
     }
     throw new IllegalArgumentException(
-        String.format("Unable to get cache upper bound for cacheType=[%s]", cacheType.toString()));
+            String.format("Unable to get cache upper bound for cacheType=[%s]", cacheType.toString()));
   }
 
   private double getFieldDataCacheUpperBound() {
