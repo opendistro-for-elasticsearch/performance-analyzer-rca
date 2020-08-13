@@ -20,6 +20,10 @@ test environment you want your tests to run on.
 The above specifies the runner for the junit test class and in this case, it says to junit
 to offload it to one of the RCA-IT runners - _RcaItNotEncryptedRunner_. All RCA-IT tests must
 use this annotation for them to be run by this integ test framework.
+
+`__@Category(RcaItMarker.class)__`
+
+All test classes must also be marked with this masker interface.
     
 `__@AClusterType(ClusterType.MULTI_NODE_CO_LOCATED_MASTER)__`
 
@@ -75,7 +79,57 @@ of 60 seconds.
     
 A test class can get access to the programmaticAPI to get information about hosts in the cluster
 or a particular host then the test class can declare a method with name `setTestApi(final TestApi api)`
-and the test runer will call this setter to give a reference of the TEestApi to the testClass. 
+and the test runner will call this setter to give a reference of the TestApi to the testClass.
+
+### Cluster Types
+The integration test framework let's us create three kinds of clusters as mentioned above. But
+you need to know the hostTags to pick a host that would publish certain metrics or its the
+hostTag by which you identify a host to make a REST request to. This section tells you what are
+the different hostTags available for different cluster types.
+
+__Dedicated Master Cluster__
+
+This cluster type is composed of three master nodes and 2 data nodes.
+
+Host Ids | Host Tags
+---------|----------
+0 | HostTag.ELECTED_MASTER
+1 | HostTag.STANDBY_MASTER_0
+2 | HostTag.STANDBY_MASTER_1
+3 | HostTag.DATA_0
+4 | HostTag.DATA_1
+
+__ Co-located Master Cluster __
+A co-located master cluster is one where all the data-nodes are master eligible. In the
+test framework, this is composed of two nodes.
+
+Host IDs | Host Tags
+---------|----------
+0 | HostTag.ELECTED_MASTER
+1 | HostTag.DATA_0
+
+
+__ Single Node Cluster__
+There is just one node in a single node cluster which is tagged as `HostTag.DATA_0`.
+
+Host IDs | Host Tags
+---------|----------
+0 | HostTag.DATA_0
+
+### Examples
+
+Some of the examples for how to write the integ tests can be found here:
+`src/test/java/com/amazon/opendistro/elasticsearch/performanceanalyzer/rca/integTests/tests/poc/*`
+
+### Running the integ tests
+1. All integration tests written using this framework can be run by using the command
+`./gradlew rcaIt`
+
+2. If you want to all the tests in an integ test class, you can do something like this:
+`./gradlew test --tests RcaItPocDedicated`
+
+3. If you want to run a particular test method in your test class, you can use something like this:
+`./gradlew test --tests RcaItPocDedicated.simple`
 
 ## Framework deep dive.
 This section might be of interest to you if you are trying to enhance the test framework itself
