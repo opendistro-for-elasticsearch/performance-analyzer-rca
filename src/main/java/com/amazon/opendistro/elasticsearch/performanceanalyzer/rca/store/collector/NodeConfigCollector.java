@@ -50,8 +50,6 @@ public class NodeConfigCollector extends EsConfigNode {
   private final int rcaPeriod;
   private int counter;
   private final HashMap<Resource, Double> configResult;
-  private final NodeKey esNode;
-
 
   public NodeConfigCollector(int rcaPeriod,
                              ThreadPool_QueueCapacity threadPool_queueCapacity,
@@ -63,7 +61,6 @@ public class NodeConfigCollector extends EsConfigNode {
     this.rcaPeriod = rcaPeriod;
     this.counter = 0;
     this.configResult = new HashMap<>();
-    this.esNode = new NodeKey(getAppContext().getMyInstanceDetails());
   }
 
   private void collectQueueCapacity(MetricFlowUnit flowUnit) {
@@ -94,6 +91,7 @@ public class NodeConfigCollector extends EsConfigNode {
 
   private void collectAndPublishMetric(final Resource resource, final double metricValue) {
     final NodeConfigCache nodeConfigCache = getAppContext().getNodeConfigCache();
+    final NodeKey esNode = new NodeKey(getAppContext().getMyInstanceDetails());
     if (!Double.isNaN(metricValue)) {
       configResult.put(resource, metricValue);
       nodeConfigCache.put(esNode, resource, metricValue);
