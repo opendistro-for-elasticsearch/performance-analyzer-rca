@@ -169,17 +169,18 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
       this.canUpdate = DEFAULT_CAN_UPDATE;
 
       this.currentCacheMaxSizeInBytes =
-              NodeConfigCacheReaderUtil.readCacheMaxSizeInBytes(
-                      appContext.getNodeConfigCache(), esNode, cacheType);
+          NodeConfigCacheReaderUtil.readCacheMaxSizeInBytes(
+              appContext.getNodeConfigCache(), esNode, cacheType);
       this.heapMaxSizeInBytes =
-              NodeConfigCacheReaderUtil.readHeapMaxSizeInBytes(appContext.getNodeConfigCache(), esNode);
+          NodeConfigCacheReaderUtil.readHeapMaxSizeInBytes(appContext.getNodeConfigCache(), esNode);
       this.desiredCacheMaxSizeInBytes = null;
       setDefaultStepSize(cacheType);
     }
 
     private void setDefaultStepSize(ResourceEnum cacheType) {
       // TODO: Move configuration values to rca.conf
-      // TODO: Update the step size to also include percentage of heap size along with absolute value
+      // TODO: Update the step size to also include percentage of heap size along with absolute
+      // value
       switch (cacheType) {
         case FIELD_DATA_CACHE:
           // Field data cache having step size of 512MB
