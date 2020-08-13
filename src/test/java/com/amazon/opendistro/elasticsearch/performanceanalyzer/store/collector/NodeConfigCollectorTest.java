@@ -56,7 +56,6 @@ public class NodeConfigCollectorTest {
     cacheMaxSize = new Cache_Max_Size(5);
     heapMax = new Heap_Max(5);
     nodeConfigCollector = new NodeConfigCollector(1, threadPool_QueueCapacity, cacheMaxSize, heapMax);
-    nodeKey = new NodeKey(new InstanceDetails.Id("node1"), new InstanceDetails.Ip("127.0.0.0"));
 
     ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
     ClusterDetailsEventProcessor.NodeDetails node1 =
@@ -66,6 +65,7 @@ public class NodeConfigCollectorTest {
     appContext = new AppContext();
     appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
     nodeConfigCollector.setAppContext(appContext);
+    nodeKey = new NodeKey(appContext.getMyInstanceDetails());
   }
 
   /**

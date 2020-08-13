@@ -50,6 +50,8 @@ public class NodeConfigCollector extends EsConfigNode {
   private final int rcaPeriod;
   private int counter;
   private final HashMap<Resource, Double> configResult;
+  private final NodeKey esNode;
+
 
   public NodeConfigCollector(int rcaPeriod,
                              ThreadPool_QueueCapacity threadPool_queueCapacity,
@@ -61,62 +63,44 @@ public class NodeConfigCollector extends EsConfigNode {
     this.rcaPeriod = rcaPeriod;
     this.counter = 0;
     this.configResult = new HashMap<>();
+    this.esNode = new NodeKey(getAppContext().getMyInstanceDetails());
   }
 
   private void collectQueueCapacity(MetricFlowUnit flowUnit) {
-    double writeQueueCapacity = SQLParsingUtil.readDataFromSqlResult(flowUnit.getData(),
+    final double writeQueueCapacity = SQLParsingUtil.readDataFromSqlResult(flowUnit.getData(),
         THREAD_POOL_TYPE.getField(), ThreadPoolType.WRITE.toString(), MetricsDB.MAX);
-    if (!Double.isNaN(writeQueueCapacity)) {
-      configResult.put(ResourceUtil.WRITE_QUEUE_CAPACITY, writeQueueCapacity);
-    }
-    else {
-      LOG.error("write queue capacity is NaN");
-    }
-    double searchQueueCapacity = SQLParsingUtil.readDataFromSqlResult(flowUnit.getData(),
+    collectAndPublishMetric(ResourceUtil.WRITE_QUEUE_CAPACITY, writeQueueCapacity);
+
+    final double searchQueueCapacity = SQLParsingUtil.readDataFromSqlResult(flowUnit.getData(),
         THREAD_POOL_TYPE.getField(), ThreadPoolType.SEARCH.toString(), MetricsDB.MAX);
-    if (!Double.isNaN(searchQueueCapacity)) {
-      configResult.put(ResourceUtil.SEARCH_QUEUE_CAPACITY, searchQueueCapacity);
-    }
-    else {
-      LOG.error("search queue capacity is NaN");
-    }
+    collectAndPublishMetric(ResourceUtil.SEARCH_QUEUE_CAPACITY, searchQueueCapacity);
   }
 
   private void collectCacheMaxSize(MetricFlowUnit cacheMaxSize) {
-    double fieldDataCacheMaxSize = SQLParsingUtil.readDataFromSqlResult(cacheMaxSize.getData(),
+    final double fieldDataCacheMaxSize = SQLParsingUtil.readDataFromSqlResult(cacheMaxSize.getData(),
             CACHE_TYPE.getField(), CacheType.FIELD_DATA_CACHE.toString(), MetricsDB.MAX);
-    if (!Double.isNaN(fieldDataCacheMaxSize)) {
-      configResult.put(ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE, fieldDataCacheMaxSize);
-    }
-    else {
-      LOG.error("Field Data cache max size is NaN");
-    }
+    collectAndPublishMetric(ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE, fieldDataCacheMaxSize);
 
-    double shardRequestCacheMaxSize = SQLParsingUtil.readDataFromSqlResult(cacheMaxSize.getData(),
+    final double shardRequestCacheMaxSize = SQLParsingUtil.readDataFromSqlResult(cacheMaxSize.getData(),
             CACHE_TYPE.getField(), CacheType.SHARD_REQUEST_CACHE.toString(), MetricsDB.MAX);
-    if (!Double.isNaN(shardRequestCacheMaxSize)) {
-      configResult.put(ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE, shardRequestCacheMaxSize);
-    }
-    else {
-      LOG.error("Shard Request cache max size is NaN");
-    }
+    collectAndPublishMetric(ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE, shardRequestCacheMaxSize);
   }
 
   private void collectHeapMaxSize(MetricFlowUnit heapMax) {
-    double heapMaxSize = SQLParsingUtil.readDataFromSqlResult(heapMax.getData(),
+    final double heapMaxSize = SQLParsingUtil.readDataFromSqlResult(heapMax.getData(),
             MEM_TYPE.getField(), AllMetrics.GCType.HEAP.toString(), MetricsDB.MAX);
-    if (!Double.isNaN(heapMaxSize)) {
-      configResult.put(ResourceUtil.HEAP_MAX_SIZE, heapMaxSize);
-    }
-    else {
-      LOG.error("Heap max size is NaN");
-    }
+    collectAndPublishMetric(ResourceUtil.HEAP_MAX_SIZE, heapMaxSize);
   }
 
-  private void addConfigToNodeCache() {
-    final NodeKey nodeKey = new NodeKey(getInstanceDetails());
+  private void collectAndPublishMetric(final Resource resource, final double metricValue) {
     final NodeConfigCache nodeConfigCache = getAppContext().getNodeConfigCache();
-    configResult.forEach((resource, value) -> nodeConfigCache.put(nodeKey, resource, value));
+    if (!Double.isNaN(metricValue)) {
+      configResult.put(resource, metricValue);
+      nodeConfigCache.put(esNode, resource, metricValue);
+    }
+    else {
+      LOG.error("Metric value is NaN for resource:" + resource.toString());
+    }
   }
 
   /**
@@ -147,11 +131,12 @@ public class NodeConfigCollector extends EsConfigNode {
       collectHeapMaxSize(flowUnit);
     }
 
-    addConfigToNodeCache();
     if (counter == rcaPeriod) {
       counter = 0;
       NodeConfigFlowUnit flowUnits = new NodeConfigFlowUnit(System.currentTimeMillis(), new NodeKey(getInstanceDetails()));
       configResult.forEach(flowUnits::addConfig);
+      // Clear the hashmap to avoid sending stale data
+      configResult.clear();
       return flowUnits;
     }
     else {
