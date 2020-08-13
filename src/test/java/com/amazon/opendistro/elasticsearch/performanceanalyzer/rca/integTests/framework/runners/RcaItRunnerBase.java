@@ -177,7 +177,7 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner, Fi
     AppenderHelper.resetErrors();
   }
 
-  private void applyMethodLevelAnnotationOverrides(Method method) throws Exception{
+  private void applyMethodLevelAnnotationOverrides(Method method) throws Exception {
     this.testEnvironment.updateEnvironment(method);
     this.testEnvironment.verifyEnvironmentSetup();
   }

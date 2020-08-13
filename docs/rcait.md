@@ -121,6 +121,16 @@ Host IDs | Host Tags
 Some of the examples for how to write the integ tests can be found here:
 `src/test/java/com/amazon/opendistro/elasticsearch/performanceanalyzer/rca/integTests/tests/poc/*`
 
+### Running the integ tests
+1. All integration tests written using this framework can be run by using the command
+`./gradlew rcaIt`
+
+2. If you want to all the tests in an integ test class, you can do something like this:
+`./gradlew test --tests RcaItPocDedicated`
+
+3. If you want to run a particular test method in your test class, you can use something like this:
+`./gradlew test --tests RcaItPocDedicated.simple`
+
 ## Framework deep dive.
 This section might be of interest to you if you are trying to enhance the test framework itself
 . If you just want to add more integration tests, then you may choose to skip this section.
