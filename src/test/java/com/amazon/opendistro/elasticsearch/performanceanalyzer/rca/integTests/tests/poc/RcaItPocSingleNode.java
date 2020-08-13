@@ -11,6 +11,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_LOCUS;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.CPU_Utilization;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AClusterType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AExpect;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AMetric;
@@ -25,10 +26,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.te
 import java.util.Arrays;
 import java.util.Collections;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 @RunWith(RcaItNotEncryptedRunner.class)
 
+@Category(RcaItMarker.class)
 @AClusterType(ClusterType.SINGLE_NODE)
 @ARcaGraph(RcaItPocSingleNode.SimpleAnalysisGraphForCoLocated.class)
 @AMetric(name = CPU_Utilization.class,
