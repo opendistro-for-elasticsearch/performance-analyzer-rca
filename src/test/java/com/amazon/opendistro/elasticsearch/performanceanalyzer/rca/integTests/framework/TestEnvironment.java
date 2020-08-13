@@ -127,6 +127,7 @@ public class TestEnvironment {
     }
 
     if (!annotationsNotSet.isEmpty()) {
+      clearUpMethodLevelEnvOverride();
       throw new IllegalStateException("** Some annotations are not set" + annotationsNotSet);
     }
   }
