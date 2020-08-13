@@ -89,6 +89,11 @@ public class PluginSettings {
     return batchMetricsRetentionPeriod;
   }
 
+  @VisibleForTesting
+  public void setBatchMetricsRetentionPeriod(long batchMetricsRetentionPeriod) {
+    this.batchMetricsRetentionPeriod = batchMetricsRetentionPeriod;
+  }
+
   public String getSettingValue(String settingName) {
     return settings.getProperty(settingName);
   }
@@ -132,6 +137,11 @@ public class PluginSettings {
 
   public boolean shouldCleanupMetricsDBFiles() {
     return shouldCleanupMetricsDBFiles;
+  }
+
+  @VisibleForTesting
+  public void setShouldCleanupMetricsDBFiles(boolean shouldCleanupMetricsDBFiles) {
+    this.shouldCleanupMetricsDBFiles = shouldCleanupMetricsDBFiles;
   }
 
   private PluginSettings(String cfPath) {

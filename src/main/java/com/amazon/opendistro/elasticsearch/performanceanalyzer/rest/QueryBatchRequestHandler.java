@@ -23,6 +23,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metrics
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.model.MetricsModel;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
+import com.google.common.annotations.VisibleForTesting;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import java.io.IOException;
@@ -44,11 +45,35 @@ import org.jooq.Record;
 import org.jooq.Result;
 
 /**
- * Request handler that supports querying MetricsDB on every EC2 instance. Example query –
- * "http://localhost:9600/_metricsdb?metrics=cpu,rss,memory%20agg=sum,avg,sum%20dims=index,operation,shard."
- * We can fetch multiple metrics using this interface and also specify the dimensions/aggregations
- * for fetching the metrics. We create a new metricsDB every 5 seconds and API only supports
- * querying the latest snapshot.
+ * Request handler that supports querying batch metrics from an EC2 instance
+ *
+ * <p>Return 1 minute of CPU_Utilization metrics sampled at a 5s sampling period:
+ * "http://localhost:9600/_opendistro/_performanceanalyzer/batch?metrics=CPU_Utilization&starttime=1566413975000&endtime=1566413980000"
+ *
+ * <p>Return 1 minute of CPU_Utilization and Latency metrics sampled at a 10s sampling period:
+ * "http://localhost:9600/_opendistro/_performanceanalyzer/batch?metrics=CPU_Utilization,Latency&starttime=1566413975000&endtime=1566413980000&samplingperiod=10"
+ *
+ * <p>Return format:
+ * {
+ *   "1594412650000": {
+ *     "CPU_Utilization": {
+ *       "fields": [
+ *         {
+ *           "name: "IndexName",
+ *           "type": "VARCHAR"
+ *         },
+ *         <...>
+ *       ]
+ *       "records": [
+ *         [
+ *           "pmc",
+ *           <...>
+ *         ],
+ *         <...>
+ *       ]
+ *     }
+ *   }
+ * }
  */
 public class QueryBatchRequestHandler extends MetricsHandler implements HttpHandler {
 
@@ -59,8 +84,8 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
   private NetClient netClient;
   MetricsRestUtil metricsRestUtil;
 
-  private static final int defaultMaxDatapoints = 100800;
-  private static final long defaultSamplingPeriod = 5000;  // Must be a multiple of 5000
+  public static final int DEFAULT_MAX_DATAPOINTS = 100800;  // Must be non-negative
+  public static final long DEFAULT_SAMPLING_PERIOD = 5000;  // Must be a multiple of 5000
 
   public QueryBatchRequestHandler(NetClient netClient, MetricsRestUtil metricsRestUtil) {
     this.netClient = netClient;
@@ -70,6 +95,11 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
   @Override
   public void handle(HttpExchange exchange) throws IOException {
     String requestMethod = exchange.getRequestMethod();
+    if (!requestMethod.equalsIgnoreCase("GET")) {
+      exchange.sendResponseHeaders(HttpURLConnection.HTTP_NOT_FOUND, -1);
+      exchange.close();
+      return;
+    }
 
     ReaderMetricsProcessor mp = ReaderMetricsProcessor.getInstance();
     if (mp == null) {
@@ -100,179 +130,171 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
       return;
     }
 
-    if (requestMethod.equalsIgnoreCase("GET")) {
+    exchange.getResponseHeaders().set("Content-Type", "application/json");
 
-      exchange.getResponseHeaders().set("Content-Type", "application/json");
+    Map<String, String> params = getParamsMap(exchange.getRequestURI().getQuery());
 
-      Map<String, String> params = getParamsMap(exchange.getRequestURI().getQuery());
-
-      try {
-        // Parse and validate parameters
-        String[] validParamsTmp = {"metrics", "starttime", "endtime", "samplingperiod", "maxdatapoints"};
-        Set<String> validParams = new HashSet<>(Arrays.asList(validParamsTmp));
-        for (String param : params.keySet()) {
-          if (!validParams.contains(param)) {
-            throw new InvalidParameterException(String.format("%s is an invalid parameter", param));
-          }
+    try {
+      // Parse and validate parameters
+      String[] validParamsTmp = {"", "metrics", "starttime", "endtime", "samplingperiod", "maxdatapoints"};
+      Set<String> validParams = new HashSet<>(Arrays.asList(validParamsTmp));
+      for (String param : params.keySet()) {
+        if (!validParams.contains(param)) {
+          throw new InvalidParameterException(String.format("%s is an invalid parameter", param));
         }
-
-        List<String> metricsList = metricsRestUtil.parseArrayParam(params, "metrics", false);
-        String startTimeParam = params.get("starttime");
-        String endTimeParam = params.get("endtime");
-        String samplingPeriodParam = params.get("samplingperiod");
-
-        for (String metric : metricsList) {
-          if (!MetricsModel.ALL_METRICS.containsKey(metric)) {
-            throw new InvalidParameterException(String.format("%s is an invalid metric", metric));
-          }
-        }
-
-        if (startTimeParam == null || startTimeParam.isEmpty()) {
-          throw new InvalidParameterException("starttime parameter must be set");
-        }
-        long startTime;
-        try {
-          startTime = Long.parseUnsignedLong(startTimeParam);
-        } catch (NumberFormatException e) {
-          throw new InvalidParameterException(String.format("%s is an invalid starttime", startTimeParam));
-        }
-
-        if (endTimeParam == null || endTimeParam.isEmpty()) {
-          throw new InvalidParameterException("endtime parameter must be set");
-        }
-        long endTime;
-        try {
-          endTime = Long.parseUnsignedLong(endTimeParam);
-        } catch (NumberFormatException e) {
-          throw new InvalidParameterException(String.format("%s is an invalid endtime", endTimeParam));
-        }
-
-        long samplingPeriod = defaultSamplingPeriod;
-        if (samplingPeriodParam != null && !samplingPeriodParam.isEmpty()) {
-          samplingPeriod = Long.parseLong(samplingPeriodParam);
-          if (samplingPeriod < 5 || samplingPeriod % 5 != 0) {
-            throw new InvalidParameterException(String.format("%s is an invalid sampling period", samplingPeriodParam));
-          }
-          if (samplingPeriod >= PluginSettings.instance().getBatchMetricsRetentionPeriod() * 60) {
-            throw new InvalidParameterException("sampling period must be less than the retention period");
-          }
-          samplingPeriod *= 1000;
-        }
-
-        if (startTime >= endTime) {
-          throw new InvalidParameterException("starttime must be less than the endtime");
-        }
-        startTime -= startTime % samplingPeriod;
-        endTime -= endTime % samplingPeriod;
-        if (startTime == endTime) {
-          throw new InvalidParameterException("starttime and endtime cannot be equal when rounded down to the nearest sampling period");
-        }
-        if (endTime > currentTime) {
-          throw new InvalidParameterException("endtime can be no greater than the system time at the node");
-        }
-        if (startTime < currentTime - PluginSettings.instance().getBatchMetricsRetentionPeriod() * 60 * 1000) {
-          throw new InvalidParameterException("starttime must be within the retention period");
-        }
-
-        int maxDatapoints = defaultMaxDatapoints + 1;
-
-        // Handle the query
-        StringBuilder responseJson = new StringBuilder();
-        responseJson.append("{");
-        Long metricsTimestamp = batchMetrics.ceiling(startTime);
-        int numMetrics = metricsList.size();
-        MetricsDB metrics;
-        Result<Record> results;
-        if (metricsTimestamp != null && metricsTimestamp < endTime) {
-          responseJson.append("\"");
-          responseJson.append(metricsTimestamp);
-          responseJson.append("\":{\"");
-          responseJson.append(metricsList.get(0));
-          responseJson.append("\":");
-          metrics = MetricsDB.fetchExisting(metricsTimestamp);
-          results = metrics.queryMetric(metricsList.get(0), maxDatapoints);
-          maxDatapoints -= results.size();
-          if (maxDatapoints == 0) {
-            throw new InvalidParameterException("requested data exceeds the 100,800 datapoints limit");
-          }
-          responseJson.append(results.formatJSON());
-          for (int i = 1; i < numMetrics; i++) {
-            responseJson.append(",\"");
-            responseJson.append(metricsList.get(i));
-            responseJson.append("\":");
-            results = metrics.queryMetric(metricsList.get(i), maxDatapoints);
-            maxDatapoints -= results.size();
-            if (maxDatapoints == 0) {
-              throw new InvalidParameterException("requested data exceeds the 100,800 datapoints limit");
-            }
-            responseJson.append(results.formatJSON());
-          }
-          responseJson.append("}");
-          metrics.close();
-          metricsTimestamp = metricsTimestamp - metricsTimestamp % samplingPeriod + samplingPeriod;
-          metricsTimestamp = batchMetrics.ceiling(metricsTimestamp);
-          while (metricsTimestamp != null && metricsTimestamp < endTime) {
-            responseJson.append(",\"");
-            responseJson.append(metricsTimestamp);
-            responseJson.append("\":{\"");
-            responseJson.append(metricsList.get(0));
-            responseJson.append("\":");
-            metrics = MetricsDB.fetchExisting(metricsTimestamp);
-            results = metrics.queryMetric(metricsList.get(0), maxDatapoints);
-            maxDatapoints -= results.size();
-            if (maxDatapoints == 0) {
-              throw new InvalidParameterException("requested data exceeds the 100,800 datapoints limit");
-            }
-            responseJson.append(results.formatJSON());
-            for (int i = 1; i < numMetrics; i++) {
-              responseJson.append(",\"");
-              responseJson.append(metricsList.get(i));
-              responseJson.append("\":");
-              results = metrics.queryMetric(metricsList.get(i), maxDatapoints);
-              maxDatapoints -= results.size();
-              if (maxDatapoints == 0) {
-                throw new InvalidParameterException("requested data exceeds the 100,800 datapoints limit");
-              }
-              responseJson.append(results.formatJSON());
-            }
-            responseJson.append("}");
-            metrics.close();
-            metricsTimestamp = metricsTimestamp - metricsTimestamp % samplingPeriod + samplingPeriod;
-            metricsTimestamp = batchMetrics.ceiling(metricsTimestamp);
-          }
-        }
-        responseJson.append("}");
-        String response = responseJson.toString();
-        sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
-      } catch (InvalidParameterException e) {
-        LOG.error(
-                (Supplier<?>)
-                        () ->
-                                new ParameterizedMessage(
-                                        "QueryException {} ExceptionCode: {}.",
-                                        e.toString(),
-                                        StatExceptionCode.REQUEST_ERROR.toString()),
-                e);
-        StatsCollector.instance().logException(StatExceptionCode.REQUEST_ERROR);
-        String response = "{\"error\":\"" + e.getMessage() + ".\"}";
-        sendResponse(exchange, response, HttpURLConnection.HTTP_BAD_REQUEST);
-      } catch (Exception e) {
-        LOG.error(
-                (Supplier<?>)
-                        () ->
-                                new ParameterizedMessage(
-                                        "QueryException {} ExceptionCode: {}.",
-                                        e.toString(),
-                                        StatExceptionCode.REQUEST_ERROR.toString()),
-                e);
-        StatsCollector.instance().logException(StatExceptionCode.REQUEST_ERROR);
-        String response = "{\"error\":\"" + e.toString() + "\"}";
-        sendResponse(exchange, response, HttpURLConnection.HTTP_INTERNAL_ERROR);
       }
-    } else {
-      exchange.sendResponseHeaders(HttpURLConnection.HTTP_NOT_FOUND, -1);
-      exchange.close();
+
+      List<String> metrics = metricsRestUtil.parseArrayParam(params, "metrics", false);
+      String startTimeParam = params.get("starttime");
+      String endTimeParam = params.get("endtime");
+      String samplingPeriodParam = params.get("samplingperiod");
+
+      for (String metric : metrics) {
+        if (!MetricsModel.ALL_METRICS.containsKey(metric)) {
+          throw new InvalidParameterException(String.format("%s is an invalid metric", metric));
+        }
+      }
+
+      if (startTimeParam == null || startTimeParam.isEmpty()) {
+        throw new InvalidParameterException("starttime parameter must be set");
+      }
+      long startTime;
+      try {
+        startTime = Long.parseUnsignedLong(startTimeParam);
+      } catch (NumberFormatException e) {
+        throw new InvalidParameterException(String.format("%s is an invalid starttime", startTimeParam));
+      }
+
+      if (endTimeParam == null || endTimeParam.isEmpty()) {
+        throw new InvalidParameterException("endtime parameter must be set");
+      }
+      long endTime;
+      try {
+        endTime = Long.parseUnsignedLong(endTimeParam);
+      } catch (NumberFormatException e) {
+        throw new InvalidParameterException(String.format("%s is an invalid endtime", endTimeParam));
+      }
+
+      long samplingPeriod = DEFAULT_SAMPLING_PERIOD;
+      if (samplingPeriodParam != null && !samplingPeriodParam.isEmpty()) {
+        samplingPeriod = Long.parseLong(samplingPeriodParam);
+        if (samplingPeriod < 5 || samplingPeriod % 5 != 0) {
+          throw new InvalidParameterException(String.format("%s is an invalid sampling period", samplingPeriodParam));
+        }
+        if (samplingPeriod >= PluginSettings.instance().getBatchMetricsRetentionPeriod() * 60) {
+          throw new InvalidParameterException("sampling period must be less than the retention period");
+        }
+        samplingPeriod *= 1000;
+      }
+
+      if (startTime >= endTime) {
+        throw new InvalidParameterException("starttime must be less than the endtime");
+      }
+      startTime -= startTime % samplingPeriod;
+      endTime -= endTime % samplingPeriod;
+      if (startTime == endTime) {
+        throw new InvalidParameterException("starttime and endtime cannot be equal when rounded down to the nearest sampling period");
+      }
+      if (endTime > currentTime) {
+        throw new InvalidParameterException("endtime can be no greater than the system time at the node");
+      }
+      if (startTime < currentTime - PluginSettings.instance().getBatchMetricsRetentionPeriod() * 60 * 1000) {
+        throw new InvalidParameterException("starttime must be within the retention period");
+      }
+
+      String queryResponse = queryFromBatchMetrics(batchMetrics, metrics, startTime, endTime, samplingPeriod,
+              DEFAULT_MAX_DATAPOINTS);
+      sendResponse(exchange, queryResponse, HttpURLConnection.HTTP_OK);
+    } catch (InvalidParameterException e) {
+      LOG.error(
+              (Supplier<?>)
+                      () ->
+                              new ParameterizedMessage(
+                                      "QueryException {} ExceptionCode: {}.",
+                                      e.toString(),
+                                      StatExceptionCode.REQUEST_ERROR.toString()),
+              e);
+      StatsCollector.instance().logException(StatExceptionCode.REQUEST_ERROR);
+      String response = "{\"error\":\"" + e.getMessage() + ".\"}";
+      sendResponse(exchange, response, HttpURLConnection.HTTP_BAD_REQUEST);
+    } catch (Exception e) {
+      LOG.error(
+              (Supplier<?>)
+                      () ->
+                              new ParameterizedMessage(
+                                      "QueryException {} ExceptionCode: {}.",
+                                      e.toString(),
+                                      StatExceptionCode.REQUEST_ERROR.toString()),
+              e);
+      StatsCollector.instance().logException(StatExceptionCode.REQUEST_ERROR);
+      String response = "{\"error\":\"" + e.toString() + "\"}";
+      sendResponse(exchange, response, HttpURLConnection.HTTP_INTERNAL_ERROR);
     }
+  }
+
+  @VisibleForTesting
+  public int appendMetrics(Long timestamp, List<String> metrics, StringBuilder builder, int maxDatapoints) throws Exception {
+    maxDatapoints += 1;
+    builder.append("\"");
+    builder.append(timestamp);
+    builder.append("\":{");
+    MetricsDB db = MetricsDB.fetchExisting(timestamp);
+    for (int metricIndex = 0, numMetrics = metrics.size(); metricIndex < numMetrics; metricIndex++) {
+      String metric = metrics.get(metricIndex);
+      Result<Record> results = db.queryMetric(metric, MetricsModel.ALL_METRICS.get(metric).dimensionNames, maxDatapoints);
+      if (results != null) {
+        maxDatapoints -= results.size();
+        if (maxDatapoints == 0) {
+          throw new InvalidParameterException(String.format("requested data exceeds the %d datapoints limit", maxDatapoints - 1));
+        }
+        builder.append("\"");
+        builder.append(metric);
+        builder.append("\":");
+        builder.append(results.formatJSON());
+        for (metricIndex += 1; metricIndex < numMetrics; metricIndex++) {
+          metric = metrics.get(metricIndex);
+          results = db.queryMetric(metric, MetricsModel.ALL_METRICS.get(metric).dimensionNames, maxDatapoints);
+          if (results != null) {
+            maxDatapoints -= results.size();
+            if (maxDatapoints == 0) {
+              throw new InvalidParameterException(String.format("requested data exceeds the %d datapoints limit", maxDatapoints - 1));
+            }
+            builder.append(",\"");
+            builder.append(metric);
+            builder.append("\":");
+            builder.append(results.formatJSON());
+          }
+        }
+      }
+    }
+    builder.append("}");
+    db.remove();
+    return maxDatapoints - 1;
+  }
+
+  /**
+   * Requires non-empty batchMetrics, valid non-empty metrics, valid startTime, valid endTime,
+   * valid samplingPeriod (in milliseconds), and non-negative maxDatapoints.
+   */
+  @VisibleForTesting
+  public String queryFromBatchMetrics(NavigableSet<Long> batchMetrics, List<String> metrics, long startTime,
+                                      long endTime, long samplingPeriod, int maxDatapoints) throws Exception {
+    StringBuilder responseJson = new StringBuilder();
+    responseJson.append("{");
+    Long metricsTimestamp = batchMetrics.ceiling(startTime);
+    if (metricsTimestamp != null && metricsTimestamp < endTime) {
+      maxDatapoints = appendMetrics(metricsTimestamp, metrics, responseJson, maxDatapoints);
+      metricsTimestamp = metricsTimestamp - metricsTimestamp % samplingPeriod + samplingPeriod;
+      metricsTimestamp = batchMetrics.ceiling(metricsTimestamp);
+      while (metricsTimestamp != null && metricsTimestamp < endTime) {
+        responseJson.append(",");
+        maxDatapoints = appendMetrics(metricsTimestamp, metrics, responseJson, maxDatapoints);
+        metricsTimestamp = metricsTimestamp - metricsTimestamp % samplingPeriod + samplingPeriod;
+        metricsTimestamp = batchMetrics.ceiling(metricsTimestamp);
+      }
+    }
+    responseJson.append("}");
+    return responseJson.toString();
   }
 
   private void sendResponse(HttpExchange exchange, String response, int status) throws IOException {

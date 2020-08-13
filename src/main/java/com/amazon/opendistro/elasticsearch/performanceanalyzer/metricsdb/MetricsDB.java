@@ -19,7 +19,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.DBUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.model.MetricsModel;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.Removable;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -27,6 +26,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -74,8 +74,7 @@ public class MetricsDB implements Removable {
 
   public String getDBFilePath() {
     return PluginSettings.instance()
-            .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT)
-        + Long.toString(windowStartTime);
+            .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT) + windowStartTime;
   }
 
   public MetricsDB(long windowStartTime) throws Exception {
@@ -88,8 +87,7 @@ public class MetricsDB implements Removable {
 
   public static MetricsDB fetchExisting(long windowStartTime) throws Exception {
     String filePath = PluginSettings.instance()
-            .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT)
-            + Long.toString(windowStartTime);
+            .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT) + windowStartTime;
     if (!(new File(filePath)).exists()) {
       throw new FileNotFoundException(String.format("MetricsDB file %s could not be found.", filePath));
     }
@@ -251,8 +249,14 @@ public class MetricsDB implements Removable {
     return create.select().from(DSL.table(metric)).fetch();
   }
 
-  public Result<Record> queryMetric(String metric, int limit) {
-    List<Field<?>> fields = DBUtils.getFieldsFromList(MetricsModel.ALL_METRICS.get(metric).dimensionNames);
+  public Result<Record> queryMetric(String metric, Collection<String> dimensions, int limit) {
+    if (!DBUtils.checkIfTableExists(create, metric)) {
+      return null;
+    }
+    if (limit < 0) {
+      throw new IllegalArgumentException("Limit must be non-negative");
+    }
+    List<Field<?>> fields = DBUtils.getFieldsFromList(dimensions);
     fields.add(DSL.field(SUM, Double.class));
     fields.add(DSL.field(AVG, Double.class));
     fields.add(DSL.field(MIN, Double.class));
@@ -282,8 +286,7 @@ public class MetricsDB implements Removable {
 
   public static void deleteOnDiskFile(long windowStartTime) {
     String dbFilePath = PluginSettings.instance()
-            .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT)
-            + Long.toString(windowStartTime);
+            .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT) + windowStartTime;
     File dbFile = new File(dbFilePath);
     if (!dbFile.delete()) {
       LOG.error(

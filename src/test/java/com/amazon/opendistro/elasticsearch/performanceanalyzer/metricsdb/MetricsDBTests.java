@@ -16,11 +16,15 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import org.jooq.BatchBindStep;
 import org.jooq.Record;
@@ -32,11 +36,13 @@ import org.junit.Test;
 @SuppressWarnings("serial")
 public class MetricsDBTests {
   private MetricsDB db;
+  private Long timestamp;
 
   @Before
   public void setUp() throws Exception {
     System.setProperty("java.io.tmpdir", "/tmp");
-    this.db = new MetricsDB(1553713380);
+    timestamp = 1553713380L;
+    this.db = new MetricsDB(timestamp);
   }
 
   public MetricsDBTests() throws ClassNotFoundException {
@@ -46,6 +52,7 @@ public class MetricsDBTests {
   @After
   public void tearDown() throws Exception {
     this.db.remove();
+    deleteAll();
   }
 
   @Test
@@ -348,5 +355,115 @@ public class MetricsDBTests {
   @Test(expected = IllegalArgumentException.class)
   public void testIncorrectDimensionNum() {
     this.db.startBatchPut("", 0);
+  }
+
+  @Test
+  public void testFetchExisting_exists() throws Exception {
+    MetricsDB existing = MetricsDB.fetchExisting(timestamp);
+    existing.remove();
+  }
+
+  @Test(expected = Exception.class)
+  public void testFetchExisting_notExists() throws Exception {
+    MetricsDB existing = MetricsDB.fetchExisting(timestamp + 1);
+  }
+
+  @Test
+  public void testQueryMetric_invalidMetric() {
+    List<String> columns = Arrays.asList("shard", "index");
+    db.createMetric(Metric.cpu(10D), columns);
+    putCPUMetric(db, 10D, "1", "ac-test");
+    putCPUMetric(db, 4D, "2", "ac-test");
+
+    assertNull(db.queryMetric("rss", Arrays.asList("shard"), 1));
+  }
+
+  @Test(expected = Exception.class)
+  public void testQueryMetric_invalidLimit() {
+    List<String> columns = Arrays.asList("shard", "index");
+    db.createMetric(Metric.cpu(10D), columns);
+    putCPUMetric(db, 10D, "1", "ac-test");
+    putCPUMetric(db, 4D, "2", "ac-test");
+
+    Result<Record> res = db.queryMetric("cpu", Arrays.asList("shard"), -1);
+  }
+
+  @Test(expected = Exception.class)
+  public void testQueryMetric_invalidDimension() {
+    List<String> columns = Arrays.asList("shard", "index");
+    db.createMetric(Metric.cpu(10D), columns);
+    putCPUMetric(db, 10D, "1", "ac-test");
+    putCPUMetric(db, 4D, "2", "ac-test");
+
+    Result<Record> res = db.queryMetric("cpu", Arrays.asList("operation"), 1);
+  }
+
+  @Test
+  public void testQueryMetric_basic() {
+    List<String> columns = Arrays.asList("shard", "index");
+    db.createMetric(Metric.cpu(10D), columns);
+    putCPUMetric(db, 10D, "1", "ac-test");
+    putCPUMetric(db, 4D, "2", "ac-test");
+
+    Iterator<Record> res = db.queryMetric("cpu", columns, 2).iterator();
+    Record r = res.next();
+    assertTrue(r.get("shard").toString().equals("1"));
+    assertTrue(r.get("index").toString().equals("ac-test"));
+    assertTrue(res.hasNext());
+    r = res.next();
+    assertTrue(r.get("shard").toString().equals("2"));
+    assertTrue(r.get("index").toString().equals("ac-test"));
+    assertFalse(res.hasNext());
+  }
+
+  @Test
+  public void testQueryMetric_limited() {
+    List<String> columns = Arrays.asList("shard", "index");
+    db.createMetric(Metric.cpu(10D), columns);
+    putCPUMetric(db, 10D, "1", "ac-test");
+    putCPUMetric(db, 4D, "2", "ac-test");
+
+    Iterator<Record> res = db.queryMetric("cpu", columns, 1).iterator();
+    Record r = res.next();
+    assertTrue(r.get("shard").toString().equals("1"));
+    assertTrue(r.get("index").toString().equals("ac-test"));
+    assertFalse(res.hasNext());
+  }
+
+  @Test
+  public void testDeleteOnDiskFile_exists() throws Exception {
+    long timestamp = 1000000000;
+    MetricsDB existing = new MetricsDB(timestamp);
+    existing.remove();
+    MetricsDB.deleteOnDiskFile(timestamp);
+    assertFalse(new File(existing.getDBFilePath()).exists());
+  }
+
+  @Test
+  public void testDeleteOnDiskFile_notExists() throws Exception {
+    long timestamp = 1000000000;
+    MetricsDB existing = new MetricsDB(timestamp);
+    existing.remove();
+    MetricsDB.deleteOnDiskFile(timestamp);
+    assertFalse(new File(existing.getDBFilePath()).exists());
+    MetricsDB.deleteOnDiskFile(timestamp);
+    assertFalse(new File(existing.getDBFilePath()).exists());
+  }
+
+  public static void deleteAll() {
+    final File folder = new File("/tmp");
+    final File[] files =
+            folder.listFiles(
+                    new FilenameFilter() {
+                      @Override
+                      public boolean accept(final File dir, final String name) {
+                        return name.matches("metricsdb_.*");
+                      }
+                    });
+    for (final File file : files) {
+      if (!file.delete()) {
+        System.err.println("Can't remove " + file.getAbsolutePath());
+      }
+    }
   }
 }

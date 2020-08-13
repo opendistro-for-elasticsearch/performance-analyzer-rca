@@ -82,7 +82,7 @@ public class ReaderMetricsProcessor implements Runnable {
   private final AppContext appContext;
   private final ConfigOverridesApplier configOverridesApplier;
 
-  private static final String BATCH_METRICS_ENABLED_CONF_FILE = "batch_metrics_enabled.conf";
+  public static final String BATCH_METRICS_ENABLED_CONF_FILE = "batch_metrics_enabled.conf";
   private boolean batchMetricsEnabled;
   private boolean defaultBatchMetricsEnabled = false;
   private ConcurrentSkipListSet<Long> batchMetricsDBSet;
@@ -232,6 +232,9 @@ public class ReaderMetricsProcessor implements Runnable {
         }
       }
     }
+    // Flush any tracking batch metrics if batch metrics is disabled. Note, in order to ensure that batch metrics
+    // consumers have had at least one cycle to use any metrics they may be holding, this flush is done before
+    // re-reading the config file to update the state of the batch metrics feature.
     if (!batchMetricsEnabled && !batchMetricsDBSet.isEmpty()) {
       if (deleteDBFiles) {
         for (Long timestamp : batchMetricsDBSet) {
@@ -243,9 +246,11 @@ public class ReaderMetricsProcessor implements Runnable {
       batchMetricsDBSet.clear();
     }
     readBatchMetricsEnabledFromConf();
+    // The (retentionPeriod * 12 + 1)'th database can be safely removed, since getBatchMetrics never returns more than
+    // the (retentionPeriod * 12) freshest metrics files.
     if (batchMetricsDBSet.size() > PluginSettings.instance().getBatchMetricsRetentionPeriod() * 12 + 1) {
       Long timestamp = batchMetricsDBSet.pollFirst();
-      if (timestamp != null && deleteDBFiles && !metricsDBMap.containsKey(timestamp)) {
+      if (deleteDBFiles && !metricsDBMap.containsKey(timestamp)) {
         MetricsDB.deleteOnDiskFile(timestamp);
       }
     }
@@ -821,7 +826,8 @@ public class ReaderMetricsProcessor implements Runnable {
     }
   }
 
-  private void readBatchMetricsEnabledFromConf() {
+  @VisibleForTesting
+  public void readBatchMetricsEnabledFromConf() {
     Path filePath = Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE);
 
     Util.invokePrivileged(
@@ -893,5 +899,15 @@ public class ReaderMetricsProcessor implements Runnable {
   void putNodeMetricsMap(
       AllMetrics.MetricName name, NavigableMap<Long, MemoryDBSnapshot> metricsMap) {
     this.nodeMetricsMap.put(name, metricsMap);
+  }
+
+  @VisibleForTesting
+  NavigableMap<Long, MetricsDB> getMetricsDBMap() {
+    return metricsDBMap;
+  }
+
+  @VisibleForTesting
+  public boolean getBatchMetricsEnabled() {
+    return batchMetricsEnabled;
   }
 }
