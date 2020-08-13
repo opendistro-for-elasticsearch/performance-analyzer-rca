@@ -90,9 +90,9 @@ public class NodeConfigCollector extends EsConfigNode {
   }
 
   private void collectAndPublishMetric(final Resource resource, final double metricValue) {
-    final NodeConfigCache nodeConfigCache = getAppContext().getNodeConfigCache();
-    final NodeKey esNode = new NodeKey(getAppContext().getMyInstanceDetails());
     if (!Double.isNaN(metricValue)) {
+      final NodeConfigCache nodeConfigCache = getAppContext().getNodeConfigCache();
+      final NodeKey esNode = new NodeKey(getAppContext().getMyInstanceDetails());
       configResult.put(resource, metricValue);
       nodeConfigCache.put(esNode, resource, metricValue);
     }
