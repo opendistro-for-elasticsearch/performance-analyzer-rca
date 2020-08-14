@@ -63,6 +63,22 @@ public class CacheUtil {
         }
     }
 
+    public static double getMBSizeInBytes(double sizeInMB) {
+        if (!Double.isNaN(sizeInMB)) {
+            return sizeInMB * 1024.0 * 1024.0;
+        } else {
+            throw new IllegalArgumentException("invalid value: {} in getMBSizeInBytes" + Float.NaN);
+        }
+    }
+
+    public static double getKBSizeInBytes(double sizeInKB) {
+        if (!Double.isNaN(sizeInKB)) {
+            return sizeInKB * 1024.0;
+        } else {
+            throw new IllegalArgumentException("invalid value: {} in getKBSizeInBytes" + Float.NaN);
+        }
+    }
+
     public static double getCacheMaxSize(AppContext appContext, NodeKey esNode, Resource cacheResource) {
         try {
             return appContext.getNodeConfigCache().get(esNode, cacheResource);
