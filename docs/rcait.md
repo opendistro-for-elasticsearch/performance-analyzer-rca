@@ -21,7 +21,7 @@ RunWith|Yes|Class|Runner class|No|This is to suggest the junit that something ot
 Category|Yes|Class|RcaItMarker.class|No|This is to categorize all the RCA-IT tests so that all integration tests can be run by using the gradle target `rcaIt`
 AClusterType|Yes|Class|value|No|The cluster type that would be used to run this integration test. Types supported can be found in `enum ClusterType`
 ARcaGraph|Yes|Class or Method|value|No|The RCA graph that will be executed by the RCA scheduler.
-AMetric|Yes|Class or Method|name, dimensionNames, tables|Yes|The metrics that will flow through the veins of the RCA graph. This is probably the most complicated annotation and is better understood with an example. Please checkout `class RcaItPocDedicated`.
+AMetric|Yes|Class or Method|name, dimensionNames, tables|Yes|The metrics that will flow through the edges of the RCA graph. This is probably the most complicated annotation and is better understood with an example. Please checkout `class RcaItPocDedicated`.
 Expect|No|Method|what, on, timeoutSeconds, validator, forRca|Yes|If you want the framework to test for an expected condition at steady state to pass or fail a test.
 AErrorPatternIgnored|No|Method|pattern, reason|Yes|If you want the checking framework to bypass certain pattern in error logs.
 
@@ -90,7 +90,7 @@ will be a column in the rca.sqlite table.
  of the metrics, similar to what exists in metricsdb files. The table is an array type
  , therfore it gives you the flexibility of specifying a different metrics table for
  each node or a group of nodes in the cluster. In the above example, the table one is to be emitted by
- `datanode0` and table 2 by `datanode1`. This can be used to push different metrics to the node that
+ `DATA_0` and table 2 by `DATA_1`. This can be used to push different metrics to the node that
  we want to be marked unhealthy vs all other nodes in the cluster.
     - _hostTag_ :  On which cluster node should emit this metric.
     - _tuple_ : This is an array type that can be used to specify the rows in the table. A
@@ -117,7 +117,7 @@ framework, will re-run them for the i+1 the iteration till a timeout. The timeou
 configurable to any number of seconds using the field `timeoutSeconds` but has the default
 of 60 seconds. 
     
-__AErrorPatternIgnored@__
+__@AErrorPatternIgnored__
 The RCA-IT will fail a test if any error is logged. If you think that some of the errors logged
 during your test is okay, then you can use this annotation to explicitly ignore them. The
 annotation takes two parameters - `pattern` the pattern to ignore and `reason` stating why it
