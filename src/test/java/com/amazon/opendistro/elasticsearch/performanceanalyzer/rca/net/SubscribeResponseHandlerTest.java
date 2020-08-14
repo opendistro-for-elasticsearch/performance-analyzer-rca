@@ -78,12 +78,6 @@ public class SubscribeResponseHandlerTest {
     }
 
     @Test
-    public void testOnError() {
-        /* No-op */
-        uut.onError(new Exception("no-op"));
-    }
-
-    @Test
     public void testOnCompleted() {
         /* No-op */
         uut.onCompleted();
