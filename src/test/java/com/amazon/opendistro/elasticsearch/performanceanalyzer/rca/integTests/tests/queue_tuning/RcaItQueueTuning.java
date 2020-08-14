@@ -21,14 +21,15 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_RejectedReqs;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AClusterType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AErrorPatternIgnored;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AExpect;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ARcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ARcaGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ATable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ATuple;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.api.TestApi;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.ClusterType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.Consts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.HostTag;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners.RcaItNotEncryptedRunner;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.queue_tuning.validator.QueueRejectionValidator;
@@ -89,10 +90,12 @@ import org.junit.runner.RunWith;
     }
 )
 public class RcaItQueueTuning {
-  public static final String QUEUE_TUNING_RESOURCES_DIR =
-      "./src/test/java/com/amazon/opendistro/elasticsearch/performanceanalyzer/rca/integTests/tests/queue_tuning/resource/";
-  private TestApi api;
+  public static final String QUEUE_TUNING_RESOURCES_DIR = Consts.INTEG_TESTS_SRC_DIR + "./tests/queue_tuning/resource/";
 
+  // This integ test is built to test queue rejection RCA + queue rejection cluster RCA
+  // This test injects queue rejection metrics on one of the data node and queries the
+  // rest API on master to check whether queue rejection cluster RCA becomes unhealthy
+  //TODO : extend this integ test to cover Decision Maker framework and queue remediation actions
   @Test
   @AExpect(
       what = AExpect.Type.REST_API,
@@ -100,10 +103,10 @@ public class RcaItQueueTuning {
       validator = QueueRejectionValidator.class,
       forRca = QueueRejectionClusterRca.class,
       timeoutSeconds = 500)
-  public void simple() {
-  }
-
-  public void setTestApi(final TestApi api) {
-    this.api = api;
+  @AErrorPatternIgnored(pattern = "CacheUtil:getCacheMaxSize()",
+      reason = "Cache related configs are expected to be missing in this integ test")
+  @AErrorPatternIgnored(pattern = "AggregateMetric:gather()",
+      reason = "Cache metrics are expected to be missing in this integ test")
+  public void testQueueRejectionRca() {
   }
 }
