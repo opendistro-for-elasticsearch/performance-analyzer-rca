@@ -44,4 +44,14 @@ public class TestApi {
     Objects.requireNonNull(params);
     return cluster.getRcaRestResponse(params, hostByTag);
   }
+
+  /**
+   * This can be used to get all the records from all the tables in a host. This can be used for validation of
+   * what gets persisted in the rca.sqlite tables.
+   * @param hostTag The host whose rca.sqlite will be queried.
+   * @return A list of all the data stored in all the tables in the particular host.
+   */
+  public Map<String, Result<Record>> getRecordsForAllTablesOnHost(HostTag hostTag) {
+    return cluster.getRecordsForAllTablesOnHost(hostTag);
+  }
 }
