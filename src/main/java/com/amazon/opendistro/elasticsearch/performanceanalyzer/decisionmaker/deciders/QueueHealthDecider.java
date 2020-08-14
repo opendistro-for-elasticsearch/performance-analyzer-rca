@@ -17,8 +17,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
@@ -95,20 +93,10 @@ public class QueueHealthDecider extends Decider {
    */
   private Action computeBestAction(NodeKey esNode, ResourceEnum threadPool) {
     Action action = null;
-    int currQueueCapacity;
-    try {
-        currQueueCapacity = getNodeQueueCapacity(esNode, threadPool);
-    } catch (Exception e) {
-      // No action if value not present in the cache.
-      // Assumption here is the cache has been wiped off due to
-      // unforeseen events and we dont want to trigger any action.
-      LOG.error("Exception while reading values from Node Config Cache", e);
-      return null;
-    }
 
     for (String actionName : actionsByUserPriority) {
       action =
-        getAction(actionName, esNode, threadPool, currQueueCapacity, true);
+        getAction(actionName, esNode, threadPool, true);
       if (action != null) {
         break;
       }
@@ -116,27 +104,23 @@ public class QueueHealthDecider extends Decider {
     return action;
   }
 
-  private Action getAction(String actionName, NodeKey esNode, ResourceEnum threadPool, int currCapacity, boolean increase) {
+  private Action getAction(String actionName, NodeKey esNode, ResourceEnum threadPool, boolean increase) {
     switch (actionName) {
       case ModifyQueueCapacityAction.NAME:
-        return configureQueueCapacity(esNode, threadPool, currCapacity, increase);
+        return configureQueueCapacity(esNode, threadPool, increase);
       default:
         return null;
     }
   }
 
-  private ModifyQueueCapacityAction configureQueueCapacity(NodeKey esNode, ResourceEnum threadPool, int currentCapacity, boolean increase) {
-    ModifyQueueCapacityAction action = new ModifyQueueCapacityAction(esNode, threadPool,
-        currentCapacity, increase, getAppContext());
-    if (action.isActionable()) {
+  private ModifyQueueCapacityAction configureQueueCapacity(NodeKey esNode, ResourceEnum threadPool, boolean increase) {
+    ModifyQueueCapacityAction action = ModifyQueueCapacityAction
+            .newBuilder(esNode, threadPool, getAppContext())
+            .increase(increase)
+            .build();
+    if (action != null && action.isActionable()) {
       return action;
     }
     return null;
-  }
-
-  private int getNodeQueueCapacity(NodeKey esNode, ResourceEnum threadPool) {
-      return (int) getAppContext().getNodeConfigCache().get(esNode, Resource.newBuilder()
-              .setResourceEnum(threadPool)
-              .setMetricEnum(MetricEnum.QUEUE_CAPACITY).build());
   }
 }
