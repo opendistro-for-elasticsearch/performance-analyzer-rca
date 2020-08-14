@@ -17,11 +17,12 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.JsonElement;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import org.jooq.Record;
 import org.jooq.Result;
 
@@ -62,4 +63,11 @@ public interface Persistable {
    * @return A list of RCAs.
    */
   List<String> getAllPersistedRcas();
+
+  /**
+   * Get records for all the tables
+   * @return A map of table and all the data contained in the table.
+   */
+  @VisibleForTesting
+  Map<String, Result<Record>> getRecordsForAllTables();
 }
