@@ -13,6 +13,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.CPU_Utilization;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AClusterType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AErrorPatternIgnored;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AExpect;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ARcaGraph;
@@ -22,9 +23,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.ClusterType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.HostTag;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners.RcaItNotEncryptedRunner;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners.RcaItRunnerBase;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.poc.validator.PocValidator;
 import java.util.Arrays;
 import java.util.Collections;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -51,6 +55,7 @@ import org.junit.runner.RunWith;
 )
 public class RcaItPocSingleNode {
   private TestApi api;
+  private static final Logger LOG = LogManager.getLogger(RcaItPocSingleNode.class);
 
   @Test
   @AExpect(
@@ -58,7 +63,11 @@ public class RcaItPocSingleNode {
       on = HostTag.DATA_0,
       validator = PocValidator.class,
       forRca = SimpleAnalysisGraphForCoLocated.ClusterRca.class)
+  @AErrorPatternIgnored(pattern = "test error", reason = "This a test for errors during test.")
+  @AErrorPatternIgnored(pattern = "test error2", reason = "This a test for errors during test.")
   public void simple() {
+    LOG.error("This is test error for you.");
+    LOG.error("This is test error2 for you.");
   }
 
   public void setTestApi(final TestApi api) {
