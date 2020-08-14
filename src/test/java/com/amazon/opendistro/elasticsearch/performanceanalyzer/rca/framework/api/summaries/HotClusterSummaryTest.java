@@ -33,18 +33,19 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 public class HotClusterSummaryTest {
-    private static final int NUM_OF_NODES = 9;
-    private static final int NUM_UNHEALTHY = 1;
+    protected static final int NUM_OF_NODES = 9;
+    protected static final int NUM_UNHEALTHY = 1;
     private static final String NODE_ID = "abc";
     private static final String NODE_ADDRESS = "127.0.0.1";
-    private static HotClusterSummary uut;
+    protected static HotClusterSummary uut;
 
     @Mock
     private Record testRecord;
 
     @BeforeClass
     public static void setup() {
-        uut = new HotClusterSummary(NUM_OF_NODES, NUM_UNHEALTHY);
+        uut = new HotClusterSummary(NUM_OF_NODES, 0);
+        uut.setNumOfUnhealthyNodes(NUM_UNHEALTHY);
     }
 
     @Test

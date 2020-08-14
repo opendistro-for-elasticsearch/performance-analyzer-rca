@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
+import java.util.Objects;
 
 /**
  * StaticBucketCalculator is a {@link BucketCalculator} which places {@link Resource}s into
@@ -50,5 +51,24 @@ public class StaticBucketCalculator extends BucketCalculator {
     } else {
         return UsageBucket.UNHEALTHY;
     }
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    StaticBucketCalculator that = (StaticBucketCalculator) o;
+    return Double.compare(that.healthyWithBuffer, healthyWithBuffer) == 0
+        && Double.compare(that.healthy, healthy) == 0
+        && Double.compare(that.unhealthy, unhealthy) == 0;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(healthyWithBuffer, healthy, unhealthy);
   }
 }

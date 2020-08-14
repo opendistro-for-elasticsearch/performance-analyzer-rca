@@ -17,7 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cl
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.JVMClusterResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.JvmClusterResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
@@ -48,11 +48,11 @@ public class HighHeapUsageClusterRca extends BaseClusterRca {
   }
 
   @Override
-  protected JVMClusterResourceFlowUnit generateFlowUnit(HotClusterSummary clusterSummary,
+  protected JvmClusterResourceFlowUnit generateFlowUnit(HotClusterSummary clusterSummary,
       ResourceContext context) {
     if (clusterSummary == null && context == null) {
-      return new JVMClusterResourceFlowUnit(clock.millis());
+      return new JvmClusterResourceFlowUnit(clock.millis());
     }
-    return new JVMClusterResourceFlowUnit(clock.millis(), context, clusterSummary, rcaConf,true);
+    return new JvmClusterResourceFlowUnit(clock.millis(), context, clusterSummary, rcaConf,true);
   }
 }

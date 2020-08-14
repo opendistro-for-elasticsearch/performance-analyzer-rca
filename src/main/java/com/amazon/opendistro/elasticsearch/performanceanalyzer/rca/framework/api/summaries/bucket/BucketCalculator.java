@@ -60,7 +60,7 @@ public abstract class BucketCalculator {
    *              up to the implementation how to handle this value for a particular {@link Resource}
    * @return The {@link UsageBucket} that the {@link Resource} should be associated with
    */
-  abstract UsageBucket compute(ResourceEnum resource, double value);
+  protected abstract UsageBucket compute(ResourceEnum resource, double value);
 
   /**
    * Returns the {@link UsageBucket} for a particular {@link Resource} on a given Node, or null if

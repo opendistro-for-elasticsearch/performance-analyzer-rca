@@ -30,7 +30,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.clu
  * various {@link UsageBucket}s
  *
  * <p>If you'd like to subclass this class, simply implement initBucketCalculator() to return an
- * appropriate {@link BucketCalculator} to use for bucketization. {@link CPUClusterResourceFlowUnit}
+ * appropriate {@link BucketCalculator} to use for bucketization. {@link CpuClusterResourceFlowUnit}
  * is a good example of this.
  */
 public class ClusterResourceFlowUnit extends ResourceFlowUnit<HotClusterSummary> {
@@ -46,14 +46,6 @@ public class ClusterResourceFlowUnit extends ResourceFlowUnit<HotClusterSummary>
   public ClusterResourceFlowUnit(long timeStamp, ResourceContext context,
       HotClusterSummary summary, RcaConf rcaConf, boolean persistSummary) {
     super(timeStamp, context, summary, persistSummary);
-    this.rcaConf = rcaConf;
-    this.bucketCalculator = initBucketCalculator();
-    computeUsageBuckets();
-  }
-
-  public ClusterResourceFlowUnit(long timeStamp, ResourceContext context,
-      HotClusterSummary summary, RcaConf rcaConf) {
-    super(timeStamp, context, summary);
     this.rcaConf = rcaConf;
     this.bucketCalculator = initBucketCalculator();
     computeUsageBuckets();

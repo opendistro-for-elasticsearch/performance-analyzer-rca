@@ -31,11 +31,11 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 public class HotNodeSummaryTest {
-    private static final String NODE_ID = "ABC123";
-    private static final String HOST_ADDRESS = "127.0.0.0";
-    private static final double THRESHOLD = 3.14;
-    private static final double VALUE = 2.71;
-    private static HotNodeSummary uut;
+    protected static final String NODE_ID = "ABC123";
+    protected static final String HOST_ADDRESS = "127.0.0.0";
+    protected static final double THRESHOLD = 3.14;
+    protected static final double VALUE = 2.71;
+    protected static HotNodeSummary uut;
 
     @BeforeClass
     public static void setup() {

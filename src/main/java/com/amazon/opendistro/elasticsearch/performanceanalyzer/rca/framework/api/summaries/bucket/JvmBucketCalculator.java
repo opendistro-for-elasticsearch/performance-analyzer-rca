@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import java.util.Objects;
 
 /**
  * JvmBucketCalculator is a {@link BucketCalculator} that contains special logic for
@@ -53,5 +54,24 @@ public class JvmBucketCalculator extends BucketCalculator {
       return oldGenHeapUsageThresholds.compute(resource, value);
     }
     return UsageBucket.UNKNOWN;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    JvmBucketCalculator that = (JvmBucketCalculator) o;
+    return Objects
+        .equals(youngGenPromotionRateThresholds, that.youngGenPromotionRateThresholds)
+        && Objects.equals(oldGenHeapUsageThresholds, that.oldGenHeapUsageThresholds);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(youngGenPromotionRateThresholds, oldGenHeapUsageThresholds);
   }
 }

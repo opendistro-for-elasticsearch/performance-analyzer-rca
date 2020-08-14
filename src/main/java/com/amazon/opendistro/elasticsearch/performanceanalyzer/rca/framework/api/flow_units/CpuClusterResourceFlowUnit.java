@@ -22,24 +22,17 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import java.util.List;
 
-public class CPUClusterResourceFlowUnit extends ClusterResourceFlowUnit {
-  public CPUClusterResourceFlowUnit(long timeStamp) {
+public class CpuClusterResourceFlowUnit extends ClusterResourceFlowUnit {
+  public CpuClusterResourceFlowUnit(long timeStamp) {
     super(timeStamp);
   }
 
-  public CPUClusterResourceFlowUnit(long timeStamp,
+  public CpuClusterResourceFlowUnit(long timeStamp,
       ResourceContext context,
       HotClusterSummary summary,
       RcaConf rcaConf,
       boolean persistSummary) {
     super(timeStamp, context, summary, rcaConf, persistSummary);
-  }
-
-  public CPUClusterResourceFlowUnit(long timeStamp,
-      ResourceContext context,
-      HotClusterSummary summary,
-      RcaConf rcaConf) {
-    super(timeStamp, context, summary, rcaConf);
   }
 
   @Override
