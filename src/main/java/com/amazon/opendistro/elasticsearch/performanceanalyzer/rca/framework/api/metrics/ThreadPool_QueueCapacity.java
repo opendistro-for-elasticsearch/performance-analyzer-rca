@@ -19,7 +19,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class ThreadPool_QueueCapacity extends Metric {
+  public static final String NAME = AllMetrics.ThreadPoolValue.THREADPOOL_QUEUE_CAPACITY.toString();
+
   public ThreadPool_QueueCapacity() {
-    super(AllMetrics.ThreadPoolValue.THREADPOOL_QUEUE_CAPACITY.toString(), 5);
+    super(NAME, 5);
   }
 }
