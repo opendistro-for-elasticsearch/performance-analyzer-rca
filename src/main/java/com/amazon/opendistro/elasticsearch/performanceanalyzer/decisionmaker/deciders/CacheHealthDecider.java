@@ -168,7 +168,7 @@ public class CacheHealthDecider extends Decider {
       return getShardRequestCacheUpperBound();
     }
     throw new IllegalArgumentException(
-            String.format("Unable to get cache upper bound for cacheType=[%s]", cacheType.toString()));
+        String.format("Unable to get cache upper bound for cacheType=[%s]", cacheType.toString()));
   }
 
   private double getFieldDataCacheUpperBound() {
