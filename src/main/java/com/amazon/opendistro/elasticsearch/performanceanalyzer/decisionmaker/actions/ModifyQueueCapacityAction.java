@@ -126,7 +126,7 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
     public static final boolean DEFAULT_CAN_UPDATE = true;
 
     private int stepSize;
-    private boolean isIncrease;
+    private boolean increase;
     private boolean canUpdate;
     private long coolOffPeriodInMillis;
     private int upperBound;
@@ -144,7 +144,7 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
       this.appContext = appContext;
       this.coolOffPeriodInMillis = DEFAULT_COOL_OFF_PERIOD_IN_MILLIS;
       this.stepSize = DEFAULT_STEP_SIZE;
-      this.isIncrease = DEFAULT_IS_INCREASE;
+      this.increase = DEFAULT_IS_INCREASE;
       this.canUpdate = DEFAULT_CAN_UPDATE;
       this.desiredCapacity = null;
       this.currentCapacity =
@@ -173,8 +173,8 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
       return this;
     }
 
-    public Builder increase(boolean isInrease) {
-      this.isIncrease = isInrease;
+    public Builder increase(boolean increase) {
+      this.increase = increase;
       return this;
     }
 
@@ -214,7 +214,7 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
       // skip the step size bound check if we set desiredCapacity
       // explicitly in action builder
       if (desiredCapacity == null) {
-        desiredCapacity = isIncrease ? currentCapacity + stepSize : currentCapacity - stepSize;
+        desiredCapacity = increase ? currentCapacity + stepSize : currentCapacity - stepSize;
       }
       desiredCapacity = Math.min(desiredCapacity, upperBound);
       desiredCapacity = Math.max(desiredCapacity, lowerBound);
