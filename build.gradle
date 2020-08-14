@@ -186,6 +186,16 @@ task rcaTest(type: Test) {
     testLogging.showStandardStreams = true
 }
 
+task rcaIt(type: Test) {
+    dependsOn checkstyleMain
+    dependsOn checkstyleTest
+    dependsOn spotbugsMain
+    useJUnit {
+        includeCategories 'com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker'
+    }
+    //testLogging.showStandardStreams = true
+}
+
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 

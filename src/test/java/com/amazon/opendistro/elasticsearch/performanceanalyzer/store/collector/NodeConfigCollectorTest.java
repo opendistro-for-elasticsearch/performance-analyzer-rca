@@ -30,7 +30,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_QueueCapacity;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.flow_units.MetricFlowUnitTestHelper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCollector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,7 +43,8 @@ import org.junit.experimental.categories.Category;
 
 @Category(GradleTaskForRca.class)
 public class NodeConfigCollectorTest {
-
+  private AppContext appContext;
+  private NodeKey nodeKey;
   private ThreadPool_QueueCapacity threadPool_QueueCapacity;
   private Cache_Max_Size cacheMaxSize;
   private Heap_Max heapMax;
@@ -58,9 +61,11 @@ public class NodeConfigCollectorTest {
     ClusterDetailsEventProcessor.NodeDetails node1 =
         new ClusterDetailsEventProcessor.NodeDetails(AllMetrics.NodeRole.DATA, "node1", "127.0.0.0", false);
     clusterDetailsEventProcessor.setNodesDetails(Collections.singletonList(node1));
-    AppContext appContext = new AppContext();
+
+    appContext = new AppContext();
     appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
     nodeConfigCollector.setAppContext(appContext);
+    nodeKey = new NodeKey(appContext.getMyInstanceDetails());
   }
 
   /**
@@ -123,6 +128,11 @@ public class NodeConfigCollectorTest {
     Assert.assertEquals(200, flowUnit.readConfig(ResourceUtil.SEARCH_QUEUE_CAPACITY), 0.01);
     Assert.assertTrue(flowUnit.hasConfig(ResourceUtil.WRITE_QUEUE_CAPACITY));
     Assert.assertEquals(100, flowUnit.readConfig(ResourceUtil.WRITE_QUEUE_CAPACITY), 0.01);
+
+    Assert.assertEquals(
+        200, appContext.getNodeConfigCache().get(nodeKey, ResourceUtil.SEARCH_QUEUE_CAPACITY), 0.01);
+    Assert.assertEquals(
+        100, appContext.getNodeConfigCache().get(nodeKey, ResourceUtil.WRITE_QUEUE_CAPACITY), 0.01);
   }
 
   @Test
@@ -132,5 +142,8 @@ public class NodeConfigCollectorTest {
     Assert.assertFalse(flowUnit.isEmpty());
     Assert.assertTrue(flowUnit.hasConfig(ResourceUtil.HEAP_MAX_SIZE));
     Assert.assertEquals(10000, flowUnit.readConfig(ResourceUtil.HEAP_MAX_SIZE), 0.01);
+
+    Assert.assertEquals(
+            10000, appContext.getNodeConfigCache().get(nodeKey, ResourceUtil.HEAP_MAX_SIZE), 0.01);
   }
 }
