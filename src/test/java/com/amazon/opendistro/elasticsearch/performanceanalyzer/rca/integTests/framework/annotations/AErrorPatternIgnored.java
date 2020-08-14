@@ -15,13 +15,15 @@ import java.lang.annotation.Target;
 public @interface AErrorPatternIgnored {
   /**
    * The substring, which if found in the error log line, we will ignore the error log.
+   *
    * @return Patterns that will be considered before the error log. If multiple patterns are specified, then the presence of any of the
-   * them will ignore the log line.
+   *     them will ignore the log line.
    */
   String pattern();
 
   /**
    * Why should this error be ignored.
+   *
    * @return The reason for ignoring the error.
    */
   String reason();
