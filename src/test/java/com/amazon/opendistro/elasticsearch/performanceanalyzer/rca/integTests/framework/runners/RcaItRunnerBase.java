@@ -4,6 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.TestEnvironment;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AClusterType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AErrorPatternIgnored;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AExpect;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.api.IValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.api.TestApi;
@@ -13,9 +14,13 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Configuration;
@@ -159,16 +164,52 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner, Fi
 
   private void validateTestRun(Method method)
       throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, IllegalStateException {
-    List<Class> failedChecks = validateTestResults(method);
+    List<Class> failedChecks = validateTestOutput(method);
 
     if (!failedChecks.isEmpty()) {
       StringBuilder sb = new StringBuilder("Failed validations for:");
-      for (Class failed: failedChecks) {
+      for (Class failed : failedChecks) {
         sb.append(System.lineSeparator()).append(failed);
       }
       throw new IllegalStateException(sb.toString());
     }
-    AppenderHelper.verifyNoErrorLogs();
+    validateNoErrorsInLog(method);
+  }
+
+  private void validateNoErrorsInLog(Method method) {
+    if (method.isAnnotationPresent(AErrorPatternIgnored.class) || method.isAnnotationPresent(AErrorPatternIgnored.Patterns.class)) {
+      Set<String> patternsToIgnore =
+          Arrays.stream(method.getAnnotationsByType(AErrorPatternIgnored.class)).map(AErrorPatternIgnored::pattern)
+              .collect(Collectors.toSet());
+
+      Collection<String> errors = AppenderHelper.getAllErrorsInLog();
+      if (errors.size() > 0) {
+        // For each of the errors, we check if they have the pattern that we are supposed to ignore. If so, we ignore them.
+        List<String> fatalErrors =
+            errors
+                .stream()
+                .filter(
+                    error -> patternsToIgnore
+                        .stream()
+                        .noneMatch(
+                            pattern -> error.contains(pattern)
+                        )
+                ).collect(Collectors.toList());
+
+        if (!fatalErrors.isEmpty()) {
+
+          StringBuilder err = new StringBuilder(
+              "RCA-IT fails if some errors are found in the logs. If you think these errors are okay to ignore, you can use the "
+                  + "@AErrorPatternIgnored to ignore them. Please see RcaItPocSingleNode.simple() for an example.");
+          err.append(System.lineSeparator()).append("The Runner found the following errors in log: [");
+          err.append(System.lineSeparator());
+
+          fatalErrors.forEach(x -> err.append(x));
+          err.append(System.lineSeparator()).append("]");
+          throw new IllegalStateException(err.toString());
+        }
+      }
+    }
   }
 
   private void prepareForRun(Method method) throws Exception {
@@ -182,7 +223,7 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner, Fi
     this.testEnvironment.verifyEnvironmentSetup();
   }
 
-  private List<Class> validateTestResults(Method method)
+  private List<Class> validateTestOutput(Method method)
       throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
     List<Class> failedValidations = new ArrayList<>();
     if (method.isAnnotationPresent(AExpect.Expectations.class) || method.isAnnotationPresent(AExpect.class)) {
