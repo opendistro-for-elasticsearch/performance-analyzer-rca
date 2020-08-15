@@ -30,6 +30,7 @@ plugins {
     id 'idea'
     id 'com.github.spotbugs' version '4.0.0'
     id "de.undercouch.download" version "4.0.4"
+    id 'com.adarshr.test-logger' version '2.1.0'
 }
 
 application {
@@ -93,6 +94,25 @@ tasks.withType(Checkstyle) {
     }
 }
 
+testlogger {
+    theme 'standard'
+    showExceptions true
+    showStackTraces false
+    showFullStackTraces false
+    showCauses true
+    slowThreshold 4000
+    showSummary true
+    showSimpleNames false
+    showPassed true
+    showSkipped true
+    showFailed true
+    showStandardStreams false
+    showPassedStandardStreams true
+    showSkippedStandardStreams true
+    showFailedStandardStreams true
+    logLevel 'lifecycle'
+}
+
 spotbugsMain {
     excludeFilter = file("checkstyle/findbugs-exclude.xml")
     effort = 'max'
@@ -110,7 +130,7 @@ spotbugsTest {
 
 check {
     dependsOn spotbugsMain
-    dependsOn spotbugsTest
+    //dependsOn spotbugsTest
 }
 
 jacoco {
