@@ -46,7 +46,7 @@ import org.junit.runner.RunWith;
                     sum = 0.0, avg = 0.0, min = 0.0, max = 10.0)
             }
         ),
-        @ATable(hostTag = {HostTag.DATA_1},
+        @ATable(hostTag = HostTag.DATA_1,
             tuple = {
                 @ATuple(dimensionValues = {"0", "logs", "bulk", "r"},
                     sum = 0.0, avg = 0.0, min = 0.0, max = 50.0),

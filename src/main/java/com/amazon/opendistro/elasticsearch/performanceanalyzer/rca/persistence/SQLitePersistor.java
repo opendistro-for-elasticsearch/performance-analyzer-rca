@@ -27,6 +27,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.uti
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -197,10 +198,11 @@ class SQLitePersistor extends PersistorBase {
     return tablesObject.toString();
   }
 
-  public synchronized List<Result<Record>> getRecordsForAllTables() {
-    List<Result<Record>> results = new ArrayList<>();
+  @VisibleForTesting
+  public synchronized Map<String, Result<Record>> getRecordsForAllTables() {
+    Map<String, Result<Record>> results = new HashMap<>();
     super.tableNames.forEach(
-            table -> results.add(getRecords(table))
+            table -> results.put(table, getRecords(table))
     );
     return results;
   }

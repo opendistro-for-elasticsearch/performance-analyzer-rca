@@ -59,17 +59,8 @@ public class AppenderHelper {
     Configurator.reconfigure(configuration);
   }
 
-  public static void verifyNoErrorLogs() throws IllegalStateException {
-    Collection<String> errors = RcaItInMemoryAppender.self().getAllErrors();
-    if (errors.size() > 0) {
-      StringBuilder err = new StringBuilder(
-          "RCA-IT fails if there are any errors that were logged. The Runner found the following: [");
-      for (String error : errors) {
-        err.append(System.lineSeparator()).append(error);
-      }
-      err.append(System.lineSeparator()).append("]");
-      throw new IllegalStateException(err.toString());
-    }
+  public static Collection<String> getAllErrorsInLog() throws IllegalStateException {
+    return RcaItInMemoryAppender.self().getAllErrors();
   }
 
   public static void resetErrors() {

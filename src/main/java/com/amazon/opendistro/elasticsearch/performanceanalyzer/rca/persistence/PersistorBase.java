@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import java.io.File;
@@ -32,6 +33,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -115,7 +117,8 @@ public abstract class PersistorBase implements Persistable {
 
   abstract void createNewDSLContext();
 
-  public abstract List<Result<Record>> getRecordsForAllTables();
+  @VisibleForTesting
+  public abstract Map<String, Result<Record>> getRecordsForAllTables();
 
   // Not required for now.
   @Override

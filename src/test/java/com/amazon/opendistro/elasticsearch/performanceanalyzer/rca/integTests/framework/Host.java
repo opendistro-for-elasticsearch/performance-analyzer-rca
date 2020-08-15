@@ -368,6 +368,10 @@ public class Host {
     return obj;
   }
 
+  public Map<String, Result<Record>> getRecordsForAllTables() {
+    return this.rcaController.getPersistenceProvider().getRecordsForAllTables();
+  }
+
   public String makeRestRequest(final Map<String, String> kvRequestParams) {
     StringBuilder queryString = new StringBuilder();
 
