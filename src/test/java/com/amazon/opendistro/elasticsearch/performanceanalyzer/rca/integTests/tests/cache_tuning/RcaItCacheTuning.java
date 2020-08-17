@@ -211,6 +211,9 @@ public class RcaItCacheTuning {
   @AErrorPatternIgnored(
           pattern = "NodeConfigCacheReaderUtil:readHeapMaxSizeInBytes()",
           reason = "Heap metrics are expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+          pattern = "CacheUtil:getCacheMaxSize()",
+          reason = "Node Config Cache are are expected to be missing during startup.")
   public void testFieldDataCacheRca() {}
 
   // Test ShardRequestCacheClusterRca.
@@ -231,5 +234,8 @@ public class RcaItCacheTuning {
   @AErrorPatternIgnored(
           pattern = "NodeConfigCacheReaderUtil:readHeapMaxSizeInBytes()",
           reason = "Heap metrics are expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+          pattern = "CacheUtil:getCacheMaxSize()",
+          reason = "Node Config Cache are are expected to be missing during startup.")
   public void testShardRequestCacheRca() {}
 }
