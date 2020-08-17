@@ -208,6 +208,9 @@ public class RcaItCacheTuning {
   @AErrorPatternIgnored(
       pattern = "Metric:gather()",
       reason = "Metrics are expected to be missing in this integ test")
+  @AErrorPatternIgnored(
+          pattern = "NodeConfigCacheReaderUtil:readHeapMaxSizeInBytes()",
+          reason = "Heap metrics are expected to be missing in this integ test.")
   public void testFieldDataCacheRca() {}
 
   // Test ShardRequestCacheClusterRca.
@@ -219,5 +222,14 @@ public class RcaItCacheTuning {
       validator = ShardRequestCacheValidator.class,
       forRca = ShardRequestCacheClusterRca.class,
       timeoutSeconds = 700)
+  @AErrorPatternIgnored(
+          pattern = "AggregateMetric:gather()",
+          reason = "CPU metrics are expected to be missing in this integ test")
+  @AErrorPatternIgnored(
+          pattern = "Metric:gather()",
+          reason = "Metrics are expected to be missing in this integ test")
+  @AErrorPatternIgnored(
+          pattern = "NodeConfigCacheReaderUtil:readHeapMaxSizeInBytes()",
+          reason = "Heap metrics are expected to be missing in this integ test.")
   public void testShardRequestCacheRca() {}
 }
