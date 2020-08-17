@@ -69,7 +69,8 @@ public class RcaConfTest {
     Assert.assertNotNull(configObj.getWorkloadPriorityOrder());
     Assert.assertNotNull(configObj.getFieldDataCacheUpperBound());
     Assert.assertNotNull(configObj.getShardRequestCacheUpperBound());
-    Assert.assertEquals(Arrays.asList("test-read-heavy", "test-write-heavy"), configObj.getCachePriorityOrder());
+    Assert.assertEquals(Arrays.asList("test-fielddata-cache", "test-shard-request-cache", "test-query-cache",
+            "test-bitset-filter-cache"), configObj.getCachePriorityOrder());
     Assert.assertEquals(10.4, configObj.getFieldDataCacheUpperBound(), 0.01);
     Assert.assertEquals(10.05, configObj.getShardRequestCacheUpperBound(), 0.01);
     Assert.assertEquals(Arrays.asList("test-ingest", "test-search"), configObj.getWorkloadPriorityOrder());

@@ -32,7 +32,8 @@ public class DeciderConfig {
     private static final double DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND = 0.05;
     // Defaults based on prioritising Stability over performance.
     private static final List<String> DEFAULT_WORKLOAD_PRIORITY = Arrays.asList("ingest", "search");
-    private static final List<String> DEFAULT_CACHE_PRIORITY = Arrays.asList("read-heavy", "write-heavy");
+    private static final List<String> DEFAULT_CACHE_PRIORITY = Arrays.asList("fielddata-cache", "shard-request-cache",
+            "query-cache", "bitset-filter-cache");
 
     private Double fieldDataCacheUpperBound;
     private Double shardRequestCacheUpperBound;
