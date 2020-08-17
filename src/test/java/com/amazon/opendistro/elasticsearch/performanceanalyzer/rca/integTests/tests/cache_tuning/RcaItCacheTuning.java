@@ -209,8 +209,8 @@ public class RcaItCacheTuning {
       pattern = "Metric:gather()",
       reason = "Metrics are expected to be missing in this integ test")
   @AErrorPatternIgnored(
-          pattern = "NodeConfigCacheReaderUtil:readHeapMaxSizeInBytes()",
-          reason = "Heap metrics are expected to be missing in this integ test.")
+          pattern = "NodeConfigCacheReaderUtil",
+          reason = "Node Config Cache are expected to be missing in this integ test.")
   @AErrorPatternIgnored(
           pattern = "CacheUtil:getCacheMaxSize()",
           reason = "Node Config Cache are are expected to be missing during startup.")
@@ -232,8 +232,8 @@ public class RcaItCacheTuning {
           pattern = "Metric:gather()",
           reason = "Metrics are expected to be missing in this integ test")
   @AErrorPatternIgnored(
-          pattern = "NodeConfigCacheReaderUtil:readHeapMaxSizeInBytes()",
-          reason = "Heap metrics are expected to be missing in this integ test.")
+          pattern = "NodeConfigCacheReaderUtil",
+          reason = "Node config cache metrics are expected to be missing in this integ test.")
   @AErrorPatternIgnored(
           pattern = "CacheUtil:getCacheMaxSize()",
           reason = "Node Config Cache are are expected to be missing during startup.")
