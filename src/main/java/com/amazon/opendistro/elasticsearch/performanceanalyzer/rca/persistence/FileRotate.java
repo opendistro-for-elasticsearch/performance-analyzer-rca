@@ -135,8 +135,9 @@ public class FileRotate {
     // try 4: If the delete fails, all bets are off, throw an exception and let the caller decide.
     try {
       ret = Files.move(FILE_TO_ROTATE, targetFilePath, StandardCopyOption.ATOMIC_MOVE);
+      LOG.info("## File rotated successfully to : {}", targetFilePath);
     } catch (FileAlreadyExistsException fae) {
-      LOG.error("Deleting file '{}' or else we cannot rotate the current {}", targetFilePath, FILE_TO_ROTATE);
+      LOG.error("**Deleting file '{}' or else we cannot rotate the current {}", targetFilePath, FILE_TO_ROTATE);
       if (!Files.deleteIfExists(targetFilePath)) {
         LOG.error("Could not delete file: " + targetFilePath);
       }

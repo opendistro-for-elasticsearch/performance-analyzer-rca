@@ -28,6 +28,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -54,18 +55,16 @@ public class RCAScheduler {
   private final NodeRole role;
   private final AppContext appContext;
 
-  final ThreadFactory schedThreadFactory =
-      new ThreadFactoryBuilder().setNameFormat("sched-%d").setDaemon(true).build();
+  final ThreadFactory schedThreadFactory;
 
   // TODO: Fix number of threads based on config.
-  final ThreadFactory taskThreadFactory =
-      new ThreadFactoryBuilder().setNameFormat("task-%d-").setDaemon(true).build();
+  final ThreadFactory taskThreadFactory;
 
   ExecutorService rcaSchedulerPeriodicExecutor;
   ScheduledExecutorService scheduledPool;
 
   List<ConnectedComponent> connectedComponents;
-  Queryable db;
+  volatile Queryable db;
   RcaConf rcaConf;
   ThresholdMain thresholdMain;
   Persistable persistable;
@@ -73,6 +72,8 @@ public class RCAScheduler {
   static final int PERIODICITY_IN_MS = PERIODICITY_SECONDS * 1000;
 
   private static final Logger LOG = LogManager.getLogger(RCAScheduler.class);
+
+  private CountDownLatch schedulerTrackingLatch;
 
   public RCAScheduler(
       List<ConnectedComponent> connectedComponents,
@@ -82,6 +83,18 @@ public class RCAScheduler {
       Persistable persistable,
       WireHopper net,
       final AppContext appContext) {
+    String instanceId = appContext.getMyInstanceDetails().getInstanceId().toString();
+    this.schedThreadFactory = new ThreadFactoryBuilder()
+        .setNameFormat(instanceId + "-sched-%d")
+        .setDaemon(true)
+        .build();
+
+    // TODO: Fix number of threads based on config.
+    this.taskThreadFactory = new ThreadFactoryBuilder()
+        .setNameFormat(instanceId + "-task-%d-")
+        .setDaemon(true)
+        .build();
+
     this.connectedComponents = connectedComponents;
     this.db = db;
     this.rcaConf = rcaConf;
@@ -101,10 +114,16 @@ public class RCAScheduler {
 
     if (scheduledPool == null) {
       LOG.error("Couldn't start RCA scheduler. Executor pool is not set.");
+      if (schedulerTrackingLatch != null) {
+        schedulerTrackingLatch.countDown();
+      }
       return;
     }
     if (role == NodeRole.UNKNOWN) {
       LOG.error("Couldn't start RCA scheduler as the node role is UNKNOWN.");
+      if (schedulerTrackingLatch != null) {
+        schedulerTrackingLatch.countDown();
+      }
       return;
     }
 
@@ -119,7 +138,10 @@ public class RCAScheduler {
         appContext);
 
     schedulerState = RcaSchedulerState.STATE_STARTED;
-    LOG.info("RCA scheduler thread started successfully.");
+    LOG.info("RCA scheduler thread started successfully on node: {}", appContext.getMyInstanceDetails().getInstanceId());
+    if (schedulerTrackingLatch != null) {
+      schedulerTrackingLatch.countDown();
+    }
 
     while (schedulerState == RcaSchedulerState.STATE_STARTED) {
       try {
@@ -149,6 +171,7 @@ public class RCAScheduler {
     LOG.info("Shutting down the scheduler..");
     shutdownRequested = true;
     scheduledPool.shutdown();
+    waitForShutdown(scheduledPool);
     rcaSchedulerPeriodicExecutor.shutdown();
     waitForShutdown(rcaSchedulerPeriodicExecutor);
     try {
@@ -158,6 +181,9 @@ public class RCAScheduler {
           "RCA: Error while closing the DB connection: {}::{}", e.getErrorCode(), e.getCause());
     }
     schedulerState = RcaSchedulerState.STATE_STOPPED;
+    if (schedulerTrackingLatch != null) {
+      schedulerTrackingLatch.countDown();
+    }
   }
 
   private void waitForShutdown(ExecutorService execPool) {
@@ -182,6 +208,10 @@ public class RCAScheduler {
 
   public NodeRole getRole() {
     return role;
+  }
+
+  public void setSchedulerTrackingLatch(final CountDownLatch schedulerTrackingLatch) {
+    this.schedulerTrackingLatch = schedulerTrackingLatch;
   }
 
   @VisibleForTesting

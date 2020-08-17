@@ -34,7 +34,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -47,7 +46,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.powermock.reflect.Whitebox;
 
 @Category(GradleTaskForRca.class)
 public class RcaControllerTest {
@@ -129,7 +127,8 @@ public class RcaControllerTest {
             rcaEnabledFileLoc.toString(),
             100,
             200,
-            appContext
+            appContext,
+                new MetricsDBProviderTestHelper()
         );
     rcaController.setDbProvider(new MetricsDBProviderTestHelper());
 
@@ -191,7 +190,7 @@ public class RcaControllerTest {
   @Test
   public void readAndUpdateMutedRcasBeforeGraphCreation() throws Exception {
     Method readAndUpdateMutesRcas = rcaController.getClass()
-            .getDeclaredMethod("readAndUpdateMutesRcas", null);
+            .getDeclaredMethod("readAndUpdateMutedComponents", null);
     readAndUpdateMutesRcas.setAccessible(true);
 
     String rcaConfPath = Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_muted.conf").toString();
@@ -203,14 +202,14 @@ public class RcaControllerTest {
     Field mutedGraphNodesField = Stats.class.getDeclaredField("mutedGraphNodes");
     mutedGraphNodesField.setAccessible(true);
     mutedGraphNodesField.set(Stats.getInstance(), null);
-    Set<String> initialComponentSet = ConnectedComponent.getNodeNames();
-    Whitebox.setInternalState(ConnectedComponent.class, "nodeNames", new HashSet<>());
+    Set<String> initialComponentSet = ConnectedComponent.getNodesForAllComponents(rcaController.getConnectedComponents());
+    // Whitebox.setInternalState(ConnectedComponent.class, "nodeNames", new HashSet<>());
 
     readAndUpdateMutesRcas.invoke(rcaController);
     Assert.assertNull(Stats.getInstance().getMutedGraphNodes());
 
     // Re-set back to initialComponentSet
-    Whitebox.setInternalState(ConnectedComponent.class, "nodeNames", initialComponentSet);
+    // Whitebox.setInternalState(ConnectedComponent.class, "nodeNames", initialComponentSet);
   }
 
   @Test
@@ -382,14 +381,14 @@ public class RcaControllerTest {
     jtime.put("current_time", 1566414001749L);
 
     JSONObject jOverrides = new JSONObject();
-    JSONObject jOverridesTimeStamp = new JSONObject();
+    long overridesTimestamp = System.currentTimeMillis();
 
     JSONObject jNode = new JSONObject();
     jNode.put(AllMetrics.NodeDetailColumns.ID.toString(), "4sqG_APMQuaQwEW17_6zwg");
     jNode.put(AllMetrics.NodeDetailColumns.HOST_ADDRESS.toString(), ip);
     jNode.put(AllMetrics.NodeDetailColumns.ROLE.toString(), nodeRole);
     jNode.put(AllMetrics.NodeDetailColumns.IS_MASTER_NODE,
-            nodeRole == AllMetrics.NodeRole.ELECTED_MASTER ? true : false);
+        nodeRole == AllMetrics.NodeRole.ELECTED_MASTER);
 
     ClusterDetailsEventProcessor eventProcessor = new ClusterDetailsEventProcessor();
     StringBuilder nodeDetails = new StringBuilder();
@@ -397,7 +396,7 @@ public class RcaControllerTest {
     nodeDetails.append(separator);
     nodeDetails.append(jOverrides);
     nodeDetails.append(separator);
-    nodeDetails.append(jOverridesTimeStamp);
+    nodeDetails.append(overridesTimestamp);
     nodeDetails.append(separator);
     nodeDetails.append(jNode.toString());
     eventProcessor.processEvent(
@@ -407,7 +406,7 @@ public class RcaControllerTest {
 
   enum RcaState {
     RUN,
-    STOP;
+    STOP
   }
 
   private void changeRcaRunState(RcaState state) throws IOException {

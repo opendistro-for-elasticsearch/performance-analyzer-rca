@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.overrides.ConfigOverridesApplier;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MetricName;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
@@ -68,6 +69,7 @@ public class ReaderMetricsProcessor implements Runnable {
   private static final Map<String, String> STATS_DATA = new HashMap<>();
 
   private final AppContext appContext;
+  private final ConfigOverridesApplier configOverridesApplier;
 
   static {
     STATS_DATA.put("MethodName", "ProcessMetrics");
@@ -98,6 +100,7 @@ public class ReaderMetricsProcessor implements Runnable {
     httpRqMetricsMap = new TreeMap<>();
     masterEventMetricsMap = new TreeMap<>();
     this.rootLocation = rootLocation;
+    this.configOverridesApplier = new ConfigOverridesApplier();
 
     AllMetrics.MetricName[] names = AllMetrics.MetricName.values();
     nodeMetricsMap = new HashMap<>(names.length);
@@ -436,7 +439,8 @@ public class ReaderMetricsProcessor implements Runnable {
     EventProcessor nodeEventsProcessor =
         NodeMetricsEventProcessor.buildNodeMetricEventsProcessor(
             currWindowStartTime, conn, nodeMetricsMap);
-    ClusterDetailsEventProcessor clusterDetailsEventsProcessor = new ClusterDetailsEventProcessor();
+    ClusterDetailsEventProcessor clusterDetailsEventsProcessor =
+        new ClusterDetailsEventProcessor(configOverridesApplier);
 
     // The event dispatcher dispatches events to each of the registered event processors.
     // In addition to event processing each processor has an initialize/finalize function that is

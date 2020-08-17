@@ -5,12 +5,14 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaRuntimeMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -104,5 +106,9 @@ public class RcaControllerHelper {
     RCA_CONF_PATH = rcaConfPath;
     MASTER_RCA_CONF_PATH = rcaMaterConfPath;
     ELECTED_MASTER_RCA_CONF_PATH = rcaElectedMasterConfPath;
+  }
+
+  public static List<String> getAllConfFilePaths() {
+    return ImmutableList.of(ELECTED_MASTER_RCA_CONF_PATH, MASTER_RCA_CONF_PATH, RCA_CONF_PATH);
   }
 }
