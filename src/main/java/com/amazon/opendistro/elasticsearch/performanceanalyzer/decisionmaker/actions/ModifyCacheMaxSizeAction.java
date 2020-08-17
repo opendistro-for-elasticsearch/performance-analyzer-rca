@@ -16,10 +16,11 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.HEAP;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.CacheUtil.MB_TO_BYTES;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.CacheUtil.KB_TO_BYTES;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.CacheUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
 import java.util.Collections;
@@ -35,7 +36,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class ModifyCacheMaxSizeAction extends SuppressibleAction {
   private static final Logger LOG = LogManager.getLogger(ModifyCacheMaxSizeAction.class);
-  public static final String NAME = "ModifyCacheCapacity";
+  public static final String NAME = "ModifyCacheMaxSize";
 
   private final NodeKey esNode;
   private final ResourceEnum cacheType;
@@ -153,7 +154,7 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
     private Long desiredCacheMaxSizeInBytes;
     private Long heapMaxSizeInBytes;
 
-    public Builder(
+    private Builder(
         final NodeKey esNode,
         final ResourceEnum cacheType,
         final AppContext appContext,
@@ -182,11 +183,11 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
       switch (cacheType) {
         case FIELD_DATA_CACHE:
           // Field data cache having step size of 512MB
-          this.stepSizeInBytes = (long) CacheUtil.getMBSizeInBytes(512);
+          this.stepSizeInBytes = (long) 512 * MB_TO_BYTES;
           break;
         case SHARD_REQUEST_CACHE:
           // Shard request cache step size of 512KB
-          this.stepSizeInBytes = (long) CacheUtil.getKBSizeInBytes(512);
+          this.stepSizeInBytes = (long) 512 * KB_TO_BYTES;
           break;
         default:
           assert false : "unrecognized cache type: " + cacheType.name();
@@ -219,7 +220,7 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
     }
 
     public ModifyCacheMaxSizeAction build() {
-      // fail to read max size from node config cache
+      // In case of failure to read cache max size or heap max size from node config cache
       // return an empty non-actionable action object
       if (currentCacheMaxSizeInBytes == null || heapMaxSizeInBytes == null) {
         LOG.error(

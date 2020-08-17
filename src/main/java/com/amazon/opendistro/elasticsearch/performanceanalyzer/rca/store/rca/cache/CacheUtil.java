@@ -29,6 +29,9 @@ import org.jooq.Result;
 public class CacheUtil {
     private static final Logger LOG = LogManager.getLogger(CacheUtil.class);
 
+    public static final long MB_TO_BYTES = 1024 * 1024;
+    public static final long KB_TO_BYTES = 1024;
+
     public static Double getTotalSizeInKB(final Metric cacheSizeGroupByOperation) {
         double totalSizeInKB = 0;
 
@@ -60,22 +63,6 @@ public class CacheUtil {
             return sizeinBytes / 1024.0;
         } else {
             throw new IllegalArgumentException("invalid value: {} in getSizeInKB" + Float.NaN);
-        }
-    }
-
-    public static double getMBSizeInBytes(double sizeInMB) {
-        if (!Double.isNaN(sizeInMB)) {
-            return sizeInMB * 1024.0 * 1024.0;
-        } else {
-            throw new IllegalArgumentException("invalid value: {} in getMBSizeInBytes" + Float.NaN);
-        }
-    }
-
-    public static double getKBSizeInBytes(double sizeInKB) {
-        if (!Double.isNaN(sizeInKB)) {
-            return sizeInKB * 1024.0;
-        } else {
-            throw new IllegalArgumentException("invalid value: {} in getKBSizeInBytes" + Float.NaN);
         }
     }
 
