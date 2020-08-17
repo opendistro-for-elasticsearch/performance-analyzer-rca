@@ -34,7 +34,6 @@ import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 public class FieldDataCacheValidator implements IValidator {
-    private static final Logger LOG = LogManager.getLogger(FieldDataCacheRca.class);
     long startTime;
 
     public FieldDataCacheValidator() {
@@ -75,7 +74,6 @@ public class FieldDataCacheValidator implements IValidator {
         if (!"unhealthy".equals(rcaObject.get("state").getAsString())) {
             return false;
         }
-        LOG.error(rcaObject);
         Assert.assertEquals(1,
                 JsonParserUtil.getSummaryJsonSize(rcaObject, HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE));
         JsonObject clusterSummaryJson =
