@@ -57,7 +57,6 @@ jobs:
     - name: Set vm.max_map_count
       run: sudo sysctl -w vm.max_map_count=262144
     - name: Build PA and run Unit Tests
-    - name: Build PerformanceAnalyzer
       working-directory: ./tmp/pa
       run: ./gradlew build -i
     - name: Run PerformanceAnalyzerIT Suite
