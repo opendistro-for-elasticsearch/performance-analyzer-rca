@@ -82,8 +82,8 @@ ext {
 }
 
 project.ext {
-    runITs = project.properties['runITs'] ?: "false"
-    runSlowTests = project.properties['runSlowTests'] ?: "false"
+    skipITs = project.properties['skipITs'] ?: "false"
+    skipSlowTests = project.properties['skipSlowTests'] ?: "false"
 }
 
 checkstyle {
@@ -166,7 +166,7 @@ jacocoTestReport {
 
 jacocoTestCoverageVerification {
     // We should only enforce coverage if we run ALL the tests
-    onlyIf { project.ext.runITs == "true" && project.ext.runSlowTests == "true" }
+    onlyIf { project.ext.skipITs != "true" && project.ext.skipSlowTests != "true" }
     afterEvaluate {
         classDirectories.from = files(classDirectories.files.collect {
             fileTree(dir: it,
@@ -199,17 +199,17 @@ if (isSnapshot) {
 test {
     enabled = true
     filter {
-        if (project.ext.runITs == "true") {
-            includeTestsMatching "com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.*"
-        } else {
+        if (project.ext.skipITs == "true") {
             excludeTestsMatching "com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.*"
+        } else {
+            includeTestsMatching "com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.*"
         }
     }
     useJUnit {
-        if (project.ext.runSlowTests == "true") {
-            includeCategories 'com.amazon.opendistro.elasticsearch.performanceanalyzer.categories.SlowTest'
-        } else {
+        if (project.ext.skipSlowTests == "true") {
             excludeCategories 'com.amazon.opendistro.elasticsearch.performanceanalyzer.categories.SlowTest'
+        } else {
+            includeCategories 'com.amazon.opendistro.elasticsearch.performanceanalyzer.categories.SlowTest'
         }
     }
 }
