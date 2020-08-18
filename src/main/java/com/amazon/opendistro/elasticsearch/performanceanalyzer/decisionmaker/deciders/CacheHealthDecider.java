@@ -143,7 +143,6 @@ public class CacheHealthDecider extends Decider {
 
   private ModifyCacheMaxSizeAction configureCacheMaxSize(
       final NodeKey esNode, final ResourceEnum cacheType, final boolean increase) {
-    final double cacheUpperBound = getCacheUpperBound(cacheType);
     final ModifyCacheMaxSizeAction action =
         ModifyCacheMaxSizeAction
             .newBuilder(esNode, cacheType, getAppContext(), getCacheUpperBound(cacheType))

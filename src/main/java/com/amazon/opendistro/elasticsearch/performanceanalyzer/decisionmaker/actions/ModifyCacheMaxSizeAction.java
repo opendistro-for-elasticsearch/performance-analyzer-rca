@@ -233,8 +233,10 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
       // skip the step size bound check if we set desiredCapacity
       // explicitly in action builder
       if (desiredCacheMaxSizeInBytes == null) {
-        desiredCacheMaxSizeInBytes =
-            isIncrease ? currentCacheMaxSizeInBytes + stepSizeInBytes : currentCacheMaxSizeInBytes;
+        desiredCacheMaxSizeInBytes = currentCacheMaxSizeInBytes;
+        if (isIncrease) {
+          desiredCacheMaxSizeInBytes += currentCacheMaxSizeInBytes;
+        }
       }
       long upperBoundInBytes = (long) (upperBoundThreshold * heapMaxSizeInBytes);
       desiredCacheMaxSizeInBytes = Math.min(desiredCacheMaxSizeInBytes, upperBoundInBytes);
