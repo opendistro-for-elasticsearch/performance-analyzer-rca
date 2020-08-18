@@ -27,11 +27,15 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.ShardRequestCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,6 +46,7 @@ import org.junit.Test;
 
 public class CacheHealthDeciderTest {
   private AppContext appContext;
+  private RcaConf rcaConf;
 
   @Before
   public void setupCluster() throws SQLException, ClassNotFoundException {
@@ -72,6 +77,9 @@ public class CacheHealthDeciderTest {
 
     appContext = new AppContext();
     appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
+
+    String rcaConfPath = Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString();
+    rcaConf = new RcaConf(rcaConfPath);
 
     for (final ClusterDetailsEventProcessor.NodeDetails node : nodes) {
       appContext
@@ -167,6 +175,7 @@ public class CacheHealthDeciderTest {
       assertTrue(decision.isEmpty());
     }
 
+    decider.readRcaConf(rcaConf);
     Decision decision = decider.operate();
     // Only one resource will be tuned at a time
     assertEquals(3, decision.getActions().size());
