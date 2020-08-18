@@ -201,15 +201,11 @@ test {
     filter {
         if (project.ext.skipITs == "true") {
             excludeTestsMatching "com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.*"
-        } else {
-            includeTestsMatching "com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.*"
         }
     }
     useJUnit {
         if (project.ext.skipSlowTests == "true") {
             excludeCategories 'com.amazon.opendistro.elasticsearch.performanceanalyzer.categories.SlowTest'
-        } else {
-            includeCategories 'com.amazon.opendistro.elasticsearch.performanceanalyzer.categories.SlowTest'
         }
     }
 }

@@ -21,8 +21,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.junit.Assert;
 import org.junit.Test;
@@ -38,8 +36,6 @@ import org.junit.runner.notification.RunNotifier;
  * This is the main runner class that is used by the RCA-IT.
  */
 public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner, Filterable {
-  private static final Logger LOG = LogManager.getLogger(RcaItRunnerBase.class);
-
   // The class whose tests the runner is currently executing.
   private final Class testClass;
 
