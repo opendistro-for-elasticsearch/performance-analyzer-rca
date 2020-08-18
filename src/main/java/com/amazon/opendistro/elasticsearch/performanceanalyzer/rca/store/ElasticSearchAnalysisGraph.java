@@ -63,6 +63,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigClusterCollector;
@@ -80,6 +81,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.TotalCpuUtilForTotalNodeMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.HeapAllocRateShardIndependentTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.ShardIndependentTemperatureCalculatorCpuUtilMetric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.ClusterReaderRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeRca;
@@ -187,7 +189,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     // Cluster level queue rejection RCA
     QueueRejectionClusterRca queueRejectionClusterRca = new QueueRejectionClusterRca(RCA_PERIOD, queueRejectionNodeRca);
     queueRejectionClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    queueRejectionClusterRca.addAllUpstreams(Collections.singletonList(queueRejectionNodeRca));
+    queueRejectionClusterRca.addAllUpstreams(Collections.singletonList(queueRejectionNodeRca)); //add queueRejectionNodeRca as upstreams
     queueRejectionClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
     // Queue Health Decider
@@ -272,6 +274,12 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     constructShardResourceUsageGraph();
 
     //constructResourceHeatMapGraph();
+
+    //Reader - read RCA update data from all cluster rca
+    //Reader reader = new Reader(EVALUATION_INTERVAL_SECONDS)
+    ClusterReaderRca<?> clusterReaderRca = new ClusterReaderRca<>(EVALUATION_INTERVAL_SECONDS, Arrays.asList(queueRejectionClusterRca, hotNodeClusterRca, highHeapUsageClusterRca, fieldDataCacheClusterRca, shardRequestCacheClusterRca));
+    clusterReaderRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    clusterReaderRca.addAllUpstreams(Arrays.asList(queueRejectionClusterRca, hotNodeClusterRca, highHeapUsageClusterRca, fieldDataCacheClusterRca, shardRequestCacheClusterRca));
 
     // Collator - Collects actions from all deciders and aligns impact vectors
     Collator collator = new Collator(EVALUATION_INTERVAL_SECONDS, queueHealthDecider, cacheHealthDecider);

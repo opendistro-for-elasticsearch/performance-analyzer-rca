@@ -56,21 +56,21 @@ public class ResourceFlowUnit<T extends GenericSummary> extends GenericFlowUnit 
   }
 
   public ResourceFlowUnit(long timeStamp, ResourceContext context,
-      T summary, boolean persistSummary) {
+      T summary, boolean persistSummary) { // called when the node is unhealthy
     super(timeStamp);
     this.resourceContext = context;
-    this.summary = summary;
+    this.summary = summary; //summary.toJson() get the json object
     this.empty = false;
     this.persistSummary = persistSummary;
   }
 
   public ResourceFlowUnit(long timeStamp, ResourceContext context,
-      T summary) {
+      T summary) { //called when the node is healthy
     this(timeStamp, context, summary, false);
   }
 
   //Call generic() only if you want to generate a empty flowunit
-  public static ResourceFlowUnit<? extends GenericSummary> generic() {
+  public static ResourceFlowUnit<? extends GenericSummary> generic() { // generate empty flowunit
     return new ResourceFlowUnit<>(System.currentTimeMillis());
   }
 

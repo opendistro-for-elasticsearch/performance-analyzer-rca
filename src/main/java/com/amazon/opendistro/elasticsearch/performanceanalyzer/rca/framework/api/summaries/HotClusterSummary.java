@@ -137,7 +137,7 @@ public class HotClusterSummary extends GenericSummary {
   }
 
   @Override
-  public GenericSummary buildNestedSummary(String summaryTable, Record record) throws IllegalArgumentException {
+  public `Generic`Summary buildNestedSummary(String summaryTable, Record record) throws IllegalArgumentException {
     if (summaryTable.equals(HotNodeSummary.HOT_NODE_SUMMARY_TABLE)) {
       HotNodeSummary hotNodeSummary = HotNodeSummary.buildSummary(record);
       if (hotNodeSummary != null) {
