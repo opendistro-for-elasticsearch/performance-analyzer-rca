@@ -235,7 +235,7 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
       if (desiredCacheMaxSizeInBytes == null) {
         desiredCacheMaxSizeInBytes = currentCacheMaxSizeInBytes;
         if (isIncrease) {
-          desiredCacheMaxSizeInBytes += currentCacheMaxSizeInBytes;
+          desiredCacheMaxSizeInBytes += stepSizeInBytes;
         }
       }
       long upperBoundInBytes = (long) (upperBoundThreshold * heapMaxSizeInBytes);
