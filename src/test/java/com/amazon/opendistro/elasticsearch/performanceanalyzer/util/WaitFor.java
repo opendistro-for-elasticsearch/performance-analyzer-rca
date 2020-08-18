@@ -1,5 +1,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.util;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -17,14 +19,13 @@ public class WaitFor {
      */
     public static void waitFor(Callable<Boolean> task, long maxWait, TimeUnit unit) throws Exception {
         long maxWaitMillis = TimeUnit.MILLISECONDS.convert(maxWait, unit);
-        long pollTime = System.currentTimeMillis();
-        long curTime;
+        Instant start = Instant.now();
         while (!task.call() && maxWaitMillis >= 0) {
-            curTime = System.currentTimeMillis();
-            maxWaitMillis -= (curTime - pollTime);
-            pollTime = curTime;
+            Instant finish = Instant.now();
+            maxWaitMillis -= Duration.between(start, finish).toMillis();
+            start = finish;
         }
-        if (maxWaitMillis < 0) {
+        if (!task.call() && maxWaitMillis < 0) {
             throw new TimeoutException("WaitFor timed out before task evaluated to true");
         }
     }

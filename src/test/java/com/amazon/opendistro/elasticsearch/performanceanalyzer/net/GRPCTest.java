@@ -1,10 +1,10 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.net;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.CertificateUtils;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.categories.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsRequest;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricsResponse;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.WaitFor;
 import io.grpc.StatusRuntimeException;
@@ -131,7 +131,7 @@ public class GRPCTest {
         insecureClient.getMetrics(remoteInstance, METRICS_REQUEST, observer);
         // Wait for the client to fail
         WaitFor.waitFor(() -> observer.errors[0] != null && observer.errors[0] instanceof StatusRuntimeException,
-                1, TimeUnit.MINUTES);
+            10, TimeUnit.SECONDS);
         insecureClient.stop();
         insecureClient.getConnectionManager().shutdown();
     }

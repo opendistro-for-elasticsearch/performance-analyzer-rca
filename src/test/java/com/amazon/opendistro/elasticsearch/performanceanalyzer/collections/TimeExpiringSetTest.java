@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.collections;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.categories.SlowTest;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -22,7 +23,9 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+@Category(SlowTest.class)
 public class TimeExpiringSetTest {
   private TimeExpiringSet<Integer> timeExpiringSet;
 

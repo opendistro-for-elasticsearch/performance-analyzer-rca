@@ -16,10 +16,9 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec;
 
 import static com.google.common.collect.Maps.newHashMap;
-import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.categories.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import java.nio.file.Paths;

@@ -1,11 +1,11 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.categories.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.TestNetServer;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.SymptomFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Used;
@@ -31,6 +31,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -40,6 +42,8 @@ import org.junit.experimental.categories.Category;
 
 @Category(GradleTaskForRca.class)
 public class WireHopperTest {
+    private final Logger LOG = LogManager.getLogger(this.getClass());
+
     private static final String NODE1 = "NODE1";
     private static final String NODE2 = "NODE2";
     private static final String LOCALHOST = "127.0.0.1";
@@ -192,9 +196,11 @@ public class WireHopperTest {
         Assert.assertEquals(msgList, actualMsgList);
         // Verify expected interactions with the subscription manager
         WaitFor.waitFor(() -> {
-                ImmutableSet<InstanceDetails.Id> subscribers = subscriptionManager.getSubscribersFor(node.name());
-                return subscribers.size() == 1 && subscribers.asList().get(0).toString().equals(LOCALHOST_INSTANCE);
-            }, 1, TimeUnit.SECONDS);
+            ImmutableSet<InstanceDetails.Id> subscribers = subscriptionManager
+                .getSubscribersFor(node.name());
+            return subscribers.size() == 1 && subscribers.asList().get(0).toString()
+                .equals(LOCALHOST_INSTANCE);
+        }, 1, TimeUnit.MINUTES);
         // Verify resilience to RejectedExecutionException
         clientExecutor.set(rejectingExecutor);
         uut.readFromWire(node);

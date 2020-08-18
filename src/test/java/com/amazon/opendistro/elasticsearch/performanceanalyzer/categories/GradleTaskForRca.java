@@ -13,6 +13,6 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.categories;
 
 public interface GradleTaskForRca {}

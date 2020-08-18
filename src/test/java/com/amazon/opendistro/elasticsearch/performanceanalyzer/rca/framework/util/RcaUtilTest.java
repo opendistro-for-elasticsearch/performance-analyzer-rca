@@ -18,7 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ut
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.categories.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.CPU_Utilization;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;

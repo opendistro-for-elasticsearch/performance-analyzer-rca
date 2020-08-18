@@ -81,6 +81,11 @@ ext {
     isSnapshot = "true" == System.getProperty("build.snapshot", "true")
 }
 
+project.ext {
+    runITs = project.properties['runITs'] ?: "false"
+    runSlowTests = project.properties['runSlowTests'] ?: "false"
+}
+
 checkstyle {
     toolVersion '8.24'
     configFile file("config/checkstyle/checkstyle.xml")
@@ -160,6 +165,8 @@ jacocoTestReport {
 }
 
 jacocoTestCoverageVerification {
+    // We should only enforce coverage if we run ALL the tests
+    onlyIf { project.ext.runITs == "true" && project.ext.runSlowTests == "true" }
     afterEvaluate {
         classDirectories.from = files(classDirectories.files.collect {
             fileTree(dir: it,
@@ -191,26 +198,20 @@ if (isSnapshot) {
 
 test {
     enabled = true
-
-}
-
-task rcaTest(type: Test) {
-    dependsOn checkstyleMain
-    dependsOn checkstyleTest
-    useJUnit {
-        includeCategories 'com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca'
+    filter {
+        if (project.ext.runITs == "true") {
+            includeTestsMatching "com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.*"
+        } else {
+            excludeTestsMatching "com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.*"
+        }
     }
-    testLogging.showStandardStreams = true
-}
-
-task rcaIt(type: Test) {
-    dependsOn checkstyleMain
-    dependsOn checkstyleTest
-    dependsOn spotbugsMain
     useJUnit {
-        includeCategories 'com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker'
+        if (project.ext.runSlowTests == "true") {
+            includeCategories 'com.amazon.opendistro.elasticsearch.performanceanalyzer.categories.SlowTest'
+        } else {
+            excludeCategories 'com.amazon.opendistro.elasticsearch.performanceanalyzer.categories.SlowTest'
+        }
     }
-    //testLogging.showStandardStreams = true
 }
 
 sourceCompatibility = 1.8

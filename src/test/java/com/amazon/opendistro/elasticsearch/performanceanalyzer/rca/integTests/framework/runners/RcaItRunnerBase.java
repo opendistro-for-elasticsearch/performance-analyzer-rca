@@ -1,7 +1,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.categories.RcaItMarker;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.Cluster;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.TestEnvironment;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AClusterType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AErrorPatternIgnored;

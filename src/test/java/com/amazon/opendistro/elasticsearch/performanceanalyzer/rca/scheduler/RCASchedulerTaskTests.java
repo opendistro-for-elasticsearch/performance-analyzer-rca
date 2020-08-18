@@ -18,7 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler;
 import static org.junit.Assert.assertEquals;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.categories.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Symptom;

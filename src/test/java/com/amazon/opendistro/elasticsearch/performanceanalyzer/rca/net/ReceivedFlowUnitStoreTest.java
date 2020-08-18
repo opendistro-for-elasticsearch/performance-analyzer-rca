@@ -1,7 +1,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.categories.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;

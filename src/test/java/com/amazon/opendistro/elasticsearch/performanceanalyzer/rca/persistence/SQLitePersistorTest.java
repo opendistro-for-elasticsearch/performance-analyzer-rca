@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.categories.SlowTest;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
@@ -40,7 +41,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+@Category(SlowTest.class)
 public class SQLitePersistorTest {
   private Path testLocation = null;
   private final String baseFilename = "rca.test.file";

@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
 import static org.junit.Assert.assertEquals;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.categories.SlowTest;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.OSMetrics;
 import java.sql.Connection;
@@ -27,7 +28,9 @@ import org.jooq.BatchBindStep;
 import org.jooq.Record;
 import org.jooq.Result;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+@Category(SlowTest.class)
 @SuppressWarnings("serial")
 public class OSMetricsSnapshotTests {
   private static final String DB_URL = "jdbc:sqlite:";

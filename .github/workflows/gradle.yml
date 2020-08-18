@@ -1,11 +1,6 @@
 name: Java CI
 
-on: 
-  push: 
-    branches: 
-      - master
-      - dev
-
+on:
   pull_request:
     branches: 
       - master
@@ -59,10 +54,3 @@ jobs:
     - name: Build PA and run Unit Tests
       working-directory: ./tmp/pa
       run: ./gradlew build -i
-    - name: Run PerformanceAnalyzerIT Suite
-      working-directory: ./tmp/pa
-      run: ./gradlew integTest -Dtests.enableIT=true -Dtests.useDockerCluster=true
-      
-      
-        
-      

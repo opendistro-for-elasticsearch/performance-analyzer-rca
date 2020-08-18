@@ -17,7 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.spec;
 
 import static org.junit.Assert.assertEquals;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.categories.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.exceptions.MalformedThresholdFile;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.exceptions.OverridesAndPrecedenceOrderCountMismatch;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.exceptions.OverridesAndPrecedenceOrderValueMismatch;
