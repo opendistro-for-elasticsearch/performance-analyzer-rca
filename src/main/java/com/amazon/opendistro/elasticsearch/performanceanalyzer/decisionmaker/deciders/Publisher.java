@@ -20,28 +20,31 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ActionListener;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.CoolOffDetector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.FlipFlopDetector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.PersistableAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.TimedFlipFlopDetector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.PublisherEventFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.google.common.annotations.VisibleForTesting;
-import java.time.Instant;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class Publisher extends NonLeafNode<EmptyFlowUnit> {
+public class Publisher extends NonLeafNode<PublisherEventFlowUnit> {
 
   private static final Logger LOG = LogManager.getLogger(Publisher.class);
-
+  public static final String NAME = "Publisher";
   private Collator collator;
   private FlipFlopDetector flipFlopDetector;
   private boolean isMuted = false;
   private CoolOffDetector coolOffDetector;
   private List<ActionListener> actionListeners;
+  protected Clock clock;
 
   public Publisher(int evalIntervalSeconds, Collator collator) {
     super(0, evalIntervalSeconds);
@@ -50,12 +53,19 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
     this.coolOffDetector = new CoolOffDetector();
     // TODO please bring in guice so we can configure this with DI
     this.flipFlopDetector = new TimedFlipFlopDetector(1, TimeUnit.HOURS);
+    this.clock = Clock.systemUTC();
   }
 
   @Override
-  public EmptyFlowUnit operate() {
+  public String name() {
+    return NAME;
+  }
+
+  @Override
+  public PublisherEventFlowUnit operate() {
     // TODO: Need to add dampening, avoidance, state persistence etc.
     Decision decision = collator.getFlowUnits().get(0);
+    List<PersistableAction> persistableActions = new ArrayList<>();
     for (Action action : decision.getActions()) {
       if (coolOffDetector.isCooledOff(action) && !flipFlopDetector.isFlipFlop(action)) {
         flipFlopDetector.recordAction(action);
@@ -63,9 +73,18 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
         for (ActionListener listener : actionListeners) {
           listener.actionPublished(action);
         }
+        if (action instanceof PersistableAction) {
+          persistableActions.add((PersistableAction) action);
+        }
       }
     }
-    return new EmptyFlowUnit(Instant.now().toEpochMilli());
+    long timestamp = clock.millis();
+    if (!persistableActions.isEmpty()) {
+      return new PublisherEventFlowUnit(timestamp, new PublisherEvent(name(), timestamp, persistableActions));
+    }
+    else {
+      return new PublisherEventFlowUnit(timestamp);
+    }
   }
 
   @Override
@@ -121,5 +140,10 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
   @VisibleForTesting
   protected CoolOffDetector getCoolOffDetector() {
     return this.coolOffDetector;
+  }
+
+  @VisibleForTesting
+  public void setClock(Clock clock) {
+    this.clock = clock;
   }
 }

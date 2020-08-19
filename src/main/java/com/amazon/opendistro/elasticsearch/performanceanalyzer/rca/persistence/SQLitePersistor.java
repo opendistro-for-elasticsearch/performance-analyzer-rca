@@ -91,7 +91,7 @@ class SQLitePersistor extends PersistorBase {
   }
 
   @Override
-  synchronized void createTable(String tableName, List<Field<?>> columns) throws SQLException {
+  public synchronized void createTable(String tableName, List<Field<?>> columns) throws SQLException {
     CreateTableConstraintStep constraintStep = create.createTable(tableName)
         //sqlite does not support identity. use plain sql string instead.
         .column(DSL.field(getPrimaryKeyColumnName(tableName) + PRIMARY_KEY_AUTOINCREMENT_POSTFIX))
@@ -118,8 +118,9 @@ class SQLitePersistor extends PersistorBase {
    * create table with foreign key
    */
   @Override
-  synchronized void createTable(String tableName, List<Field<?>> columns, String referenceTableName,
-                                String referenceTablePrimaryKeyFieldName) throws SQLException {
+  public synchronized void createTable(String tableName, List<Field<?>> columns, String referenceTableName)
+      throws SQLException {
+    String referenceTablePrimaryKeyFieldName = getPrimaryKeyColumnName(referenceTableName);
     Field foreignKeyField = DSL.field(referenceTablePrimaryKeyFieldName, Integer.class);
     columns.add(foreignKeyField);
 
@@ -150,7 +151,7 @@ class SQLitePersistor extends PersistorBase {
   }
 
   @Override
-  synchronized int insertRow(String tableName, List<Object> row) throws SQLException {
+  public synchronized int insertRow(String tableName, List<Object> row) throws SQLException {
     int lastPrimaryKey = -1;
     String sqlQuery = "SELECT " + LAST_INSERT_ROWID;
 

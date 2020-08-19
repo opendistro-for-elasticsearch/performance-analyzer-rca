@@ -101,15 +101,14 @@ public abstract class PersistorBase implements Persistable {
     }
   }
 
-  abstract void createTable(String tableName, List<Field<?>> columns) throws SQLException;
+  public abstract void createTable(String tableName, List<Field<?>> columns) throws SQLException;
 
-  abstract void createTable(
+  public abstract void createTable(
       String tableName,
       List<Field<?>> columns,
-      String refTable,
-      String referenceTablePrimaryKeyFieldName) throws SQLException;
+      String refTable) throws SQLException;
 
-  abstract int insertRow(String tableName, List<Object> columns) throws SQLException;
+  public abstract int insertRow(String tableName, List<Object> columns) throws SQLException;
 
   abstract String readTables();
 
@@ -119,6 +118,10 @@ public abstract class PersistorBase implements Persistable {
 
   @VisibleForTesting
   public abstract Map<String, Result<Record>> getRecordsForAllTables();
+
+  public boolean hasTable(String tableName) {
+    return tableNames.contains(tableName);
+  }
 
   // Not required for now.
   @Override
@@ -246,7 +249,6 @@ public abstract class PersistorBase implements Persistable {
       writeSummary(
               flowUnit.getPersistableSummary(),
               tableName,
-              getPrimaryKeyColumnName(tableName),
               lastPrimaryKey);
     }
   }
@@ -255,18 +257,17 @@ public abstract class PersistorBase implements Persistable {
   private synchronized void writeSummary(
       GenericSummary summary,
       String referenceTable,
-      String referenceTablePrimaryKeyFieldName,
       int referenceTablePrimaryKeyFieldValue) throws SQLException {
     String tableName = summary.getClass().getSimpleName();
     if (!tableNames.contains(tableName)) {
       LOG.info("RCA: Summary table '{}' does not exist. Creating one with columns: {}", tableName, summary.getSqlSchema());
-      createTable(tableName, summary.getSqlSchema(), referenceTable, referenceTablePrimaryKeyFieldName);
+      createTable(tableName, summary.getSqlSchema(), referenceTable);
     }
     List<Object> values = summary.getSqlValue();
     values.add(Integer.valueOf(referenceTablePrimaryKeyFieldValue));
     int lastPrimaryKey = insertRow(tableName, values);
     for (GenericSummary nestedSummary : summary.getNestedSummaryList()) {
-      writeSummary(nestedSummary, tableName, getPrimaryKeyColumnName(tableName), lastPrimaryKey);
+      writeSummary(nestedSummary, tableName, lastPrimaryKey);
     }
   }
 

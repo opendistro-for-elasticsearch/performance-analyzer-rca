@@ -20,6 +20,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionma
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.NETWORK;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.PersistableAction.SQL_SCHEMA_CONSTANTS.ActionField;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 
@@ -30,7 +31,7 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ModifyQueueCapacityAction extends SuppressibleAction {
+public class ModifyQueueCapacityAction extends PersistableAction {
 
   private static final Logger LOG = LogManager.getLogger(ModifyQueueCapacityAction.class);
   public static final String NAME = "ModifyQueueCapacity";
@@ -56,6 +57,7 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
     this.lowerBound = lowerBound;
     this.upperBound = upperBound;
     this.canUpdate = canUpdate;
+    persistValues();
   }
 
   public static Builder newBuilder(NodeKey esNode, ResourceEnum threadPool, AppContext appContext) {
@@ -117,6 +119,17 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
 
   public ResourceEnum getThreadPool() {
     return threadPool;
+  }
+
+  //persist values into SQL tuple
+  private void persistValues() {
+    setRowValue(ActionField.RESOURCE_TYPE_FIELD.getField(), threadPool.getNumber());
+    setRowValue(ActionField.NODE_ID_FIELD.getField(), esNode.getNodeId().toString());
+    setRowValue(ActionField.NODE_IP_FIELD.getField(), esNode.getHostAddress().toString());
+    setRowValue(ActionField.ACTIONABLE_FIELD.getField(), isActionable());
+    setRowValue(ActionField.COOL_OFF_PERIOD_FIELD.getField(), coolOffPeriodInMillis);
+    setRowValue(ActionField.CURRENT_VALUE_FIELD.getField(), currentCapacity);
+    setRowValue(ActionField.DESIRED_VALUE_FIELD.getField(), desiredCapacity);
   }
 
   public static final class Builder {

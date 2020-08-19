@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.PersistableAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.google.common.annotations.VisibleForTesting;
