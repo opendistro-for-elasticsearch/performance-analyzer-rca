@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
@@ -41,11 +42,13 @@ public class AppContext {
   // to store node config settings from ES
   private final NodeConfigCache nodeConfigCache;
   private volatile Set<String> mutedActions;
+  private volatile RcaConf rcaConf;
 
   public AppContext() {
     this.clusterDetailsEventProcessor = null;
     this.nodeConfigCache = new NodeConfigCache();
     this.mutedActions = ImmutableSet.of();
+    this.rcaConf = null;
   }
 
   public AppContext(AppContext other) {
@@ -54,6 +57,7 @@ public class AppContext {
     // Initializing this as we don't want to copy the entire cache.
     this.nodeConfigCache = new NodeConfigCache();
     this.mutedActions = ImmutableSet.copyOf(other.getMutedActions());
+    this.rcaConf = other.rcaConf;
   }
 
   public void setClusterDetailsEventProcessor(final ClusterDetailsEventProcessor clusterDetailsEventProcessor) {
@@ -138,5 +142,17 @@ public class AppContext {
 
   public Set<String> getMutedActions() {
     return this.mutedActions;
+  }
+
+  /**
+   * thread-safe setter for RcaConf
+   * @param rcaConf RcaConf object
+   */
+  public void setRcaConf(RcaConf rcaConf) {
+    this.rcaConf = rcaConf;
+  }
+
+  public RcaConf getRcaConf() {
+    return rcaConf;
   }
 }

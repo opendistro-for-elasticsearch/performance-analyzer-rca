@@ -16,11 +16,14 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.HEAP;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig.getDefaultFieldDataCacheUpperBound;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig.getDefaultShardRequestCacheUpperBound;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.CacheUtil.KB_TO_BYTES;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.CacheUtil.MB_TO_BYTES;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
 import java.util.Collections;
@@ -69,9 +72,8 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
   public static Builder newBuilder(
       final NodeKey esNode,
       final ResourceEnum cacheType,
-      final AppContext appContext,
-      double upperBoundThreshold) {
-    return new Builder(esNode, cacheType, appContext, upperBoundThreshold);
+      final AppContext appContext) {
+    return new Builder(esNode, cacheType, appContext);
   }
 
   @Override
@@ -157,12 +159,10 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
     private Builder(
         final NodeKey esNode,
         final ResourceEnum cacheType,
-        final AppContext appContext,
-        double upperBoundThreshold) {
+        final AppContext appContext) {
       this.esNode = esNode;
       this.cacheType = cacheType;
       this.appContext = appContext;
-      this.upperBoundThreshold = upperBoundThreshold;
 
       this.coolOffPeriodInMillis = DEFAULT_COOL_OFF_PERIOD_IN_MILLIS;
       this.isIncrease = DEFAULT_IS_INCREASE;
@@ -175,6 +175,7 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
           NodeConfigCacheReaderUtil.readHeapMaxSizeInBytes(appContext.getNodeConfigCache(), esNode);
       this.desiredCacheMaxSizeInBytes = null;
       setDefaultStepSize(cacheType);
+      setDefaultThreshold(cacheType);
     }
 
     private void setDefaultStepSize(ResourceEnum cacheType) {
@@ -193,6 +194,27 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
         default:
           throw new IllegalArgumentException(
                 String.format("Unrecognizable cache type: [%s]", cacheType.toString()));
+      }
+    }
+
+    private void setDefaultThreshold(ResourceEnum cacheType) {
+      if (appContext.getRcaConf() == null) {
+        //we should not run into this unless there is a bug in RCAScheduler.
+        LOG.error("RcaConf object is null. Scheduler is not supposed to run Decider with empty Rca.conf");
+        throw new IllegalStateException();
+      }
+      switch (cacheType) {
+        case FIELD_DATA_CACHE:
+          this.upperBoundThreshold =
+              appContext.getRcaConf().getDeciderConfig().getFieldDataCacheUpperBound();
+          break;
+        case SHARD_REQUEST_CACHE:
+          this.upperBoundThreshold =
+              appContext.getRcaConf().getDeciderConfig().getShardRequestCacheUpperBound();
+          break;
+        default:
+          throw new IllegalArgumentException(
+              String.format("Unrecognizable cache type: [%s]", cacheType.toString()));
       }
     }
 

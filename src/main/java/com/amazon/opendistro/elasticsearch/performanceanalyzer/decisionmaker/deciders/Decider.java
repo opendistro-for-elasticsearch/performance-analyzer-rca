@@ -112,14 +112,6 @@ public abstract class Decider extends NonLeafNode<Decision> {
     configObj = conf.getDeciderConfig();
   }
 
-  public double getFieldDataCacheUpperBound() {
-    return configObj != null ? configObj.getFieldDataCacheUpperBound() : getDefaultFieldDataCacheUpperBound();
-  }
-
-  public double getShardRequestCacheUpperBound() {
-    return configObj != null ? configObj.getShardRequestCacheUpperBound() : getDefaultShardRequestCacheUpperBound();
-  }
-
   public List<String> getWorkLoadPriority() {
     return configObj != null ? configObj.getWorkloadPriorityOrder() : getDefaultWorkloadPriority();
   }

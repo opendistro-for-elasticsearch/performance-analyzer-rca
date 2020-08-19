@@ -60,6 +60,7 @@ public class RcaControllerTest {
   private String masterIP;
   private Thread controllerThread;
   private ThreadProvider threadProvider;
+  private AppContext appContext;
 
   @Before
   public void setUp() throws Exception {
@@ -82,7 +83,7 @@ public class RcaControllerTest {
                     "127.0.0.1",
                     false))
     );
-    AppContext appContext = new AppContext();
+    appContext = new AppContext();
     appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
 
     clientServers = PerformanceAnalyzerApp.createClientServers(connectionManager, appContext);
@@ -137,9 +138,7 @@ public class RcaControllerTest {
     // since we are using 2 rca.conf files here for testing, 'rca_muted.conf' for testing Muted RCAs
     // and 'rca.conf' for remainging tests, use reflection to access the private rcaConf class variable.
     String rcaConfPath = Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString();
-    Field field = rcaController.getClass().getDeclaredField("rcaConf");
-    field.setAccessible(true);
-    field.set(rcaController, new RcaConf(rcaConfPath));
+    appContext.setRcaConf(new RcaConf(rcaConfPath));
 
     controllerThread =
         threadProvider.createThreadForRunnable(() -> rcaController.run(),
@@ -194,9 +193,7 @@ public class RcaControllerTest {
     readAndUpdateMutesRcas.setAccessible(true);
 
     String rcaConfPath = Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_muted.conf").toString();
-    Field rcaConfField = rcaController.getClass().getDeclaredField("rcaConf");
-    rcaConfField.setAccessible(true);
-    rcaConfField.set(rcaController, new RcaConf(rcaConfPath));
+    appContext.setRcaConf(new RcaConf(rcaConfPath));
     updateConfFileForMutedRcas(rcaConfPath, Arrays.asList("CPU_Utilization", "Heap_AllocRate"));
 
     Field mutedGraphNodesField = Stats.class.getDeclaredField("mutedGraphNodes");
