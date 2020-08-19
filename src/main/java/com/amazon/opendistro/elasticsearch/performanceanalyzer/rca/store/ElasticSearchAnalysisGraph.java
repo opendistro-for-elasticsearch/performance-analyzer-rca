@@ -30,6 +30,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.PluginController;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.PluginControllerConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.rca_summary.RcaSummaryPluginController;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.rca_summary.RcaSummaryPluginControllerConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
@@ -63,7 +65,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigClusterCollector;
@@ -81,7 +82,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.TotalCpuUtilForTotalNodeMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.HeapAllocRateShardIndependentTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.ShardIndependentTemperatureCalculatorCpuUtilMetric;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.ClusterReaderRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterReaderRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeRca;
@@ -275,12 +276,6 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
     //constructResourceHeatMapGraph();
 
-    //Reader - read RCA update data from all cluster rca
-    //Reader reader = new Reader(EVALUATION_INTERVAL_SECONDS)
-    ClusterReaderRca<?> clusterReaderRca = new ClusterReaderRca<>(EVALUATION_INTERVAL_SECONDS, Arrays.asList(queueRejectionClusterRca, hotNodeClusterRca, highHeapUsageClusterRca, fieldDataCacheClusterRca, shardRequestCacheClusterRca));
-    clusterReaderRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    clusterReaderRca.addAllUpstreams(Arrays.asList(queueRejectionClusterRca, hotNodeClusterRca, highHeapUsageClusterRca, fieldDataCacheClusterRca, shardRequestCacheClusterRca));
-
     // Collator - Collects actions from all deciders and aligns impact vectors
     Collator collator = new Collator(EVALUATION_INTERVAL_SECONDS, queueHealthDecider, cacheHealthDecider);
     collator.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
@@ -295,6 +290,15 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     PluginControllerConfig pluginControllerConfig = new PluginControllerConfig();
     PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
     pluginController.initPlugins();
+
+    //Reader - read RCA update data from cluster rcas
+    ClusterReaderRca<?> clusterReaderRca = new ClusterReaderRca<>(EVALUATION_INTERVAL_SECONDS, Arrays.asList(queueRejectionClusterRca, hotNodeClusterRca, highHeapUsageClusterRca, fieldDataCacheClusterRca, shardRequestCacheClusterRca));
+    clusterReaderRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    clusterReaderRca.addAllUpstreams(Arrays.asList(queueRejectionClusterRca, hotNodeClusterRca, highHeapUsageClusterRca, fieldDataCacheClusterRca, shardRequestCacheClusterRca));
+
+    RcaSummaryPluginControllerConfig rcaSummaryPluginControllerConfig = new RcaSummaryPluginControllerConfig();
+    RcaSummaryPluginController<?> rcaSummaryPluginController = new RcaSummaryPluginController<>(rcaSummaryPluginControllerConfig, clusterReaderRca);
+    rcaSummaryPluginController.initPlugins();
   }
 
   private void constructShardResourceUsageGraph() {

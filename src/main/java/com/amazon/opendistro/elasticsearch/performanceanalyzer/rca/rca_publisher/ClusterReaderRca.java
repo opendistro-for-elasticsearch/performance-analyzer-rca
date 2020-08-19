@@ -1,7 +1,23 @@
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca;
+/*
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ *  permissions and limitations under the License.
+ */
+
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.EmptyFlowUnit;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
@@ -12,7 +28,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.Flo
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,40 +37,21 @@ public class ClusterReaderRca<T extends GenericSummary> extends NonLeafNode<Empt
     private static final Logger LOG = LogManager.getLogger(ClusterReaderRca.class);
     public static final String NAME = "ClusterReaderRca";
     private final List<Rca<ResourceFlowUnit<T>>> clusterRcas;
-    private final Map<String, T> summaryMap;
+    private ClusterSummary<T> clusterSummary;
+    private List<ClusterSummaryListener<T>> clusterSummaryListeners;
 
     public ClusterReaderRca(final int evalIntervalSeconds, List<Rca<ResourceFlowUnit<T>>> clusterRcas) {
         super(0, evalIntervalSeconds);
         this.clusterRcas = clusterRcas;
-        summaryMap = new HashMap<>();
+        clusterSummary = new ClusterSummary<>(evalIntervalSeconds, new HashMap<>());
+        clusterSummaryListeners = new ArrayList<>();
     }
 
     public String name() {
         return NAME;
     }
 
-    @Override
-    public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
-        LOG.debug("ClusterReaderRca: reading Rca data from: {}", getClusterRcaName());
-        long startTime = System.currentTimeMillis();
-        try {
-            this.operate();
-        } catch (Exception e) {
-            LOG.error("ClusterReaderRca: Exception in operate", e);
-            PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
-                    ExceptionsAndErrors.EXCEPTION_IN_OPERATE, name(), 1);
-        }
-        long duration = System.currentTimeMillis() - startTime;
-        PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
-                RcaGraphMetrics.GRAPH_NODE_OPERATE_CALL, this.name(), duration);
-    }
-
-    @Override
-    public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
-        assert true;
-    }
-
-    public String getClusterRcaName() {
+    public String getAllClusterRcaName() {
         StringBuilder list = new StringBuilder();
         clusterRcas.forEach((cluster) -> {
             list.append(cluster.name()).append(", ");
@@ -70,12 +67,33 @@ public class ClusterReaderRca<T extends GenericSummary> extends NonLeafNode<Empt
         return this.clusterRcas;
     }
 
-    public boolean hasSummary() {
-        return !summaryMap.isEmpty();
+    public List<ClusterSummaryListener<T>> getClusterSummaryListeners(){
+        return clusterSummaryListeners;
     }
 
-    public Map<String, T> getSummaryMap(){
-        return this.summaryMap;
+    public void addClusterSummaryListener(ClusterSummaryListener<T> listener){
+        clusterSummaryListeners.add(listener);
+    }
+
+    @Override
+    public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
+        LOG.debug("ClusterReaderRca: reading Rca data from: {}", getAllClusterRcaName());
+        long startTime = System.currentTimeMillis();
+        try {
+            this.operate();
+        } catch (Exception e) {
+            LOG.error("ClusterReaderRca: Exception in operate", e);
+            PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
+                    ExceptionsAndErrors.EXCEPTION_IN_OPERATE, name(), 1);
+        }
+        long duration = System.currentTimeMillis() - startTime;
+        PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
+                RcaGraphMetrics.GRAPH_NODE_OPERATE_CALL, name(), duration);
+    }
+
+    @Override
+    public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
+        assert true;
     }
 
     @Override
@@ -91,17 +109,18 @@ public class ClusterReaderRca<T extends GenericSummary> extends NonLeafNode<Empt
 
     @Override
     public EmptyFlowUnit operate() {
-        for (int i = 0; i < clusterRcas.size(); i++) {
-            Rca<ResourceFlowUnit<T>> clusterRca = clusterRcas.get(i);
+        for (Rca<ResourceFlowUnit<T>> clusterRca : clusterRcas) {
             List<ResourceFlowUnit<T>> clusterFlowUnits = clusterRca.getFlowUnits();
-            //TODO: get flow unit of each cluster rca, need to check cluster summary
             if (clusterFlowUnits.isEmpty()) {
                 continue;
             }
             if (clusterFlowUnits.get(0).hasResourceSummary()) {
-                summaryMap.put(clusterRca.name(), clusterRca.getFlowUnits().get(0).getSummary());
+                clusterSummary.addSummary(clusterRca.name(), clusterRca.getFlowUnits().get(0).getSummary());
             }
         }
-        return new EmptyFlowUnit(Instant.now().toEpochMilli());
+        for(ClusterSummaryListener<T> listener: clusterSummaryListeners){
+            listener.summaryPublished(clusterSummary);
+        }
+        return new EmptyFlowUnit(System.currentTimeMillis());
     }
 }
