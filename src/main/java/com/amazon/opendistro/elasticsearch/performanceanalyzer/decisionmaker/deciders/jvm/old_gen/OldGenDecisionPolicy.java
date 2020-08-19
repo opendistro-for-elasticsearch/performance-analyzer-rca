@@ -15,7 +15,13 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.old_gen;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.CacheBoundConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.WorkLoadTypeConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.jvm.LevelOneActionBuilderConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.jvm.OldGenDecisionPolicyConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.ArrayList;
@@ -29,24 +35,26 @@ import java.util.List;
  * {@link LevelThreeActionBuilder} for each level of unhealthiness
  */
 public class OldGenDecisionPolicy {
-  private static final double OLD_GEN_THRESHOLD_LEVEL_ONE = 0.6;
-  private static final double OLD_GEN_THRESHOLD_LEVEL_TWO = 0.75;
-  private static final double OLD_GEN_THRESHOLD_LEVEL_THREE = 0.9;
-  private final NodeConfigCache nodeConfigCache;
+  private final AppContext appContext;
+  private final DeciderConfig deciderConfig;
 
-  public OldGenDecisionPolicy(final NodeConfigCache nodeConfigCache) {
-    this.nodeConfigCache = nodeConfigCache;
+  public OldGenDecisionPolicy(final AppContext appContext, final DeciderConfig deciderConfig) {
+    this.appContext = appContext;
+    //decider config will not be null unless there is a bug in RCAScheduler.
+    assert deciderConfig != null : "DeciderConfig is null";
+    this.deciderConfig = deciderConfig;
   }
 
   public List<Action> actions(final NodeKey esNode, double oldGenUsage) {
-    if (oldGenUsage >= OLD_GEN_THRESHOLD_LEVEL_THREE) {
-      return LevelThreeActionBuilder.newBuilder(esNode, nodeConfigCache).build();
+    OldGenDecisionPolicyConfig oldGenDecisionPolicyConfig = deciderConfig.getOldGenDecisionPolicyConfig();
+    if (oldGenUsage >= oldGenDecisionPolicyConfig.oldGenThresholdLevelThree()) {
+      return LevelThreeActionBuilder.newBuilder(esNode, appContext, deciderConfig).build();
     }
-    else if (oldGenUsage >= OLD_GEN_THRESHOLD_LEVEL_TWO) {
-      return LevelTwoActionBuilder.newBuilder(esNode, nodeConfigCache).build();
+    else if (oldGenUsage >= oldGenDecisionPolicyConfig.oldGenThresholdLevelTwo()) {
+      return LevelTwoActionBuilder.newBuilder(esNode, appContext, deciderConfig).build();
     }
-    else if (oldGenUsage >= OLD_GEN_THRESHOLD_LEVEL_ONE) {
-      return LevelOneActionBuilder.newBuilder(esNode, nodeConfigCache).build();
+    else if (oldGenUsage >= oldGenDecisionPolicyConfig.oldGenThresholdLevelOne()) {
+      return LevelOneActionBuilder.newBuilder(esNode, appContext, deciderConfig).build();
     }
     // old gen jvm is healthy. return empty action list.
     else {

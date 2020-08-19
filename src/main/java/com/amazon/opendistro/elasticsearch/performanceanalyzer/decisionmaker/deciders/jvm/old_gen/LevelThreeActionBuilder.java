@@ -15,12 +15,19 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.old_gen;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.CacheBoundConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.ThreadPoolConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * build actions if old gen falls into level three bucket
@@ -30,20 +37,42 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.uti
  * to scale down caches to their lower bound in one shot. And for queues we will downsize all
  * queues simultaneously with even higher steps
  */
-public class LevelThreeActionBuilder extends BaseActionBuilder {
+public class LevelThreeActionBuilder {
+  private final AppContext appContext;
+  private final NodeKey esNode;
+  private final Map<ResourceEnum, ModifyCacheMaxSizeAction> cacheActionMap;
+  private final Map<ResourceEnum, ModifyQueueCapacityAction> queueActionMap;
+  private final Map<ResourceEnum, Boolean> actionFilter;
+  private final CacheBoundConfig cacheBoundConfig;
+  private final ThreadPoolConfig threadPoolConfig;
 
-  private LevelThreeActionBuilder(final NodeKey esNode, final NodeConfigCache nodeConfigCache) {
-    super(esNode, nodeConfigCache);
+  private LevelThreeActionBuilder(final NodeKey esNode, final AppContext appContext,
+      final DeciderConfig deciderConfig) {
+    this.appContext = appContext;
+    this.esNode = esNode;
+    this.cacheActionMap = new HashMap<>();
+    this.queueActionMap = new HashMap<>();
+    this.actionFilter = new HashMap<>();
+    this.cacheBoundConfig = deciderConfig.getCacheBoundConfig();
+    this.threadPoolConfig = deciderConfig.getThreadPoolConfig();
+    registerActions();
+    actionPriorityFilter();
   }
 
-  public static LevelThreeActionBuilder newBuilder(final NodeKey esNode, final NodeConfigCache nodeConfigCache) {
-    return new LevelThreeActionBuilder(esNode, nodeConfigCache);
+  public static LevelThreeActionBuilder newBuilder(final NodeKey esNode, final AppContext appContext,
+      final DeciderConfig deciderConfig) {
+    return new LevelThreeActionBuilder(esNode, appContext, deciderConfig);
   }
 
   //downsize field data cache to its lower bound in one shot
   public void addFieldDataCacheAction() {
-    ModifyCacheMaxSizeAction action = ModifyCacheMaxSizeAction.newMinimalCapacityAction(esNode,
-        ResourceEnum.FIELD_DATA_CACHE, nodeConfigCache, 1.0);
+    ModifyCacheMaxSizeAction action = ModifyCacheMaxSizeAction
+        .newBuilder(esNode, ResourceEnum.FIELD_DATA_CACHE, appContext)
+        .increase(false)
+        .lowerBoundThreshold(cacheBoundConfig.fieldDataCacheLowerBound())
+        .upperBoundThreshold(cacheBoundConfig.fieldDataCacheUpperBound())
+        .desiredCacheMaxSize(cacheBoundConfig.fieldDataCacheLowerBound())
+        .build();
     if (action.isActionable()) {
       cacheActionMap.put(ResourceEnum.FIELD_DATA_CACHE, action);
     }
@@ -51,34 +80,39 @@ public class LevelThreeActionBuilder extends BaseActionBuilder {
 
   //downsize shard request cache to its lower bound in one shot
   public void addShardRequestCacheAction() {
-    ModifyCacheMaxSizeAction action =  ModifyCacheMaxSizeAction.newMinimalCapacityAction(esNode,
-        ResourceEnum.SHARD_REQUEST_CACHE, nodeConfigCache, 1.0);
+    ModifyCacheMaxSizeAction action = ModifyCacheMaxSizeAction
+        .newBuilder(esNode, ResourceEnum.SHARD_REQUEST_CACHE, appContext)
+        .increase(false)
+        .lowerBoundThreshold(cacheBoundConfig.shardRequestCacheLowerBound())
+        .upperBoundThreshold(cacheBoundConfig.shardRequestCacheUpperBound())
+        .desiredCacheMaxSize(cacheBoundConfig.shardRequestCacheLowerBound())
+        .build();
     if (action.isActionable()) {
       cacheActionMap.put(ResourceEnum.SHARD_REQUEST_CACHE, action);
     }
   }
 
   private void addWriteQueueAction() {
-    Integer capacity = NodeConfigCacheReaderUtil
-        .readQueueCapacity(nodeConfigCache, esNode, ResourceEnum.WRITE_THREADPOOL);
-    if (capacity == null) {
-      return;
-    }
-    ModifyQueueCapacityAction action = new ModifyQueueCapacityAction(esNode, ResourceEnum.WRITE_THREADPOOL,
-        capacity, false, LEVEL_THREE_CONST.QUEUE_ACTION_STEP_COUNT);
+    //TODO: increase step size
+    ModifyQueueCapacityAction action = ModifyQueueCapacityAction
+        .newBuilder(esNode, ResourceEnum.WRITE_THREADPOOL, appContext)
+        .increase(false)
+        .lowerBound(threadPoolConfig.writeQueueCapacityLowerBound())
+        .upperBound(threadPoolConfig.writeQueueCapacityUpperBound())
+        .build();
     if (action.isActionable()) {
       queueActionMap.put(ResourceEnum.WRITE_THREADPOOL, action);
     }
   }
 
   private void addSearchQueueAction() {
-    Integer capacity = NodeConfigCacheReaderUtil
-        .readQueueCapacity(nodeConfigCache, esNode, ResourceEnum.SEARCH_THREADPOOL);
-    if (capacity == null) {
-      return;
-    }
-    ModifyQueueCapacityAction action = new ModifyQueueCapacityAction(esNode, ResourceEnum.SEARCH_THREADPOOL,
-        capacity, false, LEVEL_THREE_CONST.QUEUE_ACTION_STEP_COUNT);
+    //TODO: increase step size
+    ModifyQueueCapacityAction action = ModifyQueueCapacityAction
+        .newBuilder(esNode, ResourceEnum.SEARCH_THREADPOOL, appContext)
+        .increase(false)
+        .lowerBound(threadPoolConfig.searchQueueCapacityLowerBound())
+        .upperBound(threadPoolConfig.searchQueueCapacityUpperBound())
+        .build();
     if (action.isActionable()) {
       queueActionMap.put(ResourceEnum.SEARCH_THREADPOOL, action);
     }
@@ -94,8 +128,7 @@ public class LevelThreeActionBuilder extends BaseActionBuilder {
     actionFilter.put(ResourceEnum.SEARCH_THREADPOOL, true);
   }
 
-  @Override
-  protected void registerActions() {
+  private void registerActions() {
     addFieldDataCacheAction();
     addShardRequestCacheAction();
     addSearchQueueAction();
@@ -108,13 +141,27 @@ public class LevelThreeActionBuilder extends BaseActionBuilder {
    * 2. downsize all queues simultaneously until they reach their lower bound
    */
   // TODO : read priority from yml if customer wants to override default ordering
-  @Override
-  protected void actionPriorityFilter() {
+  private void actionPriorityFilter() {
     actionPriorityForCache();
     actionPriorityForQueue();
   }
 
-  private static class LEVEL_THREE_CONST {
-    public static final int QUEUE_ACTION_STEP_COUNT = 2;
+  /**
+   * build actions.
+   * @return List of actions
+   */
+  public List<Action> build() {
+    List<Action> actions = new ArrayList<>();
+    cacheActionMap.forEach((cache, action) -> {
+      if (actionFilter.getOrDefault(cache, false)) {
+        actions.add(action);
+      }
+    });
+    queueActionMap.forEach((queue, action) -> {
+      if (actionFilter.getOrDefault(queue, false)) {
+        actions.add(action);
+      }
+    });
+    return actions;
   }
 }

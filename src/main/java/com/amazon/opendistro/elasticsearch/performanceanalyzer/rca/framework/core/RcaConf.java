@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyz
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaControllerHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.ConfigUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageYoungGenRcaConfig;
@@ -265,21 +266,25 @@ public class RcaConf {
   }
 
   @SuppressWarnings("unchecked")
-  public <T> T readDeciderConfig(String deciderName, String key, Class<? extends T> clazz) {
-    T setting = null;
+  public Map<String, Object> readDeciderConfig(String deciderName) {
+    Map<String, Object> deciderObj = null;
     try {
-      Map<String, Object> deciderObj = null;
       if (conf.getDeciderConfigSettings() != null
           && conf.getDeciderConfigSettings().containsKey(deciderName)
           && conf.getDeciderConfigSettings().get(deciderName) != null) {
         deciderObj = (Map<String, Object>) conf.getDeciderConfigSettings().get(deciderName);
       }
+    } catch (ClassCastException ne) {
+      LOG.error("rca.conf contains value in invalid format, trace : {}", ne.getMessage());
+    }
+    return deciderObj;
+  }
 
-      if (deciderObj != null
-          && deciderObj.containsKey(key)
-          && deciderObj.get(key) != null) {
-        setting = clazz.cast(deciderObj.get(key));
-      }
+  public <T> T readDeciderConfig(String deciderName, String key, Class<? extends T> clazz) {
+    T setting = null;
+    try {
+      Map<String, Object> deciderObj = readDeciderConfig(deciderName);
+      setting = ConfigUtils.readConfig(deciderObj, key, clazz);
     } catch (ClassCastException ne) {
       LOG.error("rca.conf contains value in invalid format, trace : {}", ne.getMessage());
     }

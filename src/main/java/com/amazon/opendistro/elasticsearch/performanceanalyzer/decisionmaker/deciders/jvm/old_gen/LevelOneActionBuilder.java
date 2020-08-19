@@ -15,11 +15,18 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.old_gen;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.CacheBoundConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.jvm.LevelOneActionBuilderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * build actions if old gen falls into level one bucket
@@ -34,46 +41,56 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.uti
  * to free up excessive heap used by fielddata cache or query cache because JVM decider favors stability
  * over performance.
  */
-public class LevelOneActionBuilder extends BaseActionBuilder {
+public class LevelOneActionBuilder {
+  private final AppContext appContext;
+  private final LevelOneActionBuilderConfig actionBuilderConfig;
+  private final CacheBoundConfig cacheBoundConfig;
+  private final NodeKey esNode;
+  private final Map<ResourceEnum, ModifyCacheMaxSizeAction> cacheActionMap;
+  private final Map<ResourceEnum, Boolean> actionFilter;
 
-  private LevelOneActionBuilder(final NodeKey esNode, final NodeConfigCache nodeConfigCache) {
-    super(esNode, nodeConfigCache);
+  private LevelOneActionBuilder(final NodeKey esNode, final AppContext appContext, final
+  DeciderConfig deciderConfig) {
+    this.appContext = appContext;
+    this.actionBuilderConfig = deciderConfig.getOldGenDecisionPolicyConfig().levelOneActionBuilderConfig();
+    this.cacheBoundConfig = deciderConfig.getCacheBoundConfig();
+    this.esNode = esNode;
+    this.cacheActionMap = new HashMap<>();
+    this.actionFilter = new HashMap<>();
+    registerActions();
+    actionPriorityFilter();
   }
 
-  public static LevelOneActionBuilder newBuilder(final NodeKey esNode, final NodeConfigCache nodeConfigCache) {
-    return new LevelOneActionBuilder(esNode, nodeConfigCache);
+  public static LevelOneActionBuilder newBuilder(final NodeKey esNode, final AppContext appContext, final
+  DeciderConfig deciderConfig) {
+    return new LevelOneActionBuilder(esNode, appContext, deciderConfig);
   }
 
   private void addFieldDataCacheAction() {
-    Long capacity = NodeConfigCacheReaderUtil
-        .readCacheMaxSizeInBytes(nodeConfigCache, esNode, ResourceEnum.FIELD_DATA_CACHE);
-    if (capacity == null) {
-      return;
-    }
-    ModifyCacheMaxSizeAction action = new ModifyCacheMaxSizeAction(esNode, ResourceEnum.FIELD_DATA_CACHE, nodeConfigCache,
-        capacity, false, LEVEL_ONE_CONST.CACHE_ACTION_STEP_COUNT);
-    if (action.isActionable()
-        && action.getDesiredCapacityInPercent() >= LEVEL_ONE_CONST.FIELD_DATA_CACHE_LOWER_BOUND) {
+    ModifyCacheMaxSizeAction action = ModifyCacheMaxSizeAction
+        .newBuilder(esNode, ResourceEnum.FIELD_DATA_CACHE, appContext)
+        .increase(false)
+        .lowerBoundThreshold(actionBuilderConfig.fieldDataCacheLowerBound())
+        .upperBoundThreshold(cacheBoundConfig.fieldDataCacheUpperBound())
+        .build();
+    if (action.isActionable()) {
       cacheActionMap.put(ResourceEnum.FIELD_DATA_CACHE, action);
     }
   }
 
   private void addShardRequestCacheAction() {
-    Long capacity = NodeConfigCacheReaderUtil
-        .readCacheMaxSizeInBytes(nodeConfigCache, esNode, ResourceEnum.SHARD_REQUEST_CACHE);
-    if (capacity == null) {
-      return;
-    }
-    ModifyCacheMaxSizeAction action = new ModifyCacheMaxSizeAction(esNode, ResourceEnum.SHARD_REQUEST_CACHE, nodeConfigCache,
-        capacity, false, LEVEL_ONE_CONST.CACHE_ACTION_STEP_COUNT);
-    if (action.isActionable()
-        && action.getDesiredCapacityInPercent() >= LEVEL_ONE_CONST.SHARD_REQUEST_CACHE_LOWER_BOUND) {
+    ModifyCacheMaxSizeAction action = ModifyCacheMaxSizeAction
+        .newBuilder(esNode, ResourceEnum.SHARD_REQUEST_CACHE, appContext)
+        .increase(false)
+        .lowerBoundThreshold(actionBuilderConfig.shardRequestCacheLowerBound())
+        .upperBoundThreshold(cacheBoundConfig.shardRequestCacheUpperBound())
+        .build();
+    if (action.isActionable()) {
       cacheActionMap.put(ResourceEnum.SHARD_REQUEST_CACHE, action);
     }
   }
 
-  @Override
-  protected void registerActions() {
+  private void registerActions() {
     addFieldDataCacheAction();
     addShardRequestCacheAction();
   }
@@ -85,16 +102,22 @@ public class LevelOneActionBuilder extends BaseActionBuilder {
    * @return final action list based on action priority
    */
   // TODO : read priority from yml if customer wants to override default ordering
-  @Override
-  protected void actionPriorityFilter() {
+  private void actionPriorityFilter() {
     actionFilter.put(ResourceEnum.FIELD_DATA_CACHE, true);
     actionFilter.put(ResourceEnum.SHARD_REQUEST_CACHE, true);
   }
 
-  //TODO : read consts from rca.conf
-  private static class LEVEL_ONE_CONST {
-    public static final double FIELD_DATA_CACHE_LOWER_BOUND = 0.1;
-    public static final double SHARD_REQUEST_CACHE_LOWER_BOUND = 0.02;
-    public static final int CACHE_ACTION_STEP_COUNT = 1;
+  /**
+   * build actions.
+   * @return List of actions
+   */
+  public List<Action> build() {
+    List<Action> actions = new ArrayList<>();
+    cacheActionMap.forEach((cache, action) -> {
+      if (actionFilter.getOrDefault(cache, false)) {
+        actions.add(action);
+      }
+    });
+    return actions;
   }
 }

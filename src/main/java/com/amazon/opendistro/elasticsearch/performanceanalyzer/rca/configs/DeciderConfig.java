@@ -15,6 +15,10 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.CacheBoundConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.ThreadPoolConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.WorkLoadTypeConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.jvm.OldGenDecisionPolicyConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 
 import java.util.Arrays;
@@ -24,75 +28,54 @@ public class DeciderConfig {
 
     private static final String CACHE_BOUNDS_CONFIG_NAME = "cache-bounds";
     private static final String CACHE_CONFIG_NAME = "cache-type";
+    private static final String THREAD_POOL_CONFIG_NAME = "threadpool-config";
     private static final String WORKLOAD_CONFIG_NAME = "workload-type";
+    private static final String OLD_GEN_DECISION_POLICY_CONFIG_NAME = "old-gen-decision-policy-config";
     private static final String PRIORITY_ORDER_CONFIG_NAME = "priority-order";
-    private static final String FIELD_DATA_CACHE_UPPER_BOUND_NAME = "field-data-cache-upper-bound";
-    private static final String SHARD_REQUEST_CACHE_UPPER_BOUND_NAME = "shard-request-cache-upper-bound";
-    private static final double DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND = 0.4;
-    private static final double DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND = 0.05;
     // Defaults based on prioritising Stability over performance.
-    private static final List<String> DEFAULT_WORKLOAD_PRIORITY = Arrays.asList("ingest", "search");
     private static final List<String> DEFAULT_CACHE_PRIORITY = Arrays.asList("fielddata-cache", "shard-request-cache",
             "query-cache", "bitset-filter-cache");
 
-    private Double fieldDataCacheUpperBound;
-    private Double shardRequestCacheUpperBound;
     private List<String> cachePriorityOrder;
-    private List<String> workloadPriorityOrder;
+    private final WorkLoadTypeConfig workLoadTypeConfig;
+    private final OldGenDecisionPolicyConfig oldGenDecisionPolicyConfig;
+    private final CacheBoundConfig cacheBoundConfig;
+    private final ThreadPoolConfig threadPoolConfig;
 
     public DeciderConfig(final RcaConf rcaConf) {
-        fieldDataCacheUpperBound = rcaConf.readDeciderConfig(CACHE_BOUNDS_CONFIG_NAME,
-                FIELD_DATA_CACHE_UPPER_BOUND_NAME, Double.class);
-        shardRequestCacheUpperBound = rcaConf.readDeciderConfig(CACHE_BOUNDS_CONFIG_NAME,
-                SHARD_REQUEST_CACHE_UPPER_BOUND_NAME, Double.class);
         cachePriorityOrder = rcaConf.readDeciderConfig(CACHE_CONFIG_NAME,
                 PRIORITY_ORDER_CONFIG_NAME, List.class);
-        workloadPriorityOrder = rcaConf.readDeciderConfig(WORKLOAD_CONFIG_NAME,
-                PRIORITY_ORDER_CONFIG_NAME, List.class);
-        if (fieldDataCacheUpperBound == null) {
-            fieldDataCacheUpperBound = DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND;
-        }
-        if (shardRequestCacheUpperBound == null) {
-            shardRequestCacheUpperBound = DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND;
-        }
+        workLoadTypeConfig = new WorkLoadTypeConfig(rcaConf.readDeciderConfig(WORKLOAD_CONFIG_NAME));
+        oldGenDecisionPolicyConfig = new OldGenDecisionPolicyConfig(rcaConf.readDeciderConfig(OLD_GEN_DECISION_POLICY_CONFIG_NAME));
+        cacheBoundConfig = new CacheBoundConfig(rcaConf.readDeciderConfig(CACHE_BOUNDS_CONFIG_NAME));
+        threadPoolConfig = new ThreadPoolConfig(rcaConf.readDeciderConfig(THREAD_POOL_CONFIG_NAME));
         if (cachePriorityOrder == null) {
             cachePriorityOrder = DEFAULT_CACHE_PRIORITY;
         }
-        if (workloadPriorityOrder == null) {
-            workloadPriorityOrder = DEFAULT_WORKLOAD_PRIORITY;
-        }
-    }
-
-    public Double getFieldDataCacheUpperBound() {
-        return fieldDataCacheUpperBound;
-    }
-
-    public Double getShardRequestCacheUpperBound() {
-        return shardRequestCacheUpperBound;
     }
 
     public List<String> getCachePriorityOrder() {
         return cachePriorityOrder;
     }
 
-    public List<String> getWorkloadPriorityOrder() {
-        return workloadPriorityOrder;
+    public WorkLoadTypeConfig getWorkLoadTypeConfig() {
+        return workLoadTypeConfig;
     }
 
-    public static List<String> getDefaultWorkloadPriority() {
-        return DEFAULT_WORKLOAD_PRIORITY;
+    public OldGenDecisionPolicyConfig getOldGenDecisionPolicyConfig() {
+        return oldGenDecisionPolicyConfig;
+    }
+
+    public CacheBoundConfig getCacheBoundConfig() {
+        return cacheBoundConfig;
+    }
+
+    public ThreadPoolConfig getThreadPoolConfig() {
+        return threadPoolConfig;
     }
 
     public static List<String> getDefaultCachePriority() {
         return DEFAULT_CACHE_PRIORITY;
-    }
-
-    public static Double getDefaultShardRequestCacheUpperBound() {
-        return DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND;
-    }
-
-    public static Double getDefaultFieldDataCacheUpperBound() {
-        return DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND;
     }
 
     public static String getCacheBoundsConfigName() {
@@ -111,11 +94,4 @@ public class DeciderConfig {
         return PRIORITY_ORDER_CONFIG_NAME;
     }
 
-    public static String getFieldDataCacheUpperBoundName() {
-        return FIELD_DATA_CACHE_UPPER_BOUND_NAME;
-    }
-
-    public static String getShardRequestCacheUpperBoundName() {
-        return SHARD_REQUEST_CACHE_UPPER_BOUND_NAME;
-    }
 }

@@ -19,11 +19,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Decider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Decision;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.old_gen.OldGenDecisionPolicy;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.List;
@@ -33,16 +35,17 @@ import java.util.List;
  */
 public class HeapHealthDecider extends Decider {
 
-  public static final String NAME = "heap_health_decider";
+  public static final String NAME = "HeapHealthDecider";
   private final HighHeapUsageClusterRca highHeapUsageClusterRca;
   private final OldGenDecisionPolicy oldGenDecisionPolicy;
+  private DeciderConfig deciderConfig;
   private int counter = 0;
 
   public HeapHealthDecider(int decisionFrequency, final HighHeapUsageClusterRca highHeapUsageClusterRca) {
     //TODO : refactor parent class to remove evalIntervalSeconds completely
     super(5, decisionFrequency);
     this.highHeapUsageClusterRca = highHeapUsageClusterRca;
-    oldGenDecisionPolicy = new OldGenDecisionPolicy(this.getAppContext().getNodeConfigCache());
+    oldGenDecisionPolicy = new OldGenDecisionPolicy(this.getAppContext(), deciderConfig);
   }
 
   @Override
@@ -78,8 +81,11 @@ public class HeapHealthDecider extends Decider {
         //TODO : Add policy for young gen
       }
     }
-
     return decision;
   }
 
+  @Override
+  public void readRcaConf(RcaConf conf) {
+    deciderConfig = conf.getDeciderConfig();
+  }
 }
