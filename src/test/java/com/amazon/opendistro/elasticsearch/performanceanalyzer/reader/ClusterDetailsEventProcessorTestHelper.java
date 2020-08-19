@@ -15,9 +15,11 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.overrides.ConfigOverrides;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.JsonConverter;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,21 +51,29 @@ public class ClusterDetailsEventProcessorTestHelper extends AbstractReaderTests 
     if (nodeDetails.isEmpty()) {
       return new ClusterDetailsEventProcessor();
     }
-    StringBuilder stringBuilder = new StringBuilder().append(PerformanceAnalyzerMetrics.getJsonCurrentMilliSeconds());
-    stringBuilder.append(SEPARATOR);
-    // TODO: @ktkrg - Change this in the PR for #291
-    stringBuilder.append("RESERVED FOR CONFIG OVERRIDES");
-    stringBuilder.append(SEPARATOR);
-    stringBuilder.append("RESERVED FOR CONFIG OVERRIDES");
-    nodeDetails.stream().forEach(
-        node -> {
-          stringBuilder.append(SEPARATOR)
-              .append(node);
-        }
-    );
-    Event testEvent = new Event("", stringBuilder.toString(), 0);
+    Event testEvent = generateTestEvent();
     ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
     clusterDetailsEventProcessor.processEvent(testEvent);
     return clusterDetailsEventProcessor;
+  }
+
+  public Event generateTestEvent() {
+    return generateTestEventWithOverrides(new ConfigOverrides());
+  }
+
+  public Event generateTestEventWithOverrides(ConfigOverrides overrides) {
+    StringBuilder stringBuilder = new StringBuilder()
+        .append(PerformanceAnalyzerMetrics.getJsonCurrentMilliSeconds());
+    stringBuilder.append(SEPARATOR);
+    stringBuilder.append(JsonConverter.writeValueAsString(overrides));
+    stringBuilder.append(SEPARATOR);
+    stringBuilder.append(System.currentTimeMillis());
+    nodeDetails.stream().forEach(
+        node -> {
+          stringBuilder.append(SEPARATOR)
+                       .append(node);
+        }
+    );
+    return new Event("", stringBuilder.toString(), 0);
   }
 }

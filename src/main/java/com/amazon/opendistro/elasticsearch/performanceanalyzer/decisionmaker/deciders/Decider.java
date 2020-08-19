@@ -15,11 +15,20 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig.getDefaultCachePriority;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig.getDefaultFieldDataCacheUpperBound;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig.getDefaultShardRequestCacheUpperBound;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig.getDefaultWorkloadPriority;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,10 +50,12 @@ public abstract class Decider extends NonLeafNode<Decision> {
 
   private static final Logger LOG = LogManager.getLogger(Decider.class);
   protected final int decisionFrequency; // Measured in terms of number of evaluationIntervalPeriods
+  DeciderConfig configObj;
 
   public Decider(long evalIntervalSeconds, int decisionFrequency) {
     super(0, evalIntervalSeconds);
     this.decisionFrequency = decisionFrequency;
+    this.configObj = null;
   }
 
   public abstract String name();
@@ -90,4 +101,31 @@ public abstract class Decider extends NonLeafNode<Decision> {
 
   @Override
   public abstract Decision operate();
+
+  /**
+   * read threshold values from rca.conf
+   *
+   * @param conf RcaConf object
+   */
+  @Override
+  public void readRcaConf(RcaConf conf) {
+    configObj = conf.getDeciderConfig();
+  }
+
+  public double getFieldDataCacheUpperBound() {
+    return configObj != null ? configObj.getFieldDataCacheUpperBound() : getDefaultFieldDataCacheUpperBound();
+  }
+
+  public double getShardRequestCacheUpperBound() {
+    return configObj != null ? configObj.getShardRequestCacheUpperBound() : getDefaultShardRequestCacheUpperBound();
+  }
+
+  public List<String> getWorkLoadPriority() {
+    return configObj != null ? configObj.getWorkloadPriorityOrder() : getDefaultWorkloadPriority();
+  }
+
+  public List<String> getCachePriority() {
+    return configObj != null ? configObj.getCachePriorityOrder() : getDefaultCachePriority();
+  }
+
 }

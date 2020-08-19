@@ -27,18 +27,25 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.uti
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.CreateTableConstraintStep;
@@ -47,6 +54,7 @@ import org.jooq.Field;
 import org.jooq.InsertValuesStepN;
 import org.jooq.JSONFormat;
 import org.jooq.Record;
+import org.jooq.Record1;
 import org.jooq.Result;
 import org.jooq.SQLDialect;
 import org.jooq.SelectJoinStep;
@@ -75,6 +83,9 @@ class SQLitePersistor extends PersistorBase {
   // It is needed during SQLite file rotation
   @Override
   synchronized void createNewDSLContext() {
+    if (create != null) {
+      create.close();
+    }
     create = DSL.using(super.conn, SQLDialect.SQLITE);
     jooqTableColumns = new HashMap<>();
   }
@@ -187,6 +198,29 @@ class SQLitePersistor extends PersistorBase {
     return tablesObject.toString();
   }
 
+  @VisibleForTesting
+  public synchronized Map<String, Result<Record>> getRecordsForAllTables() {
+    Map<String, Result<Record>> results = new HashMap<>();
+    super.tableNames.forEach(
+            table -> results.put(table, getRecords(table))
+    );
+    return results;
+  }
+
+  @Override
+  public synchronized List<String> getAllPersistedRcas() {
+    List<String> uniquePersistedRcas = new ArrayList<>();
+    try {
+          uniquePersistedRcas =
+                  (List<String>) create.selectDistinct(ResourceFlowUnitFieldValue.RCA_NAME_FILELD.getField())
+          .from(ResourceFlowUnit.RCA_TABLE_NAME)
+          .fetch(0).stream().collect(Collectors.toList());
+    } catch (DataAccessException dex) {
+
+    }
+    return uniquePersistedRcas;
+  }
+
   //read table content and convert it into JSON format
   private synchronized String readTable(String tableName) {
     String tableStr;
@@ -206,6 +240,24 @@ class SQLitePersistor extends PersistorBase {
       tableStr = "[]";
     }
     return tableStr;
+  }
+
+  private synchronized @Nullable Result<Record> getRecords(String tableName) {
+    try {
+      Result<Record> result;
+      if (tableName.equals(ResourceFlowUnit.RCA_TABLE_NAME)) {
+        result = create.select()
+                .from(tableName)
+                .orderBy(ResourceFlowUnitFieldValue.RCA_NAME_FILELD.getField())
+                .fetch();
+      } else {
+        result = create.select().from(tableName).fetch();
+      }
+      return result;
+    } catch (DataAccessException e) {
+      LOG.error("Fail to read table {}", tableName);
+    }
+    return null;
   }
 
   /**
@@ -286,8 +338,7 @@ class SQLitePersistor extends PersistorBase {
         }
       } catch (DataAccessException de) {
         // it is totally fine if we fail to read some certain tables as some types of summaries might be missing
-        LOG.warn("Fail to read Summary table : {}, query = {},  exceptions : {}",
-            nestedTableName, rcaQuery.toString(), de.getStackTrace());
+        LOG.warn("Fail to read Summary table : {}, query = {}", nestedTableName, rcaQuery.toString(), de);
       } catch (IllegalArgumentException ie) {
         LOG.error("Reading nested summary from wrong table, message : {}", ie.getMessage());
       }
@@ -321,8 +372,10 @@ class SQLitePersistor extends PersistorBase {
         }
       }
     } catch (DataAccessException de) {
-      // it is totally fine if we fail to read some certain tables.
-      LOG.warn("Fail to read RCA : {}, query = {},  exceptions : {}", rca, rcaQuery.toString(), de.getStackTrace());
+      if (!de.getMessage().contains("no such table")) {
+        // it is totally fine if we fail to read some certain tables.
+        LOG.error("Fail to read RCA : {}.", rca, de);
+      }
     }
     JsonElement ret = null;
     if (response != null) {

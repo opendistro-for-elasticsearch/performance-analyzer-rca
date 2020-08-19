@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import java.io.File;
@@ -32,11 +33,14 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.Field;
+import org.jooq.Record;
+import org.jooq.Result;
 import org.jooq.exception.DataAccessException;
 
 // TODO: Scheme to rotate the current file and garbage collect older files.
@@ -113,6 +117,9 @@ public abstract class PersistorBase implements Persistable {
 
   abstract void createNewDSLContext();
 
+  @VisibleForTesting
+  public abstract Map<String, Result<Record>> getRecordsForAllTables();
+
   // Not required for now.
   @Override
   public synchronized List<ResourceFlowUnit> read(Node<?> node) {
@@ -146,7 +153,6 @@ public abstract class PersistorBase implements Persistable {
     String url = String.format("%s%s", this.dbProtocol, this.filename);
     close();
     conn = DriverManager.getConnection(url);
-    LOG.info("RCA: Periodic File Rotation - Created a new database connection - " + url);
     createNewDSLContext();
   }
 
@@ -201,6 +207,7 @@ public abstract class PersistorBase implements Persistable {
     // the current DBFile does not exist anymore. We therefore should create a new one.
     if (fileRotate.getLastRotatedMillis() == currTime) {
       openNewDBFile();
+      LOG.info("Created a new DB file.");
     }
   }
 
@@ -214,19 +221,19 @@ public abstract class PersistorBase implements Persistable {
    *     corrupted.
    * @throws IOException This is thrown if the attempt to create a new DB file fails.
    */
-  private <T extends ResourceFlowUnit> void writeFlowUnit(
+  private synchronized <T extends ResourceFlowUnit> void writeFlowUnit(
       T flowUnit, String tableName) throws SQLException, IOException {
     try {
         tryWriteFlowUnit(flowUnit, tableName);
     } catch (SQLException | DataAccessException e) {
       LOG.info(
-          "RCA: Fail to write to table '{}', creating a new DB file and retrying write/create operation", tableName);
+          "RCA: Fail to write to table '{}', creating a new DB file and retrying write/create operation", tableName, e);
       rotateRegisterGarbageThenCreateNewDB(RotationType.FORCE_ROTATE);
       tryWriteFlowUnit(flowUnit, tableName);
     }
   }
 
-  private <T extends ResourceFlowUnit> void tryWriteFlowUnit(
+  private synchronized <T extends ResourceFlowUnit> void tryWriteFlowUnit(
           T flowUnit, String nodeName) throws SQLException, DataAccessException {
     String tableName = ResourceFlowUnit.RCA_TABLE_NAME;
     if (!tableNames.contains(tableName)) {
@@ -245,14 +252,14 @@ public abstract class PersistorBase implements Persistable {
   }
 
   /** recursively insert nested summary to sql tables */
-  private void writeSummary(
+  private synchronized void writeSummary(
       GenericSummary summary,
       String referenceTable,
       String referenceTablePrimaryKeyFieldName,
       int referenceTablePrimaryKeyFieldValue) throws SQLException {
     String tableName = summary.getClass().getSimpleName();
     if (!tableNames.contains(tableName)) {
-      LOG.info("RCA: Table '{}' does not exist. Creating one with columns: {}", tableName, summary.getSqlSchema());
+      LOG.info("RCA: Summary table '{}' does not exist. Creating one with columns: {}", tableName, summary.getSqlSchema());
       createTable(tableName, summary.getSqlSchema(), referenceTable, referenceTablePrimaryKeyFieldName);
     }
     List<Object> values = summary.getSqlValue();
