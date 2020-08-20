@@ -40,7 +40,7 @@ public class ImpactAssessor {
    *
    * @param actions The list of actions whose for which the impact need to assessed.
    * @return A map of instance to its overall impact on the instance based on the provided list of
-   * actions.
+   *         actions.
    */
   public @NonNull Map<NodeKey, ImpactAssessment> assessOverallImpact(
       @NonNull final List<Action> actions) {
@@ -59,9 +59,9 @@ public class ImpactAssessor {
    * action is classified as 'impact aligning' only if all the impacted nodes in the action align
    * with their proposed pressure heading.
    *
-   * @param action the action whose impact needs to be checked for alignment.
-   * @param overallImpactAssessment The impact assessment that provides the pressure heading for
-   *                                the nodes.
+   * @param action                  the action whose impact needs to be checked for alignment.
+   * @param overallImpactAssessment The impact assessment that provides the pressure heading for the
+   *                                nodes.
    * @return true if all impacted nodes are in alignment.
    */
   public boolean isImpactAligned(@NonNull final Action action,

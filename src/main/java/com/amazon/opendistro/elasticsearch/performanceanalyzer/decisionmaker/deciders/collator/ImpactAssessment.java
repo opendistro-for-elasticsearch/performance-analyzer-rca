@@ -28,6 +28,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+/**
+ * ImpactAssessment maintains and helps with updating impacts of actions on a node.
+ */
 public class ImpactAssessment {
 
   private static final Logger LOG = LogManager.getLogger(ImpactAssessment.class);
@@ -42,6 +45,13 @@ public class ImpactAssessment {
     this.perDimensionPressureIncreasingActions = new HashMap<>();
   }
 
+  /**
+   * Adds the action's impact to the current overall impact of all proposed actions for this node
+   * so far.
+   * @param actionName The name of the action.
+   * @param impactVector The impact vector which gives a pressure heading for various resources
+   *                     impacted by taking this action.
+   */
   public void addActionImpact(@NonNull final String actionName,
       @NonNull final ImpactVector impactVector) {
     final Map<Dimension, Impact> impactMap = impactVector.getImpact();
@@ -63,6 +73,13 @@ public class ImpactAssessment {
     });
   }
 
+  /**
+   * Removes an action's impact from the current overall impact of all proposed actions for this
+   * node so far.
+   * @param actionName The name of the action.
+   * @param impactVector The impact vector which gives a pressure heading for various resources
+   *                     impacted by taking this action.
+   */
   public void removeActionImpact(@NonNull final String actionName,
       @NonNull ImpactVector impactVector) {
     final Map<Dimension, Impact> impactMap = impactVector.getImpact();
@@ -84,9 +101,19 @@ public class ImpactAssessment {
     });
   }
 
+  /**
+   * Checks if the given impact vector aligns with the current overall impact for this node.
+   * Alignment is checked when reassessing the actions where all impacts are replayed.
+   *
+   * @param actionName The name of the action.
+   * @param impactVector The impact vector which gives a pressure heading for various resources
+   *                     impacted by taking this action.
+   * @return true if the impact vector aligns with the overall impact, false otherwise.
+   */
   public boolean checkAlignmentAcrossDimensions(@NonNull final String actionName,
       @NonNull final ImpactVector impactVector) {
     boolean isAligned = true;
+
     // If this is an action that increases pressure along some dimension for this node, and the
     // overall assessment says there are actions that decrease pressure along those same
     // dimensions, then this action is not aligned with the other proposed actions where the
