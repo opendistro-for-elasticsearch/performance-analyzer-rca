@@ -27,10 +27,10 @@ import java.net.HttpURLConnection;
 
 
 
-public class DecisionListenerPlugin extends Plugin implements ActionListener {
+public class DecisionKafkaPublisher extends Plugin implements ActionListener {
 
     public static final String NAME = "DecisionToKafkaPlugin";
-    private static final Logger LOG = LogManager.getLogger(DecisionListenerPlugin.class);
+    private static final Logger LOG = LogManager.getLogger(DecisionKafkaPublisher.class);
     private static HttpURLConnection httpConnection;
     private static PluginConfig pluginConfig = null;
     private static KafkaProducer<String,String> kafkaProducerInstance = null;

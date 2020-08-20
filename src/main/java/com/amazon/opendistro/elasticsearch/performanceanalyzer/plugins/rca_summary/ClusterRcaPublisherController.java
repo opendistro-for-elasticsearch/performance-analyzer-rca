@@ -18,7 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.rca_summ
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.Plugin;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterReaderRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterRcaPublisher;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterSummaryListener;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.logging.log4j.LogManager;
@@ -29,13 +29,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RcaSummaryPluginController<T extends GenericSummary> {
-    private static final Logger LOG = LogManager.getLogger(RcaSummaryPluginController.class);
-    private ClusterReaderRca<T> rca;
+public class ClusterRcaPublisherController<T extends GenericSummary> {
+    private static final Logger LOG = LogManager.getLogger(ClusterRcaPublisherController.class);
+    private ClusterRcaPublisher<T> rca;
     private List<Plugin> plugins;
-    private RcaSummaryPluginControllerConfig pluginControllerConfig;
+    private ClusterRcaPublisherControllerConfig pluginControllerConfig;
 
-    public RcaSummaryPluginController(RcaSummaryPluginControllerConfig pluginConfig, ClusterReaderRca<T> rca) {
+    public ClusterRcaPublisherController(ClusterRcaPublisherControllerConfig pluginConfig, ClusterRcaPublisher<T> rca) {
         this.pluginControllerConfig = pluginConfig;
         this.rca = rca;
         this.plugins = new ArrayList<>();

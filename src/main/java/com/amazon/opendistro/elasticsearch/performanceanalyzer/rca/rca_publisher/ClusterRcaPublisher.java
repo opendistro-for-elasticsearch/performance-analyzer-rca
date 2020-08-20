@@ -31,16 +31,15 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-public class ClusterReaderRca<T extends GenericSummary> extends NonLeafNode<EmptyFlowUnit> {
-    private static final Logger LOG = LogManager.getLogger(ClusterReaderRca.class);
+public class ClusterRcaPublisher<T extends GenericSummary> extends NonLeafNode<EmptyFlowUnit> {
+    private static final Logger LOG = LogManager.getLogger(ClusterRcaPublisher.class);
     public static final String NAME = "ClusterReaderRca";
     private final List<Rca<ResourceFlowUnit<T>>> clusterRcas;
     private ClusterSummary<T> clusterSummary;
     private List<ClusterSummaryListener<T>> clusterSummaryListeners;
 
-    public ClusterReaderRca(final int evalIntervalSeconds, List<Rca<ResourceFlowUnit<T>>> clusterRcas) {
+    public ClusterRcaPublisher(final int evalIntervalSeconds, List<Rca<ResourceFlowUnit<T>>> clusterRcas) {
         super(0, evalIntervalSeconds);
         this.clusterRcas = clusterRcas;
         clusterSummary = new ClusterSummary<>(evalIntervalSeconds, new HashMap<>());
@@ -82,7 +81,7 @@ public class ClusterReaderRca<T extends GenericSummary> extends NonLeafNode<Empt
         try {
             this.operate();
         } catch (Exception e) {
-            LOG.error("ClusterReaderRca: Exception in operate", e);
+            LOG.error("ClusterReaderRca: Exception in operate. ", e);
             PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
                     ExceptionsAndErrors.EXCEPTION_IN_OPERATE, name(), 1);
         }

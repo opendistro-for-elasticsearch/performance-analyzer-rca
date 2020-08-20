@@ -29,9 +29,9 @@ import org.apache.kafka.common.KafkaException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SummaryListenerPlugin <T extends GenericSummary> extends Plugin implements ClusterSummaryListener<T> {
-    private static final Logger LOG = LogManager.getLogger(SummaryListenerPlugin.class);
-    private static final String NAME = "ClusterRcaSummaryListener";
+public class ClusterSummaryKafkaPublisher<T extends GenericSummary> extends Plugin implements ClusterSummaryListener<T> {
+    private static final Logger LOG = LogManager.getLogger(ClusterSummaryKafkaPublisher.class);
+    private static final String NAME = "Kafka_Publisher_Plguin";
     private static PluginConfig pluginConfig = null;
     private static KafkaProducer<String, String> kafkaProducerInstance = null;
 
@@ -62,6 +62,7 @@ public class SummaryListenerPlugin <T extends GenericSummary> extends Plugin imp
         }
         kafkaProducerInstance.close();
     }
+
 
 
     public void initialize(){

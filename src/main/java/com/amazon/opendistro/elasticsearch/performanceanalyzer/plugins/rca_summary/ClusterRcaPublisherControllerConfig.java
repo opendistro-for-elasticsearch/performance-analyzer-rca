@@ -5,13 +5,14 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.Plugin;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RcaSummaryPluginControllerConfig {
+public class ClusterRcaPublisherControllerConfig {
 
     private List<Class<? extends Plugin>> frameworkPlugins;
 
-    public RcaSummaryPluginControllerConfig() {
+    public ClusterRcaPublisherControllerConfig() {
         frameworkPlugins = new ArrayList<>();
-        frameworkPlugins.add(SummaryListenerPlugin.class);
+        frameworkPlugins.add(ClusterSummaryLogger.class);
+        frameworkPlugins.add(ClusterSummaryKafkaPublisher.class);
     }
 
     /**
