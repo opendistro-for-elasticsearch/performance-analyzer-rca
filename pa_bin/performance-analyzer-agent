@@ -24,11 +24,11 @@ else
 fi
 
 if ! echo $* | grep -E '(^-d |-d$| -d |--daemonize$|--daemonize )' > /dev/null; then
-    export JAVA_OPTS=-Des.path.home=$ES_HOME\ -Dlog4j.configurationFile=$ES_HOME/performance-analyzer-rca/pa_config/log4j2.xml\ -DconfigFilePath=pa_config/performance-analyzer.properties
+    export JAVA_OPTS=-Des.path.home=$ES_HOME\ -Dlog4j.configurationFile=$ES_HOME/performance-analyzer-rca/pa_config/log4j2.xml
     exec $ES_HOME/performance-analyzer-rca/bin/performance-analyzer-rca
 else
     echo 'Starting deamon'
-    export JAVA_OPTS=-Des.path.home=$ES_HOME\ -Dlog4j.configurationFile=$ES_HOME/performance-analyzer-rca/pa_config/log4j2.xml\ -DconfigFilePath=pa_config/performance-analyzer.properties
+    export JAVA_OPTS=-Des.path.home=$ES_HOME\ -Dlog4j.configurationFile=$ES_HOME/performance-analyzer-rca/pa_config/log4j2.xml
     exec $ES_HOME/performance-analyzer-rca/bin/performance-analyzer-rca &
 
     pid=$!
