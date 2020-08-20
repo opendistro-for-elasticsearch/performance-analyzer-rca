@@ -18,12 +18,10 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheDeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.BaseClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
@@ -47,9 +45,6 @@ public class CacheHealthDecider extends Decider {
   private final ShardRequestCacheClusterRca shardRequestCacheClusterRca;
   private final ImmutableMap<ResourceEnum, BaseClusterRca> cacheTypeBaseClusterRcaMap;
 
-  private double fieldDataCacheSizeUpperBound;
-  private double shardRequestCacheSizeUpperBound;
-
   List<ResourceEnum> modifyCacheActionPriorityList = new ArrayList<>();
   private int counter = 0;
 
@@ -68,9 +63,6 @@ public class CacheHealthDecider extends Decider {
             .put(ResourceEnum.SHARD_REQUEST_CACHE, shardRequestCacheClusterRca)
             .put(ResourceEnum.FIELD_DATA_CACHE, fieldDataCacheClusterRca)
             .build();
-
-    this.fieldDataCacheSizeUpperBound = CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND;
-    this.shardRequestCacheSizeUpperBound = CacheDeciderConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND;
   }
 
   @Override
@@ -151,11 +143,11 @@ public class CacheHealthDecider extends Decider {
 
   private ModifyCacheMaxSizeAction configureCacheMaxSize(
       final NodeKey esNode, final ResourceEnum cacheType, final boolean increase) {
-    final double cacheUpperBound = getCacheUpperBound(cacheType);
     final ModifyCacheMaxSizeAction action =
-        new ModifyCacheMaxSizeAction(
-            esNode, cacheType, getAppContext().getNodeConfigCache(), cacheUpperBound, increase,
-            getAppContext());
+        ModifyCacheMaxSizeAction
+            .newBuilder(esNode, cacheType, getAppContext(), getCacheUpperBound(cacheType))
+            .increase(increase)
+            .build();
     if (action.isActionable()) {
       return action;
     }
@@ -170,25 +162,5 @@ public class CacheHealthDecider extends Decider {
     }
     throw new IllegalArgumentException(
         String.format("Unable to get cache upper bound for cacheType=[%s]", cacheType.toString()));
-  }
-
-  private double getFieldDataCacheUpperBound() {
-    return fieldDataCacheSizeUpperBound;
-  }
-
-  private double getShardRequestCacheUpperBound() {
-    return shardRequestCacheSizeUpperBound;
-  }
-
-  /**
-   * read threshold values from rca.conf
-   *
-   * @param conf RcaConf object
-   */
-  @Override
-  public void readRcaConf(RcaConf conf) {
-    final CacheDeciderConfig configObj = conf.getCacheDeciderConfig();
-    fieldDataCacheSizeUpperBound = configObj.getFieldDataCacheUpperBound();
-    shardRequestCacheSizeUpperBound = configObj.getShardRequestCacheUpperBound();
   }
 }
