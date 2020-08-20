@@ -164,7 +164,6 @@ public class WireHopperTest {
         uut.sendData(msg);
     }
 
-    @Test
     public void testReadFromWire() throws Exception {
         netServer.setSubscribeHandler(new SubscribeServerHandler(subscriptionManager, serverExecutor));
         // Setup mock object responses

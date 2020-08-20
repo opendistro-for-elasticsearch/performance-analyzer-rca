@@ -22,8 +22,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.dec
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Decision;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
+import com.google.common.annotations.VisibleForTesting;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -32,15 +35,15 @@ import org.checkerframework.checker.nullness.qual.NonNull;
  * Collator collects and prunes the candidate decisions from each decider so that their impacts are
  * aligned.
  *
- * <p>Decisions can increase or decrease pressure on different key resources on an Elasticearch
+ * <p>Decisions can increase or decrease pressure on different key resources on an Elasticsearch
  * node. This is encapsulated in each Action via the {@link ImpactVector}. Since each decider
  * independently evaluates its decision, it is possible to have conflicting ImpactVectors from
  * actions across deciders.
  *
  * <p>The collator prunes them to ensure we only take actions that either increase, or decrease
- * pressure on a particular node. To resolve conflicts, we prefer stability over performance. In
- * order for the above guarantee to work, there should be only one collator instance in an {@link
- * AnalysisGraph}.
+ * pressure on a particular node's resources. To resolve conflicts, we prefer stability over
+ * performance. In order for the above guarantee to work, there should be only one collator instance
+ * in an {@link AnalysisGraph}.
  */
 public class Collator extends Decider {
 
@@ -54,18 +57,33 @@ public class Collator extends Decider {
 
   private static final int evalIntervalSeconds = 5;
 
+  private final ImpactAssessor impactAssessor;
+
   private final List<Decider> deciders;
 
-  private final ActionGrouper actionGrouper;
+  private final Comparator<Action> actionComparator;
 
   public Collator(Decider... deciders) {
-    this(new SingleNodeImpactActionGrouper(), deciders);
-  }
-
-  public Collator(ActionGrouper actionGrouper, Decider... deciders) {
     super(evalIntervalSeconds, collatorFrequency);
     this.deciders = Arrays.asList(deciders);
-    this.actionGrouper = actionGrouper;
+    this.actionComparator = new ImpactBasedActionComparator();
+    this.impactAssessor = new ImpactAssessor();
+  }
+
+  /**
+   * Constructor used for unit testing purposes only.
+   *
+   * @param impactAssessor   the impact assessor.
+   * @param actionComparator comparator for sorting actions.
+   * @param deciders         The participating deciders.
+   */
+  @VisibleForTesting
+  public Collator(final ImpactAssessor impactAssessor, final Comparator<Action> actionComparator,
+      Decider... deciders) {
+    super(evalIntervalSeconds, collatorFrequency);
+    this.deciders = Arrays.asList(deciders);
+    this.actionComparator = actionComparator;
+    this.impactAssessor = impactAssessor;
   }
 
   @Override
@@ -74,75 +92,101 @@ public class Collator extends Decider {
   }
 
   /**
-   * The collator uses an action grouping strategy to first group actions by instanceIds. Then, the
-   * collator polarizes the list of actions per instance to be in the same direction of pressure,
-   * i.e. all the polarized actions either increase pressure on a node, or decrease pressure on a
-   * node.
-   *
-   * <p>When there are conflicting actions suggested by the deciders for an instance, the
-   * polarization logic prefers pruning actions that decrease stability retaining only those that
-   * increase stability. </p>
+   * Process all the actions proposed by the deciders and prune them based on their impact vectors.
    *
    * @return A {@link Decision} instance that contains the list of polarized actions.
    */
   @Override
   public Decision operate() {
-    final List<Action> proposedActions = getAllProposedActions();
-    final Map<NodeKey, List<Action>> actionsByNode = actionGrouper
-        .groupByInstanceId(proposedActions);
-    final List<Action> prunedActions = new ArrayList<>();
-    actionsByNode.forEach((nodeKey, actions) -> prunedActions.addAll(polarize(nodeKey, actions)));
+    Decision finalDecision = new Decision(System.currentTimeMillis(), NAME);
+    List<Action> allowedActions = new ArrayList<>();
 
-    final Decision finalDecision = new Decision(System.currentTimeMillis(), NAME);
-    finalDecision.addAllActions(prunedActions);
+    // First get all the actions proposed by the deciders and assess the overall impact all
+    // actions combined have on all the affected nodes.
+
+    List<Action> allActions = getProposedActions();
+    Map<NodeKey, ImpactAssessment> overallImpactAssessment =
+        impactAssessor.assessOverallImpact(allActions);
+
+    // We need to identify and prune conflicting actions based on the overall impact. In order to
+    // do that, we re-assess each of the proposed actions with the overall impact assessment in
+    // mind. In each such assessment, we ensure the impact of an action aligns with the instance's
+    // current pressure heading(increasing/decreasing). Actions that don't align are pruned and
+    // their effects on the overall impact are undone. As the order in which we reassess matters
+    // as to what actions get picked and what don't, we sort the list of actions based on a
+    // simple heuristic where actions that reduce pressure the most are re-assessed later
+    // thereby decreasing the chance of them getting pruned because of another action.
+
+    allActions.sort(actionComparator);
+    allActions.forEach(action -> {
+      if (impactAssessor.isImpactAligned(action, overallImpactAssessment)) {
+        allowedActions.add(action);
+      } else {
+        impactAssessor.undoActionImpactOnOverallAssessment(action, overallImpactAssessment);
+      }
+    });
+
+    finalDecision.addAllActions(allowedActions);
     return finalDecision;
   }
 
+  /**
+   * Combines all actions proposed by the deciders into a list.
+   *
+   * @return A list of actions.
+   */
   @NonNull
-  private List<Action> getAllProposedActions() {
+  private List<Action> getProposedActions() {
     final List<Action> proposedActions = new ArrayList<>();
     if (deciders != null) {
       for (final Decider decider : deciders) {
         List<Decision> decisions = decider.getFlowUnits();
-        if (decisions != null) {
-          decisions.forEach(decision -> {
-            if (decision.getActions() != null) {
-              proposedActions.addAll(decision.getActions());
-            }
-          });
-        }
+        decisions.forEach(decision -> {
+          if (!decision.getActions().isEmpty()) {
+            proposedActions.addAll(decision.getActions());
+          }
+        });
       }
     }
     return proposedActions;
   }
 
-  private List<Action> polarize(final NodeKey nodeKey, final List<Action> actions) {
-    final List<Action> pressureIncreasingActions = new ArrayList<>();
-    final List<Action> pressureNonIncreasingActions = new ArrayList<>();
+  /**
+   * A comparator for actions to sort them based on their impact from least pressure decreasing
+   * to most.
+   */
+  @VisibleForTesting
+  static final class ImpactBasedActionComparator implements Comparator<Action>, Serializable {
 
-    for (final Action action : actions) {
-      ImpactVector impactVector = action.impact().getOrDefault(nodeKey, new ImpactVector());
+    @Override
+    public int compare(Action action1, Action action2) {
+      int numberOfPressureReductions1 = getImpactedDimensionCount(action1, Impact.DECREASES_PRESSURE);
+      int numberOfPressureReductions2 = getImpactedDimensionCount(action2, Impact.DECREASES_PRESSURE);
 
-      // Classify the action as pressure increasing action if the impact for any dimension is
-      // increasing pressure.
-      if (impactVector.getImpact()
-                      .values()
-                      .stream()
-                      .anyMatch(impact -> impact == Impact.INCREASES_PRESSURE)) {
-        pressureIncreasingActions.add(action);
-      } else {
-        pressureNonIncreasingActions.add(action);
+      if (numberOfPressureReductions1 != numberOfPressureReductions2) {
+        return numberOfPressureReductions1 - numberOfPressureReductions2;
       }
+
+      int numberOfPressureIncreases1 = getImpactedDimensionCount(action1, Impact.INCREASES_PRESSURE);
+      int numberOfPressureIncreases2 = getImpactedDimensionCount(action2, Impact.INCREASES_PRESSURE);
+
+      if (numberOfPressureIncreases1 != numberOfPressureIncreases2) {
+        return numberOfPressureIncreases2 - numberOfPressureIncreases1;
+      }
+
+      return 0;
     }
 
-    // If there are any actions that decrease pressure for a node, prefer that over list of
-    // actions that increase pressure.
-    if (pressureNonIncreasingActions.size() > 0) {
-      return pressureNonIncreasingActions;
+    private int getImpactedDimensionCount(final Action action, Impact requiredImpact) {
+      int count = 0;
+      for (ImpactVector impactVector : action.impact().values()) {
+        for (Impact impact : impactVector.getImpact().values()) {
+          if (impact.equals(requiredImpact)) {
+            count++;
+          }
+        }
+      }
+      return count;
     }
-
-    // Return list of actions that increase pressure only if no decider has proposed an action
-    // that will relieve pressure for this node.
-    return pressureIncreasingActions;
   }
 }
