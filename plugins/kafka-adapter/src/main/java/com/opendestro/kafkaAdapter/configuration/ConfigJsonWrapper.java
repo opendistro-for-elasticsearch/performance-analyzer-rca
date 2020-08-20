@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ class ConfigJsonWrapper {
             @JsonProperty("webhooks_url") String webhooksUrl,
             @JsonProperty("kafka_producer_interval") long sendPeriodicityMillis,
             @JsonProperty("kafka_consumer_interval") long receivePeriodicityMillis,
-            @JsonProperty("max_no_message_found_count") int maxNoMessageFoundCountOnConsumer){
+            @JsonProperty("max_no_message_found_count") int maxNoMessageFoundCountOnConsumer) {
         this.kafkaBootstrapServer = kafkaBootstrapServer;
         this.kafkaTopic = kafkaTopic;
         this.queryParams = queryParams;

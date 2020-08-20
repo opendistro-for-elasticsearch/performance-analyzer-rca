@@ -1,4 +1,20 @@
+/*
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
 package com.opendestro.kafkaAdapter.util;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
@@ -20,10 +36,10 @@ public class UtilTest {
 
 
     @Before
-    public void targetSetup (){
-        target1 = new Target(KafkaAdapterConsts.PA_RCA_QUERY_ENDPOINT,"ClusterTemperatureRca");
+    public void targetSetup() {
+        target1 = new Target(KafkaAdapterConsts.PA_RCA_QUERY_ENDPOINT, "ClusterTemperatureRca");
         target2 = new Target(KafkaAdapterConsts.PA_RCA_QUERY_ENDPOINT);
-        Assert.assertEquals("http://localhost:9600/_opendistro/_performanceanalyzer/rca?name=ClusterTemperatureRca",target1.getUrl());
+        Assert.assertEquals("http://localhost:9600/_opendistro/_performanceanalyzer/rca?name=ClusterTemperatureRca", target1.getUrl());
         Assert.assertEquals("http://localhost:9600/_opendistro/_performanceanalyzer/rca", target2.getUrl());
     }
 
@@ -43,7 +59,7 @@ public class UtilTest {
     }
 
     @Test
-    public void testJsonToString() throws Exception{
+    public void testJsonToString() throws Exception {
         String testContext = "{\"sample key\": \"sample value\"}";
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node = mapper.readTree(testContext);
@@ -54,9 +70,11 @@ public class UtilTest {
     public void testHttpConnection() throws Exception {
         class UrlWrapper {
             URL url;
+
             public UrlWrapper(String spec) throws MalformedURLException {
                 url = new URL(spec);
             }
+
             public HttpURLConnection openConnection() throws IOException {
                 return (HttpURLConnection) url.openConnection();
             }
@@ -74,7 +92,7 @@ public class UtilTest {
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode jsonNode = mapper.readTree(testContext);
-        Assert.assertTrue(Helper.postToSlackWebHook(jsonNode,urlStr));
+        Assert.assertTrue(Helper.postToSlackWebHook(jsonNode, urlStr));
     }
 
 }

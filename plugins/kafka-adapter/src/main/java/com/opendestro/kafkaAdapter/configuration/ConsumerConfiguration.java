@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ public class ConsumerConfiguration {
     private String topic;
     private long interval;
 
-    public ConsumerConfiguration(String bootstrap_server, String topic, long interval){
+    public ConsumerConfiguration(String bootstrap_server, String topic, long interval) {
         this.bootstrap_server = bootstrap_server;
         this.topic = topic;
         this.setInterval(interval);
@@ -38,7 +38,7 @@ public class ConsumerConfiguration {
     }
 
     private void setInterval(long interval) {
-        this.interval = Math.max(KafkaAdapterConsts.KAFKA_MINIMAL_RECEIVE_PERIODICITY,interval);
+        this.interval = Math.max(KafkaAdapterConsts.KAFKA_MINIMAL_RECEIVE_PERIODICITY, interval);
     }
 
     public String getTopic() {
@@ -49,10 +49,10 @@ public class ConsumerConfiguration {
         return bootstrap_server;
     }
 
-    public KafkaConsumer<String, JsonNode> createConsumer(){
+    public KafkaConsumer<String, JsonNode> createConsumer() {
         Properties configProperties = new Properties();
         configProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bootstrap_server);
-        configProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringDeserializer");
+        configProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
         configProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.connect.json.JsonDeserializer");
         configProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "consumer_group");
         return new KafkaConsumer<>(configProperties);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -35,21 +35,22 @@ import java.util.TimerTask;
 
 public class ProducerStarter {
     private static ObjectMapper mapper = new ObjectMapper();
-    public static void writeToKafkaQueue(Target target, ProducerConfiguration producerConfig){
+
+    public static void writeToKafkaQueue(Target target, ProducerConfiguration producerConfig) {
         Timer timer = new Timer();
         KafkaProducer<String, JsonNode> producer = producerConfig.createProducer();
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                try{
+                try {
                     String resp = Helper.makeRequest(target);
                     JsonNode jsonNode = mapper.readTree(resp);
                     ProducerRecord<String, JsonNode> record = new ProducerRecord<String, JsonNode>(producerConfig.getTopic(), jsonNode);
                     producer.send(record);
                     producer.flush();
-                } catch (JsonProcessingException e){
+                } catch (JsonProcessingException e) {
                     System.out.println("Exception Found On Processing Json: " + e.getMessage());
-                } catch (KafkaException e){
+                } catch (KafkaException e) {
                     System.out.println("Exception Found on Kafka: " + e.getMessage());
                     producer.close();
                 }

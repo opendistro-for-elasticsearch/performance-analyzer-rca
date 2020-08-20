@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -20,22 +20,22 @@ public class Target {
     private String parameter;
     private String url;
 
-    public Target(String endpoint, String parameter){
+    public Target(String endpoint, String parameter) {
         this.endpoint = endpoint;
         this.parameter = parameter;
-        this.url = "http://"+this.endpoint+"?name="+this.parameter;
+        this.url = "http://" + this.endpoint + "?name=" + this.parameter;
     }
 
-    public Target(String endpoint){
+    public Target(String endpoint) {
         this.endpoint = endpoint;
-        this.url = "http://"+this.endpoint;
+        this.url = "http://" + this.endpoint;
     }
 
-    public String getUrl(){
+    public String getUrl() {
         return this.url;
     }
 
-    public void setEndpoint(String endpoint){
+    public void setEndpoint(String endpoint) {
         this.endpoint = endpoint;
     }
 

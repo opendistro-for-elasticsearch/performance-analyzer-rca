@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -15,12 +15,11 @@
 
 package com.opendestro.kafkaAdapter.util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
-
-import javax.net.ssl.HttpsURLConnection;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -34,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 
 public class Helper {
     private static HttpURLConnection httpConnection;
+    private static final Logger LOG = LogManager.getLogger(Helper.class);
 
     public static String makeRequest(Target target) {
         BufferedReader reader;
@@ -49,16 +49,15 @@ public class Helper {
 
             int status = httpConnection.getResponseCode();
             reader = (status != 200) ? new BufferedReader(new InputStreamReader(httpConnection.getErrorStream())) : new BufferedReader(new InputStreamReader(httpConnection.getInputStream()));
-            while((line=reader.readLine()) != null) {
+            while ((line = reader.readLine()) != null) {
                 response.append(line);
             }
             reader.close();
             return response.toString();
-        } catch (UnknownHostException e){
-            System.out.println("UnknownHostException found: " + e.getMessage());
-            e.printStackTrace();
+        } catch (UnknownHostException e) {
+            LOG.error("Unknown host found: {}", target.getUrl(), e);
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error("IOException found when reading response: ", e);
         } finally {
             httpConnection.disconnect();
         }
@@ -74,18 +73,20 @@ public class Helper {
             object.put("text", res);
             return object.toString();
         } catch (Exception e) {
-            System.out.println("error found when converting JsonNode to Json: " + e);
+            LOG.error("Exception found when converting JsonNode to String:", e);
             return null;
         }
     }
 
-    public static boolean postToSlackWebHook(JsonNode node, String webhook_url){
+    public static boolean postToSlackWebHook(JsonNode node, String webhookUrl) {
         String val = convertJsonNodeToString(node);
-        assert val != null;
+        if (val == null) {
+            return false;
+        }
         byte[] postBody = val.getBytes(StandardCharsets.UTF_8);
         int responseCode = -1;
         try {
-            httpConnection = (HttpURLConnection) new URL(webhook_url).openConnection();
+            httpConnection = (HttpURLConnection) new URL(webhookUrl).openConnection();
             httpConnection.setDoOutput(true);
             httpConnection.setRequestMethod("POST");
             httpConnection.setRequestProperty("User-Agent", "Java client");
@@ -94,12 +95,14 @@ public class Helper {
             try (DataOutputStream wr = new DataOutputStream(httpConnection.getOutputStream())) {
                 wr.write(postBody);
                 wr.flush();
-            } catch (IOException e){
-                e.printStackTrace();
+            } catch (IOException e) {
+                LOG.error("Exception found when handling output stream", e);
+                return false;
             }
             responseCode = httpConnection.getResponseCode();
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error("Couldn't resolve host {}", httpConnection.getURL(), e);
+            return false;
         } finally {
             httpConnection.disconnect();
         }

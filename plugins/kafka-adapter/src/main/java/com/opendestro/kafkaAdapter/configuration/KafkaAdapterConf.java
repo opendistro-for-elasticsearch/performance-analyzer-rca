@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -26,15 +26,15 @@ public class KafkaAdapterConf {
     private String configFileLoc;
     private ConfigJsonWrapper conf;
 
-    public KafkaAdapterConf (String configPath){
+    public KafkaAdapterConf(String configPath) {
         this.configFileLoc = configPath;
         JsonFactory factory = new JsonFactory();
         factory.enable(JsonParser.Feature.ALLOW_COMMENTS);
         ObjectMapper mapper = new ObjectMapper(factory);
-        try{
+        try {
             File configFile = new File(this.configFileLoc);
             this.conf = mapper.readValue(configFile, ConfigJsonWrapper.class);
-        }catch(IOException e){
+        } catch (IOException e) {
             System.out.println("error");
         }
     }

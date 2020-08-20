@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.WakeupException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -31,34 +33,33 @@ import java.util.Collections;
 
 
 public class ConsumerStarter {
-    public static void runConsumer(ConsumerConfiguration consumerConfig, int max_no_found, String webhooks_url) {
+    private static final Logger LOG = LogManager.getLogger(ConsumerStarter.class);
+    public static void runConsumer(ConsumerConfiguration consumerConfig, int maxNoFound, String webhooksUrl) {
         int noMessageFound = 0;
         KafkaConsumer<String, JsonNode> consumer = consumerConfig.createConsumer();
         consumer.subscribe(Collections.singletonList(consumerConfig.getTopic()));
-        try{
+        try {
             while (true) {
-                ConsumerRecords<String, JsonNode> consumerRecords = consumer.poll(Duration.ofMillis(consumerConfig.getInterval())); // setting seconds as waiting interval
+                ConsumerRecords<String, JsonNode> consumerRecords = consumer.poll(Duration.ofMillis(consumerConfig.getInterval()));
                 if (consumerRecords.count() == 0) {
                     noMessageFound++;
-                    if (noMessageFound > max_no_found) { // if no response lasting 5 times, the consumer will terminate
+                    if (noMessageFound > maxNoFound) {
                         System.out.println("No response, terminating");
                         break;
                     } else {
                         continue;
                     }
                 }
-                //print each record.
                 consumerRecords.forEach(record -> {
-                    Helper.postToSlackWebHook(record.value(), webhooks_url);
+                    Helper.postToSlackWebHook(record.value(), webhooksUrl);
                 });
-                // commits the offset of record to broker.
                 consumer.commitAsync();
             }
-        } catch (WakeupException e){
+        } catch (WakeupException e) {
             // ignore shutdown
         } finally {
             consumer.close();
-            System.out.println("Shutting down the consumer");
+            LOG.info("Shutting down the Kafka consumer");
         }
     }
 
@@ -67,10 +68,10 @@ public class ConsumerStarter {
         KafkaAdapterConf conf = new KafkaAdapterConf(kafkaAdapterConfPath);
         String bootstrapServer = conf.getKafkaBootstrapServer();
         String topic = conf.getKafkaTopicName();
-        String webhooks_url = conf.getWebhooksUrl();
+        String webhooksUrl = conf.getWebhooksUrl();
         long interval = conf.getReceivePeriodicityMillis();
-        int max_no_found = conf.getMaxNoMessageFoundCountOnConsumer();
+        int maxNoFound = conf.getMaxNoMessageFoundCountOnConsumer();
         ConsumerConfiguration consumerConfig = new ConsumerConfiguration(bootstrapServer, topic, interval);
-        runConsumer(consumerConfig, max_no_found, webhooks_url);
+        runConsumer(consumerConfig, maxNoFound, webhooksUrl);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ public class ProducerConfiguration {
     private long interval;
 
 
-    public ProducerConfiguration(String bootstrap_server, String topic, long interval){
+    public ProducerConfiguration(String bootstrap_server, String topic, long interval) {
         this.bootstrap_server = bootstrap_server;
         this.topic = topic;
         this.setInterval(interval);
@@ -50,11 +50,11 @@ public class ProducerConfiguration {
         return bootstrap_server;
     }
 
-    public KafkaProducer<String, JsonNode> createProducer(){
+    public KafkaProducer<String, JsonNode> createProducer() {
         Properties configProperties = new Properties();
         configProperties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bootstrap_server);
-        configProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringSerializer");
-        configProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,"org.apache.kafka.connect.json.JsonSerializer");
+        configProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+        configProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.connect.json.JsonSerializer");
         return new KafkaProducer<>(configProperties);
     }
 }
