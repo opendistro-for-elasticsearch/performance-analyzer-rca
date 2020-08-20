@@ -137,7 +137,7 @@ public class HighHeapUsageClusterRca extends Rca<ResourceFlowUnit<HotClusterSumm
       String nodeId = hotNodeRcaFlowUnit.getSummary().getNodeID().toString();
       try {
         readComputeWrite(nodeId, hotNodeRcaFlowUnit);
-      } catch (ExecutionException e) {
+      } catch (ExecutionException e) {;
         LOG.debug("ExecutionException occurs when retrieving key {}", nodeId);
       }
     }
