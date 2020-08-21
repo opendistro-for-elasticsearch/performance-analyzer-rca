@@ -102,13 +102,13 @@ public class PerformanceAnalyzerApp {
       new ArrayBlockingQueue<>(EXCEPTION_QUEUE_LENGTH);
 
   public static void main(String[] args) {
+    StatsCollector.STATS_TYPE = "agent-stats-metadata";
     PluginSettings settings = PluginSettings.instance();
     if (ConfigStatus.INSTANCE.haveValidConfig()) {
       AppContext appContext = new AppContext();
       PERIODIC_SAMPLERS = new PeriodicSamplers(PERIODIC_SAMPLE_AGGREGATOR, getAllSamplers(appContext),
               (MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval) / 2,
               TimeUnit.MILLISECONDS);
-      StatsCollector.STATS_TYPE = "agent-stats-metadata";
       METRIC_COLLECTOR_EXECUTOR.addScheduledMetricCollector(StatsCollector.instance());
       StatsCollector.instance()
           .addDefaultExceptionCode(StatExceptionCode.READER_RESTART_PROCESSING);
@@ -126,6 +126,7 @@ public class PerformanceAnalyzerApp {
       startRcaTopLevelThread(clientServers, connectionManager, appContext, THREAD_PROVIDER);
     } else {
       LOG.error("Performance analyzer app stopped due to invalid config status.");
+      StatsCollector.instance().logException(StatExceptionCode.READER_THREAD_STOPPED);
     }
   }
 
