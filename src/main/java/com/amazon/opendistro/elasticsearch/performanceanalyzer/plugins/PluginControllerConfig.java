@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.decision_publisher.DecisionKafkaPublisher;
+
 import java.util.ArrayList;
 import java.util.List;
 

@@ -13,7 +13,7 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.rca_summary;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.cluster_rca_publisher;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.Plugin;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
@@ -33,21 +33,21 @@ public class ClusterRcaPublisherController<T extends GenericSummary> {
     private static final Logger LOG = LogManager.getLogger(ClusterRcaPublisherController.class);
     private ClusterRcaPublisher<T> rca;
     private List<Plugin> plugins;
-    private ClusterRcaPublisherControllerConfig pluginControllerConfig;
+    private ClusterRcaPublisherControllerConfig clusterRcaPublisherControllerConfig;
 
     public ClusterRcaPublisherController(ClusterRcaPublisherControllerConfig pluginConfig, ClusterRcaPublisher<T> rca) {
-        this.pluginControllerConfig = pluginConfig;
+        this.clusterRcaPublisherControllerConfig = pluginConfig;
         this.rca = rca;
         this.plugins = new ArrayList<>();
     }
 
     public void initPlugins() {
         loadFrameworkPlugins();
-        registerActionListeners();
+        registerClusterSummaryListener();
     }
 
     private void loadFrameworkPlugins() {
-        for (Class<?> pluginClass : pluginControllerConfig.getFrameworkPlugins()) {
+        for (Class<?> pluginClass : clusterRcaPublisherControllerConfig.getFrameworkPlugins()) {
             final Constructor<?>[] constructors = pluginClass.getConstructors();
             if (constructors.length == 0) {
                 throw new IllegalStateException(
@@ -72,8 +72,8 @@ public class ClusterRcaPublisherController<T extends GenericSummary> {
         }
     }
 
-    private void registerActionListeners() {
-        for (Plugin plugin: plugins) {
+    private void registerClusterSummaryListener() {
+        for (Plugin plugin : plugins) {
             if (ClusterSummaryListener.class.isAssignableFrom(plugin.getClass())) {
                 rca.addClusterSummaryListener((ClusterSummaryListener<T>) plugin);
             }

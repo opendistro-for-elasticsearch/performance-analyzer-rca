@@ -33,93 +33,94 @@ import java.util.HashMap;
 import java.util.List;
 
 public class ClusterRcaPublisher<T extends GenericSummary> extends NonLeafNode<EmptyFlowUnit> {
-    private static final Logger LOG = LogManager.getLogger(ClusterRcaPublisher.class);
-    public static final String NAME = "ClusterReaderRca";
-    private final List<Rca<ResourceFlowUnit<T>>> clusterRcas;
-    private ClusterSummary<T> clusterSummary;
-    private List<ClusterSummaryListener<T>> clusterSummaryListeners;
+  private static final Logger LOG = LogManager.getLogger(ClusterRcaPublisher.class);
+  public static final String NAME = "ClusterReaderRca";
+  private final List<Rca<ResourceFlowUnit<T>>> clusterRcas;
+  private ClusterSummary<T> clusterSummary;
+  private List<ClusterSummaryListener<T>> clusterSummaryListeners;
 
-    public ClusterRcaPublisher(final int evalIntervalSeconds, List<Rca<ResourceFlowUnit<T>>> clusterRcas) {
-        super(0, evalIntervalSeconds);
-        this.clusterRcas = clusterRcas;
-        clusterSummary = new ClusterSummary<>(evalIntervalSeconds, new HashMap<>());
-        clusterSummaryListeners = new ArrayList<>();
-    }
+  public ClusterRcaPublisher(final int evalIntervalSeconds, List<Rca<ResourceFlowUnit<T>>> clusterRcas) {
+    super(0, evalIntervalSeconds);
+    this.clusterRcas = clusterRcas;
+    clusterSummary = new ClusterSummary<>(evalIntervalSeconds, new HashMap<>());
+    clusterSummaryListeners = new ArrayList<>();
+  }
 
-    public String name() {
-        return NAME;
-    }
+  public String name() {
+    return NAME;
+  }
 
-    public String getAllClusterRcaName() {
-        StringBuilder list = new StringBuilder();
-        clusterRcas.forEach((cluster) -> {
-            list.append(cluster.name()).append(", ");
-        });
-        return list.toString();
-    }
+  public String getAllClusterRcaName() {
+    StringBuilder list = new StringBuilder();
+    clusterRcas.forEach((cluster) -> {
+      list.append(cluster.name()).append(", ");
+    });
+    return list.toString();
+  }
 
-    public void addClusterRca(Rca<ResourceFlowUnit<T>> rca) {
-        clusterRcas.add(rca);
-    }
+  public void addClusterRca(Rca<ResourceFlowUnit<T>> rca) {
+    clusterRcas.add(rca);
+  }
 
-    public List<Rca<ResourceFlowUnit<T>>> getClusterRcas() {
-        return this.clusterRcas;
-    }
+  public ClusterSummary<T> getClusterSummary() {
+    return clusterSummary;
+  }
 
-    public List<ClusterSummaryListener<T>> getClusterSummaryListeners(){
-        return clusterSummaryListeners;
-    }
+  public List<ClusterSummaryListener<T>> getClusterSummaryListeners() {
+    return clusterSummaryListeners;
+  }
 
-    public void addClusterSummaryListener(ClusterSummaryListener<T> listener){
-        clusterSummaryListeners.add(listener);
-    }
+  public void addClusterSummaryListener(ClusterSummaryListener<T> listener) {
+    clusterSummaryListeners.add(listener);
+  }
 
-    @Override
-    public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
-        LOG.debug("ClusterReaderRca: reading Rca data from: {}", getAllClusterRcaName());
-        long startTime = System.currentTimeMillis();
-        try {
-            this.operate();
-        } catch (Exception e) {
-            LOG.error("ClusterReaderRca: Exception in operate. ", e);
-            PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
-                    ExceptionsAndErrors.EXCEPTION_IN_OPERATE, name(), 1);
-        }
-        long duration = System.currentTimeMillis() - startTime;
-        PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
-                RcaGraphMetrics.GRAPH_NODE_OPERATE_CALL, name(), duration);
-    }
 
-    @Override
-    public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
-        assert true;
+  @Override
+  public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
+    LOG.debug("ClusterReaderRca: reading Rca data from: {}", getAllClusterRcaName());
+    long startTime = System.currentTimeMillis();
+    try {
+      this.operate();
+    } catch (Exception e) {
+      LOG.error("ClusterReaderRca: Exception in operate. ", e);
+      PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
+              ExceptionsAndErrors.EXCEPTION_IN_OPERATE, name(), 1);
     }
+    long duration = System.currentTimeMillis() - startTime;
+    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
+            RcaGraphMetrics.GRAPH_NODE_OPERATE_CALL, name(), duration);
+  }
 
-    @Override
-    public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-        throw new IllegalArgumentException(name() + "'s generateFlowUnitListFromWire() should not "
-                + "be required.");
-    }
+  @Override
+  public void persistFlowUnit(FlowUnitOperationArgWrapper args) {
+    assert true;
+  }
 
-    @Override
-    public void handleNodeMuted() {
-        assert true;
-    }
+  @Override
+  public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
+    throw new IllegalArgumentException(name() + "'s generateFlowUnitListFromWire() should not "
+            + "be required.");
+  }
 
-    @Override
-    public EmptyFlowUnit operate() {
-        for (Rca<ResourceFlowUnit<T>> clusterRca : clusterRcas) {
-            List<ResourceFlowUnit<T>> clusterFlowUnits = clusterRca.getFlowUnits();
-            if (clusterFlowUnits.isEmpty()) {
-                continue;
-            }
-            if (clusterFlowUnits.get(0).hasResourceSummary()) {
-                clusterSummary.addSummary(clusterRca.name(), clusterRca.getFlowUnits().get(0).getSummary());
-            }
-        }
-        for(ClusterSummaryListener<T> listener: clusterSummaryListeners){
-            listener.summaryPublished(clusterSummary);
-        }
-        return new EmptyFlowUnit(System.currentTimeMillis());
+  @Override
+  public void handleNodeMuted() {
+    assert true;
+  }
+
+  @Override
+  public EmptyFlowUnit operate() {
+    for (Rca<ResourceFlowUnit<T>> clusterRca : clusterRcas) {
+      List<ResourceFlowUnit<T>> clusterFlowUnits = clusterRca.getFlowUnits();
+      if (clusterFlowUnits.isEmpty()) {
+        continue;
+      }
+      if (clusterFlowUnits.get(0).hasResourceSummary()) {
+        clusterSummary.addSummary(clusterRca.name(), clusterRca.getFlowUnits().get(0).getSummary());
+      }
     }
+    for (ClusterSummaryListener<T> listener : clusterSummaryListeners) {
+      listener.summaryPublished(clusterSummary);
+    }
+    return new EmptyFlowUnit(System.currentTimeMillis());
+  }
 }

@@ -13,7 +13,7 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.rca_summary;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.cluster_rca_publisher;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.KafkaProducerController;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.Plugin;
@@ -34,6 +34,40 @@ public class ClusterSummaryKafkaPublisher<T extends GenericSummary> extends Plug
     private static final String NAME = "Kafka_Publisher_Plguin";
     private static PluginConfig pluginConfig = null;
     private static KafkaProducer<String, String> kafkaProducerInstance = null;
+    private static KafkaProducerController controller;
+
+    public void initialize() {
+        if (controller == null) {
+            controller = KafkaProducerController.getInstance();
+        }
+        pluginConfig = controller.getSingletonPluginConfig();
+        kafkaProducerInstance = controller.getSingletonKafkaProducer();
+    }
+
+    public void sendRcaClusterSummaryToKafkaQueue(String msg) {
+        try {
+            String kafkaTopic = pluginConfig.getKafkaDecisionListenerConfig(ConfConsts.CLUSTER_SUMMARY_KAFKA_TOPIC_KEY);
+            ProducerRecord<String, String> record = new ProducerRecord<String, String>(kafkaTopic, msg);
+            LOG.info(String.format("sending record: %s to kafka topic: %s ", msg, kafkaTopic));
+            kafkaProducerInstance.send(record);
+        } catch (KafkaException e) {
+            LOG.error("Exception Found on Kafka: " + e.getMessage());
+        }
+        kafkaProducerInstance.close();
+    }
+
+    public JsonObject getJsonData(ClusterSummary<T> clusterSummay) {
+        LOG.debug("Generating rca cluster Json data");
+        JsonObject jsonObject = new JsonObject();
+        if (clusterSummay.summaryMapIsEmpty()) {
+            LOG.debug("clusterSummary is empty");
+        } else {
+            clusterSummay.getSummaryMap().forEach((k, v) -> {
+                jsonObject.add(k, v.toJson());
+            });
+        }
+        return jsonObject;
+    }
 
     @Override
     public String name() {
@@ -45,42 +79,15 @@ public class ClusterSummaryKafkaPublisher<T extends GenericSummary> extends Plug
         initialize();
         LOG.info("Reading updates from clusters: [{}]", clusterSummary.getExistingClusterNameList());
         JsonObject jsonObject = getJsonData(clusterSummary);
-        if(jsonObject != null){
+        if (jsonObject != null) {
             String record = jsonObject.toString();
             sendRcaClusterSummaryToKafkaQueue(record);
         }
     }
 
-    public void sendRcaClusterSummaryToKafkaQueue(String msg){
-        try{
-            String kafkaTopic = pluginConfig.getKafkaDecisionListenerConfig(ConfConsts.CLUSTER_SUMMARY_KAFKA_TOPIC_KEY);
-            ProducerRecord<String, String> record = new ProducerRecord<String, String>(kafkaTopic, msg);
-            LOG.info(String.format("sending record: %s to kafka topic: %s ", msg, kafkaTopic));
-            kafkaProducerInstance.send(record);
-        } catch (KafkaException e){
-            LOG.error("Exception Found on Kafka: " + e.getMessage());
-        }
-        kafkaProducerInstance.close();
-    }
-
-
-
-    public void initialize(){
-        pluginConfig = KafkaProducerController.getSingletonPluginConfig();
-        kafkaProducerInstance = KafkaProducerController.getSingletonKafkaProducer();
-    }
-
-    public JsonObject getJsonData(ClusterSummary<T> clusterSummay){
-        LOG.debug("Generating rca cluster Json data");
-        JsonObject jsonObject = new JsonObject();
-        if(clusterSummay.summaryMapIsEmpty()){
-            LOG.debug("clusterSummary is empty");
-        }else{
-            clusterSummay.getSummaryMap().forEach((k,v) ->{
-                jsonObject.add(k, v.toJson());
-            });
-        }
-        return jsonObject;
+    //For testing
+    public void setKafkaProducerController(KafkaProducerController testController) {
+        controller = testController;
     }
 
 }

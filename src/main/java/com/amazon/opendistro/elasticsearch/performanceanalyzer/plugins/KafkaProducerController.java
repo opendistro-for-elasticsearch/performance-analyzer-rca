@@ -22,36 +22,41 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.net.HttpURLConnection;
 import java.nio.file.Paths;
 import java.util.Properties;
 
 public class KafkaProducerController {
+  public static final String NAME = "DecisionToKafkaPlugin";
+  private static KafkaProducerController instance;
+  private static final Logger LOG = LogManager.getLogger(KafkaProducerController.class);
+  private PluginConfig pluginConfig = null;
+  private KafkaProducer<String, String> kafkaProducerInstance = null;
 
+  private KafkaProducerController() {
+    System.out.println("here");
+    String pluginConfPath = Paths.get(ConfConsts.CONFIG_DIR_PATH, ConfConsts.PLUGINS_CONF_FILENAMES).toString();
+    pluginConfig = new PluginConfig(pluginConfPath);
 
-    public static final String NAME = "DecisionToKafkaPlugin";
-    private static final Logger LOG = LogManager.getLogger(KafkaProducerController.class);
-    private static PluginConfig pluginConfig = null;
-    private static KafkaProducer<String, String> kafkaProducerInstance = null;
+    Properties configProperties = new Properties();
+    configProperties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, pluginConfig.getKafkaDecisionListenerConfig(ConfConsts.KAFKA_BOOTSTRAP_SERVER_KEY));
+    configProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+    configProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+    kafkaProducerInstance = new KafkaProducer<>(configProperties);
+  }
 
-
-    public static PluginConfig getSingletonPluginConfig() {
-        if (pluginConfig == null) {
-            String pluginConfPath = Paths.get(ConfConsts.CONFIG_DIR_PATH, ConfConsts.PLUGINS_CONF_FILENAMES).toString();
-            return new PluginConfig(pluginConfPath);
-        }
-        return pluginConfig;
+  public static KafkaProducerController getInstance() {
+    if (instance == null) {
+      instance = new KafkaProducerController();
     }
+    return instance;
+  }
+
+  public PluginConfig getSingletonPluginConfig() {
+    return pluginConfig;
+  }
 
 
-    public static KafkaProducer<String, String> getSingletonKafkaProducer(){
-        if(kafkaProducerInstance == null){
-            Properties configProperties = new Properties();
-            configProperties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, pluginConfig.getKafkaDecisionListenerConfig(ConfConsts.KAFKA_BOOTSTRAP_SERVER_KEY));
-            configProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringSerializer");
-            configProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.StringSerializer");
-            kafkaProducerInstance = new KafkaProducer<>(configProperties);
-        }
-        return kafkaProducerInstance;
-    }
+  public KafkaProducer<String, String> getSingletonKafkaProducer() {
+    return kafkaProducerInstance;
+  }
 }

@@ -13,7 +13,7 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.rca_summary;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.cluster_rca_publisher;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.Plugin;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config.PluginConfig;
@@ -25,25 +25,25 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ClusterSummaryLogger<T extends GenericSummary> extends Plugin implements ClusterSummaryListener<T> {
-    private static final Logger LOG = LogManager.getLogger(ClusterSummaryKafkaPublisher.class);
-    private static final String NAME = "Cluster_Summary_Logger";
-    private static PluginConfig pluginConfig = null;
-    private static KafkaProducer<String, String> kafkaProducerInstance = null;
+  private static final Logger LOG = LogManager.getLogger(ClusterSummaryKafkaPublisher.class);
+  private static final String NAME = "Cluster_Summary_Logger";
+  private static PluginConfig pluginConfig = null;
+  private static KafkaProducer<String, String> kafkaProducerInstance = null;
 
-    @Override
-    public String name() {
-        return NAME;
-    }
+  @Override
+  public String name() {
+    return NAME;
+  }
 
-    @Override
-    public void summaryPublished(ClusterSummary<T> clusterSummary) {
-        LOG.info("Logging updates from clusters: [{}]", clusterSummary.getExistingClusterNameList());
-        if(!clusterSummary.summaryMapIsEmpty()){
-            clusterSummary.getSummaryMap().forEach((k,v) ->{
-                LOG.info("Cluster name: [{}] , cluster summary: [{}]", k, v);
-            });
-        }else{
-            LOG.info("the cluster summary is empty");
-        }
+  @Override
+  public void summaryPublished(ClusterSummary<T> clusterSummary) {
+    LOG.info("Logging updates from clusters: [{}]", clusterSummary.getExistingClusterNameList());
+    if (!clusterSummary.summaryMapIsEmpty()) {
+      clusterSummary.getSummaryMap().forEach((k, v) -> {
+        LOG.info("Cluster name: [{}] , cluster summary: [{}]", k, v);
+      });
+    } else {
+      LOG.info("the cluster summary is empty");
     }
+  }
 }

@@ -30,8 +30,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.PluginController;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.PluginControllerConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.rca_summary.ClusterRcaPublisherController;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.rca_summary.ClusterRcaPublisherControllerConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.cluster_rca_publisher.ClusterRcaPublisherController;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.cluster_rca_publisher.ClusterRcaPublisherControllerConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
@@ -291,7 +291,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
     pluginController.initPlugins();
 
-    //Reader - read RCA update data from cluster rcas
+    //ClusterRcaPublisher - Publisher that can publish RCA updates from cluster rcas
     ClusterRcaPublisher<?> clusterRcaPublisher = new ClusterRcaPublisher<>(EVALUATION_INTERVAL_SECONDS, Arrays.asList(queueRejectionClusterRca, hotNodeClusterRca, highHeapUsageClusterRca, fieldDataCacheClusterRca, shardRequestCacheClusterRca));
     clusterRcaPublisher.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     clusterRcaPublisher.addAllUpstreams(Arrays.asList(queueRejectionClusterRca, hotNodeClusterRca, highHeapUsageClusterRca, fieldDataCacheClusterRca, shardRequestCacheClusterRca));
