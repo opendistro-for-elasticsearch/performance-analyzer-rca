@@ -35,17 +35,17 @@ public class JvmBucketCalculatorTest {
     ResourceEnum youngGen = ResourceEnum.YOUNG_GEN;
     ResourceEnum oldGen = ResourceEnum.OLD_GEN;
     // YOUNG GEN
-    Assert.assertEquals(UsageBucket.HEALTHY_WITH_BUFFER, uut.compute(youngGen, -10.0));
-    Assert.assertEquals(UsageBucket.HEALTHY_WITH_BUFFER, uut.compute(youngGen, 10.0));
-    Assert.assertEquals(UsageBucket.HEALTHY, uut.compute(youngGen, 40.0));
-    Assert.assertEquals(UsageBucket.UNDER_UTILIZED, uut.compute(youngGen, 70.0));
+    Assert.assertEquals(UsageBucket.UNDER_UTILIZED, uut.compute(youngGen, -10.0));
+    Assert.assertEquals(UsageBucket.UNDER_UTILIZED, uut.compute(youngGen, 10.0));
+    Assert.assertEquals(UsageBucket.HEALTHY_WITH_BUFFER, uut.compute(youngGen, 40.0));
+    Assert.assertEquals(UsageBucket.HEALTHY, uut.compute(youngGen, 70.0));
     Assert.assertEquals(UsageBucket.UNHEALTHY, uut.compute(youngGen, 70.1));
     Assert.assertEquals(UsageBucket.UNHEALTHY, uut.compute(youngGen, 10000));
     // OLD GEN
-    Assert.assertEquals(UsageBucket.HEALTHY_WITH_BUFFER, uut.compute(oldGen, -5.0));
-    Assert.assertEquals(UsageBucket.HEALTHY_WITH_BUFFER, uut.compute(oldGen, 5.0));
-    Assert.assertEquals(UsageBucket.HEALTHY, uut.compute(oldGen, 5.1));
-    Assert.assertEquals(UsageBucket.UNDER_UTILIZED, uut.compute(oldGen, 7.1));
+    Assert.assertEquals(UsageBucket.UNDER_UTILIZED, uut.compute(oldGen, -5.0));
+    Assert.assertEquals(UsageBucket.UNDER_UTILIZED, uut.compute(oldGen, 5.0));
+    Assert.assertEquals(UsageBucket.HEALTHY_WITH_BUFFER, uut.compute(oldGen, 5.1));
+    Assert.assertEquals(UsageBucket.HEALTHY, uut.compute(oldGen, 7.1));
     Assert.assertEquals(UsageBucket.UNHEALTHY, uut.compute(oldGen, 20.1));
     Assert.assertEquals(UsageBucket.UNHEALTHY, uut.compute(oldGen, 10000));
   }

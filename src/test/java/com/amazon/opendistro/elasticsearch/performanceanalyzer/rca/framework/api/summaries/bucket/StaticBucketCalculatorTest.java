@@ -30,10 +30,10 @@ public class StaticBucketCalculatorTest {
 
   @Test
   public void testCompute() {
-    Assert.assertEquals(UsageBucket.HEALTHY_WITH_BUFFER, uut.compute(ResourceEnum.CPU, -10.0));
-    Assert.assertEquals(UsageBucket.HEALTHY_WITH_BUFFER, uut.compute(ResourceEnum.CPU, 10.0));
-    Assert.assertEquals(UsageBucket.HEALTHY, uut.compute(ResourceEnum.CPU, 40.0));
-    Assert.assertEquals(UsageBucket.UNDER_UTILIZED, uut.compute(ResourceEnum.CPU, 70.0));
+    Assert.assertEquals(UsageBucket.UNDER_UTILIZED, uut.compute(ResourceEnum.CPU, -10.0));
+    Assert.assertEquals(UsageBucket.UNDER_UTILIZED, uut.compute(ResourceEnum.CPU, 10.0));
+    Assert.assertEquals(UsageBucket.HEALTHY_WITH_BUFFER, uut.compute(ResourceEnum.CPU, 40.0));
+    Assert.assertEquals(UsageBucket.HEALTHY, uut.compute(ResourceEnum.CPU, 70.0));
     Assert.assertEquals(UsageBucket.UNHEALTHY, uut.compute(ResourceEnum.CPU, 70.1));
     Assert.assertEquals(UsageBucket.UNHEALTHY, uut.compute(ResourceEnum.CPU, 10000));
   }
