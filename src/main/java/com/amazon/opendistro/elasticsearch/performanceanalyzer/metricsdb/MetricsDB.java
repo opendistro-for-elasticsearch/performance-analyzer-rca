@@ -141,7 +141,7 @@ public class MetricsDB implements Removable {
   // We have a table per metric. We do a group by/aggregate on
   // every dimension and return all the metric tables.
   public List<TableLike<Record>> getAggregatedMetricTables(
-    List<String> metrics, List<String> aggregations, List<String> dimensions) throws Exception {
+      List<String> metrics, List<String> aggregations, List<String> dimensions) throws Exception {
     List<TableLike<Record>> tList = new ArrayList<>();
     List<Field<?>> groupByFields = DBUtils.getFieldsFromList(dimensions);
 

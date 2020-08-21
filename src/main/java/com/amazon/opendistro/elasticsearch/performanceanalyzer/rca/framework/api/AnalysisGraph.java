@@ -44,20 +44,20 @@ public abstract class AnalysisGraph {
   }
 
   protected void addLeaf(Metric leaf) {
-    metricList.add(leaf); // add leaf into metricList
-    leaf.setAddedToFlowField(); //set status to true
-    Stats stats = Stats.getInstance(); // get stats instance
-    stats.incrementLeavesAddedToAnalysisFlowField(); //increase number of leaves
-    ConnectedComponent connectedComponent = new ConnectedComponent(stats.getGraphsCount()); //create new connected Component (with graph id = size of graphs count)
-    stats.addNewGraph(connectedComponent); // add component into the graph (id = previous graph count);
-    leaf.setGraphId(connectedComponent.getGraphId()); //set graph id (as the graph size)
+    metricList.add(leaf);
+    leaf.setAddedToFlowField();
+    Stats stats = Stats.getInstance();
+    stats.incrementLeavesAddedToAnalysisFlowField();
+    ConnectedComponent connectedComponent = new ConnectedComponent(stats.getGraphsCount());
+    stats.addNewGraph(connectedComponent);
+    leaf.setGraphId(connectedComponent.getGraphId());
     LOG.debug(
         "#rca: adding leafNode: {} with connected component id: {}",
         leaf.name(),
         leaf.getGraphId());
     LOG.debug("#rca: current connected component id: {}", connectedComponent.getGraphId());
 
-    for (int i = 0; i < leaf.getGraphId(); ++i) { // LOG all components with graph ID in graph
+    for (int i = 0; i < leaf.getGraphId(); ++i) {
       ConnectedComponent connectedComponent1 = stats.getGraphById(i);
       if (connectedComponent1 != null) {
         LOG.debug("#rca: graph so far: {}", connectedComponent1.getGraphId());
@@ -72,15 +72,15 @@ public abstract class AnalysisGraph {
    * of it this way, a flow field is an aggregation of multiple graphs and each ConnectedComponent
    * is a connected component.
    */
-  public void validateAndProcess() { //called after construct(), validate and add leaf node to according connectedComponent
+  public void validateAndProcess() {
     for (Metric metricNode : metricList) {
       LOG.debug(
           "#rca: validateAndProcess: Metric: name {}, graph-id: {}",
           metricNode.name(),
           metricNode.getGraphId());
       ConnectedComponent connectedComponent =
-          Stats.getInstance().getGraphById(metricNode.getGraphId()); //get connectedComponent by metricNode's graphID
-      connectedComponent.addLeafNode(metricNode); // add metricNode as a leaf node of connectedComponent
+          Stats.getInstance().getGraphById(metricNode.getGraphId());
+      connectedComponent.addLeafNode(metricNode);
     }
   }
 

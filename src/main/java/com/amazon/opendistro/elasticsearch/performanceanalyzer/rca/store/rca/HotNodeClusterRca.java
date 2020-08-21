@@ -177,7 +177,7 @@ public class HotNodeClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> 
         summary.appendNestedSummary(entry.getValue());
       }
     }
-    return new ResourceFlowUnit<>(System.currentTimeMillis(), context, summary, true); // return
+    return new ResourceFlowUnit<>(System.currentTimeMillis(), context, summary, true);
   }
 
   //TODO : we might need to change this function later to use EventListener

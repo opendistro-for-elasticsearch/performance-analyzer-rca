@@ -67,7 +67,6 @@ public class ConnectedComponent {
     if (dependencyOrderedNodes != null) {
       return dependencyOrderedNodes;
     }
-
     List<Node<?>> allNodes = new ArrayList<>(getAllNodes());
     allNodes.sort(new SortByIngressOrder());
 

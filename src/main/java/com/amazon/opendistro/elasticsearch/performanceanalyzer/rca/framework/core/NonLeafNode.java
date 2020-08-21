@@ -55,9 +55,9 @@ public abstract class NonLeafNode<T extends GenericFlowUnit> extends Node<T> imp
     while (!bfsQueue.isEmpty()) {
       final Node<?> currentNode = bfsQueue.poll();
       int graphId = currentNode.getGraphId();
-      if (minId != graphId) { // set all current node id to minID
+      if (minId != graphId) {
         currentNode.setGraphId(minId);
-        Stats.getInstance().removeGraph(graphId); //remove previous graphID in stats, since they are merged into the same min ID
+        Stats.getInstance().removeGraph(graphId);
       }
       final List<Node<?>> currentNodeUpstreams = currentNode.getUpstreams();
       bfsQueue.addAll(currentNodeUpstreams);
@@ -71,7 +71,7 @@ public abstract class NonLeafNode<T extends GenericFlowUnit> extends Node<T> imp
    * than or equal to all the nodes it depends on. 3. The Metrics this node depends on should
    * already be added to the FlowField.
    */
-  private int validateAndAddDownstream(List<Node<?>> upstreams) { //triggered by add upstream, add current node as the downstream of every node in upstream
+  private int validateAndAddDownstream(List<Node<?>> upstreams) {
     if (this.upStreams != null) {
       throw new MalformedAnalysisGraph("All upstreams of a node should be added at once.");
     }
@@ -110,7 +110,7 @@ public abstract class NonLeafNode<T extends GenericFlowUnit> extends Node<T> imp
               metricNodesNotAdded.toString()));
     }
 
-    setLevel(maxLevel + 1);//set current node level as the max level of upstream nodes + 1
+    setLevel(maxLevel + 1);
     return minId;
   }
 }

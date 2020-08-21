@@ -139,20 +139,20 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     addLeaf(gc_Collection_Time);
     addLeaf(cpuUtilizationGroupByOperation);
 
-    //add node stats metrics≠≠±±
+    //add node stats metrics
     List<Metric> nodeStatsMetrics = constructNodeStatsMetrics();
 
     Rca<ResourceFlowUnit<HotResourceSummary>> highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(RCA_PERIOD, heapUsed, gcEvent,
             heapMax, nodeStatsMetrics);
     highHeapUsageOldGenRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    List<Node<?>> upstream = new ArrayList<>(Arrays.asList(heapUsed, gcEvent, heapMax)); // add three metrics as well as NodeStatsMetrics as upstream
+    List<Node<?>> upstream = new ArrayList<>(Arrays.asList(heapUsed, gcEvent, heapMax));
     upstream.addAll(nodeStatsMetrics);
-    highHeapUsageOldGenRca.addAllUpstreams(upstream); // add upstream to highHeapUsageOldGenRca
+    highHeapUsageOldGenRca.addAllUpstreams(upstream);
 
     Rca<ResourceFlowUnit<HotResourceSummary>> highHeapUsageYoungGenRca = new HighHeapUsageYoungGenRca(RCA_PERIOD, heapUsed,
             gc_Collection_Time);
     highHeapUsageYoungGenRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    highHeapUsageYoungGenRca.addAllUpstreams(Arrays.asList(heapUsed, gc_Collection_Time)); // add upstream to highHeapUsageYoungGenRca
+    highHeapUsageYoungGenRca.addAllUpstreams(Arrays.asList(heapUsed, gc_Collection_Time));
 
     Rca<ResourceFlowUnit<HotResourceSummary>> highCpuRca = new HighCpuRca(RCA_PERIOD, cpuUtilizationGroupByOperation);
     highCpuRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
@@ -164,13 +164,13 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     hotJVMNodeRca.addAllUpstreams(
             Arrays.asList(highHeapUsageOldGenRca, highHeapUsageYoungGenRca, highCpuRca));
 
-    Rca<ResourceFlowUnit<HotClusterSummary>> highHeapUsageClusterRca =  //added
+    Rca<ResourceFlowUnit<HotClusterSummary>> highHeapUsageClusterRca =
             new HighHeapUsageClusterRca(RCA_PERIOD, hotJVMNodeRca);
     highHeapUsageClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     highHeapUsageClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
     highHeapUsageClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
-    Rca<ResourceFlowUnit<HotClusterSummary>> hotNodeClusterRca = //added
+    Rca<ResourceFlowUnit<HotClusterSummary>> hotNodeClusterRca =
             new HotNodeClusterRca(RCA_PERIOD, hotJVMNodeRca);
     hotNodeClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     hotNodeClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
@@ -190,7 +190,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     // Cluster level queue rejection RCA
     QueueRejectionClusterRca queueRejectionClusterRca = new QueueRejectionClusterRca(RCA_PERIOD, queueRejectionNodeRca);
     queueRejectionClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    queueRejectionClusterRca.addAllUpstreams(Collections.singletonList(queueRejectionNodeRca)); //add queueRejectionNodeRca as upstreams
+    queueRejectionClusterRca.addAllUpstreams(Collections.singletonList(queueRejectionNodeRca));
     queueRejectionClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
     // Queue Health Decider

@@ -33,7 +33,7 @@ import org.jooq.Result;
 import org.jooq.exception.DataAccessException;
 
 public abstract class Metric extends LeafNode<MetricFlowUnit> {
-  static final String[] metricList; //List of all OS metrics
+  static final String[] metricList;
 
   static {
     AllMetrics.OSMetrics[] osMetrics = AllMetrics.OSMetrics.values();

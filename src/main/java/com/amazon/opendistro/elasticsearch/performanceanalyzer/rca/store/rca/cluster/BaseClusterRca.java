@@ -106,7 +106,7 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
       if (nodeTable.get(nodeKey, nodeRca.name()) == null) {
         nodeTable.put(nodeKey, nodeRca.name(), new LinkedList<>());
       }
-      LinkedList<ResourceFlowUnit<HotNodeSummary>> linkedList = nodeTable.get(nodeKey, nodeRca.name()); //flow unit are stored in nodeTable
+      LinkedList<ResourceFlowUnit<HotNodeSummary>> linkedList = nodeTable.get(nodeKey, nodeRca.name());
       linkedList.addLast(flowUnit);
       if (linkedList.size() > numOfFlowUnitsInMap) {
         linkedList.pollFirst();
@@ -159,7 +159,7 @@ public class BaseClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
         continue;
       }
       HotNodeSummary newNodeSummary = generateNodeSummary(nodeKey);
-      if (newNodeSummary != null) { // if the node is unhealthy, add the summary into unhealhtyNodeSummaries.
+      if (newNodeSummary != null) {
         unhealthyNodeSummaries.add(newNodeSummary);
       }
     }
