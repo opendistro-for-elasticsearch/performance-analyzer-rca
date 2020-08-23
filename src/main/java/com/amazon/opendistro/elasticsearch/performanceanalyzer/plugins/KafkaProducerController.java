@@ -19,11 +19,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config.Co
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config.PluginConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.nio.file.Paths;
 import java.util.Properties;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class KafkaProducerController {
   public static final String NAME = "DecisionToKafkaPlugin";
@@ -32,13 +31,13 @@ public class KafkaProducerController {
   private PluginConfig pluginConfig = null;
   private KafkaProducer<String, String> kafkaProducerInstance = null;
 
+
   private KafkaProducerController() {
-    System.out.println("here");
     String pluginConfPath = Paths.get(ConfConsts.CONFIG_DIR_PATH, ConfConsts.PLUGINS_CONF_FILENAMES).toString();
     pluginConfig = new PluginConfig(pluginConfPath);
-
+    String bootstrapServer = pluginConfig.getKafkaDecisionListenerConfig(ConfConsts.KAFKA_BOOTSTRAP_SERVER_KEY);
     Properties configProperties = new Properties();
-    configProperties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, pluginConfig.getKafkaDecisionListenerConfig(ConfConsts.KAFKA_BOOTSTRAP_SERVER_KEY));
+    configProperties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
     configProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
     configProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
     kafkaProducerInstance = new KafkaProducer<>(configProperties);

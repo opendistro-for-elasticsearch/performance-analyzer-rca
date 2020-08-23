@@ -25,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.dec
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Collator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Publisher;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.QueueHealthDecider;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterRcaPublisher;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardStatsDerivedDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -82,7 +83,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.capacity.TotalCpuUtilForTotalNodeMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.HeapAllocRateShardIndependentTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.ShardIndependentTemperatureCalculatorCpuUtilMetric;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterRcaPublisher;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeRca;
@@ -292,12 +292,22 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     pluginController.initPlugins();
 
     //ClusterRcaPublisher - Publisher that can publish RCA updates from cluster rcas
-    ClusterRcaPublisher<?> clusterRcaPublisher = new ClusterRcaPublisher<>(EVALUATION_INTERVAL_SECONDS, Arrays.asList(queueRejectionClusterRca, hotNodeClusterRca, highHeapUsageClusterRca, fieldDataCacheClusterRca, shardRequestCacheClusterRca));
+    ClusterRcaPublisher clusterRcaPublisher = new ClusterRcaPublisher(EVALUATION_INTERVAL_SECONDS, new ArrayList<>());
+    clusterRcaPublisher.addClusterRca(queueRejectionClusterRca);
+    clusterRcaPublisher.addClusterRca(hotNodeClusterRca);
+    clusterRcaPublisher.addClusterRca(highHeapUsageClusterRca);
+    clusterRcaPublisher.addClusterRca(fieldDataCacheClusterRca);
+    clusterRcaPublisher.addClusterRca(shardRequestCacheClusterRca);
+    List<Node<?>> upstreams = new ArrayList<>();
+    upstreams.add(queueRejectionClusterRca);
+    upstreams.add(hotNodeClusterRca);
+    upstreams.add(highHeapUsageClusterRca);
+    upstreams.add(fieldDataCacheClusterRca);
+    upstreams.add(shardRequestCacheClusterRca);
     clusterRcaPublisher.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    clusterRcaPublisher.addAllUpstreams(Arrays.asList(queueRejectionClusterRca, hotNodeClusterRca, highHeapUsageClusterRca, fieldDataCacheClusterRca, shardRequestCacheClusterRca));
-
+    clusterRcaPublisher.addAllUpstreams(upstreams);
     ClusterRcaPublisherControllerConfig clusterRcaPublisherControllerConfig = new ClusterRcaPublisherControllerConfig();
-    ClusterRcaPublisherController<?> clusterRcaPublisherController = new ClusterRcaPublisherController<>(clusterRcaPublisherControllerConfig, clusterRcaPublisher);
+    ClusterRcaPublisherController clusterRcaPublisherController = new ClusterRcaPublisherController(clusterRcaPublisherControllerConfig, clusterRcaPublisher);
     clusterRcaPublisherController.initPlugins();
   }
 

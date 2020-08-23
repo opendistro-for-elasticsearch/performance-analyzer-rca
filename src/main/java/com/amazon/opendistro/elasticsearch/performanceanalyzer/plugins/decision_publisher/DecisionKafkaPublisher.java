@@ -21,13 +21,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.KafkaProd
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.Plugin;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config.ConfConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config.PluginConfig;
+import java.net.HttpURLConnection;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.KafkaException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.net.HttpURLConnection;
 
 
 public class DecisionKafkaPublisher extends Plugin implements ActionListener {

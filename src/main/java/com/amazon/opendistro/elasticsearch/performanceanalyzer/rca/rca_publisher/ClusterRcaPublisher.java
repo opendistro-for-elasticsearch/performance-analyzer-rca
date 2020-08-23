@@ -17,32 +17,31 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publishe
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.EmptyFlowUnit;
-
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-public class ClusterRcaPublisher<T extends GenericSummary> extends NonLeafNode<EmptyFlowUnit> {
+
+public class ClusterRcaPublisher extends NonLeafNode<EmptyFlowUnit> {
   private static final Logger LOG = LogManager.getLogger(ClusterRcaPublisher.class);
   public static final String NAME = "ClusterReaderRca";
-  private final List<Rca<ResourceFlowUnit<T>>> clusterRcas;
-  private ClusterSummary<T> clusterSummary;
-  private List<ClusterSummaryListener<T>> clusterSummaryListeners;
+  private final List<Rca<ResourceFlowUnit<HotClusterSummary>>> clusterRcas;
+  private ClusterSummary clusterSummary;
+  private List<ClusterSummaryListener> clusterSummaryListeners;
 
-  public ClusterRcaPublisher(final int evalIntervalSeconds, List<Rca<ResourceFlowUnit<T>>> clusterRcas) {
+  public ClusterRcaPublisher(final int evalIntervalSeconds, List<Rca<ResourceFlowUnit<HotClusterSummary>>> clusterRcas) {
     super(0, evalIntervalSeconds);
     this.clusterRcas = clusterRcas;
-    clusterSummary = new ClusterSummary<>(evalIntervalSeconds, new HashMap<>());
+    clusterSummary = new ClusterSummary(evalIntervalSeconds, new HashMap<>());
     clusterSummaryListeners = new ArrayList<>();
   }
 
@@ -58,22 +57,21 @@ public class ClusterRcaPublisher<T extends GenericSummary> extends NonLeafNode<E
     return list.toString();
   }
 
-  public void addClusterRca(Rca<ResourceFlowUnit<T>> rca) {
+  public void addClusterRca(Rca<ResourceFlowUnit<HotClusterSummary>> rca) {
     clusterRcas.add(rca);
   }
 
-  public ClusterSummary<T> getClusterSummary() {
+  public ClusterSummary getClusterSummary() {
     return clusterSummary;
   }
 
-  public List<ClusterSummaryListener<T>> getClusterSummaryListeners() {
+  public List<ClusterSummaryListener> getClusterSummaryListeners() {
     return clusterSummaryListeners;
   }
 
-  public void addClusterSummaryListener(ClusterSummaryListener<T> listener) {
+  public void addClusterSummaryListener(ClusterSummaryListener listener) {
     clusterSummaryListeners.add(listener);
   }
-
 
   @Override
   public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
@@ -109,8 +107,8 @@ public class ClusterRcaPublisher<T extends GenericSummary> extends NonLeafNode<E
 
   @Override
   public EmptyFlowUnit operate() {
-    for (Rca<ResourceFlowUnit<T>> clusterRca : clusterRcas) {
-      List<ResourceFlowUnit<T>> clusterFlowUnits = clusterRca.getFlowUnits();
+    for (Rca<ResourceFlowUnit<HotClusterSummary>> clusterRca : clusterRcas) {
+      List<ResourceFlowUnit<HotClusterSummary>> clusterFlowUnits = clusterRca.getFlowUnits();
       if (clusterFlowUnits.isEmpty()) {
         continue;
       }
@@ -118,7 +116,7 @@ public class ClusterRcaPublisher<T extends GenericSummary> extends NonLeafNode<E
         clusterSummary.addSummary(clusterRca.name(), clusterRca.getFlowUnits().get(0).getSummary());
       }
     }
-    for (ClusterSummaryListener<T> listener : clusterSummaryListeners) {
+    for (ClusterSummaryListener listener : clusterSummaryListeners) {
       listener.summaryPublished(clusterSummary);
     }
     return new EmptyFlowUnit(System.currentTimeMillis());

@@ -19,7 +19,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.KafkaProd
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.Plugin;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config.ConfConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config.PluginConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterSummaryListener;
 import com.google.gson.JsonObject;
@@ -29,7 +28,7 @@ import org.apache.kafka.common.KafkaException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ClusterSummaryKafkaPublisher<T extends GenericSummary> extends Plugin implements ClusterSummaryListener<T> {
+public class ClusterSummaryKafkaPublisher extends Plugin implements ClusterSummaryListener {
     private static final Logger LOG = LogManager.getLogger(ClusterSummaryKafkaPublisher.class);
     private static final String NAME = "Kafka_Publisher_Plguin";
     private static PluginConfig pluginConfig = null;
@@ -56,7 +55,7 @@ public class ClusterSummaryKafkaPublisher<T extends GenericSummary> extends Plug
         kafkaProducerInstance.close();
     }
 
-    public JsonObject getJsonData(ClusterSummary<T> clusterSummay) {
+    public JsonObject getJsonData(ClusterSummary clusterSummay) {
         LOG.debug("Generating rca cluster Json data");
         JsonObject jsonObject = new JsonObject();
         if (clusterSummay.summaryMapIsEmpty()) {
@@ -75,7 +74,7 @@ public class ClusterSummaryKafkaPublisher<T extends GenericSummary> extends Plug
     }
 
     @Override
-    public void summaryPublished(ClusterSummary<T> clusterSummary) {
+    public void summaryPublished(ClusterSummary clusterSummary) {
         initialize();
         LOG.info("Reading updates from clusters: [{}]", clusterSummary.getExistingClusterNameList());
         JsonObject jsonObject = getJsonData(clusterSummary);

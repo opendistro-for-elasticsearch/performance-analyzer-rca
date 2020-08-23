@@ -16,26 +16,23 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.cluster_rca_publisher;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.Plugin;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
-
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterRcaPublisher;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterSummaryListener;
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-public class ClusterRcaPublisherController<T extends GenericSummary> {
+public class ClusterRcaPublisherController {
     private static final Logger LOG = LogManager.getLogger(ClusterRcaPublisherController.class);
-    private ClusterRcaPublisher<T> rca;
+    private ClusterRcaPublisher rca;
     private List<Plugin> plugins;
     private ClusterRcaPublisherControllerConfig clusterRcaPublisherControllerConfig;
 
-    public ClusterRcaPublisherController(ClusterRcaPublisherControllerConfig pluginConfig, ClusterRcaPublisher<T> rca) {
+    public ClusterRcaPublisherController(ClusterRcaPublisherControllerConfig pluginConfig, ClusterRcaPublisher rca) {
         this.clusterRcaPublisherControllerConfig = pluginConfig;
         this.rca = rca;
         this.plugins = new ArrayList<>();
@@ -75,7 +72,7 @@ public class ClusterRcaPublisherController<T extends GenericSummary> {
     private void registerClusterSummaryListener() {
         for (Plugin plugin : plugins) {
             if (ClusterSummaryListener.class.isAssignableFrom(plugin.getClass())) {
-                rca.addClusterSummaryListener((ClusterSummaryListener<T>) plugin);
+                rca.addClusterSummaryListener((ClusterSummaryListener) plugin);
             }
         }
     }

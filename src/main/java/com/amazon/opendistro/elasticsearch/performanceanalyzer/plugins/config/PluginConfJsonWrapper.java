@@ -17,10 +17,10 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PluginConfJsonWrapper {

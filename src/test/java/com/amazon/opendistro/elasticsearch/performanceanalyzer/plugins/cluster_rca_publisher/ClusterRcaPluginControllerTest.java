@@ -18,7 +18,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.cluster_
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ActionListener;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.Plugin;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterRcaPublisher;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterSummaryListener;
@@ -34,10 +33,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isA;
 
-public class ClusterRcaPluginControllerTest<T extends GenericSummary> {
+public class ClusterRcaPluginControllerTest {
 
   @Test
-  @SuppressWarnings("unchecked")
   public void testInit() {
     List<Class<? extends Plugin>> frameworkPlugins = new ArrayList<Class<? extends Plugin>>() {{
       add(TestSummaryListener.class);
@@ -46,8 +44,8 @@ public class ClusterRcaPluginControllerTest<T extends GenericSummary> {
     }};
     ClusterRcaPublisherControllerConfig config = Mockito.mock(ClusterRcaPublisherControllerConfig.class);
     Mockito.when(config.getFrameworkPlugins()).thenReturn(frameworkPlugins);
-    ClusterRcaPublisher<T> clusterRcaPublisher = (ClusterRcaPublisher<T>) Mockito.mock(ClusterRcaPublisher.class);
-    ClusterRcaPublisherController<T> controller = new ClusterRcaPublisherController<>(config, clusterRcaPublisher);
+    ClusterRcaPublisher clusterRcaPublisher = Mockito.mock(ClusterRcaPublisher.class);
+    ClusterRcaPublisherController controller = new ClusterRcaPublisherController(config, clusterRcaPublisher);
     controller.initPlugins();
     List<Plugin> pluginList = controller.getPlugins();
     Assert.assertEquals(3, pluginList.size());
@@ -56,52 +54,49 @@ public class ClusterRcaPluginControllerTest<T extends GenericSummary> {
   }
 
   @Test(expected = IllegalStateException.class)
-  @SuppressWarnings("unchecked")
   public void testPrivateConstructorPlugin() {
     List<Class<? extends Plugin>> frameworkPlugins = new ArrayList<Class<? extends Plugin>>() {{
       add(TestPrivateConstructorPlugin.class);
     }};
     ClusterRcaPublisherControllerConfig config = Mockito.mock(ClusterRcaPublisherControllerConfig.class);
     Mockito.when(config.getFrameworkPlugins()).thenReturn(frameworkPlugins);
-    ClusterRcaPublisher<T> clusterRcaPublisher = (ClusterRcaPublisher<T>) Mockito.mock(ClusterRcaPublisher.class);
-    ClusterRcaPublisherController<T> controller = new ClusterRcaPublisherController<>(config, clusterRcaPublisher);
+    ClusterRcaPublisher clusterRcaPublisher = Mockito.mock(ClusterRcaPublisher.class);
+    ClusterRcaPublisherController controller = new ClusterRcaPublisherController(config, clusterRcaPublisher);
     controller.initPlugins();
   }
 
   @Test(expected = IllegalStateException.class)
-  @SuppressWarnings("unchecked")
   public void testMultiConstructorPlugin() {
     List<Class<? extends Plugin>> frameworkPlugins = new ArrayList<Class<? extends Plugin>>() {{
       add(TestMultiConstructorPlugin.class);
     }};
     ClusterRcaPublisherControllerConfig config = Mockito.mock(ClusterRcaPublisherControllerConfig.class);
     Mockito.when(config.getFrameworkPlugins()).thenReturn(frameworkPlugins);
-    ClusterRcaPublisher<T> clusterRcaPublisher = (ClusterRcaPublisher<T>) Mockito.mock(ClusterRcaPublisher.class);
-    ClusterRcaPublisherController<T> controller = new ClusterRcaPublisherController<>(config, clusterRcaPublisher);
+    ClusterRcaPublisher clusterRcaPublisher = Mockito.mock(ClusterRcaPublisher.class);
+    ClusterRcaPublisherController controller = new ClusterRcaPublisherController(config, clusterRcaPublisher);
     controller.initPlugins();
   }
 
   @Test(expected = IllegalStateException.class)
-  @SuppressWarnings("unchecked")
   public void testNonDefaultConstructorPlugin() {
     List<Class<? extends Plugin>> frameworkPlugins = new ArrayList<Class<? extends Plugin>>() {{
       add(TestNonDefaultConstructorPlugin.class);
     }};
     ClusterRcaPublisherControllerConfig config = Mockito.mock(ClusterRcaPublisherControllerConfig.class);
     Mockito.when(config.getFrameworkPlugins()).thenReturn(frameworkPlugins);
-    ClusterRcaPublisher<T> clusterRcaPublisher = (ClusterRcaPublisher<T>) Mockito.mock(ClusterRcaPublisher.class);
-    ClusterRcaPublisherController<T> controller = new ClusterRcaPublisherController<>(config, clusterRcaPublisher);
+    ClusterRcaPublisher clusterRcaPublisher = Mockito.mock(ClusterRcaPublisher.class);
+    ClusterRcaPublisherController controller = new ClusterRcaPublisherController(config, clusterRcaPublisher);
     controller.initPlugins();
   }
 
-  public static class TestSummaryListener<T extends GenericSummary> extends Plugin implements ClusterSummaryListener<T> {
+  public static class TestSummaryListener extends Plugin implements ClusterSummaryListener {
     @Override
     public String name() {
       return "Test_Summary_Listener";
     }
 
     @Override
-    public void summaryPublished(ClusterSummary<T> clusterSummary) {
+    public void summaryPublished(ClusterSummary clusterSummary) {
       assert true;
     }
   }

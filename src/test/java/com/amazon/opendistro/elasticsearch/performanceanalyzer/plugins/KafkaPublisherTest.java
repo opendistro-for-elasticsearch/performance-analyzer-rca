@@ -30,7 +30,7 @@ public class KafkaPublisherTest<T extends GenericSummary> {
   private static String testActionSummaryTopic = "test_action";
   private static String testClusterSummaryTopic = "test_cluster";
   private DecisionKafkaPublisher decisionKafkaPublisher;
-  private ClusterSummaryKafkaPublisher<T> clusterSummaryKafkaPublisher;
+  private ClusterSummaryKafkaPublisher clusterSummaryKafkaPublisher;
 
   @Mock
   private KafkaProducerController controller;
@@ -68,13 +68,13 @@ public class KafkaPublisherTest<T extends GenericSummary> {
     HotClusterSummary testSummary = Mockito.mock(HotClusterSummary.class);
     Mockito.when(testSummary.toJson()).thenReturn(testJson);
 
-    Map<String, GenericSummary> summaryMap = new HashMap<>();
+    Map<String, HotClusterSummary> summaryMap = new HashMap<>();
     summaryMap.put(testClusterName, testSummary);
 
-    clusterSummaryKafkaPublisher = new ClusterSummaryKafkaPublisher<>();
-    ClusterSummary<T> clusterSummary = Mockito.mock(ClusterSummary.class);
+    clusterSummaryKafkaPublisher = new ClusterSummaryKafkaPublisher();
+    ClusterSummary clusterSummary = Mockito.mock(ClusterSummary.class);
     Mockito.when(clusterSummary.summaryMapIsEmpty()).thenReturn(false);
-    Mockito.when(clusterSummary.getSummaryMap()).thenReturn((Map<String, T>) summaryMap);
+    Mockito.when(clusterSummary.getSummaryMap()).thenReturn(summaryMap);
 
     Mockito.when(pluginConfig.getKafkaDecisionListenerConfig(Mockito.any())).thenReturn(testClusterSummaryTopic);
     clusterSummaryKafkaPublisher.setKafkaProducerController(controller);

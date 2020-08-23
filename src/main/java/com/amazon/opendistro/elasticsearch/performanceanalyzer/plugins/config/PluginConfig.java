@@ -18,12 +18,12 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 
 public class PluginConfig {
     protected String configFilePath;
@@ -44,15 +44,15 @@ public class PluginConfig {
     }
 
     //for test
-    public PluginConfig(PluginConfJsonWrapper conf){
+    public PluginConfig(PluginConfJsonWrapper conf) {
         this.conf = conf;
     }
 
-    public Map<String, String> getKafkaDecisionListenerSettings(){
+    public Map<String, String> getKafkaDecisionListenerSettings() {
         return conf.getKafkaDecisionListenerSettings();
     }
 
-    public String getKafkaDecisionListenerConfig(String key){
+    public String getKafkaDecisionListenerConfig(String key) {
         return getKafkaDecisionListenerSettings().get(key);
     }
 }

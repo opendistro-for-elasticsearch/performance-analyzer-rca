@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
@@ -24,11 +25,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class ClusterSummary<T extends GenericSummary> extends GenericFlowUnit {
+public class ClusterSummary extends GenericFlowUnit {
   private String NAME = "ClusterRcaSummary";
-  private Map<String, T> summaryMap;
+  private Map<String, HotClusterSummary> summaryMap;
 
-  public ClusterSummary(long timestamp, Map<String, T> summaryMap) {
+  public ClusterSummary(long timestamp, Map<String, HotClusterSummary> summaryMap) {
     super(timestamp);
     setSummaryMap(summaryMap);
   }
@@ -37,11 +38,11 @@ public class ClusterSummary<T extends GenericSummary> extends GenericFlowUnit {
     return summaryMap.isEmpty();
   }
 
-  public Map<String, T> getSummaryMap() {
+  public Map<String, HotClusterSummary> getSummaryMap() {
     return summaryMap;
   }
 
-  public void setSummaryMap(Map<String, T> summaryMap) {
+  public void setSummaryMap(Map<String, HotClusterSummary> summaryMap) {
     this.summaryMap = summaryMap;
   }
 
@@ -60,11 +61,11 @@ public class ClusterSummary<T extends GenericSummary> extends GenericFlowUnit {
   /**
    * Returns a summary for the configured action
    */
-  public T getSummary(String name) {
+  public HotClusterSummary getSummary(String name) {
     return summaryMap.get(name);
   }
 
-  public void addSummary(String name, T summary) {
+  public void addSummary(String name, HotClusterSummary summary) {
     summaryMap.put(name, summary);
   }
 

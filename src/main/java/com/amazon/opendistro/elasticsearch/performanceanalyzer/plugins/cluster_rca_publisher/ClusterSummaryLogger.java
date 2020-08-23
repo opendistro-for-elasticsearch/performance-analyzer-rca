@@ -17,14 +17,13 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.cluster_
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.Plugin;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config.PluginConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterSummaryListener;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ClusterSummaryLogger<T extends GenericSummary> extends Plugin implements ClusterSummaryListener<T> {
+public class ClusterSummaryLogger extends Plugin implements ClusterSummaryListener {
   private static final Logger LOG = LogManager.getLogger(ClusterSummaryKafkaPublisher.class);
   private static final String NAME = "Cluster_Summary_Logger";
   private static PluginConfig pluginConfig = null;
@@ -36,7 +35,7 @@ public class ClusterSummaryLogger<T extends GenericSummary> extends Plugin imple
   }
 
   @Override
-  public void summaryPublished(ClusterSummary<T> clusterSummary) {
+  public void summaryPublished(ClusterSummary clusterSummary) {
     LOG.info("Logging updates from clusters: [{}]", clusterSummary.getExistingClusterNameList());
     if (!clusterSummary.summaryMapIsEmpty()) {
       clusterSummary.getSummaryMap().forEach((k, v) -> {

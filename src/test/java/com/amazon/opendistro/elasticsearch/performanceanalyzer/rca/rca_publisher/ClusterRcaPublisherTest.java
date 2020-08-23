@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publishe
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.Plugin;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 
 import org.junit.Assert;
@@ -29,51 +30,50 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Collections;
 
-public class ClusterRcaPublisherTest<T extends GenericSummary> {
+public class ClusterRcaPublisherTest {
   private static final int EVAL_INTERVAL = 5;
-  private ClusterRcaPublisher<T> clusterRcaPublisher;
+  private ClusterRcaPublisher clusterRcaPublisher;
 
   @Mock
-  private Rca<ResourceFlowUnit<T>> rca;
+  private Rca<ResourceFlowUnit<HotClusterSummary>> rca;
 
   @Mock
-  private ClusterSummaryListener<T> clusterSummaryListener;
+  private ClusterSummaryListener clusterSummaryListener;
 
   @Mock
-  private ResourceFlowUnit<T> flowUnit;
+  private ResourceFlowUnit<HotClusterSummary> flowUnit;
 
   @Mock
-  private T summary;
+  private HotClusterSummary summary;
 
   @Before
   public void setup() {
     MockitoAnnotations.initMocks(this);
-    clusterRcaPublisher = new ClusterRcaPublisher<>(EVAL_INTERVAL, Collections.singletonList(rca));
+    clusterRcaPublisher = new ClusterRcaPublisher(EVAL_INTERVAL, Collections.singletonList(rca));
     clusterRcaPublisher.addClusterSummaryListener(clusterSummaryListener);
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void testListenerInvocations() {
     Mockito.when(rca.getFlowUnits()).thenReturn(Collections.singletonList(flowUnit));
     Mockito.when(flowUnit.getSummary()).thenReturn(summary);
     Assert.assertEquals(rca.getFlowUnits().get(0), flowUnit);
     Assert.assertNotNull(clusterRcaPublisher.getClusterSummaryListeners());
-    ClusterSummaryListener<T> testListener = Mockito.mock(TestClusterSummaryListener.class);
+    ClusterSummaryListener testListener = Mockito.mock(TestClusterSummaryListener.class);
     clusterRcaPublisher.addClusterSummaryListener(testListener);
     clusterRcaPublisher.operate();
     Mockito.verify(clusterSummaryListener, Mockito.times(1)).summaryPublished(clusterRcaPublisher.getClusterSummary());
     Mockito.verify(testListener, Mockito.times(1)).summaryPublished(clusterRcaPublisher.getClusterSummary());
   }
 
-  public static class TestClusterSummaryListener<T extends GenericSummary> extends Plugin implements ClusterSummaryListener<T> {
+  public static class TestClusterSummaryListener extends Plugin implements ClusterSummaryListener {
     @Override
     public String name() {
       return "Test_Plugin";
     }
 
     @Override
-    public void summaryPublished(ClusterSummary<T> clusterSummary) {
+    public void summaryPublished(ClusterSummary clusterSummary) {
       assert true;
     }
   }
