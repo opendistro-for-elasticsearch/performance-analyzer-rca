@@ -25,7 +25,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.dec
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Collator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Publisher;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.QueueHealthDecider;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterRcaPublisher;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardStatsDerivedDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -68,6 +67,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.ShardStore;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterRcaPublisher;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigClusterCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric;
@@ -307,7 +307,8 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     clusterRcaPublisher.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     clusterRcaPublisher.addAllUpstreams(upstreams);
     ClusterRcaPublisherControllerConfig clusterRcaPublisherControllerConfig = new ClusterRcaPublisherControllerConfig();
-    ClusterRcaPublisherController clusterRcaPublisherController = new ClusterRcaPublisherController(clusterRcaPublisherControllerConfig, clusterRcaPublisher);
+    ClusterRcaPublisherController clusterRcaPublisherController =
+            new ClusterRcaPublisherController(clusterRcaPublisherControllerConfig, clusterRcaPublisher);
     clusterRcaPublisherController.initPlugins();
   }
 

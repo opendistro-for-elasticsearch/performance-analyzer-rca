@@ -15,7 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher;
 
-public interface ClusterSummaryListener{
+public interface ClusterSummaryListener {
   /**
    * Called ClusterReaderRca emits RCA cluster summary
    */

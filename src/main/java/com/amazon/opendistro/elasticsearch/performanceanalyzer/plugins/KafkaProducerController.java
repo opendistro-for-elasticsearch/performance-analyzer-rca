@@ -17,10 +17,10 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config.ConfConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config.PluginConfig;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import java.nio.file.Paths;
 import java.util.Properties;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
