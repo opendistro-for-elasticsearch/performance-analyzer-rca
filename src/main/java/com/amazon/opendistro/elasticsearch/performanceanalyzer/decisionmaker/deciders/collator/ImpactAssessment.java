@@ -112,25 +112,23 @@ public class ImpactAssessment {
    */
   public boolean checkAlignmentAcrossDimensions(@NonNull final String actionName,
       @NonNull final ImpactVector impactVector) {
-    boolean isAligned = true;
-
     // If this is an action that increases pressure along some dimension for this node, and the
     // overall assessment says there are actions that decrease pressure along those same
     // dimensions, then this action is not aligned with the other proposed actions where the
     // deciders are trying to reduce pressure for those dimensions.
+    boolean isAligned = true;
 
     final Map<Dimension, Impact> impactMap = impactVector.getImpact();
     for (final Map.Entry<Dimension, Impact> entry : impactMap.entrySet()) {
       final Impact impactOnDimension = entry.getValue();
       if (isAligned && impactOnDimension.equals(Impact.INCREASES_PRESSURE)) {
-        List<String> pressureDecreasingActions = perDimensionPressureDecreasingActions
-            .getOrDefault(entry.getKey(), Collections.emptyList());
-        isAligned = pressureDecreasingActions.isEmpty();
+        isAligned = !perDimensionPressureDecreasingActions.containsKey(entry.getKey());
 
         if (!isAligned) {
           LOG.info("action: {}'s impact is not aligned with node: {}'s overall impact for "
                   + "dimension: {}. Found pressure decreasing actions: {}", actionName, nodeKey,
-              entry.getKey(), pressureDecreasingActions);
+              entry.getKey(), perDimensionPressureDecreasingActions.getOrDefault(entry.getKey(),
+                  Collections.emptyList()));
         }
       }
     }
@@ -140,8 +138,7 @@ public class ImpactAssessment {
 
   private void addActionToMap(@NonNull final Map<Dimension, List<String>> map,
       @NonNull final String actionName, @NonNull final Dimension dimension) {
-    map.computeIfAbsent(dimension,
-        dim -> new ArrayList<>()).add(actionName);
+    map.computeIfAbsent(dimension, dim -> new ArrayList<>()).add(actionName);
   }
 
   private void removeActionFromMap(@NonNull final Map<Dimension, List<String>> map,
@@ -149,6 +146,9 @@ public class ImpactAssessment {
     final List<String> actions = map.get(dimension);
     if (actions != null) {
       actions.remove(actionName);
+      if (actions.isEmpty()) {
+        map.remove(dimension);
+      }
     }
   }
 }
