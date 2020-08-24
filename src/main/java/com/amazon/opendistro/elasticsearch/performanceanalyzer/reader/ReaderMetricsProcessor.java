@@ -221,11 +221,11 @@ public class ReaderMetricsProcessor implements Runnable {
     trimMap(masterEventMetricsMap, MASTER_EVENT_SNAPSHOTS);
 
     boolean deleteDBFiles = PluginSettings.instance().shouldCleanupMetricsDBFiles();
-    if (metricsDBMap.size() > MAX_DATABASES) {
-      Map.Entry<Long, MetricsDB> lowestEntry = metricsDBMap.pollFirstEntry();
-      if (lowestEntry != null) {
-        Long key = lowestEntry.getKey();
-        MetricsDB value = lowestEntry.getValue();
+    while (metricsDBMap.size() > MAX_DATABASES) {
+      Map.Entry<Long, MetricsDB> oldestEntry = metricsDBMap.pollFirstEntry();
+      if (oldestEntry != null) {
+        Long key = oldestEntry.getKey();
+        MetricsDB value = oldestEntry.getValue();
         value.remove();
         if (deleteDBFiles && !batchMetricsDBSet.contains(key)) {
           value.deleteOnDiskFile();
@@ -246,9 +246,11 @@ public class ReaderMetricsProcessor implements Runnable {
       batchMetricsDBSet.clear();
     }
     readBatchMetricsEnabledFromConf();
-    // The (retentionPeriod * 12 + 1)'th database can be safely removed, since getBatchMetrics never returns more than
-    // the (retentionPeriod * 12) freshest metrics files.
-    if (batchMetricsDBSet.size() > PluginSettings.instance().getBatchMetricsRetentionPeriodMinutes() * 12 + 1) {
+    // The (retentionPeriod * 12 + 2)'th database can be safely removed, since getBatchMetrics never returns more than
+    // the (retentionPeriod * 12) freshest metrics files. The (retentionPeriod * 12 + 1)'th file is also retained in
+    // case getBatchMetrics was called at the start of this cycle, right before the newest metrics file was added to
+    // the batchMetricsDBSet.
+    while (batchMetricsDBSet.size() > PluginSettings.instance().getBatchMetricsRetentionPeriodMinutes() * 12 + 1) {
       Long timestamp = batchMetricsDBSet.pollFirst();
       if (deleteDBFiles && !metricsDBMap.containsKey(timestamp)) {
         MetricsDB.deleteOnDiskFile(timestamp);
