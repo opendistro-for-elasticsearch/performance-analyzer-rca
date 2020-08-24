@@ -285,4 +285,8 @@ public class RcaConf {
     }
     return setting;
   }
+
+  public Map<String, Object> getActionConfigSettings() {
+    return conf.getActionConfigSettings();
+  }
 }
