@@ -301,9 +301,8 @@ public class PluginSettings {
       return;
     }
 
-    long parsedRetentionPeriod;
     try {
-      parsedRetentionPeriod = Long.parseLong(settings.getProperty(BATCH_METRICS_RETENTION_PERIOD_MINUTES));
+      long parsedRetentionPeriod = Long.parseLong(settings.getProperty(BATCH_METRICS_RETENTION_PERIOD_MINUTES));
       if (parsedRetentionPeriod <= 0 || parsedRetentionPeriod > BATCH_METRICS_RETENTION_PERIOD_MINUTES_LIMIT) {
         throw new InvalidParameterException();
       }
