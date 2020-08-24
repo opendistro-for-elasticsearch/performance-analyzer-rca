@@ -836,10 +836,16 @@ public class ReaderMetricsProcessor implements Runnable {
             () -> {
               try (Scanner sc = new Scanner(filePath)) {
                 String nextLine = sc.nextLine();
-                batchMetricsEnabled = Boolean.parseBoolean(nextLine);
+                boolean oldValue = batchMetricsEnabled;
+                boolean newValue = Boolean.parseBoolean(nextLine);
+                if (oldValue != newValue) {
+                  batchMetricsEnabled = newValue;
+                  LOG.info("Batch metrics enabled changed from {} to {}", oldValue, newValue);
+                }
               } catch (IOException e) {
                 LOG.error("Error reading file '{}': {}", filePath.toString(), e);
                 e.printStackTrace();
+                batchMetricsEnabled = defaultBatchMetricsEnabled;
               }
             });
   }
