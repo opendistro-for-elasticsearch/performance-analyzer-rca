@@ -37,6 +37,6 @@ public class ConsumerTest {
         Assert.assertNotNull(consumer1);
         Assert.assertEquals("test_rca", consumerConfig.getTopic());
         Assert.assertEquals(KafkaAdapterConsts.KAFKA_MINIMAL_RECEIVE_PERIODICITY, consumerConfig.getInterval());
-        Assert.assertEquals(KafkaAdapterConsts.DEFAULT_BOOTSTRAP_SERVER, consumerConfig.getBootstrap_server());
+        Assert.assertEquals(KafkaAdapterConsts.DEFAULT_BOOTSTRAP_SERVER, consumerConfig.getBootstrapServer());
     }
 }

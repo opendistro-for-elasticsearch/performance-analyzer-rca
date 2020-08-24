@@ -22,12 +22,12 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 
 public class ConsumerConfiguration {
-    private String bootstrap_server;
+    private String bootstrapServer;
     private String topic;
     private long interval;
 
-    public ConsumerConfiguration(String bootstrap_server, String topic, long interval) {
-        this.bootstrap_server = bootstrap_server;
+    public ConsumerConfiguration(String bootstrapServer, String topic, long interval) {
+        this.bootstrapServer = bootstrapServer;
         this.topic = topic;
         this.setInterval(interval);
     }
@@ -44,13 +44,13 @@ public class ConsumerConfiguration {
         return topic;
     }
 
-    public String getBootstrap_server() {
-        return bootstrap_server;
+    public String getBootstrapServer() {
+        return bootstrapServer;
     }
 
     public KafkaConsumer<String, String> createConsumer() {
         Properties configProperties = new Properties();
-        configProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bootstrap_server);
+        configProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bootstrapServer);
         configProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
         configProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
         configProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "consumer_group");
