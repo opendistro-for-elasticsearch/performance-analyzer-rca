@@ -85,6 +85,13 @@ public class MetricsDB implements Removable {
     create = DSL.using(conn, SQLDialect.SQLITE);
   }
 
+  /**
+   * Returns a MetricsDB handle associated with an existing metricsdb file.
+   *
+   * @param windowStartTime the timestamp associated with an existing metricsdb file
+   * @return a MetricsDB handle associated with the metricsdb file
+   * @throws Exception if the metricsdb file does not exist or is invalid
+   */
   public static MetricsDB fetchExisting(long windowStartTime) throws Exception {
     String filePath = PluginSettings.instance()
             .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT) + windowStartTime;
@@ -245,10 +252,24 @@ public class MetricsDB implements Removable {
     return create.select(allFields).from(finalTable).groupBy(groupByFields).fetch();
   }
 
+  /**
+   * Queries all the data associated with the given metric.
+   *
+   * @param metric the desired metric
+   * @return the result of the query
+   */
   public Result<Record> queryMetric(String metric) {
     return create.select().from(DSL.table(metric)).fetch();
   }
 
+  /**
+   * Queries all the data associated with a given metric.
+   *
+   * @param metric the desired metric
+   * @param dimensions the dimensions we want to return for the given metric
+   * @param limit the maximum number of records to return
+   * @return the result of the query
+   */
   public Result<Record> queryMetric(String metric, Collection<String> dimensions, int limit) {
     if (!DBUtils.checkIfTableExists(create, metric)) {
       return null;
@@ -284,6 +305,11 @@ public class MetricsDB implements Removable {
     }
   }
 
+  /**
+   * Deletes the metricsdb file associated with the given timestamp if it exists.
+   *
+   * @param windowStartTime the timestamp associated with an existing metricsdb file
+   */
   public static void deleteOnDiskFile(long windowStartTime) {
     String dbFilePath = PluginSettings.instance()
             .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT) + windowStartTime;
