@@ -192,7 +192,7 @@ public class QueryBatchRequestHandlerTest {
     checkBadQuery(queryPrefix + "metrics=CPU_Utilization&starttime=1566413975000&endtime=1566413980000&samplingperiod=4");
     checkBadQuery(queryPrefix + "metrics=CPU_Utilization&starttime=1566413975000&endtime=1566413980000&samplingperiod=6");
     checkBadQuery(queryPrefix + "metrics=CPU_Utilization&starttime=1566413975000&endtime=1566413980000&samplingperiod="
-            + PluginSettings.instance().getBatchMetricsRetentionPeriod() * 60);
+            + PluginSettings.instance().getBatchMetricsRetentionPeriodMinutes() * 60);
   }
 
   @Test
@@ -203,7 +203,7 @@ public class QueryBatchRequestHandlerTest {
     checkBadQuery(queryPrefix + "metrics=CPU_Utilization&starttime=" + (System.currentTimeMillis() - 10000)
             + "&endtime=" + (System.currentTimeMillis() + 10000));
     checkBadQuery(queryPrefix + "metrics=CPU_Utilization&starttime="
-            + (System.currentTimeMillis() - PluginSettings.instance().getBatchMetricsRetentionPeriod() * 60 * 1000 - 10000)
+            + (System.currentTimeMillis() - PluginSettings.instance().getBatchMetricsRetentionPeriodMinutes() * 60 * 1000 - 10000)
             + "&endtime=" + System.currentTimeMillis());
   }
 

@@ -45,9 +45,9 @@ public class PluginSettings {
   private static final int DELETION_INTERVAL_MAX = 60;
   private static final String HTTPS_ENABLED = "https-enabled";
   private static final String WRITER_QUEUE_SIZE = "writer-queue-size";
-  private static final String BATCH_METRICS_RETENTION_PERIOD = "batch-metrics-retention-period";
-  private static final long BATCH_METRICS_RETENTION_PERIOD_DEFAULT = 7;  // 7 minutes of metrics
-  private static final long BATCH_METRICS_RETENTION_PERIOD_LIMIT = 60;
+  private static final String BATCH_METRICS_RETENTION_PERIOD_MINUTES = "batch-metrics-retention-period-minutes";
+  private static final long BATCH_METRICS_RETENTION_PERIOD_MINUTES_DEFAULT = 7;
+  private static final long BATCH_METRICS_RETENTION_PERIOD_MINUTES_LIMIT = 60;
 
   /** Determines whether the metricsdb files should be cleaned up. */
   public static final String DB_FILE_CLEANUP_CONF_NAME = "cleanup-metrics-db-files";
@@ -63,7 +63,8 @@ public class PluginSettings {
   private Properties settings;
   private final String configFilePath;
 
-  private long batchMetricsRetentionPeriod;
+  /** Determines how many minutes worth of metricsdb files will be retained if batch metrics is enabled. */
+  private long batchMetricsRetentionPeriodMinutes;
 
   static {
     Util.invokePrivilegedAndLogError(() -> createInstance());
@@ -85,13 +86,13 @@ public class PluginSettings {
     return writerQueueSize;
   }
 
-  public long getBatchMetricsRetentionPeriod() {
-    return batchMetricsRetentionPeriod;
+  public long getBatchMetricsRetentionPeriodMinutes() {
+    return batchMetricsRetentionPeriodMinutes;
   }
 
   @VisibleForTesting
-  public void setBatchMetricsRetentionPeriod(long batchMetricsRetentionPeriod) {
-    this.batchMetricsRetentionPeriod = batchMetricsRetentionPeriod;
+  public void setBatchMetricsRetentionPeriodMinutes(long batchMetricsRetentionPeriodMinutes) {
+    this.batchMetricsRetentionPeriodMinutes = batchMetricsRetentionPeriodMinutes;
   }
 
   public String getSettingValue(String settingName) {
@@ -148,7 +149,7 @@ public class PluginSettings {
     metricsLocation = METRICS_LOCATION_DEFAULT;
     metricsDeletionInterval = DELETION_INTERVAL_DEFAULT;
     writerQueueSize = WRITER_QUEUE_SIZE_DEFAULT;
-    batchMetricsRetentionPeriod = BATCH_METRICS_RETENTION_PERIOD_DEFAULT;
+    batchMetricsRetentionPeriodMinutes = BATCH_METRICS_RETENTION_PERIOD_MINUTES_DEFAULT;
     if (cfPath == null || cfPath.isEmpty()) {
       this.configFilePath = DEFAULT_CONFIG_FILE_PATH;
     } else {
@@ -163,7 +164,7 @@ public class PluginSettings {
       loadWriterQueueSizeFromConfig();
       loadHttpsEnabled();
       loadMetricsDBFilesCleanupEnabled();
-      loadBatchMetricsRetentionPeriodFromConfig();
+      loadBatchMetricsRetentionPeriodMinutesFromConfig();
     } catch (ConfigFileException e) {
       LOG.error(
           "Loading config file {} failed with error: {}. Using default values.",
@@ -178,12 +179,12 @@ public class PluginSettings {
     }
     LOG.info(
         "Config: metricsLocation: {}, metricsDeletionInterval: {}, httpsEnabled: {},"
-            + " cleanup-metrics-db-files: {}, batch-metrics-retention-period: {}",
+            + " cleanup-metrics-db-files: {}, batch-metrics-retention-period-minutes: {}",
         metricsLocation,
         metricsDeletionInterval,
         httpsEnabled,
         shouldCleanupMetricsDBFiles,
-        batchMetricsRetentionPeriod);
+        batchMetricsRetentionPeriodMinutes);
   }
 
   public static PluginSettings instance() {
@@ -295,24 +296,25 @@ public class PluginSettings {
     }
   }
 
-  private void loadBatchMetricsRetentionPeriodFromConfig() {
-    if (!settings.containsKey(BATCH_METRICS_RETENTION_PERIOD)) {
+  private void loadBatchMetricsRetentionPeriodMinutesFromConfig() {
+    if (!settings.containsKey(BATCH_METRICS_RETENTION_PERIOD_MINUTES)) {
       return;
     }
 
     long parsedRetentionPeriod;
     try {
-      parsedRetentionPeriod = Long.parseLong(settings.getProperty(BATCH_METRICS_RETENTION_PERIOD));
-      if (parsedRetentionPeriod <= 0 || parsedRetentionPeriod > BATCH_METRICS_RETENTION_PERIOD_LIMIT) {
+      parsedRetentionPeriod = Long.parseLong(settings.getProperty(BATCH_METRICS_RETENTION_PERIOD_MINUTES));
+      if (parsedRetentionPeriod <= 0 || parsedRetentionPeriod > BATCH_METRICS_RETENTION_PERIOD_MINUTES_LIMIT) {
         throw new InvalidParameterException();
       }
-      batchMetricsRetentionPeriod = parsedRetentionPeriod;
+      batchMetricsRetentionPeriodMinutes = parsedRetentionPeriod;
     } catch (NumberFormatException | InvalidParameterException e) {
       LOG.error(
               (Supplier<?>)
                       () ->
                               new ParameterizedMessage(
-                                      "Invalid batch-metrics-retention-period. Using default value {}.", batchMetricsRetentionPeriod),
+                                      "Invalid batch-metrics-retention-period-minutes. Using default value {}.",
+                                      batchMetricsRetentionPeriodMinutes),
               e);
     }
   }

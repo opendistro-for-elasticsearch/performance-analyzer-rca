@@ -181,7 +181,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
         if (samplingPeriod < 5 || samplingPeriod % 5 != 0) {
           throw new InvalidParameterException(String.format("%s is an invalid sampling period", samplingPeriodParam));
         }
-        if (samplingPeriod >= PluginSettings.instance().getBatchMetricsRetentionPeriod() * 60) {
+        if (samplingPeriod >= PluginSettings.instance().getBatchMetricsRetentionPeriodMinutes() * 60) {
           throw new InvalidParameterException("sampling period must be less than the retention period");
         }
         samplingPeriod *= 1000;
@@ -198,7 +198,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
       if (endTime > currentTime) {
         throw new InvalidParameterException("endtime can be no greater than the system time at the node");
       }
-      if (startTime < currentTime - PluginSettings.instance().getBatchMetricsRetentionPeriod() * 60 * 1000) {
+      if (startTime < currentTime - PluginSettings.instance().getBatchMetricsRetentionPeriodMinutes() * 60 * 1000) {
         throw new InvalidParameterException("starttime must be within the retention period");
       }
 

@@ -370,7 +370,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     long currentTimestamp = System.currentTimeMillis();
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation);
     ReaderMetricsProcessor.setCurrentInstance(mp);
-    PluginSettings.instance().setBatchMetricsRetentionPeriod(1);
+    PluginSettings.instance().setBatchMetricsRetentionPeriodMinutes(1);
     PluginSettings.instance().setShouldCleanupMetricsDBFiles(true);
 
     // Test with batch metrics disabled
@@ -420,7 +420,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     long currentTimestamp = 1597091740000L;
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
     ReaderMetricsProcessor.setCurrentInstance(mp);
-    PluginSettings.instance().setBatchMetricsRetentionPeriod(1);
+    PluginSettings.instance().setBatchMetricsRetentionPeriodMinutes(1);
     PluginSettings.instance().setShouldCleanupMetricsDBFiles(true);
     NavigableSet<Long> expectedTimestamps = new TreeSet<>();
     long metricsDBTimestamp = 1597091720000L;
@@ -518,7 +518,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     long currentTimestamp = 1597091740000L;
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
     ReaderMetricsProcessor.setCurrentInstance(mp);
-    PluginSettings.instance().setBatchMetricsRetentionPeriod(1);
+    PluginSettings.instance().setBatchMetricsRetentionPeriodMinutes(1);
     PluginSettings.instance().setShouldCleanupMetricsDBFiles(false);
     NavigableSet<Long> expectedTimestamps = new TreeSet<>();
     long metricsDBTimestamp = 1597091720000L;

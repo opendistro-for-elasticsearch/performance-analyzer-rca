@@ -248,7 +248,7 @@ public class ReaderMetricsProcessor implements Runnable {
     readBatchMetricsEnabledFromConf();
     // The (retentionPeriod * 12 + 1)'th database can be safely removed, since getBatchMetrics never returns more than
     // the (retentionPeriod * 12) freshest metrics files.
-    if (batchMetricsDBSet.size() > PluginSettings.instance().getBatchMetricsRetentionPeriod() * 12 + 1) {
+    if (batchMetricsDBSet.size() > PluginSettings.instance().getBatchMetricsRetentionPeriodMinutes() * 12 + 1) {
       Long timestamp = batchMetricsDBSet.pollFirst();
       if (deleteDBFiles && !metricsDBMap.containsKey(timestamp)) {
         MetricsDB.deleteOnDiskFile(timestamp);
@@ -760,7 +760,7 @@ public class ReaderMetricsProcessor implements Runnable {
   public NavigableSet<Long> getBatchMetrics() {
     if (batchMetricsEnabled) {
       TreeSet<Long> batchMetricsDBSetCopy = new TreeSet<>(batchMetricsDBSet.clone());
-      while (batchMetricsDBSetCopy.size() > PluginSettings.instance().getBatchMetricsRetentionPeriod() * 12) {
+      while (batchMetricsDBSetCopy.size() > PluginSettings.instance().getBatchMetricsRetentionPeriodMinutes() * 12) {
         batchMetricsDBSetCopy.pollFirst();
       }
       return Collections.unmodifiableNavigableSet(batchMetricsDBSetCopy);
