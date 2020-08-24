@@ -17,7 +17,6 @@ package com.opendestro.kafkaAdapter.configuration;
 
 import java.util.Properties;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.opendestro.kafkaAdapter.util.KafkaAdapterConsts;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -49,11 +48,11 @@ public class ConsumerConfiguration {
         return bootstrap_server;
     }
 
-    public KafkaConsumer<String, JsonNode> createConsumer() {
+    public KafkaConsumer<String, String> createConsumer() {
         Properties configProperties = new Properties();
         configProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bootstrap_server);
         configProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
-        configProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.connect.json.JsonDeserializer");
+        configProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
         configProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "consumer_group");
         return new KafkaConsumer<>(configProperties);
     }

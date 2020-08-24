@@ -18,6 +18,8 @@ package com.opendestro.kafkaAdapter.configuration;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,6 +27,7 @@ import java.io.IOException;
 public class KafkaAdapterConf {
     private String configFileLoc;
     private ConfigJsonWrapper conf;
+    private static final Logger LOG = LogManager.getLogger(KafkaAdapterConf.class);
 
     public KafkaAdapterConf(String configPath) {
         this.configFileLoc = configPath;
@@ -35,7 +38,7 @@ public class KafkaAdapterConf {
             File configFile = new File(this.configFileLoc);
             this.conf = mapper.readValue(configFile, ConfigJsonWrapper.class);
         } catch (IOException e) {
-            System.out.println("error");
+            LOG.error("Exception found when reading value from the file: ",e);
         }
     }
 

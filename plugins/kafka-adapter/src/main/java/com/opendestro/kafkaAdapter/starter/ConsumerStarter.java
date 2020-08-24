@@ -20,7 +20,6 @@ import com.opendestro.kafkaAdapter.configuration.KafkaAdapterConf;
 import com.opendestro.kafkaAdapter.util.KafkaAdapterConsts;
 import com.opendestro.kafkaAdapter.util.Helper;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.WakeupException;
@@ -36,15 +35,15 @@ public class ConsumerStarter {
     private static final Logger LOG = LogManager.getLogger(ConsumerStarter.class);
     public static void runConsumer(ConsumerConfiguration consumerConfig, int maxNoFound, String webhooksUrl) {
         int noMessageFound = 0;
-        KafkaConsumer<String, JsonNode> consumer = consumerConfig.createConsumer();
+        KafkaConsumer<String, String> consumer = consumerConfig.createConsumer();
         consumer.subscribe(Collections.singletonList(consumerConfig.getTopic()));
         try {
             while (true) {
-                ConsumerRecords<String, JsonNode> consumerRecords = consumer.poll(Duration.ofMillis(consumerConfig.getInterval()));
+                ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofMillis(consumerConfig.getInterval()));
                 if (consumerRecords.count() == 0) {
                     noMessageFound++;
                     if (noMessageFound > maxNoFound) {
-                        System.out.println("No response, terminating");
+                        LOG.info("No response, terminating");
                         break;
                     } else {
                         continue;

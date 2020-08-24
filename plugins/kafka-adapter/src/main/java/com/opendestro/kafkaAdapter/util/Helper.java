@@ -21,53 +21,21 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 
 public class Helper {
     private static HttpURLConnection httpConnection;
     private static final Logger LOG = LogManager.getLogger(Helper.class);
 
-    public static String makeRequest(Target target) {
-        BufferedReader reader;
-        String line;
-        StringBuilder response = new StringBuilder();
-        try {
-            URL url = new URL(target.getUrl());
-            httpConnection = (HttpURLConnection) url.openConnection();
-
-            httpConnection.setRequestMethod("GET");
-            httpConnection.setConnectTimeout(10000);
-            httpConnection.setReadTimeout(10000);
-
-            int status = httpConnection.getResponseCode();
-            reader = (status != 200) ? new BufferedReader(new InputStreamReader(httpConnection.getErrorStream())) : new BufferedReader(new InputStreamReader(httpConnection.getInputStream()));
-            while ((line = reader.readLine()) != null) {
-                response.append(line);
-            }
-            reader.close();
-            return response.toString();
-        } catch (UnknownHostException e) {
-            LOG.error("Unknown host found: {}", target.getUrl(), e);
-        } catch (IOException e) {
-            LOG.error("IOException found when reading response: ", e);
-        } finally {
-            httpConnection.disconnect();
-        }
-        return null;
-    }
-
-    public static String convertJsonNodeToString(JsonNode jsonNode) {
+    public static String formatString(String val) {
         try {
             ObjectMapper mapper = new ObjectMapper();
-            Object json = mapper.readValue(jsonNode.toString(), Object.class);
+            Object json = mapper.readValue(val, Object.class);
             String res = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(json);
             JSONObject object = new JSONObject();
             object.put("text", res);
@@ -78,8 +46,8 @@ public class Helper {
         }
     }
 
-    public static boolean postToSlackWebHook(JsonNode node, String webhookUrl) {
-        String val = convertJsonNodeToString(node);
+    public static boolean postToSlackWebHook(String res, String webhookUrl) {
+        String val = formatString(res);
         if (val == null) {
             return false;
         }

@@ -17,7 +17,6 @@ package com.opendestro.kafkaAdapter.configuration;
 
 import com.opendestro.kafkaAdapter.util.KafkaAdapterConsts;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.nio.file.Paths;

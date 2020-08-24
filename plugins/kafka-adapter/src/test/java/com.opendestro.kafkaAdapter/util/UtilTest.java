@@ -15,25 +15,32 @@
 
 package com.opendestro.kafkaAdapter.util;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.opendestro.kafkaAdapter.configuration.ConsumerConfiguration;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.Before;
 import org.junit.Test;
 
 import org.junit.Assert;
-import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Properties;
 
 public class UtilTest {
 
     private Target target1;
     private Target target2;
-
+    private static String testBootstrapServer = "localhost:9092";
+    private static String testTopic = "test_consumer";
+    private static long testInterval = 5000;
+    private static KafkaProducer<String, String> kafkaProducer;
+    private static KafkaConsumer<String, String> kafkaConsumer;
+    private static ConsumerConfiguration config;
 
     @Before
     public void targetSetup() {
@@ -41,6 +48,11 @@ public class UtilTest {
         target2 = new Target(KafkaAdapterConsts.PA_RCA_QUERY_ENDPOINT);
         Assert.assertEquals("http://localhost:9600/_opendistro/_performanceanalyzer/rca?name=ClusterTemperatureRca", target1.getUrl());
         Assert.assertEquals("http://localhost:9600/_opendistro/_performanceanalyzer/rca", target2.getUrl());
+        Properties producerProps = new Properties();
+        producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, testBootstrapServer);
+        producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+        producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+        kafkaProducer = new KafkaProducer<>(producerProps);
     }
 
     @Test
@@ -59,40 +71,19 @@ public class UtilTest {
     }
 
     @Test
-    public void testJsonToString() throws Exception {
-        String testContext = "{\"sample key\": \"sample value\"}";
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode node = mapper.readTree(testContext);
-        Assert.assertNotNull(Helper.convertJsonNodeToString(node));
+    public void decisionPublisherTest() {
+        String testMessage = "{\"test key\": \"test value\"}";
+        config = new ConsumerConfiguration(testBootstrapServer, testTopic, testInterval);
+        kafkaConsumer = config.createConsumer();
+        kafkaConsumer.subscribe(Collections.singletonList(testTopic));
+        ProducerRecord<String, String> record = new ProducerRecord<>(testTopic, testMessage);
+        kafkaProducer.send(record);
+        kafkaProducer.close();
+        ConsumerRecords<String, String> records = kafkaConsumer.poll(10000);
+        kafkaConsumer.close();
+        Assert.assertEquals(1, records.count());
+        Iterator<ConsumerRecord<String, String>> recordIterator = records.iterator();
+        ConsumerRecord<String, String> res = recordIterator.next();
+        Assert.assertEquals("{\"text\":\"{\\n  \\\"test key\\\" : \\\"test value\\\"\\n}\"}", Helper.formatString(res.value()));
     }
-
-    @Test
-    public void testHttpConnection() throws Exception {
-        class UrlWrapper {
-            URL url;
-
-            public UrlWrapper(String spec) throws MalformedURLException {
-                url = new URL(spec);
-            }
-
-            public HttpURLConnection openConnection() throws IOException {
-                return (HttpURLConnection) url.openConnection();
-            }
-        }
-        String testContext = "{\"sample key\": \"sample value\"}";
-        String urlStr = "http://www.example.com";
-        UrlWrapper u = PowerMockito.mock(UrlWrapper.class);
-        Target target = Mockito.mock(Target.class);
-        Mockito.when(target.getUrl()).thenReturn(urlStr);
-        PowerMockito.whenNew(URL.class).withArguments(urlStr).thenReturn(u.url);
-        HttpURLConnection con = PowerMockito.mock(HttpURLConnection.class);
-        PowerMockito.when(u.openConnection()).thenReturn(con);
-        PowerMockito.when(con.getResponseCode()).thenReturn(200);
-        Assert.assertNotNull(Helper.makeRequest(target));
-
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode jsonNode = mapper.readTree(testContext);
-        Assert.assertTrue(Helper.postToSlackWebHook(jsonNode, urlStr));
-    }
-
 }
