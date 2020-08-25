@@ -308,13 +308,8 @@ public class PluginSettings {
       }
       batchMetricsRetentionPeriodMinutes = parsedRetentionPeriod;
     } catch (NumberFormatException | InvalidParameterException e) {
-      LOG.error(
-              (Supplier<?>)
-                      () ->
-                              new ParameterizedMessage(
-                                      "Invalid batch-metrics-retention-period-minutes. Using default value {}.",
-                                      batchMetricsRetentionPeriodMinutes),
-              e);
+      LOG.error("Invalid batch-metrics-retention-period-minutes. Using default value {}.",
+              batchMetricsRetentionPeriodMinutes, e);
     }
   }
 }
