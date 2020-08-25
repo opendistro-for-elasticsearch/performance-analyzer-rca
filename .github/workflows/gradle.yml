@@ -60,11 +60,7 @@ jobs:
       run: ./gradlew build -i
     - name: Spin up Docker cluster for integ testing
       working-directory: ./tmp/rca
-      run: ./gradlew enableRca
-    - name: Run PerformanceAnalyzerIT Suite
-      working-directory: ./tmp/pa
-      run: ./gradlew integTest -Dtests.enableIT=true
-      
-      
-        
-      
+      run: |
+        ./gradlew enableRca
+        cd ../pa
+        ./gradlew integTest -Dtests.enableIT=true
