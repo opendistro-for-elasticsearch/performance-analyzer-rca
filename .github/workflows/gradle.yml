@@ -50,9 +50,20 @@ jobs:
     - name: Update SHA
       working-directory: ./tmp/pa
       run: ./gradlew updateShas
-    - name: Start Build
+    - name: Set docker-compose path
+      run: echo ::set-env name=DOCKER_COMPOSE_LOCATION::$(which docker-compose)
+      # Set the vm.max_map_count system property to the minimum required to run Elasticsearch
+    - name: Set vm.max_map_count
+      run: sudo sysctl -w vm.max_map_count=262144
+    - name: Build PA and run Unit Tests
       working-directory: ./tmp/pa
       run: ./gradlew build -i
+    - name: Spin up Docker cluster for integ testing
+      working-directory: ./tmp/rca
+      run: ./gradlew enableRca
+    - name: Run PerformanceAnalyzerIT Suite
+      working-directory: ./tmp/pa
+      run: ./gradlew integTest -Dtests.enableIT=true
       
       
         
