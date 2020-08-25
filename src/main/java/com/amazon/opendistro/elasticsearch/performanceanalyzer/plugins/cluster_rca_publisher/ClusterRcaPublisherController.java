@@ -78,7 +78,7 @@ public class ClusterRcaPublisherController {
     }
 
     @VisibleForTesting
-    List<Plugin> getPlugins() {
+    public List<Plugin> getPlugins() {
         return plugins;
     }
 }

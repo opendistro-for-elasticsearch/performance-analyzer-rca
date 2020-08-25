@@ -76,11 +76,16 @@ public class ClusterSummaryKafkaPublisher extends Plugin implements ClusterSumma
     @Override
     public void summaryPublished(ClusterSummary clusterSummary) {
         initialize();
-        LOG.info("Reading updates from clusters: [{}]", clusterSummary.getExistingClusterNameList());
-        JsonObject jsonObject = getJsonData(clusterSummary);
-        if (jsonObject != null) {
-            String record = jsonObject.toString();
-            sendRcaClusterSummaryToKafkaQueue(record);
+        if (!clusterSummary.summaryMapIsEmpty()) {
+            LOG.info("Reading updates from clusters: [{}]", clusterSummary.getExistingClusterNameList());
+            JsonObject jsonObject = getJsonData(clusterSummary);
+            if (jsonObject != null) {
+                String record = jsonObject.toString();
+                LOG.info("get record: {}", record);
+                 sendRcaClusterSummaryToKafkaQueue(record);
+            }
+        } else {
+            LOG.info("the cluster summary is empty");
         }
     }
 

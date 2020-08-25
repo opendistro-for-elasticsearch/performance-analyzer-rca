@@ -291,25 +291,24 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
     pluginController.initPlugins();
 
-    //ClusterRcaPublisher - Publisher that can publish RCA updates from cluster rcas
-    ClusterRcaPublisher clusterRcaPublisher = new ClusterRcaPublisher(EVALUATION_INTERVAL_SECONDS, new ArrayList<>());
-    clusterRcaPublisher.addClusterRca(queueRejectionClusterRca);
-    clusterRcaPublisher.addClusterRca(hotNodeClusterRca);
-    clusterRcaPublisher.addClusterRca(highHeapUsageClusterRca);
-    clusterRcaPublisher.addClusterRca(fieldDataCacheClusterRca);
-    clusterRcaPublisher.addClusterRca(shardRequestCacheClusterRca);
-    List<Node<?>> upstreams = new ArrayList<>();
-    upstreams.add(queueRejectionClusterRca);
-    upstreams.add(hotNodeClusterRca);
-    upstreams.add(highHeapUsageClusterRca);
-    upstreams.add(fieldDataCacheClusterRca);
-    upstreams.add(shardRequestCacheClusterRca);
-    clusterRcaPublisher.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    clusterRcaPublisher.addAllUpstreams(upstreams);
-    ClusterRcaPublisherControllerConfig clusterRcaPublisherControllerConfig = new ClusterRcaPublisherControllerConfig();
-    ClusterRcaPublisherController clusterRcaPublisherController =
-            new ClusterRcaPublisherController(clusterRcaPublisherControllerConfig, clusterRcaPublisher);
-    clusterRcaPublisherController.initPlugins();
+    // ClusterRcaPublisher - Publisher that can publish RCA updates from cluster rcas
+    //    ClusterRcaPublisher clusterRcaPublisher = new ClusterRcaPublisher(EVALUATION_INTERVAL_SECONDS, Arrays.asList(
+    //            queueRejectionClusterRca,
+    //            hotNodeClusterRca,
+    //            highHeapUsageClusterRca,
+    //            fieldDataCacheClusterRca,
+    //            shardRequestCacheClusterRca));
+    //    clusterRcaPublisher.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    //    clusterRcaPublisher.addAllUpstreams(Arrays.asList(
+    //            queueRejectionClusterRca,
+    //            hotNodeClusterRca,
+    //            highHeapUsageClusterRca,
+    //            fieldDataCacheClusterRca,
+    //            shardRequestCacheClusterRca));
+    //    ClusterRcaPublisherControllerConfig clusterRcaPublisherControllerConfig = new ClusterRcaPublisherControllerConfig();
+    //    ClusterRcaPublisherController clusterRcaPublisherController =
+    //           new ClusterRcaPublisherController(clusterRcaPublisherControllerConfig, clusterRcaPublisher);
+    //    clusterRcaPublisherController.initPlugins();
   }
 
   private void constructShardResourceUsageGraph() {

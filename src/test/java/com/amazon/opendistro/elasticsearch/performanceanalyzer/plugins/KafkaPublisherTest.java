@@ -62,7 +62,6 @@ public class KafkaPublisherTest<T extends GenericSummary> {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void clusterSummaryPublisherTest() {
     String testClusterName = "TestRcaCluster";
     String testSummaryName = "HotClusterSummary";
@@ -88,6 +87,7 @@ public class KafkaPublisherTest<T extends GenericSummary> {
 
     ConsumerRecords<String, String> records = kafkaConsumer.poll(10000);
     kafkaConsumer.close();
+    System.out.println("records count1: " + records.count());
     Assert.assertEquals(1, records.count());
     Iterator<ConsumerRecord<String, String>> recordIterator = records.iterator();
     ConsumerRecord<String, String> record = recordIterator.next();
@@ -108,6 +108,7 @@ public class KafkaPublisherTest<T extends GenericSummary> {
     decisionKafkaPublisher.actionPublished(action);
     ConsumerRecords<String, String> records = kafkaConsumer.poll(10000);
     kafkaConsumer.close();
+    System.out.println("records count2: " + records.count());
     Assert.assertEquals(1, records.count());
     Iterator<ConsumerRecord<String, String>> recordIterator = records.iterator();
     ConsumerRecord<String, String> record = recordIterator.next();

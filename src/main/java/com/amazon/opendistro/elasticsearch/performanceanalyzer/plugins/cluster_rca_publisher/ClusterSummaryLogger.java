@@ -24,10 +24,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class ClusterSummaryLogger extends Plugin implements ClusterSummaryListener {
-  private static final Logger LOG = LogManager.getLogger(ClusterSummaryKafkaPublisher.class);
+  private static final Logger LOG = LogManager.getLogger(ClusterSummaryLogger.class);
   private static final String NAME = "Cluster_Summary_Logger";
-  private static PluginConfig pluginConfig = null;
-  private static KafkaProducer<String, String> kafkaProducerInstance = null;
+
 
   @Override
   public String name() {
@@ -39,7 +38,7 @@ public class ClusterSummaryLogger extends Plugin implements ClusterSummaryListen
     LOG.info("Logging updates from clusters: [{}]", clusterSummary.getExistingClusterNameList());
     if (!clusterSummary.summaryMapIsEmpty()) {
       clusterSummary.getSummaryMap().forEach((k, v) -> {
-        LOG.info("Cluster name: [{}] , cluster summary: [{}]", k, v);
+        LOG.info("Cluster name: [{}] , cluster summary: [{}]", k, v.toJson().toString());
       });
     } else {
       LOG.info("the cluster summary is empty");

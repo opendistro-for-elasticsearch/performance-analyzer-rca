@@ -15,23 +15,51 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ClusterSummary extends GenericFlowUnit {
-  private String NAME = "ClusterRcaSummary";
+public class ClusterSummary {
   private Map<String, HotClusterSummary> summaryMap;
+  private Map<String, Long> timesUpdateMap;
+  private long evaluationSecondinMillis;
 
-  public ClusterSummary(long timestamp, Map<String, HotClusterSummary> summaryMap) {
-    super(timestamp);
+  public ClusterSummary(long evaluationSecondinMillis, Map<String, HotClusterSummary> summaryMap) {
+    this.evaluationSecondinMillis = evaluationSecondinMillis;
+    this.timesUpdateMap = new HashMap<>();
     setSummaryMap(summaryMap);
+  }
+
+  public void setSummaryMap(Map<String, HotClusterSummary> summaryMap) {
+    this.summaryMap = summaryMap;
+    initiateTimesAddedMap();
+  }
+
+  public void initiateTimesAddedMap() {
+    for (String key : summaryMap.keySet()) {
+      timesUpdateMap.put(key, System.currentTimeMillis());
+    }
+  }
+
+  public void addValidSummary(String name, HotClusterSummary summary, long timestamp){
+    summaryMap.put(name, summary);
+    timesUpdateMap.put(name, timestamp);
+    validateSummaryMap();
+  }
+
+  public void validateSummaryMap(){
+    summaryMap.forEach((k, v) -> {
+      if(v == null || System.currentTimeMillis() - timesUpdateMap.get(k) > evaluationSecondinMillis){
+        summaryMap.remove(k);
+      }
+    });
+  }
+
+  public long getLastUpdated(String name){
+    return timesUpdateMap.get(name);
   }
 
   public boolean summaryMapIsEmpty() {
@@ -42,35 +70,18 @@ public class ClusterSummary extends GenericFlowUnit {
     return summaryMap;
   }
 
-  public void setSummaryMap(Map<String, HotClusterSummary> summaryMap) {
-    this.summaryMap = summaryMap;
-  }
-
-  public String name() {
-    return NAME;
-  }
-
   public List<String> getExistingClusterNameList() {
     if (!summaryMapIsEmpty()) {
       return new ArrayList<>(summaryMap.keySet());
-
     }
     return new ArrayList<>();
   }
 
   /**
-   * Returns a summary for the configured action
+   * Returns the latest summary for the given cluster name
    */
   public HotClusterSummary getSummary(String name) {
     return summaryMap.get(name);
   }
 
-  public void addSummary(String name, HotClusterSummary summary) {
-    summaryMap.put(name, summary);
-  }
-
-  @Override
-  public FlowUnitMessage buildFlowUnitMessage(String graphNode, InstanceDetails.Id esNode) {
-    return null;
-  }
 }

@@ -43,6 +43,7 @@ public class ClusterRcaPublisher extends NonLeafNode<EmptyFlowUnit> {
     this.clusterRcas = clusterRcas;
     clusterSummary = new ClusterSummary(evalIntervalSeconds, new HashMap<>());
     clusterSummaryListeners = new ArrayList<>();
+    LOG.info("Creating new ClusterRcaPublisher");
   }
 
   public String name() {
@@ -107,13 +108,16 @@ public class ClusterRcaPublisher extends NonLeafNode<EmptyFlowUnit> {
 
   @Override
   public EmptyFlowUnit operate() {
+    LOG.info("operating");
     for (Rca<ResourceFlowUnit<HotClusterSummary>> clusterRca : clusterRcas) {
       List<ResourceFlowUnit<HotClusterSummary>> clusterFlowUnits = clusterRca.getFlowUnits();
       if (clusterFlowUnits.isEmpty()) {
+        LOG.info("cluster flow unit is empty");
         continue;
       }
       if (clusterFlowUnits.get(0).hasResourceSummary()) {
-        clusterSummary.addSummary(clusterRca.name(), clusterRca.getFlowUnits().get(0).getSummary());
+        LOG.info("adding summary \"{}\" to cluster: {}", clusterRca.getFlowUnits().get(0).getSummary().toString(), clusterRca.name());
+        clusterSummary.addValidSummary(clusterRca.name(), clusterRca.getFlowUnits().get(0).getSummary(), System.currentTimeMillis());
       }
     }
     for (ClusterSummaryListener listener : clusterSummaryListeners) {
