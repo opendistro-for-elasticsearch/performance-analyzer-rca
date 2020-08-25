@@ -245,7 +245,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
       if (results != null) {
         maxDatapoints -= results.size();
         if (maxDatapoints == 0) {
-          throw new InvalidParameterException(String.format("requested data exceeds the %d datapoints limit", maxDatapoints - 1));
+          throw new InvalidParameterException(String.format("requested data exceeds the %d datapoints limit", DEFAULT_MAX_DATAPOINTS));
         }
         builder.append("\"");
         builder.append(metric);
@@ -257,7 +257,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
           if (results != null) {
             maxDatapoints -= results.size();
             if (maxDatapoints == 0) {
-              throw new InvalidParameterException(String.format("requested data exceeds the %d datapoints limit", maxDatapoints - 1));
+              throw new InvalidParameterException(String.format("requested data exceeds the %d datapoints limit", DEFAULT_MAX_DATAPOINTS));
             }
             builder.append(",\"");
             builder.append(metric);
