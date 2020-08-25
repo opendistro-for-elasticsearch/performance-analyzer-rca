@@ -50,10 +50,6 @@ public class KafkaAdapterConf {
         return conf.getMaxNoMessageFoundCountOnConsumer();
     }
 
-    public long getSendPeriodicityMillis() {
-        return conf.getSendPeriodicityMillis();
-    }
-
     public long getReceivePeriodicityMillis() {
         return conf.getReceivePeriodicityMillis();
     }
@@ -62,12 +58,12 @@ public class KafkaAdapterConf {
         return conf.getKafkaBootstrapServer();
     }
 
-    public String getKafkaTopicName() {
-        return conf.getKafkaTopicName();
+    public String getRcaDecisionTopicName() {
+        return conf.getDecisonTopicName();
     }
 
-    public String getQueryParams() {
-        return conf.getQueryParams();
+    public String getRcaSummaryTopicName() {
+        return conf.getSummaryTopicName();
     }
 
     public String getWebhooksUrl() {

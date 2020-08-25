@@ -30,7 +30,5 @@ public class KafkaAdapterConsts {
 
     public static final String DEFAULT_BOOTSTRAP_SERVER = "localhost:9092";
 
-    public static final long KAFKA_MINIMAL_SEND_PERIODICITY = 10000;
-
     public static final long KAFKA_MINIMAL_RECEIVE_PERIODICITY = 10000;
 }

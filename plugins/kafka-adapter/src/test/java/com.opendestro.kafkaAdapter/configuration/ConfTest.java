@@ -29,10 +29,9 @@ public class ConfTest {
         KafkaAdapterConf conf = new KafkaAdapterConf(kafkaAdapterConfPath);
         Assert.assertEquals(kafkaAdapterConfPath, conf.getConfigFileLoc());
         Assert.assertEquals("localhost:9092", conf.getKafkaBootstrapServer());
-        Assert.assertEquals("test_rca", conf.getKafkaTopicName());
-        Assert.assertEquals(2000, conf.getSendPeriodicityMillis());
+        Assert.assertEquals("decision-rca-test", conf.getRcaDecisionTopicName());
+        Assert.assertEquals("cluster-summary-rca-test", conf.getRcaSummaryTopicName());
         Assert.assertEquals(20000, conf.getReceivePeriodicityMillis());
-        Assert.assertEquals("all", conf.getQueryParams());
         Assert.assertEquals(3, conf.getMaxNoMessageFoundCountOnConsumer());
     }
 }

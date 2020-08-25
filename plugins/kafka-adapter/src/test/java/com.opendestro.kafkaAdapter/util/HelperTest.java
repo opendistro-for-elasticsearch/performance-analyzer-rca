@@ -31,7 +31,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Properties;
 
-public class UtilTest {
+public class HelperTest {
 
     private Target target1;
     private Target target2;
@@ -70,20 +70,20 @@ public class UtilTest {
         Assert.assertEquals("HighHeapUsageClusterRca", target2.getParameter());
     }
 
-    @Test
-    public void decisionPublisherTest() {
-        String testMessage = "{\"test key\": \"test value\"}";
-        config = new ConsumerConfiguration(testBootstrapServer, testTopic, testInterval);
-        kafkaConsumer = config.createConsumer();
-        kafkaConsumer.subscribe(Collections.singletonList(testTopic));
-        ProducerRecord<String, String> record = new ProducerRecord<>(testTopic, testMessage);
-        kafkaProducer.send(record);
-        kafkaProducer.close();
-        ConsumerRecords<String, String> records = kafkaConsumer.poll(10000);
-        kafkaConsumer.close();
-        Assert.assertEquals(1, records.count());
-        Iterator<ConsumerRecord<String, String>> recordIterator = records.iterator();
-        ConsumerRecord<String, String> res = recordIterator.next();
-        Assert.assertEquals("{\"text\":\"{\\n  \\\"test key\\\" : \\\"test value\\\"\\n}\"}", Helper.formatString(res.value()));
-    }
+    //    @Test
+    //    public void decisionPublisherTest() {
+    //        String testMessage = "{\"test key\": \"test value\"}";
+    //        config = new ConsumerConfiguration(testBootstrapServer, testTopic, testInterval);
+    //        kafkaConsumer = config.createConsumer();
+    //        kafkaConsumer.subscribe(Collections.singletonList(testTopic));
+    //        ProducerRecord<String, String> record = new ProducerRecord<>(testTopic, testMessage);
+    //        kafkaProducer.send(record);
+    //        kafkaProducer.close();
+    //        ConsumerRecords<String, String> records = kafkaConsumer.poll(10000);
+    //        kafkaConsumer.close();
+    //        Assert.assertEquals(1, records.count());
+    //        Iterator<ConsumerRecord<String, String>> recordIterator = records.iterator();
+    //        ConsumerRecord<String, String> res = recordIterator.next();
+    //        Assert.assertEquals("{\"text\":\"{\\n  \\\"test key\\\" : \\\"test value\\\"\\n}\"}", Helper.formatString(res.value()));
+    //    }
 }

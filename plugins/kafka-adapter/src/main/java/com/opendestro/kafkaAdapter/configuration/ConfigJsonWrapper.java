@@ -21,10 +21,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown = true)
 class ConfigJsonWrapper {
     private final String kafkaBootstrapServer;
-    private final String kafkaTopic;
-    private final String queryParams;
+    private final String decisionTopic;
+    private final String summaryTopic;
     private final String webhooksUrl;
-    private final long sendPeriodicityMillis;
     private final long receivePeriodicityMillis;
     private final int maxNoMessageFoundCountOnConsumer;
 
@@ -36,20 +35,16 @@ class ConfigJsonWrapper {
         return receivePeriodicityMillis;
     }
 
-    public long getSendPeriodicityMillis() {
-        return sendPeriodicityMillis;
-    }
-
     public String getKafkaBootstrapServer() {
         return kafkaBootstrapServer;
     }
 
-    public String getKafkaTopicName() {
-        return kafkaTopic;
+    public String getDecisonTopicName() {
+        return decisionTopic;
     }
 
-    public String getQueryParams() {
-        return queryParams;
+    public String getSummaryTopicName() {
+        return summaryTopic;
     }
 
     public String getWebhooksUrl() {
@@ -58,17 +53,15 @@ class ConfigJsonWrapper {
 
     ConfigJsonWrapper(
             @JsonProperty("bootstrap_server") String kafkaBootstrapServer,
-            @JsonProperty("topic") String kafkaTopic,
-            @JsonProperty("params") String queryParams,
+            @JsonProperty("decision_topic") String decisionTopic,
+            @JsonProperty("summary_topic") String summaryTopic,
             @JsonProperty("webhooks_url") String webhooksUrl,
-            @JsonProperty("kafka_producer_interval") long sendPeriodicityMillis,
             @JsonProperty("kafka_consumer_interval") long receivePeriodicityMillis,
             @JsonProperty("max_no_message_found_count") int maxNoMessageFoundCountOnConsumer) {
         this.kafkaBootstrapServer = kafkaBootstrapServer;
-        this.kafkaTopic = kafkaTopic;
-        this.queryParams = queryParams;
+        this.decisionTopic = decisionTopic;
+        this.summaryTopic = summaryTopic;
         this.webhooksUrl = webhooksUrl;
-        this.sendPeriodicityMillis = sendPeriodicityMillis;
         this.receivePeriodicityMillis = receivePeriodicityMillis;
         this.maxNoMessageFoundCountOnConsumer = maxNoMessageFoundCountOnConsumer;
     }

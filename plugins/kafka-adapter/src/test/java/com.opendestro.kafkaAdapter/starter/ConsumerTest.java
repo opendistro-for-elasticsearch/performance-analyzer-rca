@@ -29,13 +29,25 @@ public class ConsumerTest {
     private ConsumerConfiguration consumerConfig;
 
     @Test
-    public void consumerConfigTest() {
+    public void decisionConsumerConfigTest() {
         String kafkaAdapterConfPath = Paths.get(KafkaAdapterConsts.CONFIG_DIR_TEST_PATH, KafkaAdapterConsts.KAFKA_ADAPTER_TEST_FILENAME).toString();
         KafkaAdapterConf conf = new KafkaAdapterConf(kafkaAdapterConfPath);
-        consumerConfig = new ConsumerConfiguration(conf.getKafkaBootstrapServer(), conf.getKafkaTopicName(), 5000);
-        KafkaConsumer<String, String> consumer1 = consumerConfig.createConsumer();
-        Assert.assertNotNull(consumer1);
-        Assert.assertEquals("test_rca", consumerConfig.getTopic());
+        consumerConfig = new ConsumerConfiguration(conf.getKafkaBootstrapServer(), conf.getRcaDecisionTopicName(), 5000);
+        KafkaConsumer<String, String> consumer = consumerConfig.createConsumer();
+        Assert.assertNotNull(consumer);
+        Assert.assertEquals("decision-rca-test", consumerConfig.getTopic());
+        Assert.assertEquals(KafkaAdapterConsts.KAFKA_MINIMAL_RECEIVE_PERIODICITY, consumerConfig.getInterval());
+        Assert.assertEquals(KafkaAdapterConsts.DEFAULT_BOOTSTRAP_SERVER, consumerConfig.getBootstrapServer());
+    }
+
+    @Test
+    public void clusterSummaryConsumerConfigTest() {
+        String kafkaAdapterConfPath = Paths.get(KafkaAdapterConsts.CONFIG_DIR_TEST_PATH, KafkaAdapterConsts.KAFKA_ADAPTER_TEST_FILENAME).toString();
+        KafkaAdapterConf conf = new KafkaAdapterConf(kafkaAdapterConfPath);
+        consumerConfig = new ConsumerConfiguration(conf.getKafkaBootstrapServer(), conf.getRcaSummaryTopicName(), 5000);
+        KafkaConsumer<String, String> consumer = consumerConfig.createConsumer();
+        Assert.assertNotNull(consumer);
+        Assert.assertEquals("cluster-summary-rca-test", consumerConfig.getTopic());
         Assert.assertEquals(KafkaAdapterConsts.KAFKA_MINIMAL_RECEIVE_PERIODICITY, consumerConfig.getInterval());
         Assert.assertEquals(KafkaAdapterConsts.DEFAULT_BOOTSTRAP_SERVER, consumerConfig.getBootstrapServer());
     }

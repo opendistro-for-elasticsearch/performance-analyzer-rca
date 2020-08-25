@@ -17,6 +17,6 @@ package com.opendestro.kafkaAdapter.starter;
 
 public class Main {
     public static void main(String[] args) {
-        ConsumerStarter.startConsumer();
+        ConsumerStarter.startClusterRcaConsumer();
     }
 }

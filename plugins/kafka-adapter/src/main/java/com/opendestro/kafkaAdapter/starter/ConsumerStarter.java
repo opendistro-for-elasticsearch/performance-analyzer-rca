@@ -32,45 +32,47 @@ import java.util.Collections;
 
 
 public class ConsumerStarter {
-    private static final Logger LOG = LogManager.getLogger(ConsumerStarter.class);
-    public static void runConsumer(ConsumerConfiguration consumerConfig, int maxNoFound, String webhooksUrl) {
-        int noMessageFound = 0;
-        KafkaConsumer<String, String> consumer = consumerConfig.createConsumer();
-        consumer.subscribe(Collections.singletonList(consumerConfig.getTopic()));
-        try {
-            while (true) {
-                ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofMillis(consumerConfig.getInterval()));
-                if (consumerRecords.count() == 0) {
-                    noMessageFound++;
-                    if (noMessageFound > maxNoFound) {
-                        LOG.info("No response, terminating");
-                        break;
-                    } else {
-                        continue;
-                    }
-                }
-                consumerRecords.forEach(record -> {
-                    Helper.postToSlackWebHook(record.value(), webhooksUrl);
-                });
-                consumer.commitAsync();
-            }
-        } catch (WakeupException e) {
-            // ignore shutdown
-        } finally {
-            consumer.close();
-            LOG.info("Shutting down the Kafka consumer");
-        }
-    }
+  private static final Logger LOG = LogManager.getLogger(ConsumerStarter.class);
 
-    public static void startConsumer() {
-        String kafkaAdapterConfPath = Paths.get(KafkaAdapterConsts.CONFIG_DIR_PATH, KafkaAdapterConsts.KAFKA_ADAPTER_FILENAME).toString();
-        KafkaAdapterConf conf = new KafkaAdapterConf(kafkaAdapterConfPath);
-        String bootstrapServer = conf.getKafkaBootstrapServer();
-        String topic = conf.getKafkaTopicName();
-        String webhooksUrl = conf.getWebhooksUrl();
-        long interval = conf.getReceivePeriodicityMillis();
-        int maxNoFound = conf.getMaxNoMessageFoundCountOnConsumer();
-        ConsumerConfiguration consumerConfig = new ConsumerConfiguration(bootstrapServer, topic, interval);
-        runConsumer(consumerConfig, maxNoFound, webhooksUrl);
+  public static void runConsumer(ConsumerConfiguration consumerConfig, int maxNoFound, String webhooksUrl) {
+    int noMessageFound = 0;
+    KafkaConsumer<String, String> consumer = consumerConfig.createConsumer();
+    consumer.subscribe(Collections.singletonList(consumerConfig.getTopic()));
+    try {
+      while (true) {
+        ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofMillis(consumerConfig.getInterval()));
+        if (consumerRecords.count() == 0) {
+          noMessageFound++;
+          if (noMessageFound > maxNoFound) {
+            LOG.info("No response, terminating");
+            break;
+          } else {
+            continue;
+          }
+        }
+        consumerRecords.forEach(record -> {
+          Helper.postToSlackWebHook(record.value(), webhooksUrl);
+        });
+        consumer.commitAsync();
+      }
+    } catch (WakeupException e) {
+      // ignore shutdown
+    } finally {
+      consumer.close();
+      LOG.info("Shutting down the Kafka consumer");
     }
+  }
+
+  public static void startClusterRcaConsumer() {
+    String kafkaAdapterConfPath = Paths.get(KafkaAdapterConsts.CONFIG_DIR_PATH, KafkaAdapterConsts.KAFKA_ADAPTER_FILENAME).toString();
+    KafkaAdapterConf conf = new KafkaAdapterConf(kafkaAdapterConfPath);
+    String bootstrapServer = conf.getKafkaBootstrapServer();
+    String topic = conf.getRcaSummaryTopicName();
+    System.out.println("Cluster Rca topic : " + topic);
+    String webhooksUrl = conf.getWebhooksUrl();
+    long interval = conf.getReceivePeriodicityMillis();
+    int maxNoFound = conf.getMaxNoMessageFoundCountOnConsumer();
+    ConsumerConfiguration consumerConfig = new ConsumerConfiguration(bootstrapServer, topic, interval);
+    runConsumer(consumerConfig, maxNoFound, webhooksUrl);
+  }
 }
