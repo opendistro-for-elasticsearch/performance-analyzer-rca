@@ -63,4 +63,5 @@ jobs:
       run: |
         ./gradlew enableRca
         cd ../pa
-        ./gradlew integTest -Dtests.enableIT=true
+        ./gradlew integTest --info --stacktrace -Dtests.enableIT=true -Dtests.clusterName=docker-cluster -Dtests.cluster=localhost:9300
+          -Dtests.rest.cluster=localhost:9200 -Dtests.pa.port=9600 -Dtests.https=false
