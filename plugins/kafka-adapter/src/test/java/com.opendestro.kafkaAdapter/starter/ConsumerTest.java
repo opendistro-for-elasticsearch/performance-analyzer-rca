@@ -33,7 +33,7 @@ public class ConsumerTest {
         String kafkaAdapterConfPath = Paths.get(KafkaAdapterConsts.CONFIG_DIR_TEST_PATH, KafkaAdapterConsts.KAFKA_ADAPTER_TEST_FILENAME).toString();
         KafkaAdapterConf conf = new KafkaAdapterConf(kafkaAdapterConfPath);
         consumerConfig = new ConsumerConfiguration(conf.getKafkaBootstrapServer(), conf.getRcaDecisionTopicName(), 5000);
-        KafkaConsumer<String, String> consumer = consumerConfig.createConsumer();
+        KafkaConsumer<String, String> consumer = consumerConfig.createConsumerForDecision();
         Assert.assertNotNull(consumer);
         Assert.assertEquals("decision-rca-test", consumerConfig.getTopic());
         Assert.assertEquals(KafkaAdapterConsts.KAFKA_MINIMAL_RECEIVE_PERIODICITY, consumerConfig.getInterval());
@@ -45,7 +45,7 @@ public class ConsumerTest {
         String kafkaAdapterConfPath = Paths.get(KafkaAdapterConsts.CONFIG_DIR_TEST_PATH, KafkaAdapterConsts.KAFKA_ADAPTER_TEST_FILENAME).toString();
         KafkaAdapterConf conf = new KafkaAdapterConf(kafkaAdapterConfPath);
         consumerConfig = new ConsumerConfiguration(conf.getKafkaBootstrapServer(), conf.getRcaSummaryTopicName(), 5000);
-        KafkaConsumer<String, String> consumer = consumerConfig.createConsumer();
+        KafkaConsumer<String, String> consumer = consumerConfig.createConsumerForDecision();
         Assert.assertNotNull(consumer);
         Assert.assertEquals("cluster-summary-rca-test", consumerConfig.getTopic());
         Assert.assertEquals(KafkaAdapterConsts.KAFKA_MINIMAL_RECEIVE_PERIODICITY, consumerConfig.getInterval());

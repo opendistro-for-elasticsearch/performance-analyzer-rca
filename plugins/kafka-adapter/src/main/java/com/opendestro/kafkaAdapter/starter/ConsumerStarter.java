@@ -33,10 +33,12 @@ import java.util.Collections;
 
 public class ConsumerStarter {
   private static final Logger LOG = LogManager.getLogger(ConsumerStarter.class);
+  private static String kafkaAdapterConfPath = Paths.get(KafkaAdapterConsts.CONFIG_DIR_PATH, KafkaAdapterConsts.KAFKA_ADAPTER_FILENAME).toString();
+  private static KafkaAdapterConf conf = new KafkaAdapterConf(kafkaAdapterConfPath);
 
-  public static void runConsumer(ConsumerConfiguration consumerConfig, int maxNoFound, String webhooksUrl) {
+  public static void consumeDecisions(ConsumerConfiguration consumerConfig, int maxNoFound, String webhooksUrl) {
     int noMessageFound = 0;
-    KafkaConsumer<String, String> consumer = consumerConfig.createConsumer();
+    KafkaConsumer<String, String> consumer = consumerConfig.createConsumerForDecision();
     consumer.subscribe(Collections.singletonList(consumerConfig.getTopic()));
     try {
       while (true) {
@@ -63,16 +65,14 @@ public class ConsumerStarter {
     }
   }
 
-  public static void startClusterRcaConsumer() {
-    String kafkaAdapterConfPath = Paths.get(KafkaAdapterConsts.CONFIG_DIR_PATH, KafkaAdapterConsts.KAFKA_ADAPTER_FILENAME).toString();
-    KafkaAdapterConf conf = new KafkaAdapterConf(kafkaAdapterConfPath);
+
+  public static void startDecisionConsumer() {
     String bootstrapServer = conf.getKafkaBootstrapServer();
-    String topic = conf.getRcaSummaryTopicName();
-    System.out.println("Cluster Rca topic : " + topic);
+    String topic = conf.getRcaDecisionTopicName();
     String webhooksUrl = conf.getWebhooksUrl();
     long interval = conf.getReceivePeriodicityMillis();
     int maxNoFound = conf.getMaxNoMessageFoundCountOnConsumer();
     ConsumerConfiguration consumerConfig = new ConsumerConfiguration(bootstrapServer, topic, interval);
-    runConsumer(consumerConfig, maxNoFound, webhooksUrl);
+    consumeDecisions(consumerConfig, maxNoFound, webhooksUrl);
   }
 }
