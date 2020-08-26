@@ -31,9 +31,9 @@ import org.apache.logging.log4j.Logger;
 public class ClusterSummaryKafkaPublisher extends Plugin implements ClusterSummaryListener {
     private static final Logger LOG = LogManager.getLogger(ClusterSummaryKafkaPublisher.class);
     private static final String NAME = "Kafka_Publisher_Plguin";
-    private static PluginConfig pluginConfig = null;
-    private static KafkaProducer<String, String> kafkaProducerInstance = null;
-    private static KafkaProducerController controller;
+    private PluginConfig pluginConfig = null;
+    private KafkaProducer<String, String> kafkaProducerInstance = null;
+    private KafkaProducerController controller;
 
     public void initialize() {
         if (controller == null) {

@@ -44,21 +44,21 @@ public class ClusterSummary {
     }
   }
 
-  public void addValidSummary(String name, HotClusterSummary summary, long timestamp){
+  public void addValidSummary(String name, HotClusterSummary summary, long timestamp) {
     summaryMap.put(name, summary);
     timesUpdateMap.put(name, timestamp);
     validateSummaryMap();
   }
 
-  public void validateSummaryMap(){
+  public void validateSummaryMap() {
     summaryMap.forEach((k, v) -> {
-      if(v == null || System.currentTimeMillis() - timesUpdateMap.get(k) > evaluationSecondinMillis){
+      if (v == null || System.currentTimeMillis() - timesUpdateMap.get(k) > evaluationSecondinMillis) {
         summaryMap.remove(k);
       }
     });
   }
 
-  public long getLastUpdated(String name){
+  public long getLastUpdated(String name) {
     return timesUpdateMap.get(name);
   }
 
@@ -83,5 +83,4 @@ public class ClusterSummary {
   public HotClusterSummary getSummary(String name) {
     return summaryMap.get(name);
   }
-
 }
