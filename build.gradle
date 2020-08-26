@@ -17,11 +17,7 @@ buildscript {
     dependencies {
         classpath group: 'com.google.guava', name: 'guava', version: '28.2-jre'
         classpath 'org.ajoberstar:gradle-git:0.2.3'
-        classpath('com.google.protobuf:protobuf-gradle-plugin:0.8.8') {
-            exclude group: 'com.google.guava'
-        }
     }
-
 }
 
 plugins {
@@ -32,7 +28,7 @@ plugins {
     id 'com.google.protobuf' version '0.8.8'
     id 'jacoco'
     id 'idea'
-    id 'com.github.spotbugs' version '4.5.0'
+    id 'com.github.spotbugs' version '4.0.0'
     id "de.undercouch.download" version "4.0.4"
     id 'com.adarshr.test-logger' version '2.1.0'
 }
@@ -679,8 +675,8 @@ task runRally {
         String rallyTrack='pmc'
 
         String[] esrally = ['docker', 'run', '--network=host', 'elastic/rally',
-                            '--track=' + rallyTrack, '--test-mode', '--pipeline=benchmark-only',
-                            '--target-hosts=localhost:9200']
+                                '--track=' + rallyTrack, '--test-mode', '--pipeline=benchmark-only',
+                '--target-hosts=localhost:9200']
 
         String wdir = Paths.get(getProjectDir().getAbsolutePath(), 'src', 'test', 'resources')
                 .toString()
