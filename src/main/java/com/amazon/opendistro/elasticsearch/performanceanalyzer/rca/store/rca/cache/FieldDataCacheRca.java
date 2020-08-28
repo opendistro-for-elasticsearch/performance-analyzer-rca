@@ -37,12 +37,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.uti
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.google.common.annotations.VisibleForTesting;
-
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,8 +52,8 @@ import org.apache.logging.log4j.Logger;
  *
  * <p>Cache eviction within Elasticsearch happens in following scenarios :
  * <ol>
- * <li>Mutation to Cache (Entry Insertion/Promotion and Manual Invalidation)
- * <li>Explicit call to refresh()
+ *   <li>Mutation to Cache (Entry Insertion/Promotion and Manual Invalidation)
+ *   <li>Explicit call to refresh()
  * </ol>
  *
  * <p>Cache Eviction requires either cache weight exceeds maximum weight OR the entry TTL is expired.
@@ -71,6 +69,7 @@ import org.apache.logging.log4j.Logger;
  * which keeps track of the time window period(tp) where we repeatedly see evictions for the last
  * tp duration. This RCA is marked as unhealthy if tp is above the threshold(300 seconds) and
  * cache size exceeds the max cache size configured.
+ *
  */
 public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
     private static final Logger LOG = LogManager.getLogger(FieldDataCacheRca.class);

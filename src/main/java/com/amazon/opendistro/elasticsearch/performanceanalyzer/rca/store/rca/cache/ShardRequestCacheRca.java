@@ -134,22 +134,14 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
         if (counter >= rcaPeriod) {
             ResourceContext context;
             InstanceDetails instanceDetails = getInstanceDetails();
-            HotNodeSummary nodeSummary =
-                    new HotNodeSummary(instanceDetails.getInstanceId(), instanceDetails.getInstanceIp());
+            HotNodeSummary nodeSummary = new HotNodeSummary(instanceDetails.getInstanceId(), instanceDetails.getInstanceIp());
 
-            double shardRequestCacheMaxSizeInBytes =
-                    getCacheMaxSize(
-                            getAppContext(),
-                            new NodeKey(instanceDetails),
-                            ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE);
-            Boolean exceedsSizeThreshold =
-                    isSizeThresholdExceeded(
-                            shardRequestCacheSizeGroupByOperation,
-                            shardRequestCacheMaxSizeInBytes,
-                            cacheSizeThreshold);
+            double shardRequestCacheMaxSizeInBytes = getCacheMaxSize(
+                            getAppContext(), new NodeKey(instanceDetails), ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE);
+            Boolean exceedsSizeThreshold = isSizeThresholdExceeded(
+                            shardRequestCacheSizeGroupByOperation, shardRequestCacheMaxSizeInBytes, cacheSizeThreshold);
 
-            // if eviction and hit counts persists in last 5 minutes and cache size exceeds max cache size
-            // * threshold percentage,
+            // if eviction and hit counts persists in last 5 minutes and cache size exceeds max cache size * threshold percentage,
             // the cache is considered as unhealthy
             if (cacheEvictionCollector.isUnhealthy(currTimestamp)
                     && cacheHitCollector.isUnhealthy(currTimestamp)
@@ -161,8 +153,7 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
             }
 
             counter = 0;
-            return new ResourceFlowUnit<>(
-                    currTimestamp, context, nodeSummary, !instanceDetails.getIsMaster());
+            return new ResourceFlowUnit<>(currTimestamp, context, nodeSummary, !instanceDetails.getIsMaster());
         } else {
             return new ResourceFlowUnit<>(currTimestamp);
         }
@@ -205,8 +196,7 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
         private long metricTimestamp;
         private long metricTimePeriodInMillis;
 
-        public CacheCollector(
-                final Resource cache, final Metric cacheMetrics, final int metricTimePeriodInSec) {
+        public CacheCollector(final Resource cache, final Metric cacheMetrics, final int metricTimePeriodInSec) {
             this.cache = cache;
             this.cacheMetrics = cacheMetrics;
             this.hasMetric = false;
@@ -225,10 +215,8 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
                 }
 
                 Result<Record> records = flowUnit.getData();
-                double metricCount =
-                        records.stream()
-                                .mapToDouble(record -> record.getValue(MetricsDB.MAX, Double.class))
-                                .sum();
+                double metricCount = records.stream().mapToDouble(
+                        record -> record.getValue(MetricsDB.MAX, Double.class)).sum();
                 if (!Double.isNaN(metricCount)) {
                     if (metricCount > 0) {
                         if (!hasMetric) {
