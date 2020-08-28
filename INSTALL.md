@@ -12,29 +12,32 @@ This document walks you through the process of building and deploying the RCA fr
  3. JDK12+
  
  ### Set up
- 1. Create a workspace where you will have all the code checked out
+ #### 1. Create a workspace where you will have all the code checked out
     
     `mkdir workspace`
     
     `cd workspace`
     
- 2. Clone the Performance Analyzer RCA repository as follows:
+ #### 2. Clone the Performance Analyzer RCA repository as follows:
  
     `git clone https://github.com/opendistro-for-elasticsearch/performance-analyzer-rca.git`
     
     `cd performance-analyzer-rca`
     
- 3. Set `JAVA_HOME` environment variable to point to JDK12 or higher
+ #### 3. Set `JAVA_HOME` environment variable to point to JDK12 or higher
  
     `export JAVA_HOME=/path/to/jdk12+`
  
- 4. (Optional) IntelliJ setup
+ #### 4. (Optional) IntelliJ setup
  
     a. Launch IntelliJ IDEA
     
     b. Choose Import Project and select the `build.gradle` file in the root of this package
     
- 5. (Optional) TLS Setup
+ #### 5. (Optional) Encryption in Transit Setup
+ This section contains instruction for enabling encryption transit between the client and server for REST and gRPC requests.
+ This will not currently enforce client  authentication. This feature, including full support for TLS is
+ planned for an upcoming release.
  
     a. Open pa_config/performance-analyzer.properties
     
@@ -42,8 +45,8 @@ This document walks you through the process of building and deploying the RCA fr
     
     c. Example performance-analyzer.properties:
         
-        certificate-file-path = /etc/ssl/certs/example.com.crt
-        private-key-file-path = /home/myUser/.ssh/id_rsa
+        certificate-file-path = /etc/ssl/certs/cert.pem
+        private-key-file-path = /etc/ssl/certs/key.pem
         https-enabled = true
  
 ### Build RCA framework
