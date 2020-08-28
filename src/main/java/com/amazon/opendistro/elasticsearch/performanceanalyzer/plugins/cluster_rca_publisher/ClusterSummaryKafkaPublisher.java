@@ -45,6 +45,7 @@ public class ClusterSummaryKafkaPublisher extends Plugin implements ClusterSumma
 
     public void sendRcaClusterSummaryToKafkaQueue(String msg) {
         try {
+            msg = handleNonNumericNumbers(msg);
             String kafkaTopic = pluginConfig.getKafkaDecisionListenerConfig(ConfConsts.CLUSTER_SUMMARY_KAFKA_TOPIC_KEY);
             ProducerRecord<String, String> record = new ProducerRecord<String, String>(kafkaTopic, msg);
             LOG.info(String.format("sending record: %s to kafka topic: %s ", msg, kafkaTopic));
@@ -89,9 +90,12 @@ public class ClusterSummaryKafkaPublisher extends Plugin implements ClusterSumma
         }
     }
 
+    private String handleNonNumericNumbers(String msg) {
+        return msg.replaceAll("\\bNaN\\b", "null");
+    }
+
     //For testing
     public void setKafkaProducerController(KafkaProducerController testController) {
         controller = testController;
     }
-
 }

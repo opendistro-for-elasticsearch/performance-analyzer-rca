@@ -21,19 +21,16 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.KafkaProd
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.Plugin;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config.ConfConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config.PluginConfig;
-import java.net.HttpURLConnection;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.KafkaException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-
 public class DecisionKafkaPublisher extends Plugin implements ActionListener {
 
   public static final String NAME = "DecisionToKafkaPlugin";
   private static final Logger LOG = LogManager.getLogger(DecisionKafkaPublisher.class);
-  private HttpURLConnection httpConnection;
   private PluginConfig pluginConfig = null;
   private KafkaProducer<String, String> kafkaProducerInstance = null;
   private KafkaProducerController controller;
@@ -57,13 +54,7 @@ public class DecisionKafkaPublisher extends Plugin implements ActionListener {
     }
   }
 
-  public PluginConfig getPluginConfig() {
-    return pluginConfig;
-  }
 
-  public KafkaProducer<String, String> getKafkaProducer() {
-    return kafkaProducerInstance;
-  }
 
   @Override
   public String name() {
@@ -82,5 +73,4 @@ public class DecisionKafkaPublisher extends Plugin implements ActionListener {
   public void setKafkaProducerController(KafkaProducerController testController) {
     controller = testController;
   }
-
 }
