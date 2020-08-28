@@ -22,20 +22,40 @@ public class CacheConfig {
 
     private Double fieldDataCacheSizeThreshold;
     private Double shardRequestCacheSizeThreshold;
+    private Integer fieldDataCollectorTimePeriodInSec;
+    private Integer shardRequestCollectorTimePeriodInSec;
 
     public static final double DEFAULT_FIELD_DATA_CACHE_SIZE_THRESHOLD = 0.8;
     public static final double DEFAULT_SHARD_REQUEST_CACHE_SIZE_THRESHOLD = 0.9;
+    public static final int DEFAULT_FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC = 300;
+    public static final int DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC = 300;
 
     public CacheConfig(final RcaConf rcaConf) {
         fieldDataCacheSizeThreshold = rcaConf.readRcaConfig(CONFIG_NAME,
                 RCA_CONF_KEY_CONSTANTS.FIELD_DATA_CACHE_SIZE_THRESHOLD, Double.class);
         shardRequestCacheSizeThreshold = rcaConf.readRcaConfig(CONFIG_NAME,
                 RCA_CONF_KEY_CONSTANTS.SHARD_REQUEST_CACHE_SIZE_THRESHOLD, Double.class);
+        fieldDataCollectorTimePeriodInSec =
+                rcaConf.readRcaConfig(
+                        CONFIG_NAME,
+                        RCA_CONF_KEY_CONSTANTS.FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC,
+                        Integer.class);
+        shardRequestCollectorTimePeriodInSec =
+                rcaConf.readRcaConfig(
+                        CONFIG_NAME,
+                        RCA_CONF_KEY_CONSTANTS.SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC,
+                        Integer.class);
         if (fieldDataCacheSizeThreshold == null) {
             fieldDataCacheSizeThreshold = DEFAULT_FIELD_DATA_CACHE_SIZE_THRESHOLD;
         }
         if (shardRequestCacheSizeThreshold == null) {
             shardRequestCacheSizeThreshold = DEFAULT_SHARD_REQUEST_CACHE_SIZE_THRESHOLD;
+        }
+        if (fieldDataCollectorTimePeriodInSec == null) {
+            fieldDataCollectorTimePeriodInSec = DEFAULT_FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC;
+        }
+        if (shardRequestCollectorTimePeriodInSec == null) {
+            shardRequestCollectorTimePeriodInSec = DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC;
         }
     }
 
@@ -47,8 +67,18 @@ public class CacheConfig {
         return shardRequestCacheSizeThreshold;
     }
 
+    public int getFieldDataCollectorTimePeriodInSec() {
+        return fieldDataCollectorTimePeriodInSec;
+    }
+
+    public int getShardRequestCollectorTimePeriodInSec() {
+        return shardRequestCollectorTimePeriodInSec;
+    }
+
     public static class RCA_CONF_KEY_CONSTANTS {
         public static final String FIELD_DATA_CACHE_SIZE_THRESHOLD = "field-data-cache-size-threshold";
         public static final String SHARD_REQUEST_CACHE_SIZE_THRESHOLD = "shard-request-cache-threshold";
+        public static final String FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC = "field-data-collector-time-period-in-sec";
+        public static final String SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC = "shard-request-collector-time-period-in-sec";
     }
 }

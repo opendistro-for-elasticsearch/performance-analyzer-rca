@@ -37,10 +37,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.uti
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.google.common.annotations.VisibleForTesting;
+
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,8 +54,8 @@ import org.apache.logging.log4j.Logger;
  *
  * <p>Cache eviction within Elasticsearch happens in following scenarios :
  * <ol>
- *   <li>Mutation to Cache (Entry Insertion/Promotion and Manual Invalidation)
- *   <li>Explicit call to refresh()
+ * <li>Mutation to Cache (Entry Insertion/Promotion and Manual Invalidation)
+ * <li>Explicit call to refresh()
  * </ol>
  *
  * <p>Cache Eviction requires either cache weight exceeds maximum weight OR the entry TTL is expired.
@@ -69,11 +71,9 @@ import org.apache.logging.log4j.Logger;
  * which keeps track of the time window period(tp) where we repeatedly see evictions for the last
  * tp duration. This RCA is marked as unhealthy if tp is above the threshold(300 seconds) and
  * cache size exceeds the max cache size configured.
- *
  */
 public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
     private static final Logger LOG = LogManager.getLogger(FieldDataCacheRca.class);
-    private static final long EVICTION_THRESHOLD_TIME_PERIOD_IN_MILLISECOND = TimeUnit.SECONDS.toMillis(300);
 
     private final Metric fieldDataCacheEvictions;
     private final Metric fieldDataCacheSizeGroupByOperation;
@@ -96,7 +96,7 @@ public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
         this.cacheSizeThreshold = CacheConfig.DEFAULT_FIELD_DATA_CACHE_SIZE_THRESHOLD;
         this.clock = Clock.systemUTC();
         this.cacheEvictionCollector = new CacheEvictionCollector(FIELD_DATA_CACHE_EVICTION,
-                fieldDataCacheEvictions, EVICTION_THRESHOLD_TIME_PERIOD_IN_MILLISECOND);
+                fieldDataCacheEvictions, CacheConfig.DEFAULT_FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC);
     }
 
     @VisibleForTesting
@@ -122,27 +122,29 @@ public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
             if (cacheEvictionCollector.isUnhealthy(currTimestamp) && exceedsSizeThreshold) {
                 context = new ResourceContext(Resources.State.UNHEALTHY);
                 nodeSummary.appendNestedSummary(cacheEvictionCollector.generateSummary(currTimestamp));
-            }
-            else {
+            } else {
                 context = new ResourceContext(Resources.State.HEALTHY);
             }
 
             counter = 0;
             return new ResourceFlowUnit<>(currTimestamp, context, nodeSummary, !instanceDetails.getIsMaster());
-        }
-        else {
+        } else {
             return new ResourceFlowUnit<>(currTimestamp);
         }
     }
 
     /**
      * read threshold values from rca.conf
+     *
      * @param conf RcaConf object
      */
     @Override
     public void readRcaConf(RcaConf conf) {
         CacheConfig configObj = conf.getCacheConfig();
         cacheSizeThreshold = configObj.getFieldDataCacheSizeThreshold();
+        long cacheCollectorTimePeriodInSec =
+                TimeUnit.SECONDS.toMillis(configObj.getFieldDataCollectorTimePeriodInSec());
+        cacheEvictionCollector.setCollectorTimePeriod(cacheCollectorTimePeriodInSec);
     }
 
     @Override
@@ -165,15 +167,19 @@ public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
         private final Metric cacheEvictionMetrics;
         private boolean hasEvictions;
         private long evictionTimestamp;
-        private long evictionTimePeriodThreshold;
+        private long metricTimePeriodInMillis;
 
         private CacheEvictionCollector(final Resource cache, final Metric cacheEvictionMetrics,
-                                       final long threshold) {
+                                       final int metricTimePeriodInMillis) {
             this.cache = cache;
             this.cacheEvictionMetrics = cacheEvictionMetrics;
             this.hasEvictions = false;
             this.evictionTimestamp = 0;
-            this.evictionTimePeriodThreshold = threshold;
+            this.metricTimePeriodInMillis = TimeUnit.SECONDS.toMillis(metricTimePeriodInMillis);
+        }
+
+        public void setCollectorTimePeriod(long metricTimePeriodInMillis) {
+            this.metricTimePeriodInMillis = metricTimePeriodInMillis;
         }
 
         public void collect(final long currTimestamp) {
@@ -190,24 +196,22 @@ public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
                             evictionTimestamp = currTimestamp;
                         }
                         hasEvictions = true;
-                    }
-                    else {
+                    } else {
                         hasEvictions = false;
                     }
-                }
-                else {
+                } else {
                     LOG.error("Failed to parse metric from cache {}", cache.toString());
                 }
             }
         }
 
         public boolean isUnhealthy(final long currTimestamp) {
-            return hasEvictions && (currTimestamp - evictionTimestamp) >= evictionTimePeriodThreshold;
+            return hasEvictions && (currTimestamp - evictionTimestamp) >= metricTimePeriodInMillis;
         }
 
         private HotResourceSummary generateSummary(final long currTimestamp) {
             return new HotResourceSummary(cache,
-                    TimeUnit.MILLISECONDS.toSeconds(evictionTimePeriodThreshold),
+                    TimeUnit.MILLISECONDS.toSeconds(metricTimePeriodInMillis),
                     TimeUnit.MILLISECONDS.toSeconds(currTimestamp - evictionTimestamp),
                     0);
         }

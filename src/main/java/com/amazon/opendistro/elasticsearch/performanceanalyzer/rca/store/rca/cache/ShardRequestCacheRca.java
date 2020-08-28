@@ -38,6 +38,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.uti
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.google.common.annotations.VisibleForTesting;
+
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,38 +50,39 @@ import org.jooq.Record;
 import org.jooq.Result;
 
 /**
- * Shard Request Cache RCA is to identify when the cache is unhealthy(thrashing) and otherwise, healthy.
- * The dimension we are using for this analysis is cache eviction, hit count, cache current weight(size)
- * and cache max weight(size) configured.
+ * Shard Request Cache RCA is to identify when the cache is unhealthy(thrashing) and otherwise,
+ * healthy. The dimension we are using for this analysis is cache eviction, hit count, cache current
+ * weight(size) and cache max weight(size) configured.
  *
  * <p>Cache eviction within Elasticsearch happens in following scenarios:
+ *
  * <ol>
- *   <li> Mutation to Cache (Entry Insertion/Promotion and Manual Invalidation)
- *   <li> Explicit call to refresh()
+ * <li>Mutation to Cache (Entry Insertion/Promotion and Manual Invalidation)
+ * <li>Explicit call to refresh()
  * </ol>
  *
- * <p>Cache Eviction requires either cache weight exceeds maximum weight OR the entry TTL is expired.
- * For Shard Request Cache, TTL is defined via `indices.requests.cache.expire` setting which is never used
- * in production clusters and only provided for backward compatibility, thus we ignore time based evictions.
- * The weight based evictions(removal from Cache Map and LRU linked List with entry updated to EVICTED) occur
- * when the cache_weight exceeds the max_cache_weight, eviction.
+ * <p>Cache Eviction requires either cache weight exceeds maximum weight OR the entry TTL is
+ * expired. For Shard Request Cache, TTL is defined via `indices.requests.cache.expire` setting
+ * which is never used in production clusters and only provided for backward compatibility, thus we
+ * ignore time based evictions. The weight based evictions(removal from Cache Map and LRU linked
+ * List with entry updated to EVICTED) occur when the cache_weight exceeds the max_cache_weight,
+ * eviction.
  *
- * <p>The Entry Invalidation is performed manually on cache clear(), index close() and for cached results from
- * timed-out requests. A scheduled runnable, running every 10 minutes cleans up all the invalidated entries which
- * have not been read/written to since invalidation.
+ * <p>The Entry Invalidation is performed manually on cache clear(), index close() and for cached
+ * results from timed-out requests. A scheduled runnable, running every 10 minutes cleans up all the
+ * invalidated entries which have not been read/written to since invalidation.
  *
- * <p>The Cache Hit and Eviction metric presence implies cache is undergoing frequent load and eviction or undergoing
- * scheduled cleanup for entries which had timed-out during execution.
+ * <p>The Cache Hit and Eviction metric presence implies cache is undergoing frequent load and
+ * eviction or undergoing scheduled cleanup for entries which had timed-out during execution.
  *
- * <p>This RCA reads 'shardRequestCacheEvictions', 'shardRequestCacheHits', 'shardRequestCacheSizeGroupByOperation' and
- * 'shardRequestCacheMaxSizeInBytes' from upstream metrics and maintains collectors which keep track of time
- * window period(tp) where we repeatedly see evictions and hits for the last tp duration. This RCA is marked as unhealthy
- * if tp we find tp is above the threshold(300 seconds) and cache size exceeds the max cache size configured.
- *
+ * <p>This RCA reads 'shardRequestCacheEvictions', 'shardRequestCacheHits',
+ * 'shardRequestCacheSizeGroupByOperation' and 'shardRequestCacheMaxSizeInBytes' from upstream
+ * metrics and maintains collectors which keep track of time window period(tp) where we repeatedly
+ * see evictions and hits for the last tp duration. This RCA is marked as unhealthy if tp we find tp
+ * is above the threshold(300 seconds) and cache size exceeds the max cache size configured.
  */
 public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
     private static final Logger LOG = LogManager.getLogger(ShardRequestCacheRca.class);
-    private static final long THRESHOLD_TIME_PERIOD_IN_MILLISECOND = TimeUnit.SECONDS.toMillis(300);
 
     private final Metric shardRequestCacheEvictions;
     private final Metric shardRequestCacheHits;
@@ -92,10 +94,11 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
     private final CacheCollector cacheEvictionCollector;
     private final CacheCollector cacheHitCollector;
 
-    public <M extends Metric> ShardRequestCacheRca(final int rcaPeriod,
-                                                   final M shardRequestCacheEvictions,
-                                                   final M shardRequestCacheHits,
-                                                   final M shardRequestCacheSizeGroupByOperation) {
+    public <M extends Metric> ShardRequestCacheRca(
+            final int rcaPeriod,
+            final M shardRequestCacheEvictions,
+            final M shardRequestCacheHits,
+            final M shardRequestCacheSizeGroupByOperation) {
         super(5);
         this.rcaPeriod = rcaPeriod;
         this.shardRequestCacheEvictions = shardRequestCacheEvictions;
@@ -104,10 +107,16 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
         this.counter = 0;
         this.cacheSizeThreshold = CacheConfig.DEFAULT_SHARD_REQUEST_CACHE_SIZE_THRESHOLD;
         this.clock = Clock.systemUTC();
-        this.cacheEvictionCollector = new CacheCollector(SHARD_REQUEST_CACHE_EVICTION,
-                shardRequestCacheEvictions, THRESHOLD_TIME_PERIOD_IN_MILLISECOND);
-        this.cacheHitCollector = new CacheCollector(SHARD_REQUEST_CACHE_HIT,
-                shardRequestCacheHits, THRESHOLD_TIME_PERIOD_IN_MILLISECOND);
+        this.cacheEvictionCollector =
+                new CacheCollector(
+                        SHARD_REQUEST_CACHE_EVICTION,
+                        shardRequestCacheEvictions,
+                        CacheConfig.DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC);
+        this.cacheHitCollector =
+                new CacheCollector(
+                        SHARD_REQUEST_CACHE_HIT,
+                        shardRequestCacheHits,
+                        CacheConfig.DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC);
     }
 
     @VisibleForTesting
@@ -125,14 +134,22 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
         if (counter >= rcaPeriod) {
             ResourceContext context;
             InstanceDetails instanceDetails = getInstanceDetails();
-            HotNodeSummary nodeSummary = new HotNodeSummary(instanceDetails.getInstanceId(), instanceDetails.getInstanceIp());
+            HotNodeSummary nodeSummary =
+                    new HotNodeSummary(instanceDetails.getInstanceId(), instanceDetails.getInstanceIp());
 
-            double shardRequestCacheMaxSizeInBytes = getCacheMaxSize(
-                    getAppContext(), new NodeKey(instanceDetails), ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE);
-            Boolean exceedsSizeThreshold = isSizeThresholdExceeded(
-                    shardRequestCacheSizeGroupByOperation, shardRequestCacheMaxSizeInBytes, cacheSizeThreshold);
+            double shardRequestCacheMaxSizeInBytes =
+                    getCacheMaxSize(
+                            getAppContext(),
+                            new NodeKey(instanceDetails),
+                            ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE);
+            Boolean exceedsSizeThreshold =
+                    isSizeThresholdExceeded(
+                            shardRequestCacheSizeGroupByOperation,
+                            shardRequestCacheMaxSizeInBytes,
+                            cacheSizeThreshold);
 
-            // if eviction and hit counts persists in last 5 minutes and cache size exceeds max cache size * threshold percentage,
+            // if eviction and hit counts persists in last 5 minutes and cache size exceeds max cache size
+            // * threshold percentage,
             // the cache is considered as unhealthy
             if (cacheEvictionCollector.isUnhealthy(currTimestamp)
                     && cacheHitCollector.isUnhealthy(currTimestamp)
@@ -144,7 +161,8 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
             }
 
             counter = 0;
-            return new ResourceFlowUnit<>(currTimestamp, context, nodeSummary, !instanceDetails.getIsMaster());
+            return new ResourceFlowUnit<>(
+                    currTimestamp, context, nodeSummary, !instanceDetails.getIsMaster());
         } else {
             return new ResourceFlowUnit<>(currTimestamp);
         }
@@ -152,12 +170,17 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
 
     /**
      * read threshold values from rca.conf
+     *
      * @param conf RcaConf object
      */
     @Override
     public void readRcaConf(RcaConf conf) {
         CacheConfig configObj = conf.getCacheConfig();
         cacheSizeThreshold = configObj.getShardRequestCacheSizeThreshold();
+        long cacheCollectorTimePeriodInSec =
+                TimeUnit.SECONDS.toMillis(configObj.getShardRequestCollectorTimePeriodInSec());
+        cacheHitCollector.setCollectorTimePeriod(cacheCollectorTimePeriodInSec);
+        cacheEvictionCollector.setCollectorTimePeriod(cacheCollectorTimePeriodInSec);
     }
 
     @Override
@@ -180,14 +203,19 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
         private final Metric cacheMetrics;
         private boolean hasMetric;
         private long metricTimestamp;
-        private long metricTimePeriodThreshold;
+        private long metricTimePeriodInMillis;
 
-        public CacheCollector(final Resource cache, final Metric cacheMetrics, final long threshold) {
+        public CacheCollector(
+                final Resource cache, final Metric cacheMetrics, final int metricTimePeriodInSec) {
             this.cache = cache;
             this.cacheMetrics = cacheMetrics;
             this.hasMetric = false;
             this.metricTimestamp = 0;
-            this.metricTimePeriodThreshold = threshold;
+            this.metricTimePeriodInMillis = TimeUnit.SECONDS.toMillis(metricTimePeriodInSec);
+        }
+
+        public void setCollectorTimePeriod(long metricTimePeriodInMillis) {
+            this.metricTimePeriodInMillis = metricTimePeriodInMillis;
         }
 
         public void collect(final long currTimestamp) {
@@ -197,32 +225,33 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
                 }
 
                 Result<Record> records = flowUnit.getData();
-                double metricCount = records.stream().mapToDouble(
-                        record -> record.getValue(MetricsDB.MAX, Double.class)).sum();
+                double metricCount =
+                        records.stream()
+                                .mapToDouble(record -> record.getValue(MetricsDB.MAX, Double.class))
+                                .sum();
                 if (!Double.isNaN(metricCount)) {
                     if (metricCount > 0) {
                         if (!hasMetric) {
                             metricTimestamp = currTimestamp;
                         }
                         hasMetric = true;
-                    }
-                    else {
+                    } else {
                         hasMetric = false;
                     }
-                }
-                else {
+                } else {
                     LOG.error("Failed to parse metric from cache {}", cache.toString());
                 }
             }
         }
 
         public boolean isUnhealthy(final long currTimestamp) {
-            return hasMetric && (currTimestamp - metricTimestamp) >= metricTimePeriodThreshold;
+            return hasMetric && (currTimestamp - metricTimestamp) >= metricTimePeriodInMillis;
         }
 
         private HotResourceSummary generateSummary(final long currTimestamp) {
-            return new HotResourceSummary(cache,
-                    TimeUnit.MILLISECONDS.toSeconds(metricTimePeriodThreshold),
+            return new HotResourceSummary(
+                    cache,
+                    TimeUnit.MILLISECONDS.toSeconds(metricTimePeriodInMillis),
                     TimeUnit.MILLISECONDS.toSeconds(currTimestamp - metricTimestamp),
                     0);
         }

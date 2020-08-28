@@ -30,6 +30,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AErrorPatternIgnored;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AExpect;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AMetric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ARcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ARcaGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ATable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ATuple;
@@ -50,6 +51,8 @@ import org.junit.runner.RunWith;
 @RunWith(RcaItNotEncryptedRunner.class)
 @AClusterType(ClusterType.MULTI_NODE_CO_LOCATED_MASTER)
 @ARcaGraph(ElasticSearchAnalysisGraph.class)
+//specify a custom rca.conf to set the collector time periods to 5s to reduce runtime
+@ARcaConf(dataNode = RcaItCacheTuning.CACHE_TUNING_RESOURCES_DIR + "rca.conf")
 @AMetric(
     name = Cache_FieldData_Size.class,
     dimensionNames = {
@@ -189,6 +192,7 @@ import org.junit.runner.RunWith;
           })
     })
 public class RcaItCacheTuning {
+  public static final String CACHE_TUNING_RESOURCES_DIR = Consts.INTEG_TESTS_SRC_DIR + "./tests/cache_tuning/resource/";
   public static final String INDEX_NAME = "MockIndex";
   public static final String SHARD_ID = "1";
 
