@@ -34,7 +34,7 @@ public class PluginSettings {
   private static PluginSettings instance;
   public static final String CONFIG_FILES_PATH = "pa_config/";
   private static final String DEFAULT_CONFIG_FILE_PATH =
-      "pa_config/performance-analyzer.properties";
+      Util.PLUGIN_LOCATION + "pa_config/performance-analyzer.properties";
   private static final String METRICS_LOCATION_KEY = "metrics-location";
   private static final String METRICS_LOCATION_DEFAULT = "/dev/shm/performanceanalyzer/";
   private static final String DELETION_INTERVAL_KEY = "metrics-deletion-interval";
@@ -60,7 +60,7 @@ public class PluginSettings {
   private final String configFilePath;
 
   static {
-    Util.invokePrivilegedAndLogError(() -> createInstance());
+    Util.invokePrivilegedAndLogError(PluginSettings::createInstance);
   }
 
   public String getMetricsLocation() {
@@ -144,9 +144,10 @@ public class PluginSettings {
       loadMetricsDBFilesCleanupEnabled();
     } catch (ConfigFileException e) {
       LOG.error(
-          "Loading config file {} failed with error: {}. Using default values.",
+          "Loading config file {} failed with error: {}. Disabling plugin.",
           this.configFilePath,
           e.toString());
+      ConfigStatus.INSTANCE.setConfigurationInvalid();
     } catch (ConfigFatalException e) {
       LOG.error("Having issue to load all config items. Disabling plugin.", e);
       ConfigStatus.INSTANCE.setConfigurationInvalid();
