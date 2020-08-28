@@ -50,11 +50,13 @@ public abstract class Decider extends NonLeafNode<Decision> {
 
   private static final Logger LOG = LogManager.getLogger(Decider.class);
   protected final int decisionFrequency; // Measured in terms of number of evaluationIntervalPeriods
+  protected RcaConf rcaConf;
   DeciderConfig configObj;
 
   public Decider(long evalIntervalSeconds, int decisionFrequency) {
     super(0, evalIntervalSeconds);
     this.decisionFrequency = decisionFrequency;
+    this.rcaConf = null;
     this.configObj = null;
   }
 
@@ -109,7 +111,8 @@ public abstract class Decider extends NonLeafNode<Decision> {
    */
   @Override
   public void readRcaConf(RcaConf conf) {
-    configObj = conf.getDeciderConfig();
+    rcaConf = conf;
+    configObj = rcaConf.getDeciderConfig();
   }
 
   public double getFieldDataCacheUpperBound() {

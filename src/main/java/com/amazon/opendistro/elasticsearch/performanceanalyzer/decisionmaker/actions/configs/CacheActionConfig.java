@@ -28,34 +28,31 @@ public class CacheActionConfig {
   private NestedConfig cacheSettingsConfig;
   private FieldDataCacheConfig fieldDataCacheConfig;
   private ShardRequestCacheConfig shardRequestCacheConfig;
-  private Map<ResourceEnum, CacheMaxSizeActionConfig> cacheMaxSizeActionConfigMap;
+  private Map<ResourceEnum, ThresholdConfig<Double>> thresholdConfigMap;
 
   public CacheActionConfig(RcaConf conf) {
     Map<String, Object> actionConfig = conf.getActionConfigSettings();
     cacheSettingsConfig = new NestedConfig("cache-settings", actionConfig);
     fieldDataCacheConfig = new FieldDataCacheConfig(cacheSettingsConfig);
     shardRequestCacheConfig = new ShardRequestCacheConfig(cacheSettingsConfig);
-    cacheMaxSizeActionConfigMap = createCacheConfigMap();
+    createThresholdConfigMap();
   }
 
-  public CacheMaxSizeActionConfig getCacheMaxSizeActionConfig(ResourceEnum cacheType) {
-    return cacheMaxSizeActionConfigMap.get(cacheType);
+  public ThresholdConfig<Double> getThresholdConfig(ResourceEnum cacheType) {
+    if (!thresholdConfigMap.containsKey(cacheType)) {
+      throw new IllegalArgumentException("Threshold config requested for unknown cache type: " + cacheType.toString());
+    }
+    return thresholdConfigMap.get(cacheType);
   }
 
-  private Map<ResourceEnum, CacheMaxSizeActionConfig> createCacheConfigMap() {
-    Map<ResourceEnum, CacheMaxSizeActionConfig> configMap = new HashMap<>();
+  private void createThresholdConfigMap() {
+    Map<ResourceEnum, ThresholdConfig<Double>> configMap = new HashMap<>();
     configMap.put(ResourceEnum.FIELD_DATA_CACHE, fieldDataCacheConfig);
     configMap.put(ResourceEnum.SHARD_REQUEST_CACHE, shardRequestCacheConfig);
-    return Collections.unmodifiableMap(configMap);
+    thresholdConfigMap = Collections.unmodifiableMap(configMap);
   }
 
-
-  private interface CacheMaxSizeActionConfig {
-    Double upperBound();
-    Double lowerBound();
-  }
-
-  private static class FieldDataCacheConfig implements CacheMaxSizeActionConfig {
+  private static class FieldDataCacheConfig implements ThresholdConfig<Double> {
 
     private Config<Double> fieldDataCacheUpperBound;
     private Config<Double> fieldDataCacheLowerBound;
@@ -77,7 +74,7 @@ public class CacheActionConfig {
     }
   }
 
-  private static class ShardRequestCacheConfig implements CacheMaxSizeActionConfig {
+  private static class ShardRequestCacheConfig implements ThresholdConfig<Double> {
 
     private Config<Double> shardRequestCacheUpperBound;
     private Config<Double> shardRequestCacheLowerBound;

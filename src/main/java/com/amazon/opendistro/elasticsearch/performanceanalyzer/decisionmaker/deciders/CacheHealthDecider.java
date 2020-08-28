@@ -145,7 +145,7 @@ public class CacheHealthDecider extends Decider {
       final NodeKey esNode, final ResourceEnum cacheType, final boolean increase) {
     final ModifyCacheMaxSizeAction action =
         ModifyCacheMaxSizeAction
-            .newBuilder(esNode, cacheType, getAppContext(), getCacheUpperBound(cacheType))
+            .newBuilder(esNode, cacheType, getAppContext(), rcaConf)
             .increase(increase)
             .build();
     if (action.isActionable()) {

@@ -31,6 +31,7 @@ public class CacheUtil {
 
     public static final long KB_TO_BYTES = 1024;
     public static final long MB_TO_BYTES = KB_TO_BYTES * 1024;
+    public static final long GB_TO_BYTES = MB_TO_BYTES * 1024;
 
     public static Double getTotalSizeInKB(final Metric cacheSizeGroupByOperation) {
         double totalSizeInKB = 0;
