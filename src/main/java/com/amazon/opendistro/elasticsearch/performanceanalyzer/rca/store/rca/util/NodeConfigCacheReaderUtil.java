@@ -64,19 +64,4 @@ public class NodeConfigCacheReaderUtil {
     }
     return null;
   }
-
-  public static Integer readQueueEWMASize(
-      final NodeConfigCache nodeConfigCache, NodeKey esNode, ResourceEnum resourceEnum) {
-    final Resource resource =
-        Resource.newBuilder()
-            .setResourceEnum(resourceEnum)
-            .setMetricEnum(MetricEnum.QUEUE_SIZE)
-            .build();
-    try {
-      return (int) nodeConfigCache.get(esNode, resource);
-    } catch (final IllegalArgumentException e) {
-      LOG.error("Exception while reading queue size from Node Config Cache", e);
-    }
-    return null;
-  }
 }

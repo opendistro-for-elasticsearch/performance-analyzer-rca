@@ -140,7 +140,6 @@ public class LevelThreeActionBuilder {
    * 1. downsize both caches simultaneously to its lower bound in one shot.
    * 2. downsize all queues simultaneously until they reach their lower bound
    */
-  // TODO : read priority from yml if customer wants to override default ordering
   private void actionPriorityFilter() {
     actionPriorityForCache();
     actionPriorityForQueue();

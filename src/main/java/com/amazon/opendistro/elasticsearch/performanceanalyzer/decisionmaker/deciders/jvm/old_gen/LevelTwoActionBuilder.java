@@ -146,11 +146,11 @@ public class LevelTwoActionBuilder {
   // downsize queue based on priority and current queue size
   private void actionPriorityForQueue() {
     NodeConfigCache nodeConfigCache = appContext.getNodeConfigCache();
-    Integer writeQueueEWMASize = NodeConfigCacheReaderUtil
-        .readQueueEWMASize(nodeConfigCache, esNode, ResourceEnum.WRITE_THREADPOOL);
-    Integer searchQueueEWMASize = NodeConfigCacheReaderUtil
-        .readQueueEWMASize(nodeConfigCache, esNode, ResourceEnum.SEARCH_THREADPOOL);
-    if (writeQueueEWMASize == null || searchQueueEWMASize == null) {
+    Integer writeQueueCapacity = NodeConfigCacheReaderUtil
+        .readQueueCapacity(nodeConfigCache, esNode, ResourceEnum.WRITE_THREADPOOL);
+    Integer searchQueueCapacity = NodeConfigCacheReaderUtil
+        .readQueueCapacity(nodeConfigCache, esNode, ResourceEnum.SEARCH_THREADPOOL);
+    if (writeQueueCapacity == null || searchQueueCapacity == null) {
       return;
     }
     ModifyQueueCapacityAction writeQueueAction = queueActionMap.get(ResourceEnum.WRITE_THREADPOOL);
@@ -159,12 +159,12 @@ public class LevelTwoActionBuilder {
       int writeQueueSizeBucket = bucketization(
           threadPoolConfig.writeQueueCapacityLowerBound(),
           threadPoolConfig.writeQueueCapacityUpperBound(),
-          writeQueueEWMASize,
+          writeQueueCapacity,
           actionBuilderConfig.queueBucketSize());
       int searchQueueSizeBucket = bucketization(
           threadPoolConfig.searchQueueCapacityLowerBound(),
           threadPoolConfig.searchQueueCapacityUpperBound(),
-          searchQueueEWMASize,
+          searchQueueCapacity,
           actionBuilderConfig.queueBucketSize());
       if (writeQueueSizeBucket > searchQueueSizeBucket) {
         actionFilter.put(ResourceEnum.WRITE_THREADPOOL, true);
@@ -209,7 +209,6 @@ public class LevelTwoActionBuilder {
    * but customer's acton priority will only affect step 3 above. Step 1 and 2 will
    * be executed regardless of priority action settings
    */
-  // TODO : read priority from yml if customer wants to override default ordering
   private void actionPriorityFilter() {
     actionPriorityForCache();
     actionPriorityForQueue();

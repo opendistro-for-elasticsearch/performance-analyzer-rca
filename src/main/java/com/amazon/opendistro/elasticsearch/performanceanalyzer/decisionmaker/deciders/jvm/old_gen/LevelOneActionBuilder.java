@@ -101,7 +101,6 @@ public class LevelOneActionBuilder {
    * unless explicitly overridden by customer yml.
    * @return final action list based on action priority
    */
-  // TODO : read priority from yml if customer wants to override default ordering
   private void actionPriorityFilter() {
     actionFilter.put(ResourceEnum.FIELD_DATA_CACHE, true);
     actionFilter.put(ResourceEnum.SHARD_REQUEST_CACHE, true);
