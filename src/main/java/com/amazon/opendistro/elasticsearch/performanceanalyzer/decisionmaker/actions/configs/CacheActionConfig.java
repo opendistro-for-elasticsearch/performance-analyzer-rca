@@ -22,8 +22,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class CacheActionConfig {
+
+  private static final Logger LOG = LogManager.getLogger(CacheActionConfig.class);
 
   private NestedConfig cacheSettingsConfig;
   private FieldDataCacheConfig fieldDataCacheConfig;
@@ -40,7 +44,9 @@ public class CacheActionConfig {
 
   public ThresholdConfig<Double> getThresholdConfig(ResourceEnum cacheType) {
     if (!thresholdConfigMap.containsKey(cacheType)) {
-      throw new IllegalArgumentException("Threshold config requested for unknown cache type: " + cacheType.toString());
+      String msg = "Threshold config requested for unknown cache type: " + cacheType.toString();
+      LOG.error(msg);
+      throw new IllegalArgumentException(msg);
     }
     return thresholdConfigMap.get(cacheType);
   }
@@ -59,8 +65,10 @@ public class CacheActionConfig {
 
     public FieldDataCacheConfig(NestedConfig cacheSettingsConfig) {
       NestedConfig fieldDataCacheConfig = new NestedConfig("fielddata", cacheSettingsConfig.getValue());
-      fieldDataCacheUpperBound = new Config<>("upper-bound", fieldDataCacheConfig.getValue(), 0.4, Double.class);
-      fieldDataCacheLowerBound = new Config<>("lower-bound", fieldDataCacheConfig.getValue(), 0.1, Double.class);
+      fieldDataCacheUpperBound = new Config<>("upper-bound", fieldDataCacheConfig.getValue(),
+          0.4, (s) -> (s > 0), Double.class);
+      fieldDataCacheLowerBound = new Config<>("lower-bound", fieldDataCacheConfig.getValue(),
+          0.1, (s) -> (s > 0), Double.class);
     }
 
     @Override
@@ -81,8 +89,10 @@ public class CacheActionConfig {
 
     public ShardRequestCacheConfig(NestedConfig cacheSettingsConfig) {
       NestedConfig shardRequestCacheConfig = new NestedConfig("shard-request", cacheSettingsConfig.getValue());
-      shardRequestCacheUpperBound = new Config<>("upper-bound", shardRequestCacheConfig.getValue(), 0.05, Double.class);
-      shardRequestCacheLowerBound = new Config<>("lower-bound", shardRequestCacheConfig.getValue(), 0.01, Double.class);
+      shardRequestCacheUpperBound = new Config<>("upper-bound", shardRequestCacheConfig.getValue(),
+          0.05, (s) -> (s > 0), Double.class);
+      shardRequestCacheLowerBound = new Config<>("lower-bound", shardRequestCacheConfig.getValue(),
+          0.01, (s) -> (s > 0), Double.class);
     }
 
     @Override

@@ -22,8 +22,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class QueueActionConfig {
+
+  private static final Logger LOG = LogManager.getLogger(QueueActionConfig.class);
 
   private NestedConfig queueSettingsConfig;
   private SearchQueueConfig searchQueueConfig;
@@ -40,7 +44,9 @@ public class QueueActionConfig {
 
   public ThresholdConfig<Integer> getThresholdConfig(ResourceEnum threadPool) {
     if (!thresholdConfigMap.containsKey(threadPool)) {
-      throw new IllegalArgumentException("Threshold config requested for unknown threadpool queue: " + threadPool.toString());
+      String msg = "Threshold config requested for unknown threadpool queue: " + threadPool.toString();
+      LOG.error(msg);
+      throw new IllegalArgumentException(msg);
     }
     return thresholdConfigMap.get(threadPool);
   }
@@ -59,8 +65,10 @@ public class QueueActionConfig {
 
     public SearchQueueConfig(NestedConfig queueSettingsConfig) {
       NestedConfig searchQueueConfig = new NestedConfig("search", queueSettingsConfig.getValue());
-      searchQueueUpperBound = new Config<>("upper-bound", searchQueueConfig.getValue(), 3000, Integer.class);
-      searchQueueLowerBound = new Config<>("lower-bound", searchQueueConfig.getValue(), 500, Integer.class);
+      searchQueueUpperBound = new Config<>("upper-bound", searchQueueConfig.getValue(),
+          3000, (s) -> (s >= 0), Integer.class);
+      searchQueueLowerBound = new Config<>("lower-bound", searchQueueConfig.getValue(),
+          500, (s) -> (s >= 0), Integer.class);
     }
 
     @Override
@@ -81,8 +89,10 @@ public class QueueActionConfig {
 
     public WriteQueueConfig(NestedConfig queueSettingsConfig) {
       NestedConfig writeQueueConfig = new NestedConfig("write", queueSettingsConfig.getValue());
-      writeQueueUpperBound = new Config<>("upper-bound", writeQueueConfig.getValue(), 1000, Integer.class);
-      writeQueueLowerBound = new Config<>("lower-bound", writeQueueConfig.getValue(), 50, Integer.class);
+      writeQueueUpperBound = new Config<>("upper-bound", writeQueueConfig.getValue(),
+          1000, (s) -> (s >= 0), Integer.class);
+      writeQueueLowerBound = new Config<>("lower-bound", writeQueueConfig.getValue(),
+          50, (s) -> (s >= 0), Integer.class);
     }
 
     @Override

@@ -79,4 +79,10 @@ public class ConfigTest {
     assertEquals(0.15, testKey.getValue(), 0.000001); // In case of type mismatch, we use default value
   }
 
+  @Test
+  public void testInvalidConfig() {
+    Config<Integer> test = new Config<>("test-key-int", testConfig.getValue(), 15, (v) -> (v >= 10), Integer.class);
+    assertEquals(15, (int) test.getValue());
+  }
+
 }
