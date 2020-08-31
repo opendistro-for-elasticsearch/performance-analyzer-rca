@@ -158,9 +158,9 @@ class ConfJsonWrapper {
     this.networkQueueLength = networkQueueLength;
     this.perVertexBufferLength = perVertexBufferLength;
     this.rcaConfigSettings = rcaConfigSettings;
-    this.mutedRcaList = ImmutableList.copyOf(mutedRcas);
-    this.mutedDeciderList = ImmutableList.copyOf(mutedDeciders);
-    this.mutedActionList = ImmutableList.copyOf(mutedActions);
+    this.mutedRcaList = mutedRcas == null ? ImmutableList.of() : ImmutableList.copyOf(mutedRcas);
+    this.mutedDeciderList = mutedDeciders == null ? ImmutableList.of() : ImmutableList.copyOf(mutedDeciders);
+    this.mutedActionList = mutedActions == null ? ImmutableList.of() : ImmutableList.copyOf(mutedActions);
     this.deciderConfigSettings = deciderConfigSettings;
     this.actionConfigSettings = actionConfigSettings;
   }
