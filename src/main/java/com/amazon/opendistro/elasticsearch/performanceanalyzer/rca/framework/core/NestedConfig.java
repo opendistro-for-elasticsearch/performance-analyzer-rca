@@ -30,8 +30,12 @@ public class NestedConfig {
     this.key = key;
     this.value = null;
     if (parentConfig != null) {
-      //noinspection unchecked
-      value = (Map<String, Object>) parentConfig.get(key);
+      try {
+        //noinspection unchecked
+        value = (Map<String, Object>) parentConfig.get(key);
+      } catch (ClassCastException e) {
+        LOG.error("rca.conf contains invalid value for key: [{}], trace : [{}]", key, e.getMessage());
+      }
     }
   }
 

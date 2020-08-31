@@ -42,7 +42,7 @@ public class NestedConfigTest {
                       + "\"lower-bound\": 0.01 "
                   + "} "
               + "} "
-        + "}"
+          + "}"
       + "}";
 
   private final RcaConf conf;
@@ -93,11 +93,12 @@ public class NestedConfigTest {
     assertNull(testConfig.getValue());
   }
 
-  @Test(expected = ClassCastException.class)
+  @Test
   public void testNonNestedConfigValue() {
     Map<String, Object> actionConfigSettings = conf.getActionConfigSettings();
     NestedConfig cacheSettings = new NestedConfig("cache-settings", actionConfigSettings);
     NestedConfig shardRequestConfig = new NestedConfig("shard-request", cacheSettings.getValue());
     NestedConfig shardRequestUpperBound = new NestedConfig("upper-bound", shardRequestConfig.getValue());
+    assertNull(shardRequestUpperBound.getValue());
   }
 }

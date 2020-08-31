@@ -33,7 +33,7 @@ public class Config<T> {
       try {
         value = clazz.cast(parentConfig.getOrDefault(key, defaultValue));
       } catch (ClassCastException e) {
-        LOG.error("rca.conf contains value in invalid format, trace : {}", e.getMessage());
+        LOG.error("rca.conf contains invalid value for key: [{}], trace : [{}]", key, e.getMessage());
       }
     }
   }
