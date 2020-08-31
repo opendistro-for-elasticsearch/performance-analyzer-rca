@@ -100,39 +100,101 @@ public class ModifyQueueCapacityActionTest {
     assertEquals(Impact.NO_IMPACT, impact.get(DISK));
   }
 
-//  @Test
-//  public void testBounds() {
-//    // TODO: Move to work with test rcaConf when bounds moved to config
-//    NodeKey node1 = new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
-//    dummyCache.put(node1, ResourceUtil.SEARCH_QUEUE_CAPACITY, 3000);
-//    ModifyQueueCapacityAction.Builder builder =
-//        ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.SEARCH_THREADPOOL, testAppContext, rcaConf);
-//    ModifyQueueCapacityAction searchQueueIncrease = builder.increase(true).build();
-//    assertEquals(searchQueueIncrease.getDesiredCapacity(), searchQueueIncrease.getCurrentCapacity());
-//    assertFalse(searchQueueIncrease.isActionable());
-//    assertNoImpact(node1, searchQueueIncrease);
-//
-//    dummyCache.put(node1, ResourceUtil.SEARCH_QUEUE_CAPACITY, 1000);
-//    builder = ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.SEARCH_THREADPOOL, testAppContext, rcaConf);
-//    ModifyQueueCapacityAction searchQueueDecrease = builder.increase(false).build();
-//    assertEquals(searchQueueDecrease.getDesiredCapacity(), searchQueueDecrease.getCurrentCapacity());
-//    assertFalse(searchQueueDecrease.isActionable());
-//    assertNoImpact(node1, searchQueueDecrease);
-//
-//    dummyCache.put(node1, ResourceUtil.WRITE_QUEUE_CAPACITY, 1000);
-//    builder = ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.WRITE_THREADPOOL, testAppContext, rcaConf);
-//    ModifyQueueCapacityAction writeQueueIncrease = builder.increase(true).build();
-//    assertEquals(writeQueueIncrease.getDesiredCapacity(), writeQueueIncrease.getCurrentCapacity());
-//    assertFalse(writeQueueIncrease.isActionable());
-//    assertNoImpact(node1, writeQueueIncrease);
-//
-//    dummyCache.put(node1, ResourceUtil.WRITE_QUEUE_CAPACITY, 100);
-//    builder = ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.WRITE_THREADPOOL, testAppContext, rcaConf);
-//    ModifyQueueCapacityAction writeQueueDecrease = builder.increase(false).build();
-//    assertEquals(writeQueueDecrease.getDesiredCapacity(), writeQueueDecrease.getCurrentCapacity());
-//    assertFalse(writeQueueDecrease.isActionable());
-//    assertNoImpact(node1, writeQueueDecrease);
-//  }
+  @Test
+  public void testBounds() throws Exception {
+    final String configStr =
+      "{"
+          + "\"action-config-settings\": { "
+              + "\"queue-settings\": { "
+                  + "\"search\": { "
+                      + "\"upper-bound\": 500, "
+                      + "\"lower-bound\": 100 "
+                  + "}, "
+                  + "\"write\": { "
+                      + "\"upper-bound\": 50, "
+                      + "\"lower-bound\": 10 "
+                  + "} "
+              + "} "
+          + "} "
+      + "}";
+    RcaConf conf = new RcaConf();
+    conf.readConfigFromString(configStr);
+
+    // Test Upper Bound
+    NodeKey node1 = new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
+    dummyCache.put(node1, ResourceUtil.SEARCH_QUEUE_CAPACITY, 500);
+    ModifyQueueCapacityAction searchQueueAction = ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.SEARCH_THREADPOOL,
+        testAppContext, conf).increase(true).build();
+    assertEquals(500, searchQueueAction.getDesiredCapacity());
+    assertFalse(searchQueueAction.isActionable());
+
+    dummyCache.put(node1, ResourceUtil.WRITE_QUEUE_CAPACITY, 50);
+    ModifyQueueCapacityAction writeQueueAction = ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.WRITE_THREADPOOL,
+        testAppContext, conf).increase(true).build();
+    assertEquals(50, writeQueueAction.getDesiredCapacity());
+    assertFalse(writeQueueAction.isActionable());
+
+    // Test Lower Bound
+    node1 = new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
+    dummyCache.put(node1, ResourceUtil.SEARCH_QUEUE_CAPACITY, 100);
+    searchQueueAction = ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.SEARCH_THREADPOOL,
+        testAppContext, conf).increase(false).build();
+    assertEquals(100, searchQueueAction.getDesiredCapacity());
+    assertFalse(searchQueueAction.isActionable());
+
+    dummyCache.put(node1, ResourceUtil.WRITE_QUEUE_CAPACITY, 10);
+    writeQueueAction = ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.WRITE_THREADPOOL,
+        testAppContext, conf).increase(false).build();
+    assertEquals(10, writeQueueAction.getDesiredCapacity());
+    assertFalse(writeQueueAction.isActionable());
+  }
+
+  @Test
+  public void testMinMaxOverrides() throws Exception {
+    final String configStr =
+      "{"
+          + "\"action-config-settings\": { "
+              + "\"queue-settings\": { "
+                  + "\"search\": { "
+                      + "\"upper-bound\": 500, "
+                      + "\"lower-bound\": 100 "
+                  + "}, "
+                  + "\"write\": { "
+                      + "\"upper-bound\": 50, "
+                      + "\"lower-bound\": 10 "
+                  + "} "
+              + "} "
+          + "} "
+      + "}";
+    RcaConf conf = new RcaConf();
+    conf.readConfigFromString(configStr);
+
+    NodeKey node1 = new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
+    dummyCache.put(node1, ResourceUtil.SEARCH_QUEUE_CAPACITY, 200);
+    dummyCache.put(node1, ResourceUtil.WRITE_QUEUE_CAPACITY, 20);
+
+    // Test Max Override
+    ModifyQueueCapacityAction searchQueueAction = ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.SEARCH_THREADPOOL,
+        testAppContext, conf).setDesiredCapacityToMax().build();
+    assertEquals(500, searchQueueAction.getDesiredCapacity());
+    assertTrue(searchQueueAction.isActionable());
+
+    ModifyQueueCapacityAction writeQueueAction = ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.WRITE_THREADPOOL,
+        testAppContext, conf).setDesiredCapacityToMax().build();
+    assertEquals(50, writeQueueAction.getDesiredCapacity());
+    assertTrue(writeQueueAction.isActionable());
+
+    // Test Min Override
+    searchQueueAction = ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.SEARCH_THREADPOOL,
+        testAppContext, conf).setDesiredCapacityToMin().build();
+    assertEquals(100, searchQueueAction.getDesiredCapacity());
+    assertTrue(searchQueueAction.isActionable());
+
+    writeQueueAction = ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.WRITE_THREADPOOL,
+        testAppContext, conf).setDesiredCapacityToMin().build();
+    assertEquals(10, writeQueueAction.getDesiredCapacity());
+    assertTrue(writeQueueAction.isActionable());
+  }
 
   @Test
   public void testMutedAction() {

@@ -181,11 +181,6 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
       return this;
     }
 
-    public Builder desiredCapacity(int desiredCapacity) {
-      this.desiredCapacity = desiredCapacity;
-      return this;
-    }
-
     public Builder setDesiredCapacityToMin() {
       this.desiredCapacity = this.lowerBound;
       return this;

@@ -25,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
+import com.google.common.annotations.VisibleForTesting;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -134,6 +135,11 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
     return cacheType;
   }
 
+  @VisibleForTesting
+  public static long getThresholdInBytes(double threshold, long heapSize) {
+    return (long) (threshold * heapSize);
+  }
+
   public static final class Builder {
     public static final long DEFAULT_COOL_OFF_PERIOD_IN_MILLIS = 300 * 1_000;
     public static final boolean DEFAULT_IS_INCREASE = true;
@@ -180,8 +186,8 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
       double upperBoundThreshold = cacheActionConfig.getThresholdConfig(cacheType).upperBound();
       double lowerBoundThreshold = cacheActionConfig.getThresholdConfig(cacheType).lowerBound();
       if (heapMaxSizeInBytes != null) {
-        this.upperBoundInBytes = (long) (upperBoundThreshold * heapMaxSizeInBytes);
-        this.lowerBoundInBytes = (long) (lowerBoundThreshold * heapMaxSizeInBytes);
+        this.upperBoundInBytes = getThresholdInBytes(upperBoundThreshold, heapMaxSizeInBytes);
+        this.lowerBoundInBytes = getThresholdInBytes(lowerBoundThreshold, heapMaxSizeInBytes);
       } else {
         // If heapMaxSizeInBytes is null, we return a non-actionable object from build
         this.upperBoundInBytes = 0;
