@@ -71,6 +71,10 @@ public class ConfigTest {
     Config<Integer> testInt = new Config<>("def", testConfig.getValue(), 42, Integer.class);
     assertEquals("def", testInt.getKey());
     assertEquals(42, (int) testInt.getValue());
+
+    Config<String> testWithNull = new Config<>("qwe", null, "test-val", String.class);
+    assertEquals("qwe", testWithNull.getKey());
+    assertEquals("test-val", testWithNull.getValue());
   }
 
   @Test

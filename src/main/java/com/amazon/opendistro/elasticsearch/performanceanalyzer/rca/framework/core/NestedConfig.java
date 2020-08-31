@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
 import java.util.Map;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,7 +27,7 @@ public class NestedConfig {
   private String key;
   private Map<String, Object> value;
 
-  public NestedConfig(String key, Map<String, Object> parentConfig) {
+  public NestedConfig(String key, @Nullable Map<String, Object> parentConfig) {
     this.key = key;
     this.value = null;
     if (parentConfig != null) {
@@ -43,6 +44,7 @@ public class NestedConfig {
     return key;
   }
 
+  @Nullable
   public Map<String, Object> getValue() {
     return value;
   }

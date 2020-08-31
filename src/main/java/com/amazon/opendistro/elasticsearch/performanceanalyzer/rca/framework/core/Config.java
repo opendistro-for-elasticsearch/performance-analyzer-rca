@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.co
 
 import java.util.Map;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,11 +28,11 @@ public class Config<T> {
   private String key;
   private T value;
 
-  public Config(String key, Map<String, Object> parentConfig, T defaultValue, Class<? extends T> clazz) {
+  public Config(String key, @Nullable Map<String, Object> parentConfig, T defaultValue, Class<? extends T> clazz) {
     this(key, parentConfig, defaultValue, (s) -> true, clazz);
   }
 
-  public Config(String key, Map<String, Object> parentConfig, T defaultValue, Predicate<T> validator, Class<? extends T> clazz) {
+  public Config(String key, @Nullable Map<String, Object> parentConfig, T defaultValue, Predicate<T> validator, Class<? extends T> clazz) {
     this.key = key;
     this.value = defaultValue;
     if (parentConfig != null) {

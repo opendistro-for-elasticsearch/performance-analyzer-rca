@@ -55,10 +55,14 @@ public class QueueActionConfigTest {
     RcaConf conf = new RcaConf();
     conf.readConfigFromString(configStr);
     QueueActionConfig queueActionConfig = new QueueActionConfig(conf);
-    assertEquals(3000, (int) queueActionConfig.getThresholdConfig(ResourceEnum.SEARCH_THREADPOOL).upperBound());
-    assertEquals(500, (int) queueActionConfig.getThresholdConfig(ResourceEnum.SEARCH_THREADPOOL).lowerBound());
-    assertEquals(1000, (int) queueActionConfig.getThresholdConfig(ResourceEnum.WRITE_THREADPOOL).upperBound());
-    assertEquals(50, (int) queueActionConfig.getThresholdConfig(ResourceEnum.WRITE_THREADPOOL).lowerBound());
+    assertEquals(QueueActionConfig.DEFAULT_SEARCH_QUEUE_UPPER_BOUND,
+        (int) queueActionConfig.getThresholdConfig(ResourceEnum.SEARCH_THREADPOOL).upperBound());
+    assertEquals(QueueActionConfig.DEFAULT_SEARCH_QUEUE_LOWER_BOUND,
+        (int) queueActionConfig.getThresholdConfig(ResourceEnum.SEARCH_THREADPOOL).lowerBound());
+    assertEquals(QueueActionConfig.DEFAULT_WRITE_QUEUE_UPPER_BOUND,
+        (int) queueActionConfig.getThresholdConfig(ResourceEnum.WRITE_THREADPOOL).upperBound());
+    assertEquals(QueueActionConfig.DEFAULT_WRITE_QUEUE_LOWER_BOUND,
+        (int) queueActionConfig.getThresholdConfig(ResourceEnum.WRITE_THREADPOOL).lowerBound());
   }
 
   @Test
@@ -83,10 +87,14 @@ public class QueueActionConfigTest {
 
     // Invalid values in config, should resolve back to defaults
     QueueActionConfig queueActionConfig = new QueueActionConfig(conf);
-    assertEquals(3000, (int) queueActionConfig.getThresholdConfig(ResourceEnum.SEARCH_THREADPOOL).upperBound());
-    assertEquals(500, (int) queueActionConfig.getThresholdConfig(ResourceEnum.SEARCH_THREADPOOL).lowerBound());
-    assertEquals(1000, (int) queueActionConfig.getThresholdConfig(ResourceEnum.WRITE_THREADPOOL).upperBound());
-    assertEquals(50, (int) queueActionConfig.getThresholdConfig(ResourceEnum.WRITE_THREADPOOL).lowerBound());
+    assertEquals(QueueActionConfig.DEFAULT_SEARCH_QUEUE_UPPER_BOUND,
+        (int) queueActionConfig.getThresholdConfig(ResourceEnum.SEARCH_THREADPOOL).upperBound());
+    assertEquals(QueueActionConfig.DEFAULT_SEARCH_QUEUE_LOWER_BOUND,
+        (int) queueActionConfig.getThresholdConfig(ResourceEnum.SEARCH_THREADPOOL).lowerBound());
+    assertEquals(QueueActionConfig.DEFAULT_WRITE_QUEUE_UPPER_BOUND,
+        (int) queueActionConfig.getThresholdConfig(ResourceEnum.WRITE_THREADPOOL).upperBound());
+    assertEquals(QueueActionConfig.DEFAULT_WRITE_QUEUE_LOWER_BOUND,
+        (int) queueActionConfig.getThresholdConfig(ResourceEnum.WRITE_THREADPOOL).lowerBound());
   }
 
   @Test(expected = IllegalArgumentException.class)

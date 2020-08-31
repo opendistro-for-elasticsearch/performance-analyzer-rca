@@ -53,6 +53,11 @@ public class QueueActionConfig {
   private WriteQueueConfig writeQueueConfig;
   private Map<ResourceEnum, ThresholdConfig<Integer>> thresholdConfigMap;
 
+  public static final int DEFAULT_SEARCH_QUEUE_UPPER_BOUND = 3000;
+  public static final int DEFAULT_SEARCH_QUEUE_LOWER_BOUND = 500;
+  public static final int DEFAULT_WRITE_QUEUE_UPPER_BOUND = 1000;
+  public static final int DEFAULT_WRITE_QUEUE_LOWER_BOUND = 50;
+
   public QueueActionConfig(RcaConf conf) {
     Map<String, Object> actionConfig = conf.getActionConfigSettings();
     queueSettingsConfig = new NestedConfig("queue-settings", actionConfig);
@@ -85,9 +90,9 @@ public class QueueActionConfig {
     public SearchQueueConfig(NestedConfig queueSettingsConfig) {
       NestedConfig searchQueueConfig = new NestedConfig("search", queueSettingsConfig.getValue());
       searchQueueUpperBound = new Config<>("upper-bound", searchQueueConfig.getValue(),
-          3000, (s) -> (s >= 0), Integer.class);
+          DEFAULT_SEARCH_QUEUE_UPPER_BOUND, (s) -> (s >= 0), Integer.class);
       searchQueueLowerBound = new Config<>("lower-bound", searchQueueConfig.getValue(),
-          500, (s) -> (s >= 0), Integer.class);
+          DEFAULT_SEARCH_QUEUE_LOWER_BOUND, (s) -> (s >= 0), Integer.class);
     }
 
     @Override
@@ -109,9 +114,9 @@ public class QueueActionConfig {
     public WriteQueueConfig(NestedConfig queueSettingsConfig) {
       NestedConfig writeQueueConfig = new NestedConfig("write", queueSettingsConfig.getValue());
       writeQueueUpperBound = new Config<>("upper-bound", writeQueueConfig.getValue(),
-          1000, (s) -> (s >= 0), Integer.class);
+          DEFAULT_WRITE_QUEUE_UPPER_BOUND, (s) -> (s >= 0), Integer.class);
       writeQueueLowerBound = new Config<>("lower-bound", writeQueueConfig.getValue(),
-          50, (s) -> (s >= 0), Integer.class);
+          DEFAULT_WRITE_QUEUE_LOWER_BOUND, (s) -> (s >= 0), Integer.class);
     }
 
     @Override

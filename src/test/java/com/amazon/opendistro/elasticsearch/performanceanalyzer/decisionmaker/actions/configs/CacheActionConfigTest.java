@@ -55,10 +55,14 @@ public class CacheActionConfigTest {
     RcaConf conf = new RcaConf();
     conf.readConfigFromString(configStr);
     CacheActionConfig cacheActionConfig = new CacheActionConfig(conf);
-    assertEquals(0.4, cacheActionConfig.getThresholdConfig(ResourceEnum.FIELD_DATA_CACHE).upperBound(), 0.00001);
-    assertEquals(0.1, cacheActionConfig.getThresholdConfig(ResourceEnum.FIELD_DATA_CACHE).lowerBound(), 0.00001);
-    assertEquals(0.05, cacheActionConfig.getThresholdConfig(ResourceEnum.SHARD_REQUEST_CACHE).upperBound(), 0.00001);
-    assertEquals(0.01, cacheActionConfig.getThresholdConfig(ResourceEnum.SHARD_REQUEST_CACHE).lowerBound(), 0.00001);
+    assertEquals(CacheActionConfig.DEFAULT_FIELDDATA_CACHE_UPPER_BOUND,
+        cacheActionConfig.getThresholdConfig(ResourceEnum.FIELD_DATA_CACHE).upperBound(), 0.00001);
+    assertEquals(CacheActionConfig.DEFAULT_FIELDDATA_CACHE_LOWER_BOUND,
+        cacheActionConfig.getThresholdConfig(ResourceEnum.FIELD_DATA_CACHE).lowerBound(), 0.00001);
+    assertEquals(CacheActionConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND,
+        cacheActionConfig.getThresholdConfig(ResourceEnum.SHARD_REQUEST_CACHE).upperBound(), 0.00001);
+    assertEquals(CacheActionConfig.DEFAULT_SHARD_REQUEST_CACHE_LOWER_BOUND,
+        cacheActionConfig.getThresholdConfig(ResourceEnum.SHARD_REQUEST_CACHE).lowerBound(), 0.00001);
   }
 
   @Test
@@ -83,10 +87,14 @@ public class CacheActionConfigTest {
 
     // Invalid values in config, should resolve back to defaults
     CacheActionConfig cacheActionConfig = new CacheActionConfig(conf);
-    assertEquals(0.4, cacheActionConfig.getThresholdConfig(ResourceEnum.FIELD_DATA_CACHE).upperBound(), 0.00001);
-    assertEquals(0.1, cacheActionConfig.getThresholdConfig(ResourceEnum.FIELD_DATA_CACHE).lowerBound(), 0.00001);
-    assertEquals(0.05, cacheActionConfig.getThresholdConfig(ResourceEnum.SHARD_REQUEST_CACHE).upperBound(), 0.00001);
-    assertEquals(0.01, cacheActionConfig.getThresholdConfig(ResourceEnum.SHARD_REQUEST_CACHE).lowerBound(), 0.00001);
+    assertEquals(CacheActionConfig.DEFAULT_FIELDDATA_CACHE_UPPER_BOUND,
+        cacheActionConfig.getThresholdConfig(ResourceEnum.FIELD_DATA_CACHE).upperBound(), 0.00001);
+    assertEquals(CacheActionConfig.DEFAULT_FIELDDATA_CACHE_LOWER_BOUND,
+        cacheActionConfig.getThresholdConfig(ResourceEnum.FIELD_DATA_CACHE).lowerBound(), 0.00001);
+    assertEquals(CacheActionConfig.DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND,
+        cacheActionConfig.getThresholdConfig(ResourceEnum.SHARD_REQUEST_CACHE).upperBound(), 0.00001);
+    assertEquals(CacheActionConfig.DEFAULT_SHARD_REQUEST_CACHE_LOWER_BOUND,
+        cacheActionConfig.getThresholdConfig(ResourceEnum.SHARD_REQUEST_CACHE).lowerBound(), 0.00001);
   }
 
   @Test(expected = IllegalArgumentException.class)

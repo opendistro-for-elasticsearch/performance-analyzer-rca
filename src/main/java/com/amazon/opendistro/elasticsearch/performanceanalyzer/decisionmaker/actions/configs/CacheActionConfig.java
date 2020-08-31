@@ -54,6 +54,11 @@ public class CacheActionConfig {
   private ShardRequestCacheConfig shardRequestCacheConfig;
   private Map<ResourceEnum, ThresholdConfig<Double>> thresholdConfigMap;
 
+  public static final Double DEFAULT_FIELDDATA_CACHE_UPPER_BOUND = 0.4;
+  public static final Double DEFAULT_FIELDDATA_CACHE_LOWER_BOUND = 0.1;
+  public static final Double DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND = 0.05;
+  public static final Double DEFAULT_SHARD_REQUEST_CACHE_LOWER_BOUND = 0.01;
+
   public CacheActionConfig(RcaConf conf) {
     Map<String, Object> actionConfig = conf.getActionConfigSettings();
     cacheSettingsConfig = new NestedConfig("cache-settings", actionConfig);
@@ -86,9 +91,9 @@ public class CacheActionConfig {
     public FieldDataCacheConfig(NestedConfig cacheSettingsConfig) {
       NestedConfig fieldDataCacheConfig = new NestedConfig("fielddata", cacheSettingsConfig.getValue());
       fieldDataCacheUpperBound = new Config<>("upper-bound", fieldDataCacheConfig.getValue(),
-          0.4, (s) -> (s > 0), Double.class);
+          DEFAULT_FIELDDATA_CACHE_UPPER_BOUND, (s) -> (s > 0), Double.class);
       fieldDataCacheLowerBound = new Config<>("lower-bound", fieldDataCacheConfig.getValue(),
-          0.1, (s) -> (s > 0), Double.class);
+          DEFAULT_FIELDDATA_CACHE_LOWER_BOUND, (s) -> (s > 0), Double.class);
     }
 
     @Override
@@ -110,9 +115,9 @@ public class CacheActionConfig {
     public ShardRequestCacheConfig(NestedConfig cacheSettingsConfig) {
       NestedConfig shardRequestCacheConfig = new NestedConfig("shard-request", cacheSettingsConfig.getValue());
       shardRequestCacheUpperBound = new Config<>("upper-bound", shardRequestCacheConfig.getValue(),
-          0.05, (s) -> (s > 0), Double.class);
+          DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND, (s) -> (s > 0), Double.class);
       shardRequestCacheLowerBound = new Config<>("lower-bound", shardRequestCacheConfig.getValue(),
-          0.01, (s) -> (s > 0), Double.class);
+          DEFAULT_SHARD_REQUEST_CACHE_LOWER_BOUND, (s) -> (s > 0), Double.class);
     }
 
     @Override
