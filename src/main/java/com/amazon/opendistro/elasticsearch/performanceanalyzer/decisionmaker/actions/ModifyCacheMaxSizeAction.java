@@ -222,11 +222,6 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
       return this;
     }
 
-    public Builder desiredCacheMaxSize(long desiredCacheMaxSizeInBytes) {
-      this.desiredCacheMaxSizeInBytes = desiredCacheMaxSizeInBytes;
-      return this;
-    }
-
     public Builder setDesiredCacheMaxSizeToMin() {
       this.desiredCacheMaxSizeInBytes = lowerBoundInBytes;
       return this;
