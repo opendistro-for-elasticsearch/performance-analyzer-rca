@@ -25,6 +25,26 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Defines config for cache related actions.
+ * <p>
+ * Configs are expected in the following json format:
+ * {
+ *   "action-config-settings": {
+ *     // Cache Max Size bounds are expressed as %age of JVM heap size
+ *     "cache-settings": {
+ *       "fielddata": {
+ *         "upper-bound": 0.4,
+ *         "lower-bound": 0.1
+ *       },
+ *       "shard-request": {
+ *         "upper-bound": 0.05,
+ *         "lower-bound": 0.01
+ *       }
+ *     }
+ *   }
+ * }
+ */
 public class CacheActionConfig {
 
   private static final Logger LOG = LogManager.getLogger(CacheActionConfig.class);

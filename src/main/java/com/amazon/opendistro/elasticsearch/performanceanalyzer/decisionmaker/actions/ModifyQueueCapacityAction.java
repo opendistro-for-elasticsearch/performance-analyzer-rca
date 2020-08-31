@@ -155,22 +155,6 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
       this.lowerBound = queueActionConfig.getThresholdConfig(threadPool).lowerBound();
     }
 
-//    private void setDefaultBounds(ResourceEnum threadPool) {
-//      // TODO: Move configuration values to rca.conf
-//      switch (threadPool) {
-//        case WRITE_THREADPOOL:
-//          this.lowerBound = 100;
-//          this.upperBound = 1000;
-//          break;
-//        case SEARCH_THREADPOOL:
-//          this.lowerBound = 1000;
-//          this.upperBound = 3000;
-//          break;
-//        default:
-//          assert false : "unrecognized threadpool type: " + threadPool.name();
-//      }
-//    }
-
     public Builder coolOffPeriod(long coolOffPeriodInMillis) {
       this.coolOffPeriodInMillis = coolOffPeriodInMillis;
       return this;

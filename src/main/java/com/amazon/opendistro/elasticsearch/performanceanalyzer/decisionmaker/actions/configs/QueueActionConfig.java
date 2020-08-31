@@ -25,6 +25,25 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Defines config for threadpool queue related actions
+ * <p>
+ * Configs are expected in the following json format:
+ * {
+ *   "action-config-settings": {
+ *     // Queue Capacity bounds are expressed as absolute queue size
+ *     "queue-settings": {
+ *       "search": {
+ *         "upper-bound": 3000,
+ *         "lower-bound": 1000
+ *       },
+ *       "write": {
+ *         "upper-bound": 1000,
+ *         "lower-bound": 50
+ *       }
+ *     }
+ * }
+ */
 public class QueueActionConfig {
 
   private static final Logger LOG = LogManager.getLogger(QueueActionConfig.class);
