@@ -16,12 +16,9 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig.getDefaultCachePriority;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig.getDefaultFieldDataCacheUpperBound;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig.getDefaultShardRequestCacheUpperBound;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig.getDefaultWorkloadPriority;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
@@ -113,14 +110,6 @@ public abstract class Decider extends NonLeafNode<Decision> {
   public void readRcaConf(RcaConf conf) {
     rcaConf = conf;
     configObj = rcaConf.getDeciderConfig();
-  }
-
-  public double getFieldDataCacheUpperBound() {
-    return configObj != null ? configObj.getFieldDataCacheUpperBound() : getDefaultFieldDataCacheUpperBound();
-  }
-
-  public double getShardRequestCacheUpperBound() {
-    return configObj != null ? configObj.getShardRequestCacheUpperBound() : getDefaultShardRequestCacheUpperBound();
   }
 
   public List<String> getWorkLoadPriority() {
