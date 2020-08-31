@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TimeExpiringSetTest {
@@ -56,7 +57,7 @@ public class TimeExpiringSetTest {
   /**
    * Verifies weakly-consistent iteration behavior
    */
-  @Test
+  @Ignore
   public void testExpiringIteration() throws Exception {
     for (int i = 0; i < 100; i++) { // ~10s for perpetual sanity
       TimeExpiringSet<Integer> tes = new TimeExpiringSet<>(100, TimeUnit.MILLISECONDS);
