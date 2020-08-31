@@ -27,8 +27,8 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Defines config for cache related actions.
- * <p>
- * Configs are expected in the following json format:
+ *
+ * <p>Configs are expected in the following json format:
  * {
  *   "action-config-settings": {
  *     // Cache Max Size bounds are expressed as %age of JVM heap size

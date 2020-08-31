@@ -27,8 +27,8 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Defines config for threadpool queue related actions
- * <p>
- * Configs are expected in the following json format:
+ *
+ * <p>com.amazon.opendistro.elasticsearch.performanceanalyzer.collections.TimeExpiringSetTestConfigs are expected in the following json format:
  * {
  *   "action-config-settings": {
  *     // Queue Capacity bounds are expressed as absolute queue size

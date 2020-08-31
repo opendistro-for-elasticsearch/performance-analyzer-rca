@@ -88,8 +88,8 @@ public class RcaConf {
 
   /**
    * Converts json config passed as String to a Java Map.
-   * <p>
-   * This method should only be called from Tests to parse test configs
+   *
+   * <p>This method should only be called from Tests to parse test configs
    */
   @VisibleForTesting
   public void readConfigFromString(String configJson) throws JsonProcessingException {
