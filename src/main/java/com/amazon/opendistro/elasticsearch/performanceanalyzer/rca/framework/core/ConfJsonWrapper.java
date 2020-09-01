@@ -22,8 +22,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 // TODO: There should be a validation for the expected fields.
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -43,6 +41,7 @@ class ConfJsonWrapper {
   public static final String MUTED_DECIDERS = "muted-deciders";
   public static final String MUTED_ACTIONS = "muted-actions";
   public static final String DECIDER_CONFIG_SETTINGS = "decider-config-settings";
+  public static final String ACTION_CONFIG_SETTINGS = "action-config-settings";
 
   private final String rcaStoreLoc;
   private final String thresholdStoreLoc;
@@ -56,10 +55,11 @@ class ConfJsonWrapper {
   private final int networkQueueLength;
   private final int perVertexBufferLength;
   private final Map<String, Object> rcaConfigSettings;
-  private final Map<String, Object> deciderConfigSettings;
   private final List<String> mutedRcaList;
   private final List<String> mutedDeciderList;
   private final List<String> mutedActionList;
+  private final Map<String, Object> deciderConfigSettings;
+  private final Map<String, Object> actionConfigSettings;
 
   String getRcaStoreLoc() {
     return rcaStoreLoc;
@@ -125,6 +125,10 @@ class ConfJsonWrapper {
     return deciderConfigSettings;
   }
 
+  public Map<String, Object> getActionConfigSettings() {
+    return actionConfigSettings;
+  }
+
   ConfJsonWrapper(
       @JsonProperty(RCA_STORE_LOC) String rcaStoreLoc,
       @JsonProperty(THRESHOLD_STORE_LOC) String thresholdStoreLoc,
@@ -140,7 +144,8 @@ class ConfJsonWrapper {
       @JsonProperty(MUTED_RCAS) List<String> mutedRcas,
       @JsonProperty(MUTED_DECIDERS) List<String> mutedDeciders,
       @JsonProperty(MUTED_ACTIONS) List<String> mutedActions,
-      @JsonProperty(DECIDER_CONFIG_SETTINGS) Map<String, Object> deciderConfigSettings) {
+      @JsonProperty(DECIDER_CONFIG_SETTINGS) Map<String, Object> deciderConfigSettings,
+      @JsonProperty(ACTION_CONFIG_SETTINGS) Map<String, Object> actionConfigSettings) {
     this.creationTime = System.currentTimeMillis();
     this.rcaStoreLoc = rcaStoreLoc;
     this.thresholdStoreLoc = thresholdStoreLoc;
@@ -153,9 +158,10 @@ class ConfJsonWrapper {
     this.networkQueueLength = networkQueueLength;
     this.perVertexBufferLength = perVertexBufferLength;
     this.rcaConfigSettings = rcaConfigSettings;
-    this.mutedRcaList = ImmutableList.copyOf(mutedRcas);
-    this.mutedDeciderList = ImmutableList.copyOf(mutedDeciders);
-    this.mutedActionList = ImmutableList.copyOf(mutedActions);
+    this.mutedRcaList = mutedRcas == null ? ImmutableList.of() : ImmutableList.copyOf(mutedRcas);
+    this.mutedDeciderList = mutedDeciders == null ? ImmutableList.of() : ImmutableList.copyOf(mutedDeciders);
+    this.mutedActionList = mutedActions == null ? ImmutableList.of() : ImmutableList.copyOf(mutedActions);
     this.deciderConfigSettings = deciderConfigSettings;
+    this.actionConfigSettings = actionConfigSettings;
   }
 }

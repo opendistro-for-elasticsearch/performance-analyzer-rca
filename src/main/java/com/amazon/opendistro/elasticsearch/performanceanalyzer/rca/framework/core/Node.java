@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public abstract class Node<T extends GenericFlowUnit> {
   // TODO: Make bounds explicit
@@ -168,6 +169,7 @@ public abstract class Node<T extends GenericFlowUnit> {
     return name();
   }
 
+  @NonNull
   public List<T> getFlowUnits() {
     List<T> allFlowUnits = flowUnits == null ? new ArrayList<>() : new ArrayList<>(flowUnits);
 

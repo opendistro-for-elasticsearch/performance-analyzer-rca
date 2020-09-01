@@ -168,6 +168,7 @@ public class CacheHealthDeciderTest {
     CacheHealthDecider decider =
         new CacheHealthDecider(5, 12, fieldDataCacheClusterRca, shardRequestCacheClusterRca);
     decider.setAppContext(appContext);
+    decider.readRcaConf(rcaConf);
 
     // Since deciderFrequency is 12, the first 11 invocations return empty decision
     for (int i = 0; i < 11; i++) {
@@ -175,7 +176,6 @@ public class CacheHealthDeciderTest {
       assertTrue(decision.isEmpty());
     }
 
-    decider.readRcaConf(rcaConf);
     Decision decision = decider.operate();
     // Only one resource will be tuned at a time
     assertEquals(3, decision.getActions().size());
