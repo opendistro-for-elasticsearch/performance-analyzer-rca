@@ -364,35 +364,35 @@ class SQLitePersistor extends PersistorBase {
         String capitalizedFieldName = capitalize(field.getName());
         for (String prefix: GETTER_PREFIXES) {
           String key = prefix + capitalizedFieldName;
+          Method method;
           try {
-            Method method = clz.getDeclaredMethod(key);
-            if (method.getReturnType() != field.getType()) {
-              throw new IllegalStateException("The types of the getter '" + key + "' and field '" + field.getName() + "' don't match.");
-            }
-            checkPublic(method);
-            pair.getter = method;
-            break;
-          } catch (NoSuchMethodException e) {
+            method = clz.getDeclaredMethod(key);
+          } catch (NoSuchMethodException nom) {
+            continue;
           }
+          if (method.getReturnType() != field.getType()) {
+            StringBuilder sb = new StringBuilder("The return type of the getter '");
+            sb.append(key)
+                .append("' (")
+                .append(method.getReturnType())
+                .append(") and field '")
+                .append(field.getName())
+                .append("' (")
+                .append(field.getType())
+                .append(") don't match.");
+            throw new NoSuchMethodException(sb.toString());
+          }
+          checkPublic(method);
+          pair.getter = method;
+          break;
         }
         for (String prefix: SETTER_PREFIXES) {
           String key = prefix + capitalizedFieldName;
           try {
+            // This line will throw if no method with the name exists or if a method with such name exists
+            // but the method argument types are not the same. Remember, int and Integer are not the same
+            // types.
             Method method = clz.getDeclaredMethod(key, field.getType());
-            Class<?> setterParamType = method.getParameterTypes()[0];
-            if (setterParamType != field.getType()) {
-              StringBuilder sb = new StringBuilder("The types of the setter '");
-              sb.append(key)
-                  .append("' (")
-                  .append(setterParamType)
-                  .append(") and field '")
-                  .append(field.getName())
-                  .append("' (")
-                  .append(field.getType())
-                  .append(") don't match.");
-
-              throw new IllegalStateException(sb.toString());
-            }
             checkPublic(method);
             pair.setter = method;
             break;

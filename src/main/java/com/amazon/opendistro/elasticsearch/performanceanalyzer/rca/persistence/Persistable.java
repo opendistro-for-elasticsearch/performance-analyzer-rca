@@ -87,7 +87,10 @@ public interface Persistable {
    *    The accepted types are boolean, byte, char, short, int, long, float, and double and their Boxed counterparts.
    *    A Column can be marked as @RefColumn if the class Field is an user defined Java Class or a collection of the same.
    * - The annotated Fields should have a 'getter' and a 'setter'. getters are expected to be named as 'get' or 'is'
-   *     prepended to the _capitalized_ fieldName.
+   *     prepended to the _capitalized_ fieldName. And the setters are expected to be named 'set' and the capitalized
+   *     field name. The type of the field should match the type of the getter's return type or the setter's argument
+   *     type. Remember, int and Integer are two different types. Therefore, if the field is of type 'int' and your
+   *     'getter' returns a value of type Integer, you will still get NoSuchMethodException.
    * - The annotated fields and the getter/setters should be declared in the Object and not in a Super class of it.
    * @param object The Object that needs to be persisted.
    * @param <T> The type of the Object.
