@@ -72,9 +72,13 @@ public class MetricsDB implements Removable {
 
   private long windowStartTime;
 
-  public String getDBFilePath() {
+  private static String getDBFilePath(long windowStartTime) {
     return PluginSettings.instance()
             .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT) + windowStartTime;
+  }
+
+  public String getDBFilePath() {
+    return getDBFilePath(windowStartTime);
   }
 
   public MetricsDB(long windowStartTime) throws Exception {
@@ -93,8 +97,7 @@ public class MetricsDB implements Removable {
    * @throws Exception if the metricsdb file does not exist or is invalid
    */
   public static MetricsDB fetchExisting(long windowStartTime) throws Exception {
-    String filePath = PluginSettings.instance()
-            .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT) + windowStartTime;
+    String filePath = getDBFilePath(windowStartTime);
     if (!(new File(filePath)).exists()) {
       throw new FileNotFoundException(String.format("MetricsDB file %s could not be found.", filePath));
     }
@@ -311,8 +314,7 @@ public class MetricsDB implements Removable {
    * @param windowStartTime the timestamp associated with an existing metricsdb file
    */
   public static void deleteOnDiskFile(long windowStartTime) {
-    String dbFilePath = PluginSettings.instance()
-            .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT) + windowStartTime;
+    String dbFilePath = getDBFilePath(windowStartTime);
     File dbFile = new File(dbFilePath);
     if (!dbFile.delete()) {
       LOG.error(
