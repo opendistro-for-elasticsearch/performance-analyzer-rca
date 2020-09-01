@@ -21,6 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+
+import jdk.internal.org.jline.utils.Log;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,17 +45,12 @@ public class PluginConfig {
         }
     }
 
-    //for test
-    public PluginConfig(PluginConfJsonWrapper conf) {
-        this.conf = conf;
-    }
-
-    public Map<String, String> getKafkaDecisionListenerSettings() {
-        return conf.getKafkaDecisionListenerSettings();
-    }
-
     public String getKafkaDecisionListenerConfig(String key) {
-        return getKafkaDecisionListenerSettings().get(key);
+        return conf.getKafkaDecisionListenerSettings().get(key);
+    }
+
+    public String getKafkaClusterRcaListenerConfig (String key) {
+        return conf.getKafkaClusterRcaListenerSettings().get(key);
     }
 }
 

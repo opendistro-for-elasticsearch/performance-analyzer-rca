@@ -18,9 +18,9 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.cluster_
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.KafkaProducerController;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.Plugin;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config.ConfConsts;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config.PluginConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterSummaryListener;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.JsonObject;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -31,29 +31,25 @@ import org.apache.logging.log4j.Logger;
 public class ClusterSummaryKafkaPublisher extends Plugin implements ClusterSummaryListener {
     private static final Logger LOG = LogManager.getLogger(ClusterSummaryKafkaPublisher.class);
     private static final String NAME = "Kafka_Publisher_Plguin";
-    private PluginConfig pluginConfig = null;
     private KafkaProducer<String, String> kafkaProducerInstance = null;
     private KafkaProducerController controller;
+    private String kafkaTopic;
 
-    public void initialize() {
-        if (controller == null) {
-            controller = KafkaProducerController.getInstance();
-        }
-        pluginConfig = controller.getSingletonPluginConfig();
+    public ClusterSummaryKafkaPublisher(){
+        controller = KafkaProducerController.getInstance();
         kafkaProducerInstance = controller.getSingletonKafkaProducer();
+        kafkaTopic = controller.getSingletonPluginConfig().getKafkaClusterRcaListenerConfig(ConfConsts.CLUSTER_SUMMARY_KAFKA_TOPIC_KEY);
     }
 
     public void sendRcaClusterSummaryToKafkaQueue(String msg) {
         try {
-            msg = handleNonNumericNumbers(msg);
-            String kafkaTopic = pluginConfig.getKafkaDecisionListenerConfig(ConfConsts.CLUSTER_SUMMARY_KAFKA_TOPIC_KEY);
-            ProducerRecord<String, String> record = new ProducerRecord<String, String>(kafkaTopic, msg);
-            LOG.info(String.format("sending record: %s to kafka topic: %s ", msg, kafkaTopic));
+            msg = sanitizeMessage(msg);
+            ProducerRecord<String, String> record = new ProducerRecord<>(kafkaTopic, msg);
+            LOG.debug(String.format("sending record: %s to kafka topic: %s ", msg, kafkaTopic));
             kafkaProducerInstance.send(record);
         } catch (KafkaException e) {
             LOG.error("Exception Found on Kafka: " + e.getMessage());
         }
-        kafkaProducerInstance.close();
     }
 
     public JsonObject getJsonData(ClusterSummary clusterSummay) {
@@ -76,26 +72,32 @@ public class ClusterSummaryKafkaPublisher extends Plugin implements ClusterSumma
 
     @Override
     public void summaryPublished(ClusterSummary clusterSummary) {
-        initialize();
         if (!clusterSummary.summaryMapIsEmpty()) {
-            LOG.info("Reading updates from clusters: [{}]", clusterSummary.getExistingClusterNameList());
             JsonObject jsonObject = getJsonData(clusterSummary);
-            if (jsonObject != null) {
-                String record = jsonObject.toString();
-                LOG.info("get record: {}", record);
-                 sendRcaClusterSummaryToKafkaQueue(record);
-            }
+            String record = jsonObject.toString();
+            LOG.debug("get record: {}", record);
+            sendRcaClusterSummaryToKafkaQueue(record);
         } else {
-            LOG.info("the cluster summary is empty");
+            LOG.error("the cluster summary is empty");
         }
     }
 
-    private String handleNonNumericNumbers(String msg) {
+    private String sanitizeMessage(String msg) {
         return msg.replaceAll("\\bNaN\\b", "null");
     }
 
-    //For testing
+    @VisibleForTesting
     public void setKafkaProducerController(KafkaProducerController testController) {
         controller = testController;
+    }
+
+    @VisibleForTesting
+    public void setKafkaTopic(String topic) {
+        this.kafkaTopic = topic;
+    }
+
+    @VisibleForTesting
+    public void setKafkaProducerInstance(KafkaProducer<String, String> kafkaProducer) {
+        kafkaProducerInstance = kafkaProducer;
     }
 }

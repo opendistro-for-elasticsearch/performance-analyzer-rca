@@ -54,10 +54,8 @@ public class KafkaPublisherTest<T extends GenericSummary> {
     producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
     producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
     kafkaProducer = new KafkaProducer<>(producerProps);
-
     Mockito.when(controller.getSingletonKafkaProducer()).thenReturn(kafkaProducer);
     Mockito.when(controller.getSingletonPluginConfig()).thenReturn(pluginConfig);
-
 
   }
 
@@ -70,24 +68,20 @@ public class KafkaPublisherTest<T extends GenericSummary> {
     testJson.addProperty(testSummaryName, testClusterSummary);
     HotClusterSummary testSummary = Mockito.mock(HotClusterSummary.class);
     Mockito.when(testSummary.toJson()).thenReturn(testJson);
-
     Map<String, HotClusterSummary> summaryMap = new HashMap<>();
     summaryMap.put(testClusterName, testSummary);
-
-    clusterSummaryKafkaPublisher = new ClusterSummaryKafkaPublisher();
     ClusterSummary clusterSummary = Mockito.mock(ClusterSummary.class);
     Mockito.when(clusterSummary.summaryMapIsEmpty()).thenReturn(false);
     Mockito.when(clusterSummary.getSummaryMap()).thenReturn(summaryMap);
-
-    Mockito.when(pluginConfig.getKafkaDecisionListenerConfig(Mockito.any())).thenReturn(testClusterSummaryTopic);
+    clusterSummaryKafkaPublisher = new ClusterSummaryKafkaPublisher();
     clusterSummaryKafkaPublisher.setKafkaProducerController(controller);
+    clusterSummaryKafkaPublisher.setKafkaTopic(testClusterSummaryTopic);
+    clusterSummaryKafkaPublisher.setKafkaProducerInstance(kafkaProducer);
     kafkaConsumer = generateTestConsumer();
     kafkaConsumer.subscribe(Collections.singletonList(testClusterSummaryTopic));
     clusterSummaryKafkaPublisher.summaryPublished(clusterSummary);
-
     ConsumerRecords<String, String> records = kafkaConsumer.poll(10000);
     kafkaConsumer.close();
-    System.out.println("records count1: " + records.count());
     Assert.assertEquals(1, records.count());
     Iterator<ConsumerRecord<String, String>> recordIterator = records.iterator();
     ConsumerRecord<String, String> record = recordIterator.next();
@@ -96,19 +90,20 @@ public class KafkaPublisherTest<T extends GenericSummary> {
 
   @Test
   public void decisionPublisherTest() {
-    decisionKafkaPublisher = new DecisionKafkaPublisher();
     String testSummary = "{\"test summary\"}";
     String actionName = "testAction";
-    Mockito.when(pluginConfig.getKafkaDecisionListenerConfig(Mockito.any())).thenReturn(testActionSummaryTopic);
     Mockito.when(action.summary()).thenReturn(testSummary);
     Mockito.when(action.name()).thenReturn(actionName);
+    decisionKafkaPublisher = new DecisionKafkaPublisher();
+    decisionKafkaPublisher.setKafkaProducerController(controller);
+    decisionKafkaPublisher.setKafkaTopic(testActionSummaryTopic);
+    decisionKafkaPublisher.setKafkaProducerInstance(kafkaProducer);
     kafkaConsumer = generateTestConsumer();
     kafkaConsumer.subscribe(Collections.singletonList(testActionSummaryTopic));
-    decisionKafkaPublisher.setKafkaProducerController(controller);
     decisionKafkaPublisher.actionPublished(action);
     ConsumerRecords<String, String> records = kafkaConsumer.poll(10000);
     kafkaConsumer.close();
-    System.out.println("records count2: " + records.count());
+
     Assert.assertEquals(1, records.count());
     Iterator<ConsumerRecord<String, String>> recordIterator = records.iterator();
     ConsumerRecord<String, String> record = recordIterator.next();

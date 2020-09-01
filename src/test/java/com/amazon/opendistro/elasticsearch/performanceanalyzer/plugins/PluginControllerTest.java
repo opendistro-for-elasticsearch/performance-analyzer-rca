@@ -39,7 +39,7 @@ public class PluginControllerTest {
     PluginControllerConfig pluginControllerConfig = Mockito.mock(PluginControllerConfig.class);
     Mockito.when(pluginControllerConfig.getFrameworkPlugins()).thenReturn(frameworkPlugins);
     Publisher publisher = Mockito.mock(Publisher.class);
-    PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
+    PluginController pluginController = new PluginController(pluginControllerConfig, publisher, null);
     pluginController.initPlugins();
 
     List<Plugin> plugins = pluginController.getPlugins();
@@ -58,7 +58,7 @@ public class PluginControllerTest {
     PluginControllerConfig pluginControllerConfig = Mockito.mock(PluginControllerConfig.class);
     Mockito.when(pluginControllerConfig.getFrameworkPlugins()).thenReturn(frameworkPlugins);
     Publisher publisher = Mockito.mock(Publisher.class);
-    PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
+    PluginController pluginController = new PluginController(pluginControllerConfig, publisher, null);
     pluginController.initPlugins();
   }
 
@@ -70,7 +70,7 @@ public class PluginControllerTest {
     PluginControllerConfig pluginControllerConfig = Mockito.mock(PluginControllerConfig.class);
     Mockito.when(pluginControllerConfig.getFrameworkPlugins()).thenReturn(frameworkPlugins);
     Publisher publisher = Mockito.mock(Publisher.class);
-    PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
+    PluginController pluginController = new PluginController(pluginControllerConfig, publisher, null);
     pluginController.initPlugins();
   }
 
@@ -82,7 +82,7 @@ public class PluginControllerTest {
     PluginControllerConfig pluginControllerConfig = Mockito.mock(PluginControllerConfig.class);
     Mockito.when(pluginControllerConfig.getFrameworkPlugins()).thenReturn(frameworkPlugins);
     Publisher publisher = Mockito.mock(Publisher.class);
-    PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
+    PluginController pluginController = new PluginController(pluginControllerConfig, publisher, null);
     pluginController.initPlugins();
   }
 
@@ -141,9 +141,7 @@ public class PluginControllerTest {
 
     private String name;
 
-    public TestNonDefaultConstructorPlugin(String name) {
-      this.name = name;
-    }
+    public TestNonDefaultConstructorPlugin(String name) { this.name = name; }
 
     @Override
     public String name() {

@@ -20,7 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.KafkaProducerController;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.Plugin;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config.ConfConsts;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.config.PluginConfig;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.KafkaException;
@@ -31,30 +31,25 @@ public class DecisionKafkaPublisher extends Plugin implements ActionListener {
 
   public static final String NAME = "DecisionToKafkaPlugin";
   private static final Logger LOG = LogManager.getLogger(DecisionKafkaPublisher.class);
-  private PluginConfig pluginConfig = null;
-  private KafkaProducer<String, String> kafkaProducerInstance = null;
+  private KafkaProducer<String, String> kafkaProducerInstance;
   private KafkaProducerController controller;
+  private String kafkaTopic;
 
-  public void initialize() {
-    if (controller == null) {
-      controller = KafkaProducerController.getInstance();
-    }
-    pluginConfig = controller.getSingletonPluginConfig();
+  public DecisionKafkaPublisher(){
+    controller = KafkaProducerController.getInstance();
     kafkaProducerInstance = controller.getSingletonKafkaProducer();
+    kafkaTopic = controller.getSingletonPluginConfig().getKafkaDecisionListenerConfig(ConfConsts.DECISION_KAFKA_TOPIC_KEY);
   }
 
   public void sendDecisionSummaryToKafkaQueue(String msg) {
     try {
-      String kafkaTopic = pluginConfig.getKafkaDecisionListenerConfig(ConfConsts.DECISION_KAFKA_TOPIC_KEY);
-      ProducerRecord<String, String> record = new ProducerRecord<String, String>(kafkaTopic, msg);
-      LOG.info(String.format("sending record: %s to kafka topic: %s ", msg, kafkaTopic));
+      ProducerRecord<String, String> record = new ProducerRecord<>(kafkaTopic, msg);
+      LOG.debug(String.format("sending record: %s to kafka topic: %s ", msg, kafkaTopic));
       kafkaProducerInstance.send(record);
     } catch (KafkaException e) {
       LOG.error("Exception Found on Kafka: " + e.getMessage());
     }
   }
-
-
 
   @Override
   public String name() {
@@ -63,14 +58,23 @@ public class DecisionKafkaPublisher extends Plugin implements ActionListener {
 
   @Override
   public void actionPublished(Action action) {
-    initialize();
-    LOG.info("Action: [{}] published by decision maker publisher.", action.name());
+    LOG.debug("Action: [{}] published by decision maker publisher.", action.name());
     String summary = action.summary();
     sendDecisionSummaryToKafkaQueue(summary);
   }
 
-  //For testing
+  @VisibleForTesting
   public void setKafkaProducerController(KafkaProducerController testController) {
     controller = testController;
+  }
+
+  @VisibleForTesting
+  public void setKafkaTopic(String topic) {
+    this.kafkaTopic = topic;
+  }
+
+  @VisibleForTesting
+  public void setKafkaProducerInstance(KafkaProducer<String, String> kafkaProducer) {
+    kafkaProducerInstance = kafkaProducer;
   }
 }
