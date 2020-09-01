@@ -16,12 +16,9 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig.getDefaultCachePriority;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig.getDefaultFieldDataCacheUpperBound;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig.getDefaultShardRequestCacheUpperBound;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig.getDefaultWorkloadPriority;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
@@ -50,11 +47,13 @@ public abstract class Decider extends NonLeafNode<Decision> {
 
   private static final Logger LOG = LogManager.getLogger(Decider.class);
   protected final int decisionFrequency; // Measured in terms of number of evaluationIntervalPeriods
+  protected RcaConf rcaConf;
   DeciderConfig configObj;
 
   public Decider(long evalIntervalSeconds, int decisionFrequency) {
     super(0, evalIntervalSeconds);
     this.decisionFrequency = decisionFrequency;
+    this.rcaConf = null;
     this.configObj = null;
   }
 
@@ -109,15 +108,8 @@ public abstract class Decider extends NonLeafNode<Decision> {
    */
   @Override
   public void readRcaConf(RcaConf conf) {
-    configObj = conf.getDeciderConfig();
-  }
-
-  public double getFieldDataCacheUpperBound() {
-    return configObj != null ? configObj.getFieldDataCacheUpperBound() : getDefaultFieldDataCacheUpperBound();
-  }
-
-  public double getShardRequestCacheUpperBound() {
-    return configObj != null ? configObj.getShardRequestCacheUpperBound() : getDefaultShardRequestCacheUpperBound();
+    rcaConf = conf;
+    configObj = rcaConf.getDeciderConfig();
   }
 
   public List<String> getWorkLoadPriority() {
