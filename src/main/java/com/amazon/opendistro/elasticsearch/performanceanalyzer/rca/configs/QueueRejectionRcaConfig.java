@@ -24,7 +24,8 @@ public class QueueRejectionRcaConfig {
 
   public QueueRejectionRcaConfig(final RcaConf rcaConf) {
     rejectionTimePeriodInSeconds = rcaConf.readRcaConfig(
-        CONFIG_NAME, RCA_CONF_KEY_CONSTANTS.REJECTION_TIME_PERIOD_IN_SECONDS, Integer.class);
+        CONFIG_NAME, RCA_CONF_KEY_CONSTANTS.REJECTION_TIME_PERIOD_IN_SECONDS,
+        DEFAULT_REJECTION_TIME_PERIOD_IN_SECONDS, (s) -> (s > 0), Integer.class);
     if (rejectionTimePeriodInSeconds == null) {
       rejectionTimePeriodInSeconds = DEFAULT_REJECTION_TIME_PERIOD_IN_SECONDS;
     }

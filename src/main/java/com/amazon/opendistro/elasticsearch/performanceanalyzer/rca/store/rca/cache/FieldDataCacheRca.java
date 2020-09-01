@@ -22,7 +22,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.FieldDataCacheRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
@@ -92,10 +92,10 @@ public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
         this.fieldDataCacheEvictions = fieldDataCacheEvictions;
         this.fieldDataCacheSizeGroupByOperation = fieldDataCacheSizeGroupByOperation;
         this.counter = 0;
-        this.cacheSizeThreshold = CacheConfig.DEFAULT_FIELD_DATA_CACHE_SIZE_THRESHOLD;
+        this.cacheSizeThreshold = FieldDataCacheRcaConfig.DEFAULT_FIELD_DATA_CACHE_SIZE_THRESHOLD;
         this.clock = Clock.systemUTC();
         this.cacheEvictionCollector = new CacheEvictionCollector(FIELD_DATA_CACHE_EVICTION,
-                fieldDataCacheEvictions, CacheConfig.DEFAULT_FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC);
+                fieldDataCacheEvictions, FieldDataCacheRcaConfig.DEFAULT_FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC);
     }
 
     @VisibleForTesting
@@ -139,7 +139,7 @@ public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
      */
     @Override
     public void readRcaConf(RcaConf conf) {
-        CacheConfig configObj = conf.getCacheConfig();
+        FieldDataCacheRcaConfig configObj = conf.getFieldDataCacheRcaConfig();
         cacheSizeThreshold = configObj.getFieldDataCacheSizeThreshold();
         long cacheCollectorTimePeriodInSec =
                 TimeUnit.SECONDS.toMillis(configObj.getFieldDataCollectorTimePeriodInSec());

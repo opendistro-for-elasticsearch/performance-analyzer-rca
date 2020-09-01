@@ -15,11 +15,14 @@ public class HotShardRcaConfig {
 
     public HotShardRcaConfig(final RcaConf rcaConf) {
         cpuUtilizationThreshold = rcaConf.readRcaConfig(CONFIG_NAME,
-                HotShardRcaConfig.RCA_CONF_KEY_CONSTANTS.CPU_UTILIZATION_THRESHOLD, Double.class);
+                HotShardRcaConfig.RCA_CONF_KEY_CONSTANTS.CPU_UTILIZATION_THRESHOLD,
+                DEFAULT_CPU_UTILIZATION_THRESHOLD, (s) -> (s > 0), Double.class);
         ioTotThroughputThreshold = rcaConf.readRcaConfig(CONFIG_NAME,
-                HotShardRcaConfig.RCA_CONF_KEY_CONSTANTS.IO_TOT_THROUGHPUT_THRESHOLD_IN_BYTES, Double.class);
+                HotShardRcaConfig.RCA_CONF_KEY_CONSTANTS.IO_TOT_THROUGHPUT_THRESHOLD_IN_BYTES,
+                DEFAULT_IO_TOTAL_THROUGHPUT_THRESHOLD_IN_BYTE_PER_SEC, (s) -> (s > 0), Double.class);
         ioTotSysCallRateThreshold = rcaConf.readRcaConfig(CONFIG_NAME,
-                HotShardRcaConfig.RCA_CONF_KEY_CONSTANTS.IO_TOT_SYSCALL_RATE_THRESHOLD_PER_SECOND, Double.class);
+                HotShardRcaConfig.RCA_CONF_KEY_CONSTANTS.IO_TOT_SYSCALL_RATE_THRESHOLD_PER_SECOND,
+                DEFAULT_IO_TOTAL_SYSCALL_RATE_THRESHOLD_PER_SEC, (s) -> (s > 0), Double.class);
         if (cpuUtilizationThreshold == null) {
             cpuUtilizationThreshold = DEFAULT_CPU_UTILIZATION_THRESHOLD;
         }

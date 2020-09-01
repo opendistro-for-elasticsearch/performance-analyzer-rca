@@ -17,58 +17,45 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 
-public class CacheConfig {
-    public static final String CONFIG_NAME = "cache-config";
+/**
+ * config object to store rca config settings for ShardRequestCacheRca
+ */
+public class ShardRequestCacheRcaConfig {
+    public static final String CONFIG_NAME = "shard-request-cache-rca-config";
 
-    private Double fieldDataCacheSizeThreshold;
     private Double shardRequestCacheSizeThreshold;
-    private Integer fieldDataCollectorTimePeriodInSec;
     private Integer shardRequestCollectorTimePeriodInSec;
 
-    public static final double DEFAULT_FIELD_DATA_CACHE_SIZE_THRESHOLD = 0.8;
+    // Shard request cache size threshold is 90%
     public static final double DEFAULT_SHARD_REQUEST_CACHE_SIZE_THRESHOLD = 0.9;
-    public static final int DEFAULT_FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC = 300;
+    // Metrics like eviction, hits are collected every 300 sec in shard request cache rca
     public static final int DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC = 300;
 
-    public CacheConfig(final RcaConf rcaConf) {
-        fieldDataCacheSizeThreshold = rcaConf.readRcaConfig(CONFIG_NAME,
-                RCA_CONF_KEY_CONSTANTS.FIELD_DATA_CACHE_SIZE_THRESHOLD, Double.class);
-        shardRequestCacheSizeThreshold = rcaConf.readRcaConfig(CONFIG_NAME,
-                RCA_CONF_KEY_CONSTANTS.SHARD_REQUEST_CACHE_SIZE_THRESHOLD, Double.class);
-        fieldDataCollectorTimePeriodInSec =
+    public ShardRequestCacheRcaConfig(final RcaConf rcaConf) {
+        shardRequestCacheSizeThreshold =
                 rcaConf.readRcaConfig(
                         CONFIG_NAME,
-                        RCA_CONF_KEY_CONSTANTS.FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC,
-                        Integer.class);
+                        RCA_CONF_KEY_CONSTANTS.SHARD_REQUEST_CACHE_SIZE_THRESHOLD,
+                        DEFAULT_SHARD_REQUEST_CACHE_SIZE_THRESHOLD,
+                        (s) -> (s > 0),
+                        Double.class);
         shardRequestCollectorTimePeriodInSec =
                 rcaConf.readRcaConfig(
                         CONFIG_NAME,
                         RCA_CONF_KEY_CONSTANTS.SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC,
+                        DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC,
+                        (s) -> (s > 0),
                         Integer.class);
-        if (fieldDataCacheSizeThreshold == null) {
-            fieldDataCacheSizeThreshold = DEFAULT_FIELD_DATA_CACHE_SIZE_THRESHOLD;
-        }
         if (shardRequestCacheSizeThreshold == null) {
             shardRequestCacheSizeThreshold = DEFAULT_SHARD_REQUEST_CACHE_SIZE_THRESHOLD;
-        }
-        if (fieldDataCollectorTimePeriodInSec == null) {
-            fieldDataCollectorTimePeriodInSec = DEFAULT_FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC;
         }
         if (shardRequestCollectorTimePeriodInSec == null) {
             shardRequestCollectorTimePeriodInSec = DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC;
         }
     }
 
-    public double getFieldDataCacheSizeThreshold() {
-        return fieldDataCacheSizeThreshold;
-    }
-
     public double getShardRequestCacheSizeThreshold() {
         return shardRequestCacheSizeThreshold;
-    }
-
-    public int getFieldDataCollectorTimePeriodInSec() {
-        return fieldDataCollectorTimePeriodInSec;
     }
 
     public int getShardRequestCollectorTimePeriodInSec() {
@@ -76,9 +63,7 @@ public class CacheConfig {
     }
 
     public static class RCA_CONF_KEY_CONSTANTS {
-        public static final String FIELD_DATA_CACHE_SIZE_THRESHOLD = "field-data-cache-size-threshold";
         public static final String SHARD_REQUEST_CACHE_SIZE_THRESHOLD = "shard-request-cache-threshold";
-        public static final String FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC = "field-data-collector-time-period-in-sec";
         public static final String SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC = "shard-request-collector-time-period-in-sec";
     }
 }

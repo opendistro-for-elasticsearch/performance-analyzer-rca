@@ -23,7 +23,8 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.FieldDataCacheRcaConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.ShardRequestCacheRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
@@ -101,18 +102,18 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
         this.shardRequestCacheHits = shardRequestCacheHits;
         this.shardRequestCacheSizeGroupByOperation = shardRequestCacheSizeGroupByOperation;
         this.counter = 0;
-        this.cacheSizeThreshold = CacheConfig.DEFAULT_SHARD_REQUEST_CACHE_SIZE_THRESHOLD;
+        this.cacheSizeThreshold = ShardRequestCacheRcaConfig.DEFAULT_SHARD_REQUEST_CACHE_SIZE_THRESHOLD;
         this.clock = Clock.systemUTC();
         this.cacheEvictionCollector =
                 new CacheCollector(
                         SHARD_REQUEST_CACHE_EVICTION,
                         shardRequestCacheEvictions,
-                        CacheConfig.DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC);
+                        ShardRequestCacheRcaConfig.DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC);
         this.cacheHitCollector =
                 new CacheCollector(
                         SHARD_REQUEST_CACHE_HIT,
                         shardRequestCacheHits,
-                        CacheConfig.DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC);
+                        ShardRequestCacheRcaConfig.DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC);
     }
 
     @VisibleForTesting
@@ -162,7 +163,7 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
      */
     @Override
     public void readRcaConf(RcaConf conf) {
-        CacheConfig configObj = conf.getCacheConfig();
+        ShardRequestCacheRcaConfig configObj = conf.getShardRequestCacheRcaConfig();
         cacheSizeThreshold = configObj.getShardRequestCacheSizeThreshold();
         long cacheCollectorTimePeriodInSec =
                 TimeUnit.SECONDS.toMillis(configObj.getShardRequestCollectorTimePeriodInSec());
