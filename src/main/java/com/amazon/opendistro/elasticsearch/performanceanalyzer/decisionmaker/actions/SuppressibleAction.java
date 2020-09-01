@@ -7,7 +7,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
  */
 public abstract class SuppressibleAction implements Action {
 
-  private final AppContext appContext;
+  protected final AppContext appContext;
 
   public SuppressibleAction(final AppContext appContext) {
     this.appContext = appContext;

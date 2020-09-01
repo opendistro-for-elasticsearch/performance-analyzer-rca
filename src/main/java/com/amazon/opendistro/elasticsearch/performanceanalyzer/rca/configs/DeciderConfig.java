@@ -15,8 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.CacheBoundConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.ThreadPoolConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.WorkLoadTypeConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.jvm.OldGenDecisionPolicyConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
@@ -26,7 +24,6 @@ import java.util.List;
 
 public class DeciderConfig {
 
-    private static final String CACHE_BOUNDS_CONFIG_NAME = "cache-bounds";
     private static final String CACHE_CONFIG_NAME = "cache-type";
     private static final String THREAD_POOL_CONFIG_NAME = "threadpool-config";
     private static final String WORKLOAD_CONFIG_NAME = "workload-type";
@@ -39,16 +36,12 @@ public class DeciderConfig {
     private List<String> cachePriorityOrder;
     private final WorkLoadTypeConfig workLoadTypeConfig;
     private final OldGenDecisionPolicyConfig oldGenDecisionPolicyConfig;
-    private final CacheBoundConfig cacheBoundConfig;
-    private final ThreadPoolConfig threadPoolConfig;
 
     public DeciderConfig(final RcaConf rcaConf) {
         cachePriorityOrder = rcaConf.readDeciderConfig(CACHE_CONFIG_NAME,
                 PRIORITY_ORDER_CONFIG_NAME, List.class);
         workLoadTypeConfig = new WorkLoadTypeConfig(rcaConf.readDeciderConfig(WORKLOAD_CONFIG_NAME));
         oldGenDecisionPolicyConfig = new OldGenDecisionPolicyConfig(rcaConf.readDeciderConfig(OLD_GEN_DECISION_POLICY_CONFIG_NAME));
-        cacheBoundConfig = new CacheBoundConfig(rcaConf.readDeciderConfig(CACHE_BOUNDS_CONFIG_NAME));
-        threadPoolConfig = new ThreadPoolConfig(rcaConf.readDeciderConfig(THREAD_POOL_CONFIG_NAME));
         if (cachePriorityOrder == null) {
             cachePriorityOrder = DEFAULT_CACHE_PRIORITY;
         }
@@ -66,20 +59,8 @@ public class DeciderConfig {
         return oldGenDecisionPolicyConfig;
     }
 
-    public CacheBoundConfig getCacheBoundConfig() {
-        return cacheBoundConfig;
-    }
-
-    public ThreadPoolConfig getThreadPoolConfig() {
-        return threadPoolConfig;
-    }
-
     public static List<String> getDefaultCachePriority() {
         return DEFAULT_CACHE_PRIORITY;
-    }
-
-    public static String getCacheBoundsConfigName() {
-        return CACHE_BOUNDS_CONFIG_NAME;
     }
 
     public static String getCacheConfigName() {

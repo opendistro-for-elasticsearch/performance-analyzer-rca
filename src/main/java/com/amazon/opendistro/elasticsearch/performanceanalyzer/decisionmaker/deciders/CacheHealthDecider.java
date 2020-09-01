@@ -19,7 +19,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.CacheBoundConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
@@ -152,19 +151,11 @@ public class CacheHealthDecider extends Decider {
 
   private ModifyCacheMaxSizeAction configureCacheMaxSize(
       final NodeKey esNode, final ResourceEnum cacheType, final boolean increase) {
-    CacheBoundConfig cacheBoundConfig = deciderConfig.getCacheBoundConfig();
-    ModifyCacheMaxSizeAction.Builder builder = ModifyCacheMaxSizeAction
-        .newBuilder(esNode, cacheType, getAppContext())
-        .increase(increase);
-
-    if (cacheType.equals(ResourceEnum.FIELD_DATA_CACHE)) {
-      builder.lowerBoundThreshold(cacheBoundConfig.fieldDataCacheLowerBound())
-          .upperBoundThreshold(cacheBoundConfig.fieldDataCacheUpperBound());
-    } else if (cacheType.equals(ResourceEnum.SHARD_REQUEST_CACHE)) {
-      builder.lowerBoundThreshold(cacheBoundConfig.shardRequestCacheLowerBound())
-          .upperBoundThreshold(cacheBoundConfig.shardRequestCacheUpperBound());
-    }
-    ModifyCacheMaxSizeAction action = builder.build();
+    final ModifyCacheMaxSizeAction action =
+        ModifyCacheMaxSizeAction
+            .newBuilder(esNode, cacheType, getAppContext(), rcaConf)
+            .increase(increase)
+            .build();
     if (action.isActionable()) {
       return action;
     }

@@ -29,10 +29,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +45,7 @@ import org.junit.Test;
 
 public class QueueHealthDeciderTest {
   AppContext appContext;
+  RcaConf rcaConf;
 
   @Before
   public void setupCluster() {
@@ -67,6 +71,8 @@ public class QueueHealthDeciderTest {
 
     appContext = new AppContext();
     appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
+    String rcaConfPath = Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString();
+    rcaConf = new RcaConf(rcaConfPath);
   }
 
   @Test
@@ -99,6 +105,7 @@ public class QueueHealthDeciderTest {
     queueClusterRca.generateFlowUnitListFromLocal(null);
     QueueHealthDecider decider = new QueueHealthDecider(5, 12, queueClusterRca);
     decider.setAppContext(appContext);
+    decider.readRcaConf(rcaConf);
 
     // Since deciderFrequency is 12, the first 11 invocations return empty decision
     for (int i = 0; i < 11; i++) {
