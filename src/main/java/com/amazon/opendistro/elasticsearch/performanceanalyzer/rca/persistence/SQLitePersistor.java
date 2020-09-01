@@ -91,6 +91,9 @@ class SQLitePersistor extends PersistorBase {
   private static final String[] GETTER_PREFIXES = {"get", "is"};
   private static final String[] SETTER_PREFIXES = {"set"};
 
+  private static final String TABLE_NAME_JSON_KEY = "tableName";
+  private static final String ROW_IDS_JSON_KEY = "rowIds";
+
   /**
    * This is for efficient lookup of the getter and setter methods for all the persistable Fields of a class. This map can be in-memory and
    * does not need to be re-created during DB file rotations as we don't support dynamic class loading and rotating the DB files should
@@ -218,12 +221,12 @@ class SQLitePersistor extends PersistorBase {
   }
 
   @Override
-  public synchronized <T> T read(Class<T> clz)
-      throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+  public synchronized <T> @org.checkerframework.checker.nullness.qual.Nullable T read(Class<T> clz)
+      throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, DataAccessException {
     return read(clz, -1 /* To indicate this is the top level call */);
   }
 
-  public synchronized <T> T read(Class<T> clz, int rowId)
+  public synchronized <T> @org.checkerframework.checker.nullness.qual.Nullable T read(Class<T> clz, int rowId)
       throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
     String tableName = getTableNameFromClassName(clz);
     String primaryKeyCol = SQLiteQueryUtils.getPrimaryKeyColumnName(tableName);
@@ -234,14 +237,27 @@ class SQLitePersistor extends PersistorBase {
 
     List<Record> recordList;
     if (rowId == -1) {
-      // Fetch the latest row.
-      recordList = create.select().from(tableName).orderBy(primaryKeyField.desc()).limit(1).fetch();
+      try {
+        // Fetch the latest row.
+        recordList = create.select().from(tableName).orderBy(primaryKeyField.desc()).limit(1).fetch();
+      } catch (DataAccessException dex) {
+        LOG.debug("Error querying table {}", tableName, dex);
+        return null;
+      }
     } else {
-      recordList = create.select().from(tableName).where(DSL.field(primaryKeyCol, Integer.class).eq(rowId)).fetch();
+      try {
+        recordList = create.select().from(tableName).where(DSL.field(primaryKeyCol, Integer.class).eq(rowId)).fetch();
+      } catch (DataAccessException dex) {
+        // This is more severe. This would mean that the data corresponding to the outer Object were found but
+        // the nested tables could not be accessed.
+        LOG.error("Could not find data for table {}", tableName, dex);
+        throw dex;
+      }
     }
 
     if (recordList.size() != 1) {
-      throw new IllegalStateException();
+      // We always expect one row whether we query for the latest row or we query for a row by the rodID.
+      throw new IllegalStateException("Expected one row, found: '" + recordList + "'");
     }
     Record record = recordList.get(0);
     Field<?>[] fields = record.fields();
@@ -270,7 +286,7 @@ class SQLitePersistor extends PersistorBase {
           List<Object> collection = new ArrayList<>();
           for (JsonElement element: array) {
             JsonObject jsonObject = element.getAsJsonObject();
-            String actualTableName = jsonObject.get("tableName").getAsString();
+            String actualTableName = jsonObject.get(TABLE_NAME_JSON_KEY).getAsString();
 
             Class<?> actualTableClass = tableNameToJavaClassMap.get(actualTableName);
             if (actualTableClass == null) {
@@ -278,7 +294,7 @@ class SQLitePersistor extends PersistorBase {
                   + "the database row mentions it: " + element.toString());
             }
 
-            for (JsonElement rowIdElem: jsonObject.get("rowIds").getAsJsonArray()) {
+            for (JsonElement rowIdElem: jsonObject.get(ROW_IDS_JSON_KEY).getAsJsonArray()) {
               int rowIdNestedTable = rowIdElem.getAsInt();
               Object nestedObj = read(actualTableClass, rowIdNestedTable);
               collection.add(nestedObj);
@@ -302,7 +318,6 @@ class SQLitePersistor extends PersistorBase {
           throw new IllegalStateException("ReferenceColumn can be either Integer or String.");
         }
       } else {
-        Class<?> fieldType = jooqField.getType();
         // For all the other columns, we look for the corresponding setter.
         Method setter = fieldNameToGetterSetterMap.get(jooqField.getName()).setter;
         setter.invoke(obj, jooqField.getType().cast(jooqField.getValue(record)));
@@ -458,8 +473,8 @@ class SQLitePersistor extends PersistorBase {
       JsonArray jsonArrayInner = new JsonArray();
       colNameEntry.getValue().forEach(rowId -> jsonArrayInner.add(rowId));
 
-      jsonObject.addProperty("tableName", colNameEntry.getKey());
-      jsonObject.add("rowIds", jsonArrayInner);
+      jsonObject.addProperty(TABLE_NAME_JSON_KEY, colNameEntry.getKey());
+      jsonObject.add(ROW_IDS_JSON_KEY, jsonArrayInner);
 
       json.add(jsonObject);
     }
@@ -527,8 +542,14 @@ class SQLitePersistor extends PersistorBase {
     }
 
     if (fields.size() == 0) {
-      throw new IllegalStateException("Class '" + obj.getClass()
-          + "' was asked to be persisted but there are no getters with @AColumn annotation.");
+      StringBuilder sb = new StringBuilder();
+      sb.append("Class ")
+          .append(clz.getSimpleName())
+          .append(" was asked to be persisted but there are no fields with annotations: ")
+          .append(ValueColumn.class.getSimpleName())
+          .append(" or ")
+          .append(RefColumn.class.getSimpleName());
+      throw new IllegalStateException(sb.toString());
     }
 
     // If table does not exist, try to create one.
@@ -540,7 +561,7 @@ class SQLitePersistor extends PersistorBase {
     try {
       int ret = create.insertInto(table).columns(fields).values(values).execute();
     } catch (Exception e) {
-      LOG.error(e);
+      LOG.error("Inserting row '{}' into table '{}' failed", values, tableName, e);
       throw new SQLException(e);
     }
     int lastRowId = -1;

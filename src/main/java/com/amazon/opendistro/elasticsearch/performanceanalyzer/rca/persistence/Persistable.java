@@ -28,6 +28,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.jooq.Record;
 import org.jooq.Result;
+import org.jooq.exception.DataAccessException;
 
 public interface Persistable {
   /**
@@ -61,9 +62,10 @@ public interface Persistable {
    * @throws IllegalAccessException If the setter is not Public
    * @throws InvocationTargetException If invoking the setter by reflection threw an exception.
    * @throws InstantiationException Creating an Object of the class failed for some reason.
+   * @throws DataAccessException Thrown by the DB layer.
    */
   <T> @Nullable T read(Class<T> clz)
-      throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException;
+      throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, DataAccessException;
 
   /**
    * Write data to the database.

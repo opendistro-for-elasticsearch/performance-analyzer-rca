@@ -2,9 +2,11 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.pck1.TestPersist;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -47,6 +49,18 @@ public class SqliteObjectPersistor {
     Assert.assertEquals(outer.bObj.x, outerOut.bObj.x, 0.01);
   }
 
+  /**
+   * This test checks that we get a null Object in case the Database is created but it does not contain table with the object data we are
+   * asking for.
+   */
+  @Test
+  public void testNoData()
+      throws IOException, SQLException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+    SQLitePersistor sqlite = new SQLitePersistor(
+        testLocation.toString(), baseFilename, String.valueOf(1), TimeUnit.SECONDS, 1);
+    Assert.assertNull(sqlite.read(Outer.class));
+  }
+
   @Rule
   public ExpectedException exceptionRule = ExpectedException.none();
 
@@ -63,6 +77,106 @@ public class SqliteObjectPersistor {
         testLocation.toString(), baseFilename, String.valueOf(1), TimeUnit.SECONDS, 1);
     sqlite.write(testPersist1);
     sqlite.write(testPersist2);
+  }
+
+  @Test
+  public void testObjectWithNoGetters()
+      throws IOException, SQLException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+    exceptionRule.expect(NoSuchMethodException.class);
+    exceptionRule.expectMessage("Could not find 'getter' for the field 'x' of class");
+
+    class NoGetter {
+      @ValueColumn
+      int x;
+    }
+
+    SQLitePersistor sqlite = new SQLitePersistor(
+        testLocation.toString(), baseFilename, String.valueOf(1), TimeUnit.SECONDS, 1);
+    sqlite.write(new NoGetter());
+  }
+
+  @Test
+  public void testGetterReturnMismatch()
+      throws IOException, SQLException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+    exceptionRule.expect(NoSuchMethodException.class);
+    exceptionRule.expectMessage("The return type of the getter 'getX' (class java.lang.Integer) and field 'x' (int) don't match.");
+    class TypeMismatch {
+      @ValueColumn
+      int x;
+
+      public Integer getX() {
+        return x;
+      }
+
+      public void setX(int x) {
+        this.x = x;
+      }
+    }
+
+    SQLitePersistor sqlite = new SQLitePersistor(
+        testLocation.toString(), baseFilename, String.valueOf(1), TimeUnit.SECONDS, 1);
+    sqlite.write(new TypeMismatch());
+  }
+
+  @Test
+  public void testSetterArgTypeMismatch()
+      throws IOException, SQLException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+    exceptionRule.expect(NoSuchMethodException.class);
+    exceptionRule.expectMessage("Could not find 'setter' for the field 'x' of class");
+    class TypeMismatch {
+      @ValueColumn
+      int x;
+
+      public int getX() {
+        return x;
+      }
+
+      public void setX(Integer x) {
+        this.x = x;
+      }
+    }
+
+    SQLitePersistor sqlite = new SQLitePersistor(
+        testLocation.toString(), baseFilename, String.valueOf(1), TimeUnit.SECONDS, 1);
+    sqlite.write(new TypeMismatch());
+  }
+
+  @Test
+  public void testNonPublicGetterSetter()
+      throws IOException, SQLException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+    exceptionRule.expect(IllegalStateException.class);
+    exceptionRule.expectMessage("Found 'getX'. But it is not public");
+    class TypeMismatch {
+      @ValueColumn
+      int x;
+
+      int getX() {
+        return x;
+      }
+
+      public void setX(Integer x) {
+        this.x = x;
+      }
+    }
+
+    SQLitePersistor sqlite = new SQLitePersistor(
+        testLocation.toString(), baseFilename, String.valueOf(1), TimeUnit.SECONDS, 1);
+    sqlite.write(new TypeMismatch());
+  }
+
+  @Test
+  public void testNoPersistableFields()
+      throws IOException, SQLException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+    exceptionRule.expect(IllegalStateException.class);
+    exceptionRule.expectMessage(
+        "NotPersistable was asked to be persisted but there are no fields with annotations: ValueColumn or RefColumn");
+    class NotPersistable {
+      int x;
+    }
+    
+    SQLitePersistor sqlite = new SQLitePersistor(
+        testLocation.toString(), baseFilename, String.valueOf(1), TimeUnit.SECONDS, 1);
+    sqlite.write(new NotPersistable());
   }
 
   static class Outer {
