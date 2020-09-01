@@ -85,7 +85,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
   MetricsRestUtil metricsRestUtil;
 
   public static final int DEFAULT_MAX_DATAPOINTS = 100800;  // Must be non-negative
-  public static final long DEFAULT_SAMPLING_PERIOD = 5000;  // Must be a multiple of 5000
+  public static final long DEFAULT_SAMPLING_PERIOD_MILLIS = 5000;  // Must be a multiple of 5000
 
   public QueryBatchRequestHandler(NetClient netClient, MetricsRestUtil metricsRestUtil) {
     this.netClient = netClient;
@@ -175,7 +175,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
         throw new InvalidParameterException(String.format("%s is an invalid endtime", endTimeParam));
       }
 
-      long samplingPeriod = DEFAULT_SAMPLING_PERIOD;
+      long samplingPeriod = DEFAULT_SAMPLING_PERIOD_MILLIS;
       if (samplingPeriodParam != null && !samplingPeriodParam.isEmpty()) {
         samplingPeriod = Long.parseLong(samplingPeriodParam);
         if (samplingPeriod < 5 || samplingPeriod % 5 != 0) {
