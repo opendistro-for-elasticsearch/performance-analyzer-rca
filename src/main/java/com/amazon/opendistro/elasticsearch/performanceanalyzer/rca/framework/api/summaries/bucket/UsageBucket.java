@@ -20,18 +20,18 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
  * and identifies the state of that Resource. We use these buckets to identify when we have the
  * bandwidth to scale a particular resource out or in.
  *
+ * <p>{@link UsageBucket#UNDER_UTILIZED} means that the
+ * {@link com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource} is barely being
+ * used at all and may be a good candidate for scaling in.
+ *
  * <p>{@link UsageBucket#HEALTHY_WITH_BUFFER} means that the
  * {@link com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource} is healthy and
- * potentially under utilized. Resources in this state are good candidates for scaling in
+ * there is room to increase the pressure on this resource if need be.
  *
  * <p>{@link UsageBucket#HEALTHY} means that the
  * {@link com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource} is in a healthy
  * state. Resources in this bucket should probably be left alone.
  *
- * <p>{@link UsageBucket#UNDER_UTILIZED} means that the
- * {@link com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource} is on the verge of
- * being unhealthy. The utilization is high, but not quite high enough to be called unhealthy yet.
- * Resources in this bucket are good candidates for scaling out.
  *
  * <p>{@link UsageBucket#UNHEALTHY} means that the
  * {@link com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource} is under high

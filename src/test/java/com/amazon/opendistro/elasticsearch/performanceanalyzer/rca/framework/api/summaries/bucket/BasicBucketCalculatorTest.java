@@ -20,12 +20,12 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class StaticBucketCalculatorTest {
-  StaticBucketCalculator uut;
+public class BasicBucketCalculatorTest {
+  BasicBucketCalculator uut;
 
   @Before
   public void setup() {
-    uut = new StaticBucketCalculator(10.0, 40.0, 70.0);
+    uut = new BasicBucketCalculator(10.0, 40.0, 70.0);
   }
 
   @Test

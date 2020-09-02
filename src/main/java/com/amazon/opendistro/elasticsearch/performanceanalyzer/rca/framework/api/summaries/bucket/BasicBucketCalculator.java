@@ -20,10 +20,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum
 import java.util.Objects;
 
 /**
- * StaticBucketCalculator is a {@link BucketCalculator} which places {@link Resource}s into
- * {@link UsageBucket}s based on statically defined ranges.
+ * BasicBucketCalculator is a {@link BucketCalculator} which places {@link Resource}s into
+ * {@link UsageBucket}s based on defined ranges.
  */
-public class StaticBucketCalculator implements BucketCalculator {
+public class BasicBucketCalculator implements BucketCalculator {
   // a value in (-inf, underUtilized] is considered underutilized and signals that additional
   // resources may be removed for the sake of frugality
   double underUtilized;
@@ -35,7 +35,7 @@ public class StaticBucketCalculator implements BucketCalculator {
   // a value in (healthy, inf] is considered unhealthy and we should find ways to decrease the pressure
   double healthy;
 
-  public StaticBucketCalculator(double underUtilized, double healthyWithBuffer, double healthy) {
+  public BasicBucketCalculator(double underUtilized, double healthyWithBuffer, double healthy) {
     this.underUtilized = underUtilized;
     this.healthyWithBuffer = healthyWithBuffer;
     this.healthy = healthy;
@@ -62,7 +62,7 @@ public class StaticBucketCalculator implements BucketCalculator {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StaticBucketCalculator that = (StaticBucketCalculator) o;
+    BasicBucketCalculator that = (BasicBucketCalculator) o;
     return Double.compare(that.underUtilized, underUtilized) == 0
         && Double.compare(that.healthyWithBuffer, healthyWithBuffer) == 0
         && Double.compare(that.healthy, healthy) == 0;
