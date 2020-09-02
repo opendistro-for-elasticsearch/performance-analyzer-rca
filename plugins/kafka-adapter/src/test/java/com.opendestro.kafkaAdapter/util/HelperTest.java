@@ -16,6 +16,7 @@
 package com.opendestro.kafkaAdapter.util;
 
 import com.opendestro.kafkaAdapter.configuration.ConsumerConfiguration;
+import com.opendestro.kafkaAdapter.configuration.KafkaAdapterConf;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -27,16 +28,15 @@ import org.junit.Test;
 
 import org.junit.Assert;
 
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Properties;
 
 public class HelperTest {
 
-    private Target target1;
-    private Target target2;
     private static String testBootstrapServer = "localhost:9092";
-    private static String testTopic = "test_consumer";
+    private static String testTopic;
     private static long testInterval = 5000;
     private static KafkaProducer<String, String> kafkaProducer;
     private static KafkaConsumer<String, String> kafkaConsumer;
@@ -44,10 +44,10 @@ public class HelperTest {
 
     @Before
     public void targetSetup() {
-        target1 = new Target(KafkaAdapterConsts.PA_RCA_QUERY_ENDPOINT, "ClusterTemperatureRca");
-        target2 = new Target(KafkaAdapterConsts.PA_RCA_QUERY_ENDPOINT);
-        Assert.assertEquals("http://localhost:9600/_opendistro/_performanceanalyzer/rca?name=ClusterTemperatureRca", target1.getUrl());
-        Assert.assertEquals("http://localhost:9600/_opendistro/_performanceanalyzer/rca", target2.getUrl());
+        String kafkaAdapterConfPath = Paths.get(KafkaAdapterConsts.CONFIG_DIR_TEST_PATH, KafkaAdapterConsts.KAFKA_ADAPTER_TEST_FILENAME).toString();
+        KafkaAdapterConf conf = new KafkaAdapterConf(kafkaAdapterConfPath);
+        testTopic = conf.getKafkaTopic();
+        System.out.println("test topic: "+testTopic);
         Properties producerProps = new Properties();
         producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, testBootstrapServer);
         producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
@@ -56,34 +56,20 @@ public class HelperTest {
     }
 
     @Test
-    public void endpointTest() {
-        Assert.assertEquals(KafkaAdapterConsts.PA_RCA_QUERY_ENDPOINT, target1.getEndpoint());
-        target1.setEndpoint("localhost:9650");
-        Assert.assertEquals("localhost:9650", target1.getEndpoint());
+    public void producerToConsumerTest() {
+        String testMessage = "{\"test key\": \"test value\"}";
+        config = new ConsumerConfiguration(testBootstrapServer, testTopic, testInterval);
+        kafkaConsumer = config.createConsumer();
+        kafkaConsumer.subscribe(Collections.singletonList(testTopic));
+        ProducerRecord<String, String> record = new ProducerRecord<>(testTopic, testMessage);
+        kafkaProducer.send(record);
+        kafkaProducer.close();
+        ConsumerRecords<String, String> records = kafkaConsumer.poll(10000);
+        kafkaConsumer.close();
+        System.out.println("record count:" + records.count());
+        Assert.assertEquals(1, records.count());
+        Iterator<ConsumerRecord<String, String>> recordIterator = records.iterator();
+        ConsumerRecord<String, String> res = recordIterator.next();
+        Assert.assertEquals("{\"text\":\"{\\\"test key\\\": \\\"test value\\\"}\"}", Helper.formatString(res.value()));
     }
-
-    @Test
-    public void parameterTest() {
-        Assert.assertNull(target2.getParameter());
-        Assert.assertEquals("ClusterTemperatureRca", target1.getParameter());
-        target2.setParameter("HighHeapUsageClusterRca");
-        Assert.assertEquals("HighHeapUsageClusterRca", target2.getParameter());
-    }
-
-    //    @Test
-    //    public void decisionPublisherTest() {
-    //        String testMessage = "{\"test key\": \"test value\"}";
-    //        config = new ConsumerConfiguration(testBootstrapServer, testTopic, testInterval);
-    //        kafkaConsumer = config.createConsumer();
-    //        kafkaConsumer.subscribe(Collections.singletonList(testTopic));
-    //        ProducerRecord<String, String> record = new ProducerRecord<>(testTopic, testMessage);
-    //        kafkaProducer.send(record);
-    //        kafkaProducer.close();
-    //        ConsumerRecords<String, String> records = kafkaConsumer.poll(10000);
-    //        kafkaConsumer.close();
-    //        Assert.assertEquals(1, records.count());
-    //        Iterator<ConsumerRecord<String, String>> recordIterator = records.iterator();
-    //        ConsumerRecord<String, String> res = recordIterator.next();
-    //        Assert.assertEquals("{\"text\":\"{\\n  \\\"test key\\\" : \\\"test value\\\"\\n}\"}", Helper.formatString(res.value()));
-    //    }
 }

@@ -15,7 +15,6 @@
 
 package com.opendestro.kafkaAdapter.util;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,51 +28,48 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 public class Helper {
-    private static HttpURLConnection httpConnection;
-    private static final Logger LOG = LogManager.getLogger(Helper.class);
-
-    public static String formatString(String val) {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            Object json = mapper.readValue(val, Object.class);
-            String res = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(json);
-            JSONObject object = new JSONObject();
-            object.put("text", res);
-            return object.toString();
-        } catch (Exception e) {
-            LOG.error("Exception found when converting JsonNode to String:", e);
-            return null;
-        }
+  private static HttpURLConnection httpConnection;
+  private static final Logger LOG = LogManager.getLogger(Helper.class);
+  
+  public static String formatString(String val) {
+    try {
+      JSONObject object = new JSONObject();
+      object.put("text", val);
+      return object.toString();
+    } catch (Exception e) {
+      LOG.error("Exception found when formating String:", e);
+      return null;
     }
+  }
 
-    public static boolean postToSlackWebHook(String res, String webhookUrl) {
-        String val = formatString(res);
-        if (val == null) {
-            return false;
-        }
-        byte[] postBody = val.getBytes(StandardCharsets.UTF_8);
-        int responseCode = -1;
-        try {
-            httpConnection = (HttpURLConnection) new URL(webhookUrl).openConnection();
-            httpConnection.setDoOutput(true);
-            httpConnection.setRequestMethod("POST");
-            httpConnection.setRequestProperty("User-Agent", "Java client");
-            httpConnection.setRequestProperty("Content-Type", "application/json");
-
-            try (DataOutputStream wr = new DataOutputStream(httpConnection.getOutputStream())) {
-                wr.write(postBody);
-                wr.flush();
-            } catch (IOException e) {
-                LOG.error("Exception found when handling output stream", e);
-                return false;
-            }
-            responseCode = httpConnection.getResponseCode();
-        } catch (IOException e) {
-            LOG.error("Couldn't resolve host {}", httpConnection.getURL(), e);
-            return false;
-        } finally {
-            httpConnection.disconnect();
-        }
-        return responseCode == 200;
+  public static boolean postToSlackWebHook(String res, String webhookUrl) {
+    String val = formatString(res);
+    if (val == null) {
+      return false;
     }
+    byte[] postBody = val.getBytes(StandardCharsets.UTF_8);
+    int responseCode = -1;
+    try {
+      httpConnection = (HttpURLConnection) new URL(webhookUrl).openConnection();
+      httpConnection.setDoOutput(true);
+      httpConnection.setRequestMethod("POST");
+      httpConnection.setRequestProperty("User-Agent", "Java client");
+      httpConnection.setRequestProperty("Content-Type", "application/json");
+
+      try (DataOutputStream wr = new DataOutputStream(httpConnection.getOutputStream())) {
+        wr.write(postBody);
+        wr.flush();
+      } catch (IOException e) {
+        LOG.error("Exception found when handling output stream", e);
+        return false;
+      }
+      responseCode = httpConnection.getResponseCode();
+    } catch (IOException e) {
+      LOG.error("Couldn't resolve host {}", httpConnection.getURL(), e);
+      return false;
+    } finally {
+      httpConnection.disconnect();
+    }
+    return responseCode == 200;
+  }
 }

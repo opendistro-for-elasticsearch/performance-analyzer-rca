@@ -53,7 +53,7 @@ public class ConsumerConfiguration {
         configProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bootstrapServer);
         configProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
         configProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
-        configProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "consumer_group");
+        configProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "consumer");
         return new KafkaConsumer<>(configProperties);
     }
 }
