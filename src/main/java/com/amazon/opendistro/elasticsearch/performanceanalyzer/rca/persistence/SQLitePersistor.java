@@ -234,7 +234,6 @@ class SQLitePersistor extends PersistorBase {
 
     Map<String, GetterSetterPairs> fieldNameToGetterSetterMap = classFieldNamesToGetterSetterMap.get(clz);
 
-
     List<Record> recordList;
     if (rowId == -1) {
       try {
@@ -270,18 +269,16 @@ class SQLitePersistor extends PersistorBase {
       }
 
       if (columnName.startsWith(NESTED_OBJECT_COLUMN_PREFIX)) {
+        // If the name of the column starts with the prefix, then it is a reference Column. What it means is the value contained in this
+        // column references to RowIDs in some other table. There are two forms of this:
+        // - It can be a reference to another table, in which case the column is an integer type.
+        // - OR it is a collection of RowIDs from multiple tables, in which case the column type is a string and it is a JsonArray as e.g.
+        //    [{\"tableName\":\"ITestImpl2\",\"rowIds\":[1]},{\"tableName\":\"ITestImpl1\",\"rowIds\":[1,2]}]
         String nestedTableName = columnName.replace(NESTED_OBJECT_COLUMN_PREFIX, "");
         if (jooqField.getType() == String.class) {
           String value = (String) jooqField.getValue(record);
           JsonArray array = JsonParser.parseString(value).getAsJsonArray();
           Method setter = fieldNameToGetterSetterMap.get(nestedTableName).setter;
-          ParameterizedType type = (ParameterizedType) setter.getGenericParameterTypes()[0];
-          Type[] typeArgs = type.getActualTypeArguments();
-          if (typeArgs.length != 1) {
-            throw new IllegalStateException();
-          }
-
-          Class<?> collectionOfType = (Class<?>) typeArgs[0];
 
           List<Object> collection = new ArrayList<>();
           for (JsonElement element: array) {
@@ -336,11 +333,20 @@ class SQLitePersistor extends PersistorBase {
     return clz.getSimpleName();
   }
 
-  private Class<?> getGenericParamTypeOfMethod(Method method) {
+  private Class<?> getGenericParamTypeOfMethodReturn(Method method) {
     ParameterizedType mtype = (ParameterizedType) method.getGenericReturnType();
+    return getFirstTypeFromParameterizedTypes(mtype, method.getName());
+  }
+
+  private Class<?> getGenericFieldType(java.lang.reflect.Field field) {
+    ParameterizedType mtype = (ParameterizedType) field.getGenericType();
+    return getFirstTypeFromParameterizedTypes(mtype, field.getName());
+  }
+
+  private Class<?> getFirstTypeFromParameterizedTypes(ParameterizedType mtype, String name) {
     Type[] mTypeArguments = mtype.getActualTypeArguments();
     if (mTypeArguments.length != 1) {
-      throw new IllegalStateException("Expected list of a single type. Please check method: " + method.getName());
+      throw new IllegalStateException("Expected list of a single type. Please check field/method: " + name);
     }
     Class mTypeArgClass = (Class) mTypeArguments[0];
     return mTypeArgClass;
@@ -373,6 +379,13 @@ class SQLitePersistor extends PersistorBase {
 
     for (java.lang.reflect.Field field : clz.getDeclaredFields()) {
       if (field.isAnnotationPresent(ValueColumn.class) || field.isAnnotationPresent(RefColumn.class)) {
+        // TODO: check for valid types.
+        // if (!isValidFieldType(field)) {
+        //   throw new IllegalStateException("Only Supported types are - primitive Types (except the Void type) or String or User defined "
+        //       + "classes or Collection type of these. Provided a field " + field.getName() + " in class " + clz.getSimpleName()
+        //       + " of type: " + field.getType().getSimpleName());
+        // }
+
         // Now we try to find the corresponding Getter and Setter for this field.
         GetterSetterPairs pair = new GetterSetterPairs();
 
@@ -461,7 +474,7 @@ class SQLitePersistor extends PersistorBase {
       String myActualType = o.getClass().getSimpleName();
       nestedPrimaryKeys.putIfAbsent(myActualType, new ArrayList<>());
 
-      Class typeArgClass = getGenericParamTypeOfMethod(getter);
+      Class typeArgClass = getGenericParamTypeOfMethodReturn(getter);
 
       int id = writeImplInner(typeArgClass.cast(o));
       nestedPrimaryKeys.get(myActualType).add(id);

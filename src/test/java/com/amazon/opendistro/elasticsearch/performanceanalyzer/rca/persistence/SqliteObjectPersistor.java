@@ -39,14 +39,14 @@ public class SqliteObjectPersistor {
   public void testWriteObject() throws Exception {
     SQLitePersistor sqlite = new SQLitePersistor(
         testLocation.toString(), baseFilename, String.valueOf(1), TimeUnit.SECONDS, 1);
-    Outer outer = new Outer();
-    sqlite.write(outer);
+    PersistorTestExample persistorTestExample = new PersistorTestExample();
+    sqlite.write(persistorTestExample);
 
-    Outer outerOut = sqlite.read(Outer.class);
+    PersistorTestExample persistorTestExampleOut = sqlite.read(PersistorTestExample.class);
 
-    Assert.assertEquals(outer.x, outerOut.x);
-    Assert.assertEquals(outer.name, outerOut.name);
-    Assert.assertEquals(outer.bObj.x, outerOut.bObj.x, 0.01);
+    Assert.assertEquals(persistorTestExample.x, persistorTestExampleOut.x);
+    Assert.assertEquals(persistorTestExample.name, persistorTestExampleOut.name);
+    Assert.assertEquals(persistorTestExample.bObj.x, persistorTestExampleOut.bObj.x, 0.01);
   }
 
   /**
@@ -58,7 +58,7 @@ public class SqliteObjectPersistor {
       throws IOException, SQLException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
     SQLitePersistor sqlite = new SQLitePersistor(
         testLocation.toString(), baseFilename, String.valueOf(1), TimeUnit.SECONDS, 1);
-    Assert.assertNull(sqlite.read(Outer.class));
+    Assert.assertNull(sqlite.read(PersistorTestExample.class));
   }
 
   @Rule
@@ -173,13 +173,34 @@ public class SqliteObjectPersistor {
     class NotPersistable {
       int x;
     }
-    
+
     SQLitePersistor sqlite = new SQLitePersistor(
         testLocation.toString(), baseFilename, String.valueOf(1), TimeUnit.SECONDS, 1);
     sqlite.write(new NotPersistable());
   }
 
-  static class Outer {
+  //@Test
+  public void testCollectionOfPrimitives()
+      throws IOException, SQLException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+    class CollectionOfPrimitives {
+      @ValueColumn
+      List<Integer> ll = new ArrayList<>();
+
+      public List<Integer> getLl() {
+        return ll;
+      }
+
+      public void setLl(List<Integer> x) {
+        this.ll = x;
+      }
+    }
+
+    SQLitePersistor sqlite = new SQLitePersistor(
+        testLocation.toString(), baseFilename, String.valueOf(1), TimeUnit.SECONDS, 1);
+    sqlite.write(new CollectionOfPrimitives());
+  }
+
+  static class PersistorTestExample {
     @ValueColumn
     int x;
 
@@ -194,7 +215,7 @@ public class SqliteObjectPersistor {
     @RefColumn
     List<ITest> myList;
 
-    public Outer() {
+    public PersistorTestExample() {
       this.x = 10;
       this.y = 20;
       this.name = "test-name";
