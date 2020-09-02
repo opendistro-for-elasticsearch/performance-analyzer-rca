@@ -246,6 +246,7 @@ class SQLitePersistor extends PersistorBase {
       }
     } else {
       try {
+        // get the row with the provided rowId.
         recordList = create.select().from(tableName).where(DSL.field(primaryKeyCol, Integer.class).eq(rowId)).fetch();
       } catch (DataAccessException dex) {
         // This is more severe. This would mean that the data corresponding to the outer Object were found but
@@ -256,7 +257,7 @@ class SQLitePersistor extends PersistorBase {
     }
 
     if (recordList.size() != 1) {
-      // We always expect one row whether we query for the latest row or we query for a row by the rodID.
+      // We always expect one row whether we query for the latest row or we query for a row by the rowID.
       throw new IllegalStateException("Expected one row, found: '" + recordList + "'");
     }
     Record record = recordList.get(0);
@@ -270,10 +271,11 @@ class SQLitePersistor extends PersistorBase {
       }
 
       if (columnName.startsWith(NESTED_OBJECT_COLUMN_PREFIX)) {
-        // If the name of the column starts with the prefix, then it is a reference Column. What it means is the value contained in this
-        // column references to RowIDs in some other table. There are two forms of this:
+        // If the name of the column starts with the prefix, then it is a reference Column. It means that the value contained in this
+        // column references to a particular RowIDs in the table with name same as this column(with prefix removed).
+        // There are two forms of this:
         // - It can be a reference to another table, in which case the column is an integer type.
-        // - OR it is a collection of RowIDs from multiple tables, in which case the column type is a string and it is a JsonArray as e.g.
+        // - OR it is a collection of RowIDs from multiple tables, in which case the column type a JsonArray as String. e.g.
         //    [{\"tableName\":\"ITestImpl2\",\"rowIds\":[1]},{\"tableName\":\"ITestImpl1\",\"rowIds\":[1,2]}]
         String nestedTableName = columnName.replace(NESTED_OBJECT_COLUMN_PREFIX, "");
         if (jooqField.getType() == String.class) {
@@ -298,17 +300,26 @@ class SQLitePersistor extends PersistorBase {
               collection.add(nestedObj);
             }
           }
-
           setter.invoke(obj, collection);
         } else if (jooqField.getType() == Integer.class) {
-          // ReferenceObjectType
+          // This references a row in a table.
           if (fieldNameToGetterSetterMap.get(nestedTableName) == null) {
             throw new IllegalStateException("No Field Mapping exist for column name " + jooqField.getName() + " of table " + tableName);
           }
           Method setter = fieldNameToGetterSetterMap.get(nestedTableName).setter;
-          Class<?> setterType = setter.getParameterTypes()[0];
 
+          if (setter.getParameterTypes().length != 1) {
+            throw new IllegalStateException("A setter " + setter.getName() + " of class " + clz.getSimpleName()
+                + " accepts more than one arguments.");
+          }
+
+          // This gives the type of the setter parameter.
+          Class<?> setterType = setter.getParameterTypes()[0];
           int nestedRowId = (int)jooqField.getValue(record);
+
+          // Now that we have the Type of the parameter and the rowID specifying the data the object
+          // is to be filled with; we call the read method recursively to create the referenced Object
+          // and then invoke the setter with it.
           Object nestedObj = read(setterType, nestedRowId);
           setter.invoke(obj, nestedObj);
         }
@@ -360,6 +371,9 @@ class SQLitePersistor extends PersistorBase {
   }
 
   private String capitalize(String name) {
+    if (name.length() == 1) {
+      return name.toUpperCase();
+    }
     return name.substring(0, 1).toUpperCase() + name.substring(1);
   }
 
