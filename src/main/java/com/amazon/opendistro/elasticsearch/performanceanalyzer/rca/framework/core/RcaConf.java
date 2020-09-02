@@ -29,6 +29,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.Queue
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -83,6 +84,16 @@ public class RcaConf {
   // This should only be used for Tests.
   public RcaConf() {
     this.mapper = new ObjectMapper();
+  }
+
+  /**
+   * Converts json config passed as String to a Java Map.
+   *
+   * <p>This method should only be called from Tests to parse test configs
+   */
+  @VisibleForTesting
+  public void readConfigFromString(String configJson) throws JsonProcessingException {
+    this.conf = mapper.readValue(configJson, ConfJsonWrapper.class);
   }
 
   public static void clear() {
@@ -215,14 +226,14 @@ public class RcaConf {
     List<String> rcaConfFiles = RcaControllerHelper.getAllConfFilePaths();
     for (String confFilePath : rcaConfFiles) {
       updateStatus = updateRcaConf(confFilePath, mutedRcas, mutedDeciders,
-        mutedActions);
+          mutedActions);
       if (!updateStatus) {
         LOG.error("Failed to update the conf file at path: {}", confFilePath);
         StatsCollector.instance().logMetric(RcaConsts.WRITE_UPDATED_RCA_CONF_ERROR);
         break;
       }
     }
-      return updateStatus;
+    return updateStatus;
   }
 
   private boolean updateRcaConf(String originalFilePath, final Set<String> mutedRcas,
@@ -284,5 +295,9 @@ public class RcaConf {
       LOG.error("rca.conf contains value in invalid format, trace : {}", ne.getMessage());
     }
     return setting;
+  }
+
+  public Map<String, Object> getActionConfigSettings() {
+    return conf.getActionConfigSettings();
   }
 }

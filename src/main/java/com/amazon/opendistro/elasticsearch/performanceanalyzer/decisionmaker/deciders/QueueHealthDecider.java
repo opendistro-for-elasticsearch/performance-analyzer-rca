@@ -115,7 +115,7 @@ public class QueueHealthDecider extends Decider {
 
   private ModifyQueueCapacityAction configureQueueCapacity(NodeKey esNode, ResourceEnum threadPool, boolean increase) {
     ModifyQueueCapacityAction action = ModifyQueueCapacityAction
-            .newBuilder(esNode, threadPool, getAppContext())
+            .newBuilder(esNode, threadPool, getAppContext(), rcaConf)
             .increase(increase)
             .build();
     if (action != null && action.isActionable()) {
