@@ -35,12 +35,6 @@ public class HighHeapUsageYoungGenRcaConfig {
     youngGenGcTimeThreshold = rcaConf.readRcaConfig(CONFIG_NAME,
             RCA_CONF_KEY_CONSTANTS.YOUNG_GEN_GC_TIME_THRES, DEFAULT_YOUNG_GEN_GC_TIME_THRESHOLD_IN_MS_PER_SEC,
             (s) -> (s > 0), Integer.class);
-    if (promotionRateThreshold == null) {
-      promotionRateThreshold = DEFAULT_PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC;
-    }
-    if (youngGenGcTimeThreshold == null) {
-      youngGenGcTimeThreshold = DEFAULT_YOUNG_GEN_GC_TIME_THRESHOLD_IN_MS_PER_SEC;
-    }
   }
 
   public int getPromotionRateThreshold() {

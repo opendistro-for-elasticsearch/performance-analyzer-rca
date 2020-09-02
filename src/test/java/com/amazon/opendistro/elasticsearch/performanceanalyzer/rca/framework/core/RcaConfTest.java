@@ -62,21 +62,23 @@ public class RcaConfTest {
     Integer val = rcaConf.readRcaConfig(HotNodeClusterRcaConfig.CONFIG_NAME,
         HotNodeClusterRcaConfig.RCA_CONF_KEY_CONSTANTS.UNBALANCED_RESOURCE_THRES,
         0, Integer.class);
-    Assert.assertNull(val);
+    Assert.assertNotNull(val);
+    Assert.assertEquals(0, val.intValue());
 
     val = rcaConf.readRcaConfig(HighHeapUsageOldGenRcaConfig.CONFIG_NAME, "test", 0, Integer.class);
-    Assert.assertNull(val);
+    Assert.assertNotNull(val);
+    Assert.assertEquals(0, val.intValue());
  
     Integer fieldDataTimePeriod = rcaConf.readRcaConfig(FieldDataCacheRcaConfig.CONFIG_NAME,
             FieldDataCacheRcaConfig.RCA_CONF_KEY_CONSTANTS.FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC,
             FieldDataCacheRcaConfig.DEFAULT_FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC, Integer.class);
-    Assert.assertNull(val);
+    Assert.assertNotNull(fieldDataTimePeriod);
     Assert.assertEquals(FieldDataCacheRcaConfig.DEFAULT_FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC, fieldDataTimePeriod.intValue());
 
     Integer shardRequestTimePeriod = rcaConf.readRcaConfig(ShardRequestCacheRcaConfig.CONFIG_NAME,
             ShardRequestCacheRcaConfig.RCA_CONF_KEY_CONSTANTS.SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC,
             ShardRequestCacheRcaConfig.DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC, Integer.class);
-    Assert.assertNull(val);
+    Assert.assertNotNull(shardRequestTimePeriod);
     Assert.assertEquals(ShardRequestCacheRcaConfig.DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC, shardRequestTimePeriod.intValue());
   }
 

@@ -210,7 +210,7 @@ public class RcaConf {
 
   @SuppressWarnings("unchecked")
   public <T> T readRcaConfig(String rcaName, String key, T defaultValue, Predicate<T> validator, Class<? extends T> clazz) {
-    T setting = null;
+    T setting = defaultValue;
     try {
       Map<String, Object> rcaObj = null;
       if (conf.getRcaConfigSettings() != null

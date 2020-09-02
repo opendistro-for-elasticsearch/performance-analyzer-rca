@@ -23,15 +23,6 @@ public class HotShardRcaConfig {
         ioTotSysCallRateThreshold = rcaConf.readRcaConfig(CONFIG_NAME,
                 HotShardRcaConfig.RCA_CONF_KEY_CONSTANTS.IO_TOT_SYSCALL_RATE_THRESHOLD_PER_SECOND,
                 DEFAULT_IO_TOTAL_SYSCALL_RATE_THRESHOLD_PER_SEC, (s) -> (s > 0), Double.class);
-        if (cpuUtilizationThreshold == null) {
-            cpuUtilizationThreshold = DEFAULT_CPU_UTILIZATION_THRESHOLD;
-        }
-        if (ioTotThroughputThreshold == null) {
-            ioTotThroughputThreshold = DEFAULT_IO_TOTAL_THROUGHPUT_THRESHOLD_IN_BYTE_PER_SEC;
-        }
-        if (ioTotSysCallRateThreshold == null) {
-            ioTotSysCallRateThreshold = DEFAULT_IO_TOTAL_SYSCALL_RATE_THRESHOLD_PER_SEC;
-        }
     }
 
     public double getCpuUtilizationThreshold() {

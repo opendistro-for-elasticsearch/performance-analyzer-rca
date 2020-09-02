@@ -25,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Eviction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Hit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Size;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AClusterType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AErrorPatternIgnored;
@@ -40,6 +41,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners.RcaItNotEncryptedRunner;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.FieldDataCacheValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.ShardRequestCacheValidator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.queue_tuning.RcaItQueueTuning;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.ElasticSearchAnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.ShardRequestCacheClusterRca;
@@ -221,6 +223,9 @@ public class RcaItCacheTuning {
   @AErrorPatternIgnored(
           pattern = "ModifyCacheMaxSizeAction:build()",
           reason = "Heap metrics is expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+          pattern = "SubscribeResponseHandler:onError()",
+          reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
   public void testFieldDataCacheRca() {}
 
   // Test ShardRequestCacheClusterRca.
@@ -247,5 +252,8 @@ public class RcaItCacheTuning {
   @AErrorPatternIgnored(
           pattern = "ModifyCacheMaxSizeAction:build()",
           reason = "Heap metrics is expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+          pattern = "SubscribeResponseHandler:onError()",
+          reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
   public void testShardRequestCacheRca() {}
 }

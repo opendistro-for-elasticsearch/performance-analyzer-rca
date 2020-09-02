@@ -46,12 +46,6 @@ public class FieldDataCacheRcaConfig {
                         DEFAULT_FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC,
                         (s) -> (s > 0),
                         Integer.class);
-        if (fieldDataCacheSizeThreshold == null) {
-            fieldDataCacheSizeThreshold = DEFAULT_FIELD_DATA_CACHE_SIZE_THRESHOLD;
-        }
-        if (fieldDataCollectorTimePeriodInSec == null) {
-            fieldDataCollectorTimePeriodInSec = DEFAULT_FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC;
-        }
     }
 
     public double getFieldDataCacheSizeThreshold() {

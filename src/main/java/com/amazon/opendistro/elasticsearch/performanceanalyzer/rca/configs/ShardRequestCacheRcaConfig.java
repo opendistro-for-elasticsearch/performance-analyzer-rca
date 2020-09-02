@@ -46,12 +46,6 @@ public class ShardRequestCacheRcaConfig {
                         DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC,
                         (s) -> (s > 0),
                         Integer.class);
-        if (shardRequestCacheSizeThreshold == null) {
-            shardRequestCacheSizeThreshold = DEFAULT_SHARD_REQUEST_CACHE_SIZE_THRESHOLD;
-        }
-        if (shardRequestCollectorTimePeriodInSec == null) {
-            shardRequestCollectorTimePeriodInSec = DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC;
-        }
     }
 
     public double getShardRequestCacheSizeThreshold() {
