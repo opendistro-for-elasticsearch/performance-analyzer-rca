@@ -32,16 +32,17 @@ public class WaitFor {
     public static void waitFor(Callable<Boolean> task, long maxWait, TimeUnit unit, String message)
         throws Exception {
         long maxWaitMillis = TimeUnit.MILLISECONDS.convert(maxWait, unit);
-        Instant start = Instant.now();
-        while (!task.call() && maxWaitMillis >= 0) {
-            Instant finish = Instant.now();
-            maxWaitMillis -= Duration.between(start, finish).toMillis();
-            start = finish;
+        do {
+            Instant start = Instant.now();
+            if (task.call()) {
+                break;
+            }
+            maxWaitMillis -= Duration.between(start, Instant.now()).toMillis();
             // Wait for a fixed amount before calling the task again
-            Thread.sleep(500L);
-        }
+            Thread.sleep(100L);
+        } while (maxWaitMillis >= 0);
         // Check the task one last time before throwing an exception
-        if (!task.call() && maxWaitMillis < 0) {
+        if (!task.call()) {
             throw new TimeoutException(message);
         }
     }
