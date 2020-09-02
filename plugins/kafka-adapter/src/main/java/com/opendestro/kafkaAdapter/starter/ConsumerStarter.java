@@ -36,9 +36,10 @@ public class ConsumerStarter {
   private static String kafkaAdapterConfPath = Paths.get(KafkaAdapterConsts.CONFIG_DIR_PATH, KafkaAdapterConsts.KAFKA_ADAPTER_FILENAME).toString();
   private static KafkaAdapterConf conf = new KafkaAdapterConf(kafkaAdapterConfPath);
 
-  public static void consumeDecisions(ConsumerConfiguration consumerConfig, int maxNoFound, String webhooksUrl) {
+  public static void consume(ConsumerConfiguration consumerConfig, int maxNoFound, String webhooksUrl) {
     int noMessageFound = 0;
-    KafkaConsumer<String, String> consumer = consumerConfig.createConsumerForDecision();
+    KafkaConsumer<String, String> consumer = consumerConfig.createConsumer();
+    LOG.info("subscribing to topic: " + consumerConfig.getTopic());
     consumer.subscribe(Collections.singletonList(consumerConfig.getTopic()));
     try {
       while (true) {
@@ -53,6 +54,7 @@ public class ConsumerStarter {
           }
         }
         consumerRecords.forEach(record -> {
+          LOG.info("sending to Slack: " + record.value());
           Helper.postToSlackWebHook(record.value(), webhooksUrl);
         });
         consumer.commitAsync();
@@ -65,14 +67,13 @@ public class ConsumerStarter {
     }
   }
 
-
-  public static void startDecisionConsumer() {
+  public static void startKafkaConsumer() {
     String bootstrapServer = conf.getKafkaBootstrapServer();
-    String topic = conf.getRcaDecisionTopicName();
+    String topic = conf.getKafkaTopic();
     String webhooksUrl = conf.getWebhooksUrl();
     long interval = conf.getReceivePeriodicityMillis();
     int maxNoFound = conf.getMaxNoMessageFoundCountOnConsumer();
     ConsumerConfiguration consumerConfig = new ConsumerConfiguration(bootstrapServer, topic, interval);
-    consumeDecisions(consumerConfig, maxNoFound, webhooksUrl);
+    consume(consumerConfig, maxNoFound, webhooksUrl);
   }
 }

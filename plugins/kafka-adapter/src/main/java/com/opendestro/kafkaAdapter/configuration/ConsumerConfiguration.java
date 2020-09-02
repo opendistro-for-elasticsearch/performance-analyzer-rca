@@ -48,21 +48,12 @@ public class ConsumerConfiguration {
         return bootstrapServer;
     }
 
-    public KafkaConsumer<String, String> createConsumerForDecision() {
+    public KafkaConsumer<String, String> createConsumer() {
         Properties configProperties = new Properties();
         configProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bootstrapServer);
         configProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
         configProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
-        configProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "decision");
-        return new KafkaConsumer<>(configProperties);
-    }
-
-    public KafkaConsumer<String, String> createConsumerForClusterSummary() {
-        Properties configProperties = new Properties();
-        configProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, this.bootstrapServer);
-        configProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
-        configProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
-        configProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "cluster_summary");
+        configProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "consumer");
         return new KafkaConsumer<>(configProperties);
     }
 }

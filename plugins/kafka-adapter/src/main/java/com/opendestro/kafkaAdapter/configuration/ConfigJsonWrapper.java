@@ -21,8 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown = true)
 class ConfigJsonWrapper {
     private final String kafkaBootstrapServer;
-    private final String decisionTopic;
-    private final String summaryTopic;
+    private final String kafkaTopic;
     private final String webhooksUrl;
     private final long receivePeriodicityMillis;
     private final int maxNoMessageFoundCountOnConsumer;
@@ -39,12 +38,8 @@ class ConfigJsonWrapper {
         return kafkaBootstrapServer;
     }
 
-    public String getDecisonTopicName() {
-        return decisionTopic;
-    }
-
-    public String getSummaryTopicName() {
-        return summaryTopic;
+    public String getKafkaTopic() {
+        return kafkaTopic;
     }
 
     public String getWebhooksUrl() {
@@ -53,14 +48,12 @@ class ConfigJsonWrapper {
 
     ConfigJsonWrapper(
             @JsonProperty("bootstrap_server") String kafkaBootstrapServer,
-            @JsonProperty("decision_topic") String decisionTopic,
-            @JsonProperty("summary_topic") String summaryTopic,
+            @JsonProperty("kafka_topic") String topic,
             @JsonProperty("webhooks_url") String webhooksUrl,
             @JsonProperty("kafka_consumer_interval") long receivePeriodicityMillis,
             @JsonProperty("max_no_message_found_count") int maxNoMessageFoundCountOnConsumer) {
         this.kafkaBootstrapServer = kafkaBootstrapServer;
-        this.decisionTopic = decisionTopic;
-        this.summaryTopic = summaryTopic;
+        this.kafkaTopic = topic;
         this.webhooksUrl = webhooksUrl;
         this.receivePeriodicityMillis = receivePeriodicityMillis;
         this.maxNoMessageFoundCountOnConsumer = maxNoMessageFoundCountOnConsumer;

@@ -32,6 +32,7 @@ public class KafkaAdapterConf {
     public KafkaAdapterConf(String configPath) {
         this.configFileLoc = configPath;
         JsonFactory factory = new JsonFactory();
+        factory.enable(JsonParser.Feature.ALLOW_NON_NUMERIC_NUMBERS);
         factory.enable(JsonParser.Feature.ALLOW_COMMENTS);
         ObjectMapper mapper = new ObjectMapper(factory);
         try {
@@ -58,14 +59,10 @@ public class KafkaAdapterConf {
         return conf.getKafkaBootstrapServer();
     }
 
-    public String getRcaDecisionTopicName() {
-        return conf.getDecisonTopicName();
+    public String getKafkaTopic() {
+        return conf.getKafkaTopic();
     }
-
-    public String getRcaSummaryTopicName() {
-        return conf.getSummaryTopicName();
-    }
-
+    
     public String getWebhooksUrl() {
         return conf.getWebhooksUrl();
     }
