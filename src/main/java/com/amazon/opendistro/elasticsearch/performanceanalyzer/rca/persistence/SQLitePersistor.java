@@ -33,6 +33,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -362,6 +363,48 @@ class SQLitePersistor extends PersistorBase {
     return name.substring(0, 1).toUpperCase() + name.substring(1);
   }
 
+  private void checkValidType(java.lang.reflect.Field field, Class<?> clz) {
+    Type type = field.getGenericType();
+    Annotation[] annotation = field.getAnnotations();
+    StringBuilder err = new StringBuilder();
+    err.append("[class: ").append(clz.getSimpleName()).append(":field:").append(field.getName()).append("]::");
+
+    if (annotation.length != 1) {
+      err
+          .append("A field can have either ")
+          .append(ValueColumn.class.getSimpleName())
+          .append(" or ")
+          .append(RefColumn.class.getSimpleName())
+          .append(" not both");
+      throw new IllegalStateException(err.toString());
+    }
+
+    if (annotation[0].annotationType() == RefColumn.class) {
+      if (type instanceof ParameterizedType) {
+        ParameterizedType parameterizedType = (ParameterizedType) type;
+        Class<?> actualType = (Class<?>) parameterizedType.getActualTypeArguments()[0];
+        if (actualType.isPrimitive() || actualType == String.class) {
+          err.append("RefColumn can only be used for a user defined class or a Collection of user-defined class NOT "
+              + "a primitive or String type");
+          throw new IllegalStateException(err.toString());
+        }
+      } else {
+        Class<?> justType = field.getType();
+        if (justType.isPrimitive() || justType == String.class) {
+          err.append("RefColumn can only be used for a user defined class or a Collection of user-defined class NOT "
+              + "a primitive or String type");
+          throw new IllegalStateException(err.toString());
+        }
+      }
+    } else {
+      if (type instanceof ParameterizedType) {
+        // TODO: This will be added if use-cases require this.
+        err.append("persisting Primitives or Strings as Parameterized Types is not supported.");
+        throw new IllegalStateException(err.toString());
+      }
+    }
+  }
+
   /**
    * Go over all the fields of the class and then filter out all that are annotated as @AColumn or @ATable. For those fields,
    * try to figure out the getter and setters.
@@ -379,13 +422,7 @@ class SQLitePersistor extends PersistorBase {
 
     for (java.lang.reflect.Field field : clz.getDeclaredFields()) {
       if (field.isAnnotationPresent(ValueColumn.class) || field.isAnnotationPresent(RefColumn.class)) {
-        // TODO: check for valid types.
-        // if (!isValidFieldType(field)) {
-        //   throw new IllegalStateException("Only Supported types are - primitive Types (except the Void type) or String or User defined "
-        //       + "classes or Collection type of these. Provided a field " + field.getName() + " in class " + clz.getSimpleName()
-        //       + " of type: " + field.getType().getSimpleName());
-        // }
-
+        checkValidType(field, clz);
         // Now we try to find the corresponding Getter and Setter for this field.
         GetterSetterPairs pair = new GetterSetterPairs();
 

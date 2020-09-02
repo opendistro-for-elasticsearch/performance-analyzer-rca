@@ -179,9 +179,12 @@ public class SqliteObjectPersistor {
     sqlite.write(new NotPersistable());
   }
 
-  //@Test
+  @Test
   public void testCollectionOfPrimitives()
       throws IOException, SQLException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+    exceptionRule.expect(IllegalStateException.class);
+    exceptionRule.expectMessage("persisting Primitives or Strings as Parameterized Types is not supported");
+
     class CollectionOfPrimitives {
       @ValueColumn
       List<Integer> ll = new ArrayList<>();
