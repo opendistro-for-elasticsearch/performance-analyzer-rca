@@ -19,12 +19,15 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.CacheActionConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.QueueActionConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.ThresholdConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.CacheBoundConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.ThreadPoolConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.WorkLoadTypeConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.jvm.LevelTwoActionBuilderConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.jvm.OldGenDecisionPolicyConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
@@ -47,22 +50,27 @@ import java.util.Map;
  */
 public class LevelTwoActionBuilder {
   private final AppContext appContext;
+  private final RcaConf rcaConf;
+  private final OldGenDecisionPolicyConfig oldGenDecisionPolicyConfig;
   private final LevelTwoActionBuilderConfig actionBuilderConfig;
   private final WorkLoadTypeConfig workLoadTypeConfig;
-  private final CacheBoundConfig cacheBoundConfig;
-  private final ThreadPoolConfig threadPoolConfig;
+  private final CacheActionConfig cacheActionConfig;
+  private final QueueActionConfig queueActionConfig;
   private final NodeKey esNode;
   private final Map<ResourceEnum, ModifyCacheMaxSizeAction> cacheActionMap;
   private final Map<ResourceEnum, ModifyQueueCapacityAction> queueActionMap;
   private final Map<ResourceEnum, Boolean> actionFilter;
 
   private LevelTwoActionBuilder(final NodeKey esNode, final AppContext appContext,
-      final DeciderConfig deciderConfig) {
+      final RcaConf rcaConf) {
     this.appContext = appContext;
+    this.rcaConf = rcaConf;
+    DeciderConfig deciderConfig = rcaConf.getDeciderConfig();
+    this.oldGenDecisionPolicyConfig = rcaConf.getDeciderConfig().getOldGenDecisionPolicyConfig();
     this.actionBuilderConfig = deciderConfig.getOldGenDecisionPolicyConfig().levelTwoActionBuilderConfig();
     this.workLoadTypeConfig = deciderConfig.getWorkLoadTypeConfig();
-    this.cacheBoundConfig = deciderConfig.getCacheBoundConfig();
-    this.threadPoolConfig = deciderConfig.getThreadPoolConfig();
+    this.cacheActionConfig = rcaConf.getCacheActionConfig();
+    this.queueActionConfig = rcaConf.getQueueActionConfig();
     this.esNode = esNode;
     this.cacheActionMap = new HashMap<>();
     this.queueActionMap = new HashMap<>();
@@ -72,17 +80,21 @@ public class LevelTwoActionBuilder {
   }
 
   public static LevelTwoActionBuilder newBuilder(final NodeKey esNode, final AppContext appContext,
-      final DeciderConfig deciderConfig) {
-    return new LevelTwoActionBuilder(esNode, appContext, deciderConfig);
+      final RcaConf rcaConf) {
+    return new LevelTwoActionBuilder(esNode, appContext, rcaConf);
   }
 
   private void addFieldDataCacheAction() {
-    //TODO : increase step size
+    ThresholdConfig<Double> fieldDataCacheConfig = cacheActionConfig.getThresholdConfig(ResourceEnum.FIELD_DATA_CACHE);
+    double stepSizeInPercent = OldGenDecisionUtils.calculateStepSize(
+        fieldDataCacheConfig.lowerBound(),
+        fieldDataCacheConfig.upperBound(),
+        oldGenDecisionPolicyConfig.cacheStepCount());
+
     ModifyCacheMaxSizeAction action = ModifyCacheMaxSizeAction
-        .newBuilder(esNode, ResourceEnum.FIELD_DATA_CACHE, appContext)
+        .newBuilder(esNode, ResourceEnum.FIELD_DATA_CACHE, appContext, rcaConf)
         .increase(false)
-        .lowerBoundThreshold(actionBuilderConfig.fieldDataCacheLowerBound())
-        .upperBoundThreshold(cacheBoundConfig.fieldDataCacheUpperBound())
+        .stepSizeInPercent(stepSizeInPercent * actionBuilderConfig.fieldDataCacheStepSize())
         .build();
     if (action.isActionable()) {
       cacheActionMap.put(ResourceEnum.FIELD_DATA_CACHE, action);
@@ -90,12 +102,16 @@ public class LevelTwoActionBuilder {
   }
 
   private void addShardRequestCacheAction() {
-    //TODO : increase step size
+    ThresholdConfig<Double> shardRequestCache = cacheActionConfig.getThresholdConfig(ResourceEnum.SHARD_REQUEST_CACHE);
+    double stepSizeInPercent = OldGenDecisionUtils.calculateStepSize(
+        shardRequestCache.lowerBound(),
+        shardRequestCache.upperBound(),
+        oldGenDecisionPolicyConfig.cacheStepCount());
+
     ModifyCacheMaxSizeAction action = ModifyCacheMaxSizeAction
-        .newBuilder(esNode, ResourceEnum.SHARD_REQUEST_CACHE, appContext)
+        .newBuilder(esNode, ResourceEnum.SHARD_REQUEST_CACHE, appContext, rcaConf)
         .increase(false)
-        .lowerBoundThreshold(actionBuilderConfig.shardRequestCacheLowerBound())
-        .upperBoundThreshold(cacheBoundConfig.shardRequestCacheUpperBound())
+        .stepSizeInPercent(stepSizeInPercent * actionBuilderConfig.shardRequestCacheStepSize())
         .build();
     if (action.isActionable()) {
       cacheActionMap.put(ResourceEnum.SHARD_REQUEST_CACHE, action);
@@ -103,11 +119,16 @@ public class LevelTwoActionBuilder {
   }
 
   private void addWriteQueueAction() {
+    ThresholdConfig<Integer> writeQueueConfig = queueActionConfig.getThresholdConfig(ResourceEnum.WRITE_THREADPOOL);
+    int stepSize = OldGenDecisionUtils.calculateStepSize(
+        writeQueueConfig.lowerBound(),
+        writeQueueConfig.upperBound(),
+        oldGenDecisionPolicyConfig.queueStepCount());
+
     ModifyQueueCapacityAction action = ModifyQueueCapacityAction
-        .newBuilder(esNode, ResourceEnum.WRITE_THREADPOOL, appContext)
+        .newBuilder(esNode, ResourceEnum.WRITE_THREADPOOL, appContext, rcaConf)
         .increase(false)
-        .lowerBound(threadPoolConfig.writeQueueCapacityLowerBound())
-        .upperBound(threadPoolConfig.writeQueueCapacityUpperBound())
+        .stepSize(stepSize * actionBuilderConfig.writeQueueStepSize())
         .build();
     if (action.isActionable()) {
       queueActionMap.put(ResourceEnum.WRITE_THREADPOOL, action);
@@ -115,11 +136,16 @@ public class LevelTwoActionBuilder {
   }
 
   private void addSearchQueueAction() {
+    ThresholdConfig<Integer> searchQueueConfig = queueActionConfig.getThresholdConfig(ResourceEnum.SEARCH_THREADPOOL);
+    int stepSize = OldGenDecisionUtils.calculateStepSize(
+        searchQueueConfig.lowerBound(),
+        searchQueueConfig.upperBound(),
+        oldGenDecisionPolicyConfig.queueStepCount());
+
     ModifyQueueCapacityAction action = ModifyQueueCapacityAction
-        .newBuilder(esNode, ResourceEnum.SEARCH_THREADPOOL, appContext)
+        .newBuilder(esNode, ResourceEnum.SEARCH_THREADPOOL, appContext, rcaConf)
         .increase(false)
-        .lowerBound(threadPoolConfig.searchQueueCapacityLowerBound())
-        .upperBound(threadPoolConfig.searchQueueCapacityUpperBound())
+        .stepSize(stepSize * actionBuilderConfig.searchQueueStepSize())
         .build();
     if (action.isActionable()) {
       queueActionMap.put(ResourceEnum.SEARCH_THREADPOOL, action);
@@ -132,16 +158,7 @@ public class LevelTwoActionBuilder {
     actionFilter.put(ResourceEnum.SHARD_REQUEST_CACHE, true);
   }
 
-  /**
-   * This function divide the range {lower bound - upper bound } of search/wrire queue into
-   * buckets. And allocate the val into its corresponding bucket. The value here refers to the
-   * EWMA size of search/write queue. step here is calculated as {range of queue} / {num of buckets}
-   * The queue's lower/upper bound can be configured in rca.conf
-   */
-  private int bucketization(int lowerBound, int upperBound, int val, int bucketSize) {
-    double step = (double) (upperBound - lowerBound) / (double) bucketSize;
-    return (int) ((double) val / step);
-  }
+
 
   // downsize queue based on priority and current queue size
   private void actionPriorityForQueue() {
@@ -155,17 +172,19 @@ public class LevelTwoActionBuilder {
     }
     ModifyQueueCapacityAction writeQueueAction = queueActionMap.get(ResourceEnum.WRITE_THREADPOOL);
     ModifyQueueCapacityAction searchQueueAction = queueActionMap.get(ResourceEnum.SEARCH_THREADPOOL);
+    ThresholdConfig<Integer> writeQueueConfig = queueActionConfig.getThresholdConfig(ResourceEnum.WRITE_THREADPOOL);
+    ThresholdConfig<Integer> searchQueueConfig = queueActionConfig.getThresholdConfig(ResourceEnum.SEARCH_THREADPOOL);
     if (writeQueueAction != null && searchQueueAction != null) {
-      int writeQueueSizeBucket = bucketization(
-          threadPoolConfig.writeQueueCapacityLowerBound(),
-          threadPoolConfig.writeQueueCapacityUpperBound(),
+      int writeQueueSizeBucket = OldGenDecisionUtils.bucketization(
+          writeQueueConfig.lowerBound(),
+          writeQueueConfig.upperBound(),
           writeQueueCapacity,
-          actionBuilderConfig.queueBucketSize());
-      int searchQueueSizeBucket = bucketization(
-          threadPoolConfig.searchQueueCapacityLowerBound(),
-          threadPoolConfig.searchQueueCapacityUpperBound(),
+          oldGenDecisionPolicyConfig.queueBucketSize());
+      int searchQueueSizeBucket = OldGenDecisionUtils.bucketization(
+          searchQueueConfig.lowerBound(),
+          searchQueueConfig.upperBound(),
           searchQueueCapacity,
-          actionBuilderConfig.queueBucketSize());
+          oldGenDecisionPolicyConfig.queueBucketSize());
       if (writeQueueSizeBucket > searchQueueSizeBucket) {
         actionFilter.put(ResourceEnum.WRITE_THREADPOOL, true);
       }

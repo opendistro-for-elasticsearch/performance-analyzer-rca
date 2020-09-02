@@ -20,47 +20,26 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Predicate;
 
 /**
- * "workload-type": {
- *   "priority-order": ["ingest", "search"]
+ * "cache-type": {
+ *    "priority-order": ["fielddata-cache", "shard-request-cache"]
  * }
  */
-public class WorkLoadTypeConfig {
-
+public class CachePriorityOrderConfig {
   private static final String PRIORITY_ORDER_CONFIG_NAME = "priority-order";
-  private static String INGEST = "ingest";
-  private static String SEARCH = "search";
+  private static String FIELDDATA_CACHE = "fielddata-cache";
+  private static String SHARD_REQUEST_CACHE = "shard-request-cache";
   public static final List<String> DEFAULT_PRIORITY_ORDER = Collections.unmodifiableList(
-      Arrays.asList(INGEST, SEARCH));
+      Arrays.asList(FIELDDATA_CACHE, SHARD_REQUEST_CACHE));
   private Config<List<String>> priorityOrder;
-  private Predicate<List<String>> listValidator;
 
-  public WorkLoadTypeConfig(NestedConfig configs) {
-    listValidator = (list) -> {
-      if (list.size() > 2) {
-        return false;
-      }
-      if (SEARCH.equals(list.get(0))) {
-        return INGEST.equals(list.get(1));
-      }
-      else if (INGEST.equals(list.get(0))) {
-        return SEARCH.equals(list.get(1));
-      }
-      else {
-        return false;
-      }
-    };
+  public CachePriorityOrderConfig(NestedConfig configs) {
     priorityOrder = new Config(PRIORITY_ORDER_CONFIG_NAME, configs.getValue(),
-        DEFAULT_PRIORITY_ORDER, listValidator, List.class);
+        DEFAULT_PRIORITY_ORDER, List.class);
   }
 
   public List<String> getPriorityOrder() {
     return priorityOrder.getValue();
-  }
-
-  public boolean preferIngestOverSearch() {
-    return INGEST.equals(getPriorityOrder().get(0));
   }
 }

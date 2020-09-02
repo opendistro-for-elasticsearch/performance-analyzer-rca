@@ -19,10 +19,14 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.CacheActionConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.QueueActionConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.ThresholdConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.CacheBoundConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.ThreadPoolConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.jvm.LevelThreeActionBuilderConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.jvm.OldGenDecisionPolicyConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,39 +43,41 @@ import java.util.Map;
  */
 public class LevelThreeActionBuilder {
   private final AppContext appContext;
+  private final RcaConf rcaConf;
   private final NodeKey esNode;
   private final Map<ResourceEnum, ModifyCacheMaxSizeAction> cacheActionMap;
   private final Map<ResourceEnum, ModifyQueueCapacityAction> queueActionMap;
-  private final Map<ResourceEnum, Boolean> actionFilter;
-  private final CacheBoundConfig cacheBoundConfig;
-  private final ThreadPoolConfig threadPoolConfig;
+  private final OldGenDecisionPolicyConfig oldGenDecisionPolicyConfig;
+  private final LevelThreeActionBuilderConfig actionBuilderConfig;
+  private final CacheActionConfig cacheActionConfig;
+  private final QueueActionConfig queueActionConfig;
 
   private LevelThreeActionBuilder(final NodeKey esNode, final AppContext appContext,
-      final DeciderConfig deciderConfig) {
+      final RcaConf rcaConf) {
     this.appContext = appContext;
+    this.rcaConf = rcaConf;
     this.esNode = esNode;
     this.cacheActionMap = new HashMap<>();
     this.queueActionMap = new HashMap<>();
-    this.actionFilter = new HashMap<>();
-    this.cacheBoundConfig = deciderConfig.getCacheBoundConfig();
-    this.threadPoolConfig = deciderConfig.getThreadPoolConfig();
+    DeciderConfig deciderConfig = rcaConf.getDeciderConfig();
+    this.oldGenDecisionPolicyConfig = rcaConf.getDeciderConfig().getOldGenDecisionPolicyConfig();
+    this.actionBuilderConfig = deciderConfig.getOldGenDecisionPolicyConfig().levelThreeActionBuilderConfig();
+    this.cacheActionConfig = rcaConf.getCacheActionConfig();
+    this.queueActionConfig = rcaConf.getQueueActionConfig();
     registerActions();
-    actionPriorityFilter();
   }
 
   public static LevelThreeActionBuilder newBuilder(final NodeKey esNode, final AppContext appContext,
-      final DeciderConfig deciderConfig) {
-    return new LevelThreeActionBuilder(esNode, appContext, deciderConfig);
+      final RcaConf rcaConf) {
+    return new LevelThreeActionBuilder(esNode, appContext, rcaConf);
   }
 
   //downsize field data cache to its lower bound in one shot
   public void addFieldDataCacheAction() {
     ModifyCacheMaxSizeAction action = ModifyCacheMaxSizeAction
-        .newBuilder(esNode, ResourceEnum.FIELD_DATA_CACHE, appContext)
+        .newBuilder(esNode, ResourceEnum.FIELD_DATA_CACHE, appContext, rcaConf)
         .increase(false)
-        .lowerBoundThreshold(cacheBoundConfig.fieldDataCacheLowerBound())
-        .upperBoundThreshold(cacheBoundConfig.fieldDataCacheUpperBound())
-        .desiredCacheMaxSize(cacheBoundConfig.fieldDataCacheLowerBound())
+        .setDesiredCacheMaxSizeToMin()
         .build();
     if (action.isActionable()) {
       cacheActionMap.put(ResourceEnum.FIELD_DATA_CACHE, action);
@@ -81,11 +87,9 @@ public class LevelThreeActionBuilder {
   //downsize shard request cache to its lower bound in one shot
   public void addShardRequestCacheAction() {
     ModifyCacheMaxSizeAction action = ModifyCacheMaxSizeAction
-        .newBuilder(esNode, ResourceEnum.SHARD_REQUEST_CACHE, appContext)
+        .newBuilder(esNode, ResourceEnum.SHARD_REQUEST_CACHE, appContext, rcaConf)
         .increase(false)
-        .lowerBoundThreshold(cacheBoundConfig.shardRequestCacheLowerBound())
-        .upperBoundThreshold(cacheBoundConfig.shardRequestCacheUpperBound())
-        .desiredCacheMaxSize(cacheBoundConfig.shardRequestCacheLowerBound())
+        .setDesiredCacheMaxSizeToMin()
         .build();
     if (action.isActionable()) {
       cacheActionMap.put(ResourceEnum.SHARD_REQUEST_CACHE, action);
@@ -93,12 +97,16 @@ public class LevelThreeActionBuilder {
   }
 
   private void addWriteQueueAction() {
-    //TODO: increase step size
+    ThresholdConfig<Integer> writeQueueConfig = queueActionConfig.getThresholdConfig(ResourceEnum.WRITE_THREADPOOL);
+    int stepSize = OldGenDecisionUtils.calculateStepSize(
+        writeQueueConfig.lowerBound(),
+        writeQueueConfig.upperBound(),
+        oldGenDecisionPolicyConfig.queueStepCount());
+
     ModifyQueueCapacityAction action = ModifyQueueCapacityAction
-        .newBuilder(esNode, ResourceEnum.WRITE_THREADPOOL, appContext)
+        .newBuilder(esNode, ResourceEnum.WRITE_THREADPOOL, appContext, rcaConf)
         .increase(false)
-        .lowerBound(threadPoolConfig.writeQueueCapacityLowerBound())
-        .upperBound(threadPoolConfig.writeQueueCapacityUpperBound())
+        .stepSize(stepSize * actionBuilderConfig.writeQueueStepSize())
         .build();
     if (action.isActionable()) {
       queueActionMap.put(ResourceEnum.WRITE_THREADPOOL, action);
@@ -106,27 +114,22 @@ public class LevelThreeActionBuilder {
   }
 
   private void addSearchQueueAction() {
-    //TODO: increase step size
+    ThresholdConfig<Integer> searchQueueConfig = queueActionConfig.getThresholdConfig(ResourceEnum.SEARCH_THREADPOOL);
+    int stepSize = OldGenDecisionUtils.calculateStepSize(
+        searchQueueConfig.lowerBound(),
+        searchQueueConfig.upperBound(),
+        oldGenDecisionPolicyConfig.queueStepCount());
+
     ModifyQueueCapacityAction action = ModifyQueueCapacityAction
-        .newBuilder(esNode, ResourceEnum.SEARCH_THREADPOOL, appContext)
+        .newBuilder(esNode, ResourceEnum.SEARCH_THREADPOOL, appContext, rcaConf)
         .increase(false)
-        .lowerBound(threadPoolConfig.searchQueueCapacityLowerBound())
-        .upperBound(threadPoolConfig.searchQueueCapacityUpperBound())
+        .stepSize(stepSize * actionBuilderConfig.searchQueueStepSize())
         .build();
     if (action.isActionable()) {
       queueActionMap.put(ResourceEnum.SEARCH_THREADPOOL, action);
     }
   }
 
-  private void actionPriorityForCache() {
-    actionFilter.put(ResourceEnum.FIELD_DATA_CACHE, true);
-    actionFilter.put(ResourceEnum.SHARD_REQUEST_CACHE, true);
-  }
-
-  private void actionPriorityForQueue() {
-    actionFilter.put(ResourceEnum.WRITE_THREADPOOL, true);
-    actionFilter.put(ResourceEnum.SEARCH_THREADPOOL, true);
-  }
 
   private void registerActions() {
     addFieldDataCacheAction();
@@ -135,15 +138,6 @@ public class LevelThreeActionBuilder {
     addWriteQueueAction();
   }
 
-  /**
-   * The default priority in this level is
-   * 1. downsize both caches simultaneously to its lower bound in one shot.
-   * 2. downsize all queues simultaneously until they reach their lower bound
-   */
-  private void actionPriorityFilter() {
-    actionPriorityForCache();
-    actionPriorityForQueue();
-  }
 
   /**
    * build actions.
@@ -152,14 +146,10 @@ public class LevelThreeActionBuilder {
   public List<Action> build() {
     List<Action> actions = new ArrayList<>();
     cacheActionMap.forEach((cache, action) -> {
-      if (actionFilter.getOrDefault(cache, false)) {
-        actions.add(action);
-      }
+      actions.add(action);
     });
     queueActionMap.forEach((queue, action) -> {
-      if (actionFilter.getOrDefault(queue, false)) {
-        actions.add(action);
-      }
+      actions.add(action);
     });
     return actions;
   }

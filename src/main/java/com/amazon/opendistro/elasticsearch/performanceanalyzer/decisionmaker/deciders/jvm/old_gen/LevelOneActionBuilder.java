@@ -18,10 +18,12 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.CacheActionConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.ThresholdConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.CacheBoundConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.jvm.LevelOneActionBuilderConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.jvm.OldGenDecisionPolicyConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,35 +45,41 @@ import java.util.Map;
  */
 public class LevelOneActionBuilder {
   private final AppContext appContext;
+  private final RcaConf rcaConf;
+  private final OldGenDecisionPolicyConfig oldGenDecisionPolicyConfig;
   private final LevelOneActionBuilderConfig actionBuilderConfig;
-  private final CacheBoundConfig cacheBoundConfig;
+  private final CacheActionConfig cacheActionConfig;
   private final NodeKey esNode;
   private final Map<ResourceEnum, ModifyCacheMaxSizeAction> cacheActionMap;
-  private final Map<ResourceEnum, Boolean> actionFilter;
 
   private LevelOneActionBuilder(final NodeKey esNode, final AppContext appContext, final
-  DeciderConfig deciderConfig) {
+  RcaConf rcaConf) {
     this.appContext = appContext;
-    this.actionBuilderConfig = deciderConfig.getOldGenDecisionPolicyConfig().levelOneActionBuilderConfig();
-    this.cacheBoundConfig = deciderConfig.getCacheBoundConfig();
+    this.rcaConf = rcaConf;
+    this.oldGenDecisionPolicyConfig = rcaConf.getDeciderConfig().getOldGenDecisionPolicyConfig();
+    this.actionBuilderConfig = this.oldGenDecisionPolicyConfig.levelOneActionBuilderConfig();
+    this.cacheActionConfig = rcaConf.getCacheActionConfig();
     this.esNode = esNode;
     this.cacheActionMap = new HashMap<>();
-    this.actionFilter = new HashMap<>();
     registerActions();
-    actionPriorityFilter();
   }
 
   public static LevelOneActionBuilder newBuilder(final NodeKey esNode, final AppContext appContext, final
-  DeciderConfig deciderConfig) {
-    return new LevelOneActionBuilder(esNode, appContext, deciderConfig);
+  RcaConf rcaConf) {
+    return new LevelOneActionBuilder(esNode, appContext, rcaConf);
   }
 
   private void addFieldDataCacheAction() {
+    ThresholdConfig<Double> fieldDataCacheConfig = cacheActionConfig.getThresholdConfig(ResourceEnum.FIELD_DATA_CACHE);
+    double stepSizeInPercent = OldGenDecisionUtils.calculateStepSize(
+        fieldDataCacheConfig.lowerBound(),
+        fieldDataCacheConfig.upperBound(),
+        oldGenDecisionPolicyConfig.cacheStepCount());
+
     ModifyCacheMaxSizeAction action = ModifyCacheMaxSizeAction
-        .newBuilder(esNode, ResourceEnum.FIELD_DATA_CACHE, appContext)
+        .newBuilder(esNode, ResourceEnum.FIELD_DATA_CACHE, appContext, rcaConf)
         .increase(false)
-        .lowerBoundThreshold(actionBuilderConfig.fieldDataCacheLowerBound())
-        .upperBoundThreshold(cacheBoundConfig.fieldDataCacheUpperBound())
+        .stepSizeInPercent(stepSizeInPercent * actionBuilderConfig.fieldDataCacheStepSize())
         .build();
     if (action.isActionable()) {
       cacheActionMap.put(ResourceEnum.FIELD_DATA_CACHE, action);
@@ -79,11 +87,16 @@ public class LevelOneActionBuilder {
   }
 
   private void addShardRequestCacheAction() {
+    ThresholdConfig<Double> shardRequestCache = cacheActionConfig.getThresholdConfig(ResourceEnum.SHARD_REQUEST_CACHE);
+    double stepSizeInPercent = OldGenDecisionUtils.calculateStepSize(
+        shardRequestCache.lowerBound(),
+        shardRequestCache.upperBound(),
+        oldGenDecisionPolicyConfig.cacheStepCount());
+
     ModifyCacheMaxSizeAction action = ModifyCacheMaxSizeAction
-        .newBuilder(esNode, ResourceEnum.SHARD_REQUEST_CACHE, appContext)
+        .newBuilder(esNode, ResourceEnum.SHARD_REQUEST_CACHE, appContext, rcaConf)
         .increase(false)
-        .lowerBoundThreshold(actionBuilderConfig.shardRequestCacheLowerBound())
-        .upperBoundThreshold(cacheBoundConfig.shardRequestCacheUpperBound())
+        .stepSizeInPercent(stepSizeInPercent * actionBuilderConfig.shardRequestCacheStepSize())
         .build();
     if (action.isActionable()) {
       cacheActionMap.put(ResourceEnum.SHARD_REQUEST_CACHE, action);
@@ -96,26 +109,13 @@ public class LevelOneActionBuilder {
   }
 
   /**
-   * generate final action list based on action priority.
-   * The default priority in this level is to downsize both caches simultaneously
-   * unless explicitly overridden by customer yml.
-   * @return final action list based on action priority
-   */
-  private void actionPriorityFilter() {
-    actionFilter.put(ResourceEnum.FIELD_DATA_CACHE, true);
-    actionFilter.put(ResourceEnum.SHARD_REQUEST_CACHE, true);
-  }
-
-  /**
    * build actions.
    * @return List of actions
    */
   public List<Action> build() {
     List<Action> actions = new ArrayList<>();
     cacheActionMap.forEach((cache, action) -> {
-      if (actionFilter.getOrDefault(cache, false)) {
-        actions.add(action);
-      }
+      actions.add(action);
     });
     return actions;
   }

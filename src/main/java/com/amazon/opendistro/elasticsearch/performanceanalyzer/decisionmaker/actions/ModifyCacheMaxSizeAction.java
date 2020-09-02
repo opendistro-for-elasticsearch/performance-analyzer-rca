@@ -150,7 +150,7 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
     private final AppContext appContext;
     private final RcaConf rcaConf;
 
-    private long stepSizeInBytes;
+    private double stepSizeInPercent;
     private boolean isIncrease;
     private boolean canUpdate;
     private long coolOffPeriodInMillis;
@@ -200,12 +200,10 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
       // TODO: Update the step size to also include percentage of heap size along with absolute value
       switch (cacheType) {
         case FIELD_DATA_CACHE:
-          // Field data cache having step size of 512MB
-          this.stepSizeInBytes = (long) 512 * MB_TO_BYTES;
+          this.stepSizeInPercent = 0.01;
           break;
         case SHARD_REQUEST_CACHE:
-          // Shard request cache step size of 512KB
-          this.stepSizeInBytes = (long) 512 * KB_TO_BYTES;
+          this.stepSizeInPercent = 0.002;
           break;
         default:
           throw new IllegalArgumentException(String.format("Unrecognizable cache type: [%s]", cacheType.toString()));
@@ -232,8 +230,8 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
       return this;
     }
 
-    public Builder stepSizeInBytes(long stepSizeInBytes) {
-      this.stepSizeInBytes = stepSizeInBytes;
+    public Builder stepSizeInPercent(double stepSizeInPercent) {
+      this.stepSizeInPercent = stepSizeInPercent;
       return this;
     }
 
@@ -245,6 +243,7 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
             -1, -1, coolOffPeriodInMillis, false);
       }
 
+      long stepSizeInBytes = (long) stepSizeInPercent * heapMaxSizeInBytes;
       if (desiredCacheMaxSizeInBytes == null) {
         desiredCacheMaxSizeInBytes = isIncrease ? currentCacheMaxSizeInBytes + stepSizeInBytes :
             currentCacheMaxSizeInBytes - stepSizeInBytes;
