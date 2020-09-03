@@ -24,6 +24,7 @@ import java.util.Objects;
  * {@link UsageBucket}s based on defined ranges.
  */
 public class BasicBucketCalculator implements BucketCalculator {
+
   // a value in (-inf, underUtilized] is considered underutilized and signals that additional
   // resources may be removed for the sake of frugality
   double underUtilized;
@@ -52,24 +53,5 @@ public class BasicBucketCalculator implements BucketCalculator {
     } else {
       return UsageBucket.UNHEALTHY;
     }
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    BasicBucketCalculator that = (BasicBucketCalculator) o;
-    return Double.compare(that.underUtilized, underUtilized) == 0
-        && Double.compare(that.healthyWithBuffer, healthyWithBuffer) == 0
-        && Double.compare(that.healthy, healthy) == 0;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(underUtilized, healthyWithBuffer, healthy);
   }
 }

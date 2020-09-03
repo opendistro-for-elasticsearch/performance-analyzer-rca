@@ -105,7 +105,7 @@ public class SubscribeResponseHandler implements StreamObserver<SubscribeRespons
    */
   @Override
   public void onError(Throwable t) {
-    LOG.warn("Encountered an error while processing subscription stream", t);
+    LOG.error("Encountered an error while processing subscription stream", t);
   }
 
   /**
