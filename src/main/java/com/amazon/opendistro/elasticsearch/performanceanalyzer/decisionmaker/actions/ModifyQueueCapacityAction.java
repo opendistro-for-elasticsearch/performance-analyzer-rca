@@ -101,6 +101,11 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
   }
 
   @Override
+  public ResourceEnum getResource() {
+    return threadPool;
+  }
+
+  @Override
   public String toString() {
     return summary();
   }

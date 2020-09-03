@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 
@@ -48,4 +49,6 @@ public interface Action {
 
   /** Returns if this action is explicitly muted through configuration */
   boolean isMuted();
+
+  ResourceEnum getResource();
 }

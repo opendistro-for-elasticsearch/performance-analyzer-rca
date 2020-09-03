@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.ac
 
 import static java.time.Instant.ofEpochMilli;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Id;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Ip;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
@@ -166,6 +167,11 @@ public class CoolOffDetectorTest {
     @Override
     public boolean isMuted() {
       return false;
+    }
+
+    @Override
+    public ResourceEnum getResource() {
+      return null;
     }
   }
 }

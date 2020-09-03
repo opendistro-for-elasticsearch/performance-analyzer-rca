@@ -119,6 +119,11 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
   }
 
   @Override
+  public ResourceEnum getResource() {
+    return cacheType;
+  }
+
+  @Override
   public String toString() {
     return summary();
   }

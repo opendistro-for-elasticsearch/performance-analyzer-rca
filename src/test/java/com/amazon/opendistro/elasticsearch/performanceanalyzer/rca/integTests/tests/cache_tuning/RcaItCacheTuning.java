@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.RcaItCacheTuning.INDEX_NAME;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.RcaItCacheTuning.SHARD_ID;
 
@@ -25,6 +26,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Eviction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Hit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Size;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AClusterType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AErrorPatternIgnored;
@@ -34,7 +36,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ATable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ATuple;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.ClusterType;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.Consts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.HostTag;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners.RcaItNotEncryptedRunner;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.FieldDataCacheValidator;
@@ -173,9 +174,6 @@ import org.junit.runner.RunWith;
             @ATuple(
                 dimensionValues = {AllMetrics.CacheType.Constants.SHARD_REQUEST_CACHE_NAME},
                 sum = 100.0, avg = 100.0, min = 100.0, max = 100.0),
-            @ATuple(
-                dimensionValues = {AllMetrics.CacheType.Constants.SHARD_REQUEST_CACHE_NAME},
-                sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
           }),
       @ATable(
           hostTag = {HostTag.ELECTED_MASTER},
@@ -188,6 +186,32 @@ import org.junit.runner.RunWith;
                 sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
           })
     })
+@AMetric(
+        name = Heap_Max.class,
+        dimensionNames = {AllMetrics.HeapDimension.Constants.TYPE_VALUE},
+        tables = {
+                @ATable(
+                        hostTag = HostTag.DATA_0,
+                        tuple = {
+                                @ATuple(
+                                        dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
+                                        sum = 1000000.0, avg = 1000000.0, min = 1000000.0, max = 1000000.0),
+                                @ATuple(
+                                        dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
+                                        sum = 1000000.0, avg = 1000000.0, min = 1000000.0, max = 1000000.0)
+                        }),
+                @ATable(
+                        hostTag = {HostTag.ELECTED_MASTER},
+                        tuple = {
+                                @ATuple(
+                                        dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
+                                        sum = 1000000.0, avg = 1000000.0, min = 1000000.0, max = 1000000.0),
+                                @ATuple(
+                                        dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
+                                        sum = 1000000.0, avg = 1000000.0, min = 1000000.0, max = 1000000.0)
+                        })
+        })
+
 public class RcaItCacheTuning {
   public static final String INDEX_NAME = "MockIndex";
   public static final String SHARD_ID = "1";
@@ -214,9 +238,6 @@ public class RcaItCacheTuning {
   @AErrorPatternIgnored(
           pattern = "CacheUtil:getCacheMaxSize()",
           reason = "Node Config Cache is expected to be missing during startup.")
-  @AErrorPatternIgnored(
-          pattern = "ModifyCacheMaxSizeAction:build()",
-          reason = "Heap metrics is expected to be missing in this integ test.")
   public void testFieldDataCacheRca() {}
 
   // Test ShardRequestCacheClusterRca.
@@ -240,8 +261,5 @@ public class RcaItCacheTuning {
   @AErrorPatternIgnored(
           pattern = "CacheUtil:getCacheMaxSize()",
           reason = "Node Config Cache is expected to be missing during startup.")
-  @AErrorPatternIgnored(
-          pattern = "ModifyCacheMaxSizeAction:build()",
-          reason = "Heap metrics is expected to be missing in this integ test.")
   public void testShardRequestCacheRca() {}
 }
