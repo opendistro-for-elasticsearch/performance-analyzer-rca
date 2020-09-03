@@ -73,6 +73,7 @@ public class RcaConfTest {
     Assert.assertEquals(Arrays.asList("test-fielddata-cache", "test-shard-request-cache", "test-query-cache",
             "test-bitset-filter-cache"), cachePriorityOrderConfig.getPriorityOrder());
     WorkLoadTypeConfig workLoadTypeConfig = configObj.getWorkLoadTypeConfig();
-    Assert.assertFalse(workLoadTypeConfig.preferIngestOverSearch());
+    Assert.assertFalse(workLoadTypeConfig.preferSearch());
+    Assert.assertTrue(workLoadTypeConfig.preferIngest());
   }
 }

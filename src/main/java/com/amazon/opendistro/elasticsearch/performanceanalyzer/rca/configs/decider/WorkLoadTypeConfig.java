@@ -17,50 +17,33 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.deci
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Config;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NestedConfig;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Predicate;
 
 /**
  * "workload-type": {
- *   "priority-order": ["ingest", "search"]
+ *   "prefer-ingest": true,
+ *   "prefer-search": false
  * }
  */
 public class WorkLoadTypeConfig {
-
-  private static final String PRIORITY_ORDER_CONFIG_NAME = "priority-order";
-  private static String INGEST = "ingest";
-  private static String SEARCH = "search";
-  public static final List<String> DEFAULT_PRIORITY_ORDER = Collections.unmodifiableList(
-      Arrays.asList(INGEST, SEARCH));
-  private Config<List<String>> priorityOrder;
-  private Predicate<List<String>> listValidator;
+  private static final String INGEST_CONFIG = "prefer-ingest";
+  private static final String SEARCH_CONFIG = "prefer-search";
+  public static final boolean DEFAULT_PREFER_INGEST = false;
+  public static final boolean DEFAULT_PREFER_SEARCH = false;
+  private Config<Boolean> preferIngest;
+  private Config<Boolean> preferSearch;
 
   public WorkLoadTypeConfig(NestedConfig configs) {
-    listValidator = (list) -> {
-      if (list.size() > 2) {
-        return false;
-      }
-      if (SEARCH.equals(list.get(0))) {
-        return INGEST.equals(list.get(1));
-      }
-      else if (INGEST.equals(list.get(0))) {
-        return SEARCH.equals(list.get(1));
-      }
-      else {
-        return false;
-      }
-    };
-    priorityOrder = new Config(PRIORITY_ORDER_CONFIG_NAME, configs.getValue(),
-        DEFAULT_PRIORITY_ORDER, listValidator, List.class);
+    preferIngest = new Config<>(INGEST_CONFIG, configs.getValue(),
+        DEFAULT_PREFER_INGEST, Boolean.class);
+    preferSearch = new Config<>(SEARCH_CONFIG, configs.getValue(),
+        DEFAULT_PREFER_SEARCH, Boolean.class);
   }
 
-  public List<String> getPriorityOrder() {
-    return priorityOrder.getValue();
+  public boolean preferIngest() {
+    return preferIngest.getValue();
   }
 
-  public boolean preferIngestOverSearch() {
-    return INGEST.equals(getPriorityOrder().get(0));
+  public boolean preferSearch() {
+    return preferSearch.getValue();
   }
 }

@@ -143,7 +143,7 @@ public class LevelTwoActionBuilder {
   }
 
   /**
-   * This function divide the range {lower bound - upper bound } of search/wrire queue into
+   * This function divide the range {lower bound - upper bound } of search/write queue into
    * buckets. And allocate the val into its corresponding bucket. The value here refers to the
    * EWMA size of search/write queue. step here is calculated as {range of queue} / {num of buckets}
    * The queue's lower/upper bound can be configured in rca.conf
@@ -151,6 +151,22 @@ public class LevelTwoActionBuilder {
   private int bucketization(int lowerBound, int upperBound, int val, int bucketSize) {
     double step = (double) (upperBound - lowerBound) / (double) bucketSize;
     return (int) ((double) val / step);
+  }
+
+  private void tieBreaker() {
+    boolean preferIngest = workLoadTypeConfig.preferIngest();
+    boolean preferSearch = workLoadTypeConfig.preferSearch();
+    if ((preferIngest && preferSearch) || (!preferIngest && !preferSearch)) {
+      // no preference, downsizing both queues
+      actionFilter.put(ResourceEnum.WRITE_THREADPOOL, true);
+      actionFilter.put(ResourceEnum.SEARCH_THREADPOOL, true);
+    }
+    else if (preferIngest) {
+      actionFilter.put(ResourceEnum.SEARCH_THREADPOOL, true);
+    }
+    else if (preferSearch) {
+      actionFilter.put(ResourceEnum.WRITE_THREADPOOL, true);
+    }
   }
 
   // downsize queue based on priority and current queue size
@@ -186,12 +202,7 @@ public class LevelTwoActionBuilder {
       }
       // tie breaker
       else {
-        if (workLoadTypeConfig.preferIngestOverSearch()) {
-          actionFilter.put(ResourceEnum.WRITE_THREADPOOL, true);
-        }
-        else {
-          actionFilter.put(ResourceEnum.SEARCH_THREADPOOL, true);
-        }
+        tieBreaker();
       }
     }
     else if (writeQueueAction != null) {
