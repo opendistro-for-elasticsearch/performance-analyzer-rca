@@ -37,4 +37,3 @@ public class ClusterRcaPublisherControllerConfig {
         return frameworkPlugins;
     }
 }
-

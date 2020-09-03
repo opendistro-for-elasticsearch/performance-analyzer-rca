@@ -25,8 +25,6 @@ public class ConfConsts {
 
     public static final String CLUSTER_SUMMARY_KAFKA_TOPIC_KEY = "cluster-summary-kafka-topic";
 
-    public static final String WEBHOOKS_URL_KEY = "webhooks-url";
-
     public static final String CONFIG_DIR_PATH = Paths.get(System.getProperty("user.dir"), "pa_config").toString();
 
     public static final String CONFIG_DIR_TEST_PATH = Paths.get(System.getProperty("user.dir"), "src", "test", "resources").toString();
@@ -36,4 +34,3 @@ public class ConfConsts {
     public static final String PLUGINS_CONF_TEST_FILENAMES = "plugins_test.conf";
 
 }
-

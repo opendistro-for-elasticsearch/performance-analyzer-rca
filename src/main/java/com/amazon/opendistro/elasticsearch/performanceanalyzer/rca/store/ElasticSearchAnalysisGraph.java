@@ -30,8 +30,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.PluginController;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.PluginControllerConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.cluster_rca_publisher.ClusterRcaPublisherController;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.cluster_rca_publisher.ClusterRcaPublisherControllerConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.AnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
@@ -286,19 +284,15 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     publisher.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     publisher.addAllUpstreams(Collections.singletonList(collator));
 
-    // TODO: Refactor using DI to move out of construct method
-    PluginControllerConfig pluginControllerConfig = new PluginControllerConfig();
-    PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
-    pluginController.initPlugins();
-
     // ClusterRcaPublisher - Publisher that can publish RCA updates from cluster rcas
     ClusterRcaPublisher clusterRcaPublisher = new ClusterRcaPublisher(1, Collections.singletonList(queueRejectionClusterRca));
     clusterRcaPublisher.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     clusterRcaPublisher.addAllUpstreams(Collections.singletonList(queueRejectionClusterRca));
-    ClusterRcaPublisherControllerConfig clusterRcaPublisherControllerConfig = new ClusterRcaPublisherControllerConfig();
-    ClusterRcaPublisherController clusterRcaPublisherController =
-            new ClusterRcaPublisherController(clusterRcaPublisherControllerConfig, clusterRcaPublisher);
-    clusterRcaPublisherController.initPlugins();
+
+    // TODO: Refactor using DI to move out of construct method
+    PluginControllerConfig pluginControllerConfig = new PluginControllerConfig();
+    PluginController pluginController = new PluginController(pluginControllerConfig, publisher, clusterRcaPublisher);
+    pluginController.initPlugins();
   }
 
   private void constructShardResourceUsageGraph() {

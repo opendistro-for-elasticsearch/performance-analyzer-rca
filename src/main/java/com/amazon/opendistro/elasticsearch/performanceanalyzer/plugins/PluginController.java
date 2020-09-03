@@ -17,6 +17,8 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ActionListener;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Publisher;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterRcaPublisher;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.rca_publisher.ClusterSummaryListener;
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -29,18 +31,20 @@ public class PluginController {
 
   private static final Logger LOG = LogManager.getLogger(PluginController.class);
   private final Publisher publisher;
+  private final ClusterRcaPublisher clusterRcaPublisher;
   private List<Plugin> plugins;
   private PluginControllerConfig pluginControllerConfig;
 
-  public PluginController(PluginControllerConfig pluginConfig, Publisher publisher) {
+  public PluginController(PluginControllerConfig pluginConfig, Publisher publisher, ClusterRcaPublisher clusterRcaPublisher) {
     this.pluginControllerConfig = pluginConfig;
     this.publisher = publisher;
+    this.clusterRcaPublisher = clusterRcaPublisher;
     this.plugins = new ArrayList<>();
   }
 
   public void initPlugins() {
     loadFrameworkPlugins();
-    registerActionListeners();
+    registerPublisherListeners();
   }
 
   private void loadFrameworkPlugins() {
@@ -69,10 +73,13 @@ public class PluginController {
     }
   }
 
-  private void registerActionListeners() {
+  private void registerPublisherListeners() {
     for (Plugin plugin: plugins) {
-      if (ActionListener.class.isAssignableFrom(plugin.getClass())) {
+      if (ActionListener.class.isAssignableFrom(plugin.getClass()) && publisher != null) {
         publisher.addActionListener((ActionListener)plugin);
+      }
+      else if (ClusterSummaryListener.class.isAssignableFrom(plugin.getClass()) && clusterRcaPublisher != null) {
+        clusterRcaPublisher.addClusterSummaryListener((ClusterSummaryListener) plugin);
       }
     }
   }

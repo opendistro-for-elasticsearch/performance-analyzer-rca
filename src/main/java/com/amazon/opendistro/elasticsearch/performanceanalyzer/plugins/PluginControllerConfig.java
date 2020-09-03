@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.cluster_rca_publisher.ClusterSummaryKafkaPublisher;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.cluster_rca_publisher.ClusterSummaryLogger;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.decision_publisher.DecisionKafkaPublisher;
 
 import java.util.ArrayList;
@@ -28,6 +30,8 @@ public class PluginControllerConfig {
     frameworkPlugins = new ArrayList<>();
     frameworkPlugins.add(PublisherEventsLogger.class);
     frameworkPlugins.add(DecisionKafkaPublisher.class);
+    frameworkPlugins.add(ClusterSummaryLogger.class);
+    frameworkPlugins.add(ClusterSummaryKafkaPublisher.class);
   }
 
   /**
