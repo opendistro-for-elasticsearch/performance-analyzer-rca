@@ -83,6 +83,15 @@ public class RcaConfTest {
   }
 
   @Test
+  public void testValidateRcaConfig() {
+    Integer defaultValue = rcaConf.readRcaConfig(ShardRequestCacheRcaConfig.CONFIG_NAME,
+            ShardRequestCacheRcaConfig.RCA_CONF_KEY_CONSTANTS.SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC,
+            0, s -> s < 1, Integer.class);
+    Assert.assertNotNull(defaultValue);
+    Assert.assertEquals(0, defaultValue.intValue());
+  }
+
+  @Test
   public void testReadDeciderConfig() {
     DeciderConfig configObj = new DeciderConfig(rcaConf);
     Assert.assertNotNull(configObj.getCachePriorityOrder());
