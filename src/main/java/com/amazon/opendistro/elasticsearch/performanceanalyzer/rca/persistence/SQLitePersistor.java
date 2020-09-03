@@ -64,7 +64,7 @@ import org.jooq.Table;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 
-class SQLitePersistor extends PersistorBase {
+public class SQLitePersistor extends PersistorBase {
   private enum GetterOrSetter {
     GETTER,
     SETTER,
@@ -110,7 +110,8 @@ class SQLitePersistor extends PersistorBase {
 
   private static int id_test = 1;
 
-  SQLitePersistor(String dir, String filename, String storageFileRetentionCount,
+  @VisibleForTesting
+  public SQLitePersistor(String dir, String filename, String storageFileRetentionCount,
                   TimeUnit rotationTime, long rotationPeriod) throws SQLException, IOException {
     super(dir, filename, DB_URL, storageFileRetentionCount, rotationTime, rotationPeriod);
     create = DSL.using(conn, SQLDialect.SQLITE);
@@ -280,7 +281,8 @@ class SQLitePersistor extends PersistorBase {
         String nestedTableName = columnName.replace(NESTED_OBJECT_COLUMN_PREFIX, "");
         if (jooqField.getType() == String.class) {
           String value = (String) jooqField.getValue(record);
-          JsonArray array = JsonParser.parseString(value).getAsJsonArray();
+          JsonParser valueParser = new JsonParser();
+          JsonArray array = valueParser.parse(value).getAsJsonArray();
           Method setter = fieldNameToGetterSetterMap.get(nestedTableName).setter;
 
           List<Object> collection = new ArrayList<>();
@@ -315,7 +317,7 @@ class SQLitePersistor extends PersistorBase {
 
           // This gives the type of the setter parameter.
           Class<?> setterType = setter.getParameterTypes()[0];
-          int nestedRowId = (int)jooqField.getValue(record);
+          int nestedRowId = (Integer) jooqField.getValue(record);
 
           // Now that we have the Type of the parameter and the rowID specifying the data the object
           // is to be filled with; we call the read method recursively to create the referenced Object

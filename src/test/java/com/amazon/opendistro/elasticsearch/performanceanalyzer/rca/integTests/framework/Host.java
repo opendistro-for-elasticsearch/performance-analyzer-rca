@@ -34,6 +34,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.Rca
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -366,6 +367,10 @@ public class Host {
     obj.addProperty(Consts.HOST_ROLE_KEY, role.toString());
     obj.add(Consts.DATA_KEY, data);
     return obj;
+  }
+
+  public <T> T getDataForClass(Class<T> className) throws Exception {
+    return this.rcaController.getPersistenceProvider().read(className);
   }
 
   public Map<String, Result<Record>> getRecordsForAllTables() {

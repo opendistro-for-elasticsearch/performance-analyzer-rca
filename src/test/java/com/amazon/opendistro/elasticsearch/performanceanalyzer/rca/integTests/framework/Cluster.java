@@ -273,6 +273,10 @@ public class Cluster {
     return tagToHostMapping.get(hostTag).getDataForRca(rcaName);
   }
 
+  public <T> T getAllClassDataOnHost(HostTag hostTag, Class<T> className) throws Exception {
+    return tagToHostMapping.get(hostTag).getDataForClass(className);
+  }
+
   public String getRcaRestResponse(final Map<String, String> params, HostTag hostByTag) {
     return verifyTag(hostByTag).makeRestRequest(params);
   }
