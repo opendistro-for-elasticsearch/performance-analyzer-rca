@@ -19,7 +19,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.CacheActionConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.ThresholdConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.jvm.LevelOneActionBuilderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.jvm.OldGenDecisionPolicyConfig;
@@ -70,11 +69,7 @@ public class LevelOneActionBuilder {
   }
 
   private void addFieldDataCacheAction() {
-    ThresholdConfig<Double> fieldDataCacheConfig = cacheActionConfig.getThresholdConfig(ResourceEnum.FIELD_DATA_CACHE);
-    double stepSizeInPercent = OldGenDecisionUtils.calculateStepSize(
-        fieldDataCacheConfig.lowerBound(),
-        fieldDataCacheConfig.upperBound(),
-        oldGenDecisionPolicyConfig.cacheStepCount());
+    double stepSizeInPercent = cacheActionConfig.getStepSize(ResourceEnum.FIELD_DATA_CACHE);
 
     ModifyCacheMaxSizeAction action = ModifyCacheMaxSizeAction
         .newBuilder(esNode, ResourceEnum.FIELD_DATA_CACHE, appContext, rcaConf)
@@ -87,11 +82,7 @@ public class LevelOneActionBuilder {
   }
 
   private void addShardRequestCacheAction() {
-    ThresholdConfig<Double> shardRequestCache = cacheActionConfig.getThresholdConfig(ResourceEnum.SHARD_REQUEST_CACHE);
-    double stepSizeInPercent = OldGenDecisionUtils.calculateStepSize(
-        shardRequestCache.lowerBound(),
-        shardRequestCache.upperBound(),
-        oldGenDecisionPolicyConfig.cacheStepCount());
+    double stepSizeInPercent = cacheActionConfig.getStepSize(ResourceEnum.SHARD_REQUEST_CACHE);
 
     ModifyCacheMaxSizeAction action = ModifyCacheMaxSizeAction
         .newBuilder(esNode, ResourceEnum.SHARD_REQUEST_CACHE, appContext, rcaConf)

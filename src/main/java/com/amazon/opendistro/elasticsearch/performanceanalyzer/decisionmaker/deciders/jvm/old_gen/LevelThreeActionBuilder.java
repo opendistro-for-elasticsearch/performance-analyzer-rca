@@ -97,11 +97,7 @@ public class LevelThreeActionBuilder {
   }
 
   private void addWriteQueueAction() {
-    ThresholdConfig<Integer> writeQueueConfig = queueActionConfig.getThresholdConfig(ResourceEnum.WRITE_THREADPOOL);
-    int stepSize = OldGenDecisionUtils.calculateStepSize(
-        writeQueueConfig.lowerBound(),
-        writeQueueConfig.upperBound(),
-        oldGenDecisionPolicyConfig.queueStepCount());
+    int stepSize = queueActionConfig.getStepSize(ResourceEnum.WRITE_THREADPOOL);
 
     ModifyQueueCapacityAction action = ModifyQueueCapacityAction
         .newBuilder(esNode, ResourceEnum.WRITE_THREADPOOL, appContext, rcaConf)
@@ -114,11 +110,7 @@ public class LevelThreeActionBuilder {
   }
 
   private void addSearchQueueAction() {
-    ThresholdConfig<Integer> searchQueueConfig = queueActionConfig.getThresholdConfig(ResourceEnum.SEARCH_THREADPOOL);
-    int stepSize = OldGenDecisionUtils.calculateStepSize(
-        searchQueueConfig.lowerBound(),
-        searchQueueConfig.upperBound(),
-        oldGenDecisionPolicyConfig.queueStepCount());
+    int stepSize = queueActionConfig.getStepSize(ResourceEnum.SEARCH_THREADPOOL);
 
     ModifyQueueCapacityAction action = ModifyQueueCapacityAction
         .newBuilder(esNode, ResourceEnum.SEARCH_THREADPOOL, appContext, rcaConf)

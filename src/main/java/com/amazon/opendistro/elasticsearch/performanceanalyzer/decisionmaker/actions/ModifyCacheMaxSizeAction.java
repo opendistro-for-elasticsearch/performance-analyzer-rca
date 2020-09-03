@@ -16,8 +16,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.HEAP;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.CacheUtil.KB_TO_BYTES;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.CacheUtil.MB_TO_BYTES;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.CacheActionConfig;
@@ -25,7 +23,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
-import com.google.common.annotations.VisibleForTesting;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -135,7 +132,6 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
     return cacheType;
   }
 
-  @VisibleForTesting
   public static long getThresholdInBytes(double threshold, long heapSize) {
     return (long) (threshold * heapSize);
   }
@@ -180,11 +176,11 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
       this.heapMaxSizeInBytes = NodeConfigCacheReaderUtil.readHeapMaxSizeInBytes(
           appContext.getNodeConfigCache(), esNode);
       this.desiredCacheMaxSizeInBytes = null;
-      setDefaultStepSize(cacheType);
 
       CacheActionConfig cacheActionConfig = new CacheActionConfig(rcaConf);
       double upperBoundThreshold = cacheActionConfig.getThresholdConfig(cacheType).upperBound();
       double lowerBoundThreshold = cacheActionConfig.getThresholdConfig(cacheType).lowerBound();
+      this.stepSizeInPercent = cacheActionConfig.getStepSize(cacheType);
       if (heapMaxSizeInBytes != null) {
         this.upperBoundInBytes = getThresholdInBytes(upperBoundThreshold, heapMaxSizeInBytes);
         this.lowerBoundInBytes = getThresholdInBytes(lowerBoundThreshold, heapMaxSizeInBytes);
@@ -192,21 +188,6 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
         // If heapMaxSizeInBytes is null, we return a non-actionable object from build
         this.upperBoundInBytes = 0;
         this.lowerBoundInBytes = 0;
-      }
-    }
-
-    private void setDefaultStepSize(ResourceEnum cacheType) {
-      // TODO: Move configuration values to rca.conf
-      // TODO: Update the step size to also include percentage of heap size along with absolute value
-      switch (cacheType) {
-        case FIELD_DATA_CACHE:
-          this.stepSizeInPercent = 0.01;
-          break;
-        case SHARD_REQUEST_CACHE:
-          this.stepSizeInPercent = 0.002;
-          break;
-        default:
-          throw new IllegalArgumentException(String.format("Unrecognizable cache type: [%s]", cacheType.toString()));
       }
     }
 
@@ -243,7 +224,7 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
             -1, -1, coolOffPeriodInMillis, false);
       }
 
-      long stepSizeInBytes = (long) stepSizeInPercent * heapMaxSizeInBytes;
+      long stepSizeInBytes = (long) (stepSizeInPercent * heapMaxSizeInBytes);
       if (desiredCacheMaxSizeInBytes == null) {
         desiredCacheMaxSizeInBytes = isIncrease ? currentCacheMaxSizeInBytes + stepSizeInBytes :
             currentCacheMaxSizeInBytes - stepSizeInBytes;
