@@ -33,6 +33,7 @@ import org.apache.logging.log4j.Logger;
  *   "action-config-settings": {
  *     // Queue Capacity bounds are expressed as absolute queue size
  *     "queue-settings": {
+ *       "total-step-count": 20,
  *       "search": {
  *         "upper-bound": 3000,
  *         "lower-bound": 1000
@@ -51,8 +52,11 @@ public class QueueActionConfig {
   private NestedConfig queueSettingsConfig;
   private SearchQueueConfig searchQueueConfig;
   private WriteQueueConfig writeQueueConfig;
+  private Config<Integer> totalStepCount;
   private Map<ResourceEnum, ThresholdConfig<Integer>> thresholdConfigMap;
 
+  private static final String TOTAL_STEP_COUNT_CONFIG_NAME = "total-step-count";
+  public static final int DEFAULT_TOTAL_STEP_COUNT = 20;
   public static final int DEFAULT_SEARCH_QUEUE_UPPER_BOUND = 3000;
   public static final int DEFAULT_SEARCH_QUEUE_LOWER_BOUND = 500;
   public static final int DEFAULT_WRITE_QUEUE_UPPER_BOUND = 1000;
@@ -63,7 +67,22 @@ public class QueueActionConfig {
     queueSettingsConfig = new NestedConfig("queue-settings", actionConfig);
     searchQueueConfig = new SearchQueueConfig(queueSettingsConfig);
     writeQueueConfig = new WriteQueueConfig(queueSettingsConfig);
+    totalStepCount = new Config<>(TOTAL_STEP_COUNT_CONFIG_NAME, queueSettingsConfig.getValue(),
+        DEFAULT_TOTAL_STEP_COUNT, (s) -> (s > 0), Integer.class);
     createThresholdConfigMap();
+  }
+
+  public int getTotalStepCount() {
+    return totalStepCount.getValue();
+  }
+
+  /**
+   * this function calculate the size of a single step given the range {lower bound - upper bound}
+   * and number of steps
+   */
+  public int getStepSize(ResourceEnum threadPool) {
+    ThresholdConfig<Integer> threshold = getThresholdConfig(threadPool);
+    return (int) ((threshold.upperBound() - threshold.lowerBound()) / (double) getTotalStepCount());
   }
 
   public ThresholdConfig<Integer> getThresholdConfig(ResourceEnum threadPool) {

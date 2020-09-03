@@ -15,64 +15,60 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.CachePriorityOrderConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.WorkLoadTypeConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.jvm.OldGenDecisionPolicyConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NestedConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 
-import java.util.Arrays;
-import java.util.List;
-
+/**
+ * "decider-config-settings": {
+ *     // Decreasing order of priority for the type of workload we can expect on the cluster.
+ *     // Priority order in the list goes from most expected to the lease expected workload type.
+ *     "workload-type": {
+ *       "priority-order": ["ingest", "search"]
+ *     },
+ *     // Decreasing order of priority for the type of cache which is expected to be consumed more.
+ *     // Priority order in the list goes from most used to the lease used cache type.
+ *     "cache-type": {
+ *       "priority-order": ["fielddata-cache", "shard-request-cache", "query-cache", "bitset-filter-cache"]
+ *     },
+ *     "old-gen-decision-policy-config": {
+ *       XXXX
+ *     }
+ *   },
+ */
 public class DeciderConfig {
 
     private static final String CACHE_CONFIG_NAME = "cache-type";
     private static final String WORKLOAD_CONFIG_NAME = "workload-type";
-    private static final String PRIORITY_ORDER_CONFIG_NAME = "priority-order";
-    // Defaults based on prioritising Stability over performance.
-    private static final List<String> DEFAULT_WORKLOAD_PRIORITY = Arrays.asList("ingest", "search");
-    private static final List<String> DEFAULT_CACHE_PRIORITY = Arrays.asList("fielddata-cache", "shard-request-cache",
-            "query-cache", "bitset-filter-cache");
+    private static final String OLD_GEN_DECISION_POLICY_CONFIG_NAME = "old-gen-decision-policy-config";
 
-    private List<String> cachePriorityOrder;
-    private List<String> workloadPriorityOrder;
+    private final CachePriorityOrderConfig cachePriorityOrderConfig;
+    private final WorkLoadTypeConfig workLoadTypeConfig;
+    private final OldGenDecisionPolicyConfig oldGenDecisionPolicyConfig;
 
     public DeciderConfig(final RcaConf rcaConf) {
-        cachePriorityOrder = rcaConf.readDeciderConfig(CACHE_CONFIG_NAME,
-                PRIORITY_ORDER_CONFIG_NAME, List.class);
-        workloadPriorityOrder = rcaConf.readDeciderConfig(WORKLOAD_CONFIG_NAME,
-                PRIORITY_ORDER_CONFIG_NAME, List.class);
-
-        if (cachePriorityOrder == null) {
-            cachePriorityOrder = DEFAULT_CACHE_PRIORITY;
-        }
-        if (workloadPriorityOrder == null) {
-            workloadPriorityOrder = DEFAULT_WORKLOAD_PRIORITY;
-        }
+        cachePriorityOrderConfig = new CachePriorityOrderConfig(
+            new NestedConfig(CACHE_CONFIG_NAME, rcaConf.getDeciderConfigSettings())
+        );
+        workLoadTypeConfig = new WorkLoadTypeConfig(
+            new NestedConfig(WORKLOAD_CONFIG_NAME, rcaConf.getDeciderConfigSettings())
+        );
+        oldGenDecisionPolicyConfig = new OldGenDecisionPolicyConfig(
+            new NestedConfig(OLD_GEN_DECISION_POLICY_CONFIG_NAME, rcaConf.getDeciderConfigSettings())
+        );
     }
 
-    public List<String> getCachePriorityOrder() {
-        return cachePriorityOrder;
+    public CachePriorityOrderConfig getCachePriorityOrderConfig() {
+        return cachePriorityOrderConfig;
     }
 
-    public List<String> getWorkloadPriorityOrder() {
-        return workloadPriorityOrder;
+    public WorkLoadTypeConfig getWorkLoadTypeConfig() {
+        return workLoadTypeConfig;
     }
 
-    public static List<String> getDefaultWorkloadPriority() {
-        return DEFAULT_WORKLOAD_PRIORITY;
+    public OldGenDecisionPolicyConfig getOldGenDecisionPolicyConfig() {
+        return oldGenDecisionPolicyConfig;
     }
-
-    public static List<String> getDefaultCachePriority() {
-        return DEFAULT_CACHE_PRIORITY;
-    }
-
-    public static String getCacheConfigName() {
-        return CACHE_CONFIG_NAME;
-    }
-
-    public static String getWorkloadConfigName() {
-        return WORKLOAD_CONFIG_NAME;
-    }
-
-    public static String getPriorityOrderConfigName() {
-        return PRIORITY_ORDER_CONFIG_NAME;
-    }
-
 }
