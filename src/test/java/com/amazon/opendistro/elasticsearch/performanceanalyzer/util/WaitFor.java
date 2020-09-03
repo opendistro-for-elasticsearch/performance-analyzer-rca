@@ -35,11 +35,11 @@ public class WaitFor {
         do {
             Instant start = Instant.now();
             if (task.call()) {
-                break;
+                return;
             }
-            maxWaitMillis -= Duration.between(start, Instant.now()).toMillis();
             // Wait for a fixed amount before calling the task again
             Thread.sleep(100L);
+            maxWaitMillis -= Duration.between(start, Instant.now()).toMillis();
         } while (maxWaitMillis >= 0);
         // Check the task one last time before throwing an exception
         if (!task.call()) {
