@@ -4,7 +4,7 @@
 The metrics API currently allows us to collect the past 5 seconds of performance data from an ODFE cluster. However, this data is aggregated, not raw, performance metrics. Additionally, it is restricting that we only have access to the past 5 seconds of data, rather than data from longer periods of time. Having fine granularity (raw) metrics from longer periods of time would allow users to learn a lot more about the performance of an AES cluster.
 
 ## Design
-First, we would like to expand the retention period from beyond 5s. Currently, each cluster retains the past 5s of performance data in the form of a sqlite database (metricsdb files). We can naively expand the retention period by simply retaining more of these databases and allowing users to query from them.
+First, we would like to expand the retention period beyond 5s. Currently, each cluster retains the past 5s of performance data in the form of a sqlite database (metricsdb files). We can naively expand the retention period by simply retaining more of these databases and allowing users to query from them.
 
 ![Retaining more metricsdb files](/docs/images/batch-metrics-api-1.png)
 
@@ -12,7 +12,7 @@ First, we would like to expand the retention period from beyond 5s. Currently, e
 
 The second issue is the limited granularity of the data. We can simply expand the granularity by allowing users to query the raw data for each metric rather than responding with an aggregate of that data. One drawback of this approach is that the response size will drastically increase. This prevents us from supplying a “nodes=all” parameter like with the metrics API, as it would require a single node to gather that data from all the other nodes and retain that data in memory before responding to the user. So, users will have to query individual nodes in order to gather performance metrics from those nodes.
 
-All the raw metrics data from a period of time may be too high granularity for some users. One approach to limiting this granularity might be to respond with some aggregate of that data, like with the metrics API. However, a more compute-efficient, practical, and useful approach would be to instead respond with a sample of that raw data. The available datapoints are currently in the form of 5s granularity bins (each metricsdb file collects 5s of data). We can efficiently sample from these bins by providing users with a “samplingperiod” parameter. We would partition the available data according to the sampling period and simply respond with the data from the first bin in each partition.
+All the raw metrics data from a period of time may be too high granularity for some users. One approach to limiting this granularity might be to respond with some aggregate of that data, like with the metrics API. However, for the sake of compute and memory efficiency, we will instead choose to respond with a sample of that raw data. The available datapoints are currently in the form of 5s granularity bins (each metricsdb file collects 5s of data). We can efficiently sample from these bins by providing users with a “samplingperiod” parameter. We would partition the available data according to the sampling period and simply respond with the data from the first bin in each partition.
 
 ![Sampling from bins](/docs/images/batch-metrics-api-2.png)
 
