@@ -136,7 +136,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
 
     try {
       // Parse and validate parameters
-      String[] validParamsTmp = {"", "metrics", "starttime", "endtime", "samplingperiod", "maxdatapoints"};
+      String[] validParamsTmp = {"", "metrics", "starttime", "endtime", "samplingperiod"};
       Set<String> validParams = new HashSet<>(Arrays.asList(validParamsTmp));
       for (String param : params.keySet()) {
         if (!validParams.contains(param)) {
