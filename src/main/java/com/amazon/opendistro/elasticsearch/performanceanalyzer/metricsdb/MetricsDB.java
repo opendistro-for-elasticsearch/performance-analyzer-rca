@@ -41,6 +41,7 @@ import org.jooq.Result;
 import org.jooq.SQLDialect;
 import org.jooq.Select;
 import org.jooq.TableLike;
+import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 
 /**
@@ -273,7 +274,7 @@ public class MetricsDB implements Removable {
    * @param limit the maximum number of records to return
    * @return the result of the query
    */
-  public Result<Record> queryMetric(String metric, Collection<String> dimensions, int limit) {
+  public Result<Record> queryMetric(String metric, Collection<String> dimensions, int limit) throws DataAccessException {
     if (!DBUtils.checkIfTableExists(create, metric)) {
       return null;
     }
