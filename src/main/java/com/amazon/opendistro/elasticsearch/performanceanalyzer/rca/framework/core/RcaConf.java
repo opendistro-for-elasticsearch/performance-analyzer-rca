@@ -17,6 +17,8 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.co
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.CacheActionConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.QueueActionConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaControllerHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig;
@@ -197,6 +199,14 @@ public class RcaConf {
     return ImmutableMap.copyOf(conf.getRcaConfigSettings());
   }
 
+  public CacheActionConfig getCacheActionConfig() {
+    return new CacheActionConfig(this);
+  }
+
+  public QueueActionConfig getQueueActionConfig() {
+    return new QueueActionConfig(this);
+  }
+
   @SuppressWarnings("unchecked")
   public <T> T readRcaConfig(String rcaName, String key, Class<? extends T> clazz) {
     T setting = null;
@@ -275,29 +285,11 @@ public class RcaConf {
     return true;
   }
 
-  @SuppressWarnings("unchecked")
-  public <T> T readDeciderConfig(String deciderName, String key, Class<? extends T> clazz) {
-    T setting = null;
-    try {
-      Map<String, Object> deciderObj = null;
-      if (conf.getDeciderConfigSettings() != null
-          && conf.getDeciderConfigSettings().containsKey(deciderName)
-          && conf.getDeciderConfigSettings().get(deciderName) != null) {
-        deciderObj = (Map<String, Object>) conf.getDeciderConfigSettings().get(deciderName);
-      }
-
-      if (deciderObj != null
-          && deciderObj.containsKey(key)
-          && deciderObj.get(key) != null) {
-        setting = clazz.cast(deciderObj.get(key));
-      }
-    } catch (ClassCastException ne) {
-      LOG.error("rca.conf contains value in invalid format, trace : {}", ne.getMessage());
-    }
-    return setting;
-  }
-
   public Map<String, Object> getActionConfigSettings() {
     return conf.getActionConfigSettings();
+  }
+
+  public Map<String, Object> getDeciderConfigSettings() {
+    return conf.getDeciderConfigSettings();
   }
 }

@@ -20,6 +20,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighH
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig.RCA_CONF_KEY_CONSTANTS;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageYoungGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNodeClusterRcaConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.CachePriorityOrderConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.WorkLoadTypeConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -65,10 +67,13 @@ public class RcaConfTest {
   @Test
   public void testReadDeciderConfig() {
     DeciderConfig configObj = new DeciderConfig(rcaConf);
-    Assert.assertNotNull(configObj.getCachePriorityOrder());
-    Assert.assertNotNull(configObj.getWorkloadPriorityOrder());
+    Assert.assertNotNull(configObj.getCachePriorityOrderConfig());
+    Assert.assertNotNull(configObj.getWorkLoadTypeConfig());
+    CachePriorityOrderConfig cachePriorityOrderConfig = configObj.getCachePriorityOrderConfig();
     Assert.assertEquals(Arrays.asList("test-fielddata-cache", "test-shard-request-cache", "test-query-cache",
-            "test-bitset-filter-cache"), configObj.getCachePriorityOrder());
-    Assert.assertEquals(Arrays.asList("test-ingest", "test-search"), configObj.getWorkloadPriorityOrder());
+            "test-bitset-filter-cache"), cachePriorityOrderConfig.getPriorityOrder());
+    WorkLoadTypeConfig workLoadTypeConfig = configObj.getWorkLoadTypeConfig();
+    Assert.assertFalse(workLoadTypeConfig.preferSearch());
+    Assert.assertTrue(workLoadTypeConfig.preferIngest());
   }
 }
