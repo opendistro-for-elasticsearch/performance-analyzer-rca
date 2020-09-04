@@ -105,4 +105,49 @@ public class QueueActionConfigTest {
     QueueActionConfig queueActionConfig = new QueueActionConfig(conf);
     queueActionConfig.getThresholdConfig(ResourceEnum.FIELD_DATA_CACHE).upperBound();
   }
+
+  @Test
+  public void testGetStepSize() throws Exception {
+    String configStr =
+      "{"
+          + "\"action-config-settings\": { "
+              + "\"queue-settings\": { "
+                  + "\"search\": { "
+                      + "\"upper-bound\": 500, "
+                      + "\"lower-bound\": 100 "
+                  + "}, "
+                  + "\"write\": { "
+                      + "\"upper-bound\": 50, "
+                      + "\"lower-bound\": 10 "
+                  + "} "
+              + "} "
+          + "} "
+      + "}";
+    RcaConf conf = new RcaConf();
+    conf.readConfigFromString(configStr);
+    QueueActionConfig queueActionConfig = new QueueActionConfig(conf);
+    assertEquals(20, queueActionConfig.getStepSize(ResourceEnum.SEARCH_THREADPOOL));
+    assertEquals(2, queueActionConfig.getStepSize(ResourceEnum.WRITE_THREADPOOL));
+
+    configStr =
+      "{"
+          + "\"action-config-settings\": { "
+              + "\"total-step-count\": 10,"
+              + "\"queue-settings\": { "
+                  + "\"search\": { "
+                      + "\"upper-bound\": 500, "
+                      + "\"lower-bound\": 100 "
+                  + "}, "
+                  + "\"write\": { "
+                      + "\"upper-bound\": 50, "
+                      + "\"lower-bound\": 10 "
+                  + "} "
+              + "} "
+          + "} "
+      + "}";
+    conf.readConfigFromString(configStr);
+    queueActionConfig = new QueueActionConfig(conf);
+    assertEquals(40, queueActionConfig.getStepSize(ResourceEnum.SEARCH_THREADPOOL));
+    assertEquals(4, queueActionConfig.getStepSize(ResourceEnum.WRITE_THREADPOOL));
+  }
 }

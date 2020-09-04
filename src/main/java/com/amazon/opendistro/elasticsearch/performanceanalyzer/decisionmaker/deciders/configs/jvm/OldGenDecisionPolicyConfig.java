@@ -13,7 +13,7 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.jvm;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.jvm;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Config;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NestedConfig;

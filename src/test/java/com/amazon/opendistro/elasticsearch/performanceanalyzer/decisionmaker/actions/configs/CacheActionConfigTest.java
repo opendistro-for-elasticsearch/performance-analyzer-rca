@@ -105,4 +105,48 @@ public class CacheActionConfigTest {
     CacheActionConfig cacheActionConfig = new CacheActionConfig(conf);
     cacheActionConfig.getThresholdConfig(ResourceEnum.SEARCH_THREADPOOL).upperBound();
   }
+
+  @Test
+  public void testGetStepSize() throws Exception {
+    String configStr =
+        "{"
+          + "\"action-config-settings\": { "
+              + "\"cache-settings\": { "
+                  + "\"fielddata\": { "
+                      + "\"upper-bound\": 0.8, "
+                      + "\"lower-bound\": 0.2 "
+                  + "}, "
+                  + "\"shard-request\": { "
+                      + "\"upper-bound\": 0.08, "
+                      + "\"lower-bound\": 0.01 "
+                  + "} "
+              + "} "
+          + "} "
+      + "}";
+    RcaConf conf = new RcaConf();
+    conf.readConfigFromString(configStr);
+    CacheActionConfig cacheActionConfig = new CacheActionConfig(conf);
+    assertEquals(0.03, cacheActionConfig.getStepSize(ResourceEnum.FIELD_DATA_CACHE), 0.0001);
+    assertEquals(0.0035, cacheActionConfig.getStepSize(ResourceEnum.SHARD_REQUEST_CACHE), 0.0001);
+    configStr =
+        "{"
+          + "\"action-config-settings\": { "
+              + "\"total-step-count\": 5,"
+              + "\"cache-settings\": { "
+                  + "\"fielddata\": { "
+                      + "\"upper-bound\": 0.8, "
+                      + "\"lower-bound\": 0.2 "
+                  + "}, "
+                  + "\"shard-request\": { "
+                      + "\"upper-bound\": 0.08, "
+                      + "\"lower-bound\": 0.01 "
+                  + "} "
+              + "} "
+          + "} "
+      + "}";
+    conf.readConfigFromString(configStr);
+    cacheActionConfig = new CacheActionConfig(conf);
+    assertEquals(0.12, cacheActionConfig.getStepSize(ResourceEnum.FIELD_DATA_CACHE), 0.0001);
+    assertEquals(0.014, cacheActionConfig.getStepSize(ResourceEnum.SHARD_REQUEST_CACHE), 0.0001);
+  }
 }

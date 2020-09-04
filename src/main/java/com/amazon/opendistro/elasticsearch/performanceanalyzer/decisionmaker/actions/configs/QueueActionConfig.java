@@ -36,7 +36,7 @@ import org.apache.logging.log4j.Logger;
  *       "total-step-count": 20,
  *       "search": {
  *         "upper-bound": 3000,
- *         "lower-bound": 1000
+ *         "lower-bound": 500
  *       },
  *       "write": {
  *         "upper-bound": 1000,
@@ -67,7 +67,7 @@ public class QueueActionConfig {
     queueSettingsConfig = new NestedConfig("queue-settings", actionConfig);
     searchQueueConfig = new SearchQueueConfig(queueSettingsConfig);
     writeQueueConfig = new WriteQueueConfig(queueSettingsConfig);
-    totalStepCount = new Config<>(TOTAL_STEP_COUNT_CONFIG_NAME, queueSettingsConfig.getValue(),
+    totalStepCount = new Config<>(TOTAL_STEP_COUNT_CONFIG_NAME, actionConfig,
         DEFAULT_TOTAL_STEP_COUNT, (s) -> (s > 0), Integer.class);
     createThresholdConfigMap();
   }
