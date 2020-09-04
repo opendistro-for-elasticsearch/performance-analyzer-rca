@@ -43,12 +43,12 @@ Note, the maximum number of datapoints that a single query can request for via A
 
 Sample Query:
 
-GET localhost:9600/_opendistro/_performanceanalyzer/batch?metrics=CPU_Utilization,IO_TotThroughput&starttime=1594412650000&endtime=1594412665000&samplingperiod=5
+GET localhost:9600/_opendistro/_performanceanalyzer/batch?metrics=CPU_Utilization,IO_TotThroughput&starttime=1594412250000&endtime=1594412260000&samplingperiod=5
 
 Output
 ```
 {
-    "1594412650000": {
+    "1594412250000": {
         "CPU_Utilization": {
             "fields": [
                 {
@@ -152,8 +152,95 @@ Output
                     1175.8217964071857,
                     1175.8217964071857,
                     1175.8217964071857
-                ],
+                ]
             ]
+        }
+    },
+    "1594412255000": {
+        "CPU_Utilization": {
+            "fields": [
+                {
+                    "name": "ShardID",
+                    "type": "VARCHAR"
+                },
+                {
+                    "name": "IndexName",
+                    "type": "VARCHAR"
+                },
+                {
+                    "name": "Operation",
+                    "type": "VARCHAR"
+                },
+                {
+                    "name": "ShardRole",
+                    "type": "VARCHAR"
+                },
+                {
+                    "name": "sum",
+                    "type": "DOUBLE"
+                },
+                {
+                    "name": "avg",
+                    "type": "DOUBLE"
+                },
+                {
+                    "name": "min",
+                    "type": "DOUBLE"
+                },
+                {
+                    "name": "max",
+                    "type": "DOUBLE"
+                }
+            ],
+            "records": [
+                [
+                    null,
+                    null,
+                    "GC",
+                    null,
+                    0.0039980247804126965,
+                    0.0039980247804126965,
+                    0.0039980247804126965,
+                    0.0039980247804126965
+                ]
+            ]
+        },
+        "IO_TotThroughput": {
+            "fields": [
+                {
+                    "name": "IndexName",
+                    "type": "VARCHAR"
+                },
+                {
+                    "name": "ShardID",
+                    "type": "VARCHAR"
+                },
+                {
+                    "name": "ShardRole",
+                    "type": "VARCHAR"
+                },
+                {
+                    "name": "Operation",
+                    "type": "VARCHAR"
+                },
+                {
+                    "name": "sum",
+                    "type": "DOUBLE"
+                },
+                {
+                    "name": "avg",
+                    "type": "DOUBLE"
+                },
+                {
+                    "name": "min",
+                    "type": "DOUBLE"
+                },
+                {
+                    "name": "max",
+                    "type": "DOUBLE"
+                }
+            ],
+            "records": []
         }
     }
 }
