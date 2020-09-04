@@ -238,6 +238,12 @@ public class RcaItCacheTuning {
   @AErrorPatternIgnored(
           pattern = "CacheUtil:getCacheMaxSize()",
           reason = "Node Config Cache is expected to be missing during startup.")
+  @AErrorPatternIgnored(
+          pattern = "SQLParsingUtil:readDataFromSqlResult()",
+          reason = "Old gen metrics is expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+          pattern = "HighHeapUsageOldGenRca:operate()",
+          reason = "Old gen rca is expected to be missing in this integ test.")
   public void testFieldDataCacheRca() {}
 
   // Test ShardRequestCacheClusterRca.
@@ -261,5 +267,11 @@ public class RcaItCacheTuning {
   @AErrorPatternIgnored(
           pattern = "CacheUtil:getCacheMaxSize()",
           reason = "Node Config Cache is expected to be missing during startup.")
+  @AErrorPatternIgnored(
+          pattern = "SQLParsingUtil:readDataFromSqlResult()",
+          reason = "Old gen metrics is expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+          pattern = "HighHeapUsageOldGenRca:operate()",
+          reason = "Old gen rca is expected to be missing in this integ test.")
   public void testShardRequestCacheRca() {}
 }
