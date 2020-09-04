@@ -25,7 +25,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Eviction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Hit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Size;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AClusterType;
@@ -246,6 +245,12 @@ public class RcaItCacheTuning {
   @AErrorPatternIgnored(
           pattern = "SubscribeResponseHandler:onError()",
           reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
+  @AErrorPatternIgnored(
+          pattern = "SQLParsingUtil:readDataFromSqlResult()",
+          reason = "Old gen metrics is expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+          pattern = "HighHeapUsageOldGenRca:operate()",
+          reason = "Old gen rca is expected to be missing in this integ test.")
   public void testFieldDataCacheRca() {}
 
   // Test ShardRequestCacheClusterRca.
@@ -272,5 +277,11 @@ public class RcaItCacheTuning {
   @AErrorPatternIgnored(
           pattern = "SubscribeResponseHandler:onError()",
           reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
+  @AErrorPatternIgnored(
+          pattern = "SQLParsingUtil:readDataFromSqlResult()",
+          reason = "Old gen metrics is expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+          pattern = "HighHeapUsageOldGenRca:operate()",
+          reason = "Old gen rca is expected to be missing in this integ test.")
   public void testShardRequestCacheRca() {}
 }
