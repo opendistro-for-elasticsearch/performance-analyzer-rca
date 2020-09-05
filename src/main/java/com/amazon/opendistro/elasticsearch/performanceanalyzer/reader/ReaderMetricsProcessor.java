@@ -221,6 +221,9 @@ public class ReaderMetricsProcessor implements Runnable {
     trimMap(masterEventMetricsMap, MASTER_EVENT_SNAPSHOTS);
 
     boolean deleteDBFiles = PluginSettings.instance().shouldCleanupMetricsDBFiles();
+    // Cleanup all but the 2 most recent metricsDB files from metricsDBMap. The most recent metricsDB files needs to be
+    // retained for future metrics query handling, the second most recent metricsDB file needs to be retained in case
+    // any metrics query handler just got access to it right before the most recent metricsDB file was available.
     while (metricsDBMap.size() > MAX_DATABASES) {
       Map.Entry<Long, MetricsDB> oldestEntry = metricsDBMap.pollFirstEntry();
       if (oldestEntry != null) {
