@@ -190,30 +190,30 @@ import org.junit.runner.RunWith;
           })
     })
 @AMetric(
-        name = Heap_Max.class,
-        dimensionNames = {AllMetrics.HeapDimension.Constants.TYPE_VALUE},
-        tables = {
-                @ATable(
-                        hostTag = HostTag.DATA_0,
-                        tuple = {
-                                @ATuple(
-                                        dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
-                                        sum = 1000000.0, avg = 1000000.0, min = 1000000.0, max = 1000000.0),
-                                @ATuple(
-                                        dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
-                                        sum = 1000000.0, avg = 1000000.0, min = 1000000.0, max = 1000000.0)
-                        }),
-                @ATable(
-                        hostTag = {HostTag.ELECTED_MASTER},
-                        tuple = {
-                                @ATuple(
-                                        dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
-                                        sum = 1000000.0, avg = 1000000.0, min = 1000000.0, max = 1000000.0),
-                                @ATuple(
-                                        dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
-                                        sum = 1000000.0, avg = 1000000.0, min = 1000000.0, max = 1000000.0)
-                        })
-        })
+    name = Heap_Max.class,
+    dimensionNames = {AllMetrics.HeapDimension.Constants.TYPE_VALUE},
+    tables = {
+      @ATable(
+          hostTag = HostTag.DATA_0,
+          tuple = {
+            @ATuple(
+                dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
+                sum = 1000000.0, avg = 1000000.0, min = 1000000.0, max = 1000000.0),
+          @ATuple(
+                dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
+                sum = 1000000.0, avg = 1000000.0, min = 1000000.0, max = 1000000.0)
+          }),
+      @ATable(
+          hostTag = {HostTag.ELECTED_MASTER},
+          tuple = {
+            @ATuple(
+                dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
+                sum = 1000000.0, avg = 1000000.0, min = 1000000.0, max = 1000000.0),
+            @ATuple(
+                dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
+                sum = 1000000.0, avg = 1000000.0, min = 1000000.0, max = 1000000.0)
+          })
+    })
 
 public class RcaItCacheTuning {
   public static final String CACHE_TUNING_RESOURCES_DIR = Consts.INTEG_TESTS_SRC_DIR + "./tests/cache_tuning/resource/";
