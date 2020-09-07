@@ -22,9 +22,9 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_LOCUS;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.CacheHealthDecider;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Collator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Publisher;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.QueueHealthDecider;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.collator.Collator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardStatsDerivedDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -103,7 +103,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -274,7 +273,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     //constructResourceHeatMapGraph();
 
     // Collator - Collects actions from all deciders and aligns impact vectors
-    Collator collator = new Collator(EVALUATION_INTERVAL_SECONDS, queueHealthDecider, cacheHealthDecider);
+    Collator collator = new Collator(queueHealthDecider, cacheHealthDecider);
     collator.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     collator.addAllUpstreams(Arrays.asList(queueHealthDecider, cacheHealthDecider));
 

@@ -18,12 +18,12 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.ac
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.HEAP;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.CacheActionConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
@@ -34,49 +34,41 @@ import org.apache.logging.log4j.Logger;
  * deciders to implement actions like increasing the cache's size. Presently, it acts on field data
  * cache and shard request cache.
  */
-
-// TODO: Split the cache action into separate actions for different caches.
-
 public class ModifyCacheMaxSizeAction extends SuppressibleAction {
   private static final Logger LOG = LogManager.getLogger(ModifyCacheMaxSizeAction.class);
-  public static final String NAME = "modifyCacheCapacity";
-  public static final long COOL_OFF_PERIOD_IN_MILLIS = 300 * 1_000;
+  public static final String NAME = "ModifyCacheMaxSize";
 
   private final NodeKey esNode;
   private final ResourceEnum cacheType;
-  private final NodeConfigCache nodeConfigCache;
-  private final double cacheSizeUpperBound;
 
-  private Long currentCacheMaxSizeInBytes;
-  private Long heapMaxSizeInBytes;
-  private long cacheUpperBoundInBytes;
-  private long desiredCacheMaxSizeInBytes;
-
-  private Map<ResourceEnum, Long> stepSizeInBytes = new HashMap<>();
+  private final long desiredCacheMaxSizeInBytes;
+  private final long currentCacheMaxSizeInBytes;
+  private final long coolOffPeriodInMillis;
+  private final boolean canUpdate;
 
   public ModifyCacheMaxSizeAction(
       final NodeKey esNode,
       final ResourceEnum cacheType,
-      final NodeConfigCache nodeConfigCache,
-      final double cacheSizeUpperBound,
-      final boolean increase,
-      final AppContext appContext) {
-    // TODO: Add lower bound for caches
-    // TODO: Address cache scaling down  when JVM decider is available
-
+      final AppContext appContext,
+      final long desiredCacheMaxSizeInBytes,
+      final long currentCacheMaxSizeInBytes,
+      final long coolOffPeriodInMillis,
+      final boolean canUpdate) {
     super(appContext);
     this.esNode = esNode;
     this.cacheType = cacheType;
-    this.nodeConfigCache = nodeConfigCache;
-    this.cacheSizeUpperBound = cacheSizeUpperBound;
+    this.desiredCacheMaxSizeInBytes = desiredCacheMaxSizeInBytes;
+    this.currentCacheMaxSizeInBytes = currentCacheMaxSizeInBytes;
+    this.coolOffPeriodInMillis = coolOffPeriodInMillis;
+    this.canUpdate = canUpdate;
+  }
 
-    setStepSize();
-
-    if (validateAndSetConfigValues()) {
-      long desiredCapacity =
-              increase ? currentCacheMaxSizeInBytes + getStepSize(cacheType) : currentCacheMaxSizeInBytes;
-      setDesiredCacheMaxSize(desiredCapacity);
-    }
+  public static Builder newBuilder(
+      final NodeKey esNode,
+      final ResourceEnum cacheType,
+      final AppContext appContext,
+      final RcaConf conf) {
+    return new Builder(esNode, cacheType, appContext, conf);
   }
 
   @Override
@@ -86,15 +78,12 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
 
   @Override
   public boolean canUpdate() {
-    if (currentCacheMaxSizeInBytes == null) {
-      return false;
-    }
-    return desiredCacheMaxSizeInBytes != currentCacheMaxSizeInBytes;
+    return canUpdate && (desiredCacheMaxSizeInBytes != currentCacheMaxSizeInBytes);
   }
 
   @Override
   public long coolOffPeriodInMillis() {
-    return COOL_OFF_PERIOD_IN_MILLIS;
+    return coolOffPeriodInMillis;
   }
 
   @Override
@@ -105,12 +94,10 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
   @Override
   public Map<NodeKey, ImpactVector> impact() {
     final ImpactVector impactVector = new ImpactVector();
-    if (currentCacheMaxSizeInBytes != null) {
-      if (desiredCacheMaxSizeInBytes > currentCacheMaxSizeInBytes) {
-        impactVector.increasesPressure(HEAP);
-      } else if (desiredCacheMaxSizeInBytes < currentCacheMaxSizeInBytes) {
-        impactVector.decreasesPressure(HEAP);
-      }
+    if (desiredCacheMaxSizeInBytes > currentCacheMaxSizeInBytes) {
+      impactVector.increasesPressure(HEAP);
+    } else if (desiredCacheMaxSizeInBytes < currentCacheMaxSizeInBytes) {
+      impactVector.decreasesPressure(HEAP);
     }
     return Collections.singletonMap(esNode, impactVector);
   }
@@ -133,15 +120,11 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
     return summary();
   }
 
-  public void setStepSizeForCache(final long stepSizeInBytes) {
-    this.stepSizeInBytes.put(cacheType, stepSizeInBytes);
-  }
-
-  public Long getCurrentCacheMaxSizeInBytes() {
+  public long getCurrentCacheMaxSizeInBytes() {
     return currentCacheMaxSizeInBytes;
   }
 
-  public Long getDesiredCacheMaxSizeInBytes() {
+  public long getDesiredCacheMaxSizeInBytes() {
     return desiredCacheMaxSizeInBytes;
   }
 
@@ -149,37 +132,109 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
     return cacheType;
   }
 
-  private boolean validateAndSetConfigValues() {
-    // This is intentionally not made static because different nodes can
-    // have different bounds based on instance types
+  public static long getThresholdInBytes(double threshold, long heapSize) {
+    return (long) (threshold * heapSize);
+  }
 
-    final Long cacheMaxSize = NodeConfigCacheReaderUtil.readCacheMaxSizeInBytes(nodeConfigCache, esNode, cacheType);
-    final Long heapMaxSize = NodeConfigCacheReaderUtil.readHeapMaxSizeInBytes(nodeConfigCache, esNode);
+  public static final class Builder {
+    public static final long DEFAULT_COOL_OFF_PERIOD_IN_MILLIS = 300 * 1_000;
+    public static final boolean DEFAULT_IS_INCREASE = true;
+    public static final boolean DEFAULT_CAN_UPDATE = true;
 
-    if (cacheMaxSize == null || cacheMaxSize == 0 || heapMaxSize == null || heapMaxSize == 0) {
-      return false;
-    } else {
-      currentCacheMaxSizeInBytes = cacheMaxSize;
-      heapMaxSizeInBytes = heapMaxSize;
-      cacheUpperBoundInBytes = (long) (heapMaxSizeInBytes * cacheSizeUpperBound);
-      return true;
+    private final ResourceEnum cacheType;
+    private final NodeKey esNode;
+    private final AppContext appContext;
+    private final RcaConf rcaConf;
+
+    private double stepSizeInPercent;
+    private boolean isIncrease;
+    private boolean canUpdate;
+    private long coolOffPeriodInMillis;
+
+    private Long currentCacheMaxSizeInBytes;
+    private Long desiredCacheMaxSizeInBytes;
+    private Long heapMaxSizeInBytes;
+    private final long upperBoundInBytes;
+    private final long lowerBoundInBytes;
+
+    private Builder(
+        final NodeKey esNode,
+        final ResourceEnum cacheType,
+        final AppContext appContext,
+        final RcaConf conf) {
+      this.esNode = esNode;
+      this.cacheType = cacheType;
+      this.appContext = appContext;
+      this.rcaConf = conf;
+
+      this.coolOffPeriodInMillis = DEFAULT_COOL_OFF_PERIOD_IN_MILLIS;
+      this.isIncrease = DEFAULT_IS_INCREASE;
+      this.canUpdate = DEFAULT_CAN_UPDATE;
+
+      this.currentCacheMaxSizeInBytes = NodeConfigCacheReaderUtil.readCacheMaxSizeInBytes(
+          appContext.getNodeConfigCache(), esNode, cacheType);
+      this.heapMaxSizeInBytes = NodeConfigCacheReaderUtil.readHeapMaxSizeInBytes(
+          appContext.getNodeConfigCache(), esNode);
+      this.desiredCacheMaxSizeInBytes = null;
+
+      CacheActionConfig cacheActionConfig = new CacheActionConfig(rcaConf);
+      double upperBoundThreshold = cacheActionConfig.getThresholdConfig(cacheType).upperBound();
+      double lowerBoundThreshold = cacheActionConfig.getThresholdConfig(cacheType).lowerBound();
+      this.stepSizeInPercent = cacheActionConfig.getStepSize(cacheType);
+      if (heapMaxSizeInBytes != null) {
+        this.upperBoundInBytes = getThresholdInBytes(upperBoundThreshold, heapMaxSizeInBytes);
+        this.lowerBoundInBytes = getThresholdInBytes(lowerBoundThreshold, heapMaxSizeInBytes);
+      } else {
+        // If heapMaxSizeInBytes is null, we return a non-actionable object from build
+        this.upperBoundInBytes = 0;
+        this.lowerBoundInBytes = 0;
+      }
     }
-  }
 
-  private void setStepSize() {
-    // TODO: Update the step size to also include percentage of heap size along with absolute value
-    // Field data cache having step size of 512MB
-    stepSizeInBytes.put(ResourceEnum.FIELD_DATA_CACHE, 512 * 1_024L * 1_024L);
+    public Builder coolOffPeriod(long coolOffPeriodInMillis) {
+      this.coolOffPeriodInMillis = coolOffPeriodInMillis;
+      return this;
+    }
 
-    // Shard request cache step size of 512KB
-    stepSizeInBytes.put(ResourceEnum.SHARD_REQUEST_CACHE, 512 * 1_024L);
-  }
+    public Builder increase(boolean isIncrease) {
+      this.isIncrease = isIncrease;
+      return this;
+    }
 
-  private long getStepSize(final ResourceEnum cacheType) {
-    return stepSizeInBytes.get(cacheType);
-  }
+    public Builder setDesiredCacheMaxSizeToMin() {
+      this.desiredCacheMaxSizeInBytes = lowerBoundInBytes;
+      return this;
+    }
 
-  private void setDesiredCacheMaxSize(final long desiredCacheMaxSize) {
-    this.desiredCacheMaxSizeInBytes = Math.min(desiredCacheMaxSize, cacheUpperBoundInBytes);
+    public Builder setDesiredCacheMaxSizeToMax() {
+      this.desiredCacheMaxSizeInBytes = upperBoundInBytes;
+      return this;
+    }
+
+    public Builder stepSizeInPercent(double stepSizeInPercent) {
+      this.stepSizeInPercent = stepSizeInPercent;
+      return this;
+    }
+
+    public ModifyCacheMaxSizeAction build() {
+      if (currentCacheMaxSizeInBytes == null || heapMaxSizeInBytes == null) {
+        LOG.error("Action: Fail to read cache max size or heap max size from node config cache. "
+            + "Return an non-actionable action");
+        return new ModifyCacheMaxSizeAction(esNode, cacheType, appContext,
+            -1, -1, coolOffPeriodInMillis, false);
+      }
+
+      long stepSizeInBytes = (long) (stepSizeInPercent * heapMaxSizeInBytes);
+      if (desiredCacheMaxSizeInBytes == null) {
+        desiredCacheMaxSizeInBytes = isIncrease ? currentCacheMaxSizeInBytes + stepSizeInBytes :
+            currentCacheMaxSizeInBytes - stepSizeInBytes;
+      }
+
+      // Ensure desired cache max size is within thresholds
+      desiredCacheMaxSizeInBytes = Math.max(Math.min(desiredCacheMaxSizeInBytes, upperBoundInBytes), lowerBoundInBytes);
+
+      return new ModifyCacheMaxSizeAction(esNode, cacheType, appContext,
+          desiredCacheMaxSizeInBytes, currentCacheMaxSizeInBytes, coolOffPeriodInMillis, canUpdate);
+    }
   }
 }

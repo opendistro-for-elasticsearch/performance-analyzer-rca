@@ -17,9 +17,11 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.co
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.CacheActionConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.QueueActionConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaControllerHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheDeciderConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageYoungGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNodeClusterRcaConfig;
@@ -29,6 +31,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.Queue
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -83,6 +86,16 @@ public class RcaConf {
   // This should only be used for Tests.
   public RcaConf() {
     this.mapper = new ObjectMapper();
+  }
+
+  /**
+   * Converts json config passed as String to a Java Map.
+   *
+   * <p>This method should only be called from Tests to parse test configs
+   */
+  @VisibleForTesting
+  public void readConfigFromString(String configJson) throws JsonProcessingException {
+    this.conf = mapper.readValue(configJson, ConfJsonWrapper.class);
   }
 
   public static void clear() {
@@ -166,8 +179,8 @@ public class RcaConf {
     return new CacheConfig(this);
   }
 
-  public CacheDeciderConfig getCacheDeciderConfig() {
-    return new CacheDeciderConfig(this);
+  public DeciderConfig getDeciderConfig() {
+    return new DeciderConfig(this);
   }
 
   public List<String> getMutedRcaList() {
@@ -184,6 +197,14 @@ public class RcaConf {
 
   public Map<String, Object> getRcaConfigSettings() {
     return ImmutableMap.copyOf(conf.getRcaConfigSettings());
+  }
+
+  public CacheActionConfig getCacheActionConfig() {
+    return new CacheActionConfig(this);
+  }
+
+  public QueueActionConfig getQueueActionConfig() {
+    return new QueueActionConfig(this);
   }
 
   @SuppressWarnings("unchecked")
@@ -215,14 +236,14 @@ public class RcaConf {
     List<String> rcaConfFiles = RcaControllerHelper.getAllConfFilePaths();
     for (String confFilePath : rcaConfFiles) {
       updateStatus = updateRcaConf(confFilePath, mutedRcas, mutedDeciders,
-        mutedActions);
+          mutedActions);
       if (!updateStatus) {
         LOG.error("Failed to update the conf file at path: {}", confFilePath);
         StatsCollector.instance().logMetric(RcaConsts.WRITE_UPDATED_RCA_CONF_ERROR);
         break;
       }
     }
-      return updateStatus;
+    return updateStatus;
   }
 
   private boolean updateRcaConf(String originalFilePath, final Set<String> mutedRcas,
@@ -264,25 +285,11 @@ public class RcaConf {
     return true;
   }
 
-  @SuppressWarnings("unchecked")
-  public <T> T readDeciderConfig(String deciderName, String key, Class<? extends T> clazz) {
-    T setting = null;
-    try {
-      Map<String, Object> deciderObj = null;
-      if (conf.getDeciderConfigSettings() != null
-          && conf.getDeciderConfigSettings().containsKey(deciderName)
-          && conf.getDeciderConfigSettings().get(deciderName) != null) {
-        deciderObj = (Map<String, Object>) conf.getDeciderConfigSettings().get(deciderName);
-      }
+  public Map<String, Object> getActionConfigSettings() {
+    return conf.getActionConfigSettings();
+  }
 
-      if (deciderObj != null
-          && deciderObj.containsKey(key)
-          && deciderObj.get(key) != null) {
-        setting = clazz.cast(deciderObj.get(key));
-      }
-    } catch (ClassCastException ne) {
-      LOG.error("rca.conf contains value in invalid format, trace : {}", ne.getMessage());
-    }
-    return setting;
+  public Map<String, Object> getDeciderConfigSettings() {
+    return conf.getDeciderConfigSettings();
   }
 }

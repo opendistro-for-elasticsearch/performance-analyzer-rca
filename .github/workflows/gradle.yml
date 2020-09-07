@@ -20,7 +20,7 @@ jobs:
     - name: Checkout RCA package
       uses: actions/checkout@v2
       with:
-        path: ./tmp/rca
+        path: ./tmp/performance-analyzer-rca
     - name: Checkout Performance Analyzer package
       uses: actions/checkout@v2
       with:
@@ -31,29 +31,36 @@ jobs:
       with:
         java-version: 1.12
     - name: Build RCA with Gradle
-      working-directory:  ./tmp/rca
+      working-directory:  ./tmp/performance-analyzer-rca
       run: ./gradlew build --stacktrace
     - name: Generate Jacoco coverage report
-      working-directory: ./tmp/rca
+      working-directory: ./tmp/performance-analyzer-rca
       run: ./gradlew jacocoTestReport
     - name: Upload coverage report
-      working-directory: ./tmp/rca
+      working-directory: ./tmp/performance-analyzer-rca
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       run: bash <(curl -s https://codecov.io/bash) -f ./build/reports/jacoco/test/jacocoTestReport.xml
     - name: Publish RCA jar to maven local
-      working-directory: ./tmp/rca
+      working-directory: ./tmp/performance-analyzer-rca
       run: ./gradlew publishToMavenLocal
     - name: Build PA gradle using the new RCA jar
       working-directory: ./tmp/pa
-      run: rm licenses/performanceanalyzer-rca-1.3.jar.sha1
+      run: rm licenses/performanceanalyzer-rca-1.10.jar.sha1
     - name: Update SHA
       working-directory: ./tmp/pa
       run: ./gradlew updateShas
-    - name: Start Build
+    - name: Set docker-compose path
+      run: echo ::set-env name=DOCKER_COMPOSE_LOCATION::$(which docker-compose)
+      # Set the vm.max_map_count system property to the minimum required to run Elasticsearch
+    - name: Set vm.max_map_count
+      run: sudo sysctl -w vm.max_map_count=262144
+    - name: Build PA and run Unit Tests
       working-directory: ./tmp/pa
       run: ./gradlew build -i
-      
-      
-        
-      
+    - name: Spin up Docker cluster for integ testing
+      working-directory: ./tmp/performance-analyzer-rca
+      run: ./gradlew enableRca
+    - name: Run integration tests
+      working-directory: ./tmp/pa
+      run: ./gradlew integTest --info --stacktrace -Dtests.enableIT=true

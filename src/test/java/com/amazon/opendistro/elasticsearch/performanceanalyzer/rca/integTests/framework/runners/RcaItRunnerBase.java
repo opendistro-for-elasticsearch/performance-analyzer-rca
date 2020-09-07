@@ -1,30 +1,43 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.Cluster;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.TestEnvironment;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AClusterType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AErrorPatternIgnored;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AExpect;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.api.IValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.api.TestApi;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.ClusterType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.log.AppenderHelper;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.Description;
 import org.junit.runner.Runner;
+import org.junit.runner.manipulation.Filter;
+import org.junit.runner.manipulation.Filterable;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunNotifier;
 
 /**
  * This is the main runner class that is used by the RCA-IT.
  */
-public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner {
+public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner, Filterable {
   private static final Logger LOG = LogManager.getLogger(RcaItRunnerBase.class);
 
   // The class whose tests the runner is currently executing.
@@ -44,22 +57,21 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner {
   // This is wrapper on top of the cluster object that is passed on to the testClass to get access to the cluster.
   private final TestApi testApi;
 
+  private final Configuration oldConfiguration;
+
   public RcaItRunnerBase(Class testClass, boolean useHttps) throws Exception {
     super();
+
+    checkTestClassMarked(testClass);
+
+    this.oldConfiguration = AppenderHelper.addMemoryAppenderToRootLogger();
     this.testClass = testClass;
     ClusterType clusterType = getClusterTypeFromAnnotation(testClass);
     this.cluster = createCluster(clusterType, useHttps);
     this.testApi = new TestApi(cluster);
     this.testObject = testClass.getDeclaredConstructor().newInstance();
 
-    try {
-      Method setClusterMethod = testClass.getMethod(SET_CLUSTER_METHOD, TestApi.class);
-      setClusterMethod.setAccessible(true);
-      setClusterMethod.invoke(testObject, testApi);
-    } catch (NoSuchMethodException ex) {
-      // This test class hasn't defined a method setCluster(Cluster). SO probably it does not need
-      // access to the cluster object. Which is fine. We move on to the method execution.
-    }
+    setTestApiForTestClass();
 
     cluster.createServersAndThreads();
     try {
@@ -67,9 +79,31 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner {
     } catch (Exception ex) {
       cluster.deleteClusterDir();
       ex.printStackTrace();
+      AppenderHelper.setLoggerConfiguration(oldConfiguration);
       throw ex;
     }
     cluster.startRcaControllerThread();
+  }
+
+  private static void checkTestClassMarked(Class testClass) {
+    Category categoryAnnotation = (Category) testClass.getAnnotation(Category.class);
+    Objects.requireNonNull(
+        categoryAnnotation,
+        "All RcaIt test classes must have annotation '@Category(RcaItMarker.class). "
+            + "Not found for class: " + testClass.getName());
+    Assert.assertEquals("The number of expected annotation value is 1.", 1, categoryAnnotation.value().length);
+    Assert.assertEquals(RcaItMarker.class, categoryAnnotation.value()[0]);
+  }
+
+  private void setTestApiForTestClass() {
+    try {
+      Method setClusterMethod = testClass.getMethod(SET_CLUSTER_METHOD, TestApi.class);
+      setClusterMethod.setAccessible(true);
+      setClusterMethod.invoke(testObject, testApi);
+    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ex) {
+      // This test class hasn't defined a method setCluster(Cluster). SO probably it does not need
+      // access to the cluster object. Which is fine. We move on to the method execution.
+    }
   }
 
   private static ClusterType getClusterTypeFromAnnotation(Class testClass) {
@@ -90,44 +124,19 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner {
     try {
       for (Method method : testClass.getMethods()) {
         if (method.isAnnotationPresent(Test.class)) {
-          notifier.fireTestStarted(Description
-              .createTestDescription(testClass, method.getName()));
+          notifier.fireTestStarted(Description.createTestDescription(testClass, method.getName()));
 
           try {
-            this.testEnvironment.updateEnvironment(method);
-            this.testEnvironment.verifyEnvironmentSetup();
-          } catch (Exception ex) {
-            notifier.fireTestFailure(
-                new Failure(
-                    Description.createTestDescription(testClass.getClass(), method.getName()), ex));
-          }
-          cluster.startRcaScheduler();
-
-          try {
+            prepareForRun(method);
             method.invoke(testObject);
-            List<Class> failedChecks = validate(method);
-
-            if (!failedChecks.isEmpty()) {
-              StringBuilder sb = new StringBuilder("Failed validations for:");
-              for (Class failed: failedChecks) {
-                sb.append(System.lineSeparator()).append(failed);
-              }
-
-              notifier.fireTestFailure(
-                  new Failure(
-                      Description.createTestDescription(testClass.getClass(), method.getName()),
-                      new AssertionError(sb.toString())));
-            }
+            validateTestRun(method);
           } catch (Exception exception) {
-            LOG.error("** ERR: While running method: '{}'", method.getName(), exception);
             notifier.fireTestFailure(
                 new Failure(
                     Description.createTestDescription(testClass.getClass(), method.getName()), exception));
           }
 
-          cluster.stopRcaScheduler();
-          this.testEnvironment.clearUpMethodLevelEnvOverride();
-
+          postRunCleanups();
           notifier.fireTestFinished(Description.createTestDescription(testClass, method.getName()));
         }
       }
@@ -140,10 +149,81 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner {
       } catch (IOException e) {
         e.printStackTrace();
       }
+      AppenderHelper.setLoggerConfiguration(oldConfiguration);
     }
   }
 
-  private List<Class> validate(Method method)
+  private void postRunCleanups() {
+    try {
+      cluster.stopRcaScheduler();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    this.testEnvironment.clearUpMethodLevelEnvOverride();
+  }
+
+  private void validateTestRun(Method method)
+      throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, IllegalStateException {
+    List<Class> failedChecks = validateTestOutput(method);
+
+    if (!failedChecks.isEmpty()) {
+      StringBuilder sb = new StringBuilder("Failed validations for:");
+      for (Class failed : failedChecks) {
+        sb.append(System.lineSeparator()).append(failed);
+      }
+      throw new IllegalStateException(sb.toString());
+    }
+    validateNoErrorsInLog(method);
+  }
+
+  private void validateNoErrorsInLog(Method method) {
+    if (method.isAnnotationPresent(AErrorPatternIgnored.class) || method.isAnnotationPresent(AErrorPatternIgnored.Patterns.class)) {
+      Set<String> patternsToIgnore =
+          Arrays.stream(method.getAnnotationsByType(AErrorPatternIgnored.class)).map(AErrorPatternIgnored::pattern)
+              .collect(Collectors.toSet());
+
+      Collection<String> errors = AppenderHelper.getAllErrorsInLog();
+      if (errors.size() > 0) {
+        // For each of the errors, we check if they have the pattern that we are supposed to ignore. If so, we ignore them.
+        List<String> fatalErrors =
+            errors
+                .stream()
+                .filter(
+                    error -> patternsToIgnore
+                        .stream()
+                        .noneMatch(
+                            pattern -> error.contains(pattern)
+                        )
+                ).collect(Collectors.toList());
+
+        if (!fatalErrors.isEmpty()) {
+
+          StringBuilder err = new StringBuilder(
+              "RCA-IT fails if some errors are found in the logs. If you think these errors are okay to ignore, you can use the "
+                  + "@AErrorPatternIgnored to ignore them. Please see RcaItPocSingleNode.simple() for an example.");
+          err.append(System.lineSeparator()).append("The Runner found the following errors in log: [");
+          err.append(System.lineSeparator());
+
+          fatalErrors.forEach(x -> err.append(x));
+          err.append(System.lineSeparator()).append("]");
+          throw new IllegalStateException(err.toString());
+        }
+      }
+    }
+  }
+
+  private void prepareForRun(Method method) throws Exception {
+    applyMethodLevelAnnotationOverrides(method);
+    cluster.startRcaScheduler();
+    AppenderHelper.resetErrors();
+  }
+
+  private void applyMethodLevelAnnotationOverrides(Method method) throws Exception {
+    this.testEnvironment.updateEnvironment(method);
+    this.testEnvironment.verifyEnvironmentSetup();
+  }
+
+  private List<Class> validateTestOutput(Method method)
       throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
     List<Class> failedValidations = new ArrayList<>();
     if (method.isAnnotationPresent(AExpect.Expectations.class) || method.isAnnotationPresent(AExpect.class)) {
@@ -199,5 +279,10 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner {
       }
     }
     return failedValidations;
+  }
+
+  @Override
+  public void filter(Filter filter) {
+
   }
 }

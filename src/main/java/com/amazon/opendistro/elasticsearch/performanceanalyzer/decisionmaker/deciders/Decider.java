@@ -16,8 +16,8 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
@@ -42,10 +42,12 @@ public abstract class Decider extends NonLeafNode<Decision> {
 
   private static final Logger LOG = LogManager.getLogger(Decider.class);
   protected final int decisionFrequency; // Measured in terms of number of evaluationIntervalPeriods
+  protected RcaConf rcaConf;
 
   public Decider(long evalIntervalSeconds, int decisionFrequency) {
     super(0, evalIntervalSeconds);
     this.decisionFrequency = decisionFrequency;
+    this.rcaConf = null;
   }
 
   public abstract String name();
@@ -91,4 +93,14 @@ public abstract class Decider extends NonLeafNode<Decision> {
 
   @Override
   public abstract Decision operate();
+
+  /**
+   * read threshold values from rca.conf
+   *
+   * @param conf RcaConf object
+   */
+  @Override
+  public void readRcaConf(RcaConf conf) {
+    rcaConf = conf;
+  }
 }

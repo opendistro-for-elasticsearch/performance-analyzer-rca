@@ -104,26 +104,32 @@ public class PerformanceAnalyzerApp {
       new ArrayBlockingQueue<>(EXCEPTION_QUEUE_LENGTH);
 
   public static void main(String[] args) {
-    AppContext appContext = new AppContext();
-    PERIODIC_SAMPLERS = new PeriodicSamplers(PERIODIC_SAMPLE_AGGREGATOR, getAllSamplers(appContext),
-        (MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval) / 2,
-        TimeUnit.MILLISECONDS);
-    PluginSettings settings = PluginSettings.instance();
     StatsCollector.STATS_TYPE = "agent-stats-metadata";
-    METRIC_COLLECTOR_EXECUTOR.addScheduledMetricCollector(StatsCollector.instance());
-    StatsCollector.instance().addDefaultExceptionCode(StatExceptionCode.READER_RESTART_PROCESSING);
-    METRIC_COLLECTOR_EXECUTOR.setEnabled(true);
-    METRIC_COLLECTOR_EXECUTOR.start();
+    PluginSettings settings = PluginSettings.instance();
+    if (ConfigStatus.INSTANCE.haveValidConfig()) {
+      AppContext appContext = new AppContext();
+      PERIODIC_SAMPLERS = new PeriodicSamplers(PERIODIC_SAMPLE_AGGREGATOR, getAllSamplers(appContext),
+              (MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval) / 2,
+              TimeUnit.MILLISECONDS);
+      METRIC_COLLECTOR_EXECUTOR.addScheduledMetricCollector(StatsCollector.instance());
+      StatsCollector.instance()
+          .addDefaultExceptionCode(StatExceptionCode.READER_RESTART_PROCESSING);
+      METRIC_COLLECTOR_EXECUTOR.setEnabled(true);
+      METRIC_COLLECTOR_EXECUTOR.start();
 
-    final GRPCConnectionManager connectionManager = new GRPCConnectionManager(
-        settings.getHttpsEnabled());
-    final ClientServers clientServers = createClientServers(connectionManager, appContext);
-    startErrorHandlingThread(THREAD_PROVIDER, exceptionQueue);
+      final GRPCConnectionManager connectionManager =
+          new GRPCConnectionManager(settings.getHttpsEnabled());
+      final ClientServers clientServers = createClientServers(connectionManager, appContext);
+      startErrorHandlingThread(THREAD_PROVIDER, exceptionQueue);
 
-    startReaderThread(appContext, THREAD_PROVIDER);
-    startGrpcServerThread(clientServers.getNetServer(), THREAD_PROVIDER);
-    startWebServerThread(clientServers.getHttpServer(), THREAD_PROVIDER);
-    startRcaTopLevelThread(clientServers, connectionManager, appContext, THREAD_PROVIDER);
+      startReaderThread(appContext, THREAD_PROVIDER);
+      startGrpcServerThread(clientServers.getNetServer(), THREAD_PROVIDER);
+      startWebServerThread(clientServers.getHttpServer(), THREAD_PROVIDER);
+      startRcaTopLevelThread(clientServers, connectionManager, appContext, THREAD_PROVIDER);
+    } else {
+      LOG.error("Performance analyzer app stopped due to invalid config status.");
+      StatsCollector.instance().logException(StatExceptionCode.READER_THREAD_STOPPED);
+    }
   }
 
   private static void startRcaTopLevelThread(final ClientServers clientServers,

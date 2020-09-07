@@ -20,37 +20,43 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionma
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.NETWORK;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.QueueActionConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class ModifyQueueCapacityAction extends SuppressibleAction {
 
-  public static final String NAME = "modify_queue_capacity";
-  public static final long COOL_OFF_PERIOD_IN_MILLIS = 300 * 1_000;
+  private static final Logger LOG = LogManager.getLogger(ModifyQueueCapacityAction.class);
+  public static final String NAME = "ModifyQueueCapacity";
 
-  private int currentCapacity;
-  private int desiredCapacity;
-  private ResourceEnum threadPool;
-  private NodeKey esNode;
+  private final ResourceEnum threadPool;
+  private final NodeKey esNode;
+  private final int desiredCapacity;
+  private final int currentCapacity;
+  private final long coolOffPeriodInMillis;
+  private final boolean canUpdate;
 
-  private Map<ResourceEnum, Integer> lowerBound = new HashMap<>();
-  private Map<ResourceEnum, Integer> upperBound = new HashMap<>();
-
-  public ModifyQueueCapacityAction(NodeKey esNode, ResourceEnum threadPool, int currentCapacity,
-      boolean increase, AppContext appContext) {
+  private ModifyQueueCapacityAction(NodeKey esNode, ResourceEnum threadPool, AppContext appContext,
+      int desiredCapacity, int currentCapacity, long coolOffPeriodInMillis, boolean canUpdate) {
     super(appContext);
-    setBounds();
-    int STEP_SIZE = 50;
     this.esNode = esNode;
     this.threadPool = threadPool;
+    this.desiredCapacity = desiredCapacity;
     this.currentCapacity = currentCapacity;
-    int desiredCapacity = increase ? currentCapacity + STEP_SIZE : currentCapacity - STEP_SIZE;
-    setDesiredCapacity(desiredCapacity);
+    this.coolOffPeriodInMillis = coolOffPeriodInMillis;
+    this.canUpdate = canUpdate;
+  }
+
+  public static Builder newBuilder(NodeKey esNode, ResourceEnum threadPool, final AppContext appContext, final RcaConf conf) {
+    return new Builder(esNode, threadPool, appContext, conf);
   }
 
   @Override
@@ -60,12 +66,12 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
 
   @Override
   public boolean canUpdate() {
-    return desiredCapacity != currentCapacity;
+    return canUpdate && (desiredCapacity != currentCapacity);
   }
 
   @Override
   public long coolOffPeriodInMillis() {
-    return COOL_OFF_PERIOD_IN_MILLIS;
+    return coolOffPeriodInMillis;
   }
 
   @Override
@@ -98,24 +104,6 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
     return summary();
   }
 
-  private void setBounds() {
-    // This is intentionally not made static because different nodes can
-    // have different bounds based on instance types
-    // TODO: Move configuration values to rca.conf
-
-    // Write thread pool for bulk write requests
-    this.lowerBound.put(ResourceEnum.WRITE_THREADPOOL, 100);
-    this.upperBound.put(ResourceEnum.WRITE_THREADPOOL, 1000);
-
-    // Search thread pool
-    this.lowerBound.put(ResourceEnum.SEARCH_THREADPOOL, 1000);
-    this.upperBound.put(ResourceEnum.SEARCH_THREADPOOL, 3000);
-  }
-
-  private void setDesiredCapacity(int desiredCapacity) {
-    this.desiredCapacity = Math.max(Math.min(desiredCapacity, upperBound.get(threadPool)), lowerBound.get(threadPool));
-  }
-
   public int getCurrentCapacity() {
     return currentCapacity;
   }
@@ -126,5 +114,85 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
 
   public ResourceEnum getThreadPool() {
     return threadPool;
+  }
+
+  public static final class Builder {
+    public static final long DEFAULT_COOL_OFF_PERIOD_IN_MILLIS = 300 * 1_000;
+    public static final boolean DEFAULT_IS_INCREASE = true;
+    public static final boolean DEFAULT_CAN_UPDATE = true;
+
+    private int stepSize;
+    private boolean increase;
+    private boolean canUpdate;
+    private long coolOffPeriodInMillis;
+    private final ResourceEnum threadPool;
+    private final NodeKey esNode;
+    private final AppContext appContext;
+    private final RcaConf rcaConf;
+
+    private Integer currentCapacity;
+    private Integer desiredCapacity;
+    private final int upperBound;
+    private final int lowerBound;
+
+    public Builder(NodeKey esNode, ResourceEnum threadPool, final AppContext appContext, final RcaConf conf) {
+      this.esNode = esNode;
+      this.threadPool = threadPool;
+      this.appContext = appContext;
+      this.rcaConf = conf;
+      this.coolOffPeriodInMillis = DEFAULT_COOL_OFF_PERIOD_IN_MILLIS;
+      this.increase = DEFAULT_IS_INCREASE;
+      this.canUpdate = DEFAULT_CAN_UPDATE;
+      this.desiredCapacity = null;
+      this.currentCapacity = NodeConfigCacheReaderUtil.readQueueCapacity(
+          appContext.getNodeConfigCache(), esNode, threadPool);
+
+      QueueActionConfig queueActionConfig = new QueueActionConfig(rcaConf);
+      this.upperBound = queueActionConfig.getThresholdConfig(threadPool).upperBound();
+      this.lowerBound = queueActionConfig.getThresholdConfig(threadPool).lowerBound();
+      this.stepSize = queueActionConfig.getStepSize(threadPool);
+    }
+
+    public Builder coolOffPeriod(long coolOffPeriodInMillis) {
+      this.coolOffPeriodInMillis = coolOffPeriodInMillis;
+      return this;
+    }
+
+    public Builder increase(boolean increase) {
+      this.increase = increase;
+      return this;
+    }
+
+    public Builder setDesiredCapacityToMin() {
+      this.desiredCapacity = this.lowerBound;
+      return this;
+    }
+
+    public Builder setDesiredCapacityToMax() {
+      this.desiredCapacity = this.upperBound;
+      return this;
+    }
+
+    public Builder stepSize(int stepSize) {
+      this.stepSize = stepSize;
+      return this;
+    }
+
+    public ModifyQueueCapacityAction build() {
+      if (currentCapacity == null) {
+        LOG.error("Action: Fail to read queue capacity from node config cache. Return an non-actionable action");
+        return new ModifyQueueCapacityAction(esNode, threadPool, appContext,
+            -1, -1, coolOffPeriodInMillis, false);
+      }
+      if (desiredCapacity == null) {
+        desiredCapacity = increase ? currentCapacity + stepSize : currentCapacity - stepSize;
+      }
+
+      // Ensure desired capacity is within configured safety bounds
+      desiredCapacity = Math.min(desiredCapacity, upperBound);
+      desiredCapacity = Math.max(desiredCapacity, lowerBound);
+      return new ModifyQueueCapacityAction(esNode, threadPool, appContext,
+          desiredCapacity, currentCapacity, coolOffPeriodInMillis, canUpdate);
+    }
   }
 }

@@ -29,6 +29,10 @@ import org.jooq.Result;
 public class CacheUtil {
     private static final Logger LOG = LogManager.getLogger(CacheUtil.class);
 
+    public static final long KB_TO_BYTES = 1024;
+    public static final long MB_TO_BYTES = KB_TO_BYTES * 1024;
+    public static final long GB_TO_BYTES = MB_TO_BYTES * 1024;
+
     public static Double getTotalSizeInKB(final Metric cacheSizeGroupByOperation) {
         double totalSizeInKB = 0;
 

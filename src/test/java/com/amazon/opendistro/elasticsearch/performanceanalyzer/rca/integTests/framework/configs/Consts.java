@@ -10,6 +10,9 @@ public class Consts {
   public static final String RCAIT_DEFAULT_RCA_CONF_STANDBY_MASTER_NODE = TEST_RESOURCES_DIR + "rca_master.conf";
   public static final String RCAIT_DEFAULT_RCA_CONF_DATA_NODE = TEST_RESOURCES_DIR + "rca.conf";
 
+  public static final String INTEG_TESTS_SRC_DIR =
+      "./src/test/java/com/amazon/opendistro/elasticsearch/performanceanalyzer/rca/integTests/";
+
   public static final String HOST_ID_KEY = "hostId";
   public static final String HOST_ROLE_KEY = "hostRole";
   public static final String DATA_KEY = "data";

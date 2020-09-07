@@ -36,6 +36,8 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import org.apache.commons.io.FileUtils;
+import org.jooq.Record;
+import org.jooq.Result;
 
 public class Cluster {
   // A cluster can have 0 (single node) to 5 (multi node with dedicated masters) hosts. The following three
@@ -273,6 +275,10 @@ public class Cluster {
 
   public String getRcaRestResponse(final Map<String, String> params, HostTag hostByTag) {
     return verifyTag(hostByTag).makeRestRequest(params);
+  }
+
+  public Map<String, Result<Record>> getRecordsForAllTablesOnHost(HostTag hostTag) {
+    return verifyTag(hostTag).getRecordsForAllTables();
   }
 
   private Host verifyTag(HostTag hostTag) {

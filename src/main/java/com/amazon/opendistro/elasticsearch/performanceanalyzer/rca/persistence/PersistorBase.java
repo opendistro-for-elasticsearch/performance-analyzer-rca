@@ -18,10 +18,12 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
@@ -32,6 +34,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -115,7 +119,8 @@ public abstract class PersistorBase implements Persistable {
 
   abstract void createNewDSLContext();
 
-  public abstract List<Result<Record>> getRecordsForAllTables();
+  @VisibleForTesting
+  public abstract Map<String, Result<Record>> getRecordsForAllTables();
 
   // Not required for now.
   @Override
@@ -184,6 +189,30 @@ public abstract class PersistorBase implements Persistable {
       throw e;
     }
   }
+
+  public synchronized <T> void write(T obj)
+      throws SQLException, IOException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+    Objects.requireNonNull(obj);
+    rotateRegisterGarbageThenCreateNewDB(RotationType.TRY_ROTATE);
+    try {
+      writeImpl(obj);
+    } catch (IllegalStateException | IllegalArgumentException | IllegalAccessException | InvocationTargetException | NoSuchMethodException
+        illegalEx) {
+      throw illegalEx;
+    } catch (SQLException e) {
+      LOG.info("RCA: Fail to write.", e);
+      rotateRegisterGarbageThenCreateNewDB(RotationType.FORCE_ROTATE);
+      try {
+        writeImpl(obj);
+      } catch (SQLException ex) {
+        LOG.error("Failed to write multiple times. Giving up.");
+        // We rethrow this exception so that framework can take appropriate action.
+        throw e;
+      }
+    }
+  }
+
+  abstract <T> void writeImpl(T obj) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, SQLException;
 
   private synchronized void rotateRegisterGarbageThenCreateNewDB(RotationType type) throws IOException, SQLException {
     Path rotatedFile = null;
