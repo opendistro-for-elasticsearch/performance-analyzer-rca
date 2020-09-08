@@ -254,7 +254,8 @@ public class ReaderMetricsProcessor implements Runnable {
     // the (retentionPeriod * 12) freshest metrics files. The (retentionPeriod * 12 + 1)'th file is also retained in
     // case getBatchMetrics was called at the start of this cycle, right before the newest metrics file was added to
     // the batchMetricsDBSet.
-    while (batchMetricsDBSet.size() > PluginSettings.instance().getBatchMetricsRetentionPeriodMinutes() * 12 + 1) {
+    long maxNumBatchMetricsDBFiles = PluginSettings.instance().getBatchMetricsRetentionPeriodMinutes() * 12 + 1;
+    while (batchMetricsDBSet.size() > maxNumBatchMetricsDBFiles) {
       Long timestamp = batchMetricsDBSet.pollFirst();
       if (deleteDBFiles && !metricsDBMap.containsKey(timestamp)) {
         MetricsDB.deleteOnDiskFile(timestamp);
@@ -746,7 +747,8 @@ public class ReaderMetricsProcessor implements Runnable {
   public NavigableSet<Long> getBatchMetrics() {
     if (batchMetricsEnabled) {
       TreeSet<Long> batchMetricsDBSetCopy = new TreeSet<>(batchMetricsDBSet.clone());
-      while (batchMetricsDBSetCopy.size() > PluginSettings.instance().getBatchMetricsRetentionPeriodMinutes() * 12) {
+      long maxNumBatchMetricsDBFiles =  PluginSettings.instance().getBatchMetricsRetentionPeriodMinutes() * 12;
+      while (batchMetricsDBSetCopy.size() > maxNumBatchMetricsDBFiles) {
         batchMetricsDBSetCopy.pollFirst();
       }
       return Collections.unmodifiableNavigableSet(batchMetricsDBSetCopy);
