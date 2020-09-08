@@ -22,6 +22,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSett
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.Removable;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.ArrayList;
@@ -298,15 +304,11 @@ public class MetricsDB implements Removable {
     conn.close();
   }
 
+  /**
+   * Deletes the underlying metricsdb file.
+   */
   public void deleteOnDiskFile() {
-    File dbFile = new File(getDBFilePath());
-    if (!dbFile.delete()) {
-      LOG.error(
-          "Failed to delete File - {} with ExceptionCode: {}",
-          getDBFilePath(),
-          StatExceptionCode.OTHER.toString());
-      StatsCollector.instance().logException();
-    }
+    MetricsDB.deleteOnDiskFile(windowStartTime);
   }
 
   /**
@@ -315,13 +317,12 @@ public class MetricsDB implements Removable {
    * @param windowStartTime the timestamp associated with an existing metricsdb file
    */
   public static void deleteOnDiskFile(long windowStartTime) {
-    String dbFilePath = getDBFilePath(windowStartTime);
-    File dbFile = new File(dbFilePath);
-    if (!dbFile.delete()) {
-      LOG.error(
-              "Failed to delete File - {} with ExceptionCode: {}",
-              dbFilePath,
-              StatExceptionCode.OTHER.toString());
+    Path dbFilePath = Paths.get(getDBFilePath(windowStartTime));
+    try {
+      Files.delete(dbFilePath);
+    } catch (IOException | SecurityException e) {
+            LOG.error("Failed to delete File - {} with ExceptionCode: {}",
+              dbFilePath, StatExceptionCode.OTHER.toString(), e);
       StatsCollector.instance().logException();
     }
   }
