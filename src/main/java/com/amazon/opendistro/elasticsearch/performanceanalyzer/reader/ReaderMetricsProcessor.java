@@ -85,6 +85,7 @@ public class ReaderMetricsProcessor implements Runnable {
   public static final String BATCH_METRICS_ENABLED_CONF_FILE = "batch_metrics_enabled.conf";
   private boolean batchMetricsEnabled;
   private static final boolean defaultBatchMetricsEnabled = false;
+  // This needs to be concurrent since it may be concurrently accessed by the metrics processor thread and the query handler thread.
   private ConcurrentSkipListSet<Long> batchMetricsDBSet;
 
   static {
