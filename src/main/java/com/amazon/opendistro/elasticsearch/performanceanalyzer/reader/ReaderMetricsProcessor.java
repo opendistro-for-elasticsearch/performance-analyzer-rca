@@ -84,7 +84,7 @@ public class ReaderMetricsProcessor implements Runnable {
 
   public static final String BATCH_METRICS_ENABLED_CONF_FILE = "batch_metrics_enabled.conf";
   private boolean batchMetricsEnabled;
-  private boolean defaultBatchMetricsEnabled = false;
+  private static final boolean defaultBatchMetricsEnabled = false;
   private ConcurrentSkipListSet<Long> batchMetricsDBSet;
 
   static {
