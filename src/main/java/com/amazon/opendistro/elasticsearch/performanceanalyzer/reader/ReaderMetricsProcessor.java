@@ -282,26 +282,6 @@ public class ReaderMetricsProcessor implements Runnable {
   }
 
   /**
-   * Deletes the MetricsDB entries in the map till the size of the map is equal to maxSize. The
-   * actual on-disk files is deleted ony if the config is not set or set to true.
-   */
-  public static void trimDatabases(
-      NavigableMap<Long, MetricsDB> map, int maxSize, boolean deleteDBFiles) throws Exception {
-    // Remove the oldest entries from the map, upto maxSize.
-    while (map.size() > maxSize) {
-      Map.Entry<Long, MetricsDB> lowestEntry = map.firstEntry();
-      if (lowestEntry != null) {
-        MetricsDB value = lowestEntry.getValue();
-        map.remove(lowestEntry.getKey());
-        value.remove();
-        if (deleteDBFiles) {
-          value.deleteOnDiskFile();
-        }
-      }
-    }
-  }
-
-  /**
    * Enrich event data with OS metrics and calculate aggregated metrics on dimensions like (shard,
    * index, operation, role). We emit metrics for the previous window interval as we need two metric
    * windows to align OSMetrics. Ex: To emit metrics between 5-10, we need OSMetrics emitted at 8
