@@ -59,10 +59,11 @@ public class BasicBucketCalculator implements BucketCalculator {
 
   @Override
   public String toString() {
-    return "BasicBucketCalculator{" +
-        "underUtilized=" + underUtilized +
-        ", healthyWithBuffer=" + healthyWithBuffer +
-        ", healthy=" + healthy +
-        '}';
+    return "BasicBucketCalculator{"
+        + "underUtilized=" + underUtilized
+        + ", healthyWithBuffer="
+        + healthyWithBuffer
+        + ", healthy=" + healthy
+        + '}';
   }
 }
