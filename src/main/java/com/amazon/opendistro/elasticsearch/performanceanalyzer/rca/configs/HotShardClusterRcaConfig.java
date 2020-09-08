@@ -15,20 +15,14 @@ public class HotShardClusterRcaConfig {
 
     public HotShardClusterRcaConfig(final RcaConf rcaConf) {
         cpuUtilizationClusterThreshold = rcaConf.readRcaConfig(CONFIG_NAME,
-                HotShardClusterRcaConfig.RCA_CONF_KEY_CONSTANTS.CPU_UTILIZATION_CLUSTER_THRESHOLD, Double.class);
+                HotShardClusterRcaConfig.RCA_CONF_KEY_CONSTANTS.CPU_UTILIZATION_CLUSTER_THRESHOLD,
+                DEFAULT_CPU_UTILIZATION_CLUSTER_THRESHOLD, (s) -> (s > 0), Double.class);
         ioTotThroughputClusterThreshold = rcaConf.readRcaConfig(CONFIG_NAME,
-                HotShardClusterRcaConfig.RCA_CONF_KEY_CONSTANTS.CLUSTER_IO_THROUGHPUT_CLUSTER_THRESHOLD, Double.class);
+                HotShardClusterRcaConfig.RCA_CONF_KEY_CONSTANTS.CLUSTER_IO_THROUGHPUT_CLUSTER_THRESHOLD,
+                DEFAULT_IO_TOTAL_THROUGHPUT_CLUSTER_THRESHOLD, (s) -> (s > 0), Double.class);
         ioTotSysCallRateClusterThreshold = rcaConf.readRcaConfig(CONFIG_NAME,
-                HotShardClusterRcaConfig.RCA_CONF_KEY_CONSTANTS.CLUSTER_IO_SYSCALLRATE_CLUSTER_THRESHOLD, Double.class);
-        if (cpuUtilizationClusterThreshold == null) {
-            cpuUtilizationClusterThreshold = DEFAULT_CPU_UTILIZATION_CLUSTER_THRESHOLD;
-        }
-        if (ioTotThroughputClusterThreshold == null) {
-            ioTotThroughputClusterThreshold = DEFAULT_IO_TOTAL_THROUGHPUT_CLUSTER_THRESHOLD;
-        }
-        if (ioTotSysCallRateClusterThreshold == null) {
-            ioTotSysCallRateClusterThreshold = DEFAULT_IO_TOTAL_SYSCALL_RATE_CLUSTER_THRESHOLD;
-        }
+                HotShardClusterRcaConfig.RCA_CONF_KEY_CONSTANTS.CLUSTER_IO_SYSCALLRATE_CLUSTER_THRESHOLD,
+                DEFAULT_IO_TOTAL_SYSCALL_RATE_CLUSTER_THRESHOLD, (s) -> (s > 0), Double.class);
     }
 
     public double getCpuUtilizationClusterThreshold() {

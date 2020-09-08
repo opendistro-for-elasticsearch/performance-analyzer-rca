@@ -30,14 +30,11 @@ public class HighHeapUsageYoungGenRcaConfig {
   public static final int DEFAULT_YOUNG_GEN_GC_TIME_THRESHOLD_IN_MS_PER_SEC = 400;
 
   public HighHeapUsageYoungGenRcaConfig(final RcaConf rcaConf) {
-    promotionRateThreshold = rcaConf.readRcaConfig(CONFIG_NAME, RCA_CONF_KEY_CONSTANTS.PROMOTION_RATE_THRES, Integer.class);
-    youngGenGcTimeThreshold = rcaConf.readRcaConfig(CONFIG_NAME, RCA_CONF_KEY_CONSTANTS.YOUNG_GEN_GC_TIME_THRES, Integer.class);
-    if (promotionRateThreshold == null) {
-      promotionRateThreshold = DEFAULT_PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC;
-    }
-    if (youngGenGcTimeThreshold == null) {
-      youngGenGcTimeThreshold = DEFAULT_YOUNG_GEN_GC_TIME_THRESHOLD_IN_MS_PER_SEC;
-    }
+    promotionRateThreshold = rcaConf.readRcaConfig(CONFIG_NAME,
+            RCA_CONF_KEY_CONSTANTS.PROMOTION_RATE_THRES, DEFAULT_PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC, (s) -> (s > 0), Integer.class);
+    youngGenGcTimeThreshold = rcaConf.readRcaConfig(CONFIG_NAME,
+            RCA_CONF_KEY_CONSTANTS.YOUNG_GEN_GC_TIME_THRES, DEFAULT_YOUNG_GEN_GC_TIME_THRESHOLD_IN_MS_PER_SEC,
+            (s) -> (s > 0), Integer.class);
   }
 
   public int getPromotionRateThreshold() {

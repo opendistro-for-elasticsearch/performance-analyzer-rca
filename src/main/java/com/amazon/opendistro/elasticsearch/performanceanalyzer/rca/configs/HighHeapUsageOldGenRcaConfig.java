@@ -30,10 +30,7 @@ public class HighHeapUsageOldGenRcaConfig {
   public static final String CONFIG_NAME = "high-heap-usage-old-gen-rca";
 
   public HighHeapUsageOldGenRcaConfig(final RcaConf rcaConf) {
-    topK = rcaConf.readRcaConfig(CONFIG_NAME, RCA_CONF_KEY_CONSTANTS.TOP_K, Integer.class);
-    if (topK == null) {
-      topK = DEFAULT_TOP_K;
-    }
+    topK = rcaConf.readRcaConfig(CONFIG_NAME, RCA_CONF_KEY_CONSTANTS.TOP_K, DEFAULT_TOP_K, (s) -> (s > 0), Integer.class);
   }
 
   public int getTopK() {
