@@ -47,7 +47,8 @@ public class PluginSettings {
   private static final String WRITER_QUEUE_SIZE = "writer-queue-size";
   private static final String BATCH_METRICS_RETENTION_PERIOD_MINUTES = "batch-metrics-retention-period-minutes";
   private static final long BATCH_METRICS_RETENTION_PERIOD_MINUTES_DEFAULT = 7;
-  private static final long BATCH_METRICS_RETENTION_PERIOD_MINUTES_LIMIT = 60;
+  private static final long BATCH_METRICS_RETENTION_PERIOD_MINUTES_MIN = 1;
+  private static final long BATCH_METRICS_RETENTION_PERIOD_MINUTES_MAX = 60;
 
   /** Determines whether the metricsdb files should be cleaned up. */
   public static final String DB_FILE_CLEANUP_CONF_NAME = "cleanup-metrics-db-files";
@@ -304,13 +305,20 @@ public class PluginSettings {
 
     try {
       long parsedRetentionPeriod = Long.parseLong(settings.getProperty(BATCH_METRICS_RETENTION_PERIOD_MINUTES));
-      if (parsedRetentionPeriod <= 0 || parsedRetentionPeriod > BATCH_METRICS_RETENTION_PERIOD_MINUTES_LIMIT) {
-        throw new InvalidParameterException();
+      if (parsedRetentionPeriod < BATCH_METRICS_RETENTION_PERIOD_MINUTES_MIN ||
+              parsedRetentionPeriod > BATCH_METRICS_RETENTION_PERIOD_MINUTES_MAX) {
+        LOG.error("{} out of range. Value should be in range [{}, {}]. Using default value {}.",
+                BATCH_METRICS_RETENTION_PERIOD_MINUTES,
+                BATCH_METRICS_RETENTION_PERIOD_MINUTES_MIN,
+                BATCH_METRICS_RETENTION_PERIOD_MINUTES_MAX,
+                batchMetricsRetentionPeriodMinutes);
+        return;
       }
       batchMetricsRetentionPeriodMinutes = parsedRetentionPeriod;
-    } catch (NumberFormatException | InvalidParameterException e) {
-      LOG.error("Invalid batch-metrics-retention-period-minutes. Using default value {}.",
-              batchMetricsRetentionPeriodMinutes, e);
+    } catch (NumberFormatException e) {
+      LOG.error("Invalid batch-metrics-retention-period-minutes {}. Using default value {}.",
+              settings.getProperty(BATCH_METRICS_RETENTION_PERIOD_MINUTES),
+              batchMetricsRetentionPeriodMinutes);
     }
   }
 }
