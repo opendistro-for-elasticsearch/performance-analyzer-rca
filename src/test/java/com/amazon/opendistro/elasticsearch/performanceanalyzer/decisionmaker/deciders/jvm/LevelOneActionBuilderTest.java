@@ -79,9 +79,9 @@ public class LevelOneActionBuilderTest {
     final double fielddataCacheSizeInPercent = 0.3;
     final double shardRequestCacheSizeInPercent = 0.04;
     dummyCache.put(node, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE,
-        (long)(heapMaxSizeInBytes*fielddataCacheSizeInPercent));
+        (long)(heapMaxSizeInBytes * fielddataCacheSizeInPercent));
     dummyCache.put(node, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE,
-        (long)(heapMaxSizeInBytes*shardRequestCacheSizeInPercent));
+        (long)(heapMaxSizeInBytes * shardRequestCacheSizeInPercent));
     List<Action> actions = LevelOneActionBuilder.newBuilder(node, testAppContext, rcaConf).build();
     deciderActionParser.addActions(actions);
 
@@ -110,9 +110,9 @@ public class LevelOneActionBuilderTest {
     final double fielddataCacheSizeInPercent = CacheActionConfig.DEFAULT_FIELDDATA_CACHE_LOWER_BOUND;
     final double shardRequestCacheSizeInPercent = 0.012;
     dummyCache.put(node, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE,
-        (long)(heapMaxSizeInBytes*fielddataCacheSizeInPercent));
+        (long)(heapMaxSizeInBytes * fielddataCacheSizeInPercent));
     dummyCache.put(node, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE,
-        (long)(heapMaxSizeInBytes*shardRequestCacheSizeInPercent));
+        (long)(heapMaxSizeInBytes * shardRequestCacheSizeInPercent));
     List<Action> actions = LevelOneActionBuilder.newBuilder(node, testAppContext, rcaConf).build();
     Assert.assertEquals(1, actions.size());
     Assert.assertTrue(actions.get(0).isActionable());
@@ -133,9 +133,9 @@ public class LevelOneActionBuilderTest {
     final double shardRequestCacheSizeInPercent =
         CacheActionConfig.DEFAULT_SHARD_REQUEST_CACHE_LOWER_BOUND;
     dummyCache.put(node, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE,
-        (long)(heapMaxSizeInBytes*fielddataCacheSizeInPercent));
+        (long)(heapMaxSizeInBytes * fielddataCacheSizeInPercent));
     dummyCache.put(node, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE,
-        (long)(heapMaxSizeInBytes*shardRequestCacheSizeInPercent));
+        (long)(heapMaxSizeInBytes * shardRequestCacheSizeInPercent));
     List<Action> actions = LevelOneActionBuilder.newBuilder(node, testAppContext, rcaConf).build();
     Assert.assertEquals(0, actions.size());
   }

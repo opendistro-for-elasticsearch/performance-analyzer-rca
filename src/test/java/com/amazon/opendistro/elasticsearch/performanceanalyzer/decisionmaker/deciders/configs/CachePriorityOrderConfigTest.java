@@ -28,7 +28,8 @@ public class CachePriorityOrderConfigTest {
         "{"
             + "\"decider-config-settings\": { "
               + "\"cache-type\": { "
-                + "\"priority-order\": [\"test-fielddata-cache\", \"test-shard-request-cache\", \"test-query-cache\", \"test-bitset-filter-cache\"] "
+                + "\"priority-order\": [\"test-fielddata-cache\", "
+                + "\"test-shard-request-cache\", \"test-query-cache\", \"test-bitset-filter-cache\"] "
               + "} "
             + "} "
         + "} ";

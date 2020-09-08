@@ -83,9 +83,9 @@ public class LevelThreeActionBuilderTest {
     final int writeQueueSize = 800;
     final int searchQueueSize = 2000;
     dummyCache.put(node, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE,
-        (long)(heapMaxSizeInBytes*fielddataCacheSizeInPercent));
+        (long)(heapMaxSizeInBytes * fielddataCacheSizeInPercent));
     dummyCache.put(node, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE,
-        (long)(heapMaxSizeInBytes*shardRequestCacheSizeInPercent));
+        (long)(heapMaxSizeInBytes * shardRequestCacheSizeInPercent));
     dummyCache.put(node, ResourceUtil.WRITE_QUEUE_CAPACITY, writeQueueSize);
     dummyCache.put(node, ResourceUtil.SEARCH_QUEUE_CAPACITY, searchQueueSize);
     List<Action> actions = LevelThreeActionBuilder.newBuilder(node, testAppContext, rcaConf).build();
