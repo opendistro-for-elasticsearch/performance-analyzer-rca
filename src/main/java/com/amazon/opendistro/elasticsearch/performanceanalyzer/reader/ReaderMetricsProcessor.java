@@ -847,7 +847,6 @@ public class ReaderMetricsProcessor implements Runnable {
                 }
               } catch (IOException e) {
                 LOG.error("Error reading file '{}': {}", filePath.toString(), e);
-                e.printStackTrace();
                 batchMetricsEnabled = defaultBatchMetricsEnabled;
               }
             });
