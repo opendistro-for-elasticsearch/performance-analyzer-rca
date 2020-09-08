@@ -19,15 +19,16 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyz
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.CacheActionConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.QueueActionConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaControllerHelper;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.DeciderConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaControllerHelper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.FieldDataCacheRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageYoungGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNodeClusterRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardClusterRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.QueueRejectionRcaConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.ShardRequestCacheRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
@@ -52,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -175,8 +177,12 @@ public class RcaConf {
     return new HotShardClusterRcaConfig(this);
   }
 
-  public CacheConfig getCacheConfig() {
-    return new CacheConfig(this);
+  public FieldDataCacheRcaConfig getFieldDataCacheRcaConfig() {
+    return new FieldDataCacheRcaConfig(this);
+  }
+
+  public ShardRequestCacheRcaConfig getShardRequestCacheRcaConfig() {
+    return new ShardRequestCacheRcaConfig(this);
   }
 
   public DeciderConfig getDeciderConfig() {
@@ -206,22 +212,30 @@ public class RcaConf {
   public QueueActionConfig getQueueActionConfig() {
     return new QueueActionConfig(this);
   }
-
+  
+  public <T> T readRcaConfig(String rcaName, String key, T defaultValue, Class<? extends T> clazz) {
+    return readRcaConfig(rcaName, key, defaultValue, (s) -> true, clazz);
+  }
+  
   @SuppressWarnings("unchecked")
-  public <T> T readRcaConfig(String rcaName, String key, Class<? extends T> clazz) {
-    T setting = null;
+  public <T> T readRcaConfig(String rcaName, String key, T defaultValue, Predicate<T> validator, Class<? extends T> clazz) {
+    T setting = defaultValue;
     try {
       Map<String, Object> rcaObj = null;
       if (conf.getRcaConfigSettings() != null
-          && conf.getRcaConfigSettings().containsKey(rcaName)
-          && conf.getRcaConfigSettings().get(rcaName) != null) {
+              && conf.getRcaConfigSettings().containsKey(rcaName)
+              && conf.getRcaConfigSettings().get(rcaName) != null) {
         rcaObj = (Map<String, Object>) conf.getRcaConfigSettings().get(rcaName);
       }
 
       if (rcaObj != null
-          && rcaObj.containsKey(key)
-          && rcaObj.get(key) != null) {
+              && rcaObj.containsKey(key)
+              && rcaObj.get(key) != null) {
         setting = clazz.cast(rcaObj.get(key));
+        if (!validator.test(setting)) {
+          LOG.error("Config value: [{}] provided for key: [{}] is invalid", setting, key);
+          return defaultValue;
+        }
       }
     } catch (ClassCastException ne) {
       LOG.error("rca.conf contains value in invalid format, trace : {}", ne.getMessage());

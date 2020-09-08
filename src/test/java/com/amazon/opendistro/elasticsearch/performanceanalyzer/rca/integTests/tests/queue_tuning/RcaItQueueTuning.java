@@ -107,6 +107,8 @@ public class RcaItQueueTuning {
       reason = "Cache related configs are expected to be missing in this integ test")
   @AErrorPatternIgnored(pattern = "AggregateMetric:gather()",
       reason = "Cache metrics are expected to be missing in this integ test")
+  @AErrorPatternIgnored(pattern = "SubscribeResponseHandler:onError()",
+      reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
   public void testQueueRejectionRca() {
   }
 }
