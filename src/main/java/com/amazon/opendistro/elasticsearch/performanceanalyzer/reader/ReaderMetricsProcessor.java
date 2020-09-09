@@ -163,7 +163,7 @@ public class ReaderMetricsProcessor implements Runnable {
         trimOldSnapshots();
         conn.commit();
         conn.setAutoCommit(true);
-        trimMetricsDBFiles();
+        trimOldMetricsDBFiles();
         long duration = System.currentTimeMillis() - startTime;
         LOG.debug("Total time taken: {}", duration);
         if (duration < runInterval) {
@@ -240,7 +240,7 @@ public class ReaderMetricsProcessor implements Runnable {
    *
    * @throws Exception if there is some problem closing the connection to a metricsdb file
    */
-  public void trimMetricsDBFiles() throws Exception {
+  public void trimOldMetricsDBFiles() throws Exception {
     boolean deleteDBFiles = PluginSettings.instance().shouldCleanupMetricsDBFiles();
     // Cleanup all but the 2 most recent metricsDB files from metricsDBMap. The most recent metricsDB files needs to be
     // retained for future metrics query handling, the second most recent metricsDB file needs to be retained in case

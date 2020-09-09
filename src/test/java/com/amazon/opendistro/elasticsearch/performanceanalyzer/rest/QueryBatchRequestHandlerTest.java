@@ -115,7 +115,7 @@ public class QueryBatchRequestHandlerTest {
     ReaderMetricsProcessor.setCurrentInstance(mp);
     setBatchMetricsEnabled(true);
     mp.trimOldSnapshots();
-    mp.trimMetricsDBFiles();
+    mp.trimOldMetricsDBFiles();
 
     HttpExchange exchange = Mockito.mock(HttpExchange.class);
     Mockito.when(exchange.getResponseBody()).thenReturn(System.out);
@@ -417,10 +417,10 @@ public class QueryBatchRequestHandlerTest {
     ReaderMetricsProcessor.setCurrentInstance(mp);
     setBatchMetricsEnabled(true);
     mp.trimOldSnapshots();
-    mp.trimMetricsDBFiles();
+    mp.trimOldMetricsDBFiles();
     mp.processMetrics(rootLocation, timestamp);
     mp.trimOldSnapshots();
-    mp.trimMetricsDBFiles();
+    mp.trimOldMetricsDBFiles();
   }
 
   private void setBatchMetricsEnabled(boolean state) throws IOException {
