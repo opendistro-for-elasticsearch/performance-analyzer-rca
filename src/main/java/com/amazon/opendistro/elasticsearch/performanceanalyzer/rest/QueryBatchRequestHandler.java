@@ -232,8 +232,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
     }
   }
 
-  @VisibleForTesting
-  public int appendMetrics(Long timestamp, List<String> metrics, StringBuilder builder, int maxDatapoints) throws Exception {
+  private int appendMetrics(Long timestamp, List<String> metrics, StringBuilder builder, int maxDatapoints) throws Exception {
     maxDatapoints += 1;
     builder.append("\"");
     builder.append(timestamp);
@@ -276,8 +275,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
    * Requires non-empty batchMetrics, valid non-empty metrics, valid startTime, valid endTime,
    * valid samplingPeriod (in milliseconds), and non-negative maxDatapoints.
    */
-  @VisibleForTesting
-  public String queryFromBatchMetrics(NavigableSet<Long> batchMetrics, List<String> metrics, long startTime,
+  private String queryFromBatchMetrics(NavigableSet<Long> batchMetrics, List<String> metrics, long startTime,
                                       long endTime, long samplingPeriod, int maxDatapoints) throws Exception {
     StringBuilder responseJson = new StringBuilder();
     responseJson.append("{");
@@ -305,5 +303,16 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
       response = e.toString();
       exchange.sendResponseHeaders(HttpURLConnection.HTTP_INTERNAL_ERROR, response.length());
     }
+  }
+
+  @VisibleForTesting
+  public String queryFromBatchMetricsShim(NavigableSet<Long> batchMetrics, List<String> metrics, long startTime,
+                                      long endTime, long samplingPeriod, int maxDatapoints) throws Exception {
+    return queryFromBatchMetrics(batchMetrics, metrics, startTime, endTime, samplingPeriod, maxDatapoints);
+  }
+
+  @VisibleForTesting
+  public int appendMetricsShim(Long timestamp, List<String> metrics, StringBuilder builder, int maxDatapoints) throws Exception {
+    return appendMetrics(timestamp, metrics, builder, maxDatapoints);
   }
 }

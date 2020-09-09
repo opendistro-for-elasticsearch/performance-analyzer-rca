@@ -236,7 +236,7 @@ public class QueryBatchRequestHandlerTest {
           metrics.add("Sched_Runtime");
         }
         StringBuilder builder = new StringBuilder();
-        Assert.assertEquals(0, handler.appendMetrics(timestamp, metrics, builder, Integer.bitCount(i & j)));
+        Assert.assertEquals(0, handler.appendMetricsShim(timestamp, metrics, builder, Integer.bitCount(i & j)));
         Assert.assertEquals(expectedResponse, builder.toString());
       }
       MetricsDB db = MetricsDB.fetchExisting(timestamp);
@@ -253,20 +253,20 @@ public class QueryBatchRequestHandlerTest {
     List<String> metrics = Arrays.asList("CPU_Utilization", "Paging_RSS", "Sched_Runtime");
     for (int i = 0; i < 3; i++) {
       try {
-        handler.appendMetrics(timestamp, metrics, new StringBuilder(), i);
+        handler.appendMetricsShim(timestamp, metrics, new StringBuilder(), i);
         Assert.fail();
       } catch (InvalidParameterException e) {
       }
     }
     StringBuilder actualResponseBuilder = new StringBuilder();
-    handler.appendMetrics(timestamp, metrics, actualResponseBuilder, 3);
+    handler.appendMetricsShim(timestamp, metrics, actualResponseBuilder, 3);
     Assert.assertEquals(expectedResponseBuilder.toString(), actualResponseBuilder.toString());
   }
 
   @Test
   public void testQueryFromBatchMetrics_emptyBatchMetrics() throws Exception {
     NavigableSet<Long> batchMetrics = new TreeSet<Long>();
-    String response = handler.queryFromBatchMetrics(batchMetrics, Arrays.asList("CPU_Utilization"), timestamp,
+    String response = handler.queryFromBatchMetricsShim(batchMetrics, Arrays.asList("CPU_Utilization"), timestamp,
             timestamp + MetricsConfiguration.SAMPLING_INTERVAL, 5000, 1);
     Assert.assertEquals(response, "{}");
   }
@@ -275,17 +275,17 @@ public class QueryBatchRequestHandlerTest {
   public void testQueryFromBatchMetrics_noMetricsInTimerange() throws Exception {
     NavigableSet<Long> batchMetrics = new TreeSet<Long>();
     batchMetrics.add(timestamp - MetricsConfiguration.SAMPLING_INTERVAL);
-    String response = handler.queryFromBatchMetrics(batchMetrics, Arrays.asList("CPU_Utilization"), timestamp,
+    String response = handler.queryFromBatchMetricsShim(batchMetrics, Arrays.asList("CPU_Utilization"), timestamp,
             timestamp + MetricsConfiguration.SAMPLING_INTERVAL, 5000, 1);
     Assert.assertEquals(response, "{}");
     batchMetrics.clear();
     batchMetrics.add(timestamp + MetricsConfiguration.SAMPLING_INTERVAL);
-    response = handler.queryFromBatchMetrics(batchMetrics, Arrays.asList("CPU_Utilization"), timestamp,
+    response = handler.queryFromBatchMetricsShim(batchMetrics, Arrays.asList("CPU_Utilization"), timestamp,
             timestamp + MetricsConfiguration.SAMPLING_INTERVAL, 5000, 1);
     Assert.assertEquals(response, "{}");
     batchMetrics.clear();
     batchMetrics.add(timestamp + 2 * MetricsConfiguration.SAMPLING_INTERVAL);
-    response = handler.queryFromBatchMetrics(batchMetrics, Arrays.asList("CPU_Utilization"), timestamp,
+    response = handler.queryFromBatchMetricsShim(batchMetrics, Arrays.asList("CPU_Utilization"), timestamp,
             timestamp + MetricsConfiguration.SAMPLING_INTERVAL, 5000, 1);
     Assert.assertEquals(response, "{}");
   }
@@ -306,7 +306,7 @@ public class QueryBatchRequestHandlerTest {
     expectedResponseBuilder.append(",");
     prepareMetricDB(timestamps.get(2), expectedResponseBuilder);
     expectedResponseBuilder.append("}");
-    String response = handler.queryFromBatchMetrics(batchMetrics,
+    String response = handler.queryFromBatchMetricsShim(batchMetrics,
             Arrays.asList("CPU_Utilization", "Paging_RSS", "Sched_Runtime"), timestamp,
             timestamp + MetricsConfiguration.SAMPLING_INTERVAL * 3, 5000, 9);
     Assert.assertEquals(expectedResponseBuilder.toString(), response);
@@ -327,7 +327,7 @@ public class QueryBatchRequestHandlerTest {
     prepareMetricDB(timestamps.get(1), new StringBuilder());
     prepareMetricDB(timestamps.get(2), expectedResponseBuilder);
     expectedResponseBuilder.append("}");
-    String response = handler.queryFromBatchMetrics(batchMetrics,
+    String response = handler.queryFromBatchMetricsShim(batchMetrics,
             Arrays.asList("CPU_Utilization", "Paging_RSS", "Sched_Runtime"), timestamp,
             timestamp + MetricsConfiguration.SAMPLING_INTERVAL * 3, 10000, 6);
     Assert.assertEquals(expectedResponseBuilder.toString(), response);
@@ -344,7 +344,7 @@ public class QueryBatchRequestHandlerTest {
     prepareMetricDB(timestamps.get(0), expectedResponseBuilder);
     prepareMetricDB(timestamps.get(1), new StringBuilder());
     expectedResponseBuilder.append("}");
-    String response = handler.queryFromBatchMetrics(batchMetrics,
+    String response = handler.queryFromBatchMetricsShim(batchMetrics,
             Arrays.asList("CPU_Utilization", "Paging_RSS", "Sched_Runtime"), timestamp,
             timestamp + MetricsConfiguration.SAMPLING_INTERVAL * 3, 5000, 3);
     Assert.assertEquals(expectedResponseBuilder.toString(), response);
@@ -365,7 +365,7 @@ public class QueryBatchRequestHandlerTest {
     prepareMetricDB(timestamps.get(1), expectedResponseBuilder);
     prepareMetricDB(timestamps.get(2), new StringBuilder());
     expectedResponseBuilder.append("}");
-    String response = handler.queryFromBatchMetrics(batchMetrics,
+    String response = handler.queryFromBatchMetricsShim(batchMetrics,
             Arrays.asList("CPU_Utilization", "Paging_RSS", "Sched_Runtime"), timestamp,
             timestamp + MetricsConfiguration.SAMPLING_INTERVAL * 3, 10000, 6);
     Assert.assertEquals(expectedResponseBuilder.toString(), response);
@@ -383,7 +383,7 @@ public class QueryBatchRequestHandlerTest {
     prepareMetricDB(timestamps.get(0), expectedResponseBuilder);
     prepareMetricDB(timestamps.get(1), new StringBuilder());
     expectedResponseBuilder.append("}");
-    String response = handler.queryFromBatchMetrics(batchMetrics,
+    String response = handler.queryFromBatchMetricsShim(batchMetrics,
             Arrays.asList("CPU_Utilization", "Paging_RSS", "Sched_Runtime"), timestamp,
             timestamp + MetricsConfiguration.SAMPLING_INTERVAL * 3, 10000, 3);
     Assert.assertEquals(expectedResponseBuilder.toString(), response);
@@ -406,7 +406,7 @@ public class QueryBatchRequestHandlerTest {
     expectedResponseBuilder.append(",");
     prepareMetricDB(timestamps.get(3), expectedResponseBuilder);
     expectedResponseBuilder.append("}");
-    String response = handler.queryFromBatchMetrics(batchMetrics,
+    String response = handler.queryFromBatchMetricsShim(batchMetrics,
             Arrays.asList("CPU_Utilization", "Paging_RSS", "Sched_Runtime"), timestamp,
             timestamp + MetricsConfiguration.SAMPLING_INTERVAL * 5, 10000, 9);
     Assert.assertEquals(expectedResponseBuilder.toString(), response);

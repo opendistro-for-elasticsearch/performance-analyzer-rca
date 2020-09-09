@@ -827,8 +827,7 @@ public class ReaderMetricsProcessor implements Runnable {
     }
   }
 
-  @VisibleForTesting
-  public void readBatchMetricsEnabledFromConf() {
+  private void readBatchMetricsEnabledFromConf() {
     Path filePath = Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE);
 
     Util.invokePrivileged(
@@ -915,5 +914,10 @@ public class ReaderMetricsProcessor implements Runnable {
   @VisibleForTesting
   public boolean getBatchMetricsEnabled() {
     return batchMetricsEnabled;
+  }
+
+  @VisibleForTesting
+  public void readBatchMetricsEnabledFromConfShim() {
+    readBatchMetricsEnabledFromConf();
   }
 }

@@ -348,7 +348,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
 
     // Test disabled
     Files.write(batchMetricsEnabledConfFile, Boolean.toString(false).getBytes());
-    mp.readBatchMetricsEnabledFromConf();
+    mp.readBatchMetricsEnabledFromConfShim();
     assertFalse(mp.getBatchMetricsEnabled());
 
     // Test no state change when the file is deleted
@@ -357,7 +357,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
 
     // Test disabled
     Files.write(batchMetricsEnabledConfFile, Boolean.toString(true).getBytes());
-    mp.readBatchMetricsEnabledFromConf();
+    mp.readBatchMetricsEnabledFromConfShim();
     assertTrue(mp.getBatchMetricsEnabled());
 
     // Test no state change when the file is deleted
