@@ -41,6 +41,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners.RcaItNotEncryptedRunner;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.FieldDataCacheActionValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.FieldDataCacheRcaValidator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.ShardRequestCacheActionValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.ShardRequestCacheRcaValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.ActionsSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.ElasticSearchAnalysisGraph;
@@ -286,13 +287,15 @@ public class RcaItCacheTuning {
           reason = "Old gen rca is expected to be missing in this integ test.")
   public void testShardRequestCacheRca() {}
 
+  // Test CacheDecider for ModifyCacheAction (shard request cache).
+  // The cache decider should emit modify cache size action as shard request cache rca is unhealthy.
   @Test
   @AExpect(
       what = AExpect.Type.REST_TABLE_API,
       on = HostTag.ELECTED_MASTER,
-      validator = FieldDataCacheActionValidator.class,
+      validator = ShardRequestCacheActionValidator.class,
       forRca = ActionsSummary.class,
-      timeoutSeconds = 700)
+      timeoutSeconds = 1000)
   @AErrorPatternIgnored(
           pattern = "AggregateMetric:gather()",
           reason = "CPU metrics are expected to be missing in this integ test")
@@ -314,5 +317,5 @@ public class RcaItCacheTuning {
   @AErrorPatternIgnored(
           pattern = "HighHeapUsageOldGenRca:operate()",
           reason = "Old gen rca is expected to be missing in this integ test.")
-  public void testFieldDataCacheAction() {}
+  public void testShardRequestCacheAction() {}
 }

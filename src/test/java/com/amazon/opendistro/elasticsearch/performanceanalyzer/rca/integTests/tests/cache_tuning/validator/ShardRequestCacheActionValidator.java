@@ -15,10 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary.SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary.SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary.SQL_SCHEMA_CONSTANTS.RESOURCE_TYPE_COL_NAME;
-
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
@@ -30,10 +26,14 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.a
 import com.google.gson.JsonObject;
 import org.junit.Assert;
 
-public class FieldDataCacheActionValidator implements IValidator {
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary.SQL_SCHEMA_CONSTANTS.HOST_IP_ADDRESS_COL_NAME;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary.SQL_SCHEMA_CONSTANTS.NODE_ID_COL_NAME;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary.SQL_SCHEMA_CONSTANTS.RESOURCE_TYPE_COL_NAME;
+
+public class ShardRequestCacheActionValidator implements IValidator {
     long startTime;
 
-    public FieldDataCacheActionValidator() {
+    public ShardRequestCacheActionValidator() {
         startTime = System.currentTimeMillis();
     }
 
@@ -48,9 +48,9 @@ public class FieldDataCacheActionValidator implements IValidator {
     }
 
     // TODO: Update comments
-    boolean checkActionSummary(final ActionsSummary actionObject) {
+    private boolean checkActionSummary(final ActionsSummary actionObject) {
         Assert.assertEquals(ModifyCacheMaxSizeAction.NAME, actionObject.getActionName());
-        Assert.assertEquals(ResourceEnum.FIELD_DATA_CACHE.getNumber(), actionObject.getResourceValue());
+        Assert.assertEquals(ResourceEnum.SHARD_REQUEST_CACHE.getNumber(), actionObject.getResourceValue());
         return true;
     }
 }
