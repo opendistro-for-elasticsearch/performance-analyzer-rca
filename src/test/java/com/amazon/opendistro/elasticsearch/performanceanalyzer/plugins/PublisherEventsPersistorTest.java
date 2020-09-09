@@ -4,6 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.SQLitePersistor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.ActionsSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
@@ -43,7 +44,7 @@ public class PublisherEventsPersistorTest {
 
     @Test
     public void actionPublished() throws Exception {
-        final SQLitePersistor persistor = new SQLitePersistor(
+        final Persistable persistor = new SQLitePersistor(
                 testLocation.toString(), baseFilename, String.valueOf(1), TimeUnit.SECONDS, 1);
         final MockAction mockAction = new MockAction();
 

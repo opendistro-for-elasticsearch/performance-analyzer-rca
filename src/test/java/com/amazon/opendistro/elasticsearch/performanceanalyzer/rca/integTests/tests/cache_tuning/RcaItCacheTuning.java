@@ -245,6 +245,9 @@ public class RcaItCacheTuning {
           pattern = "CacheUtil:getCacheMaxSize()",
           reason = "Node Config Cache is expected to be missing during startup.")
   @AErrorPatternIgnored(
+          pattern = "ModifyCacheMaxSizeAction:build()",
+          reason = "Heap metrics is expected to be missing during startup.")
+  @AErrorPatternIgnored(
           pattern = "SubscribeResponseHandler:onError()",
           reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
   @AErrorPatternIgnored(
@@ -277,6 +280,9 @@ public class RcaItCacheTuning {
           pattern = "CacheUtil:getCacheMaxSize()",
           reason = "Node Config Cache is expected to be missing during startup.")
   @AErrorPatternIgnored(
+          pattern = "ModifyCacheMaxSizeAction:build()",
+          reason = "Heap metrics is expected to be missing during startup.")
+  @AErrorPatternIgnored(
           pattern = "SubscribeResponseHandler:onError()",
           reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
   @AErrorPatternIgnored(
@@ -308,6 +314,9 @@ public class RcaItCacheTuning {
   @AErrorPatternIgnored(
           pattern = "CacheUtil:getCacheMaxSize()",
           reason = "Node Config Cache is expected to be missing during startup.")
+  @AErrorPatternIgnored(
+          pattern = "ModifyCacheMaxSizeAction:build()",
+          reason = "Heap metrics is expected to be missing during startup.")
   @AErrorPatternIgnored(
           pattern = "SubscribeResponseHandler:onError()",
           reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")

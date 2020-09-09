@@ -137,7 +137,6 @@ public class RcaResponse extends GenericSummary {
   public GenericSummary buildNestedSummary(String summaryTable, Record record) {
     GenericSummary ret = null;
     if (summaryTable.equals(HotClusterSummary.HOT_CLUSTER_SUMMARY_TABLE)) {
-
       HotClusterSummary hotClusterSummary = HotClusterSummary.buildSummary(record);
       if (hotClusterSummary != null) {
         summaryList.add(hotClusterSummary);

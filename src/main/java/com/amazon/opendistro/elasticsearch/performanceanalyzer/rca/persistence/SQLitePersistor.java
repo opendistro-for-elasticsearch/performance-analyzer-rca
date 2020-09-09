@@ -64,6 +64,7 @@ import org.jooq.Table;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 
+@VisibleForTesting
 public class SQLitePersistor extends PersistorBase {
   private enum GetterOrSetter {
     GETTER,
