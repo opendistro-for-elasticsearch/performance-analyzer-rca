@@ -163,6 +163,7 @@ public class ReaderMetricsProcessor implements Runnable {
         trimOldSnapshots();
         conn.commit();
         conn.setAutoCommit(true);
+        trimMetricsDBFiles();
         long duration = System.currentTimeMillis() - startTime;
         LOG.debug("Total time taken: {}", duration);
         if (duration < runInterval) {
@@ -215,12 +216,31 @@ public class ReaderMetricsProcessor implements Runnable {
     }
   }
 
+  /**
+   * Cleans up stale in-memory snapshots.
+   *
+   * @throws Exception if there is some problem removing a snapshot
+   */
   public void trimOldSnapshots() throws Exception {
     trimMap(osMetricsMap, OS_SNAPSHOTS);
     trimMap(shardRqMetricsMap, RQ_SNAPSHOTS);
     trimMap(httpRqMetricsMap, HTTP_RQ_SNAPSHOTS);
     trimMap(masterEventMetricsMap, MASTER_EVENT_SNAPSHOTS);
 
+    for (NavigableMap<Long, MemoryDBSnapshot> snap : nodeMetricsMap.values()) {
+      // do the same thing as OS_SNAPSHOTS.  Eventually MemoryDBSnapshot
+      // will replace OSMetricsSnapshot as we want to our code to be
+      // stable.
+      trimMap(snap, OS_SNAPSHOTS);
+    }
+  }
+
+  /**
+   * Cleans up stale metricsdb files.
+   *
+   * @throws Exception if there is some problem closing the connection to a metricsdb file
+   */
+  public void trimMetricsDBFiles() throws Exception {
     boolean deleteDBFiles = PluginSettings.instance().shouldCleanupMetricsDBFiles();
     // Cleanup all but the 2 most recent metricsDB files from metricsDBMap. The most recent metricsDB files needs to be
     // retained for future metrics query handling, the second most recent metricsDB file needs to be retained in case
@@ -260,13 +280,6 @@ public class ReaderMetricsProcessor implements Runnable {
       if (deleteDBFiles && !metricsDBMap.containsKey(timestamp)) {
         MetricsDB.deleteOnDiskFile(timestamp);
       }
-    }
-
-    for (NavigableMap<Long, MemoryDBSnapshot> snap : nodeMetricsMap.values()) {
-      // do the same thing as OS_SNAPSHOTS.  Eventually MemoryDBSnapshot
-      // will replace OSMetricsSnapshot as we want to our code to be
-      // stable.
-      trimMap(snap, OS_SNAPSHOTS);
     }
   }
 

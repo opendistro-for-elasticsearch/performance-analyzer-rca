@@ -82,6 +82,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     }
 
     mp.trimOldSnapshots();
+    mp.trimMetricsDBFiles();
     mp.deleteDBs();
   }
 
@@ -107,6 +108,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     }
 
     mp.trimOldSnapshots();
+    mp.trimMetricsDBFiles();
     mp.deleteDBs();
   }
 
@@ -377,6 +379,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(false).getBytes());
     mp.processMetrics(rootLocation, currentTimestamp);
     mp.trimOldSnapshots();
+    mp.trimMetricsDBFiles();
     currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
     assertNull(mp.getBatchMetrics());
 
@@ -387,6 +390,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
       for (int i = 0; i <= 12; i++) {
         mp.processMetrics(rootLocation, currentTimestamp);
         mp.trimOldSnapshots();
+        mp.trimMetricsDBFiles();
         currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
         assertEquals(i, mp.getBatchMetrics().size());
       }
@@ -395,6 +399,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
       for (int i = 0; i < 5; i++) {
         mp.processMetrics(rootLocation, currentTimestamp);
         mp.trimOldSnapshots();
+        mp.trimMetricsDBFiles();
         currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
         assertEquals(12, mp.getBatchMetrics().size());
       }
@@ -407,6 +412,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
 
       // Test batch metrics data right after as it's disabled
       mp.trimOldSnapshots();
+      mp.trimMetricsDBFiles();
       assertNull(mp.getBatchMetrics());
 
       secondRun = !secondRun;
@@ -430,6 +436,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     for (int i = 0; i < 2; i++) {
       mp.processMetrics(rootLocation, currentTimestamp);
       mp.trimOldSnapshots();
+      mp.trimMetricsDBFiles();
       currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
       expectedTimestamps.add(metricsDBTimestamp);
       metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
@@ -441,6 +448,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     for (int i = 0; i < 7; i++) {
       mp.processMetrics(rootLocation, currentTimestamp);
       mp.trimOldSnapshots();
+      mp.trimMetricsDBFiles();
       currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
       expectedTimestamps.add(metricsDBTimestamp);
       metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
@@ -456,6 +464,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
       for (int i = 0; i < 3; i++) {
         mp.processMetrics(rootLocation, currentTimestamp);
         mp.trimOldSnapshots();
+        mp.trimMetricsDBFiles();
         currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
         expectedTimestamps.add(metricsDBTimestamp);
         metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
@@ -466,6 +475,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
       for (int i = 3; i <= 13; i++) {
         mp.processMetrics(rootLocation, currentTimestamp);
         mp.trimOldSnapshots();
+        mp.trimMetricsDBFiles();
         currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
         expectedTimestamps.add(metricsDBTimestamp);
         metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
@@ -477,6 +487,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
       for (int i = 0; i < 7; i++) {
         mp.processMetrics(rootLocation, currentTimestamp);
         mp.trimOldSnapshots();
+        mp.trimMetricsDBFiles();
         currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
         expectedTimestamps.add(metricsDBTimestamp);
         metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
@@ -489,6 +500,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
       Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(false).getBytes());
       mp.processMetrics(rootLocation, currentTimestamp);
       mp.trimOldSnapshots();
+      mp.trimMetricsDBFiles();
       currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
       expectedTimestamps.add(metricsDBTimestamp);
       metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
@@ -498,6 +510,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
 
       mp.processMetrics(rootLocation, currentTimestamp);
       mp.trimOldSnapshots();
+      mp.trimMetricsDBFiles();
       currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
       expectedTimestamps.add(metricsDBTimestamp);
       metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
@@ -529,6 +542,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     for (int i = 0; i < 9; i++) {
       mp.processMetrics(rootLocation, currentTimestamp);
       mp.trimOldSnapshots();
+      mp.trimMetricsDBFiles();
       currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
       expectedTimestamps.add(metricsDBTimestamp);
       metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
@@ -542,6 +556,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
       for (int i = 0; i < 21; i++) {
         mp.processMetrics(rootLocation, currentTimestamp);
         mp.trimOldSnapshots();
+        mp.trimMetricsDBFiles();
         currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
         expectedTimestamps.add(metricsDBTimestamp);
         metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
@@ -553,6 +568,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
       for (int i = 0; i < 2; i++) {
         mp.processMetrics(rootLocation, currentTimestamp);
         mp.trimOldSnapshots();
+        mp.trimMetricsDBFiles();
         currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
         expectedTimestamps.add(metricsDBTimestamp);
         metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
