@@ -31,7 +31,7 @@ public class TestApi {
     return cluster.getAllRcaDataOnHost(hostTag, rcaName);
   }
 
-  public <T> T getClassDataOnHost(HostTag hostTag, Class<T> clz) throws Exception {
+  public <T> T getClassDataOnHost(HostTag hostTag, Class<T> clz) {
     return cluster.getAllClassDataOnHost(hostTag, clz);
   }
 

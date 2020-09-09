@@ -267,6 +267,8 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner, Fi
                 failedValidations.add(validator.getClass());
               }
               break;
+            case REST_TABLE_API:
+              successful = validator.check(testApi.getClassDataOnHost(expect.on(), rca));
           }
           if (successful) {
             passedCount += 1;

@@ -16,5 +16,5 @@ public interface IValidator {
    * @param response This REST response as a JSONElement.
    * @return true, if this matches expectation.
    */
-  boolean check(JsonElement response);
+  <T> boolean check(T response);
 }

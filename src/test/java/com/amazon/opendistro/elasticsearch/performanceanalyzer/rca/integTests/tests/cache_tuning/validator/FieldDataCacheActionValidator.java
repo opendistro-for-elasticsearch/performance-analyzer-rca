@@ -24,46 +24,29 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.api.IValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.util.JsonParserUtil;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.ShardRequestCacheClusterRca;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.ActionsSummary;
 import com.google.gson.JsonObject;
 import org.junit.Assert;
 
-public class ShardRequestCacheValidator implements IValidator {
+public class FieldDataCacheActionValidator implements IValidator {
     long startTime;
 
-    public ShardRequestCacheValidator() {
+    public FieldDataCacheActionValidator() {
         startTime = System.currentTimeMillis();
     }
 
-    /**
-     * {"rca_name":"ShardRequestCacheClusterRca",
-     * "timestamp":1596557050522,
-     * "state":"unhealthy",
-     * "HotClusterSummary":[
-     * {"number_of_nodes":1,"number_of_unhealthy_nodes":1}
-     * ]}
-     */
     @Override
-    public boolean check(JsonElement response) {
-        JsonArray array = response.getAsJsonObject().get("data").getAsJsonArray();
-        if (array.size() == 0) {
+    public <T> boolean check(T response) {
+        if (response == null) {
             return false;
         }
-
-        for (int i = 0; i < array.size(); i++) {
-            JsonObject object = array.get(i).getAsJsonObject();
-            if (object.get("rca_name").getAsString().equals(ShardRequestCacheClusterRca.RCA_TABLE_NAME)) {
-                return checkClusterRca(object);
-            }
-        }
-        return false;
+        ActionsSummary actionsSummary = (ActionsSummary) response;
+        System.out.println("Coming here");
+        return true;
     }
 
     /**
-     * {"rca_name":"ShardRequestCacheClusterRca",
+     * {"rca_name":"FieldDataCacheClusterRca",
      *  "timestamp":1596557050522,
      *  "state":"unhealthy",
      *  "HotClusterSummary":[{"number_of_nodes":1,"number_of_unhealthy_nodes":1}]
@@ -93,7 +76,7 @@ public class ShardRequestCacheValidator implements IValidator {
         JsonObject resourceSummaryJson =
                 JsonParserUtil.getSummaryJson(nodeSummaryJson, HotResourceSummary.HOT_RESOURCE_SUMMARY_TABLE, 0);
         Assert.assertNotNull(resourceSummaryJson);
-        Assert.assertEquals("shard request cache", resourceSummaryJson.get(RESOURCE_TYPE_COL_NAME).getAsString());
+        Assert.assertEquals("field data cache", resourceSummaryJson.get(RESOURCE_TYPE_COL_NAME).getAsString());
         return true;
     }
 }

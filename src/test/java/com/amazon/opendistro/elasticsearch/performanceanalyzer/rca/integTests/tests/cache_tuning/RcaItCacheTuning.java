@@ -39,8 +39,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.Consts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.HostTag;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners.RcaItNotEncryptedRunner;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.FieldDataCacheValidator;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.ShardRequestCacheValidator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.FieldDataCacheActionValidator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.FieldDataCacheRcaValidator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.ShardRequestCacheRcaValidator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.ActionsSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.ElasticSearchAnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.ShardRequestCacheClusterRca;
@@ -222,12 +224,11 @@ public class RcaItCacheTuning {
 
   // Test FieldDataCacheClusterRca.
   // This rca should be un-healthy when cache size is higher than threshold with evictions.
-  // TODO : extend this integ test to cover Decision Maker framework and queue remediation actions
   @Test
   @AExpect(
       what = AExpect.Type.REST_API,
       on = HostTag.ELECTED_MASTER,
-      validator = FieldDataCacheValidator.class,
+      validator = FieldDataCacheRcaValidator.class,
       forRca = FieldDataCacheClusterRca.class,
       timeoutSeconds = 700)
   @AErrorPatternIgnored(
@@ -259,7 +260,7 @@ public class RcaItCacheTuning {
   @AExpect(
       what = AExpect.Type.REST_API,
       on = HostTag.ELECTED_MASTER,
-      validator = ShardRequestCacheValidator.class,
+      validator = ShardRequestCacheRcaValidator.class,
       forRca = ShardRequestCacheClusterRca.class,
       timeoutSeconds = 700)
   @AErrorPatternIgnored(
@@ -284,4 +285,34 @@ public class RcaItCacheTuning {
           pattern = "HighHeapUsageOldGenRca:operate()",
           reason = "Old gen rca is expected to be missing in this integ test.")
   public void testShardRequestCacheRca() {}
+
+  @Test
+  @AExpect(
+      what = AExpect.Type.REST_TABLE_API,
+      on = HostTag.ELECTED_MASTER,
+      validator = FieldDataCacheActionValidator.class,
+      forRca = ActionsSummary.class,
+      timeoutSeconds = 700)
+  @AErrorPatternIgnored(
+          pattern = "AggregateMetric:gather()",
+          reason = "CPU metrics are expected to be missing in this integ test")
+  @AErrorPatternIgnored(
+          pattern = "Metric:gather()",
+          reason = "Metrics are expected to be missing in this integ test")
+  @AErrorPatternIgnored(
+          pattern = "NodeConfigCacheReaderUtil",
+          reason = "Node Config Cache are expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+          pattern = "CacheUtil:getCacheMaxSize()",
+          reason = "Node Config Cache is expected to be missing during startup.")
+  @AErrorPatternIgnored(
+          pattern = "SubscribeResponseHandler:onError()",
+          reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
+  @AErrorPatternIgnored(
+          pattern = "SQLParsingUtil:readDataFromSqlResult()",
+          reason = "Old gen metrics is expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+          pattern = "HighHeapUsageOldGenRca:operate()",
+          reason = "Old gen rca is expected to be missing in this integ test.")
+  public void testFieldDataCacheAction() {}
 }

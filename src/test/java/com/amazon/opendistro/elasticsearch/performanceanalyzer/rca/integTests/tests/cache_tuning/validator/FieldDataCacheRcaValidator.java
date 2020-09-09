@@ -33,10 +33,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
-public class FieldDataCacheValidator implements IValidator {
+public class FieldDataCacheRcaValidator implements IValidator {
     long startTime;
 
-    public FieldDataCacheValidator() {
+    public FieldDataCacheRcaValidator() {
         startTime = System.currentTimeMillis();
     }
 
@@ -49,8 +49,9 @@ public class FieldDataCacheValidator implements IValidator {
      * ]}
      */
     @Override
-    public boolean check(JsonElement response) {
-        JsonArray array = response.getAsJsonObject().get("data").getAsJsonArray();
+    public <T> boolean check(T response) {
+        JsonElement jsonElement = (JsonElement) response;
+        JsonArray array = jsonElement.getAsJsonObject().get("data").getAsJsonArray();
         if (array.size() == 0) {
             return false;
         }
