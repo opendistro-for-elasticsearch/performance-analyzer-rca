@@ -23,7 +23,8 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.FieldDataCacheRcaConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.ShardRequestCacheRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
@@ -80,7 +81,6 @@ import org.jooq.Result;
  */
 public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
     private static final Logger LOG = LogManager.getLogger(ShardRequestCacheRca.class);
-    private static final long THRESHOLD_TIME_PERIOD_IN_MILLISECOND = TimeUnit.SECONDS.toMillis(300);
 
     private final Metric shardRequestCacheEvictions;
     private final Metric shardRequestCacheHits;
@@ -102,12 +102,18 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
         this.shardRequestCacheHits = shardRequestCacheHits;
         this.shardRequestCacheSizeGroupByOperation = shardRequestCacheSizeGroupByOperation;
         this.counter = 0;
-        this.cacheSizeThreshold = CacheConfig.DEFAULT_SHARD_REQUEST_CACHE_SIZE_THRESHOLD;
+        this.cacheSizeThreshold = ShardRequestCacheRcaConfig.DEFAULT_SHARD_REQUEST_CACHE_SIZE_THRESHOLD;
         this.clock = Clock.systemUTC();
-        this.cacheEvictionCollector = new CacheCollector(SHARD_REQUEST_CACHE_EVICTION,
-                shardRequestCacheEvictions, THRESHOLD_TIME_PERIOD_IN_MILLISECOND);
-        this.cacheHitCollector = new CacheCollector(SHARD_REQUEST_CACHE_HIT,
-                shardRequestCacheHits, THRESHOLD_TIME_PERIOD_IN_MILLISECOND);
+        this.cacheEvictionCollector =
+                new CacheCollector(
+                        SHARD_REQUEST_CACHE_EVICTION,
+                        shardRequestCacheEvictions,
+                        ShardRequestCacheRcaConfig.DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC);
+        this.cacheHitCollector =
+                new CacheCollector(
+                        SHARD_REQUEST_CACHE_HIT,
+                        shardRequestCacheHits,
+                        ShardRequestCacheRcaConfig.DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC);
     }
 
     @VisibleForTesting
@@ -152,12 +158,17 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
 
     /**
      * read threshold values from rca.conf
+     *
      * @param conf RcaConf object
      */
     @Override
     public void readRcaConf(RcaConf conf) {
-        CacheConfig configObj = conf.getCacheConfig();
+        ShardRequestCacheRcaConfig configObj = conf.getShardRequestCacheRcaConfig();
         cacheSizeThreshold = configObj.getShardRequestCacheSizeThreshold();
+        long cacheCollectorTimePeriodInSec =
+                TimeUnit.SECONDS.toMillis(configObj.getShardRequestCollectorTimePeriodInSec());
+        cacheHitCollector.setCollectorTimePeriod(cacheCollectorTimePeriodInSec);
+        cacheEvictionCollector.setCollectorTimePeriod(cacheCollectorTimePeriodInSec);
     }
 
     @Override
@@ -180,14 +191,18 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
         private final Metric cacheMetrics;
         private boolean hasMetric;
         private long metricTimestamp;
-        private long metricTimePeriodThreshold;
+        private long metricTimePeriodInMillis;
 
-        public CacheCollector(final Resource cache, final Metric cacheMetrics, final long threshold) {
+        public CacheCollector(final Resource cache, final Metric cacheMetrics, final int metricTimePeriodInSec) {
             this.cache = cache;
             this.cacheMetrics = cacheMetrics;
             this.hasMetric = false;
             this.metricTimestamp = 0;
-            this.metricTimePeriodThreshold = threshold;
+            this.metricTimePeriodInMillis = TimeUnit.SECONDS.toMillis(metricTimePeriodInSec);
+        }
+
+        public void setCollectorTimePeriod(long metricTimePeriodInMillis) {
+            this.metricTimePeriodInMillis = metricTimePeriodInMillis;
         }
 
         public void collect(final long currTimestamp) {
@@ -205,24 +220,22 @@ public class ShardRequestCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> 
                             metricTimestamp = currTimestamp;
                         }
                         hasMetric = true;
-                    }
-                    else {
+                    } else {
                         hasMetric = false;
                     }
-                }
-                else {
+                } else {
                     LOG.error("Failed to parse metric from cache {}", cache.toString());
                 }
             }
         }
 
         public boolean isUnhealthy(final long currTimestamp) {
-            return hasMetric && (currTimestamp - metricTimestamp) >= metricTimePeriodThreshold;
+            return hasMetric && (currTimestamp - metricTimestamp) >= metricTimePeriodInMillis;
         }
 
         private HotResourceSummary generateSummary(final long currTimestamp) {
             return new HotResourceSummary(cache,
-                    TimeUnit.MILLISECONDS.toSeconds(metricTimePeriodThreshold),
+                    TimeUnit.MILLISECONDS.toSeconds(metricTimePeriodInMillis),
                     TimeUnit.MILLISECONDS.toSeconds(currTimestamp - metricTimestamp),
                     0);
         }

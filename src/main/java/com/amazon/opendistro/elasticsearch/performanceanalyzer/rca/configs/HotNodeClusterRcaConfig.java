@@ -32,15 +32,9 @@ public class HotNodeClusterRcaConfig {
 
   public HotNodeClusterRcaConfig(final RcaConf rcaConf) {
     unbalancedResourceThreshold = rcaConf.readRcaConfig(CONFIG_NAME,
-        RCA_CONF_KEY_CONSTANTS.UNBALANCED_RESOURCE_THRES, Double.class);
+        RCA_CONF_KEY_CONSTANTS.UNBALANCED_RESOURCE_THRES, DEFAULT_UNBALANCED_RESOURCE_THRES, (s) -> (s > 0), Double.class);
     resourceUsageLowerBoundThreshold = rcaConf.readRcaConfig(CONFIG_NAME,
-        RCA_CONF_KEY_CONSTANTS.RESOURCE_USAGE_LOWER_BOUND_THRES, Double.class);
-    if (unbalancedResourceThreshold == null) {
-      unbalancedResourceThreshold = DEFAULT_UNBALANCED_RESOURCE_THRES;
-    }
-    if (resourceUsageLowerBoundThreshold == null) {
-      resourceUsageLowerBoundThreshold = DEFAULT_RESOURCE_USAGE_LOWER_BOUND_THRES;
-    }
+        RCA_CONF_KEY_CONSTANTS.RESOURCE_USAGE_LOWER_BOUND_THRES, DEFAULT_RESOURCE_USAGE_LOWER_BOUND_THRES, (s) -> (s > 0), Double.class);
   }
 
   public double getUnbalancedResourceThreshold() {
