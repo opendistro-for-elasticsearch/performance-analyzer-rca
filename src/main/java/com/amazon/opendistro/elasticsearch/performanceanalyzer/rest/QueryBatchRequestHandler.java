@@ -193,7 +193,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
       startTime -= startTime % samplingPeriod;
       endTime -= endTime % samplingPeriod;
       if (startTime == endTime) {
-        throw new InvalidParameterException("starttime and endtime cannot be equal when rounded down to the nearest sampling period");
+        throw new InvalidParameterException("starttime and endtime must be at least one sampling period apart");
       }
       if (endTime > currentTime) {
         throw new InvalidParameterException("endtime can be no greater than the system time at the node");
@@ -244,7 +244,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
       Result<Record> results = db.queryMetric(metric, MetricsModel.ALL_METRICS.get(metric).dimensionNames, maxDatapoints);
       if (results != null) {
         maxDatapoints -= results.size();
-        if (maxDatapoints == 0) {
+        if (maxDatapoints <= 0) {
           throw new InvalidParameterException(String.format("requested data exceeds the %d datapoints limit", DEFAULT_MAX_DATAPOINTS));
         }
         builder.append("\"");
@@ -256,7 +256,7 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
           results = db.queryMetric(metric, MetricsModel.ALL_METRICS.get(metric).dimensionNames, maxDatapoints);
           if (results != null) {
             maxDatapoints -= results.size();
-            if (maxDatapoints == 0) {
+            if (maxDatapoints <= 0) {
               throw new InvalidParameterException(String.format("requested data exceeds the %d datapoints limit", DEFAULT_MAX_DATAPOINTS));
             }
             builder.append(",\"");
