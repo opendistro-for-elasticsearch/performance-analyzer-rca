@@ -33,6 +33,7 @@ import org.apache.logging.log4j.Logger;
  *   "action-config-settings": {
  *     // Cache Max Size bounds are expressed as %age of JVM heap size
  *     "cache-settings": {
+ *       "total-step-count": 20,
  *       "fielddata": {
  *         "upper-bound": 0.4,
  *         "lower-bound": 0.1
@@ -52,8 +53,11 @@ public class CacheActionConfig {
   private NestedConfig cacheSettingsConfig;
   private FieldDataCacheConfig fieldDataCacheConfig;
   private ShardRequestCacheConfig shardRequestCacheConfig;
+  private Config<Integer> totalStepCount;
   private Map<ResourceEnum, ThresholdConfig<Double>> thresholdConfigMap;
 
+  private static final String TOTAL_STEP_COUNT_CONFIG_NAME = "total-step-count";
+  public static final int DEFAULT_TOTAL_STEP_COUNT = 20;
   public static final Double DEFAULT_FIELDDATA_CACHE_UPPER_BOUND = 0.4;
   public static final Double DEFAULT_FIELDDATA_CACHE_LOWER_BOUND = 0.1;
   public static final Double DEFAULT_SHARD_REQUEST_CACHE_UPPER_BOUND = 0.05;
@@ -64,7 +68,22 @@ public class CacheActionConfig {
     cacheSettingsConfig = new NestedConfig("cache-settings", actionConfig);
     fieldDataCacheConfig = new FieldDataCacheConfig(cacheSettingsConfig);
     shardRequestCacheConfig = new ShardRequestCacheConfig(cacheSettingsConfig);
+    totalStepCount = new Config<>(TOTAL_STEP_COUNT_CONFIG_NAME, cacheSettingsConfig.getValue(),
+        DEFAULT_TOTAL_STEP_COUNT, (s) -> (s > 0), Integer.class);
     createThresholdConfigMap();
+  }
+
+  public int getTotalStepCount() {
+    return totalStepCount.getValue();
+  }
+
+  /**
+   * this function calculate the size of a single step given the range {lower bound - upper bound}
+   * and number of steps
+   */
+  public double getStepSize(ResourceEnum cacheType) {
+    ThresholdConfig<Double> threshold = getThresholdConfig(cacheType);
+    return (threshold.upperBound() - threshold.lowerBound()) / (double) getTotalStepCount();
   }
 
   public ThresholdConfig<Double> getThresholdConfig(ResourceEnum cacheType) {

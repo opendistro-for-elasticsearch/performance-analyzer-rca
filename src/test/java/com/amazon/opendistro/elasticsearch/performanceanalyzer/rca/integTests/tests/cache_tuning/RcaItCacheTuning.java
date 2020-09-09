@@ -27,11 +27,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Hit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Size;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AClusterType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AErrorPatternIgnored;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AExpect;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AMetric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ARcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ARcaGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ATable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ATuple;
@@ -40,6 +42,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners.RcaItNotEncryptedRunner;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.FieldDataCacheValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.ShardRequestCacheValidator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.queue_tuning.RcaItQueueTuning;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.ElasticSearchAnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.ShardRequestCacheClusterRca;
@@ -51,6 +54,8 @@ import org.junit.runner.RunWith;
 @RunWith(RcaItNotEncryptedRunner.class)
 @AClusterType(ClusterType.MULTI_NODE_CO_LOCATED_MASTER)
 @ARcaGraph(ElasticSearchAnalysisGraph.class)
+//specify a custom rca.conf to set the collector time periods to 5s to reduce runtime
+@ARcaConf(dataNode = RcaItCacheTuning.CACHE_TUNING_RESOURCES_DIR + "rca.conf")
 @AMetric(
     name = Cache_FieldData_Size.class,
     dimensionNames = {
@@ -213,6 +218,7 @@ import org.junit.runner.RunWith;
     })
 
 public class RcaItCacheTuning {
+  public static final String CACHE_TUNING_RESOURCES_DIR = Consts.INTEG_TESTS_SRC_DIR + "./tests/cache_tuning/resource/";
   public static final String INDEX_NAME = "MockIndex";
   public static final String SHARD_ID = "1";
 
@@ -244,6 +250,9 @@ public class RcaItCacheTuning {
   @AErrorPatternIgnored(
           pattern = "HighHeapUsageOldGenRca:operate()",
           reason = "Old gen rca is expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+          pattern = "SubscribeResponseHandler:onError()",
+          reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
   public void testFieldDataCacheRca() {}
 
   // Test ShardRequestCacheClusterRca.
@@ -273,5 +282,8 @@ public class RcaItCacheTuning {
   @AErrorPatternIgnored(
           pattern = "HighHeapUsageOldGenRca:operate()",
           reason = "Old gen rca is expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+          pattern = "SubscribeResponseHandler:onError()",
+          reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
   public void testShardRequestCacheRca() {}
 }

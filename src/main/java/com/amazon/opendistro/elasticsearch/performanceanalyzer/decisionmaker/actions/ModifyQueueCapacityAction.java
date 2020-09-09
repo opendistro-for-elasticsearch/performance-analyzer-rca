@@ -22,7 +22,6 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionma
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.QueueActionConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 
@@ -124,7 +123,6 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
 
   public static final class Builder {
     public static final long DEFAULT_COOL_OFF_PERIOD_IN_MILLIS = 300 * 1_000;
-    public static final int DEFAULT_STEP_SIZE = 50;
     public static final boolean DEFAULT_IS_INCREASE = true;
     public static final boolean DEFAULT_CAN_UPDATE = true;
 
@@ -148,7 +146,6 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
       this.appContext = appContext;
       this.rcaConf = conf;
       this.coolOffPeriodInMillis = DEFAULT_COOL_OFF_PERIOD_IN_MILLIS;
-      this.stepSize = DEFAULT_STEP_SIZE;
       this.increase = DEFAULT_IS_INCREASE;
       this.canUpdate = DEFAULT_CAN_UPDATE;
       this.desiredCapacity = null;
@@ -158,6 +155,7 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
       QueueActionConfig queueActionConfig = new QueueActionConfig(rcaConf);
       this.upperBound = queueActionConfig.getThresholdConfig(threadPool).upperBound();
       this.lowerBound = queueActionConfig.getThresholdConfig(threadPool).lowerBound();
+      this.stepSize = queueActionConfig.getStepSize(threadPool);
     }
 
     public Builder coolOffPeriod(long coolOffPeriodInMillis) {
