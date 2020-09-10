@@ -280,7 +280,7 @@ class SQLitePersistor extends PersistorBase {
         String nestedTableName = columnName.replace(NESTED_OBJECT_COLUMN_PREFIX, "");
         if (jooqField.getType() == String.class) {
           String value = (String) jooqField.getValue(record);
-          JsonArray array = JsonParser.parseString(value).getAsJsonArray();
+          JsonArray array = new JsonParser().parse(value).getAsJsonArray();
           Method setter = fieldNameToGetterSetterMap.get(nestedTableName).setter;
 
           List<Object> collection = new ArrayList<>();
