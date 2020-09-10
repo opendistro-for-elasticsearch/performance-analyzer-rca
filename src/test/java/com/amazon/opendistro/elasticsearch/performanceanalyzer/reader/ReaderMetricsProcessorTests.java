@@ -579,6 +579,40 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     } while (secondRun);
   }
 
+  @Test
+  public void testCleanupMetricsDBFiles_empty() throws Exception {
+    deleteAll();
+    PluginSettings.instance().setShouldCleanupMetricsDBFiles(true);
+    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
+    assertEquals(Set.of(), MetricsDB.listOnDiskFiles());
+  }
+
+  @Test
+  public void testCleanupMetricsDBFiles_enabled() throws Exception {
+    deleteAll();
+    Set<Long> expected = Set.of(1000000000L, 500L, 0L);
+    for (Long ts : expected) {
+      (new MetricsDB(ts)).remove();
+    }
+    assertEquals(expected, MetricsDB.listOnDiskFiles());
+    PluginSettings.instance().setShouldCleanupMetricsDBFiles(true);
+    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
+    assertEquals(Set.of(), MetricsDB.listOnDiskFiles());
+  }
+
+  @Test
+  public void testCleanupMetricsDBFiles_disabled() throws Exception {
+    deleteAll();
+    Set<Long> expected = Set.of(1000000000L, 500L, 0L);
+    for (Long ts : expected) {
+      (new MetricsDB(ts)).remove();
+    }
+    assertEquals(expected, MetricsDB.listOnDiskFiles());
+    PluginSettings.instance().setShouldCleanupMetricsDBFiles(false);
+    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
+    assertEquals(expected, MetricsDB.listOnDiskFiles());
+  }
+
   public void verifyAvailableFiles(Set<Long> expectedFiles) {
     final File folder = new File("/tmp");
     final File[] files =

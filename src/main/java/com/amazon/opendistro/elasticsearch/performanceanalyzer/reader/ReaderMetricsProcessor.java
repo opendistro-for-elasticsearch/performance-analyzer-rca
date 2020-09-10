@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -129,6 +130,7 @@ public class ReaderMetricsProcessor implements Runnable {
     this.appContext = appContext;
     batchMetricsEnabled = defaultBatchMetricsEnabled;
     batchMetricsDBSet = new ConcurrentSkipListSet<>();
+    cleanupMetricsDBFiles();
   }
 
   @Override
@@ -212,6 +214,15 @@ public class ReaderMetricsProcessor implements Runnable {
         db.close();
       } catch (Exception e) {
         LOG.error("Unable to close database - {}", db.getDBFilePath());
+      }
+    }
+  }
+
+  public void cleanupMetricsDBFiles() {
+    if (PluginSettings.instance().shouldCleanupMetricsDBFiles()) {
+      Set<Long> fileTimestamps = MetricsDB.listOnDiskFiles();
+      for (Long ts : fileTimestamps) {
+        MetricsDB.deleteOnDiskFile(ts);
       }
     }
   }

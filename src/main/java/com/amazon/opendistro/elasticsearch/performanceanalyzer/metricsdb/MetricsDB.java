@@ -24,9 +24,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -37,6 +39,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.BatchBindStep;
@@ -325,6 +329,36 @@ public class MetricsDB implements Removable {
               dbFilePath, StatExceptionCode.OTHER.toString(), e);
       StatsCollector.instance().logException();
     }
+  }
+
+  /**
+   * Returns the timestamps associated with on-disk files.
+   *
+   * @return the timestamps associated with on-disk files
+   */
+  public static Set<Long> listOnDiskFiles() {
+    String prefix = PluginSettings.instance().getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT);
+    Path prefixPath = Paths.get(prefix);
+    Path parentPath = prefixPath.getParent();
+    Set<Long> found = new HashSet<Long>();
+    try (Stream<Path> paths = Files.list(parentPath)) {
+      PathMatcher matcher = FileSystems.getDefault().getPathMatcher("regex:" + prefix + "\\d+");
+      int prefixLength = prefix.length();
+      paths.filter(matcher::matches)
+              .map(path -> path.toString())
+              .forEach(s -> {
+                try {
+                  found.add(Long.parseUnsignedLong(s, prefixLength, s.length(), 10));
+                } catch (IndexOutOfBoundsException | NumberFormatException e) {
+                  LOG.error("Unexpected file in metricsdb directory - {}", s);
+                }
+              });
+    } catch (IOException | SecurityException e) {
+      LOG.error("Failed to access metricsdb directory - {} with ExceptionCode: {}",
+              parentPath, StatExceptionCode.OTHER.toString(), e);
+      StatsCollector.instance().logException();
+    }
+    return found;
   }
 
   public DSLContext getDSLContext() {

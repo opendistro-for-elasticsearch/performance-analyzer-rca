@@ -26,6 +26,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+
 import org.jooq.BatchBindStep;
 import org.jooq.Record;
 import org.jooq.Result;
@@ -448,6 +450,42 @@ public class MetricsDBTests {
     assertFalse(new File(existing.getDBFilePath()).exists());
     MetricsDB.deleteOnDiskFile(timestamp);
     assertFalse(new File(existing.getDBFilePath()).exists());
+  }
+
+  @Test
+  public void testListOnDiskFiles_empty() throws Exception {
+    deleteAll();
+    assertEquals(Set.of(), MetricsDB.listOnDiskFiles());
+  }
+
+  @Test
+  public void testListOnDiskFiles_one() throws Exception {
+    deleteAll();
+    Set<Long> expected = Set.of(1000000000L);
+    for (Long ts : expected) {
+      (new MetricsDB(ts)).remove();
+    }
+    assertEquals(expected, MetricsDB.listOnDiskFiles());
+  }
+
+  @Test
+  public void testListOnDiskFiles_two() throws Exception {
+    deleteAll();
+    Set<Long> expected = Set.of(1000000000L, 500L);
+    for (Long ts : expected) {
+      (new MetricsDB(ts)).remove();
+    }
+    assertEquals(expected, MetricsDB.listOnDiskFiles());
+  }
+
+  @Test
+  public void testListOnDiskFiles_many() throws Exception {
+    deleteAll();
+    Set<Long> expected = Set.of(1000000000L, 500L, 0L);
+    for (Long ts : expected) {
+      (new MetricsDB(ts)).remove();
+    }
+    assertEquals(expected, MetricsDB.listOnDiskFiles());
   }
 
   public static void deleteAll() {
