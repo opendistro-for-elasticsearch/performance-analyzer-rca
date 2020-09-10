@@ -315,7 +315,7 @@ class SQLitePersistor extends PersistorBase {
 
           // This gives the type of the setter parameter.
           Class<?> setterType = setter.getParameterTypes()[0];
-          int nestedRowId = (int)jooqField.getValue(record);
+          int nestedRowId = jooqField.cast(Integer.class).getValue(record);
 
           // Now that we have the Type of the parameter and the rowID specifying the data the object
           // is to be filled with; we call the read method recursively to create the referenced Object
