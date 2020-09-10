@@ -244,7 +244,7 @@ public class RcaConf {
     return setting;
   }
 
-  public boolean updateAllRcaConfFiles(final Set<String> mutedRcas, final Set<String> mutedDeciders,
+  public static boolean updateAllRcaConfFiles(final Set<String> mutedRcas, final Set<String> mutedDeciders,
       final Set<String> mutedActions) {
     boolean updateStatus = true;
     // update all rca.conf files
@@ -261,11 +261,11 @@ public class RcaConf {
     return updateStatus;
   }
 
-  private boolean updateRcaConf(String originalFilePath, final Set<String> mutedRcas,
+  private static boolean updateRcaConf(String originalFilePath, final Set<String> mutedRcas,
       final Set<String> mutedDeciders, final Set<String> mutedActions) {
 
     String updatedPath = originalFilePath + ".updated";
-    try (final FileInputStream originalFileInputStream = new FileInputStream(this.configFileLoc);
+    try (final FileInputStream originalFileInputStream = new FileInputStream(originalFilePath);
         final Scanner scanner = new Scanner(originalFileInputStream, StandardCharsets.UTF_8.name());
         final FileOutputStream updatedFileOutputStream = new FileOutputStream(updatedPath)) {
       // create the config json Object from rca config file
