@@ -4,6 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.reaction_wheel.ReactionWheelUtil.ControlType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Id;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Ip;
@@ -22,8 +23,10 @@ public class ModifyQueueCapacityRequestBuilderTest {
   @Test
   public void testBuilder() {
     AppContext appContext = new AppContext();  
-    ModifyQueueCapacityAction action =
-        new ModifyQueueCapacityAction(nodeKey, ResourceEnum.SEARCH_THREADPOOL, 1000, true, appContext);
+    RcaConf rcaConf = new RcaConf();
+    ModifyQueueCapacityAction.Builder builder =
+        ModifyQueueCapacityAction.newBuilder(nodeKey, ResourceEnum.SEARCH_THREADPOOL, appContext, rcaConf);
+    ModifyQueueCapacityAction action = builder.increase(true).build();
     BatchStartControlRequest request = ModifyQueueCapacityRequestBuilder.newBuilder(action).build();
     Assert.assertEquals(1, request.getActionsCount());
     ReactionWheel.Action requestAction = request.getActions(0);

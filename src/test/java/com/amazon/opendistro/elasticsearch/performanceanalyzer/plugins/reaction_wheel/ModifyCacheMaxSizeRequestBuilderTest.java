@@ -4,8 +4,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.reaction_wheel.ReactionWheelUtil.ControlType;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CacheDeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Id;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Ip;
@@ -22,6 +22,7 @@ public class ModifyCacheMaxSizeRequestBuilderTest {
   final NodeKey nodeKey = new NodeKey(id, ip);
 
   private AppContext appContext;
+  private RcaConf rcaConf = new RcaConf();
 
   @Before
   public void setUp() {
@@ -43,14 +44,10 @@ public class ModifyCacheMaxSizeRequestBuilderTest {
 
   @Test
   public void testBuilder() {
-    ModifyCacheMaxSizeAction action =
-        new ModifyCacheMaxSizeAction(
-            nodeKey,
-            ResourceEnum.FIELD_DATA_CACHE,
-            appContext.getNodeConfigCache(),
-            CacheDeciderConfig.DEFAULT_FIELD_DATA_CACHE_UPPER_BOUND,
-            true,
-            appContext);
+    ModifyCacheMaxSizeAction.Builder builder =
+        ModifyCacheMaxSizeAction.newBuilder(
+            nodeKey, ResourceEnum.FIELD_DATA_CACHE, appContext, rcaConf);
+    ModifyCacheMaxSizeAction action = builder.increase(true).build();
     BatchStartControlRequest request = ModifyCacheMaxSizeRequestBuilder.newBuilder(action).build();
     Assert.assertEquals(1, request.getActionsCount());
     ReactionWheel.Action requestAction = request.getActions(0);
