@@ -23,9 +23,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.CacheActionConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.QueueActionConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.DeciderActionParser;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.jvm.LevelThreeActionBuilderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.old_gen.LevelThreeActionBuilder;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.test_utils.DeciderActionParserUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
@@ -46,14 +46,14 @@ public class LevelThreeActionBuilderTest {
   private final long heapMaxSizeInBytes = 10 * GB_TO_BYTES;
   private int writeQueueStep;
   private int searchQueueStep;
-  private DeciderActionParser deciderActionParser;
+  private DeciderActionParserUtil deciderActionParser;
 
   public LevelThreeActionBuilderTest() {
     testAppContext = new AppContext();
     dummyCache = testAppContext.getNodeConfigCache();
     rcaConf = new RcaConf();
     node = new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("127.0.0.1"));
-    deciderActionParser = new DeciderActionParser();
+    deciderActionParser = new DeciderActionParserUtil();
   }
 
   @Before

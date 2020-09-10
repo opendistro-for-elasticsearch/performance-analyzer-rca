@@ -13,7 +13,7 @@
  * permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.test_utils;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
@@ -23,11 +23,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class DeciderActionParser {
+public class DeciderActionParserUtil {
   private final Map<ResourceEnum, ModifyCacheMaxSizeAction> cacheActionMap;
   private final Map<ResourceEnum, ModifyQueueCapacityAction> queueActionMap;
 
-  public DeciderActionParser() {
+  public DeciderActionParserUtil() {
     cacheActionMap = new HashMap<>();
     queueActionMap = new HashMap<>();
   }

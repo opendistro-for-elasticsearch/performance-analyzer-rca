@@ -21,8 +21,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 
 /**
  * "decider-config-settings": {
- *     // Decreasing order of priority for the type of workload we can expect on the cluster.
- *     // Priority order in the list goes from most expected to the lease expected workload type.
+ *     // Define the type of workload we can expect on the cluster.
+ *     // User can specify workload preference on ingest/search or skip this setting which implicitly
+ *     // give equal preference to ingest/search.
  *     "workload-type": {
  *       "prefer-ingest": true,
  *       "prefer-search": false
