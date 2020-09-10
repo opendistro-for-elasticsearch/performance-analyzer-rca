@@ -305,8 +305,8 @@ public class PluginSettings {
 
     try {
       long parsedRetentionPeriod = Long.parseLong(settings.getProperty(BATCH_METRICS_RETENTION_PERIOD_MINUTES));
-      if (parsedRetentionPeriod < BATCH_METRICS_RETENTION_PERIOD_MINUTES_MIN ||
-              parsedRetentionPeriod > BATCH_METRICS_RETENTION_PERIOD_MINUTES_MAX) {
+      if (parsedRetentionPeriod < BATCH_METRICS_RETENTION_PERIOD_MINUTES_MIN
+              || parsedRetentionPeriod > BATCH_METRICS_RETENTION_PERIOD_MINUTES_MAX) {
         LOG.error("{} out of range. Value should be in range [{}, {}]. Using default value {}.",
                 BATCH_METRICS_RETENTION_PERIOD_MINUTES,
                 BATCH_METRICS_RETENTION_PERIOD_MINUTES_MIN,
