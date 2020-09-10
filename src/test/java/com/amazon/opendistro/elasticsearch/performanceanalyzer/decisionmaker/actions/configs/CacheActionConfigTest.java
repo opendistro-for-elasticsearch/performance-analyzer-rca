@@ -131,8 +131,8 @@ public class CacheActionConfigTest {
     configStr =
         "{"
           + "\"action-config-settings\": { "
-              + "\"total-step-count\": 5,"
               + "\"cache-settings\": { "
+                  + "\"total-step-count\": 5,"
                   + "\"fielddata\": { "
                       + "\"upper-bound\": 0.8, "
                       + "\"lower-bound\": 0.2 "

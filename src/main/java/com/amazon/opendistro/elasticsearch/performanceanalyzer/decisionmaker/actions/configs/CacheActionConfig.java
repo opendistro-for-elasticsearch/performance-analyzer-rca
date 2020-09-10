@@ -68,7 +68,7 @@ public class CacheActionConfig {
     cacheSettingsConfig = new NestedConfig("cache-settings", actionConfig);
     fieldDataCacheConfig = new FieldDataCacheConfig(cacheSettingsConfig);
     shardRequestCacheConfig = new ShardRequestCacheConfig(cacheSettingsConfig);
-    totalStepCount = new Config<>(TOTAL_STEP_COUNT_CONFIG_NAME, actionConfig,
+    totalStepCount = new Config<>(TOTAL_STEP_COUNT_CONFIG_NAME, cacheSettingsConfig.getValue(),
         DEFAULT_TOTAL_STEP_COUNT, (s) -> (s > 0), Integer.class);
     createThresholdConfigMap();
   }

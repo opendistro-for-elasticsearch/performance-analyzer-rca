@@ -132,8 +132,8 @@ public class QueueActionConfigTest {
     configStr =
       "{"
           + "\"action-config-settings\": { "
-              + "\"total-step-count\": 10,"
               + "\"queue-settings\": { "
+                  + "\"total-step-count\": 10,"
                   + "\"search\": { "
                       + "\"upper-bound\": 500, "
                       + "\"lower-bound\": 100 "

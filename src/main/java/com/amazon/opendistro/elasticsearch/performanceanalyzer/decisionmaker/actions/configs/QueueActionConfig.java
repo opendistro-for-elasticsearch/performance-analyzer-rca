@@ -67,7 +67,7 @@ public class QueueActionConfig {
     queueSettingsConfig = new NestedConfig("queue-settings", actionConfig);
     searchQueueConfig = new SearchQueueConfig(queueSettingsConfig);
     writeQueueConfig = new WriteQueueConfig(queueSettingsConfig);
-    totalStepCount = new Config<>(TOTAL_STEP_COUNT_CONFIG_NAME, actionConfig,
+    totalStepCount = new Config<>(TOTAL_STEP_COUNT_CONFIG_NAME, queueSettingsConfig.getValue(),
         DEFAULT_TOTAL_STEP_COUNT, (s) -> (s > 0), Integer.class);
     createThresholdConfigMap();
   }
