@@ -39,7 +39,7 @@ public class FieldDataCacheActionValidator implements IValidator {
     }
 
     // TODO: Update comments
-    boolean checkActionSummary(final ActionsSummary actionObject) {
+    private boolean checkActionSummary(final ActionsSummary actionObject) {
         Assert.assertEquals(ModifyCacheMaxSizeAction.NAME, actionObject.getActionName());
         Assert.assertEquals(ResourceEnum.FIELD_DATA_CACHE.getNumber(), actionObject.getResourceValue());
         return true;

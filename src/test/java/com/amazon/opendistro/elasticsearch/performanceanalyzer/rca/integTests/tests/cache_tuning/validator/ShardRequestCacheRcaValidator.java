@@ -70,7 +70,7 @@ public class ShardRequestCacheRcaValidator implements IValidator {
      *  "HotClusterSummary":[{"number_of_nodes":1,"number_of_unhealthy_nodes":1}]
      * }
      */
-    boolean checkClusterRca(final JsonObject rcaObject) {
+    private boolean checkClusterRca(final JsonObject rcaObject) {
         if (!"unhealthy".equals(rcaObject.get("state").getAsString())) {
             return false;
         }
