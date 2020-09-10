@@ -63,6 +63,10 @@
         <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
     </Match>
     <Match>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB"/>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
+    </Match>
+    <Match>
         <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration"/>
         <Bug pattern="MS_MUTABLE_COLLECTION"/>
     </Match>
