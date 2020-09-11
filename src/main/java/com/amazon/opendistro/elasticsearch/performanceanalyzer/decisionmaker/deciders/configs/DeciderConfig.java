@@ -13,20 +13,20 @@
  * permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.CachePriorityOrderConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.WorkLoadTypeConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.decider.jvm.OldGenDecisionPolicyConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.jvm.OldGenDecisionPolicyConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NestedConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 
 /**
  * "decider-config-settings": {
- *     // Decreasing order of priority for the type of workload we can expect on the cluster.
- *     // Priority order in the list goes from most expected to the lease expected workload type.
+ *     // Define the type of workload we can expect on the cluster.
+ *     // User can specify workload preference on ingest/search or skip this setting which implicitly
+ *     // give equal preference to ingest/search.
  *     "workload-type": {
- *       "priority-order": ["ingest", "search"]
+ *       "prefer-ingest": true,
+ *       "prefer-search": false
  *     },
  *     // Decreasing order of priority for the type of cache which is expected to be consumed more.
  *     // Priority order in the list goes from most used to the lease used cache type.

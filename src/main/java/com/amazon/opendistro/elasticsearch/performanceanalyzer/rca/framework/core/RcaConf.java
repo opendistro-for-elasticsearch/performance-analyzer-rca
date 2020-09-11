@@ -19,8 +19,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyz
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.CacheActionConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.QueueActionConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.DeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaControllerHelper;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.FieldDataCacheRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageYoungGenRcaConfig;
@@ -54,7 +54,6 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.function.Predicate;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -244,7 +243,7 @@ public class RcaConf {
     return setting;
   }
 
-  public boolean updateAllRcaConfFiles(final Set<String> mutedRcas, final Set<String> mutedDeciders,
+  public static boolean updateAllRcaConfFiles(final Set<String> mutedRcas, final Set<String> mutedDeciders,
       final Set<String> mutedActions) {
     boolean updateStatus = true;
     // update all rca.conf files
@@ -261,11 +260,11 @@ public class RcaConf {
     return updateStatus;
   }
 
-  private boolean updateRcaConf(String originalFilePath, final Set<String> mutedRcas,
+  private static boolean updateRcaConf(String originalFilePath, final Set<String> mutedRcas,
       final Set<String> mutedDeciders, final Set<String> mutedActions) {
 
     String updatedPath = originalFilePath + ".updated";
-    try (final FileInputStream originalFileInputStream = new FileInputStream(this.configFileLoc);
+    try (final FileInputStream originalFileInputStream = new FileInputStream(originalFilePath);
         final Scanner scanner = new Scanner(originalFileInputStream, StandardCharsets.UTF_8.name());
         final FileOutputStream updatedFileOutputStream = new FileOutputStream(updatedPath)) {
       // create the config json Object from rca config file
