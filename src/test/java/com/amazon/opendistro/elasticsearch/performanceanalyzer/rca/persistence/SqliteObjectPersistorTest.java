@@ -18,7 +18,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class SqliteObjectPersistor {
+public class SqliteObjectPersistorTest {
   private Path testLocation = null;
   private final String baseFilename = "rca.test.file";
 
@@ -216,7 +216,7 @@ public class SqliteObjectPersistor {
     B bObj;
 
     @RefColumn
-    List<ITest> myList;
+    List<ITUtil> myList;
 
     public PersistorTestExample() {
       this.x = 10;
@@ -224,9 +224,9 @@ public class SqliteObjectPersistor {
       this.name = "test-name";
       this.bObj = new B();
       this.myList = new ArrayList<>();
-      myList.add(new ITestImpl1());
-      myList.add(new ITestImpl1());
-      myList.add(new ITestImpl2());
+      myList.add(new ITUtilImpl1());
+      myList.add(new ITUtilImpl1());
+      myList.add(new ITUtilImpl2());
     }
 
     public void setY(Integer y) {
@@ -237,7 +237,7 @@ public class SqliteObjectPersistor {
       this.bObj = bObj;
     }
 
-    public void setMyList(List<ITest> myList) {
+    public void setMyList(List<ITUtil> myList) {
       this.myList = myList;
     }
 
@@ -265,7 +265,7 @@ public class SqliteObjectPersistor {
       return bObj;
     }
 
-    public List<ITest> getMyList() {
+    public List<ITUtil> getMyList() {
       return myList;
     }
   }
@@ -295,11 +295,11 @@ public class SqliteObjectPersistor {
     }
   }
 
-  interface ITest {
+  interface ITUtil {
 
   }
 
-  static class ITestImpl1 implements ITest {
+  static class ITUtilImpl1 implements ITUtil {
     @ValueColumn
     boolean yes = true;
 
@@ -307,7 +307,7 @@ public class SqliteObjectPersistor {
       this.yes = yes;
     }
 
-    public ITestImpl1() {
+    public ITUtilImpl1() {
     }
 
     public boolean isYes() {
@@ -315,11 +315,11 @@ public class SqliteObjectPersistor {
     }
   }
 
-  static class ITestImpl2 implements ITest {
+  static class ITUtilImpl2 implements ITUtil {
     @ValueColumn
     boolean no = false;
 
-    public ITestImpl2() {
+    public ITUtilImpl2() {
     }
 
     public void setNo(boolean no) {
