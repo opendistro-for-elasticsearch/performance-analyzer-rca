@@ -49,7 +49,7 @@ public class ReactionWheelHandlerTest {
   }
 
   @Test
-  public void testPublishQueueAction() {
+  public void testPublishQueueAction() throws Exception {
     RcaConf rcaConf = new RcaConf();
     rcaConf.readConfigFromString("{}");
     ModifyQueueCapacityAction.Builder builder =

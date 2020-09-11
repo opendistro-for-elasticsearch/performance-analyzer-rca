@@ -3,6 +3,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.reaction
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.reaction_wheel.ReactionWheelUtil.ControlType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
@@ -21,7 +22,7 @@ public class ModifyQueueCapacityRequestBuilderTest {
 
 
   @Test
-  public void testBuilder() {
+  public void testBuilder() throws Exception {
     AppContext appContext = new AppContext();  
     appContext.getNodeConfigCache()
         .put(nodeKey, ResourceUtil.SEARCH_QUEUE_CAPACITY, 800);

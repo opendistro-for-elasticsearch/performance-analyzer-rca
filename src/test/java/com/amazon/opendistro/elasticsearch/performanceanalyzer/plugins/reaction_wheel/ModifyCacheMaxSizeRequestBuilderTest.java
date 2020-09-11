@@ -43,7 +43,7 @@ public class ModifyCacheMaxSizeRequestBuilderTest {
   }
 
   @Test
-  public void testBuilder() {
+  public void testBuilder() throws Exception {
     rcaConf.readConfigFromString("{}");
     ModifyCacheMaxSizeAction.Builder builder =
         ModifyCacheMaxSizeAction.newBuilder(
