@@ -51,6 +51,7 @@ public class ReactionWheelHandlerTest {
   @Test
   public void testPublishQueueAction() {
     RcaConf rcaConf = new RcaConf();
+    rcaConf.readConfigFromString("{}");
     ModifyQueueCapacityAction.Builder builder =
         ModifyQueueCapacityAction.newBuilder(nodeKey, ResourceEnum.WRITE_THREADPOOL, appContext, rcaConf);
     ModifyQueueCapacityAction action = builder.increase(true).build();

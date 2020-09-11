@@ -44,6 +44,7 @@ public class ModifyCacheMaxSizeRequestBuilderTest {
 
   @Test
   public void testBuilder() {
+    rcaConf.readConfigFromString("{}");
     ModifyCacheMaxSizeAction.Builder builder =
         ModifyCacheMaxSizeAction.newBuilder(
             nodeKey, ResourceEnum.FIELD_DATA_CACHE, appContext, rcaConf);
