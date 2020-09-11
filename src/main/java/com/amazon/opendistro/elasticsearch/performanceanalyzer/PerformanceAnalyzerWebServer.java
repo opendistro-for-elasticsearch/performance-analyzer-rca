@@ -42,6 +42,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 public class PerformanceAnalyzerWebServer {
 
   private static final Logger LOG = LogManager.getLogger(PerformanceAnalyzerWebServer.class);
+  @VisibleForTesting
   public static final int WEBSERVICE_DEFAULT_PORT = 9600;
   @VisibleForTesting
   public static final String WEBSERVICE_BIND_HOST_NAME = "webservice-bind-host";

@@ -339,23 +339,22 @@ public class MetricsDB implements Removable {
   public static Set<Long> listOnDiskFiles() {
     String prefix = PluginSettings.instance().getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT);
     Path prefixPath = Paths.get(prefix);
-    Path parentPath = prefixPath.getParent();
     Set<Long> found = new HashSet<Long>();
-    try (Stream<Path> paths = Files.list(parentPath)) {
+    try (Stream<Path> paths = Files.list(prefixPath.getParent())) {
       PathMatcher matcher = FileSystems.getDefault().getPathMatcher("regex:" + prefix + "\\d+");
       int prefixLength = prefix.length();
       paths.filter(matcher::matches)
-              .map(path -> path.toString())
+              .map(path -> path.toString().substring(prefixLength))
               .forEach(s -> {
                 try {
-                  found.add(Long.parseUnsignedLong(s, prefixLength, s.length(), 10));
-                } catch (IndexOutOfBoundsException | NumberFormatException e) {
+                  found.add(Long.parseUnsignedLong(s));
+                } catch (NumberFormatException e) {
                   LOG.error("Unexpected file in metricsdb directory - {}", s);
                 }
               });
     } catch (IOException | SecurityException e) {
       LOG.error("Failed to access metricsdb directory - {} with ExceptionCode: {}",
-              parentPath, StatExceptionCode.OTHER.toString(), e);
+              prefixPath.getParent(), StatExceptionCode.OTHER.toString(), e);
       StatsCollector.instance().logException();
     }
     return found;

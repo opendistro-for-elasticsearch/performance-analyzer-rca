@@ -36,6 +36,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Set;
@@ -584,26 +585,26 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     deleteAll();
     PluginSettings.instance().setShouldCleanupMetricsDBFiles(true);
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
-    assertEquals(Set.of(), MetricsDB.listOnDiskFiles());
+    assertEquals(new HashSet<Long>(), MetricsDB.listOnDiskFiles());
   }
 
   @Test
   public void testCleanupMetricsDBFiles_enabled() throws Exception {
     deleteAll();
-    Set<Long> expected = Set.of(1000000000L, 500L, 0L);
+    Set<Long> expected = new HashSet<>(Arrays.asList(1000000000L, 500L, 0L));
     for (Long ts : expected) {
       (new MetricsDB(ts)).remove();
     }
     assertEquals(expected, MetricsDB.listOnDiskFiles());
     PluginSettings.instance().setShouldCleanupMetricsDBFiles(true);
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
-    assertEquals(Set.of(), MetricsDB.listOnDiskFiles());
+    assertEquals(new HashSet<Long>(), MetricsDB.listOnDiskFiles());
   }
 
   @Test
   public void testCleanupMetricsDBFiles_disabled() throws Exception {
     deleteAll();
-    Set<Long> expected = Set.of(1000000000L, 500L, 0L);
+    Set<Long> expected = new HashSet<>(Arrays.asList(1000000000L, 500L, 0L));
     for (Long ts : expected) {
       (new MetricsDB(ts)).remove();
     }

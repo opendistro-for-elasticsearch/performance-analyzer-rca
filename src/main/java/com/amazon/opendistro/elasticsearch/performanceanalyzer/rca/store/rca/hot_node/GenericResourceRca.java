@@ -186,7 +186,7 @@ public class GenericResourceRca extends Rca<ResourceFlowUnit<HotResourceSummary>
           summary.appendNestedSummary(new TopConsumerSummary(name, num));
         }
         catch (DataTypeException de) {
-          LOG.error("Fail to read some field from SQL record, trace : {}", de.getStackTrace());
+          LOG.error("Fail to read some field from SQL record, trace :", de);
           break;
         }
       }

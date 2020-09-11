@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -455,13 +456,13 @@ public class MetricsDBTests {
   @Test
   public void testListOnDiskFiles_empty() throws Exception {
     deleteAll();
-    assertEquals(Set.of(), MetricsDB.listOnDiskFiles());
+    assertEquals(new HashSet<Long>(), MetricsDB.listOnDiskFiles());
   }
 
   @Test
   public void testListOnDiskFiles_one() throws Exception {
     deleteAll();
-    Set<Long> expected = Set.of(1000000000L);
+    Set<Long> expected = new HashSet<>(Arrays.asList(1000000000L));
     for (Long ts : expected) {
       (new MetricsDB(ts)).remove();
     }
@@ -471,7 +472,7 @@ public class MetricsDBTests {
   @Test
   public void testListOnDiskFiles_two() throws Exception {
     deleteAll();
-    Set<Long> expected = Set.of(1000000000L, 500L);
+    Set<Long> expected = new HashSet<>(Arrays.asList(1000000000L, 500L));
     for (Long ts : expected) {
       (new MetricsDB(ts)).remove();
     }
@@ -481,7 +482,7 @@ public class MetricsDBTests {
   @Test
   public void testListOnDiskFiles_many() throws Exception {
     deleteAll();
-    Set<Long> expected = Set.of(1000000000L, 500L, 0L);
+    Set<Long> expected = new HashSet<>(Arrays.asList(1000000000L, 500L, 0L));
     for (Long ts : expected) {
       (new MetricsDB(ts)).remove();
     }

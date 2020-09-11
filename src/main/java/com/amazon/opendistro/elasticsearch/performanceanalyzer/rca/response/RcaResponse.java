@@ -82,7 +82,7 @@ public class RcaResponse extends GenericSummary {
     }
     // we are very unlikely to catch this exception unless some fields are not persisted properly.
     catch (NullPointerException ne) {
-      LOG.error("read null object from SQL, trace : {} ", ne.getStackTrace());
+      LOG.error("read null object from SQL, trace :", ne);
     }
     return response;
   }
