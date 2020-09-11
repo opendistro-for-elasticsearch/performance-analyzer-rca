@@ -36,7 +36,7 @@ import org.apache.logging.log4j.Logger;
  *       "total-step-count": 20,
  *       "search": {
  *         "upper-bound": 3000,
- *         "lower-bound": 1000
+ *         "lower-bound": 500
  *       },
  *       "write": {
  *         "upper-bound": 1000,
