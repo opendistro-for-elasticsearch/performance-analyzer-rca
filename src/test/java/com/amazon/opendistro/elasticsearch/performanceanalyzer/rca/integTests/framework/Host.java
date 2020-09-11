@@ -29,6 +29,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.HostTag;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.overrides.RcaControllerIt;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.overrides.RcaItMetricsDBProvider;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.ActionsSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCAScheduler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RcaSchedulerState;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
@@ -62,6 +63,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.units.qual.A;
 import org.jooq.Record;
 import org.jooq.Result;
 import org.junit.Assert;
@@ -371,6 +373,11 @@ public class Host {
 
   public <T> T getDataForClass(Class<T> className) {
     try {
+      ActionsSummary actionsSummary = (ActionsSummary) this.rcaController.getPersistenceProvider().read(className);
+      if (actionsSummary != null) {
+        actionsSummary.getId();
+        actionsSummary.getActionName();
+      }
       return this.rcaController.getPersistenceProvider().read(className);
     } catch (Exception e) {
       return null;

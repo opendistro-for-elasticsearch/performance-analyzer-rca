@@ -13,8 +13,8 @@ import org.apache.logging.log4j.Logger;
  * <p>schema :
  * | id(primary key) |     actionName       |  resourceValue    | nodeId    |
  * |      1          | ModifyQueueCapacity  |      1            |  node1    |
- * | nodeIp   | actionable | coolOffPeriod  |     timestamp
- * | 127.0.0.1 |  true      |  300          |   1599257910923
+ * | nodeIp     | actionable | coolOffPeriod  |     timestamp
+ * | 127.0.0.1  |  true      |  300          |   1599257910923
  */
 public class ActionsSummary {
     private static final Logger LOG = LogManager.getLogger(ActionsSummary.class);

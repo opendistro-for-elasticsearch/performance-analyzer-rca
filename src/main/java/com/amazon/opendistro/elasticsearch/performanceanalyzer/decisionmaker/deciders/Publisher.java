@@ -22,6 +22,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.FlipFlopDetector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.TimedFlipFlopDetector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.collator.Collator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.PluginController;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.PluginControllerConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
@@ -51,6 +53,11 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
     this.coolOffDetector = new CoolOffDetector();
     // TODO please bring in guice so we can configure this with DI
     this.flipFlopDetector = new TimedFlipFlopDetector(1, TimeUnit.HOURS);
+
+    // TODO: Refactor using DI to move out of construct method
+    PluginControllerConfig pluginControllerConfig = new PluginControllerConfig();
+    PluginController pluginController = new PluginController(pluginControllerConfig, this);
+    pluginController.initPlugins();
   }
 
   @Override

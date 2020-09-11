@@ -50,6 +50,7 @@ public class PublisherEventsPersistor extends Plugin implements ActionListener {
                             timestamp);
                     try {
                         persistable.write(actionsSummary);
+                        persistable.read(ActionsSummary.class);
                     } catch (Exception e) {
                         LOG.error("Unable to write publisher events to sqlite", e);
                     }
