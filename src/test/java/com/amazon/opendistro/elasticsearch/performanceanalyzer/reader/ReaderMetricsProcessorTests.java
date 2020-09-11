@@ -29,6 +29,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
+import com.google.common.collect.ImmutableSet;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.nio.file.Files;
@@ -584,26 +585,26 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     deleteAll();
     PluginSettings.instance().setShouldCleanupMetricsDBFiles(true);
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
-    assertEquals(Set.of(), MetricsDB.listOnDiskFiles());
+    assertEquals(ImmutableSet.of(), MetricsDB.listOnDiskFiles());
   }
 
   @Test
   public void testCleanupMetricsDBFiles_enabled() throws Exception {
     deleteAll();
-    Set<Long> expected = Set.of(1000000000L, 500L, 0L);
+    Set<Long> expected = ImmutableSet.of(1000000000L, 500L, 0L);
     for (Long ts : expected) {
       (new MetricsDB(ts)).remove();
     }
     assertEquals(expected, MetricsDB.listOnDiskFiles());
     PluginSettings.instance().setShouldCleanupMetricsDBFiles(true);
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
-    assertEquals(Set.of(), MetricsDB.listOnDiskFiles());
+    assertEquals(ImmutableSet.of(), MetricsDB.listOnDiskFiles());
   }
 
   @Test
   public void testCleanupMetricsDBFiles_disabled() throws Exception {
     deleteAll();
-    Set<Long> expected = Set.of(1000000000L, 500L, 0L);
+    Set<Long> expected = ImmutableSet.of(1000000000L, 500L, 0L);
     for (Long ts : expected) {
       (new MetricsDB(ts)).remove();
     }
