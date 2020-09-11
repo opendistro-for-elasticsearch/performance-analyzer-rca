@@ -348,7 +348,7 @@ public class MetricsDB implements Removable {
               .map(path -> path.toString())
               .forEach(s -> {
                 try {
-                  found.add(Long.parseUnsignedLong(s, prefixLength, s.length(), 10));
+                  found.add(Long.parseUnsignedLong(s.substring(prefixLength), 10));
                 } catch (IndexOutOfBoundsException | NumberFormatException e) {
                   LOG.error("Unexpected file in metricsdb directory - {}", s);
                 }
