@@ -78,14 +78,6 @@ public class ReactionWheelHandlerTest {
 
   @Test
   public void testPublishInvalidAction() {
-//    InvalidAction invalidAction =
-  //      new InvalidAction(nodeKey, ResourceEnum.WRITE_THREADPOOL, 100, true, appContext);
-      /*
-    RcaConf rcaConf = new RcaConf();
-ModifyQueueCapacityAction.Builder builder =
-        ModifyQueueCapacityAction.newBuilder(nodeKey, ResourceEnum.WRITE_THREADPOOL, appContext, rcaConf);
-InvalidAction action = builder.increase(true).build();
-*/
     InvalidAction invalidAction = new InvalidAction();
 
     reactionWheelHandler.actionPublished(invalidAction);
@@ -130,19 +122,5 @@ InvalidAction action = builder.increase(true).build();
       return false;
     }
   }
-  /*
-  private static class InvalidAction extends ModifyQueueCapacityAction {
-
-    public InvalidAction
-        (NodeKey esNode, ResourceEnum threadPool, int currentCapacity, boolean increase, AppContext appContext) {
-      super(esNode, threadPool, currentCapacity, increase, appContext);
-    }
-
-    @Override
-    public String name() {
-      return "InvalidAction";
-    }
-  }
-  */
 }
 
