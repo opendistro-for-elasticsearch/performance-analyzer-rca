@@ -7,6 +7,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.reaction_wheel.ReactionWheelUtil.ControlType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
@@ -52,6 +53,8 @@ public class ReactionWheelHandlerTest {
   public void testPublishQueueAction() throws Exception {
     RcaConf rcaConf = new RcaConf();
     rcaConf.readConfigFromString("{}");
+    appContext.getNodeConfigCache()
+        .put(nodeKey, ResourceUtil.WRITE_QUEUE_CAPACITY, 300);
     ModifyQueueCapacityAction.Builder builder =
         ModifyQueueCapacityAction.newBuilder(nodeKey, ResourceEnum.WRITE_THREADPOOL, appContext, rcaConf);
     ModifyQueueCapacityAction action = builder.increase(true).build();
