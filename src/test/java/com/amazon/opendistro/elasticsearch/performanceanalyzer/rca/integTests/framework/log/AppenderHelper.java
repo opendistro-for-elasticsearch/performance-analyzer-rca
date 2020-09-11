@@ -29,7 +29,7 @@ public class AppenderHelper {
 
     builder.add(rootLogger);
     Configuration configuration = builder.build();
-    Configurator.reconfigure(configuration);
+    // Configurator.reconfigure(configuration);
     return oldConfiguration;
   }
 
@@ -56,7 +56,7 @@ public class AppenderHelper {
 
   public static void setLoggerConfiguration(Configuration configuration) {
     Objects.requireNonNull(configuration);
-    Configurator.reconfigure(configuration);
+    // Configurator.reconfigure(configuration);
   }
 
   public static Collection<String> getAllErrorsInLog() throws IllegalStateException {
