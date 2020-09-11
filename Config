@@ -35,7 +35,7 @@ package.OpenDistroPerformanceAnalyzerEngine = {
             JakartaCommons-lang3 = 3.x;
             log4j = 1.2;
             Log4j-api = 2.x;
-            Log4j-core = 2.13;
+            Log4j-core = 2.12;
         };
     };
 
