@@ -20,6 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatEx
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.overrides.ConfigOverridesApplier;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MetricName;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
@@ -28,14 +29,25 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metrics
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.EventLog;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.EventLogFileHandler;
 import com.google.common.annotations.VisibleForTesting;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.NavigableSet;
+import java.util.Scanner;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
@@ -70,6 +82,12 @@ public class ReaderMetricsProcessor implements Runnable {
 
   private final AppContext appContext;
   private final ConfigOverridesApplier configOverridesApplier;
+
+  public static final String BATCH_METRICS_ENABLED_CONF_FILE = "batch_metrics_enabled.conf";
+  private boolean batchMetricsEnabled;
+  private static final boolean defaultBatchMetricsEnabled = false;
+  // This needs to be concurrent since it may be concurrently accessed by the metrics processor thread and the query handler thread.
+  private ConcurrentSkipListSet<Long> batchMetricsDBSet;
 
   static {
     STATS_DATA.put("MethodName", "ProcessMetrics");
@@ -110,6 +128,9 @@ public class ReaderMetricsProcessor implements Runnable {
     eventLogFileHandler = new EventLogFileHandler(new EventLog(), rootLocation);
     this.processNewFormat = processNewFormat;
     this.appContext = appContext;
+    batchMetricsEnabled = defaultBatchMetricsEnabled;
+    batchMetricsDBSet = new ConcurrentSkipListSet<>();
+    cleanupMetricsDBFiles();
   }
 
   @Override
@@ -144,6 +165,7 @@ public class ReaderMetricsProcessor implements Runnable {
         trimOldSnapshots();
         conn.commit();
         conn.setAutoCommit(true);
+        trimOldMetricsDBFiles();
         long duration = System.currentTimeMillis() - startTime;
         LOG.debug("Total time taken: {}", duration);
         if (duration < runInterval) {
@@ -196,19 +218,79 @@ public class ReaderMetricsProcessor implements Runnable {
     }
   }
 
+  public void cleanupMetricsDBFiles() {
+    if (PluginSettings.instance().shouldCleanupMetricsDBFiles()) {
+      Set<Long> fileTimestamps = MetricsDB.listOnDiskFiles();
+      for (Long ts : fileTimestamps) {
+        MetricsDB.deleteOnDiskFile(ts);
+      }
+    }
+  }
+
+  /**
+   * Cleans up stale in-memory snapshots.
+   *
+   * @throws Exception if there is some problem removing a snapshot
+   */
   public void trimOldSnapshots() throws Exception {
     trimMap(osMetricsMap, OS_SNAPSHOTS);
     trimMap(shardRqMetricsMap, RQ_SNAPSHOTS);
     trimMap(httpRqMetricsMap, HTTP_RQ_SNAPSHOTS);
     trimMap(masterEventMetricsMap, MASTER_EVENT_SNAPSHOTS);
-    trimDatabases(
-        metricsDBMap, MAX_DATABASES, PluginSettings.instance().shouldCleanupMetricsDBFiles());
 
     for (NavigableMap<Long, MemoryDBSnapshot> snap : nodeMetricsMap.values()) {
       // do the same thing as OS_SNAPSHOTS.  Eventually MemoryDBSnapshot
       // will replace OSMetricsSnapshot as we want to our code to be
       // stable.
       trimMap(snap, OS_SNAPSHOTS);
+    }
+  }
+
+  /**
+   * Cleans up stale metricsdb files.
+   *
+   * @throws Exception if there is some problem closing the connection to a metricsdb file
+   */
+  public void trimOldMetricsDBFiles() throws Exception {
+    boolean deleteDBFiles = PluginSettings.instance().shouldCleanupMetricsDBFiles();
+    // Cleanup all but the 2 most recent metricsDB files from metricsDBMap. The most recent metricsDB files needs to be
+    // retained for future metrics query handling, the second most recent metricsDB file needs to be retained in case
+    // any metrics query handler just got access to it right before the most recent metricsDB file was available.
+    while (metricsDBMap.size() > MAX_DATABASES) {
+      Map.Entry<Long, MetricsDB> oldestEntry = metricsDBMap.pollFirstEntry();
+      if (oldestEntry != null) {
+        Long key = oldestEntry.getKey();
+        MetricsDB value = oldestEntry.getValue();
+        value.remove();
+        if (deleteDBFiles && !batchMetricsDBSet.contains(key)) {
+          value.deleteOnDiskFile();
+        }
+      }
+    }
+    // Flush any tracking batch metrics if batch metrics is disabled. Note, in order to ensure that batch metrics
+    // consumers have had at least one cycle to use any metrics they may be holding, this flush is done before
+    // re-reading the config file to update the state of the batch metrics feature.
+    if (!batchMetricsEnabled && !batchMetricsDBSet.isEmpty()) {
+      if (deleteDBFiles) {
+        for (Long timestamp : batchMetricsDBSet) {
+          if (!metricsDBMap.containsKey(timestamp)) {
+            MetricsDB.deleteOnDiskFile(timestamp);
+          }
+        }
+      }
+      batchMetricsDBSet.clear();
+    }
+    readBatchMetricsEnabledFromConf();
+    // The (retentionPeriod * 12 + 2)'th database can be safely removed, since getBatchMetrics never returns more than
+    // the (retentionPeriod * 12) freshest metrics files. The (retentionPeriod * 12 + 1)'th file is also retained in
+    // case getBatchMetrics was called at the start of this cycle, right before the newest metrics file was added to
+    // the batchMetricsDBSet.
+    long maxNumBatchMetricsDBFiles = PluginSettings.instance().getBatchMetricsRetentionPeriodMinutes() * 12 + 1;
+    while (batchMetricsDBSet.size() > maxNumBatchMetricsDBFiles) {
+      Long timestamp = batchMetricsDBSet.pollFirst();
+      if (deleteDBFiles && !metricsDBMap.containsKey(timestamp)) {
+        MetricsDB.deleteOnDiskFile(timestamp);
+      }
     }
   }
 
@@ -221,26 +303,6 @@ public class ReaderMetricsProcessor implements Runnable {
         Removable value = (Removable) lowestEntry.getValue();
         value.remove();
         map.remove(lowestEntry.getKey());
-      }
-    }
-  }
-
-  /**
-   * Deletes the MetricsDB entries in the map till the size of the map is equal to maxSize. The
-   * actual on-disk files is deleted ony if the config is not set or set to true.
-   */
-  public static void trimDatabases(
-      NavigableMap<Long, MetricsDB> map, int maxSize, boolean deleteDBFiles) throws Exception {
-    // Remove the oldest entries from the map, upto maxSize.
-    while (map.size() > maxSize) {
-      Map.Entry<Long, MetricsDB> lowestEntry = map.firstEntry();
-      if (lowestEntry != null) {
-        MetricsDB value = lowestEntry.getValue();
-        map.remove(lowestEntry.getKey());
-        value.remove();
-        if (deleteDBFiles) {
-          value.deleteOnDiskFile();
-        }
       }
     }
   }
@@ -289,6 +351,9 @@ public class ReaderMetricsProcessor implements Runnable {
 
     metricsDB.commit();
     metricsDBMap.put(prevWindowStartTime, metricsDB);
+    if (batchMetricsEnabled) {
+      batchMetricsDBSet.add(prevWindowStartTime);
+    }
     mFinalT = System.currentTimeMillis();
     LOG.debug("Total time taken for emitting Metrics: {}", mFinalT - mCurrT);
     TIMING_STATS.put("emitMetrics", (double) (mFinalT - mCurrT));
@@ -697,6 +762,25 @@ public class ReaderMetricsProcessor implements Runnable {
   }
 
   /**
+   * This is called by operations outside of the ReaderMetricsProcessor.
+   *
+   * @return A list of the timestamps associated with MetricsDB files. The oldest of the MetricsDB files typically
+   *     have a lifetime of ~SAMPLING_INTERVAL seconds (no less than SAMPLING_INTERVAL/2 seconds). Null if batch
+   *     metrics is disabled.
+   */
+  public NavigableSet<Long> getBatchMetrics() {
+    if (batchMetricsEnabled) {
+      TreeSet<Long> batchMetricsDBSetCopy = new TreeSet<>(batchMetricsDBSet.clone());
+      long maxNumBatchMetricsDBFiles =  PluginSettings.instance().getBatchMetricsRetentionPeriodMinutes() * 12;
+      while (batchMetricsDBSetCopy.size() > maxNumBatchMetricsDBFiles) {
+        batchMetricsDBSetCopy.pollFirst();
+      }
+      return Collections.unmodifiableNavigableSet(batchMetricsDBSetCopy);
+    }
+    return null;
+  }
+
+  /**
    * Enrich event data with node metrics and calculate aggregated metrics on dimensions like (shard,
    * index, operation, role). The aggregated metrics are then written to a metricsDB.
    *
@@ -752,6 +836,26 @@ public class ReaderMetricsProcessor implements Runnable {
       mFinalT = System.currentTimeMillis();
       LOG.debug("Total time taken for emitting node metrics: {}", mFinalT - mCurrT);
     }
+  }
+
+  private void readBatchMetricsEnabledFromConf() {
+    Path filePath = Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE);
+
+    Util.invokePrivileged(
+            () -> {
+              try (Scanner sc = new Scanner(filePath)) {
+                String nextLine = sc.nextLine();
+                boolean oldValue = batchMetricsEnabled;
+                boolean newValue = Boolean.parseBoolean(nextLine);
+                if (oldValue != newValue) {
+                  batchMetricsEnabled = newValue;
+                  LOG.info("Batch metrics enabled changed from {} to {}", oldValue, newValue);
+                }
+              } catch (IOException e) {
+                LOG.error("Error reading file '{}': {}", filePath.toString(), e);
+                batchMetricsEnabled = defaultBatchMetricsEnabled;
+              }
+            });
   }
 
   /**
@@ -811,5 +915,20 @@ public class ReaderMetricsProcessor implements Runnable {
   void putNodeMetricsMap(
       AllMetrics.MetricName name, NavigableMap<Long, MemoryDBSnapshot> metricsMap) {
     this.nodeMetricsMap.put(name, metricsMap);
+  }
+
+  @VisibleForTesting
+  NavigableMap<Long, MetricsDB> getMetricsDBMap() {
+    return metricsDBMap;
+  }
+
+  @VisibleForTesting
+  public boolean getBatchMetricsEnabled() {
+    return batchMetricsEnabled;
+  }
+
+  @VisibleForTesting
+  public void readBatchMetricsEnabledFromConfShim() {
+    readBatchMetricsEnabledFromConf();
   }
 }
