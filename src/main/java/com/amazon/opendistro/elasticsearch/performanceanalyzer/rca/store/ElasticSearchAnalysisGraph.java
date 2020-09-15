@@ -281,6 +281,11 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     Publisher publisher = new Publisher(EVALUATION_INTERVAL_SECONDS, collator);
     publisher.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     publisher.addAllUpstreams(Collections.singletonList(collator));
+
+    // TODO: Refactor using DI to move out of construct method
+    PluginControllerConfig pluginControllerConfig = new PluginControllerConfig();
+    PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
+    pluginController.initPlugins();
   }
 
   private void constructShardResourceUsageGraph() {

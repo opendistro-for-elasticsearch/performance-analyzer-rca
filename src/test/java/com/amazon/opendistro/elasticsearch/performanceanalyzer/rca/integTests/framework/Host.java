@@ -371,13 +371,8 @@ public class Host {
     return obj;
   }
 
-  public <T> T getDataForClass(Class<T> className) {
+  public <T> T constructObjectFromDB(Class<T> className) {
     try {
-      ActionsSummary actionsSummary = (ActionsSummary) this.rcaController.getPersistenceProvider().read(className);
-      if (actionsSummary != null) {
-        actionsSummary.getId();
-        actionsSummary.getActionName();
-      }
       return this.rcaController.getPersistenceProvider().read(className);
     } catch (Exception e) {
       return null;

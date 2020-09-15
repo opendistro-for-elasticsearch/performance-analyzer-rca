@@ -31,8 +31,8 @@ public class TestApi {
     return cluster.getAllRcaDataOnHost(hostTag, rcaName);
   }
 
-  public <T> T getClassDataOnHost(HostTag hostTag, Class<T> clz) {
-    return cluster.getAllClassDataOnHost(hostTag, clz);
+  public <T> T constructObjectFromDBOnHost(HostTag hostTag, Class<T> clz) {
+    return cluster.constructObjectFromDBOnHost(hostTag, clz);
   }
 
   /**

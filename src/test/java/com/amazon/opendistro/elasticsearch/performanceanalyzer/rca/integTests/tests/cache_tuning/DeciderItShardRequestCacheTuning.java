@@ -222,7 +222,7 @@ public class DeciderItShardRequestCacheTuning {
   // The cache decider should emit modify cache size action as shard request cache rca is unhealthy.
   @Test
   @AExpect(
-      what = AExpect.Type.REST_TABLE_API,
+      what = AExpect.Type.SQLITE,
       on = HostTag.ELECTED_MASTER,
       validator = ShardRequestCacheActionValidator.class,
       forRca = ActionsSummary.class,

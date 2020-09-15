@@ -37,7 +37,12 @@ public enum ExceptionsAndErrors implements MeasurementSet {
   /**
    * When persisting an RCA throws an exception.
    */
-  EXCEPTION_IN_PERSIST("ExceptionInPersist", "namedCount", Statistics.NAMED_COUNTERS);
+  EXCEPTION_IN_PERSIST("ExceptionInPersist", "namedCount", Statistics.NAMED_COUNTERS),
+
+  /**
+   * When persisting an action, the persistable throws an exception when it is unable to write to DB.
+   */
+  EXCEPTION_IN_WRITE_TO_SQLITE("ExceptionInWriteToSqlite", "namedCount", Statistics.NAMED_COUNTERS);
 
   /** What we want to appear as the metric name. */
   private String name;

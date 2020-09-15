@@ -222,7 +222,7 @@ public class DeciderItFieldDataCacheTuning {
   // The cache decider should emit modify cache size action as field data rca is unhealthy.
   @Test
   @AExpect(
-      what = AExpect.Type.REST_TABLE_API,
+      what = AExpect.Type.SQLITE,
       on = HostTag.ELECTED_MASTER,
       validator = FieldDataCacheActionValidator.class,
       forRca = ActionsSummary.class,

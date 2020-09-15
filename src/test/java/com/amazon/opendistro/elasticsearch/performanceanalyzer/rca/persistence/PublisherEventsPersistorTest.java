@@ -1,14 +1,14 @@
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.SQLitePersistor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.ActionsSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
+
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Assert;
@@ -26,15 +27,19 @@ public class PublisherEventsPersistorTest {
     private Path testLocation = null;
     private final String baseFilename = "rca.test.file";
 
+    private Persistable persistable;
     private PublisherEventsPersistor publisherEventsPersistor;
 
     @Before
-    public void init() throws IOException {
+    public void init() throws Exception {
         String cwd = System.getProperty("user.dir");
         testLocation = Paths.get(cwd, "src", "test", "resources", "tmp", "file_rotate");
         Files.createDirectories(testLocation);
         FileUtils.cleanDirectory(testLocation.toFile());
-        publisherEventsPersistor = new PublisherEventsPersistor();
+
+        persistable = new SQLitePersistor(
+                testLocation.toString(), baseFilename, String.valueOf(1), TimeUnit.SECONDS, 1);
+        publisherEventsPersistor = new PublisherEventsPersistor(persistable);
     }
 
     @After
@@ -43,15 +48,12 @@ public class PublisherEventsPersistorTest {
     }
 
     @Test
-    public void actionPublished() throws Exception {
-        final Persistable persistor = new SQLitePersistor(
-                testLocation.toString(), baseFilename, String.valueOf(1), TimeUnit.SECONDS, 1);
+    public void actionPublished() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         final MockAction mockAction = new MockAction();
 
-        PublisherEventsPersistor.setPersistable(persistor);
-        publisherEventsPersistor.actionPublished(mockAction);
+        publisherEventsPersistor.persistAction(mockAction);
 
-        ActionsSummary actionsSummary = persistor.read(ActionsSummary.class);
+        ActionsSummary actionsSummary = persistable.read(ActionsSummary.class);
         Assert.assertNotNull(actionsSummary);
         Assert.assertEquals(actionsSummary.getActionName(), mockAction.name());
         Assert.assertEquals(actionsSummary.getResourceValue(), mockAction.getResource().getNumber());

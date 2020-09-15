@@ -64,8 +64,7 @@ import org.jooq.Table;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 
-@VisibleForTesting
-public class SQLitePersistor extends PersistorBase {
+class SQLitePersistor extends PersistorBase {
   private enum GetterOrSetter {
     GETTER,
     SETTER,
@@ -111,8 +110,7 @@ public class SQLitePersistor extends PersistorBase {
 
   private static int id_test = 1;
 
-  @VisibleForTesting
-  public SQLitePersistor(String dir, String filename, String storageFileRetentionCount,
+  SQLitePersistor(String dir, String filename, String storageFileRetentionCount,
                   TimeUnit rotationTime, long rotationPeriod) throws SQLException, IOException {
     super(dir, filename, DB_URL, storageFileRetentionCount, rotationTime, rotationPeriod);
     create = DSL.using(conn, SQLDialect.SQLITE);
