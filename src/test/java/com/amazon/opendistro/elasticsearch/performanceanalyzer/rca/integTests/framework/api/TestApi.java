@@ -2,10 +2,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.f
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.Cluster;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.HostTag;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nonnull;
@@ -31,8 +28,8 @@ public class TestApi {
     return cluster.getAllRcaDataOnHost(hostTag, rcaName);
   }
 
-  public <T> T getClassDataOnHost(HostTag hostTag, Class<T> clz) throws Exception {
-    return cluster.getAllClassDataOnHost(hostTag, clz);
+  public <T> T constructObjectFromDBOnHost(HostTag hostTag, Class<T> clz) {
+    return cluster.constructObjectFromDBOnHost(hostTag, clz);
   }
 
   /**

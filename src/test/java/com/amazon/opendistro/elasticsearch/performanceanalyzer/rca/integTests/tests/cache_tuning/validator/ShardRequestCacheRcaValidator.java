@@ -31,10 +31,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.junit.Assert;
 
-public class ShardRequestCacheValidator implements IValidator {
+public class ShardRequestCacheRcaValidator implements IValidator {
     long startTime;
 
-    public ShardRequestCacheValidator() {
+    public ShardRequestCacheRcaValidator() {
         startTime = System.currentTimeMillis();
     }
 
@@ -47,8 +47,9 @@ public class ShardRequestCacheValidator implements IValidator {
      * ]}
      */
     @Override
-    public boolean check(JsonElement response) {
-        JsonArray array = response.getAsJsonObject().get("data").getAsJsonArray();
+    public <T> boolean check(T response) {
+        JsonElement jsonElement = (JsonElement) response;
+        JsonArray array = jsonElement.getAsJsonObject().get("data").getAsJsonArray();
         if (array.size() == 0) {
             return false;
         }
@@ -69,7 +70,7 @@ public class ShardRequestCacheValidator implements IValidator {
      *  "HotClusterSummary":[{"number_of_nodes":1,"number_of_unhealthy_nodes":1}]
      * }
      */
-    boolean checkClusterRca(final JsonObject rcaObject) {
+    private boolean checkClusterRca(final JsonObject rcaObject) {
         if (!"unhealthy".equals(rcaObject.get("state").getAsString())) {
             return false;
         }

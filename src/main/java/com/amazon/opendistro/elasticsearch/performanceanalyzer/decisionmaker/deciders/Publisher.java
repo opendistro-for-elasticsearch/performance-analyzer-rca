@@ -22,6 +22,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.FlipFlopDetector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.TimedFlipFlopDetector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.collator.Collator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.PublisherEventsPersistor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
@@ -55,7 +56,11 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
 
   @Override
   public EmptyFlowUnit operate() {
-    // TODO: Need to add dampening, avoidance, state persistence etc.
+    return new EmptyFlowUnit(Instant.now().toEpochMilli());
+  }
+
+  public void compute(FlowUnitOperationArgWrapper args) {
+    // TODO: Need to add dampening, avoidance etc.
     Decision decision = collator.getFlowUnits().get(0);
     for (Action action : decision.getActions()) {
       if (coolOffDetector.isCooledOff(action) && !flipFlopDetector.isFlipFlop(action)) {
@@ -64,9 +69,11 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
         for (ActionListener listener : actionListeners) {
           listener.actionPublished(action);
         }
+        // Persist actions to sqlite
+        PublisherEventsPersistor persistor = new PublisherEventsPersistor(args.getPersistable());
+        persistor.persistAction(action);
       }
     }
-    return new EmptyFlowUnit(Instant.now().toEpochMilli());
   }
 
   @Override
@@ -75,7 +82,7 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
     long startTime = System.currentTimeMillis();
 
     try {
-      this.operate();
+      this.compute(args);
     } catch (Exception ex) {
       LOG.error("Publisher: Exception in operate", ex);
       PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(

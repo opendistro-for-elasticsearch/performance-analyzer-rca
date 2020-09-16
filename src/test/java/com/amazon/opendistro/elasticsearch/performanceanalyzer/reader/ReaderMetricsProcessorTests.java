@@ -15,21 +15,33 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor.BATCH_METRICS_ENABLED_CONF_FILE;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MasterPendingValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MetricName;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
+import com.google.common.collect.ImmutableSet;
 import java.io.File;
 import java.io.FilenameFilter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.NavigableMap;
+import java.util.NavigableSet;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.Result;
@@ -71,6 +83,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     }
 
     mp.trimOldSnapshots();
+    mp.trimOldMetricsDBFiles();
     mp.deleteDBs();
   }
 
@@ -96,19 +109,20 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     }
 
     mp.trimOldSnapshots();
+    mp.trimOldMetricsDBFiles();
     mp.deleteDBs();
   }
 
   public void deleteAll() {
     final File folder = new File("/tmp");
     final File[] files =
-        folder.listFiles(
-            new FilenameFilter() {
-              @Override
-              public boolean accept(final File dir, final String name) {
-                return name.matches("metricsdb_.*");
-              }
-            });
+            folder.listFiles(
+                    new FilenameFilter() {
+                      @Override
+                      public boolean accept(final File dir, final String name) {
+                        return name.matches("metricsdb_.*");
+                      }
+                    });
     for (final File file : files) {
       if (!file.delete()) {
         System.err.println("Can't remove " + file.getAbsolutePath());
@@ -323,5 +337,303 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
 
     assertTrue(!db.metricExists(MasterPendingValue.MASTER_PENDING_QUEUE_SIZE.toString()));
     db.remove();
+  }
+
+  @Test
+  public void testReadBatchMetricsEnabledFromConf() throws Exception {
+    Files.createDirectories(Paths.get(Util.DATA_DIR));
+    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation);
+    ReaderMetricsProcessor.setCurrentInstance(mp);
+
+    Path batchMetricsEnabledConfFile = Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE);
+
+    // Test disabled
+    Files.write(batchMetricsEnabledConfFile, Boolean.toString(false).getBytes());
+    mp.readBatchMetricsEnabledFromConfShim();
+    assertFalse(mp.getBatchMetricsEnabled());
+
+    // Test no state change when the file is deleted
+    Files.delete(batchMetricsEnabledConfFile);
+    assertFalse(mp.getBatchMetricsEnabled());
+
+    // Test disabled
+    Files.write(batchMetricsEnabledConfFile, Boolean.toString(true).getBytes());
+    mp.readBatchMetricsEnabledFromConfShim();
+    assertTrue(mp.getBatchMetricsEnabled());
+
+    // Test no state change when the file is deleted
+    Files.delete(batchMetricsEnabledConfFile);
+    assertTrue(mp.getBatchMetricsEnabled());
+  }
+
+  @Test
+  public void testGetBatchMetrics() throws Exception {
+    deleteAll();
+    Files.createDirectories(Paths.get(Util.DATA_DIR));
+    long currentTimestamp = System.currentTimeMillis();
+    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation);
+    ReaderMetricsProcessor.setCurrentInstance(mp);
+    PluginSettings.instance().setBatchMetricsRetentionPeriodMinutes(1);
+    PluginSettings.instance().setShouldCleanupMetricsDBFiles(true);
+
+    // Test with batch metrics disabled
+    Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(false).getBytes());
+    mp.processMetrics(rootLocation, currentTimestamp);
+    mp.trimOldSnapshots();
+    mp.trimOldMetricsDBFiles();
+    currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+    assertNull(mp.getBatchMetrics());
+
+    boolean secondRun = false;
+    do {
+      // Test with batch metrics recently enabled
+      Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(true).getBytes());
+      for (int i = 0; i <= 12; i++) {
+        mp.processMetrics(rootLocation, currentTimestamp);
+        mp.trimOldSnapshots();
+        mp.trimOldMetricsDBFiles();
+        currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+        assertEquals(i, mp.getBatchMetrics().size());
+      }
+
+      // Test batch metrics data during steady-state
+      for (int i = 0; i < 5; i++) {
+        mp.processMetrics(rootLocation, currentTimestamp);
+        mp.trimOldSnapshots();
+        mp.trimOldMetricsDBFiles();
+        currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+        assertEquals(12, mp.getBatchMetrics().size());
+      }
+
+      // Test batch metrics data as it's being disabled
+      Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(false).getBytes());
+      mp.processMetrics(rootLocation, currentTimestamp);
+      currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+      assertEquals(12, mp.getBatchMetrics().size());
+
+      // Test batch metrics data right after as it's disabled
+      mp.trimOldSnapshots();
+      mp.trimOldMetricsDBFiles();
+      assertNull(mp.getBatchMetrics());
+
+      secondRun = !secondRun;
+    } while (secondRun);
+  }
+
+  @Test
+  public void testTrimOldSnapshots() throws Exception {
+    deleteAll();
+    Files.createDirectories(Paths.get(Util.DATA_DIR));
+    long currentTimestamp = 1597091740000L;
+    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
+    ReaderMetricsProcessor.setCurrentInstance(mp);
+    PluginSettings.instance().setBatchMetricsRetentionPeriodMinutes(1);
+    PluginSettings.instance().setShouldCleanupMetricsDBFiles(true);
+    NavigableSet<Long> expectedTimestamps = new TreeSet<>();
+    long metricsDBTimestamp = 1597091720000L;
+    Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(false).getBytes());
+
+    // Test ramp up
+    for (int i = 0; i < 2; i++) {
+      mp.processMetrics(rootLocation, currentTimestamp);
+      mp.trimOldSnapshots();
+      mp.trimOldMetricsDBFiles();
+      currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+      expectedTimestamps.add(metricsDBTimestamp);
+      metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+      verifyAvailableFiles(expectedTimestamps);
+      verifyMetricsDBMap(expectedTimestamps);
+    }
+
+    // Test steady-state
+    for (int i = 0; i < 7; i++) {
+      mp.processMetrics(rootLocation, currentTimestamp);
+      mp.trimOldSnapshots();
+      mp.trimOldMetricsDBFiles();
+      currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+      expectedTimestamps.add(metricsDBTimestamp);
+      metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+      expectedTimestamps.pollFirst();
+      verifyAvailableFiles(expectedTimestamps);
+      verifyMetricsDBMap(expectedTimestamps);
+    }
+
+    boolean secondRun = false;
+    do {
+      // Test batch metrics enabled ramp up
+      Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(true).getBytes());
+      for (int i = 0; i < 3; i++) {
+        mp.processMetrics(rootLocation, currentTimestamp);
+        mp.trimOldSnapshots();
+        mp.trimOldMetricsDBFiles();
+        currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+        expectedTimestamps.add(metricsDBTimestamp);
+        metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+        expectedTimestamps.pollFirst();
+        verifyAvailableFiles(expectedTimestamps);
+        verifyMetricsDBMap(expectedTimestamps);
+      }
+      for (int i = 3; i <= 13; i++) {
+        mp.processMetrics(rootLocation, currentTimestamp);
+        mp.trimOldSnapshots();
+        mp.trimOldMetricsDBFiles();
+        currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+        expectedTimestamps.add(metricsDBTimestamp);
+        metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+        verifyAvailableFiles(expectedTimestamps);
+        verifyMetricsDBMap(expectedTimestamps);
+      }
+
+      // Test batch metrics enabled steady-state
+      for (int i = 0; i < 7; i++) {
+        mp.processMetrics(rootLocation, currentTimestamp);
+        mp.trimOldSnapshots();
+        mp.trimOldMetricsDBFiles();
+        currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+        expectedTimestamps.add(metricsDBTimestamp);
+        metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+        expectedTimestamps.pollFirst();
+        verifyAvailableFiles(expectedTimestamps);
+        verifyMetricsDBMap(expectedTimestamps);
+      }
+
+      // Test batch metrics disabled
+      Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(false).getBytes());
+      mp.processMetrics(rootLocation, currentTimestamp);
+      mp.trimOldSnapshots();
+      mp.trimOldMetricsDBFiles();
+      currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+      expectedTimestamps.add(metricsDBTimestamp);
+      metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+      expectedTimestamps.pollFirst();
+      verifyAvailableFiles(expectedTimestamps);
+      verifyMetricsDBMap(expectedTimestamps);
+
+      mp.processMetrics(rootLocation, currentTimestamp);
+      mp.trimOldSnapshots();
+      mp.trimOldMetricsDBFiles();
+      currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+      expectedTimestamps.add(metricsDBTimestamp);
+      metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+      while (expectedTimestamps.size() != 2) {
+        expectedTimestamps.pollFirst();
+      }
+      verifyAvailableFiles(expectedTimestamps);
+      verifyMetricsDBMap(expectedTimestamps);
+
+      secondRun = !secondRun;
+    } while (secondRun);
+  }
+
+  @Test
+  public void testTrimOldSnapshots_fileCleanupDisabled() throws Exception {
+    deleteAll();
+    Files.createDirectories(Paths.get(Util.DATA_DIR));
+    long currentTimestamp = 1597091740000L;
+    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
+    ReaderMetricsProcessor.setCurrentInstance(mp);
+    PluginSettings.instance().setBatchMetricsRetentionPeriodMinutes(1);
+    PluginSettings.instance().setShouldCleanupMetricsDBFiles(false);
+    NavigableSet<Long> expectedTimestamps = new TreeSet<>();
+    long metricsDBTimestamp = 1597091720000L;
+    Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(false).getBytes());
+
+
+    // Test metrics rampup and steady state
+    for (int i = 0; i < 9; i++) {
+      mp.processMetrics(rootLocation, currentTimestamp);
+      mp.trimOldSnapshots();
+      mp.trimOldMetricsDBFiles();
+      currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+      expectedTimestamps.add(metricsDBTimestamp);
+      metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+      verifyAvailableFiles(expectedTimestamps);
+    }
+
+    boolean secondRun = false;
+    do {
+      // Test batch metrics enabled ramp up and steady-state
+      Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(true).getBytes());
+      for (int i = 0; i < 21; i++) {
+        mp.processMetrics(rootLocation, currentTimestamp);
+        mp.trimOldSnapshots();
+        mp.trimOldMetricsDBFiles();
+        currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+        expectedTimestamps.add(metricsDBTimestamp);
+        metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+        verifyAvailableFiles(expectedTimestamps);
+      }
+
+      // Test batch metrics disabled
+      Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(false).getBytes());
+      for (int i = 0; i < 2; i++) {
+        mp.processMetrics(rootLocation, currentTimestamp);
+        mp.trimOldSnapshots();
+        mp.trimOldMetricsDBFiles();
+        currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+        expectedTimestamps.add(metricsDBTimestamp);
+        metricsDBTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
+        verifyAvailableFiles(expectedTimestamps);
+      }
+
+      secondRun = !secondRun;
+    } while (secondRun);
+  }
+
+  @Test
+  public void testCleanupMetricsDBFiles_empty() throws Exception {
+    deleteAll();
+    PluginSettings.instance().setShouldCleanupMetricsDBFiles(true);
+    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
+    assertEquals(ImmutableSet.of(), MetricsDB.listOnDiskFiles());
+  }
+
+  @Test
+  public void testCleanupMetricsDBFiles_enabled() throws Exception {
+    deleteAll();
+    Set<Long> expected = ImmutableSet.of(1000000000L, 500L, 0L);
+    for (Long ts : expected) {
+      (new MetricsDB(ts)).remove();
+    }
+    assertEquals(expected, MetricsDB.listOnDiskFiles());
+    PluginSettings.instance().setShouldCleanupMetricsDBFiles(true);
+    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
+    assertEquals(ImmutableSet.of(), MetricsDB.listOnDiskFiles());
+  }
+
+  @Test
+  public void testCleanupMetricsDBFiles_disabled() throws Exception {
+    deleteAll();
+    Set<Long> expected = ImmutableSet.of(1000000000L, 500L, 0L);
+    for (Long ts : expected) {
+      (new MetricsDB(ts)).remove();
+    }
+    assertEquals(expected, MetricsDB.listOnDiskFiles());
+    PluginSettings.instance().setShouldCleanupMetricsDBFiles(false);
+    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
+    assertEquals(expected, MetricsDB.listOnDiskFiles());
+  }
+
+  public void verifyAvailableFiles(Set<Long> expectedFiles) {
+    final File folder = new File("/tmp");
+    final File[] files =
+            folder.listFiles(
+                    new FilenameFilter() {
+                      @Override
+                      public boolean accept(final File dir, final String name) {
+                        return name.matches("metricsdb_.*");
+                      }
+                    });
+    assertEquals(expectedFiles.size(), files.length);
+    for (final File file : files) {
+      String name = file.getName();
+      long ts = Long.parseLong(name.substring(10));
+      assertTrue(expectedFiles.contains(ts));
+    }
+  }
+
+  public void verifyMetricsDBMap(Set<Long> possibleTimestamps) {
+    Set<Long> metricsTimestamps = ReaderMetricsProcessor.getInstance().getMetricsDBMap().keySet();
+    assertTrue(possibleTimestamps.containsAll(metricsTimestamps));
   }
 }

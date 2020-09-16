@@ -15,7 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.RcaItCacheTuning.INDEX_NAME;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.RcaItCacheTuning.SHARD_ID;
 
@@ -27,7 +26,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Hit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Size;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AClusterType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AErrorPatternIgnored;
@@ -38,11 +36,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ATable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ATuple;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.ClusterType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.Consts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.HostTag;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners.RcaItNotEncryptedRunner;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.FieldDataCacheValidator;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.ShardRequestCacheValidator;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.queue_tuning.RcaItQueueTuning;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.FieldDataCacheRcaValidator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.ShardRequestCacheRcaValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.ElasticSearchAnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.ShardRequestCacheClusterRca;
@@ -224,45 +222,12 @@ public class RcaItCacheTuning {
 
   // Test FieldDataCacheClusterRca.
   // This rca should be un-healthy when cache size is higher than threshold with evictions.
-  // TODO : extend this integ test to cover Decision Maker framework and queue remediation actions
   @Test
   @AExpect(
       what = AExpect.Type.REST_API,
       on = HostTag.ELECTED_MASTER,
-      validator = FieldDataCacheValidator.class,
+      validator = FieldDataCacheRcaValidator.class,
       forRca = FieldDataCacheClusterRca.class,
-      timeoutSeconds = 700)
-  @AErrorPatternIgnored(
-      pattern = "AggregateMetric:gather()",
-      reason = "CPU metrics are expected to be missing in this integ test")
-  @AErrorPatternIgnored(
-      pattern = "Metric:gather()",
-      reason = "Metrics are expected to be missing in this integ test")
-  @AErrorPatternIgnored(
-          pattern = "NodeConfigCacheReaderUtil",
-          reason = "Node Config Cache are expected to be missing in this integ test.")
-  @AErrorPatternIgnored(
-          pattern = "CacheUtil:getCacheMaxSize()",
-          reason = "Node Config Cache is expected to be missing during startup.")
-  @AErrorPatternIgnored(
-          pattern = "SQLParsingUtil:readDataFromSqlResult()",
-          reason = "Old gen metrics is expected to be missing in this integ test.")
-  @AErrorPatternIgnored(
-          pattern = "HighHeapUsageOldGenRca:operate()",
-          reason = "Old gen rca is expected to be missing in this integ test.")
-  @AErrorPatternIgnored(
-          pattern = "SubscribeResponseHandler:onError()",
-          reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
-  public void testFieldDataCacheRca() {}
-
-  // Test ShardRequestCacheClusterRca.
-  // This rca should be un-healthy when cache size is higher than threshold with evictions and hits.
-  @Test
-  @AExpect(
-      what = AExpect.Type.REST_API,
-      on = HostTag.ELECTED_MASTER,
-      validator = ShardRequestCacheValidator.class,
-      forRca = ShardRequestCacheClusterRca.class,
       timeoutSeconds = 700)
   @AErrorPatternIgnored(
           pattern = "AggregateMetric:gather()",
@@ -285,5 +250,49 @@ public class RcaItCacheTuning {
   @AErrorPatternIgnored(
           pattern = "SubscribeResponseHandler:onError()",
           reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
+  @AErrorPatternIgnored(
+          pattern = "SQLParsingUtil:readDataFromSqlResult()",
+          reason = "Old gen metrics is expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+          pattern = "HighHeapUsageOldGenRca:operate()",
+          reason = "Old gen rca is expected to be missing in this integ test.")
+  public void testFieldDataCacheRca() {}
+
+  // Test ShardRequestCacheClusterRca.
+  // This rca should be un-healthy when cache size is higher than threshold with evictions and hits.
+  @Test
+  @AExpect(
+      what = AExpect.Type.REST_API,
+      on = HostTag.ELECTED_MASTER,
+      validator = ShardRequestCacheRcaValidator.class,
+      forRca = ShardRequestCacheClusterRca.class,
+      timeoutSeconds = 700)
+  @AErrorPatternIgnored(
+          pattern = "AggregateMetric:gather()",
+          reason = "CPU metrics are expected to be missing in this integ test")
+  @AErrorPatternIgnored(
+          pattern = "Metric:gather()",
+          reason = "Metrics are expected to be missing in this integ test")
+  @AErrorPatternIgnored(
+          pattern = "NodeConfigCacheReaderUtil",
+          reason = "Node Config Cache are expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+          pattern = "CacheUtil:getCacheMaxSize()",
+          reason = "Node Config Cache is expected to be missing during startup.")
+  @AErrorPatternIgnored(
+          pattern = "SQLParsingUtil:readDataFromSqlResult()",
+          reason = "Old gen metrics is expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+          pattern = "HighHeapUsageOldGenRca:operate()",
+          reason = "Old gen rca is expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+          pattern = "SubscribeResponseHandler:onError()",
+          reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
+  @AErrorPatternIgnored(
+          pattern = "SQLParsingUtil:readDataFromSqlResult()",
+          reason = "Old gen metrics is expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+          pattern = "HighHeapUsageOldGenRca:operate()",
+          reason = "Old gen rca is expected to be missing in this integ test.")
   public void testShardRequestCacheRca() {}
 }

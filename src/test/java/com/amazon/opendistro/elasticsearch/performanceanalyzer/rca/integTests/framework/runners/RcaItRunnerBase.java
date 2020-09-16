@@ -267,6 +267,12 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner, Fi
                 failedValidations.add(validator.getClass());
               }
               break;
+            case SQLITE:
+              successful = validator.check(testApi.constructObjectFromDBOnHost(expect.on(), rca));
+              if (!successful) {
+                failedValidations.add(validator.getClass());
+              }
+              break;
           }
           if (successful) {
             passedCount += 1;

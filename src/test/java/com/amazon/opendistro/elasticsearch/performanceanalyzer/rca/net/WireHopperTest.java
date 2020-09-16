@@ -194,7 +194,7 @@ public class WireHopperTest {
         WaitFor.waitFor(() -> {
                 ImmutableSet<InstanceDetails.Id> subscribers = subscriptionManager.getSubscribersFor(node.name());
                 return subscribers.size() == 1 && subscribers.asList().get(0).toString().equals(LOCALHOST_INSTANCE);
-            }, 1, TimeUnit.SECONDS);
+            }, 10, TimeUnit.SECONDS);
         // Verify resilience to RejectedExecutionException
         clientExecutor.set(rejectingExecutor);
         uut.readFromWire(node);

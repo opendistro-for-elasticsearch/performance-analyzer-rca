@@ -21,14 +21,26 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsC
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.Removable;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.BatchBindStep;
@@ -39,6 +51,7 @@ import org.jooq.Result;
 import org.jooq.SQLDialect;
 import org.jooq.Select;
 import org.jooq.TableLike;
+import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 
 /**
@@ -70,10 +83,13 @@ public class MetricsDB implements Removable {
 
   private long windowStartTime;
 
-  public String getDBFilePath() {
+  private static String getDBFilePath(long windowStartTime) {
     return PluginSettings.instance()
-            .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT)
-        + Long.toString(windowStartTime);
+            .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT) + windowStartTime;
+  }
+
+  public String getDBFilePath() {
+    return getDBFilePath(windowStartTime);
   }
 
   public MetricsDB(long windowStartTime) throws Exception {
@@ -82,6 +98,21 @@ public class MetricsDB implements Removable {
     conn = DriverManager.getConnection(url);
     conn.setAutoCommit(false);
     create = DSL.using(conn, SQLDialect.SQLITE);
+  }
+
+  /**
+   * Returns a MetricsDB handle associated with an existing metricsdb file.
+   *
+   * @param windowStartTime the timestamp associated with an existing metricsdb file
+   * @return a MetricsDB handle associated with the metricsdb file
+   * @throws Exception if the metricsdb file does not exist or is invalid
+   */
+  public static MetricsDB fetchExisting(long windowStartTime) throws Exception {
+    String filePath = getDBFilePath(windowStartTime);
+    if (!(new File(filePath)).exists()) {
+      throw new FileNotFoundException(String.format("MetricsDB file %s could not be found.", filePath));
+    }
+    return new MetricsDB(windowStartTime);
   }
 
   public void close() throws Exception {
@@ -235,8 +266,37 @@ public class MetricsDB implements Removable {
     return create.select(allFields).from(finalTable).groupBy(groupByFields).fetch();
   }
 
+  /**
+   * Queries all the data associated with the given metric.
+   *
+   * @param metric the desired metric
+   * @return the result of the query
+   */
   public Result<Record> queryMetric(String metric) {
     return create.select().from(DSL.table(metric)).fetch();
+  }
+
+  /**
+   * Queries all the data associated with a given metric.
+   *
+   * @param metric the desired metric
+   * @param dimensions the dimensions we want to return for the given metric
+   * @param limit the maximum number of records to return
+   * @return the result of the query
+   */
+  public Result<Record> queryMetric(String metric, Collection<String> dimensions, int limit) throws DataAccessException {
+    if (!DBUtils.checkIfTableExists(create, metric)) {
+      return null;
+    }
+    if (limit < 0) {
+      throw new IllegalArgumentException("Limit must be non-negative");
+    }
+    List<Field<?>> fields = DBUtils.getFieldsFromList(dimensions);
+    fields.add(DSL.field(SUM, Double.class));
+    fields.add(DSL.field(AVG, Double.class));
+    fields.add(DSL.field(MIN, Double.class));
+    fields.add(DSL.field(MAX, Double.class));
+    return create.select(fields).from(DSL.table(metric)).limit(limit).fetch();
   }
 
   public void commit() throws Exception {
@@ -248,15 +308,57 @@ public class MetricsDB implements Removable {
     conn.close();
   }
 
+  /**
+   * Deletes the underlying metricsdb file.
+   */
   public void deleteOnDiskFile() {
-    File dbFile = new File(getDBFilePath());
-    if (!dbFile.delete()) {
-      LOG.error(
-          "Failed to delete File - {} with ExceptionCode: {}",
-          getDBFilePath(),
-          StatExceptionCode.OTHER.toString());
+    MetricsDB.deleteOnDiskFile(windowStartTime);
+  }
+
+  /**
+   * Deletes the metricsdb file associated with the given timestamp if it exists.
+   *
+   * @param windowStartTime the timestamp associated with an existing metricsdb file
+   */
+  public static void deleteOnDiskFile(long windowStartTime) {
+    Path dbFilePath = Paths.get(getDBFilePath(windowStartTime));
+    try {
+      Files.delete(dbFilePath);
+    } catch (IOException | SecurityException e) {
+            LOG.error("Failed to delete File - {} with ExceptionCode: {}",
+              dbFilePath, StatExceptionCode.OTHER.toString(), e);
       StatsCollector.instance().logException();
     }
+  }
+
+  /**
+   * Returns the timestamps associated with on-disk files.
+   *
+   * @return the timestamps associated with on-disk files
+   */
+  public static Set<Long> listOnDiskFiles() {
+    String prefix = PluginSettings.instance().getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT);
+    Path prefixPath = Paths.get(prefix);
+    Path parentPath = prefixPath.getParent();
+    Set<Long> found = new HashSet<Long>();
+    try (Stream<Path> paths = Files.list(parentPath)) {
+      PathMatcher matcher = FileSystems.getDefault().getPathMatcher("regex:" + prefix + "\\d+");
+      int prefixLength = prefix.length();
+      paths.filter(matcher::matches)
+              .map(path -> path.toString())
+              .forEach(s -> {
+                try {
+                  found.add(Long.parseUnsignedLong(s.substring(prefixLength), 10));
+                } catch (IndexOutOfBoundsException | NumberFormatException e) {
+                  LOG.error("Unexpected file in metricsdb directory - {}", s);
+                }
+              });
+    } catch (IOException | SecurityException e) {
+      LOG.error("Failed to access metricsdb directory - {} with ExceptionCode: {}",
+              parentPath, StatExceptionCode.OTHER.toString(), e);
+      StatsCollector.instance().logException();
+    }
+    return found;
   }
 
   public DSLContext getDSLContext() {

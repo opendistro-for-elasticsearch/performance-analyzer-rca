@@ -11,10 +11,10 @@ import org.apache.logging.log4j.Logger;
  * <p>Table name : ActionsSummary
  *
  * <p>schema :
- * | id(primary key) |     actionName       |  resourceValue    | nodeId    |
- * |      1          | ModifyQueueCapacity  |      1            |  node1    |
- * | nodeIp   | actionable | coolOffPeriod  |     timestamp
- * | 127.0.0.1 |  true      |  300          |   1599257910923
+ * | id(primary key) |     actionName       |  resourceValue    |  timestamp        |   nodeId      |
+ * |      1          | ModifyQueueCapacity  |      1            |  1599257910923    |   node1       |
+ * | nodeIp     | actionable | coolOffPeriod
+ * | 127.0.0.1  |  true      |  300
  */
 public class ActionsSummary {
     private static final Logger LOG = LogManager.getLogger(ActionsSummary.class);
@@ -26,17 +26,6 @@ public class ActionsSummary {
     @ValueColumn public boolean actionable;
     @ValueColumn public long coolOffPeriod;
     @ValueColumn public long timestamp;
-
-    public void setValues(
-            String actionName, long resourceValue, String id, String ip, boolean actionable, long coolOffPeriod, long timestamp) {
-        this.actionName = actionName;
-        this.resourceValue = resourceValue;
-        this.id = id;
-        this.ip = ip;
-        this.actionable = actionable;
-        this.coolOffPeriod = coolOffPeriod;
-        this.timestamp = timestamp;
-    }
 
     public String getActionName() {
         return actionName;
