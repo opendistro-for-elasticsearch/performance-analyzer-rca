@@ -200,7 +200,7 @@ public class RcaController {
       ThresholdMain thresholdMain = new ThresholdMain(RcaConsts.THRESHOLDS_PATH, rcaConf);
       persistenceProvider = PersistenceFactory.create(rcaConf);
       networkThreadPoolReference
-            .set(RcaControllerHelper.buildNetworkThreadPool(rcaConf.getNetworkQueueLength()));
+          .set(RcaControllerHelper.buildNetworkThreadPool(rcaConf.getNetworkQueueLength()));
       addRcaRequestHandler();
       queryRcaRequestHandler.setPersistable(persistenceProvider);
       receivedFlowUnitStore = new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength());
