@@ -23,10 +23,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.collator.Collator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.Plugin;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Id;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Ip;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.google.common.collect.Lists;
 import java.time.Clock;
@@ -62,6 +65,12 @@ public class PublisherTest {
   @Mock
   private ActionListener actionListener;
 
+  @Mock
+  private FlowUnitOperationArgWrapper flowUnitOperationArgWrapper;
+
+  @Mock
+  private Persistable persistable;
+
   @Before
   public void setup() {
     MockitoAnnotations.initMocks(this);
@@ -70,6 +79,7 @@ public class PublisherTest {
     List<Decision> decisionList = Lists.newArrayList(decision);
     Mockito.when(collator.getFlowUnits()).thenReturn(decisionList);
     Mockito.when(decision.getActions()).thenReturn(Lists.newArrayList(action));
+    Mockito.when(flowUnitOperationArgWrapper.getPersistable()).thenReturn(persistable);
   }
 
   @Test
@@ -86,23 +96,24 @@ public class PublisherTest {
     Mockito.when(action.impactedNodes()).thenReturn(new ArrayList<>(
         Collections.singletonList(node1)));
     Mockito.when(action.coolOffPeriodInMillis()).thenReturn(TimeUnit.SECONDS.toMillis(coolOffPeriod));
+    Mockito.when(action.getResource()).thenReturn(ResourceEnum.CPU);
     // Verify that a newly initialized publisher doesn't execute an action until the publisher object
     // has been alive for longer than the action's cool off period
-    publisher.operate();
+    publisher.compute(flowUnitOperationArgWrapper);
     Mockito.verify(actionListener, Mockito.times(0)).actionPublished(action);
 
     coolOffDetector.setClock(Clock.offset(constantClock, Duration.ofSeconds(evalStartTimeStamp)));
-    publisher.operate();
+    publisher.compute(flowUnitOperationArgWrapper);
     Mockito.verify(actionListener, Mockito.times(1)).actionPublished(action);
     // Verify that a publisher doesn't execute a previously executed action until the action's cool off period
     // has elapsed
     Mockito.reset(actionListener);
     coolOffDetector.setClock(Clock.offset(constantClock, Duration.ofSeconds(evalStartTimeStamp + 20)));
-    publisher.operate();
+    publisher.compute(flowUnitOperationArgWrapper);
     Mockito.verify(actionListener, Mockito.times(0)).actionPublished(action);
     // Verify that a published executes a previously executed action once the action's cool off period has elapsed
     coolOffDetector.setClock(Clock.offset(constantClock, Duration.ofSeconds(evalStartTimeStamp + 120)));
-    publisher.operate();
+    publisher.compute(flowUnitOperationArgWrapper);
     Mockito.verify(actionListener, Mockito.times(1)).actionPublished(action);
   }
 
@@ -127,7 +138,7 @@ public class PublisherTest {
     Thread.sleep(1000L);
     // Even though our action has cooled off, it will flip flop, so the publisher shouldn't
     // execute it
-    publisher.operate();
+    publisher.compute(flowUnitOperationArgWrapper);
     Mockito.verify(actionListener, Mockito.times(0)).actionPublished(action);
   }
 
@@ -143,7 +154,7 @@ public class PublisherTest {
     publisher.addActionListener(actionListener2);
     publisher.addActionListener(testActionListener);
 
-    publisher.operate();
+    publisher.compute(flowUnitOperationArgWrapper);
     Mockito.verify(actionListener, Mockito.times(1)).actionPublished(action);
     Mockito.verify(actionListener2, Mockito.times(1)).actionPublished(action);
     Mockito.verify(testActionListener, Mockito.times(1)).actionPublished(action);

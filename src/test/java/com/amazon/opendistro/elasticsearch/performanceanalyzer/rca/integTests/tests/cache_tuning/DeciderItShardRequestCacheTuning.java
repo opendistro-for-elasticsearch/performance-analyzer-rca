@@ -70,7 +70,7 @@ import org.junit.runner.RunWith;
           hostTag = {HostTag.ELECTED_MASTER},
           tuple = {
             @ATuple(
-                dimensionValues = {"Index1", "1"},
+                dimensionValues = {INDEX_NAME, SHARD_ID},
                 sum = 100.0, avg = 100.0, min = 100.0, max = 100.0),
           })
     })
@@ -248,5 +248,8 @@ public class DeciderItShardRequestCacheTuning {
   @AErrorPatternIgnored(
           pattern = "HighHeapUsageOldGenRca:operate()",
           reason = "Old gen rca is expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+          pattern = "ModifyCacheMaxSizeAction:build()",
+          reason = "Node Config Cache metrics is expected to be missing during startup")
   public void testShardRequestCacheAction() {}
 }
