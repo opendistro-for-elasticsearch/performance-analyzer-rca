@@ -28,10 +28,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.GRPCConnectionManager;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetServer;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.PublisherEventsPersistor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.exceptions.MalformedConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.MetricsDBProvider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
@@ -202,10 +200,9 @@ public class RcaController {
       ThresholdMain thresholdMain = new ThresholdMain(RcaConsts.THRESHOLDS_PATH, rcaConf);
       persistenceProvider = PersistenceFactory.create(rcaConf);
       networkThreadPoolReference
-              .set(RcaControllerHelper.buildNetworkThreadPool(rcaConf.getNetworkQueueLength()));
+            .set(RcaControllerHelper.buildNetworkThreadPool(rcaConf.getNetworkQueueLength()));
       addRcaRequestHandler();
       queryRcaRequestHandler.setPersistable(persistenceProvider);
-      PublisherEventsPersistor.setPersistable(persistenceProvider);
       receivedFlowUnitStore = new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength());
       WireHopper net =
           new WireHopper(nodeStateManager, rcaNetClient, subscriptionManager,
