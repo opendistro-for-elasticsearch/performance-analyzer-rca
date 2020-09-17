@@ -35,13 +35,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 
-@Ignore
 public class ConfigOverridesApplierTest {
 
   private static final String RCA1 = "rca1";
