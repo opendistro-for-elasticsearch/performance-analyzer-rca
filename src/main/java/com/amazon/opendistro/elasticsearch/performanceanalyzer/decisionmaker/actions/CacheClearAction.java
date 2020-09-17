@@ -67,8 +67,7 @@ public class CacheClearAction extends SuppressibleAction {
   @Override
   public Map<NodeKey, ImpactVector> impact() {
     Map<NodeKey, ImpactVector> impactedMap = new HashMap<>();
-    impactedNodes.forEach(node ->
-        {
+    impactedNodes.forEach(node -> {
           ImpactVector impactVector = new ImpactVector();
           impactVector.decreasesPressure(HEAP);
           impactedMap.put(node, impactVector);
