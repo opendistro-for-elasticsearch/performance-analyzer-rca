@@ -243,7 +243,7 @@ public class RcaConf {
     return setting;
   }
 
-  public static boolean updateAllRcaConfFiles(final Set<String> mutedRcas, final Set<String> mutedDeciders,
+  public boolean updateAllRcaConfFiles(final Set<String> mutedRcas, final Set<String> mutedDeciders,
       final Set<String> mutedActions) {
     boolean updateStatus = true;
     // update all rca.conf files
@@ -260,7 +260,7 @@ public class RcaConf {
     return updateStatus;
   }
 
-  private static boolean updateRcaConf(String originalFilePath, final Set<String> mutedRcas,
+  private boolean updateRcaConf(String originalFilePath, final Set<String> mutedRcas,
       final Set<String> mutedDeciders, final Set<String> mutedActions) {
 
     String updatedPath = originalFilePath + ".updated";
