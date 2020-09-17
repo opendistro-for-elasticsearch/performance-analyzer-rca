@@ -19,6 +19,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.CacheClearAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.CacheActionConfig;
@@ -27,11 +28,15 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.dec
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.old_gen.LevelThreeActionBuilder;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.test_utils.DeciderActionParserUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor.NodeDetails;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Before;
@@ -56,6 +61,24 @@ public class LevelThreeActionBuilderTest {
     deciderActionParser = new DeciderActionParserUtil();
   }
 
+  private void setupClusterDetails() {
+    ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
+    ClusterDetailsEventProcessor.NodeDetails node1 =
+        new ClusterDetailsEventProcessor.NodeDetails(NodeRole.DATA, "node1", "127.0.0.0", false);
+    ClusterDetailsEventProcessor.NodeDetails node2 =
+        new ClusterDetailsEventProcessor.NodeDetails(NodeRole.DATA, "node2", "127.0.0.1", false);
+    ClusterDetailsEventProcessor.NodeDetails master =
+        new ClusterDetailsEventProcessor.NodeDetails(NodeRole.ELECTED_MASTER, "master", "127.0.0.3",
+            true);
+
+    List<NodeDetails> nodes = new ArrayList<>();
+    nodes.add(node1);
+    nodes.add(node2);
+    nodes.add(master);
+    clusterDetailsEventProcessor.setNodesDetails(nodes);
+    testAppContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
+  }
+
   @Before
   public void init() throws Exception {
     final String configStr =
@@ -74,6 +97,7 @@ public class LevelThreeActionBuilderTest {
         rcaConf.getQueueActionConfig().getStepSize(ResourceEnum.SEARCH_THREADPOOL);
     writeQueueStep = writeQueueStep * LevelThreeActionBuilderConfig.DEFAULT_WRITE_QUEUE_STEP_SIZE;
     searchQueueStep = searchQueueStep * LevelThreeActionBuilderConfig.DEFAULT_WRITE_QUEUE_STEP_SIZE;
+    setupClusterDetails();
   }
 
   @Test
@@ -91,7 +115,7 @@ public class LevelThreeActionBuilderTest {
     List<Action> actions = LevelThreeActionBuilder.newBuilder(node, testAppContext, rcaConf).build();
     deciderActionParser.addActions(actions);
 
-    Assert.assertEquals(4, deciderActionParser.size());
+    Assert.assertEquals(5, deciderActionParser.size());
 
     int expectedQueueSize;
     ModifyQueueCapacityAction writeQueueAction = deciderActionParser.readQueueAction(ResourceEnum.WRITE_THREADPOOL);
@@ -121,6 +145,11 @@ public class LevelThreeActionBuilderTest {
     currentCacheSize = (long) (shardRequestCacheSizeInPercent * heapMaxSizeInBytes);
     Assert.assertEquals(expectedCacheSize, requestCacheAction.getDesiredCacheMaxSizeInBytes(), 10);
     Assert.assertEquals(currentCacheSize, requestCacheAction.getCurrentCacheMaxSizeInBytes(), 10);
+
+    CacheClearAction cacheClearAction = deciderActionParser.readCacheClearAction();
+    Assert.assertNotNull(cacheClearAction);
+    Assert.assertTrue(cacheClearAction.isActionable());
+    Assert.assertEquals(2, cacheClearAction.impactedNodes().size());
   }
 
 
@@ -140,7 +169,7 @@ public class LevelThreeActionBuilderTest {
         .build();
     deciderActionParser.addActions(actions);
 
-    Assert.assertEquals(2, deciderActionParser.size());
+    Assert.assertEquals(3, deciderActionParser.size());
 
     int expectedQueueSize;
     ModifyQueueCapacityAction writeQueueAction = deciderActionParser.readQueueAction(ResourceEnum.WRITE_THREADPOOL);
@@ -163,5 +192,10 @@ public class LevelThreeActionBuilderTest {
 
     ModifyCacheMaxSizeAction requestCacheAction = deciderActionParser.readCacheAction(ResourceEnum.SHARD_REQUEST_CACHE);
     Assert.assertNull(requestCacheAction);
+
+    CacheClearAction cacheClearAction = deciderActionParser.readCacheClearAction();
+    Assert.assertNotNull(cacheClearAction);
+    Assert.assertTrue(cacheClearAction.isActionable());
+    Assert.assertEquals(2, cacheClearAction.impactedNodes().size());
   }
 }
