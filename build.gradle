@@ -83,14 +83,14 @@ ext {
 
 checkstyle {
     toolVersion '8.24'
-    configFile file("config/checkstyle/checkstyle.xml")
+    configFile file("configs/checkstyle/checkstyle.xml")
 }
 
 tasks.withType(Checkstyle) {
     reports {
         xml.enabled false
         html.enabled true
-        html.stylesheet resources.text.fromFile('config/xsl/severity-sorted.xsl')
+        html.stylesheet resources.text.fromFile('configs/xsl/severity-sorted.xsl')
     }
 }
 
