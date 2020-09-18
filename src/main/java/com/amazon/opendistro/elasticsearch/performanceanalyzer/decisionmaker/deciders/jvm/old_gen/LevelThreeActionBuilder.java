@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.CacheClearAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.CacheActionConfig;
@@ -28,9 +29,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * build actions if old gen falls into level three bucket
@@ -44,8 +43,7 @@ public class LevelThreeActionBuilder {
   private final AppContext appContext;
   private final RcaConf rcaConf;
   private final NodeKey esNode;
-  private final Map<ResourceEnum, ModifyCacheMaxSizeAction> cacheActionMap;
-  private final Map<ResourceEnum, ModifyQueueCapacityAction> queueActionMap;
+  private final List<Action> actions;
   private final OldGenDecisionPolicyConfig oldGenDecisionPolicyConfig;
   private final LevelThreeActionBuilderConfig actionBuilderConfig;
   private final CacheActionConfig cacheActionConfig;
@@ -56,14 +54,12 @@ public class LevelThreeActionBuilder {
     this.appContext = appContext;
     this.rcaConf = rcaConf;
     this.esNode = esNode;
-    this.cacheActionMap = new HashMap<>();
-    this.queueActionMap = new HashMap<>();
     DeciderConfig deciderConfig = rcaConf.getDeciderConfig();
     this.oldGenDecisionPolicyConfig = rcaConf.getDeciderConfig().getOldGenDecisionPolicyConfig();
     this.actionBuilderConfig = deciderConfig.getOldGenDecisionPolicyConfig().levelThreeActionBuilderConfig();
     this.cacheActionConfig = rcaConf.getCacheActionConfig();
     this.queueActionConfig = rcaConf.getQueueActionConfig();
-    registerActions();
+    this.actions = new ArrayList<>();
   }
 
   public static LevelThreeActionBuilder newBuilder(final NodeKey esNode, final AppContext appContext,
@@ -79,7 +75,7 @@ public class LevelThreeActionBuilder {
         .setDesiredCacheMaxSizeToMin()
         .build();
     if (action.isActionable()) {
-      cacheActionMap.put(ResourceEnum.FIELD_DATA_CACHE, action);
+      actions.add(action);
     }
   }
 
@@ -91,7 +87,7 @@ public class LevelThreeActionBuilder {
         .setDesiredCacheMaxSizeToMin()
         .build();
     if (action.isActionable()) {
-      cacheActionMap.put(ResourceEnum.SHARD_REQUEST_CACHE, action);
+      actions.add(action);
     }
   }
 
@@ -104,7 +100,7 @@ public class LevelThreeActionBuilder {
         .stepSize(stepSize * actionBuilderConfig.writeQueueStepSize())
         .build();
     if (action.isActionable()) {
-      queueActionMap.put(ResourceEnum.WRITE_THREADPOOL, action);
+      actions.add(action);
     }
   }
 
@@ -117,31 +113,28 @@ public class LevelThreeActionBuilder {
         .stepSize(stepSize * actionBuilderConfig.searchQueueStepSize())
         .build();
     if (action.isActionable()) {
-      queueActionMap.put(ResourceEnum.SEARCH_THREADPOOL, action);
+      actions.add(action);
     }
   }
 
-
-  private void registerActions() {
-    addFieldDataCacheAction();
-    addShardRequestCacheAction();
-    addSearchQueueAction();
-    addWriteQueueAction();
+  private void addCacheClearAction() {
+    CacheClearAction action = CacheClearAction
+        .newBuilder(appContext).build();
+    if (action.isActionable()) {
+      actions.add(action);
+    }
   }
-
 
   /**
    * build actions.
    * @return List of actions
    */
   public List<Action> build() {
-    List<Action> actions = new ArrayList<>();
-    cacheActionMap.forEach((cache, action) -> {
-      actions.add(action);
-    });
-    queueActionMap.forEach((queue, action) -> {
-      actions.add(action);
-    });
+    addFieldDataCacheAction();
+    addShardRequestCacheAction();
+    addSearchQueueAction();
+    addWriteQueueAction();
+    addCacheClearAction();
     return actions;
   }
 }

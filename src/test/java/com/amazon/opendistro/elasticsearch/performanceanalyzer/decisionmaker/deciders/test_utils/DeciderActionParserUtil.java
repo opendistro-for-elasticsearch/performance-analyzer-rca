@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.test_utils;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.CacheClearAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
@@ -26,10 +27,12 @@ import java.util.Map;
 public class DeciderActionParserUtil {
   private final Map<ResourceEnum, ModifyCacheMaxSizeAction> cacheActionMap;
   private final Map<ResourceEnum, ModifyQueueCapacityAction> queueActionMap;
+  private CacheClearAction cacheClearAction;
 
   public DeciderActionParserUtil() {
     cacheActionMap = new HashMap<>();
     queueActionMap = new HashMap<>();
+    cacheClearAction = null;
   }
 
   public void addActions(List<Action> actions) throws IllegalArgumentException {
@@ -38,14 +41,20 @@ public class DeciderActionParserUtil {
     for (Action action : actions) {
       if (action instanceof ModifyQueueCapacityAction) {
         ModifyQueueCapacityAction queueAction = (ModifyQueueCapacityAction) action;
+        assert !queueActionMap.containsKey(queueAction.getThreadPool());
         queueActionMap.put(queueAction.getThreadPool(), queueAction);
       }
       else if (action instanceof ModifyCacheMaxSizeAction) {
         ModifyCacheMaxSizeAction cacheAction = (ModifyCacheMaxSizeAction) action;
+        assert !cacheActionMap.containsKey(cacheAction.getCacheType());
         cacheActionMap.put(cacheAction.getCacheType(), cacheAction);
       }
+      else if (action instanceof CacheClearAction) {
+        assert cacheClearAction == null;
+        cacheClearAction = (CacheClearAction) action;
+      }
       else {
-        throw new IllegalArgumentException();
+        assert false;
       }
     }
   }
@@ -58,7 +67,13 @@ public class DeciderActionParserUtil {
     return queueActionMap.getOrDefault(resource, null);
   }
 
+  public CacheClearAction readCacheClearAction() {
+    return cacheClearAction;
+  }
+
   public int size() {
-    return cacheActionMap.size() + queueActionMap.size();
+    return cacheActionMap.size()
+        + queueActionMap.size()
+        + (cacheClearAction == null ? 0 : 1);
   }
 }
