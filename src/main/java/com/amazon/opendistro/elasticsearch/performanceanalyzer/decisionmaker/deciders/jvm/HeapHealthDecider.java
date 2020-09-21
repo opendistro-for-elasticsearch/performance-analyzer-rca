@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Decider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Decision;
@@ -24,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.List;
@@ -42,7 +44,7 @@ public class HeapHealthDecider extends Decider {
     //TODO : refactor parent class to remove evalIntervalSeconds completely
     super(5, decisionFrequency);
     this.highHeapUsageClusterRca = highHeapUsageClusterRca;
-    oldGenDecisionPolicy = new OldGenDecisionPolicy(this.getAppContext(), rcaConf);
+    oldGenDecisionPolicy = new OldGenDecisionPolicy();
   }
 
   @Override
@@ -72,12 +74,24 @@ public class HeapHealthDecider extends Decider {
       NodeKey esNode = new NodeKey(nodeSummary.getNodeID(), nodeSummary.getHostAddress());
       for (HotResourceSummary resource : nodeSummary.getHotResourceSummaryList()) {
         if (resource.getResource().equals(ResourceUtil.OLD_GEN_HEAP_USAGE)) {
-          List<Action> actions = oldGenDecisionPolicy.actions(esNode, resource.getValue());
+          List<Action> actions = oldGenDecisionPolicy.evaluate(esNode, resource.getValue());
           actions.forEach(decision::addAction);
         }
         //TODO : Add policy for young gen
       }
     }
     return decision;
+  }
+
+  @Override
+  public void readRcaConf(RcaConf conf) {
+    super.readRcaConf(conf);
+    oldGenDecisionPolicy.setRcaConf(conf);
+  }
+
+  @Override
+  public void setAppContext(final AppContext appContext) {
+    super.setAppContext(appContext);
+    oldGenDecisionPolicy.setAppContext(appContext);
   }
 }

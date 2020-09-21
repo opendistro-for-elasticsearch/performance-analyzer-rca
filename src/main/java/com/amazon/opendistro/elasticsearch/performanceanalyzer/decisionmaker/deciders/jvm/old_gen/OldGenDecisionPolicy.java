@@ -22,6 +22,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Decision policy for old gen related actions
@@ -31,17 +33,24 @@ import java.util.List;
  * {@link LevelThreeActionBuilder} for each level of unhealthiness
  */
 public class OldGenDecisionPolicy {
-  private final AppContext appContext;
-  private final RcaConf rcaConf;
+  private static final Logger LOG = LogManager.getLogger(OldGenDecisionPolicy.class);
+  private AppContext appContext;
+  private RcaConf rcaConf;
 
-  public OldGenDecisionPolicy(final AppContext appContext, final RcaConf rcaConf) {
-    this.appContext = appContext;
-    //decider config will not be null unless there is a bug in RCAScheduler.
-    assert rcaConf != null : "DeciderConfig is null";
+  public void setRcaConf(final RcaConf rcaConf) {
     this.rcaConf = rcaConf;
   }
 
-  public List<Action> actions(final NodeKey esNode, double oldGenUsage) {
+  public void setAppContext(final AppContext appContext) {
+    this.appContext = appContext;
+  }
+
+  public List<Action> evaluate(final NodeKey esNode, double oldGenUsage) {
+    //rca config / app context will not be null unless there is a bug in RCAScheduler.
+    if (rcaConf == null || appContext == null) {
+      LOG.error("rca conf/app context is null, return empty action list");
+      return new ArrayList<>();
+    }
     OldGenDecisionPolicyConfig oldGenDecisionPolicyConfig =
         rcaConf.getDeciderConfig().getOldGenDecisionPolicyConfig();
     if (oldGenUsage >= oldGenDecisionPolicyConfig.oldGenThresholdLevelThree()) {
