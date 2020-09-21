@@ -26,6 +26,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.dec
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.QueueHealthDecider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.collator.Collator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.HeapHealthDecider;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.JvmGenerationTuningDecider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardStatsDerivedDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -149,7 +150,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     Rca<ResourceFlowUnit<HotResourceSummary>> highHeapUsageYoungGenRca = new HighHeapUsageYoungGenRca(RCA_PERIOD, heapUsed,
             gc_Collection_Time);
     highHeapUsageYoungGenRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    highHeapUsageYoungGenRca.addAllUpstreams(Arrays.asList(heapUsed, gc_Collection_Time));
+    highHeapUsageYoungGenRca.addAllUpstreams(Arrays.asList(heapUsed, gc_Collection_Time, gcEvent));
 
     Rca<ResourceFlowUnit<HotResourceSummary>> highCpuRca = new HighCpuRca(RCA_PERIOD, cpuUtilizationGroupByOperation);
     highCpuRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
@@ -277,6 +278,11 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     constructShardResourceUsageGraph();
 
     //constructResourceHeatMapGraph();
+
+    // JVM Generation Tuning Decider
+    JvmGenerationTuningDecider jvmGenerationTuningDecider = new JvmGenerationTuningDecider(12, highHeapUsageClusterRca);
+    jvmGenerationTuningDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    jvmGenerationTuningDecider.addAllUpstreams(Collections.singletonList(highHeapUsageClusterRca));
 
     // Collator - Collects actions from all deciders and aligns impact vectors
     Collator collator = new Collator(queueHealthDecider, cacheHealthDecider, heapHealthDecider);

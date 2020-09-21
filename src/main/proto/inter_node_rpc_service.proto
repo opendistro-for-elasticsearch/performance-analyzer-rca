@@ -101,6 +101,9 @@ enum MetricEnum {
 
   // Heap
   HEAP_MAX = 16 [(additional_fields).name = "heap max", (additional_fields).description = "max heap size in bytes"];
+
+  // GC
+  FULL_GC = 32 [(additional_fields).name = "full gc", (additional_fields).description = "pause time in ms"];
 }
 
 /*

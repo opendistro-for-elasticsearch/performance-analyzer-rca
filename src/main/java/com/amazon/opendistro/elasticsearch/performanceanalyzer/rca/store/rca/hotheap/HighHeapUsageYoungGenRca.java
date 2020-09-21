@@ -16,8 +16,10 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.OLD_GEN;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_FULL_GC;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_YOUNG_GC;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.MINOR_GC_PAUSE_TIME;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.YOUNG_GEN_PROMOTION_RATE;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
@@ -25,7 +27,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metrics
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageYoungGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources.State;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindow;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindowData;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
@@ -53,6 +55,9 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
 
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageYoungGenRca.class);
   private static final int PROMOTION_RATE_SLIDING_WINDOW_IN_MINS = 10;
+  private static final int ONE_HOUR_IN_MIN = 60;
+  private static final double GARBAGE_PROMOTION_THRESHOLD = .80;
+  private static final double FOLLOWER_CHECK_TIMEOUT_MS = 30d * 1_000;
   private static final double CONVERT_BYTES_TO_MEGABYTES = Math.pow(1024, 2);
   private final Metric heap_Used;
   private final Metric gc_Collection_Time;
@@ -62,16 +67,24 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
   // e.g. if lowerBoundThreshold = 0.2, then we only send out summary if value > 0.2*threshold
   private final double lowerBoundThreshold;
   private int counter;
-  private final SlidingWindow<SlidingWindowData> gcTimeDeque;
+  private final SlidingWindow<SlidingWindowData> minorGcTimeDeque;
+  private final SlidingWindow<SlidingWindowData> fullGcTimeDeque;
   private final SlidingWindow<SlidingWindowData> promotionRateDeque;
+  private final SlidingWindow<SlidingWindowData> garbagePromotedDeque;
   //promotion rate in mb/s
   private int promotionRateThreshold;
   //young gc time in ms per second
   private int youngGenGcTimeThreshold;
+  // variables used to roughly compute garbage promotion percentage
+  private double youngGenPromotedMB = 0d;
+  private double maxOldGen = 0d;
+  private double prevOldGen = 0d;
   protected Clock clock;
 
-  public <M extends Metric> HighHeapUsageYoungGenRca(final int rcaPeriod, final double lowerBoundThreshold,
-      final M heap_Used, final M gc_Collection_Time) {
+  public <M extends Metric> HighHeapUsageYoungGenRca(final int rcaPeriod,
+                                                     final double lowerBoundThreshold,
+                                                     final M heap_Used,
+                                                     final M gc_Collection_Time) {
     super(5);
     this.clock = Clock.systemUTC();
     this.heap_Used = heap_Used;
@@ -80,10 +93,12 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
     this.lowerBoundThreshold = (lowerBoundThreshold >= 0 && lowerBoundThreshold <= 1.0)
         ? lowerBoundThreshold : 1.0;
     this.counter = 0;
-    this.gcTimeDeque = new SlidingWindow<>(PROMOTION_RATE_SLIDING_WINDOW_IN_MINS, TimeUnit.MINUTES);
+    this.minorGcTimeDeque = new SlidingWindow<>(PROMOTION_RATE_SLIDING_WINDOW_IN_MINS, TimeUnit.MINUTES);
+    this.fullGcTimeDeque = new SlidingWindow<>(ONE_HOUR_IN_MIN, TimeUnit.MINUTES);
     this.promotionRateThreshold = HighHeapUsageYoungGenRcaConfig.DEFAULT_PROMOTION_RATE_THRESHOLD_IN_MB_PER_SEC;
     this.youngGenGcTimeThreshold = HighHeapUsageYoungGenRcaConfig.DEFAULT_YOUNG_GEN_GC_TIME_THRESHOLD_IN_MS_PER_SEC;
 
+    this.garbagePromotedDeque = new SlidingWindow<>(ONE_HOUR_IN_MIN, TimeUnit.MINUTES);
     this.promotionRateDeque = new SlidingWindow<SlidingWindowData>(PROMOTION_RATE_SLIDING_WINDOW_IN_MINS, TimeUnit.MINUTES) {
       /**
        * always compare the current old gen usage with the usage from the previous time intervals and the amount of
@@ -118,6 +133,67 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
     this(rcaPeriod, 1.0, heap_Used, gc_Collection_Time);
   }
 
+  private boolean fullGcTimeTooHigh(double avgFullGcTime) {
+    return (!Double.isNaN(avgFullGcTime) && avgFullGcTime > FOLLOWER_CHECK_TIMEOUT_MS);
+  }
+
+  private boolean promotionRateTooHigh(double avgPromotionRate, double modifier) {
+    return (!Double.isNaN(avgPromotionRate) && avgPromotionRate > promotionRateThreshold * modifier);
+  }
+
+  private boolean youngGcTimeTooHigh(double avgYoungGCTime) {
+    return (!Double.isNaN(avgYoungGCTime) && avgYoungGCTime > youngGenGcTimeThreshold);
+  }
+
+  private boolean prematurePromotionTooHigh(double avgGarbagePromoted) {
+    return (!Double.isNaN(avgGarbagePromoted)
+        && avgGarbagePromoted <= 1
+        && avgGarbagePromoted > GARBAGE_PROMOTION_THRESHOLD);
+  }
+
+  private double getFollowerCheckTimeoutMs() {
+    return FOLLOWER_CHECK_TIMEOUT_MS;
+  }
+
+  private ResourceFlowUnit<HotResourceSummary> compute(double avgPromotionRate,
+                                                       double avgYoungGCTime,
+                                                       double avgGarbagePromoted,
+                                                       double avgFullGCTime) {
+    ResourceContext context = new ResourceContext(State.UNHEALTHY);
+    HotResourceSummary summary = null;
+    boolean unhealthy = true;
+
+    // Check if the RCA is unhealthy
+    if (fullGcTimeTooHigh(avgFullGCTime)) {
+      summary = new HotResourceSummary(YOUNG_GEN_PROMOTION_RATE,
+          getFollowerCheckTimeoutMs(), avgPromotionRate,
+          ONE_HOUR_IN_MIN * 60);
+    } else if (promotionRateTooHigh(avgPromotionRate, this.lowerBoundThreshold)) {
+      //check to see if the value is above lower bound thres
+      summary = new HotResourceSummary(YOUNG_GEN_PROMOTION_RATE,
+          promotionRateThreshold * this.lowerBoundThreshold, avgPromotionRate,
+          PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
+    } else if (youngGcTimeTooHigh(avgYoungGCTime)) {
+      summary = new HotResourceSummary(MINOR_GC_PAUSE_TIME, youngGenGcTimeThreshold, avgYoungGCTime,
+          PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
+    } else if (prematurePromotionTooHigh(avgGarbagePromoted)) {
+      summary = new HotResourceSummary(YOUNG_GEN_PROMOTION_RATE, GARBAGE_PROMOTION_THRESHOLD,
+          avgGarbagePromoted, ONE_HOUR_IN_MIN * 60);
+    } else {
+      unhealthy = false;
+      context = new ResourceContext(State.HEALTHY);
+    }
+
+    if (unhealthy) {
+      LOG.debug("avgPromotionRate = {} , avgGCTime = {}, avgGarbagePromoted = {}, avgFullGcTime = {},",
+          avgPromotionRate, avgYoungGCTime, avgGarbagePromoted, avgFullGCTime);
+      PerformanceAnalyzerApp.RCA_VERTICES_METRICS_AGGREGATOR.updateStat(
+          RcaVerticesMetrics.NUM_YOUNG_GEN_RCA_TRIGGERED, "", 1);
+    }
+
+    return new ResourceFlowUnit<>(this.clock.millis(), context, summary);
+  }
+
   @Override
   public ResourceFlowUnit<HotResourceSummary> operate() {
     long currTimeStamp = this.clock.millis();
@@ -132,6 +208,22 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
           MEM_TYPE.getField(), OLD_GEN.toString(), MetricsDB.MAX);
       if (!Double.isNaN(oldGenHeapUsed)) {
         promotionRateDeque.next(new SlidingWindowData(currTimeStamp, oldGenHeapUsed / CONVERT_BYTES_TO_MEGABYTES));
+        if (oldGenHeapUsed > maxOldGen) {
+          maxOldGen = oldGenHeapUsed;
+        }
+        double promoted = oldGenHeapUsed - prevOldGen;
+        if (promoted > 0) {
+          youngGenPromotedMB += promoted / CONVERT_BYTES_TO_MEGABYTES;
+        } else { // full GC must have occurred if there's less data in the old gen
+          double garbageReclaimedPct = (prevOldGen - oldGenHeapUsed) / (youngGenPromotedMB * CONVERT_BYTES_TO_MEGABYTES);
+          if (garbageReclaimedPct < 1) {
+            garbagePromotedDeque.next(new SlidingWindowData(currTimeStamp, garbageReclaimedPct));
+          }
+          // Reset variables
+          prevOldGen = 0;
+          youngGenPromotedMB = 0;
+          maxOldGen = 0;
+        }
       }
       else {
         LOG.error("Failed to parse metric in FlowUnit from {}", heap_Used.getClass().getName());
@@ -146,7 +238,12 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
       double totYoungGCTime = SQLParsingUtil.readDataFromSqlResult(metricFU.getData(),
           MEM_TYPE.getField(), TOT_YOUNG_GC.toString(), MetricsDB.MAX);
       if (!Double.isNaN(totYoungGCTime)) {
-        gcTimeDeque.next(new SlidingWindowData(currTimeStamp, totYoungGCTime));
+        minorGcTimeDeque.next(new SlidingWindowData(currTimeStamp, totYoungGCTime));
+      }
+      double totFullGCTime = SQLParsingUtil.readDataFromSqlResult(metricFU.getData(),
+          MEM_TYPE.getField(), TOT_FULL_GC.toString(), MetricsDB.MAX);
+      if (!Double.isNaN(totFullGCTime)) {
+        fullGcTimeDeque.next(new SlidingWindowData(currTimeStamp, totFullGCTime));
       }
       else {
         LOG.error("Failed to parse metric in FlowUnit from {}", gc_Collection_Time.getClass().getName());
@@ -154,36 +251,12 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
     }
 
     if (counter == rcaPeriod) {
-      ResourceContext context = null;
-      HotResourceSummary summary = null;
-      // reset the variables
       counter = 0;
-
       double avgPromotionRate = promotionRateDeque.readAvg(TimeUnit.SECONDS);
-      double avgYoungGCTime = gcTimeDeque.readAvg(TimeUnit.SECONDS);
-
-      if (!Double.isNaN(avgPromotionRate)
-          && avgPromotionRate > promotionRateThreshold
-          && !Double.isNaN(avgYoungGCTime)
-          && avgYoungGCTime > youngGenGcTimeThreshold) {
-        LOG.debug("avgPromotionRate = {} , avgGCTime = {}", avgPromotionRate, avgYoungGCTime);
-        context = new ResourceContext(Resources.State.UNHEALTHY);
-        PerformanceAnalyzerApp.RCA_VERTICES_METRICS_AGGREGATOR.updateStat(
-            RcaVerticesMetrics.NUM_YOUNG_GEN_RCA_TRIGGERED, "", 1);
-      } else {
-        context = new ResourceContext(Resources.State.HEALTHY);
-      }
-
-      //check to see if the value is above lower bound thres
-      if (!Double.isNaN(avgPromotionRate)
-          && avgPromotionRate > promotionRateThreshold * this.lowerBoundThreshold) {
-        summary = new HotResourceSummary(YOUNG_GEN_PROMOTION_RATE,
-            promotionRateThreshold, avgPromotionRate,
-            PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
-      }
-
-      LOG.debug("@@: Young Gen RCA Context = " + context.toString());
-      return new ResourceFlowUnit<>(this.clock.millis(), context, summary);
+      double avgYoungGCTime = minorGcTimeDeque.readAvg(TimeUnit.SECONDS);
+      double avgGarbagePromoted = garbagePromotedDeque.readAvg(TimeUnit.SECONDS);
+      double avgFullGCTime = fullGcTimeDeque.readAvg(TimeUnit.SECONDS);
+      return compute(avgPromotionRate, avgYoungGCTime, avgGarbagePromoted, avgFullGCTime);
     } else {
       // we return an empty FlowUnit RCA for now. Can change to healthy (or previous known RCA state)
       LOG.debug("RCA: Empty FlowUnit returned for Young Gen RCA");

@@ -64,4 +64,24 @@ public class NodeConfigCacheReaderUtil {
     }
     return null;
   }
+
+  public static Double readOldGenMaxSizeInBytes(
+      final NodeConfigCache nodeConfigCache, final NodeKey esNode) {
+    try {
+      return nodeConfigCache.get(esNode, ResourceUtil.OLD_GEN_MAX_SIZE);
+    } catch (final IllegalArgumentException e) {
+      LOG.error("Exception while reading heap max size from Node Config Cache", e);
+    }
+    return null;
+  }
+
+  public static Double readYoungGenMaxSizeInBytes(
+      final NodeConfigCache nodeConfigCache, final NodeKey esNode) {
+    try {
+      return nodeConfigCache.get(esNode, ResourceUtil.YOUNG_GEN_MAX_SIZE);
+    } catch (final IllegalArgumentException e) {
+      LOG.error("Exception while reading heap max size from Node Config Cache", e);
+    }
+    return null;
+  }
 }

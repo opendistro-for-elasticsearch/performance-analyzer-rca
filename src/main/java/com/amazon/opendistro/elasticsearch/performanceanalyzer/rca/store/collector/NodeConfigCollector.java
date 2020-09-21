@@ -22,6 +22,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.Al
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.EsConfigNode;
@@ -83,10 +84,21 @@ public class NodeConfigCollector extends EsConfigNode {
     collectAndPublishMetric(ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE, shardRequestCacheMaxSize);
   }
 
-  private void collectHeapMaxSize(MetricFlowUnit heapMax) {
+  private void collectHeapStats(MetricFlowUnit heapMax) {
+    // total maximum heap size
     final double heapMaxSize = SQLParsingUtil.readDataFromSqlResult(heapMax.getData(),
             MEM_TYPE.getField(), AllMetrics.GCType.HEAP.toString(), MetricsDB.MAX);
     collectAndPublishMetric(ResourceUtil.HEAP_MAX_SIZE, heapMaxSize);
+    // maximum old generation heap size
+    final double oldGenMaxSize = SQLParsingUtil.readDataFromSqlResult(heapMax.getData(),
+        MEM_TYPE.getField(), GCType.OLD_GEN.toString(), MetricsDB.MAX);
+    collectAndPublishMetric(ResourceUtil.OLD_GEN_MAX_SIZE, heapMaxSize);
+    // maximum young generation heap size
+    final double edenMaxSize = SQLParsingUtil.readDataFromSqlResult(heapMax.getData(),
+        MEM_TYPE.getField(), GCType.EDEN.toString(), MetricsDB.MAX);
+    final double survivorMaxSize = SQLParsingUtil.readDataFromSqlResult(heapMax.getData(),
+        MEM_TYPE.getField(), GCType.SURVIVOR.toString(), MetricsDB.MAX);
+    collectAndPublishMetric(ResourceUtil.YOUNG_GEN_MAX_SIZE, edenMaxSize + (2 * survivorMaxSize));
   }
 
   private void collectAndPublishMetric(final Resource resource, final double metricValue) {
@@ -126,7 +138,7 @@ public class NodeConfigCollector extends EsConfigNode {
       if (flowUnit.isEmpty()) {
         continue;
       }
-      collectHeapMaxSize(flowUnit);
+      collectHeapStats(flowUnit);
     }
 
     if (counter == rcaPeriod) {
