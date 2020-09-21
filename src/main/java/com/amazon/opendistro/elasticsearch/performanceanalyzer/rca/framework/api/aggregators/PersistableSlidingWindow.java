@@ -2,6 +2,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedWriter;
+import java.io.Closeable;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,7 +14,7 @@ import org.apache.commons.io.LineIterator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> {
+public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> implements Closeable {
   private static final Logger LOG = LogManager.getLogger(PersistableSlidingWindow.class);
   private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -23,6 +24,7 @@ public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> {
 
   private Path path;
   private BufferedWriter writer;
+  private long timestamp = -1;
 
   public PersistableSlidingWindow(int slidingWindowSize,
                                   long writePeriod,
@@ -46,8 +48,12 @@ public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> {
 
   @Override
   public void next(SlidingWindowData slidingWindowData) {
+    if (timestamp == -1) {
+      timestamp = slidingWindowData.getTimeStamp();
+    }
+    long currTimestamp = slidingWindowData.getTimeStamp();
     super.next(slidingWindowData);
-    long timestampDiff = windowDeque.peekFirst().getTimeStamp() - windowDeque.peekLast().getTimeStamp();
+    long timestampDiff = currTimestamp - timestamp;
     if (timeUnit.convert(timestampDiff, TimeUnit.MILLISECONDS)
         > timeUnit.convert(writePeriod, TimeUnit.MILLISECONDS)) {
       try {
@@ -77,5 +83,12 @@ public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> {
       writer.write(SEPARATOR);
     }
     writer.flush();
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (writer != null) {
+      writer.close();
+    }
   }
 }

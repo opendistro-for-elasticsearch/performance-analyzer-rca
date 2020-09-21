@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Decider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Decision;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
@@ -28,13 +29,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.Hig
  */
 public class JvmGenerationTuningDecider extends Decider {
   private final HighHeapUsageClusterRca highHeapUsageClusterRca;
-  private final JvmGenerationTuningPolicy generationSizingPolicy;
+  private final JvmGenerationTuningPolicy jvmGenerationTuningPolicy;
   private int counter = 0;
 
   public JvmGenerationTuningDecider(int decisionFrequency, final HighHeapUsageClusterRca highHeapUsageClusterRca) {
     super(5, decisionFrequency);
     this.highHeapUsageClusterRca = highHeapUsageClusterRca;
-    generationSizingPolicy = new JvmGenerationTuningPolicy(getAppContext());
+    jvmGenerationTuningPolicy = new JvmGenerationTuningPolicy();
   }
 
   @Override
@@ -55,7 +56,7 @@ public class JvmGenerationTuningDecider extends Decider {
     HotClusterSummary clusterSummary = flowUnit.getSummary();
     for (HotNodeSummary nodeSummary : clusterSummary.getHotNodeSummaryList()) {
       for (HotResourceSummary summary : nodeSummary.getHotResourceSummaryList()) {
-        generationSizingPolicy.record(summary);
+        jvmGenerationTuningPolicy.record(summary);
       }
     }
   }
@@ -63,14 +64,20 @@ public class JvmGenerationTuningDecider extends Decider {
   @Override
   public Decision operate() {
     Decision decision = new Decision(System.currentTimeMillis(), name());
-    recordIssues();
     counter += 1;
     if (counter < decisionFrequency) {
       return decision;
     } else {
       counter = 0;
     }
-    decision.addAllActions(generationSizingPolicy.actions());
+    recordIssues();
+    decision.addAllActions(jvmGenerationTuningPolicy.actions());
     return decision;
+  }
+
+  @Override
+  public void setAppContext(AppContext appContext) {
+    super.setAppContext(appContext);
+    jvmGenerationTuningPolicy.setAppContext(appContext);
   }
 }

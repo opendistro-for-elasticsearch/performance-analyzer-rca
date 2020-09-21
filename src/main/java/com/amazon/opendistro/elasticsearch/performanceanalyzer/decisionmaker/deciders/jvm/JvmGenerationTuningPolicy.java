@@ -52,7 +52,7 @@ public class JvmGenerationTuningPolicy {
   );
   private static final long COOLOFF_PERIOD_IN_MILLIS = 48L * 24L * 60L * 60L * 1000L;
 
-  private final AppContext appContext;
+  private AppContext appContext;
 
   // Tracks issues which suggest that the young generation is too small
   private PersistableSlidingWindow tooSmallIssues;
@@ -61,9 +61,7 @@ public class JvmGenerationTuningPolicy {
   private int issueCountThreshold;
 
 
-  public JvmGenerationTuningPolicy(AppContext appContext) {
-    this.appContext = appContext;
-    this.issueCountThreshold = (int) Math.ceil(appContext.getDataNodeInstances().size() * .1d);
+  public JvmGenerationTuningPolicy() {
     this.tooSmallIssues = new PersistableSlidingWindow(48, 1, TimeUnit.HOURS, "/tmp/young_generation_data_rca");
     this.tooLargeIssues = new SlidingWindow<>(1, TimeUnit.HOURS);
   }
@@ -77,6 +75,9 @@ public class JvmGenerationTuningPolicy {
   }
 
   public double getCurrentRatio() {
+    if (appContext == null) {
+      return -1;
+    }
     NodeConfigCache cache = appContext.getNodeConfigCache();
     NodeKey key = new NodeKey(appContext.getDataNodeInstances().get(0));
     Double oldGenMaxSizeInBytes = NodeConfigCacheReaderUtil.readOldGenMaxSizeInBytes(cache, key);
@@ -127,5 +128,10 @@ public class JvmGenerationTuningPolicy {
       }
     }
     return actions;
+  }
+
+  public void setAppContext(AppContext appContext) {
+    this.appContext = appContext;
+    this.issueCountThreshold = (int) Math.ceil(appContext.getDataNodeInstances().size() * .1d);
   }
 }

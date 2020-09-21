@@ -150,7 +150,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     Rca<ResourceFlowUnit<HotResourceSummary>> highHeapUsageYoungGenRca = new HighHeapUsageYoungGenRca(RCA_PERIOD, heapUsed,
             gc_Collection_Time);
     highHeapUsageYoungGenRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    highHeapUsageYoungGenRca.addAllUpstreams(Arrays.asList(heapUsed, gc_Collection_Time, gcEvent));
+    highHeapUsageYoungGenRca.addAllUpstreams(Arrays.asList(heapUsed, gc_Collection_Time));
 
     Rca<ResourceFlowUnit<HotResourceSummary>> highCpuRca = new HighCpuRca(RCA_PERIOD, cpuUtilizationGroupByOperation);
     highCpuRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
@@ -285,9 +285,9 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     jvmGenerationTuningDecider.addAllUpstreams(Collections.singletonList(highHeapUsageClusterRca));
 
     // Collator - Collects actions from all deciders and aligns impact vectors
-    Collator collator = new Collator(queueHealthDecider, cacheHealthDecider, heapHealthDecider);
+    Collator collator = new Collator(queueHealthDecider, cacheHealthDecider, heapHealthDecider, jvmGenerationTuningDecider);
     collator.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    collator.addAllUpstreams(Arrays.asList(queueHealthDecider, cacheHealthDecider, heapHealthDecider));
+    collator.addAllUpstreams(Arrays.asList(queueHealthDecider, cacheHealthDecider, heapHealthDecider, jvmGenerationTuningDecider));
 
     // Publisher - Executes decisions output from collator
     Publisher publisher = new Publisher(EVALUATION_INTERVAL_SECONDS, collator);
