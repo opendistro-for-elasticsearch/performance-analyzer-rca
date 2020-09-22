@@ -223,6 +223,10 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
         return new ModifyCacheMaxSizeAction(esNode, cacheType, appContext,
             -1, -1, coolOffPeriodInMillis, false);
       }
+      // check if fielddata cache is -1 (unbounded).
+      if (currentCacheMaxSizeInBytes == -1) {
+        currentCacheMaxSizeInBytes = heapMaxSizeInBytes;
+      }
 
       long stepSizeInBytes = (long) (stepSizeInPercent * heapMaxSizeInBytes);
       if (desiredCacheMaxSizeInBytes == null) {
