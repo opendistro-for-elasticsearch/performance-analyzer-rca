@@ -26,7 +26,8 @@ public class PocValidator implements IValidator {
    * ]}
    */
   @Override
-  public boolean check(JsonElement response) {
+  public <T> boolean check(T responseObject) {
+    JsonElement response = (JsonElement) responseObject;
     JsonArray array = response.getAsJsonObject().get("data").getAsJsonArray();
     if (array.size() == 0) {
       return false;

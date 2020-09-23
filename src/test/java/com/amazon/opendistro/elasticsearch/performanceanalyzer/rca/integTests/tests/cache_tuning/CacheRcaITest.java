@@ -15,8 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.RcaItCacheTuning.INDEX_NAME;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.RcaItCacheTuning.SHARD_ID;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.CacheRcaITest.INDEX_NAME;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.CacheRcaITest.SHARD_ID;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_FieldData_Eviction;
@@ -25,7 +25,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Eviction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Hit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Size;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AClusterType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AErrorPatternIgnored;
@@ -41,7 +40,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners.RcaItNotEncryptedRunner;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.FieldDataCacheValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.ShardRequestCacheValidator;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.queue_tuning.RcaItQueueTuning;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.ElasticSearchAnalysisGraph;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.ShardRequestCacheClusterRca;
@@ -54,7 +52,7 @@ import org.junit.runner.RunWith;
 @AClusterType(ClusterType.MULTI_NODE_CO_LOCATED_MASTER)
 @ARcaGraph(ElasticSearchAnalysisGraph.class)
 //specify a custom rca.conf to set the collector time periods to 5s to reduce runtime
-@ARcaConf(dataNode = RcaItCacheTuning.CACHE_TUNING_RESOURCES_DIR + "rca.conf")
+@ARcaConf(dataNode = CacheRcaITest.CACHE_TUNING_RESOURCES_DIR + "rca.conf")
 @AMetric(
     name = Cache_FieldData_Size.class,
     dimensionNames = {
@@ -193,14 +191,13 @@ import org.junit.runner.RunWith;
                 sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
           })
     })
-public class RcaItCacheTuning {
+public class CacheRcaITest {
   public static final String CACHE_TUNING_RESOURCES_DIR = Consts.INTEG_TESTS_SRC_DIR + "./tests/cache_tuning/resource/";
   public static final String INDEX_NAME = "MockIndex";
   public static final String SHARD_ID = "1";
 
   // Test FieldDataCacheClusterRca.
   // This rca should be un-healthy when cache size is higher than threshold with evictions.
-  // TODO : extend this integ test to cover Decision Maker framework and queue remediation actions
   @Test
   @AExpect(
       what = AExpect.Type.REST_API,

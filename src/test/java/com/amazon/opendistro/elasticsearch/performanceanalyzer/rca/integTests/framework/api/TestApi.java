@@ -31,6 +31,10 @@ public class TestApi {
     return cluster.getAllRcaDataOnHost(hostTag, rcaName);
   }
 
+  public <T> T constructObjectFromDBOnHost(HostTag hostTag, Class<T> clz) {
+    return cluster.constructObjectFromDBOnHost(hostTag, clz);
+  }
+
   /**
    * This let's you make a REST request to the REST endpoint of a particular host identified by
    * the host tag.
