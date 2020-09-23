@@ -13,7 +13,7 @@ public interface IValidator {
   /**
    * Based on what is required to be validated,
    *
-   * @param response The REST response returns JSONElement and sqlite response returns </T> (class type).
+   * @param response The REST response returns JSONElement and sqlite response returns the class type.
    * @return true, if this matches expectation.
    */
   <T> boolean check(T response);
