@@ -59,19 +59,24 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
     return new EmptyFlowUnit(Instant.now().toEpochMilli());
   }
 
+  /**
+   * Publish the decisions to action listeners and persist actions.
+   */
   public void compute(FlowUnitOperationArgWrapper args) {
     // TODO: Need to add dampening, avoidance etc.
-    Decision decision = collator.getFlowUnits().get(0);
-    for (Action action : decision.getActions()) {
-      if (coolOffDetector.isCooledOff(action) && !flipFlopDetector.isFlipFlop(action)) {
-        flipFlopDetector.recordAction(action);
-        coolOffDetector.recordAction(action);
-        for (ActionListener listener : actionListeners) {
-          listener.actionPublished(action);
+    if (!collator.getFlowUnits().isEmpty()) {
+      Decision decision = collator.getFlowUnits().get(0);
+      for (Action action : decision.getActions()) {
+        if (coolOffDetector.isCooledOff(action) && !flipFlopDetector.isFlipFlop(action)) {
+          flipFlopDetector.recordAction(action);
+          coolOffDetector.recordAction(action);
+          for (ActionListener listener : actionListeners) {
+            listener.actionPublished(action);
+          }
+          // Persist actions to sqlite
+          PublisherEventsPersistor persistor = new PublisherEventsPersistor(args.getPersistable());
+          persistor.persistAction(action);
         }
-        // Persist actions to sqlite
-        PublisherEventsPersistor persistor = new PublisherEventsPersistor(args.getPersistable());
-        persistor.persistAction(action);
       }
     }
   }
