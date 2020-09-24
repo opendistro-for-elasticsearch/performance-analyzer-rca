@@ -39,11 +39,11 @@ public class ShardRequestCacheDeciderValidator implements IValidator {
      * "summary": Update [SHARD_REQUEST_CACHE] capacity from [10000] to [100000] on node [DATA_0]
      */
     @Override
-    public <T> boolean check(T response) {
-        if (response == null) {
+    public boolean checkDbObj(Object object) {
+        if (object == null) {
             return false;
         }
-        PersistedAction persistedAction = (PersistedAction) response;
+        PersistedAction persistedAction = (PersistedAction) object;
         return checkPersistedAction(persistedAction);
     }
 

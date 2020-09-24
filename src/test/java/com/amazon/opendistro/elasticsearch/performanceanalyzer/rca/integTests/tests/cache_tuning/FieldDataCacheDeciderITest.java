@@ -222,7 +222,7 @@ public class FieldDataCacheDeciderITest {
     // The cache decider should emit modify cache size action as field data rca is unhealthy.
     @Test
     @AExpect(
-            what = AExpect.Type.SQLITE,
+            what = AExpect.Type.DB_QUERY,
             on = HostTag.ELECTED_MASTER,
             validator = FieldDataCacheDeciderValidator.class,
             forRca = PersistedAction.class,

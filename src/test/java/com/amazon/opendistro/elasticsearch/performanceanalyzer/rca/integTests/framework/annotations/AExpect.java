@@ -54,7 +54,7 @@ public @interface AExpect {
    */
   enum Type {
     REST_API,
-    SQLITE
+    DB_QUERY
   }
 
   @Retention(RetentionPolicy.RUNTIME)

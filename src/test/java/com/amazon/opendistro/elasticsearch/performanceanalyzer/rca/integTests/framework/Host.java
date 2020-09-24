@@ -368,12 +368,8 @@ public class Host {
     return obj;
   }
 
-  public <T> T constructObjectFromDB(Class<T> className) {
-    try {
+  public <T> Object constructObjectFromDB(Class<T> className) throws Exception {
       return this.rcaController.getPersistenceProvider().read(className);
-    } catch (Exception e) {
-      return null;
-    }
   }
 
   public Map<String, Result<Record>> getRecordsForAllTables() {
