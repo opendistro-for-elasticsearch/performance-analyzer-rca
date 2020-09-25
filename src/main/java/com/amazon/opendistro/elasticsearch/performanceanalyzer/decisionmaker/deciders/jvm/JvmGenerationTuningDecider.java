@@ -22,6 +22,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 
 /**
@@ -79,5 +80,11 @@ public class JvmGenerationTuningDecider extends Decider {
   public void setAppContext(AppContext appContext) {
     super.setAppContext(appContext);
     jvmGenerationTuningPolicy.setAppContext(appContext);
+  }
+
+  @Override
+  public void readRcaConf(RcaConf conf) {
+    super.readRcaConf(conf);
+    jvmGenerationTuningPolicy.setRcaConf(conf);
   }
 }
