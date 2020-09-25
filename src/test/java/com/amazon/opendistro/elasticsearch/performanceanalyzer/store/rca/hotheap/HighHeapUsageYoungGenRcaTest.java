@@ -35,12 +35,14 @@ import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.junit.experimental.categories.Category;
 
 
 @Category(GradleTaskForRca.class)
+@Ignore
 public class HighHeapUsageYoungGenRcaTest {
   private static final double CONVERT_MEGABYTES_TO_BYTES = Math.pow(1024, 2);
   private MetricTestHelper heap_Used;
