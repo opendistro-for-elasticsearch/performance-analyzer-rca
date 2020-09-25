@@ -22,12 +22,13 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyJvmGenerationAction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyJvmGenerationParams;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.jvm.JvmGenerationTuningPolicyConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.PersistableSlidingWindow;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindow;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindowData;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
@@ -36,12 +37,15 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * JvmGenerationTuningPolicy computes generation tuning actions which should be taken based on
  * observed issues in an Elasticsearch cluster.
  */
 public class JvmGenerationTuningPolicy {
+  private static final Logger LOG = LogManager.getLogger(JvmGenerationTuningPolicy.class);
   private static final List<Resource> YOUNG_GEN_UNDERSIZED_SIGNALS = Lists.newArrayList(
       YOUNG_GEN_PROMOTION_RATE,
       FULL_GC_PAUSE_TIME
@@ -51,20 +55,17 @@ public class JvmGenerationTuningPolicy {
       OLD_GEN_HEAP_USAGE
   );
   private static final long COOLOFF_PERIOD_IN_MILLIS = 48L * 24L * 60L * 60L * 1000L;
+  private static final String UNDERSIZED_DATA_FILE_PATH = "/tmp/JvmGenerationTuningPolicy_Undersized";
+  private static final String OVERSIZED_DATA_FILE_PATH = "/tmp/JvmGenerationTuningPolicy_Oversized";
 
   private AppContext appContext;
+  private RcaConf rcaConf;
+  private JvmGenerationTuningPolicyConfig policyConfig;
 
   // Tracks issues which suggest that the young generation is too small
   private PersistableSlidingWindow tooSmallIssues;
   // Tracks issues which suggest that the young generation is too large
-  private SlidingWindow<SlidingWindowData> tooLargeIssues;
-  private int issueCountThreshold;
-
-
-  public JvmGenerationTuningPolicy() {
-    this.tooSmallIssues = new PersistableSlidingWindow(48, 1, TimeUnit.HOURS, "/tmp/young_generation_data_rca");
-    this.tooLargeIssues = new SlidingWindow<>(1, TimeUnit.HOURS);
-  }
+  private PersistableSlidingWindow tooLargeIssues;
 
   public void record(HotResourceSummary issue) {
     if (YOUNG_GEN_OVERSIZED_SIGNALS.contains(issue.getResource())) {
@@ -103,28 +104,42 @@ public class JvmGenerationTuningPolicy {
     if (currentRatio < 3) {
       return -1;
     }
-    return (int) Math.floor(currentRatio - 1);
+    double newRatio = currentRatio > 5 ? 3 : currentRatio - 1;
+    return (int) Math.floor(newRatio);
   }
 
-  private int getOversizedThreshold() {
-    return issueCountThreshold;
-  }
-
-  private int getUndersizedThreshold() {
-    return issueCountThreshold;
+  public void initializeSlidingWindows(JvmGenerationTuningPolicyConfig policyConfig) {
+    if (this.tooSmallIssues == null) {
+      this.tooSmallIssues = new PersistableSlidingWindow(policyConfig.getSlidingWindowSizeInSeconds(),
+          policyConfig.getBucketSizeInSeconds(),
+          TimeUnit.SECONDS,
+          UNDERSIZED_DATA_FILE_PATH);
+    }
+    if (this.tooLargeIssues == null) {
+      this.tooLargeIssues = new PersistableSlidingWindow(policyConfig.getSlidingWindowSizeInSeconds(),
+          policyConfig.getBucketSizeInSeconds(),
+          TimeUnit.SECONDS,
+          OVERSIZED_DATA_FILE_PATH);
+    }
   }
 
   public List<Action> actions() {
+    if (rcaConf == null || appContext ==  null) {
+      LOG.error("rca conf/app context is null, return empty action list");
+      return new ArrayList<>();
+    }
+    policyConfig = rcaConf.getDeciderConfig().getJvmGenerationTuningPolicyConfig();
+    initializeSlidingWindows(policyConfig);
     List<Action> actions = new ArrayList<>();
-    if (tooLargeIssues.size() > getOversizedThreshold()) {
+    if (tooLargeIssues.readCurrentBucket() > policyConfig.getOversizedbucketHeight()) {
       int newRatio = decreaseYoungGeneration();
       if (newRatio >= 1) {
-        actions.add(new ModifyJvmGenerationAction(appContext, decreaseYoungGeneration(), COOLOFF_PERIOD_IN_MILLIS, true));
+        actions.add(new ModifyJvmGenerationParams(appContext, decreaseYoungGeneration(), COOLOFF_PERIOD_IN_MILLIS, true));
       }
-    } else if (tooSmallIssues.size() > getUndersizedThreshold()) {
+    } else if (tooSmallIssues.readCurrentBucket() > policyConfig.getUndersizedbucketHeight()) {
       int newRatio = increaseYoungGeneration();
       if (newRatio >= 1) {
-        actions.add(new ModifyJvmGenerationAction(appContext, increaseYoungGeneration(), COOLOFF_PERIOD_IN_MILLIS, true));
+        actions.add(new ModifyJvmGenerationParams(appContext, increaseYoungGeneration(), COOLOFF_PERIOD_IN_MILLIS, true));
       }
     }
     return actions;
@@ -132,6 +147,9 @@ public class JvmGenerationTuningPolicy {
 
   public void setAppContext(AppContext appContext) {
     this.appContext = appContext;
-    this.issueCountThreshold = (int) Math.ceil(appContext.getDataNodeInstances().size() * .1d);
+  }
+
+  public void setRcaConf(final RcaConf rcaConf) {
+    this.rcaConf = rcaConf;
   }
 }

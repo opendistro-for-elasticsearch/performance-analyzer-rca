@@ -1,8 +1,23 @@
+/*
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ *  permissions and limitations under the License.
+ */
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.FileRotate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedWriter;
-import java.io.Closeable;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,57 +26,77 @@ import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> implements Closeable {
+/**
+ * PersistableSlidingWindow is a SlidingWindow which can have its data written to and read from disk
+ *
+ * <p>The sliding window retains data for slidingWindowSizeInSeconds and aggregates values into time
+ * buckets of width bucketSizeInSeconds. For example if slidingWindowSizeInSeconds is 86400 (1 day)
+ * and bucketSizeInSeconds is 3600 (1 hr) then there will be at most 25 data points in the sliding window
+ * at any given time. It's 25 and not 24 because the oldest datapoints are removed lazily based on
+ * arrival time. This shouldn't impact most consumers of this data structure.
+ *
+ * <p>The data contained in this sliding window is effectively a time series. Consumers may extend this
+ * class and define more complex aggregations or analytics functions.
+ */
+public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> {
   private static final Logger LOG = LogManager.getLogger(PersistableSlidingWindow.class);
   private static final ObjectMapper objectMapper = new ObjectMapper();
 
   protected static final String SEPARATOR = "\n";
 
-  protected final long writePeriod;
+  protected final double bucketSizeInSeconds;
 
-  private Path path;
-  private BufferedWriter writer;
-  private long timestamp = -1;
+  private SlidingWindowData aggregatedData;
+  private Path pathToFile;
 
-  public PersistableSlidingWindow(int slidingWindowSize,
-                                  long writePeriod,
+  public PersistableSlidingWindow(int slidingWindowSizeInSeconds,
+                                  int bucketSizeInSeconds,
                                   TimeUnit timeUnit,
                                   String filePath) {
-    super(slidingWindowSize, timeUnit);
-    this.writePeriod = writePeriod;
+    super(slidingWindowSizeInSeconds, timeUnit);
+    this.bucketSizeInSeconds = bucketSizeInSeconds;
     try {
-      this.path = Paths.get(filePath);
-      if (Files.exists(path)) {
-        loadFromFile(path);
+      this.pathToFile = Paths.get(filePath);
+      if (Files.exists(pathToFile)) {
+        loadFromFile(pathToFile);
       } else {
-        Files.createFile(path);
+        Files.createFile(pathToFile);
       }
-      this.writer = new BufferedWriter(new FileWriter(filePath, false));
     } catch (IOException e) {
-      LOG.error("Couldn't create file {} to perform young generation tuning", path, e);
+      LOG.error("Couldn't create file {} to perform young generation tuning", pathToFile, e);
       throw new IllegalArgumentException("Couldn't create or read a file at " + filePath);
     }
   }
 
   @Override
   public void next(SlidingWindowData slidingWindowData) {
-    if (timestamp == -1) {
-      timestamp = slidingWindowData.getTimeStamp();
+    if (aggregatedData == null) {
+      aggregatedData = new SlidingWindowData(slidingWindowData.getTimeStamp(), slidingWindowData.getValue());
+    } else {
+      aggregatedData.setValue(aggregatedData.getValue() + slidingWindowData.getValue());
     }
     long currTimestamp = slidingWindowData.getTimeStamp();
-    super.next(slidingWindowData);
-    long timestampDiff = currTimestamp - timestamp;
-    if (timeUnit.convert(timestampDiff, TimeUnit.MILLISECONDS)
-        > timeUnit.convert(writePeriod, TimeUnit.MILLISECONDS)) {
+    long timestampDiff = currTimestamp - aggregatedData.getTimeStamp();
+    if (timeUnit.convert(timestampDiff, TimeUnit.SECONDS) > bucketSizeInSeconds) {
       try {
+        super.next(aggregatedData);
+        aggregatedData = null;
         persist();
       } catch (IOException e) {
         LOG.error("Exception persisting sliding window data", e);
       }
     }
+  }
+
+  public double readCurrentBucket() {
+    if (aggregatedData == null) {
+      return -1;
+    }
+    return aggregatedData.getValue();
   }
 
   public void loadFromFile(Path path) throws IOException {
@@ -78,17 +113,17 @@ public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> i
   }
 
   public void persist() throws IOException {
+    String tmpFile = pathToFile.toString() + RandomStringUtils.randomAlphanumeric(32);
+    Path tmpPath = Paths.get(tmpFile);
+    Files.createFile(Paths.get(tmpFile));
+    BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile, false));
     for (SlidingWindowData data : windowDeque) {
       writer.write(objectMapper.writeValueAsString(data));
       writer.write(SEPARATOR);
     }
+    // write to temporary file
     writer.flush();
-  }
-
-  @Override
-  public void close() throws IOException {
-    if (writer != null) {
-      writer.close();
-    }
+    // atomic rotate
+    FileRotate.rotateFile(tmpPath, pathToFile);
   }
 }

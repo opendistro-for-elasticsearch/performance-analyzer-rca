@@ -23,11 +23,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Action class is used to modify the cache's max size. It is used by cache decider and other
- * deciders to implement actions like increasing the cache's size. Presently, it acts on field data
- * cache and shard request cache.
+ * ModifyJvmGenerationParams modifies a generational Garbage Collector's tuning parameters
+ *
+ * <p>This class is currently used to tune the young generation size when the CMS collector is being used
  */
-public class ModifyJvmGenerationAction extends SuppressibleAction {
+public class ModifyJvmGenerationParams extends SuppressibleAction {
   public static final String NAME = "ModifyJvmGeneration";
   private static final ImpactVector NO_IMPACT = new ImpactVector();
 
@@ -35,7 +35,7 @@ public class ModifyJvmGenerationAction extends SuppressibleAction {
   private final long coolOffPeriodInMillis;
   private final boolean canUpdate;
 
-  public ModifyJvmGenerationAction(
+  public ModifyJvmGenerationParams(
       final AppContext appContext,
       final int targetRatio,
       final long coolOffPeriodInMillis,
@@ -64,7 +64,7 @@ public class ModifyJvmGenerationAction extends SuppressibleAction {
   @Override
   public List<NodeKey> impactedNodes() {
     // all nodes are impacted by this change
-    return appContext.getAllClusterInstances().stream().map(NodeKey::new).collect(Collectors.toList());
+    return appContext.getDataNodeInstances().stream().map(NodeKey::new).collect(Collectors.toList());
   }
 
   /* TODO we can guess at this more accurately from metrics, but increasing/decreasing may have different
