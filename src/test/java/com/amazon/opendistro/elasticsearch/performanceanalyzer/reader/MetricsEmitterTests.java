@@ -22,6 +22,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.TroubleshootingConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HttpMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MetricName;
@@ -184,6 +185,31 @@ public class MetricsEmitterTests extends AbstractReaderTests {
                 ShardRequestMetricsSnapshot.Fields.INDEX_NAME.toString(),
                 ShardRequestMetricsSnapshot.Fields.OPERATION.toString()));
     db.remove();
+  }
+
+  @Test
+  public void testShardStateMetricsEmitter() throws Exception {
+    Connection conn = DriverManager.getConnection(DB_URL);
+    ShardStateMetricsSnapshot shardStateMetricsSnapshot = new ShardStateMetricsSnapshot(conn, 1L);
+    Map<String, String> dimensions = new HashMap<>();
+    dimensions.put(AllMetrics.ShardStateDimension.INDEX_NAME.toString(), "indexName");
+    dimensions.put(AllMetrics.ShardStateDimension.SHARD_ID.toString(), "shardId");
+    dimensions.put(AllMetrics.ShardStateDimension.SHARD_TYPE.toString(), "primary");
+    dimensions.put(AllMetrics.ShardStateDimension.NODE_NAME.toString(), "nodeName");
+
+    shardStateMetricsSnapshot.putMetrics(1, dimensions);
+    MetricsDB db = new MetricsDB(1553713438);
+    MetricsEmitter.emitShardStateMetric(db, shardStateMetricsSnapshot);
+
+    Result<Record> res =
+            db.queryMetric(
+                    Arrays.asList(AllMetrics.ShardStateValue.SHARD_STATE_ACTIVE.toString()),
+                    Arrays.asList("sum"),
+                    Arrays.asList(AllMetrics.ShardStateDimension.INDEX_NAME.toString()));
+
+    Double shard_active = Double.parseDouble(res.get(0).get(AllMetrics.ShardStateValue.SHARD_STATE_ACTIVE.toString()).toString());
+    db.remove();
+    assertEquals(1.0, shard_active.doubleValue(), 0);
   }
 
   @Test

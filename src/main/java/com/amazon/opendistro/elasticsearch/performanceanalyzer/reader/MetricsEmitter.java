@@ -810,4 +810,199 @@ public class MetricsEmitter {
           "Total time taken for writing {} metrics metricsdb: {}", tableName, mFinalT - mCurrT);
     }
   }
+
+  public static void emitShardStateMetric(
+          MetricsDB metricsDB, ShardStateMetricsSnapshot shardStateMetricsSnapshot) {
+    long mCurrT = System.currentTimeMillis();
+    Result<Record> shardStateMetrics = shardStateMetricsSnapshot.fetchAggregatedShardStateMetrics();
+
+    List<String> dims =
+            new ArrayList<String>() {
+              {
+                this.add(AllMetrics.ShardStateDimension.INDEX_NAME.toString());
+                this.add(AllMetrics.ShardStateDimension.SHARD_ID.toString());
+                this.add(AllMetrics.ShardStateDimension.SHARD_TYPE.toString());
+                this.add(AllMetrics.ShardStateDimension.NODE_NAME.toString());
+              }
+            };
+
+    emitActiveShardStateMetric(metricsDB, shardStateMetrics, dims);
+    emitInitializingShardStateMetric(metricsDB, shardStateMetrics, dims);
+    emitUnassignedShardStateMetric(metricsDB, shardStateMetrics, dims);
+
+    long mFinalT = System.currentTimeMillis();
+    LOG.debug(
+            "Total time taken for writing shard state event queue metrics metricsdb: {}", mFinalT - mCurrT);
+  }
+
+  public static void emitActiveShardStateMetric(MetricsDB metricsDB, Result<Record> res, List<String> dims) {
+    metricsDB.createMetric(
+            new Metric<Double>(AllMetrics.ShardStateValue.SHARD_STATE_ACTIVE.toString(), 0d),
+            dims);
+
+    BatchBindStep handle =
+            metricsDB.startBatchPut(
+                    new Metric<Double>(AllMetrics.ShardStateValue.SHARD_STATE_ACTIVE.toString(), 0d),
+                    dims);
+
+    for (Record r : res) {
+
+      Double sumShardStateActive =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.ShardStateValue.SHARD_STATE_ACTIVE.toString(),
+                                      MetricsDB.SUM))
+                              .toString());
+
+      Double avgShardStateActive =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.ShardStateValue.SHARD_STATE_ACTIVE.toString(),
+                                      MetricsDB.AVG))
+                              .toString());
+
+      Double minShardStateActive =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.ShardStateValue.SHARD_STATE_ACTIVE.toString(),
+                                      MetricsDB.MIN))
+                              .toString());
+
+      Double maxShardStateActive =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.ShardStateValue.SHARD_STATE_ACTIVE.toString(),
+                                      MetricsDB.MAX))
+                              .toString());
+
+      handle.bind(
+              r.get(AllMetrics.ShardStateDimension.INDEX_NAME.toString()).toString(),
+              r.get(AllMetrics.ShardStateDimension.SHARD_ID.toString()).toString(),
+              r.get(AllMetrics.ShardStateDimension.SHARD_TYPE.toString()).toString(),
+              r.get(AllMetrics.ShardStateDimension.NODE_NAME.toString()).toString(),
+              sumShardStateActive,
+              avgShardStateActive,
+              minShardStateActive,
+              maxShardStateActive);
+    }
+    handle.execute();
+  }
+
+  public static void emitInitializingShardStateMetric(MetricsDB metricsDB, Result<Record> res, List<String> dims) {
+    metricsDB.createMetric(
+            new Metric<Double>(AllMetrics.ShardStateValue.SHARD_STATE_INITIALIZING.toString(), 0d),
+            dims);
+
+    BatchBindStep handle =
+            metricsDB.startBatchPut(
+                    new Metric<Double>(AllMetrics.ShardStateValue.SHARD_STATE_INITIALIZING.toString(), 0d),
+                    dims);
+
+    for (Record r : res) {
+
+      Double sumShardStateInitializing =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.ShardStateValue.SHARD_STATE_INITIALIZING.toString(),
+                                      MetricsDB.SUM))
+                              .toString());
+
+      Double avgShardStateInitializing =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.ShardStateValue.SHARD_STATE_INITIALIZING.toString(),
+                                      MetricsDB.AVG))
+                              .toString());
+
+      Double minShardStateInitializing =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.ShardStateValue.SHARD_STATE_INITIALIZING.toString(),
+                                      MetricsDB.MIN))
+                              .toString());
+
+      Double maxShardStateInitializing =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.ShardStateValue.SHARD_STATE_INITIALIZING.toString(),
+                                      MetricsDB.MAX))
+                              .toString());
+
+      handle.bind(
+              r.get(AllMetrics.ShardStateDimension.INDEX_NAME.toString()).toString(),
+              r.get(AllMetrics.ShardStateDimension.SHARD_ID.toString()).toString(),
+              r.get(AllMetrics.ShardStateDimension.SHARD_TYPE.toString()).toString(),
+              r.get(AllMetrics.ShardStateDimension.NODE_NAME.toString()).toString(),
+              sumShardStateInitializing,
+              avgShardStateInitializing,
+              minShardStateInitializing,
+              maxShardStateInitializing);
+    }
+    handle.execute();
+  }
+
+  public static void emitUnassignedShardStateMetric(MetricsDB metricsDB, Result<Record> res, List<String> dims) {
+    metricsDB.createMetric(
+            new Metric<Double>(AllMetrics.ShardStateValue.SHARD_STATE_UNASSIGNED.toString(), 0d),
+            dims);
+
+    BatchBindStep handle =
+            metricsDB.startBatchPut(
+                    new Metric<Double>(AllMetrics.ShardStateValue.SHARD_STATE_UNASSIGNED.toString(), 0d),
+                    dims);
+
+    for (Record r : res) {
+
+      Double sumShardStateUnassigned =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.ShardStateValue.SHARD_STATE_UNASSIGNED.toString(),
+                                      MetricsDB.SUM))
+                              .toString());
+
+      Double avgShardStateUnassigned =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.ShardStateValue.SHARD_STATE_UNASSIGNED.toString(),
+                                      MetricsDB.AVG))
+                              .toString());
+
+      Double minShardStateUnassigned =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.ShardStateValue.SHARD_STATE_UNASSIGNED.toString(),
+                                      MetricsDB.MIN))
+                              .toString());
+
+      Double maxShardStateUnassigned =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.ShardStateValue.SHARD_STATE_UNASSIGNED.toString(),
+                                      MetricsDB.MAX))
+                              .toString());
+
+      handle.bind(
+              r.get(AllMetrics.ShardStateDimension.INDEX_NAME.toString()).toString(),
+              r.get(AllMetrics.ShardStateDimension.SHARD_ID.toString()).toString(),
+              r.get(AllMetrics.ShardStateDimension.SHARD_TYPE.toString()).toString(),
+              r.get(AllMetrics.ShardStateDimension.NODE_NAME.toString()).toString(),
+              sumShardStateUnassigned,
+              avgShardStateUnassigned,
+              minShardStateUnassigned,
+              maxShardStateUnassigned);
+    }
+    handle.execute();
+  }
 }

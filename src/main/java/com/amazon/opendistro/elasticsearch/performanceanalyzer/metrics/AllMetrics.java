@@ -1100,4 +1100,50 @@ public class AllMetrics {
       public static final String PACKET_PER_SEC_VALUE = "packets/s";
     }
   }
+
+  public enum ShardStateDimension implements MetricDimension {
+    SHARD_ID(CommonDimension.SHARD_ID.toString()),
+    INDEX_NAME(CommonDimension.INDEX_NAME.toString()),
+    SHARD_TYPE(Constants.SHARD_TYPE),
+    NODE_NAME(Constants.NODE_NAME);
+
+    private final String value;
+
+    ShardStateDimension(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String NODE_NAME = "NodeName";
+      public static final String SHARD_TYPE = "ShardType";
+    }
+  }
+
+  public enum ShardStateValue implements MetricValue {
+    SHARD_STATE_UNASSIGNED(Constants.SHARD_STATE_UNASSIGNED),
+    SHARD_STATE_ACTIVE(Constants.SHARD_STATE_ACTIVE),
+    SHARD_STATE_INITIALIZING(Constants.SHARD_STATE_INITIALIZING);
+
+    private final String value;
+
+    ShardStateValue(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String SHARD_STATE_UNASSIGNED = "Shard_State_Unassigned";
+      public static final String SHARD_STATE_ACTIVE = "Shard_State_Active";
+      public static final String SHARD_STATE_INITIALIZING = "Shard_State_Initializing";
+    }
+  }
 }
