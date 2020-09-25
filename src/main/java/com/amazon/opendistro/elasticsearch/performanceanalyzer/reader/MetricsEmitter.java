@@ -19,6 +19,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.DBUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.TroubleshootingConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonMetric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCInfoDimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCInfoValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.OSMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Dimensions;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metric;
@@ -26,6 +28,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metrics
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -607,6 +610,40 @@ public class MetricsEmitter {
 
     long mFinalT = System.currentTimeMillis();
     LOG.debug("Total time taken for writing http metrics metricsdb: {}", mFinalT - mCurrT);
+  }
+
+  public static void emitGarbageCollectionInfo(MetricsDB metricsDB,
+      GarbageCollectorInfoSnapshot garbageCollectorInfoSnapshot) {
+    long mCurrT = System.currentTimeMillis();
+    Result<Record> gcTypeRecords = garbageCollectorInfoSnapshot.fetchAll();
+
+    List<String> dims = new ArrayList<String>() {
+      {
+        this.add(GCInfoDimension.MEMORY_POOL.toString());
+        this.add(GCInfoDimension.COLLECTOR_NAME.toString());
+      }
+    };
+
+    metricsDB.createMetric(new Metric<>(GCInfoValue.GARBAGE_COLLECTOR_TYPE.toString(), 0d), dims);
+    BatchBindStep handle =
+        metricsDB.startBatchPut(new Metric<>(GCInfoValue.GARBAGE_COLLECTOR_TYPE.toString(), 0d)
+            , dims);
+    for (Record record : gcTypeRecords) {
+      Optional<Object> memPoolObj =
+          Optional.ofNullable(record.get(GCInfoDimension.MEMORY_POOL.toString()));
+      Optional<Object> collectorObj =
+          Optional.ofNullable(record.get(GCInfoDimension.COLLECTOR_NAME.toString()));
+      handle.bind(memPoolObj.orElseGet(Object::new).toString(),
+                  collectorObj.orElseGet(Object::new).toString(),
+                  // the rest are agg fields: sum, avg, min, max which don't make sense for gc type.
+                  null, null, null, null);
+    }
+
+    handle.execute();
+
+    long mFinalT = System.currentTimeMillis();
+    LOG.debug("Total time taken for writing garbage collection info into metricsDB: {}",
+        mFinalT - mCurrT);
   }
 
   public static void emitMasterEventMetrics(

@@ -319,6 +319,58 @@ public class AllMetrics {
     }
   }
 
+  public enum GCInfoDimension implements MetricDimension, JooqFieldValue {
+
+    MEMORY_POOL(Constants.MEMORY_POOL_VALUE),
+    COLLECTOR_NAME(Constants.COLLECTOR_NAME_VALUE);
+
+    private final String value;
+
+    GCInfoDimension(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String getName() {
+      return value;
+    }
+
+    @Override
+    public Field<String> getField() {
+      return DSL.field(DSL.name(this.value), String.class);
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String MEMORY_POOL_VALUE = "MemoryPool";
+      public static final String COLLECTOR_NAME_VALUE = "CollectorName";
+    }
+  }
+
+  public enum GCInfoValue implements MetricValue {
+    GARBAGE_COLLECTOR_TYPE(Constants.GC_TYPE_VALUE);
+
+    private final String value;
+
+    GCInfoValue(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String GC_TYPE_VALUE = "GC_Type";
+    }
+  }
+
+
   public enum DiskDimension implements MetricDimension {
     DISK_NAME(Constants.NAME_VALUE);
 
