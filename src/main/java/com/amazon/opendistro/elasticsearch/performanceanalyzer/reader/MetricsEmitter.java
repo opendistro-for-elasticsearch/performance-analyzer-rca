@@ -626,8 +626,8 @@ public class MetricsEmitter {
 
     metricsDB.createMetric(new Metric<>(GCInfoValue.GARBAGE_COLLECTOR_TYPE.toString(), 0d), dims);
     BatchBindStep handle =
-        metricsDB.startBatchPut(new Metric<>(GCInfoValue.GARBAGE_COLLECTOR_TYPE.toString(), 0d)
-            , dims);
+        metricsDB.startBatchPut(new Metric<>(GCInfoValue.GARBAGE_COLLECTOR_TYPE.toString(), 0d),
+            dims);
     for (Record record : gcTypeRecords) {
       Optional<Object> memPoolObj =
           Optional.ofNullable(record.get(GCInfoDimension.MEMORY_POOL.toString()));

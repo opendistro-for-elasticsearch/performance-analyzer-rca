@@ -12,6 +12,7 @@
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
@@ -25,8 +26,6 @@ import java.util.NavigableMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.BatchBindStep;
-import org.jooq.Record;
-import org.jooq.Result;
 
 public class GarbageCollectorInfoProcessor implements EventProcessor {
 
@@ -66,18 +65,13 @@ public class GarbageCollectorInfoProcessor implements EventProcessor {
   public void finalizeProcessing() {
     if (handle.size() > 0) {
       handle.execute();
-
-      Result<Record> records = gcSnap.fetchAll();
     }
   }
 
   @Override
   public void processEvent(Event event) {
     handleGarbageCollectorInfoEvent(event);
-    if (handle.size() >= BATCH_LIMIT) {
-      handle.execute();
-      handle = gcSnap.startBatchPut();
-    }
+    commitBatchIfRequired();
   }
 
   private void handleGarbageCollectorInfoEvent(Event event) {
@@ -113,7 +107,7 @@ public class GarbageCollectorInfoProcessor implements EventProcessor {
 
   @Override
   public void commitBatchIfRequired() {
-    if (handle.size() > BATCH_LIMIT) {
+    if (handle.size() >= BATCH_LIMIT) {
       handle.execute();
       handle = gcSnap.startBatchPut();
     }
