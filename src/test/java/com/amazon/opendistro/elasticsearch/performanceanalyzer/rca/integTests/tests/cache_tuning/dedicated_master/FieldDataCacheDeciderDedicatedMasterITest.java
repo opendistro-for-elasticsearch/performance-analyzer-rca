@@ -15,8 +15,9 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.dedicated_master;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.multi_node.FieldDataCacheDeciderMultiNodeITest.INDEX_NAME;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.multi_node.FieldDataCacheDeciderMultiNodeITest.SHARD_ID;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.Constants.CACHE_TUNING_RESOURCES_DIR;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.Constants.INDEX_NAME;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.Constants.SHARD_ID;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_FieldData_Eviction;
@@ -36,7 +37,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ATable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ATuple;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.ClusterType;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.Consts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.HostTag;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners.RcaItNotEncryptedRunner;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.FieldDataCacheDeciderValidator;
@@ -51,7 +51,7 @@ import org.junit.runner.RunWith;
 @AClusterType(ClusterType.MULTI_NODE_CO_LOCATED_MASTER)
 @ARcaGraph(ElasticSearchAnalysisGraph.class)
 //specify a custom rca.conf to set the collector time periods to 5s to reduce runtime
-@ARcaConf(dataNode = FieldDataCacheDeciderDedicatedMasterITest.CACHE_TUNING_RESOURCES_DIR + "rca.conf")
+@ARcaConf(dataNode = CACHE_TUNING_RESOURCES_DIR + "rca.conf")
 @AMetric(
         name = Cache_FieldData_Size.class,
         dimensionNames = {
@@ -214,10 +214,6 @@ import org.junit.runner.RunWith;
         })
 
 public class FieldDataCacheDeciderDedicatedMasterITest {
-    public static final String CACHE_TUNING_RESOURCES_DIR = Consts.INTEG_TESTS_SRC_DIR + "./tests/cache_tuning/resource/";
-    public static final String INDEX_NAME = "MockIndex";
-    public static final String SHARD_ID = "1";
-
     // Test CacheDecider for ModifyCacheAction (field data cache).
     // The cache decider should emit modify cache size action as field data rca is unhealthy.
     @Test
@@ -245,5 +241,8 @@ public class FieldDataCacheDeciderDedicatedMasterITest {
     @AErrorPatternIgnored(
             pattern = "HighHeapUsageOldGenRca:operate()",
             reason = "Old gen rca is expected to be missing in this integ test.")
+    @AErrorPatternIgnored(
+            pattern = "ModifyCacheMaxSizeAction:build()",
+            reason = "Node config cache is expected to be missing during shutdown")
     public void testFieldDataCacheAction() {}
 }

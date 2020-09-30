@@ -40,7 +40,8 @@ public class FieldDataCacheDeciderValidator implements IValidator {
      * "actionable":1,
      * "coolOffPeriod": 300000
      * "muted": 1
-     * "summary": Update [FIELD_DATA_CACHE] capacity from [10000] to [100000] on node [DATA_0]
+     * "summary": "Id":"DATA_0","Ip":"127.0.0.1","resource":10,"desiredCacheMaxSizeInBytes":100000,
+     *            "currentCacheMaxSizeInBytes":10000,"coolOffPeriodInMillis":300000,"canUpdate":true}
      */
     @Override
     public boolean checkDbObj(Object object) {
@@ -60,7 +61,8 @@ public class FieldDataCacheDeciderValidator implements IValidator {
      * "actionable":1,
      * "coolOffPeriod": 300000
      * "muted": 1
-     * "summary": Update [FIELD_DATA_CACHE] capacity from [10000] to [100000] on node [DATA_0]
+     * "summary": "Id":"DATA_0","Ip":"127.0.0.1","resource":10,"desiredCacheMaxSizeInBytes":100000,
+     *            "currentCacheMaxSizeInBytes":10000,"coolOffPeriodInMillis":300000,"canUpdate":true}
      *
      */
     private boolean checkPersistedAction(final PersistedAction persistedAction) {

@@ -15,8 +15,9 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.multi_node;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.multi_node.ShardRequestCacheDeciderMultiNodeITest.INDEX_NAME;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.multi_node.ShardRequestCacheDeciderMultiNodeITest.SHARD_ID;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.Constants.CACHE_TUNING_RESOURCES_DIR;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.Constants.INDEX_NAME;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.Constants.SHARD_ID;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_FieldData_Eviction;
@@ -51,7 +52,7 @@ import org.junit.runner.RunWith;
 @AClusterType(ClusterType.MULTI_NODE_CO_LOCATED_MASTER)
 @ARcaGraph(ElasticSearchAnalysisGraph.class)
 //specify a custom rca.conf to set the collector time periods to 5s to reduce runtime
-@ARcaConf(dataNode = ShardRequestCacheDeciderMultiNodeITest.CACHE_TUNING_RESOURCES_DIR + "rca.conf")
+@ARcaConf(dataNode = CACHE_TUNING_RESOURCES_DIR + "rca.conf")
 @AMetric(
         name = Cache_FieldData_Size.class,
         dimensionNames = {
@@ -196,9 +197,6 @@ import org.junit.runner.RunWith;
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
-                                        sum = 1000000.0, avg = 1000000.0, min = 1000000.0, max = 1000000.0),
-                                @ATuple(
-                                        dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
                                         sum = 1000000.0, avg = 1000000.0, min = 1000000.0, max = 1000000.0)
                         }),
                 @ATable(
@@ -206,18 +204,11 @@ import org.junit.runner.RunWith;
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
-                                        sum = 1000000.0, avg = 1000000.0, min = 1000000.0, max = 1000000.0),
-                                @ATuple(
-                                        dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
                                         sum = 1000000.0, avg = 1000000.0, min = 1000000.0, max = 1000000.0)
                         })
         })
 
 public class ShardRequestCacheDeciderMultiNodeITest {
-    public static final String CACHE_TUNING_RESOURCES_DIR = Consts.INTEG_TESTS_SRC_DIR + "./tests/cache_tuning/resource/";
-    public static final String INDEX_NAME = "MockIndex";
-    public static final String SHARD_ID = "1";
-
     // Test CacheDecider for ModifyCacheAction (shard request cache).
     // The cache decider should emit modify cache size action as shard request cache rca is unhealthy.
     @Test
@@ -245,6 +236,9 @@ public class ShardRequestCacheDeciderMultiNodeITest {
     @AErrorPatternIgnored(
             pattern = "HighHeapUsageOldGenRca:operate()",
             reason = "Old gen rca is expected to be missing in this integ test.")
+    @AErrorPatternIgnored(
+            pattern = "ModifyCacheMaxSizeAction:build()",
+            reason = "Node config cache is expected to be missing during shutdown")
     public void testShardRequestCacheAction() {
     }
 }

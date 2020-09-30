@@ -15,8 +15,9 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.dedicated_master;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.multi_node.CacheRcaMultiNodeITest.INDEX_NAME;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.multi_node.CacheRcaMultiNodeITest.SHARD_ID;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.Constants.CACHE_TUNING_RESOURCES_DIR;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.Constants.INDEX_NAME;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.Constants.SHARD_ID;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_FieldData_Eviction;
@@ -38,6 +39,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.Consts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.HostTag;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners.RcaItNotEncryptedRunner;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.Constants;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.FieldDataCacheValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.ShardRequestCacheValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.ElasticSearchAnalysisGraph;
@@ -52,7 +54,7 @@ import org.junit.runner.RunWith;
 @AClusterType(ClusterType.MULTI_NODE_DEDICATED_MASTER)
 @ARcaGraph(ElasticSearchAnalysisGraph.class)
 //specify a custom rca.conf to set the collector time periods to 5s to reduce runtime
-@ARcaConf(dataNode = CacheRcaDedicatedMasterITest.CACHE_TUNING_RESOURCES_DIR + "rca.conf")
+@ARcaConf(dataNode = CACHE_TUNING_RESOURCES_DIR + "rca.conf")
 @AMetric(
         name = Cache_FieldData_Size.class,
         dimensionNames = {
@@ -65,21 +67,21 @@ import org.junit.runner.RunWith;
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 8500.0, avg = 8500.0, min = 8500.0, max = 8500.0),
+                                        sum = 8500.0, avg = 8500.0, min = 8500.0, max = 8500.0)
                         }),
                 @ATable(
                         hostTag = {HostTag.STANDBY_MASTER_0},
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 100.0, avg = 100.0, min = 100.0, max = 100.0),
+                                        sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
                         }),
                 @ATable(
                         hostTag = {HostTag.STANDBY_MASTER_1},
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 100.0, avg = 100.0, min = 100.0, max = 100.0),
+                                        sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
                         })
         })
 @AMetric(
@@ -94,21 +96,21 @@ import org.junit.runner.RunWith;
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 1.0, avg = 1.0, min = 1.0, max = 1.0),
+                                        sum = 1.0, avg = 1.0, min = 1.0, max = 1.0)
                         }),
                 @ATable(
                         hostTag = {HostTag.STANDBY_MASTER_0},
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 0.0, avg = 0.0, min = 0.0, max = 0.0),
+                                        sum = 0.0, avg = 0.0, min = 0.0, max = 0.0)
                         }),
                 @ATable(
                         hostTag = {HostTag.STANDBY_MASTER_1},
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 0.0, avg = 0.0, min = 0.0, max = 0.0),
+                                        sum = 0.0, avg = 0.0, min = 0.0, max = 0.0)
                         })
         })
 @AMetric(
@@ -123,21 +125,21 @@ import org.junit.runner.RunWith;
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 100.0, avg = 100.0, min = 100.0, max = 100.0),
+                                        sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
                         }),
                 @ATable(
                         hostTag = {HostTag.STANDBY_MASTER_0},
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 50.0, avg = 50.0, min = 50.0, max = 50.0),
+                                        sum = 50.0, avg = 50.0, min = 50.0, max = 50.0)
                         }),
                 @ATable(
                         hostTag = {HostTag.STANDBY_MASTER_0},
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 50.0, avg = 50.0, min = 50.0, max = 50.0),
+                                        sum = 50.0, avg = 50.0, min = 50.0, max = 50.0)
                         })
         })
 @AMetric(
@@ -152,21 +154,21 @@ import org.junit.runner.RunWith;
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 1.0, avg = 1.0, min = 1.0, max = 1.0),
+                                        sum = 1.0, avg = 1.0, min = 1.0, max = 1.0)
                         }),
                 @ATable(
                         hostTag = {HostTag.STANDBY_MASTER_0},
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 0.0, avg = 0.0, min = 0.0, max = 0.0),
+                                        sum = 0.0, avg = 0.0, min = 0.0, max = 0.0)
                         }),
                 @ATable(
                         hostTag = {HostTag.STANDBY_MASTER_0},
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 0.0, avg = 0.0, min = 0.0, max = 0.0),
+                                        sum = 0.0, avg = 0.0, min = 0.0, max = 0.0)
                         })
         })
 @AMetric(
@@ -181,21 +183,21 @@ import org.junit.runner.RunWith;
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 1.0, avg = 1.0, min = 1.0, max = 1.0),
+                                        sum = 1.0, avg = 1.0, min = 1.0, max = 1.0)
                         }),
                 @ATable(
                         hostTag = {HostTag.STANDBY_MASTER_0},
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 0.0, avg = 0.0, min = 0.0, max = 0.0),
+                                        sum = 0.0, avg = 0.0, min = 0.0, max = 0.0)
                         }),
                 @ATable(
                         hostTag = {HostTag.STANDBY_MASTER_1},
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 0.0, avg = 0.0, min = 0.0, max = 0.0),
+                                        sum = 0.0, avg = 0.0, min = 0.0, max = 0.0)
                         })
         })
 @AMetric(
@@ -234,10 +236,6 @@ import org.junit.runner.RunWith;
                         })
         })
 public class CacheRcaDedicatedMasterITest {
-    public static final String CACHE_TUNING_RESOURCES_DIR = Consts.INTEG_TESTS_SRC_DIR + "./tests/cache_tuning/resource/";
-    public static final String INDEX_NAME = "MockIndex";
-    public static final String SHARD_ID = "1";
-
     // Test FieldDataCacheClusterRca.
     // This rca should be un-healthy when cache size is higher than threshold with evictions.
     @Test
