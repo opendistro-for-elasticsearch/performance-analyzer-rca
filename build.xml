@@ -74,8 +74,8 @@
         <copy todir="${plugin_orig.dir}/pa_config">
             <fileset dir="${basedir}/pa_config"/>
         </copy>
-        <copy todir="${output.dir}/config">
-            <fileset dir="${basedir}/config"/>
+        <copy todir="${output.dir}/configs">
+            <fileset dir="${basedir}/configs"/>
         </copy>
         <copy todir="${plugin.dir}/pa_bin">
             <fileset dir="${basedir}/pa_bin"/>

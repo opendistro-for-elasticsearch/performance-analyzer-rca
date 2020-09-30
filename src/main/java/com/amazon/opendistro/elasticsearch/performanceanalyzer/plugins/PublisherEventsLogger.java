@@ -30,7 +30,7 @@ public class PublisherEventsLogger extends Plugin implements ActionListener {
 
   @Override
   public void actionPublished(Action action) {
-    LOG.info("Action: [{}] published by decision maker publisher.", action.name());
+    LOG.info("Action: [{}] published by decision maker publisher. action summary : {}", action.name(), action.summary());
   }
 
   @Override
