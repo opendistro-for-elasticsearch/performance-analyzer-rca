@@ -24,6 +24,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaController
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.FieldDataCacheRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageYoungGenRcaConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighOldGenOccupancyRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNodeClusterRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardClusterRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardRcaConfig;
@@ -151,6 +152,10 @@ public class RcaConf {
 
   public int getPerVertexBufferLength() {
     return conf.getPerVertexBufferLength();
+  }
+
+  public HighOldGenOccupancyRcaConfig getHighOldGenOccupancyRcaConfig() {
+    return new HighOldGenOccupancyRcaConfig(this);
   }
 
   public HighHeapUsageOldGenRcaConfig getHighHeapUsageOldGenRcaConfig() {

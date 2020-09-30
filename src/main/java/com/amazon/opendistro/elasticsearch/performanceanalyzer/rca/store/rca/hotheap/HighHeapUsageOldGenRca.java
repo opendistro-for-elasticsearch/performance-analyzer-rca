@@ -245,7 +245,7 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit<HotResourceSumm
   /**
    * Sliding window to check the minimal olg gen usage within a given time frame
    */
-  private static class MinOldGenSlidingWindow extends SlidingWindow<SlidingWindowData> {
+  public static class MinOldGenSlidingWindow extends SlidingWindow<SlidingWindowData> {
 
     public MinOldGenSlidingWindow(int SLIDING_WINDOW_SIZE_IN_TIMESTAMP, TimeUnit timeUnit) {
       super(SLIDING_WINDOW_SIZE_IN_TIMESTAMP, timeUnit);

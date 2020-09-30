@@ -26,6 +26,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.dec
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.QueueHealthDecider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.collator.Collator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.HeapHealthDecider;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.JvmSizingDecider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardStatsDerivedDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -94,6 +95,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hot
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageYoungGenRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.HighOldGenOccupancyRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.LargeHeapClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.OldGenContendedRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.OldGenReclamationRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
@@ -104,6 +109,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -274,6 +280,9 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     cacheHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     cacheHealthDecider.addAllUpstreams(Arrays.asList(fieldDataCacheClusterRca, shardRequestCacheClusterRca));
 
+    // construct 128g heap rca graph
+    construct128gHeapRcaGraph(heapUsed, heapMax, gcEvent);
+
     constructShardResourceUsageGraph();
 
     //constructResourceHeatMapGraph();
@@ -292,6 +301,19 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     PluginControllerConfig pluginControllerConfig = new PluginControllerConfig();
     PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
     pluginController.initPlugins();
+  }
+
+  private void construct128gHeapRcaGraph(final Metric heapUsed, final Metric heapMax,
+      final Metric gcEvent) {
+    final HighOldGenOccupancyRca oldGenOccupancyRca = new HighOldGenOccupancyRca(heapMax, heapUsed);
+    final OldGenReclamationRca oldGenReclamationRca = new OldGenReclamationRca(heapUsed,
+        heapMax, gcEvent);
+    final OldGenContendedRca oldGenContendedRca = new OldGenContendedRca(oldGenOccupancyRca,
+        oldGenReclamationRca);
+    final LargeHeapClusterRca largeHeapClusterRca = new LargeHeapClusterRca(oldGenContendedRca);
+    final JvmSizingDecider largeHeapJvmDecider =
+        new JvmSizingDecider((int)TimeUnit.DAYS.toSeconds(2),
+        largeHeapClusterRca, 50, 288);
   }
 
   private void constructShardResourceUsageGraph() {
