@@ -20,8 +20,6 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integT
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.Constants.SHARD_ID;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_FieldData_Eviction;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_FieldData_Size;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Max_Size;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Eviction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Hit;
@@ -37,7 +35,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ATable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ATuple;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.ClusterType;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.Consts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.HostTag;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners.RcaItNotEncryptedRunner;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator.ShardRequestCacheDeciderValidator;
@@ -54,50 +51,6 @@ import org.junit.runner.RunWith;
 //specify a custom rca.conf to set the collector time periods to 5s to reduce runtime
 @ARcaConf(dataNode = CACHE_TUNING_RESOURCES_DIR + "rca.conf")
 @AMetric(
-        name = Cache_FieldData_Size.class,
-        dimensionNames = {
-                AllMetrics.CommonDimension.Constants.INDEX_NAME_VALUE,
-                AllMetrics.CommonDimension.Constants.SHARDID_VALUE
-        },
-        tables = {
-                @ATable(
-                        hostTag = HostTag.DATA_0,
-                        tuple = {
-                                @ATuple(
-                                        dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 8500.0, avg = 8500.0, min = 8500.0, max = 8500.0),
-                        }),
-                @ATable(
-                        hostTag = {HostTag.ELECTED_MASTER},
-                        tuple = {
-                                @ATuple(
-                                        dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 100.0, avg = 100.0, min = 100.0, max = 100.0),
-                        })
-        })
-@AMetric(
-        name = Cache_FieldData_Eviction.class,
-        dimensionNames = {
-                AllMetrics.CommonDimension.Constants.INDEX_NAME_VALUE,
-                AllMetrics.CommonDimension.Constants.SHARDID_VALUE
-        },
-        tables = {
-                @ATable(
-                        hostTag = HostTag.DATA_0,
-                        tuple = {
-                                @ATuple(
-                                        dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 0.0, avg = 0.0, min = 0.0, max = 0.0),
-                        }),
-                @ATable(
-                        hostTag = {HostTag.ELECTED_MASTER},
-                        tuple = {
-                                @ATuple(
-                                        dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 0.0, avg = 0.0, min = 0.0, max = 0.0),
-                        })
-        })
-@AMetric(
         name = Cache_Request_Size.class,
         dimensionNames = {
                 AllMetrics.CommonDimension.Constants.INDEX_NAME_VALUE,
@@ -109,14 +62,7 @@ import org.junit.runner.RunWith;
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 100.0, avg = 100.0, min = 100.0, max = 100.0),
-                        }),
-                @ATable(
-                        hostTag = {HostTag.ELECTED_MASTER},
-                        tuple = {
-                                @ATuple(
-                                        dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 50.0, avg = 50.0, min = 50.0, max = 50.0),
+                                        sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
                         })
         })
 @AMetric(
@@ -131,14 +77,7 @@ import org.junit.runner.RunWith;
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 1.0, avg = 1.0, min = 1.0, max = 1.0),
-                        }),
-                @ATable(
-                        hostTag = {HostTag.ELECTED_MASTER},
-                        tuple = {
-                                @ATuple(
-                                        dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 0.0, avg = 0.0, min = 0.0, max = 0.0),
+                                        sum = 1.0, avg = 1.0, min = 1.0, max = 1.0)
                         })
         })
 @AMetric(
@@ -153,14 +92,7 @@ import org.junit.runner.RunWith;
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 1.0, avg = 1.0, min = 1.0, max = 1.0),
-                        }),
-                @ATable(
-                        hostTag = {HostTag.ELECTED_MASTER},
-                        tuple = {
-                                @ATuple(
-                                        dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 0.0, avg = 0.0, min = 0.0, max = 0.0),
+                                        sum = 1.0, avg = 1.0, min = 1.0, max = 1.0)
                         })
         })
 @AMetric(
@@ -171,18 +103,12 @@ import org.junit.runner.RunWith;
                         hostTag = HostTag.DATA_0,
                         tuple = {
                                 @ATuple(
-                                        dimensionValues = {AllMetrics.CacheType.Constants.FIELD_DATA_CACHE_NAME},
-                                        sum = 10000.0, avg = 10000.0, min = 10000.0, max = 10000.0),
-                                @ATuple(
                                         dimensionValues = {AllMetrics.CacheType.Constants.SHARD_REQUEST_CACHE_NAME},
-                                        sum = 100.0, avg = 100.0, min = 100.0, max = 100.0),
+                                        sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
                         }),
                 @ATable(
-                        hostTag = {HostTag.ELECTED_MASTER},
+                        hostTag = HostTag.ELECTED_MASTER,
                         tuple = {
-                                @ATuple(
-                                        dimensionValues = {AllMetrics.CacheType.Constants.FIELD_DATA_CACHE_NAME},
-                                        sum = 10000.0, avg = 10000.0, min = 10000.0, max = 10000.0),
                                 @ATuple(
                                         dimensionValues = {AllMetrics.CacheType.Constants.SHARD_REQUEST_CACHE_NAME},
                                         sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
@@ -239,6 +165,12 @@ public class ShardRequestCacheDeciderMultiNodeITest {
     @AErrorPatternIgnored(
             pattern = "ModifyCacheMaxSizeAction:build()",
             reason = "Node config cache is expected to be missing during shutdown")
+    @AErrorPatternIgnored(
+            pattern = "NodeConfigCollector:collectAndPublishMetric()",
+            reason = "Field data cache metrics is expected to be missing")
+    @AErrorPatternIgnored(
+            pattern = "CacheUtil:getCacheMaxSize()",
+            reason = "Field data cache metrics is expected to be missing.")
     public void testShardRequestCacheAction() {
     }
 }
