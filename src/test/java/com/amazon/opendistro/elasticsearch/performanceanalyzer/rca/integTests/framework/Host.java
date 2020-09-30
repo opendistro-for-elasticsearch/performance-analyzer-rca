@@ -36,7 +36,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadPro
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;

@@ -15,15 +15,19 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.api.IValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.PersistedAction;
 import org.junit.Assert;
 
 public class ShardRequestCacheDeciderValidator implements IValidator {
+    AppContext appContext;
     long startTime;
 
     public ShardRequestCacheDeciderValidator() {
+        appContext = new AppContext();
         startTime = System.currentTimeMillis();
     }
 
@@ -36,7 +40,8 @@ public class ShardRequestCacheDeciderValidator implements IValidator {
      * "actionable":1,
      * "coolOffPeriod": 300000,
      * "muted": 1,
-     * "summary": Update [SHARD_REQUEST_CACHE] capacity from [10000] to [100000] on node [DATA_0]
+     * "summary": "Id":"DATA_0","Ip":"127.0.0.1","resource":11,"desiredCacheMaxSizeInBytes":10000,"currentCacheMaxSizeInBytes":100,
+     *            "coolOffPeriodInMillis":300000,"canUpdate":true}
      */
     @Override
     public boolean checkDbObj(Object object) {
@@ -56,15 +61,21 @@ public class ShardRequestCacheDeciderValidator implements IValidator {
      * "actionable":1,
      * "coolOffPeriod": 300000,
      * "muted": 1
-     * "summary": Update [SHARD_REQUEST_CACHE] capacity from [10000] to [100000] on node [DATA_0]
+     * "summary": "Id":"DATA_0","Ip":"127.0.0.1","resource":11,"desiredCacheMaxSizeInBytes":10000,"currentCacheMaxSizeInBytes":100,
+     *            "coolOffPeriodInMillis":300000,"canUpdate":true}
      */
     private boolean checkPersistedAction(final PersistedAction persistedAction) {
+        ModifyCacheMaxSizeAction modifyCacheMaxSizeAction =
+                ModifyCacheMaxSizeAction.fromSummary(persistedAction.getSummary(), appContext);
         Assert.assertEquals(ModifyCacheMaxSizeAction.NAME, persistedAction.getActionName());
         Assert.assertEquals("{DATA_0}", persistedAction.getNodeIds());
         Assert.assertEquals("{127.0.0.1}", persistedAction.getNodeIps());
         Assert.assertEquals(300000, persistedAction.getCoolOffPeriod());
         Assert.assertTrue(persistedAction.isActionable());
         Assert.assertFalse(persistedAction.isMuted());
+        Assert.assertEquals(ResourceEnum.SHARD_REQUEST_CACHE, modifyCacheMaxSizeAction.getCacheType());
+        Assert.assertEquals(100, modifyCacheMaxSizeAction.getCurrentCacheMaxSizeInBytes());
+        Assert.assertEquals(10000, modifyCacheMaxSizeAction.getDesiredCacheMaxSizeInBytes());
         return true;
     }
 }

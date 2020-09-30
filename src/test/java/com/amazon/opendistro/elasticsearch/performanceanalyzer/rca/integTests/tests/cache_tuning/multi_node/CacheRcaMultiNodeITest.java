@@ -13,10 +13,10 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.multi_node;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.CacheRcaITest.INDEX_NAME;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.CacheRcaITest.SHARD_ID;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.multi_node.CacheRcaMultiNodeITest.INDEX_NAME;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.multi_node.CacheRcaMultiNodeITest.SHARD_ID;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_FieldData_Eviction;
@@ -52,7 +52,7 @@ import org.junit.runner.RunWith;
 @AClusterType(ClusterType.MULTI_NODE_CO_LOCATED_MASTER)
 @ARcaGraph(ElasticSearchAnalysisGraph.class)
 //specify a custom rca.conf to set the collector time periods to 5s to reduce runtime
-@ARcaConf(dataNode = CacheRcaITest.CACHE_TUNING_RESOURCES_DIR + "rca.conf")
+@ARcaConf(dataNode = CacheRcaMultiNodeITest.CACHE_TUNING_RESOURCES_DIR + "rca.conf")
 @AMetric(
     name = Cache_FieldData_Size.class,
     dimensionNames = {
@@ -175,9 +175,6 @@ import org.junit.runner.RunWith;
                 sum = 10000.0, avg = 10000.0, min = 10000.0, max = 10000.0),
             @ATuple(
                 dimensionValues = {AllMetrics.CacheType.Constants.SHARD_REQUEST_CACHE_NAME},
-                sum = 100.0, avg = 100.0, min = 100.0, max = 100.0),
-            @ATuple(
-                dimensionValues = {AllMetrics.CacheType.Constants.SHARD_REQUEST_CACHE_NAME},
                 sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
           }),
       @ATable(
@@ -191,7 +188,7 @@ import org.junit.runner.RunWith;
                 sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
           })
     })
-public class CacheRcaITest {
+public class CacheRcaMultiNodeITest {
   public static final String CACHE_TUNING_RESOURCES_DIR = Consts.INTEG_TESTS_SRC_DIR + "./tests/cache_tuning/resource/";
   public static final String INDEX_NAME = "MockIndex";
   public static final String SHARD_ID = "1";

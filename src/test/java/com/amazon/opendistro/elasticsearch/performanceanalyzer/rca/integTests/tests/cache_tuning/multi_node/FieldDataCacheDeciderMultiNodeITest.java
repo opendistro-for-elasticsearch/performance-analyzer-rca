@@ -13,10 +13,10 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.multi_node;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.FieldDataCacheDeciderITest.INDEX_NAME;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.FieldDataCacheDeciderITest.SHARD_ID;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.multi_node.FieldDataCacheDeciderMultiNodeITest.INDEX_NAME;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.multi_node.FieldDataCacheDeciderMultiNodeITest.SHARD_ID;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_FieldData_Eviction;
@@ -51,7 +51,7 @@ import org.junit.runner.RunWith;
 @AClusterType(ClusterType.MULTI_NODE_CO_LOCATED_MASTER)
 @ARcaGraph(ElasticSearchAnalysisGraph.class)
 //specify a custom rca.conf to set the collector time periods to 5s to reduce runtime
-@ARcaConf(dataNode = FieldDataCacheDeciderITest.CACHE_TUNING_RESOURCES_DIR + "rca.conf")
+@ARcaConf(dataNode = FieldDataCacheDeciderMultiNodeITest.CACHE_TUNING_RESOURCES_DIR + "rca.conf")
 @AMetric(
         name = Cache_FieldData_Size.class,
         dimensionNames = {
@@ -213,7 +213,7 @@ import org.junit.runner.RunWith;
                         })
         })
 
-public class FieldDataCacheDeciderITest {
+public class FieldDataCacheDeciderMultiNodeITest {
     public static final String CACHE_TUNING_RESOURCES_DIR = Consts.INTEG_TESTS_SRC_DIR + "./tests/cache_tuning/resource/";
     public static final String INDEX_NAME = "MockIndex";
     public static final String SHARD_ID = "1";
@@ -237,9 +237,6 @@ public class FieldDataCacheDeciderITest {
             pattern = "NodeConfigCacheReaderUtil",
             reason = "Node Config Cache are expected to be missing in this integ test.")
     @AErrorPatternIgnored(
-            pattern = "CacheUtil:getCacheMaxSize()",
-            reason = "Node Config Cache is expected to be missing during startup.")
-    @AErrorPatternIgnored(
             pattern = "SubscribeResponseHandler:onError()",
             reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
     @AErrorPatternIgnored(
@@ -248,8 +245,5 @@ public class FieldDataCacheDeciderITest {
     @AErrorPatternIgnored(
             pattern = "HighHeapUsageOldGenRca:operate()",
             reason = "Old gen rca is expected to be missing in this integ test.")
-    @AErrorPatternIgnored(
-            pattern = "ModifyCacheMaxSizeAction:build()",
-            reason = "Node Config Cache metrics is expected to be missing during startup")
     public void testFieldDataCacheAction() {}
 }

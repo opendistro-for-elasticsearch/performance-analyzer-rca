@@ -15,15 +15,19 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.api.IValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.PersistedAction;
 import org.junit.Assert;
 
 public class FieldDataCacheDeciderValidator implements IValidator {
+    AppContext appContext;
     long startTime;
 
     public FieldDataCacheDeciderValidator() {
+        appContext = new AppContext();
         startTime = System.currentTimeMillis();
     }
 
@@ -60,12 +64,17 @@ public class FieldDataCacheDeciderValidator implements IValidator {
      *
      */
     private boolean checkPersistedAction(final PersistedAction persistedAction) {
+        ModifyCacheMaxSizeAction modifyCacheMaxSizeAction =
+                ModifyCacheMaxSizeAction.fromSummary(persistedAction.getSummary(), appContext);
         Assert.assertEquals(ModifyCacheMaxSizeAction.NAME, persistedAction.getActionName());
         Assert.assertEquals("{DATA_0}", persistedAction.getNodeIds());
         Assert.assertEquals("{127.0.0.1}", persistedAction.getNodeIps());
         Assert.assertEquals(300000, persistedAction.getCoolOffPeriod());
         Assert.assertTrue(persistedAction.isActionable());
         Assert.assertFalse(persistedAction.isMuted());
+        Assert.assertEquals(ResourceEnum.FIELD_DATA_CACHE, modifyCacheMaxSizeAction.getCacheType());
+        Assert.assertEquals(10000, modifyCacheMaxSizeAction.getCurrentCacheMaxSizeInBytes());
+        Assert.assertEquals(100000, modifyCacheMaxSizeAction.getDesiredCacheMaxSizeInBytes());
         return true;
     }
 }
