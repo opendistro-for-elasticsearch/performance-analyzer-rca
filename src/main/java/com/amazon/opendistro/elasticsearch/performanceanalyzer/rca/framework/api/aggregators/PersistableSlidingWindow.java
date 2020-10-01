@@ -97,6 +97,10 @@ public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> {
     return super.readSum() + aggregatedData.getValue();
   }
 
+  public double readCurrentBucket() {
+    return aggregatedData.getValue();
+  }
+
   public void loadFromFile(Path path) throws IOException {
     LineIterator it = FileUtils.lineIterator(path.toFile(), "UTF-8");
     try {

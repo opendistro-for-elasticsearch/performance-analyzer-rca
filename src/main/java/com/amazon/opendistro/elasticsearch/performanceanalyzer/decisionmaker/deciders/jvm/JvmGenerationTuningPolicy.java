@@ -131,8 +131,16 @@ public class JvmGenerationTuningPolicy {
     return tooSmallIssues.readSum() > policyConfig.getUndersizedbucketHeight();
   }
 
+  /**
+   * Returns true if the young generation is too large
+   *
+   * <p>We consider the young generation to be too large if we've seen related RCAs fire recently
+   * Recently in this context means within the length of the last bucket
+   *
+   * @return true if the young generation is too large
+   */
   public boolean youngGenerationIsTooLarge() {
-    return tooLargeIssues.readSum() > policyConfig.getOversizedbucketHeight();
+    return tooLargeIssues.readCurrentBucket() > policyConfig.getOversizedbucketHeight();
   }
 
   public List<Action> actions() {
@@ -143,15 +151,19 @@ public class JvmGenerationTuningPolicy {
     policyConfig = rcaConf.getDeciderConfig().getJvmGenerationTuningPolicyConfig();
     initializeSlidingWindows(policyConfig);
     List<Action> actions = new ArrayList<>();
-    if (youngGenerationIsTooSmall()) {
-      int newRatio = decreaseYoungGeneration();
-      if (newRatio >= 1) {
-        actions.add(new ModifyJvmGenerationParams(appContext, decreaseYoungGeneration(), COOLOFF_PERIOD_IN_MILLIS, true));
+    if (youngGenerationIsTooLarge()) {
+      // only decrease the young generation if the config allows it
+      if (policyConfig.shouldDecreaseYoungGen()) {
+        int newRatio = decreaseYoungGeneration();
+        if (newRatio >= 1) {
+          actions.add(
+              new ModifyJvmGenerationParams(appContext, newRatio, COOLOFF_PERIOD_IN_MILLIS, true));
+        }
       }
-    } else if (youngGenerationIsTooLarge()) {
+    } else if (youngGenerationIsTooSmall()) {
       int newRatio = increaseYoungGeneration();
       if (newRatio >= 1) {
-        actions.add(new ModifyJvmGenerationParams(appContext, increaseYoungGeneration(), COOLOFF_PERIOD_IN_MILLIS, true));
+        actions.add(new ModifyJvmGenerationParams(appContext, newRatio, COOLOFF_PERIOD_IN_MILLIS, true));
       }
     }
     return actions;

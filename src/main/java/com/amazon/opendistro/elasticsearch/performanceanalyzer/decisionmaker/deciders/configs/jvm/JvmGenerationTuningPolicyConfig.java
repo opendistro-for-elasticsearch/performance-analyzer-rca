@@ -33,6 +33,7 @@ public class JvmGenerationTuningPolicyConfig {
   private static final String BUCKET_SIZE_IN_SECONDS = "bucket-size-in-seconds";
   private static final String UNDERSIZED_BUCKET_HEIGHT = "undersized-bucket-height";
   private static final String OVERSIZED_BUCKET_HEIGHT = "oversized-bucket-height";
+  private static final String SHOULD_DECREASE_YOUNG_GEN = "should-decrease-young-gen";
 
   public static final int DEFAULT_SLIDING_WINDOW_SIZE_IN_S = 86400;
   public static final int DEFAULT_BUCKET_SIZE_IN_S = 3600;
@@ -43,6 +44,7 @@ public class JvmGenerationTuningPolicyConfig {
   private Config<Integer> slidingWindowSizeInSeconds;
   private Config<Integer> undersizedbucketHeight;
   private Config<Integer> oversizedbucketHeight;
+  private Config<Boolean> shouldDecreaseYoungGen;
 
   public JvmGenerationTuningPolicyConfig(NestedConfig config) {
     slidingWindowSizeInSeconds = new Config<>(SLIDING_WINDOW_SIZE_IN_SECONDS, config.getValue(),
@@ -53,6 +55,8 @@ public class JvmGenerationTuningPolicyConfig {
         DEFAULT_UNDERSIZED_BUCKET_HEIGHT, (s) -> (s > 0), Integer.class);
     oversizedbucketHeight = new Config<>(OVERSIZED_BUCKET_HEIGHT, config.getValue(),
         DEFAULT_OVERSIZED_BUCKET_HEIGHT, (s) -> (s > 0), Integer.class);
+    shouldDecreaseYoungGen = new Config<>(SHOULD_DECREASE_YOUNG_GEN, config.getValue(),
+        false, Boolean.class);
   }
 
   public int getSlidingWindowSizeInSeconds() {
@@ -69,5 +73,9 @@ public class JvmGenerationTuningPolicyConfig {
 
   public int getOversizedbucketHeight() {
     return oversizedbucketHeight.getValue();
+  }
+
+  public boolean shouldDecreaseYoungGen() {
+    return shouldDecreaseYoungGen.getValue();
   }
 }
