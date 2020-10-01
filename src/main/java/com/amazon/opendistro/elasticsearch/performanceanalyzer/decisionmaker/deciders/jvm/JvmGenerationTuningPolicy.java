@@ -23,14 +23,19 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyJvmGenerationParams;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.DecisionPolicy;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.jvm.JvmGenerationTuningPolicyConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.PersistableSlidingWindow;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindowData;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
 import com.google.common.collect.Lists;
@@ -47,7 +52,7 @@ import org.apache.logging.log4j.Logger;
  * JvmGenerationTuningPolicy computes generation tuning actions which should be taken based on
  * observed issues in an Elasticsearch cluster.
  */
-public class JvmGenerationTuningPolicy {
+public class JvmGenerationTuningPolicy implements DecisionPolicy {
   private static final Logger LOG = LogManager.getLogger(JvmGenerationTuningPolicy.class);
   private static final List<Resource> YOUNG_GEN_UNDERSIZED_SIGNALS = Lists.newArrayList(
       YOUNG_GEN_PROMOTION_RATE,
@@ -64,19 +69,43 @@ public class JvmGenerationTuningPolicy {
   private AppContext appContext;
   private RcaConf rcaConf;
   private JvmGenerationTuningPolicyConfig policyConfig;
+  private HighHeapUsageClusterRca highHeapUsageClusterRca;
 
   // Tracks issues which suggest that the young generation is too small
   private PersistableSlidingWindow tooSmallIssues;
   // Tracks issues which suggest that the young generation is too large
   private PersistableSlidingWindow tooLargeIssues;
 
-  public void record(HotResourceSummary issue) {
+  public JvmGenerationTuningPolicy(HighHeapUsageClusterRca highHeapUsageClusterRca) {
+    this.highHeapUsageClusterRca = highHeapUsageClusterRca;
+  }
+
+  private void record(HotResourceSummary issue) {
     if (YOUNG_GEN_OVERSIZED_SIGNALS.contains(issue.getResource())) {
       tooLargeIssues.next(new SlidingWindowData(Instant.now().toEpochMilli(), 1));
     } else if (YOUNG_GEN_UNDERSIZED_SIGNALS.contains(issue.getResource())) {
       tooSmallIssues.next(new SlidingWindowData(Instant.now().toEpochMilli(), 1));
     }
   }
+
+  private void recordIssues() {
+    if (highHeapUsageClusterRca.getFlowUnits().isEmpty()) {
+      return;
+    }
+
+    ResourceFlowUnit<HotClusterSummary> flowUnit = highHeapUsageClusterRca.getFlowUnits().get(0);
+    if (!flowUnit.hasResourceSummary()) {
+      return;
+    }
+
+    HotClusterSummary clusterSummary = flowUnit.getSummary();
+    for (HotNodeSummary nodeSummary : clusterSummary.getHotNodeSummaryList()) {
+      for (HotResourceSummary summary : nodeSummary.getHotResourceSummaryList()) {
+        record(summary);
+      }
+    }
+  }
+
 
   public double getCurrentRatio() {
     if (appContext == null) {
@@ -143,14 +172,20 @@ public class JvmGenerationTuningPolicy {
     return tooLargeIssues.readCurrentBucket() > policyConfig.getOversizedbucketHeight();
   }
 
-  public List<Action> actions() {
+  @Override
+  public List<Action> evaluate() {
+    List<Action> actions = new ArrayList<>();
     if (rcaConf == null || appContext ==  null) {
       LOG.error("rca conf/app context is null, return empty action list");
-      return new ArrayList<>();
+      return actions;
+    }
+    if (!policyConfig.isEnabled()) {
+      LOG.debug("JvmGenerationTuningPolicy is disabled");
+      return actions;
     }
     policyConfig = rcaConf.getDeciderConfig().getJvmGenerationTuningPolicyConfig();
     initializeSlidingWindows(policyConfig);
-    List<Action> actions = new ArrayList<>();
+    recordIssues();
     if (youngGenerationIsTooLarge()) {
       // only decrease the young generation if the config allows it
       if (policyConfig.shouldDecreaseYoungGen()) {

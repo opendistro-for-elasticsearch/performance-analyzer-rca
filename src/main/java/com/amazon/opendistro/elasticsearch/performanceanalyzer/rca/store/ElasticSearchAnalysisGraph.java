@@ -26,7 +26,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.dec
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.QueueHealthDecider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.collator.Collator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.HeapHealthDecider;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.JvmGenerationTuningDecider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardStatsDerivedDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -279,15 +278,10 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
     //constructResourceHeatMapGraph();
 
-    // JVM Generation Tuning Decider
-    JvmGenerationTuningDecider jvmGenerationTuningDecider = new JvmGenerationTuningDecider(12, highHeapUsageClusterRca);
-    jvmGenerationTuningDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    jvmGenerationTuningDecider.addAllUpstreams(Collections.singletonList(highHeapUsageClusterRca));
-
     // Collator - Collects actions from all deciders and aligns impact vectors
-    Collator collator = new Collator(queueHealthDecider, cacheHealthDecider, heapHealthDecider, jvmGenerationTuningDecider);
+    Collator collator = new Collator(queueHealthDecider, cacheHealthDecider, heapHealthDecider);
     collator.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    collator.addAllUpstreams(Arrays.asList(queueHealthDecider, cacheHealthDecider, heapHealthDecider, jvmGenerationTuningDecider));
+    collator.addAllUpstreams(Arrays.asList(queueHealthDecider, cacheHealthDecider, heapHealthDecider));
 
     // Publisher - Executes decisions output from collator
     Publisher publisher = new Publisher(EVALUATION_INTERVAL_SECONDS, collator);

@@ -29,17 +29,21 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
  * }
  */
 public class JvmGenerationTuningPolicyConfig {
+  private static final String ENABLED = "enabled";
   private static final String SLIDING_WINDOW_SIZE_IN_SECONDS = "bucket-size-in-seconds";
   private static final String BUCKET_SIZE_IN_SECONDS = "bucket-size-in-seconds";
   private static final String UNDERSIZED_BUCKET_HEIGHT = "undersized-bucket-height";
   private static final String OVERSIZED_BUCKET_HEIGHT = "oversized-bucket-height";
   private static final String SHOULD_DECREASE_YOUNG_GEN = "should-decrease-young-gen";
 
+  public static final boolean DEFAULT_ENABLED = false;
   public static final int DEFAULT_SLIDING_WINDOW_SIZE_IN_S = 86400;
   public static final int DEFAULT_BUCKET_SIZE_IN_S = 3600;
   public static final int DEFAULT_UNDERSIZED_BUCKET_HEIGHT = 3;
   public static final int DEFAULT_OVERSIZED_BUCKET_HEIGHT = 3;
+  public static final boolean DEFAULT_SHOULD_DECREASE_YOUNG_GEN = false;
 
+  private Config<Boolean> enabled;
   private Config<Integer> bucketSizeInSeconds;
   private Config<Integer> slidingWindowSizeInSeconds;
   private Config<Integer> undersizedbucketHeight;
@@ -47,6 +51,7 @@ public class JvmGenerationTuningPolicyConfig {
   private Config<Boolean> shouldDecreaseYoungGen;
 
   public JvmGenerationTuningPolicyConfig(NestedConfig config) {
+    enabled = new Config<>(ENABLED, config.getValue(), DEFAULT_ENABLED, Boolean.class);
     slidingWindowSizeInSeconds = new Config<>(SLIDING_WINDOW_SIZE_IN_SECONDS, config.getValue(),
         DEFAULT_SLIDING_WINDOW_SIZE_IN_S, (s) -> (s > 0), Integer.class);
     bucketSizeInSeconds = new Config<>(BUCKET_SIZE_IN_SECONDS, config.getValue(),
@@ -56,7 +61,11 @@ public class JvmGenerationTuningPolicyConfig {
     oversizedbucketHeight = new Config<>(OVERSIZED_BUCKET_HEIGHT, config.getValue(),
         DEFAULT_OVERSIZED_BUCKET_HEIGHT, (s) -> (s > 0), Integer.class);
     shouldDecreaseYoungGen = new Config<>(SHOULD_DECREASE_YOUNG_GEN, config.getValue(),
-        false, Boolean.class);
+        DEFAULT_SHOULD_DECREASE_YOUNG_GEN, Boolean.class);
+  }
+
+  public boolean isEnabled() {
+    return enabled.getValue();
   }
 
   public int getSlidingWindowSizeInSeconds() {

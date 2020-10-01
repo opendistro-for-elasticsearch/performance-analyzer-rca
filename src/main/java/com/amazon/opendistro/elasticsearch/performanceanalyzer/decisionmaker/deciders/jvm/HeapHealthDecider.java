@@ -31,12 +31,14 @@ public class HeapHealthDecider extends Decider {
 
   public static final String NAME = "HeapHealthDecider";
   private final OldGenDecisionPolicy oldGenDecisionPolicy;
+  private final JvmGenerationTuningPolicy jvmGenTuningPolicy;
   private int counter = 0;
 
   public HeapHealthDecider(int decisionFrequency, final HighHeapUsageClusterRca highHeapUsageClusterRca) {
     //TODO : refactor parent class to remove evalIntervalSeconds completely
     super(5, decisionFrequency);
     oldGenDecisionPolicy = new OldGenDecisionPolicy(highHeapUsageClusterRca);
+    jvmGenTuningPolicy = new JvmGenerationTuningPolicy(highHeapUsageClusterRca);
   }
 
   @Override
@@ -58,7 +60,9 @@ public class HeapHealthDecider extends Decider {
     oldGenPolicyActions.forEach(decision::addAction);
 
     // TODO: Add actions from JvmScaleUpPolicy (128gb heaps)
-    // TODO: If no JvmScaleUpPolicy actions found, fetch and add genTuningPolicy actions
+    //  only fetch jvmTuningActions if no JvmScaleUpPolicy actions are found
+    List<Action> jvmGenTuningActions = jvmGenTuningPolicy.evaluate();
+    jvmGenTuningActions.forEach(decision::addAction);
 
     return decision;
   }
@@ -67,11 +71,13 @@ public class HeapHealthDecider extends Decider {
   public void readRcaConf(RcaConf conf) {
     super.readRcaConf(conf);
     oldGenDecisionPolicy.setRcaConf(conf);
+    jvmGenTuningPolicy.setRcaConf(conf);
   }
 
   @Override
   public void setAppContext(final AppContext appContext) {
     super.setAppContext(appContext);
     oldGenDecisionPolicy.setAppContext(appContext);
+    jvmGenTuningPolicy.setAppContext(appContext);
   }
 }
