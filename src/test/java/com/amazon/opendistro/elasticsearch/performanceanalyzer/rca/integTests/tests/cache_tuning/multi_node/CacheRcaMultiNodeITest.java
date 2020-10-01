@@ -54,196 +54,163 @@ import org.junit.runner.RunWith;
 //specify a custom rca.conf to set the collector time periods to 5s to reduce runtime
 @ARcaConf(dataNode = CACHE_TUNING_RESOURCES_DIR + "rca.conf")
 @AMetric(
-    name = Cache_FieldData_Size.class,
-    dimensionNames = {
-      AllMetrics.CommonDimension.Constants.INDEX_NAME_VALUE,
-      AllMetrics.CommonDimension.Constants.SHARDID_VALUE
-    },
-    tables = {
-      @ATable(
-          hostTag = HostTag.DATA_0,
-          tuple = {
-            @ATuple(
-                dimensionValues = {INDEX_NAME, SHARD_ID},
-                sum = 8500.0, avg = 8500.0, min = 8500.0, max = 8500.0)
-          }),
-      @ATable(
-          hostTag = {HostTag.ELECTED_MASTER},
-          tuple = {
-            @ATuple(
-                dimensionValues = {INDEX_NAME, SHARD_ID},
-                sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
-          })
-    })
+        name = Cache_FieldData_Size.class,
+        dimensionNames = {
+                AllMetrics.CommonDimension.Constants.INDEX_NAME_VALUE,
+                AllMetrics.CommonDimension.Constants.SHARDID_VALUE
+        },
+        tables = {
+                @ATable(
+                        hostTag = HostTag.DATA_0,
+                        tuple = {
+                                @ATuple(
+                                        dimensionValues = {INDEX_NAME, SHARD_ID},
+                                        sum = 8500.0, avg = 8500.0, min = 8500.0, max = 8500.0)
+                        })
+        })
 @AMetric(
-    name = Cache_FieldData_Eviction.class,
-    dimensionNames = {
-      AllMetrics.CommonDimension.Constants.INDEX_NAME_VALUE,
-      AllMetrics.CommonDimension.Constants.SHARDID_VALUE
-    },
-    tables = {
-      @ATable(
-          hostTag = HostTag.DATA_0,
-          tuple = {
-            @ATuple(
-                dimensionValues = {INDEX_NAME, SHARD_ID},
-                sum = 1.0, avg = 1.0, min = 1.0, max = 1.0)
-          }),
-      @ATable(
-          hostTag = {HostTag.ELECTED_MASTER},
-          tuple = {
-            @ATuple(
-                dimensionValues = {INDEX_NAME, SHARD_ID},
-                sum = 0.0, avg = 0.0, min = 0.0, max = 0.0)
-          })
-    })
+        name = Cache_FieldData_Eviction.class,
+        dimensionNames = {
+                AllMetrics.CommonDimension.Constants.INDEX_NAME_VALUE,
+                AllMetrics.CommonDimension.Constants.SHARDID_VALUE
+        },
+        tables = {
+                @ATable(
+                        hostTag = HostTag.DATA_0,
+                        tuple = {
+                                @ATuple(
+                                        dimensionValues = {INDEX_NAME, SHARD_ID},
+                                        sum = 1.0, avg = 1.0, min = 1.0, max = 1.0)
+                        })
+        })
 @AMetric(
-    name = Cache_Request_Size.class,
-    dimensionNames = {
-      AllMetrics.CommonDimension.Constants.INDEX_NAME_VALUE,
-      AllMetrics.CommonDimension.Constants.SHARDID_VALUE
-    },
-    tables = {
-      @ATable(
-          hostTag = HostTag.DATA_0,
-          tuple = {
-            @ATuple(
-                dimensionValues = {INDEX_NAME, SHARD_ID},
-                sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
-          }),
-      @ATable(
-          hostTag = {HostTag.ELECTED_MASTER},
-          tuple = {
-            @ATuple(
-                dimensionValues = {INDEX_NAME, SHARD_ID},
-                sum = 50.0, avg = 50.0, min = 50.0, max = 50.0)
-          })
-    })
+        name = Cache_Request_Size.class,
+        dimensionNames = {
+                AllMetrics.CommonDimension.Constants.INDEX_NAME_VALUE,
+                AllMetrics.CommonDimension.Constants.SHARDID_VALUE
+        },
+        tables = {
+                @ATable(
+                        hostTag = HostTag.DATA_0,
+                        tuple = {
+                                @ATuple(
+                                        dimensionValues = {INDEX_NAME, SHARD_ID},
+                                        sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
+                        })
+        })
 @AMetric(
-    name = Cache_Request_Eviction.class,
-    dimensionNames = {
-      AllMetrics.CommonDimension.Constants.INDEX_NAME_VALUE,
-      AllMetrics.CommonDimension.Constants.SHARDID_VALUE
-    },
-    tables = {
-      @ATable(
-          hostTag = HostTag.DATA_0,
-          tuple = {
-            @ATuple(
-                dimensionValues = {INDEX_NAME, SHARD_ID},
-                sum = 1.0, avg = 1.0, min = 1.0, max = 1.0)
-          }),
-      @ATable(
-          hostTag = {HostTag.ELECTED_MASTER},
-          tuple = {
-            @ATuple(
-                dimensionValues = {INDEX_NAME, SHARD_ID},
-                sum = 0.0, avg = 0.0, min = 0.0, max = 0.0)
-          })
-    })
+        name = Cache_Request_Eviction.class,
+        dimensionNames = {
+                AllMetrics.CommonDimension.Constants.INDEX_NAME_VALUE,
+                AllMetrics.CommonDimension.Constants.SHARDID_VALUE
+        },
+        tables = {
+                @ATable(
+                        hostTag = HostTag.DATA_0,
+                        tuple = {
+                                @ATuple(
+                                        dimensionValues = {INDEX_NAME, SHARD_ID},
+                                        sum = 1.0, avg = 1.0, min = 1.0, max = 1.0)
+                        })
+        })
 @AMetric(
-    name = Cache_Request_Hit.class,
-    dimensionNames = {
-      AllMetrics.CommonDimension.Constants.INDEX_NAME_VALUE,
-      AllMetrics.CommonDimension.Constants.SHARDID_VALUE
-    },
-    tables = {
-      @ATable(
-          hostTag = HostTag.DATA_0,
-          tuple = {
-            @ATuple(
-                dimensionValues = {INDEX_NAME, SHARD_ID},
-                sum = 1.0, avg = 1.0, min = 1.0, max = 1.0)
-          }),
-      @ATable(
-          hostTag = {HostTag.ELECTED_MASTER},
-          tuple = {
-            @ATuple(
-                dimensionValues = {INDEX_NAME, SHARD_ID},
-                sum = 0.0, avg = 0.0, min = 0.0, max = 0.0)
-          })
-    })
+        name = Cache_Request_Hit.class,
+        dimensionNames = {
+                AllMetrics.CommonDimension.Constants.INDEX_NAME_VALUE,
+                AllMetrics.CommonDimension.Constants.SHARDID_VALUE
+        },
+        tables = {
+                @ATable(
+                        hostTag = HostTag.DATA_0,
+                        tuple = {
+                                @ATuple(
+                                        dimensionValues = {INDEX_NAME, SHARD_ID},
+                                        sum = 1.0, avg = 1.0, min = 1.0, max = 1.0)
+                        })
+        })
 @AMetric(
-    name = Cache_Max_Size.class,
-    dimensionNames = {AllMetrics.CacheConfigDimension.Constants.TYPE_VALUE},
-    tables = {
-      @ATable(
-          hostTag = HostTag.DATA_0,
-          tuple = {
-            @ATuple(
-                dimensionValues = {AllMetrics.CacheType.Constants.FIELD_DATA_CACHE_NAME},
-                sum = 10000.0, avg = 10000.0, min = 10000.0, max = 10000.0),
-            @ATuple(
-                dimensionValues = {AllMetrics.CacheType.Constants.SHARD_REQUEST_CACHE_NAME},
-                sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
-          }),
-      @ATable(
-          hostTag = {HostTag.ELECTED_MASTER},
-          tuple = {
-            @ATuple(
-                dimensionValues = {AllMetrics.CacheType.Constants.FIELD_DATA_CACHE_NAME},
-                sum = 10000.0, avg = 10000.0, min = 10000.0, max = 10000.0),
-            @ATuple(
-                dimensionValues = {AllMetrics.CacheType.Constants.SHARD_REQUEST_CACHE_NAME},
-                sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
-          })
-    })
+        name = Cache_Max_Size.class,
+        dimensionNames = {AllMetrics.CacheConfigDimension.Constants.TYPE_VALUE},
+        tables = {
+                @ATable(
+                        hostTag = HostTag.DATA_0,
+                        tuple = {
+                                @ATuple(
+                                        dimensionValues = {AllMetrics.CacheType.Constants.FIELD_DATA_CACHE_NAME},
+                                        sum = 10000.0, avg = 10000.0, min = 10000.0, max = 10000.0),
+                                @ATuple(
+                                        dimensionValues = {AllMetrics.CacheType.Constants.SHARD_REQUEST_CACHE_NAME},
+                                        sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
+                        }),
+                @ATable(
+                        hostTag = HostTag.ELECTED_MASTER,
+                        tuple = {
+                                @ATuple(
+                                        dimensionValues = {AllMetrics.CacheType.Constants.FIELD_DATA_CACHE_NAME},
+                                        sum = 10000.0, avg = 10000.0, min = 10000.0, max = 10000.0),
+                                @ATuple(
+                                        dimensionValues = {AllMetrics.CacheType.Constants.SHARD_REQUEST_CACHE_NAME},
+                                        sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
+                        })
+        })
 public class CacheRcaMultiNodeITest {
-  // Test FieldDataCacheClusterRca.
-  // This rca should be un-healthy when cache size is higher than threshold with evictions.
-  @Test
-  @AExpect(
-      what = AExpect.Type.REST_API,
-      on = HostTag.ELECTED_MASTER,
-      validator = FieldDataCacheValidator.class,
-      forRca = FieldDataCacheClusterRca.class,
-      timeoutSeconds = 700)
-  @AErrorPatternIgnored(
-      pattern = "AggregateMetric:gather()",
-      reason = "CPU metrics are expected to be missing in this integ test")
-  @AErrorPatternIgnored(
-      pattern = "Metric:gather()",
-      reason = "Metrics are expected to be missing in this integ test")
-  @AErrorPatternIgnored(
-          pattern = "NodeConfigCacheReaderUtil",
-          reason = "Node Config Cache are expected to be missing in this integ test.")
-  @AErrorPatternIgnored(
-          pattern = "CacheUtil:getCacheMaxSize()",
-          reason = "Node Config Cache is expected to be missing during startup.")
-  @AErrorPatternIgnored(
-          pattern = "ModifyCacheMaxSizeAction:build()",
-          reason = "Heap metrics is expected to be missing in this integ test.")
-  @AErrorPatternIgnored(
-          pattern = "SubscribeResponseHandler:onError()",
-          reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
-  public void testFieldDataCacheRca() {}
+    // Test FieldDataCacheClusterRca.
+    // This rca should be un-healthy when cache size is higher than threshold with evictions.
+    @Test
+    @AExpect(
+            what = AExpect.Type.REST_API,
+            on = HostTag.ELECTED_MASTER,
+            validator = FieldDataCacheValidator.class,
+            forRca = FieldDataCacheClusterRca.class,
+            timeoutSeconds = 700)
+    @AErrorPatternIgnored(
+            pattern = "AggregateMetric:gather()",
+            reason = "CPU metrics are expected to be missing in this integ test")
+    @AErrorPatternIgnored(
+            pattern = "Metric:gather()",
+            reason = "Metrics are expected to be missing in this integ test")
+    @AErrorPatternIgnored(
+            pattern = "NodeConfigCacheReaderUtil",
+            reason = "Node Config Cache are expected to be missing in this integ test.")
+    @AErrorPatternIgnored(
+            pattern = "CacheUtil:getCacheMaxSize()",
+            reason = "Node Config Cache is expected to be missing during startup.")
+    @AErrorPatternIgnored(
+            pattern = "ModifyCacheMaxSizeAction:build()",
+            reason = "Heap metrics is expected to be missing in this integ test.")
+    @AErrorPatternIgnored(
+            pattern = "SubscribeResponseHandler:onError()",
+            reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
+    public void testFieldDataCacheRca() {
+    }
 
-  // Test ShardRequestCacheClusterRca.
-  // This rca should be un-healthy when cache size is higher than threshold with evictions and hits.
-  @Test
-  @AExpect(
-      what = AExpect.Type.REST_API,
-      on = HostTag.ELECTED_MASTER,
-      validator = ShardRequestCacheValidator.class,
-      forRca = ShardRequestCacheClusterRca.class,
-      timeoutSeconds = 700)
-  @AErrorPatternIgnored(
-          pattern = "AggregateMetric:gather()",
-          reason = "CPU metrics are expected to be missing in this integ test")
-  @AErrorPatternIgnored(
-          pattern = "Metric:gather()",
-          reason = "Metrics are expected to be missing in this integ test")
-  @AErrorPatternIgnored(
-          pattern = "NodeConfigCacheReaderUtil",
-          reason = "Node config cache metrics are expected to be missing in this integ test.")
-  @AErrorPatternIgnored(
-          pattern = "CacheUtil:getCacheMaxSize()",
-          reason = "Node Config Cache is expected to be missing during startup.")
-  @AErrorPatternIgnored(
-          pattern = "ModifyCacheMaxSizeAction:build()",
-          reason = "Heap metrics is expected to be missing in this integ test.")
-  @AErrorPatternIgnored(
-          pattern = "SubscribeResponseHandler:onError()",
-          reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
-  public void testShardRequestCacheRca() {}
+    // Test ShardRequestCacheClusterRca.
+    // This rca should be un-healthy when cache size is higher than threshold with evictions and hits.
+    @Test
+    @AExpect(
+            what = AExpect.Type.REST_API,
+            on = HostTag.ELECTED_MASTER,
+            validator = ShardRequestCacheValidator.class,
+            forRca = ShardRequestCacheClusterRca.class,
+            timeoutSeconds = 700)
+    @AErrorPatternIgnored(
+            pattern = "AggregateMetric:gather()",
+            reason = "CPU metrics are expected to be missing in this integ test")
+    @AErrorPatternIgnored(
+            pattern = "Metric:gather()",
+            reason = "Metrics are expected to be missing in this integ test")
+    @AErrorPatternIgnored(
+            pattern = "NodeConfigCacheReaderUtil",
+            reason = "Node config cache metrics are expected to be missing in this integ test.")
+    @AErrorPatternIgnored(
+            pattern = "CacheUtil:getCacheMaxSize()",
+            reason = "Node Config Cache is expected to be missing during startup.")
+    @AErrorPatternIgnored(
+            pattern = "ModifyCacheMaxSizeAction:build()",
+            reason = "Heap metrics is expected to be missing in this integ test.")
+    @AErrorPatternIgnored(
+            pattern = "SubscribeResponseHandler:onError()",
+            reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
+    public void testShardRequestCacheRca() {
+    }
 }

@@ -62,13 +62,6 @@ import org.junit.runner.RunWith;
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
                                         sum = 8500.0, avg = 8500.0, min = 8500.0, max = 8500.0)
-                        }),
-                @ATable(
-                        hostTag = {HostTag.ELECTED_MASTER},
-                        tuple = {
-                                @ATuple(
-                                        dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
                         })
         })
 @AMetric(
@@ -84,13 +77,6 @@ import org.junit.runner.RunWith;
                                 @ATuple(
                                         dimensionValues = {INDEX_NAME, SHARD_ID},
                                         sum = 1.0, avg = 1.0, min = 1.0, max = 1.0)
-                        }),
-                @ATable(
-                        hostTag = {HostTag.ELECTED_MASTER},
-                        tuple = {
-                                @ATuple(
-                                        dimensionValues = {INDEX_NAME, SHARD_ID},
-                                        sum = 0.0, avg = 0.0, min = 0.0, max = 0.0)
                         })
         })
 @AMetric(
@@ -105,7 +91,7 @@ import org.junit.runner.RunWith;
                                         sum = 10000.0, avg = 10000.0, min = 10000.0, max = 10000.0)
                         }),
                 @ATable(
-                        hostTag = {HostTag.ELECTED_MASTER},
+                        hostTag = HostTag.ELECTED_MASTER,
                         tuple = {
                                 @ATuple(
                                         dimensionValues = {AllMetrics.CacheType.Constants.FIELD_DATA_CACHE_NAME},
