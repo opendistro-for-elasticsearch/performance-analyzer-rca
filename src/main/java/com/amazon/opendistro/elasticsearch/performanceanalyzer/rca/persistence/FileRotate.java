@@ -148,13 +148,12 @@ public class FileRotate {
     } catch (FileAlreadyExistsException fae) {
       LOG.error("**Deleting file '{}' or else we cannot rotate the current {}", targetFilePath, fileToRotate);
       if (!Files.deleteIfExists(targetFilePath)) {
-        LOG.error("Could not delete file: " + targetFilePath);
+        LOG.error("Could not delete file: {}", targetFilePath);
       }
       try {
         ret = Files.move(fileToRotate, targetFilePath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
       } catch (Exception ex) {
-        LOG.error(ex);
-        LOG.error("Deleting file: {}", fileToRotate);
+        LOG.error("Deleting file: {}", fileToRotate, ex);
         tryDelete(fileToRotate);
 
         // Because we are deleting the current file, there is nothing for the GC to add.

@@ -56,11 +56,11 @@ public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> {
   public PersistableSlidingWindow(int slidingWindowSizeInSeconds,
                                   int bucketSizeInSeconds,
                                   TimeUnit timeUnit,
-                                  String filePath) {
+                                  Path filePath) {
     super(slidingWindowSizeInSeconds, timeUnit);
     this.bucketSizeInSeconds = bucketSizeInSeconds;
+    this.pathToFile = filePath;
     try {
-      this.pathToFile = Paths.get(filePath);
       if (Files.exists(pathToFile)) {
         loadFromFile(pathToFile);
       } else {
@@ -92,11 +92,9 @@ public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> {
     }
   }
 
-  public double readCurrentBucket() {
-    if (aggregatedData == null) {
-      return -1;
-    }
-    return aggregatedData.getValue();
+  @Override
+  public double readSum() {
+    return super.readSum() + aggregatedData.getValue();
   }
 
   public void loadFromFile(Path path) throws IOException {

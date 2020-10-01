@@ -57,7 +57,7 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
   private static final int PROMOTION_RATE_SLIDING_WINDOW_IN_MINS = 10;
   private static final int ONE_HOUR_IN_MIN = 60;
   private static final double GARBAGE_PROMOTION_THRESHOLD = .80;
-  private static final double FOLLOWER_CHECK_TIMEOUT_MS = 30d * 1_000;
+  private static final double FOLLOWER_CHECK_TIMEOUT_MS = 10 * 1_000;
   private static final double CONVERT_BYTES_TO_MEGABYTES = Math.pow(1024, 2);
   private final Metric heap_Used;
   private final Metric gc_Collection_Time;

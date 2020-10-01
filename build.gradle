@@ -97,7 +97,7 @@ tasks.withType(Checkstyle) {
 testlogger {
     theme 'standard'
     showExceptions true
-    showStackTraces false
+    showStackTraces true
     showFullStackTraces false
     showCauses true
     slowThreshold 4000
@@ -106,7 +106,7 @@ testlogger {
     showPassed true
     showSkipped true
     showFailed true
-    showStandardStreams false
+    showStandardStreams true
     showPassedStandardStreams true
     showSkippedStandardStreams true
     showFailedStandardStreams true

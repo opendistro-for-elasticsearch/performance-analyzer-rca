@@ -29,10 +29,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindowData;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
 import com.google.common.collect.Lists;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,8 +58,8 @@ public class JvmGenerationTuningPolicy {
       OLD_GEN_HEAP_USAGE
   );
   private static final long COOLOFF_PERIOD_IN_MILLIS = 48L * 24L * 60L * 60L * 1000L;
-  private static final String UNDERSIZED_DATA_FILE_PATH = "/tmp/JvmGenerationTuningPolicy_Undersized";
-  private static final String OVERSIZED_DATA_FILE_PATH = "/tmp/JvmGenerationTuningPolicy_Oversized";
+  private static final Path UNDERSIZED_DATA_FILE_PATH = Paths.get(RcaConsts.RCA_CONF_PATH, "JvmGenerationTuningPolicy_Undersized");
+  private static final Path OVERSIZED_DATA_FILE_PATH = Paths.get(RcaConsts.RCA_CONF_PATH, "JvmGenerationTuningPolicy_Oversized");
 
   private AppContext appContext;
   private RcaConf rcaConf;
@@ -104,6 +107,7 @@ public class JvmGenerationTuningPolicy {
     if (currentRatio < 3) {
       return -1;
     }
+    // If the current ratio is egregious (e.g. 50:1) set the ratio to 3:1 immediately
     double newRatio = currentRatio > 5 ? 3 : currentRatio - 1;
     return (int) Math.floor(newRatio);
   }
@@ -123,6 +127,14 @@ public class JvmGenerationTuningPolicy {
     }
   }
 
+  public boolean youngGenerationIsTooSmall() {
+    return tooSmallIssues.readSum() > policyConfig.getUndersizedbucketHeight();
+  }
+
+  public boolean youngGenerationIsTooLarge() {
+    return tooLargeIssues.readSum() > policyConfig.getOversizedbucketHeight();
+  }
+
   public List<Action> actions() {
     if (rcaConf == null || appContext ==  null) {
       LOG.error("rca conf/app context is null, return empty action list");
@@ -131,12 +143,12 @@ public class JvmGenerationTuningPolicy {
     policyConfig = rcaConf.getDeciderConfig().getJvmGenerationTuningPolicyConfig();
     initializeSlidingWindows(policyConfig);
     List<Action> actions = new ArrayList<>();
-    if (tooLargeIssues.readCurrentBucket() > policyConfig.getOversizedbucketHeight()) {
+    if (youngGenerationIsTooSmall()) {
       int newRatio = decreaseYoungGeneration();
       if (newRatio >= 1) {
         actions.add(new ModifyJvmGenerationParams(appContext, decreaseYoungGeneration(), COOLOFF_PERIOD_IN_MILLIS, true));
       }
-    } else if (tooSmallIssues.readCurrentBucket() > policyConfig.getUndersizedbucketHeight()) {
+    } else if (youngGenerationIsTooLarge()) {
       int newRatio = increaseYoungGeneration();
       if (newRatio >= 1) {
         actions.add(new ModifyJvmGenerationParams(appContext, increaseYoungGeneration(), COOLOFF_PERIOD_IN_MILLIS, true));
