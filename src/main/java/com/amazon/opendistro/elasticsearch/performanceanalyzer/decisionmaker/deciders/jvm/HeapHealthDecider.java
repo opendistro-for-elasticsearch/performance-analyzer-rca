@@ -20,14 +20,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Decider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Decision;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.old_gen.OldGenDecisionPolicy;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.List;
 
 /**
@@ -36,15 +30,13 @@ import java.util.List;
 public class HeapHealthDecider extends Decider {
 
   public static final String NAME = "HeapHealthDecider";
-  private final HighHeapUsageClusterRca highHeapUsageClusterRca;
   private final OldGenDecisionPolicy oldGenDecisionPolicy;
   private int counter = 0;
 
   public HeapHealthDecider(int decisionFrequency, final HighHeapUsageClusterRca highHeapUsageClusterRca) {
     //TODO : refactor parent class to remove evalIntervalSeconds completely
     super(5, decisionFrequency);
-    this.highHeapUsageClusterRca = highHeapUsageClusterRca;
-    oldGenDecisionPolicy = new OldGenDecisionPolicy();
+    oldGenDecisionPolicy = new OldGenDecisionPolicy(highHeapUsageClusterRca);
   }
 
   @Override
@@ -61,25 +53,13 @@ public class HeapHealthDecider extends Decider {
     }
 
     counter = 0;
-    if (highHeapUsageClusterRca.getFlowUnits().isEmpty()) {
-      return decision;
-    }
+    // oldGenDecisionPolicy are always accepted
+    List<Action> oldGenPolicyActions = oldGenDecisionPolicy.evaluate();
+    oldGenPolicyActions.forEach(decision::addAction);
 
-    ResourceFlowUnit<HotClusterSummary> flowUnit = highHeapUsageClusterRca.getFlowUnits().get(0);
-    if (!flowUnit.hasResourceSummary()) {
-      return decision;
-    }
-    HotClusterSummary clusterSummary = flowUnit.getSummary();
-    for (HotNodeSummary nodeSummary : clusterSummary.getHotNodeSummaryList()) {
-      NodeKey esNode = new NodeKey(nodeSummary.getNodeID(), nodeSummary.getHostAddress());
-      for (HotResourceSummary resource : nodeSummary.getHotResourceSummaryList()) {
-        if (resource.getResource().equals(ResourceUtil.OLD_GEN_HEAP_USAGE)) {
-          List<Action> actions = oldGenDecisionPolicy.evaluate(esNode, resource.getValue());
-          actions.forEach(decision::addAction);
-        }
-        //TODO : Add policy for young gen
-      }
-    }
+    // TODO: Add actions from JvmScaleUpPolicy (128gb heaps)
+    // TODO: If no JvmScaleUpPolicy actions found, fetch and add genTuningPolicy actions
+
     return decision;
   }
 
