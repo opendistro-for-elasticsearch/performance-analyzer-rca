@@ -31,7 +31,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum
  * such as TOTAL_THROUGHPUT and SYS_CALL_RATE
  */
 public class ResourceUtil {
-  // JVM resource
+  // JVM resources
   public static final Resource HEAP_MAX_SIZE = Resource.newBuilder()
           .setResourceEnum(ResourceEnum.HEAP)
           .setMetricEnum(MetricEnum.HEAP_MAX).build();
@@ -41,6 +41,18 @@ public class ResourceUtil {
   public static final Resource YOUNG_GEN_PROMOTION_RATE = Resource.newBuilder()
       .setResourceEnum(ResourceEnum.YOUNG_GEN)
       .setMetricEnum(MetricEnum.PROMOTION_RATE).build();
+  public static final Resource FULL_GC_PAUSE_TIME = Resource.newBuilder()
+      .setResourceEnum(ResourceEnum.OLD_GEN)
+      .setMetricEnum(MetricEnum.FULL_GC).build();
+  public static final Resource OLD_GEN_MAX_SIZE = Resource.newBuilder()
+      .setResourceEnum(ResourceEnum.OLD_GEN)
+      .setMetricEnum(MetricEnum.HEAP_MAX).build();
+  public static final Resource YOUNG_GEN_MAX_SIZE = Resource.newBuilder()
+      .setResourceEnum(ResourceEnum.YOUNG_GEN)
+      .setMetricEnum(MetricEnum.HEAP_MAX).build();
+  public static final Resource MINOR_GC_PAUSE_TIME = Resource.newBuilder()
+      .setResourceEnum(ResourceEnum.YOUNG_GEN)
+      .setMetricEnum(MetricEnum.MINOR_GC).build();
 
   // hardware resource
   public static final Resource CPU_USAGE = Resource.newBuilder()
