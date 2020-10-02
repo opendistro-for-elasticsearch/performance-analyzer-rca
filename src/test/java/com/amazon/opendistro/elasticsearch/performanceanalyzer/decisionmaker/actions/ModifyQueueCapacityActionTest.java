@@ -27,7 +27,7 @@ import static org.junit.Assert.assertTrue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Impact;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction.Builder;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.QueueActionConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
@@ -64,7 +64,7 @@ public class ModifyQueueCapacityActionTest {
     Assert.assertNotNull(modifyQueueCapacityAction);
     assertTrue(modifyQueueCapacityAction.getDesiredCapacity() > modifyQueueCapacityAction.getCurrentCapacity());
     assertTrue(modifyQueueCapacityAction.isActionable());
-    assertEquals(Builder.DEFAULT_COOL_OFF_PERIOD_IN_MILLIS,
+    assertEquals(QueueActionConfig.DEFAULT_COOL_OFF_PERIOD_IN_SECONDS * 1_000,
             modifyQueueCapacityAction.coolOffPeriodInMillis());
     assertEquals(ResourceEnum.WRITE_THREADPOOL, modifyQueueCapacityAction.getThreadPool());
     assertEquals(1, modifyQueueCapacityAction.impactedNodes().size());
@@ -87,7 +87,7 @@ public class ModifyQueueCapacityActionTest {
     Assert.assertNotNull(modifyQueueCapacityAction);
     assertTrue(modifyQueueCapacityAction.getDesiredCapacity() < modifyQueueCapacityAction.getCurrentCapacity());
     assertTrue(modifyQueueCapacityAction.isActionable());
-    assertEquals(Builder.DEFAULT_COOL_OFF_PERIOD_IN_MILLIS,
+    assertEquals(QueueActionConfig.DEFAULT_COOL_OFF_PERIOD_IN_SECONDS * 1_000,
             modifyQueueCapacityAction.coolOffPeriodInMillis());
     assertEquals(ResourceEnum.SEARCH_THREADPOOL, modifyQueueCapacityAction.getThreadPool());
     assertEquals(1, modifyQueueCapacityAction.impactedNodes().size());
