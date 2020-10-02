@@ -155,7 +155,6 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
   }
 
   public static final class Builder {
-    public static final long DEFAULT_COOL_OFF_PERIOD_IN_MILLIS = 300 * 1_000;
     public static final boolean DEFAULT_IS_INCREASE = true;
     public static final boolean DEFAULT_CAN_UPDATE = true;
 
@@ -185,7 +184,6 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
       this.appContext = appContext;
       this.rcaConf = conf;
 
-      this.coolOffPeriodInMillis = DEFAULT_COOL_OFF_PERIOD_IN_MILLIS;
       this.isIncrease = DEFAULT_IS_INCREASE;
       this.canUpdate = DEFAULT_CAN_UPDATE;
 
@@ -199,6 +197,7 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
       double upperBoundThreshold = cacheActionConfig.getThresholdConfig(cacheType).upperBound();
       double lowerBoundThreshold = cacheActionConfig.getThresholdConfig(cacheType).lowerBound();
       this.stepSizeInPercent = cacheActionConfig.getStepSize(cacheType);
+      this.coolOffPeriodInMillis = cacheActionConfig.getCoolOffPeriodInSeconds() * 1_000;
       if (heapMaxSizeInBytes != null) {
         this.upperBoundInBytes = getThresholdInBytes(upperBoundThreshold, heapMaxSizeInBytes);
         this.lowerBoundInBytes = getThresholdInBytes(lowerBoundThreshold, heapMaxSizeInBytes);
