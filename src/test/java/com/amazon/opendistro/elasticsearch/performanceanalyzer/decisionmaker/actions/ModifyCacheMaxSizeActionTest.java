@@ -285,6 +285,21 @@ public class ModifyCacheMaxSizeActionTest {
         decreaseAction.getDesiredCacheMaxSizeInBytes(), 10);
   }
 
+  @Test
+  public void testSummary() {
+    NodeKey node1 = new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
+    populateNodeConfigCache();
+    ModifyCacheMaxSizeAction.Builder builder =
+            ModifyCacheMaxSizeAction.newBuilder(node1, ResourceEnum.FIELD_DATA_CACHE, appContext, rcaConf);
+    ModifyCacheMaxSizeAction modifyCacheMaxSizeAction = builder.increase(true).build();
+    String summary = modifyCacheMaxSizeAction.summary();
+
+    ModifyCacheMaxSizeAction objectFromSummary = ModifyCacheMaxSizeAction.fromSummary(summary, appContext);
+    assertEquals(modifyCacheMaxSizeAction.getCurrentCacheMaxSizeInBytes(), objectFromSummary.getCurrentCacheMaxSizeInBytes());
+    assertEquals(modifyCacheMaxSizeAction.getDesiredCacheMaxSizeInBytes(), objectFromSummary.getDesiredCacheMaxSizeInBytes());
+    assertEquals(modifyCacheMaxSizeAction.getCacheType(), objectFromSummary.getCacheType());
+  }
+
   private void assertNoImpact(NodeKey node, ModifyCacheMaxSizeAction modifyCacheSizeAction) {
     Map<Dimension, Impact> impact = modifyCacheSizeAction.impact().get(node).getImpact();
     assertEquals(Impact.NO_IMPACT, impact.get(HEAP));

@@ -23,9 +23,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.QueueActionConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
-
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -92,11 +94,31 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
 
   @Override
   public String summary() {
-    if (!isActionable()) {
-      return String.format("No action to take for: [%s]", NAME);
-    }
-    return String.format("Update [%s] queue capacity from [%d] to [%d] on node [%s]",
-        threadPool.toString(), currentCapacity, desiredCapacity, esNode.getNodeId());
+    JsonObject jsonObject = new JsonObject();
+    jsonObject.addProperty("Id", esNode.getNodeId().toString());
+    jsonObject.addProperty("Ip", esNode.getHostAddress().toString());
+    jsonObject.addProperty("resource", threadPool.getNumber());
+    jsonObject.addProperty("desiredCapacity", desiredCapacity);
+    jsonObject.addProperty("currentCapacity", currentCapacity);
+    jsonObject.addProperty("coolOffPeriodInMillis", coolOffPeriodInMillis);
+    jsonObject.addProperty("canUpdate", canUpdate);
+    return jsonObject.toString();
+  }
+
+  // Generates action from summary. Passing in appContext because it contains dynamic settings
+  public static ModifyQueueCapacityAction fromSummary(String jsonRepr, AppContext appContext) {
+    final JsonObject jsonObject = JsonParser.parseString(jsonRepr).getAsJsonObject();
+
+    NodeKey esNode = new NodeKey(new InstanceDetails.Id(jsonObject.get("Id").getAsString()),
+            new InstanceDetails.Ip(jsonObject.get("Ip").getAsString()));
+    ResourceEnum threadPool = ResourceEnum.forNumber(jsonObject.get("resource").getAsInt());
+    int desiredCapacity = jsonObject.get("desiredCapacity").getAsInt();
+    int currentCapacity = jsonObject.get("currentCapacity").getAsInt();
+    long coolOffPeriodInMillis = jsonObject.get("coolOffPeriodInMillis").getAsLong();
+    boolean canUpdate = jsonObject.get("canUpdate").getAsBoolean();
+
+    return new ModifyQueueCapacityAction(esNode, threadPool, appContext,
+            desiredCapacity, currentCapacity, coolOffPeriodInMillis, canUpdate);
   }
 
   @Override
