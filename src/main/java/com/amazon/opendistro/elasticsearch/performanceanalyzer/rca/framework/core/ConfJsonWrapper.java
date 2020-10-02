@@ -42,6 +42,7 @@ class ConfJsonWrapper {
   public static final String MUTED_ACTIONS = "muted-actions";
   public static final String DECIDER_CONFIG_SETTINGS = "decider-config-settings";
   public static final String ACTION_CONFIG_SETTINGS = "action-config-settings";
+  public static final String BUCKETIZATION_KEY = "bucketization";
 
   private final String rcaStoreLoc;
   private final String thresholdStoreLoc;
@@ -60,6 +61,7 @@ class ConfJsonWrapper {
   private final List<String> mutedActionList;
   private final Map<String, Object> deciderConfigSettings;
   private final Map<String, Object> actionConfigSettings;
+  private final Map<String, Object> bucketizationTunings;
 
   String getRcaStoreLoc() {
     return rcaStoreLoc;
@@ -129,6 +131,10 @@ class ConfJsonWrapper {
     return actionConfigSettings;
   }
 
+  public Map<String, Object> getBucketizationTunings() {
+    return bucketizationTunings;
+  }
+
   ConfJsonWrapper(
       @JsonProperty(RCA_STORE_LOC) String rcaStoreLoc,
       @JsonProperty(THRESHOLD_STORE_LOC) String thresholdStoreLoc,
@@ -145,7 +151,8 @@ class ConfJsonWrapper {
       @JsonProperty(MUTED_DECIDERS) List<String> mutedDeciders,
       @JsonProperty(MUTED_ACTIONS) List<String> mutedActions,
       @JsonProperty(DECIDER_CONFIG_SETTINGS) Map<String, Object> deciderConfigSettings,
-      @JsonProperty(ACTION_CONFIG_SETTINGS) Map<String, Object> actionConfigSettings) {
+      @JsonProperty(ACTION_CONFIG_SETTINGS) Map<String, Object> actionConfigSettings,
+      @JsonProperty(BUCKETIZATION_KEY) Map<String, Object> bucketizationTunings) {
     this.creationTime = System.currentTimeMillis();
     this.rcaStoreLoc = rcaStoreLoc;
     this.thresholdStoreLoc = thresholdStoreLoc;
@@ -163,5 +170,6 @@ class ConfJsonWrapper {
     this.mutedActionList = mutedActions == null ? ImmutableList.of() : ImmutableList.copyOf(mutedActions);
     this.deciderConfigSettings = deciderConfigSettings;
     this.actionConfigSettings = actionConfigSettings;
+    this.bucketizationTunings = bucketizationTunings;
   }
 }

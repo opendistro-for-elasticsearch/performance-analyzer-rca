@@ -1,0 +1,19 @@
+{
+  "bucketization": {
+    "base1": {
+      "UNDER_UTILIZED": 20.0,
+      "HEALTHY_WITH_BUFFER": 40.0,
+      "HEALTHY": 80.0
+    },
+    "base2": {
+      "UNDER_UTILIZED": 30.0,
+      "HEALTHY_WITH_BUFFER": 40.0,
+      "HEALTHY": 75.0
+    },
+    "base3": {
+      "UNDER_UTILIZED": 30.1,
+      "HEALTHY_WITH_BUFFER": 40.23456,
+      "HEALTHY": 75.0
+    }
+  }
+}
