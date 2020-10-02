@@ -1,59 +1,54 @@
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.sizing;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.SizeUpJvmAction;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Decider;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Decision;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.DecisionPolicy;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.JvmScaleUpPolicyConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindow;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindowData;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.LargeHeapClusterRca;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class JvmSizingDecider extends Decider {
+public class JvmScaleUpPolicy implements DecisionPolicy {
 
-  public static final String NAME = "JvmSizingDecider";
-  private static final long EVAL_INTERVAL_IN_S = 5;
+  private final LargeHeapClusterRca largeHeapClusterRca;
+  private AppContext appContext;
+  private RcaConf rcaConf;
+  private PerNodeSlidingWindow perNodeSlidingWindow;
+  private long evalFrequency;
+  private long counter;
+  private int unhealthyNodePercentage;
+  private int minimumMinutesUnhealthy;
 
-  private final PerNodeSlidingWindow perNodeSlidingWindow;
-
-  private LargeHeapClusterRca largeHeapClusterRca;
-  private int decisionFrequency;
-  private int thresholdNumNodesPercent;
-  private int unhealthyDataPointsThreshold;
-  private int counter = 0;
-
-  public JvmSizingDecider(int decisionFrequency, final LargeHeapClusterRca largeHeapClusterRca,
-      int thresholdNumNodesPercent, int unhealthyDataPointsThreshold) {
-    super(EVAL_INTERVAL_IN_S, decisionFrequency);
+  public JvmScaleUpPolicy(final LargeHeapClusterRca largeHeapClusterRca,
+      final long policyEvaluationFrequency) {
     this.largeHeapClusterRca = largeHeapClusterRca;
-    this.decisionFrequency = decisionFrequency;
-    this.thresholdNumNodesPercent = thresholdNumNodesPercent;
-    this.unhealthyDataPointsThreshold = unhealthyDataPointsThreshold;
+    this.evalFrequency = policyEvaluationFrequency;
+    this.counter = 0;
     this.perNodeSlidingWindow = new PerNodeSlidingWindow(4, TimeUnit.DAYS);
   }
 
   @Override
-  public String name() {
-    return NAME;
-  }
-
-  @Override
-  public Decision operate() {
-    long currTime = System.currentTimeMillis();
-    ++counter;
+  public List<Action> evaluate() {
+    counter++;
     addToSlidingWindow();
-    if (counter == decisionFrequency) {
+    if (counter == evalFrequency) {
       counter = 0;
       return evaluateAndEmit();
     }
 
-    return new Decision(currTime, NAME);
+    return Collections.emptyList();
   }
 
   private void addToSlidingWindow() {
@@ -73,16 +68,19 @@ public class JvmSizingDecider extends Decider {
     });
   }
 
-  private Decision evaluateAndEmit() {
-    Decision decision = new Decision(System.currentTimeMillis(), NAME);
-    int numNodesInCluster = getAppContext().getAllClusterInstances().size();
+  private List<Action> evaluateAndEmit() {
+    List<Action> actions = new ArrayList<>();
+    int numNodesInCluster = appContext.getAllClusterInstances().size();
     int numNodesInClusterUndersizedOldGen = getUnderSizedOldGenCount();
 
-    if (numNodesInClusterUndersizedOldGen * 100 / numNodesInCluster >= thresholdNumNodesPercent) {
-      decision.addAction(new SizeUpJvmAction(getAppContext()));
+    if (numNodesInClusterUndersizedOldGen * 100 / numNodesInCluster >= unhealthyNodePercentage) {
+      Action jvmSizeUpAction = new SizeUpJvmAction(appContext);
+      if (jvmSizeUpAction.isActionable()) {
+        actions.add(jvmSizeUpAction);
+      }
     }
 
-    return decision;
+    return actions;
   }
 
   /**
@@ -95,7 +93,7 @@ public class JvmSizingDecider extends Decider {
   private int getUnderSizedOldGenCount() {
     int count = 0;
     for (NodeKey key : perNodeSlidingWindow.perNodeSlidingWindow.keySet()) {
-      if (perNodeSlidingWindow.readCount(key) >= unhealthyDataPointsThreshold) {
+      if (perNodeSlidingWindow.readCount(key) >= minimumMinutesUnhealthy) {
         count++;
       }
     }
@@ -128,5 +126,20 @@ public class JvmSizingDecider extends Decider {
 
       return 0;
     }
+  }
+
+  public void setAppContext(final AppContext appContext) {
+    this.appContext = appContext;
+  }
+
+  public void setRcaConf(final RcaConf rcaConf) {
+    this.rcaConf = rcaConf;
+    readThresholdValuesFromConf();
+  }
+
+  private void readThresholdValuesFromConf() {
+    JvmScaleUpPolicyConfig policyConfig = rcaConf.getJvmScaleUpPolicyConfig();
+    this.unhealthyNodePercentage = policyConfig.getUnhealthyNodePercentage();
+    this.minimumMinutesUnhealthy = policyConfig.getMinUnhealthyMinutes();
   }
 }

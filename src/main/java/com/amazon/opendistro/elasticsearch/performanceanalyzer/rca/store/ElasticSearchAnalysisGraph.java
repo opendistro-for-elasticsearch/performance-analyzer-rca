@@ -26,7 +26,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.dec
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.QueueHealthDecider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.collator.Collator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.HeapHealthDecider;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.JvmSizingDecider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardStatsDerivedDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -105,11 +104,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.tem
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.HeapAllocRateTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.ShardSizeDimensionTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.threadpool.QueueRejectionRca;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -178,8 +177,27 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     hotNodeClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     hotNodeClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
 
+    final HighOldGenOccupancyRca oldGenOccupancyRca = new HighOldGenOccupancyRca(heapMax, heapUsed);
+    oldGenOccupancyRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    oldGenOccupancyRca.addAllUpstreams(Arrays.asList(heapMax, heapUsed));
+
+    final OldGenReclamationRca oldGenReclamationRca = new OldGenReclamationRca(heapUsed,
+        heapMax, gcEvent);
+    oldGenReclamationRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    oldGenReclamationRca.addAllUpstreams(Arrays.asList(heapUsed, heapMax, gcEvent));
+
+    final OldGenContendedRca oldGenContendedRca = new OldGenContendedRca(oldGenOccupancyRca,
+        oldGenReclamationRca);
+    oldGenContendedRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    oldGenContendedRca.addAllUpstreams(Arrays.asList(oldGenOccupancyRca, oldGenReclamationRca));
+
+    final LargeHeapClusterRca largeHeapClusterRca = new LargeHeapClusterRca(oldGenContendedRca);
+    largeHeapClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    largeHeapClusterRca.addAllUpstreams(Collections.singletonList(oldGenContendedRca));
+    largeHeapClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
+
     // Heap Health Decider
-    HeapHealthDecider heapHealthDecider = new HeapHealthDecider(12, highHeapUsageClusterRca);
+    HeapHealthDecider heapHealthDecider = new HeapHealthDecider(12, highHeapUsageClusterRca, largeHeapClusterRca);
     heapHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     heapHealthDecider.addAllUpstreams(Collections.singletonList(highHeapUsageClusterRca));
 
@@ -280,9 +298,6 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     cacheHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     cacheHealthDecider.addAllUpstreams(Arrays.asList(fieldDataCacheClusterRca, shardRequestCacheClusterRca));
 
-    // construct 128g heap rca graph
-    construct128gHeapRcaGraph(heapUsed, heapMax, gcEvent);
-
     constructShardResourceUsageGraph();
 
     //constructResourceHeatMapGraph();
@@ -303,23 +318,11 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     pluginController.initPlugins();
   }
 
-  private void construct128gHeapRcaGraph(final Metric heapUsed, final Metric heapMax,
-      final Metric gcEvent) {
-    final HighOldGenOccupancyRca oldGenOccupancyRca = new HighOldGenOccupancyRca(heapMax, heapUsed);
-    final OldGenReclamationRca oldGenReclamationRca = new OldGenReclamationRca(heapUsed,
-        heapMax, gcEvent);
-    final OldGenContendedRca oldGenContendedRca = new OldGenContendedRca(oldGenOccupancyRca,
-        oldGenReclamationRca);
-    final LargeHeapClusterRca largeHeapClusterRca = new LargeHeapClusterRca(oldGenContendedRca);
-    final JvmSizingDecider largeHeapJvmDecider =
-        new JvmSizingDecider((int)TimeUnit.DAYS.toSeconds(2),
-        largeHeapClusterRca, 50, 288);
-  }
-
   private void constructShardResourceUsageGraph() {
     Metric cpuUtilization = new CPU_Utilization(EVALUATION_INTERVAL_SECONDS);
     Metric ioTotThroughput = new IO_TotThroughput(EVALUATION_INTERVAL_SECONDS);
     Metric ioTotSyscallRate = new IO_TotalSyscallRate(EVALUATION_INTERVAL_SECONDS);
+    new File("/").getTotalSpace();
 
     cpuUtilization.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     ioTotThroughput.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
