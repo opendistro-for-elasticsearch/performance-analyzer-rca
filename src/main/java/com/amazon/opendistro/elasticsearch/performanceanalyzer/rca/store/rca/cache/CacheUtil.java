@@ -82,7 +82,10 @@ public class CacheUtil {
                                                   double threshold_percentage) {
         try {
             double cacheSizeInKB = getTotalSizeInKB(cacheSizeGroupByOperation);
+            LOG.info("MOCHI, cacheSizeInKB: {}", cacheSizeInKB);
             double cacheMaxSizeInKB = getSizeInKB(cacheMaxSizeinBytes);
+            LOG.info("MOCHI, cacheMaxSizeInKB: {}", cacheMaxSizeInKB);
+            LOG.info("MOCHI, threshold_percentage: {}", threshold_percentage);
             return cacheSizeInKB != 0 && cacheMaxSizeInKB != 0 && (cacheSizeInKB > cacheMaxSizeInKB * threshold_percentage);
         } catch (Exception e) {
             LOG.error("error in calculating isSizeThresholdExceeded");

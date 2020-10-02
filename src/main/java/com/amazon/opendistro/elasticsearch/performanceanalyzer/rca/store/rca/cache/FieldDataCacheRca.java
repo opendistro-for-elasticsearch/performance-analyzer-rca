@@ -116,9 +116,12 @@ public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
 
             double fieldDataCacheMaxSizeInBytes = getCacheMaxSize(
                     getAppContext(), new NodeKey(instanceDetails), ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE);
+            LOG.info("MOCHI, fieldDataCacheMaxSizeInBytes: {}", fieldDataCacheMaxSizeInBytes);
             Boolean exceedsSizeThreshold = isSizeThresholdExceeded(
                     fieldDataCacheSizeGroupByOperation, fieldDataCacheMaxSizeInBytes, cacheSizeThreshold);
+            LOG.info("MOCHI, exceedsSizeThreshold: {}", exceedsSizeThreshold);
             if (cacheEvictionCollector.isUnhealthy(currTimestamp) && exceedsSizeThreshold) {
+                LOG.info("MOCHI, marking the context as UNHEALTHY");
                 context = new ResourceContext(Resources.State.UNHEALTHY);
                 nodeSummary.appendNestedSummary(cacheEvictionCollector.generateSummary(currTimestamp));
             } else {
@@ -126,8 +129,10 @@ public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
             }
 
             counter = 0;
+            LOG.info("MOCHI, returning flowunit. Context: {}, nodeSummary:{}", context, nodeSummary);
             return new ResourceFlowUnit<>(currTimestamp, context, nodeSummary, !instanceDetails.getIsMaster());
         } else {
+            LOG.info("MOCHI, returning Empty flowunit.");
             return new ResourceFlowUnit<>(currTimestamp);
         }
     }
@@ -189,6 +194,7 @@ public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
 
                 double evictionCount = flowUnit.getData().stream().mapToDouble(
                         record -> record.getValue(MetricsDB.MAX, Double.class)).sum();
+                LOG.info("MOCHI, evictionCount: {}", evictionCount);
                 if (!Double.isNaN(evictionCount)) {
                     if (evictionCount > 0) {
                         if (!hasEvictions) {
@@ -205,6 +211,9 @@ public class FieldDataCacheRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
         }
 
         public boolean isUnhealthy(final long currTimestamp) {
+            LOG.info("MOCHI, hasEvictions: {}", hasEvictions);
+            LOG.info("MOCHI, timestamp diff: {}, metricTimePeriodInMillis: {}",
+                    (currTimestamp - evictionTimestamp), metricTimePeriodInMillis);
             return hasEvictions && (currTimestamp - evictionTimestamp) >= metricTimePeriodInMillis;
         }
 
