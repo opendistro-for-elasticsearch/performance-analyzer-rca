@@ -18,7 +18,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ActionListener;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.CoolOffDetector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.FlipFlopDetector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.TimedFlipFlopDetector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.collator.Collator;
@@ -42,14 +41,12 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
   private Collator collator;
   private FlipFlopDetector flipFlopDetector;
   private boolean isMuted = false;
-  private CoolOffDetector coolOffDetector;
   private List<ActionListener> actionListeners;
 
   public Publisher(int evalIntervalSeconds, Collator collator) {
     super(0, evalIntervalSeconds);
     this.collator = collator;
     this.actionListeners = new ArrayList<>();
-    this.coolOffDetector = new CoolOffDetector();
     // TODO please bring in guice so we can configure this with DI
     this.flipFlopDetector = new TimedFlipFlopDetector(1, TimeUnit.HOURS);
   }
@@ -67,9 +64,8 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
     if (!collator.getFlowUnits().isEmpty()) {
       Decision decision = collator.getFlowUnits().get(0);
       for (Action action : decision.getActions()) {
-        if (coolOffDetector.isCooledOff(action) && !flipFlopDetector.isFlipFlop(action)) {
+        if (!flipFlopDetector.isFlipFlop(action)) {
           flipFlopDetector.recordAction(action);
-          coolOffDetector.recordAction(action);
           for (ActionListener listener : actionListeners) {
             listener.actionPublished(action);
           }
@@ -129,10 +125,5 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
   @VisibleForTesting
   protected FlipFlopDetector getFlipFlopDetector() {
     return this.flipFlopDetector;
-  }
-
-  @VisibleForTesting
-  protected CoolOffDetector getCoolOffDetector() {
-    return this.coolOffDetector;
   }
 }
