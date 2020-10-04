@@ -35,6 +35,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.uti
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -121,10 +123,12 @@ public class QueueHealthDeciderTest {
       assertEquals(1, action.impactedNodes().size());
       String nodeId = action.impactedNodes().get(0).getNodeId().toString();
       String summary = action.summary();
-      if (summary.contains(ResourceEnum.WRITE_THREADPOOL.toString())) {
+      JsonObject jsonObject = JsonParser.parseString(summary).getAsJsonObject();
+
+      if (jsonObject.get("resource").getAsInt() == ResourceEnum.WRITE_THREADPOOL.getNumber()) {
         nodeActionCounter.computeIfAbsent(nodeId, k -> new HashMap<>()).merge(ResourceEnum.WRITE_THREADPOOL, 1, Integer::sum);
       }
-      if (summary.contains(ResourceEnum.SEARCH_THREADPOOL.toString())) {
+      if (jsonObject.get("resource").getAsInt() == ResourceEnum.SEARCH_THREADPOOL.getNumber()) {
         nodeActionCounter.computeIfAbsent(nodeId, k -> new HashMap<>()).merge(ResourceEnum.SEARCH_THREADPOOL, 1, Integer::sum);
       }
     }

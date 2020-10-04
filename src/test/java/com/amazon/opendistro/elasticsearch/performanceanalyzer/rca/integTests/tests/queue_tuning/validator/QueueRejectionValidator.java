@@ -46,7 +46,7 @@ public class QueueRejectionValidator implements IValidator {
    * ]}
    */
   @Override
-  public boolean check(JsonElement response) {
+  public boolean checkJsonResp(JsonElement response) {
     JsonArray array = response.getAsJsonObject().get("data").getAsJsonArray();
     if (array.size() == 0) {
       return false;

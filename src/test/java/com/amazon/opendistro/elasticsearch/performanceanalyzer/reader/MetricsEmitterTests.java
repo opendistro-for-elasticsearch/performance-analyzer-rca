@@ -23,6 +23,8 @@ import static org.junit.Assert.assertTrue;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.TroubleshootingConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonMetric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCInfoDimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCInfoValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HttpMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MetricName;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.OSMetrics;
@@ -371,5 +373,29 @@ public class MetricsEmitterTests extends AbstractReaderTests {
           anyOf(closeTo(1, 0.001), closeTo(-1, 0.001), closeTo(5, 0.001), closeTo(0, 0.001)));
     }
     db.remove();
+  }
+
+  @Test
+  public void testEmitGCTypeMetric() throws Exception {
+    Connection conn = DriverManager.getConnection(DB_URL);
+    final String memPool = "testMemPool";
+    final String collectorName = "testCollectorName";
+    long currTime = System.currentTimeMillis();
+
+    GarbageCollectorInfoSnapshot gcSnap = new GarbageCollectorInfoSnapshot(conn, currTime);
+    BatchBindStep handle = gcSnap.startBatchPut();
+    Object[] bindVals = new Object[2];
+    bindVals[0] = memPool;
+    bindVals[1] = collectorName;
+    handle.bind(bindVals).execute();
+
+    MetricsDB metricsDB = new MetricsDB(currTime);
+    MetricsEmitter.emitGarbageCollectionInfo(metricsDB, gcSnap);
+
+    Result<Record> result = metricsDB.queryMetric(GCInfoValue.GARBAGE_COLLECTOR_TYPE.toString());
+
+    assertEquals(1, result.size());
+    assertEquals(memPool, result.get(0).get(GCInfoDimension.MEMORY_POOL.getField()));
+    assertEquals(collectorName, result.get(0).get(GCInfoDimension.COLLECTOR_NAME.getField()));
   }
 }

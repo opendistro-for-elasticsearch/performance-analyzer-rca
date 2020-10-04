@@ -47,7 +47,7 @@ public class ShardRequestCacheValidator implements IValidator {
      * ]}
      */
     @Override
-    public boolean check(JsonElement response) {
+    public boolean checkJsonResp(JsonElement response) {
         JsonArray array = response.getAsJsonObject().get("data").getAsJsonArray();
         if (array.size() == 0) {
             return false;
@@ -69,7 +69,7 @@ public class ShardRequestCacheValidator implements IValidator {
      *  "HotClusterSummary":[{"number_of_nodes":1,"number_of_unhealthy_nodes":1}]
      * }
      */
-    boolean checkClusterRca(final JsonObject rcaObject) {
+    private boolean checkClusterRca(final JsonObject rcaObject) {
         if (!"unhealthy".equals(rcaObject.get("state").getAsString())) {
             return false;
         }

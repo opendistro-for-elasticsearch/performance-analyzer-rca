@@ -262,14 +262,22 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner, Fi
 
           switch (what) {
             case REST_API:
-              successful = validator.check(testApi.getRcaDataOnHost(expect.on(), rca.getSimpleName()));
-              if (!successful) {
-                failedValidations.add(validator.getClass());
+              successful = validator.checkJsonResp(testApi.getRcaDataOnHost(expect.on(), rca.getSimpleName()));
+              break;
+            case DB_QUERY:
+              try {
+                successful = validator.checkDbObj(testApi.constructObjectFromDBOnHost(expect.on(), rca));
+              } catch (Exception e) {
+                // if any exceptions occur on reading from the DB, we want to continue.
+                // exceptions might also mean the data is not yet available in the DB.
+                // successful will remain false.
               }
               break;
           }
           if (successful) {
             passedCount += 1;
+          } else {
+            failedValidations.add(validator.getClass());
           }
         }
 

@@ -63,6 +63,7 @@ public class QueueActionConfigTest {
         (int) queueActionConfig.getThresholdConfig(ResourceEnum.WRITE_THREADPOOL).upperBound());
     assertEquals(QueueActionConfig.DEFAULT_WRITE_QUEUE_LOWER_BOUND,
         (int) queueActionConfig.getThresholdConfig(ResourceEnum.WRITE_THREADPOOL).lowerBound());
+    assertEquals(QueueActionConfig.DEFAULT_COOL_OFF_PERIOD_IN_SECONDS, queueActionConfig.getCoolOffPeriodInSeconds());
   }
 
   @Test
@@ -134,6 +135,7 @@ public class QueueActionConfigTest {
           + "\"action-config-settings\": { "
               + "\"queue-settings\": { "
                   + "\"total-step-count\": 10,"
+                  + "\"cool-off-period-in-seconds\": 5,"
                   + "\"search\": { "
                       + "\"upper-bound\": 500, "
                       + "\"lower-bound\": 100 "
@@ -147,6 +149,7 @@ public class QueueActionConfigTest {
       + "}";
     conf.readConfigFromString(configStr);
     queueActionConfig = new QueueActionConfig(conf);
+    assertEquals(5, queueActionConfig.getCoolOffPeriodInSeconds());
     assertEquals(40, queueActionConfig.getStepSize(ResourceEnum.SEARCH_THREADPOOL));
     assertEquals(4, queueActionConfig.getStepSize(ResourceEnum.WRITE_THREADPOOL));
   }

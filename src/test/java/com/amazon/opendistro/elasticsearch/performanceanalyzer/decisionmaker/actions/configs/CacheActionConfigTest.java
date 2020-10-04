@@ -63,6 +63,7 @@ public class CacheActionConfigTest {
         cacheActionConfig.getThresholdConfig(ResourceEnum.SHARD_REQUEST_CACHE).upperBound(), 0.00001);
     assertEquals(CacheActionConfig.DEFAULT_SHARD_REQUEST_CACHE_LOWER_BOUND,
         cacheActionConfig.getThresholdConfig(ResourceEnum.SHARD_REQUEST_CACHE).lowerBound(), 0.00001);
+    assertEquals(CacheActionConfig.DEFAULT_COOL_OFF_PERIOD_IN_SECONDS, cacheActionConfig.getCoolOffPeriodInSeconds());
   }
 
   @Test
@@ -133,6 +134,7 @@ public class CacheActionConfigTest {
           + "\"action-config-settings\": { "
               + "\"cache-settings\": { "
                   + "\"total-step-count\": 5,"
+                  + "\"cool-off-period-in-seconds\": 5,"
                   + "\"fielddata\": { "
                       + "\"upper-bound\": 0.8, "
                       + "\"lower-bound\": 0.2 "
@@ -146,6 +148,7 @@ public class CacheActionConfigTest {
       + "}";
     conf.readConfigFromString(configStr);
     cacheActionConfig = new CacheActionConfig(conf);
+    assertEquals(5, cacheActionConfig.getCoolOffPeriodInSeconds());
     assertEquals(0.12, cacheActionConfig.getStepSize(ResourceEnum.FIELD_DATA_CACHE), 0.0001);
     assertEquals(0.014, cacheActionConfig.getStepSize(ResourceEnum.SHARD_REQUEST_CACHE), 0.0001);
   }

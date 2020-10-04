@@ -70,12 +70,14 @@ public class ReaderMetricsProcessor implements Runnable {
   private NavigableMap<Long, ShardRequestMetricsSnapshot> shardRqMetricsMap;
   private NavigableMap<Long, HttpRequestMetricsSnapshot> httpRqMetricsMap;
   private NavigableMap<Long, MasterEventMetricsSnapshot> masterEventMetricsMap;
+  private NavigableMap<Long, GarbageCollectorInfoSnapshot> gcInfoMap;
   private Map<AllMetrics.MetricName, NavigableMap<Long, MemoryDBSnapshot>> nodeMetricsMap;
   private static final int MAX_DATABASES = 2;
   private static final int OS_SNAPSHOTS = 4;
   private static final int RQ_SNAPSHOTS = 4;
   private static final int HTTP_RQ_SNAPSHOTS = 4;
   private static final int MASTER_EVENT_SNAPSHOTS = 4;
+  private static final int GC_INFO_SNAPSHOTS = 4;
   private final String rootLocation;
   private static final Map<String, Double> TIMING_STATS = new HashMap<>();
   private static final Map<String, String> STATS_DATA = new HashMap<>();
@@ -117,6 +119,7 @@ public class ReaderMetricsProcessor implements Runnable {
     shardRqMetricsMap = new TreeMap<>();
     httpRqMetricsMap = new TreeMap<>();
     masterEventMetricsMap = new TreeMap<>();
+    gcInfoMap = new TreeMap<>();
     this.rootLocation = rootLocation;
     this.configOverridesApplier = new ConfigOverridesApplier();
 
@@ -237,6 +240,7 @@ public class ReaderMetricsProcessor implements Runnable {
     trimMap(shardRqMetricsMap, RQ_SNAPSHOTS);
     trimMap(httpRqMetricsMap, HTTP_RQ_SNAPSHOTS);
     trimMap(masterEventMetricsMap, MASTER_EVENT_SNAPSHOTS);
+    trimMap(gcInfoMap, GC_INFO_SNAPSHOTS);
 
     for (NavigableMap<Long, MemoryDBSnapshot> snap : nodeMetricsMap.values()) {
       // do the same thing as OS_SNAPSHOTS.  Eventually MemoryDBSnapshot
@@ -344,6 +348,7 @@ public class ReaderMetricsProcessor implements Runnable {
     mCurrT = System.currentTimeMillis();
     MetricsDB metricsDB = createMetricsDB(prevWindowStartTime);
 
+    emitGarbageCollectionInfo(prevWindowStartTime, metricsDB);
     emitMasterMetrics(prevWindowStartTime, metricsDB);
     emitShardRequestMetrics(prevWindowStartTime, alignedOSSnapHolder, osAlignedSnap, metricsDB);
     emitHttpRequestMetrics(prevWindowStartTime, metricsDB);
@@ -357,6 +362,16 @@ public class ReaderMetricsProcessor implements Runnable {
     mFinalT = System.currentTimeMillis();
     LOG.debug("Total time taken for emitting Metrics: {}", mFinalT - mCurrT);
     TIMING_STATS.put("emitMetrics", (double) (mFinalT - mCurrT));
+  }
+
+  private void emitGarbageCollectionInfo(long prevWindowStartTime, MetricsDB metricsDB) throws Exception {
+    if (gcInfoMap.containsKey(prevWindowStartTime)) {
+      GarbageCollectorInfoSnapshot prevGcSnap = gcInfoMap.get(prevWindowStartTime);
+      MetricsEmitter.emitGarbageCollectionInfo(metricsDB, prevGcSnap);
+    } else {
+      LOG.debug("Garbage collector information snapshot does not exist for the previous window. "
+          + "Not emitting metrics.");
+    }
   }
 
   private void emitHttpRequestMetrics(long prevWindowStartTime, MetricsDB metricsDB)
@@ -504,6 +519,9 @@ public class ReaderMetricsProcessor implements Runnable {
     EventProcessor nodeEventsProcessor =
         NodeMetricsEventProcessor.buildNodeMetricEventsProcessor(
             currWindowStartTime, conn, nodeMetricsMap);
+    EventProcessor garbageCollectorInfoProcessor =
+        GarbageCollectorInfoProcessor.buildGarbageCollectorInfoProcessor(
+            currWindowStartTime, conn, gcInfoMap);
     ClusterDetailsEventProcessor clusterDetailsEventsProcessor =
         new ClusterDetailsEventProcessor(configOverridesApplier);
 
@@ -522,6 +540,7 @@ public class ReaderMetricsProcessor implements Runnable {
     eventDispatcher.registerEventProcessor(nodeEventsProcessor);
     eventDispatcher.registerEventProcessor(masterEventsProcessor);
     eventDispatcher.registerEventProcessor(clusterDetailsEventsProcessor);
+    eventDispatcher.registerEventProcessor(garbageCollectorInfoProcessor);
 
     eventDispatcher.initializeProcessing(
         currWindowStartTime, currWindowStartTime + MetricsConfiguration.SAMPLING_INTERVAL);
