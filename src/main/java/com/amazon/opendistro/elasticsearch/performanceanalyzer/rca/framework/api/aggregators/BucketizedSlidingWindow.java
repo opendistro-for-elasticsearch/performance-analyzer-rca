@@ -37,7 +37,7 @@ public class BucketizedSlidingWindow extends SlidingWindow<SlidingWindowData> {
   public void next(SlidingWindowData e) {
     if (!windowDeque.isEmpty()) {
       SlidingWindowData firstElement = windowDeque.getFirst();
-      if (TimeUnit.MILLISECONDS.toSeconds(e.getTimeStamp() - firstElement.getTimeStamp()) <= BUCKET_WINDOW_SIZE) {
+      if (TimeUnit.MILLISECONDS.toSeconds(e.getTimeStamp() - firstElement.getTimeStamp()) < BUCKET_WINDOW_SIZE) {
         firstElement.value += e.getValue();
         add(e);
         pruneExpiredEntries(e.getTimeStamp());

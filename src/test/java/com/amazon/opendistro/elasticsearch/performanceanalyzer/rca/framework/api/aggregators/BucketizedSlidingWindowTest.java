@@ -38,7 +38,7 @@ public class BucketizedSlidingWindowTest {
     currTimeInSecs += 3;
 
     // Add data within bucket window size
-    slidingWindow.next(new SlidingWindowData(TimeUnit.SECONDS.toMillis(currTimeInSecs + 2), 3));
+    slidingWindow.next(new SlidingWindowData(TimeUnit.SECONDS.toMillis(currTimeInSecs + 1), 3));
     assertEquals(2, slidingWindow.size());
     assertEquals(1 + (2 + 3), slidingWindow.readSum(), 0.00000001);
     currTimeInSecs += 2;

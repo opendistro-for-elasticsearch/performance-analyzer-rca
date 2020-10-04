@@ -39,13 +39,12 @@ public class JvmActionsAlarmMonitorTest {
     long startTimeInMins = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis());
 
     // Record issues and breach day threshold
-    // (31 issues per bucket as we include boundary data points)
     long currTime;
-    long thresholdBreachTS = startTimeInMins + 31 * jvmMonitor.DAY_BREACH_THRESHOLD;
+    long thresholdBreachTS = startTimeInMins + 30 * jvmMonitor.DAY_BREACH_THRESHOLD;
     for (currTime = startTimeInMins; currTime < thresholdBreachTS; currTime++) {
       monitor.recordIssue(TimeUnit.MINUTES.toMillis(currTime), 1);
     }
-    assertEquals(5, jvmMonitor.getDayMonitor().size());
+    assertEquals(jvmMonitor.DAY_BREACH_THRESHOLD, jvmMonitor.getDayMonitor().size());
     assertEquals(1, jvmMonitor.getWeekMonitor().size());
     assertTrue(monitor.isHealthy());
 
@@ -60,7 +59,7 @@ public class JvmActionsAlarmMonitorTest {
     // Add issues after 2 days
     currTime += TimeUnit.DAYS.toMinutes(2);
     for (int i = 0; i < jvmMonitor.DAY_BREACH_THRESHOLD; i++) {
-      currTime += 31;
+      currTime += 30;
       monitor.recordIssue(TimeUnit.MINUTES.toMillis(currTime), 1);
     }
     assertEquals(jvmMonitor.DAY_BREACH_THRESHOLD, jvmMonitor.getDayMonitor().size());
