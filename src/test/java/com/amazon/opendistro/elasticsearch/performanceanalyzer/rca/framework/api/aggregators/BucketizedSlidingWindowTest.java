@@ -61,6 +61,21 @@ public class BucketizedSlidingWindowTest {
     assertEquals(6, slidingWindow.readSum(), 0.00000001);
   }
 
+  /**
+   * When events are added frequently, with time between consecutive events being
+   * less than the bucket window size, we should still see aggregated buckets across
+   * the full sliding window timeline.
+   */
+  @Test
+  public void testFrequentEvents() {
+    BucketizedSlidingWindow slidingWindow = new BucketizedSlidingWindow(10, 2, TimeUnit.SECONDS);
+    long currTimeInSecs = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+    for (long t = currTimeInSecs; t < currTimeInSecs + 4; t++) {
+      slidingWindow.next(new SlidingWindowData(TimeUnit.SECONDS.toMillis(t), 1));
+    }
+    assertEquals(2, slidingWindow.size());
+  }
+
   @Test
   public void testReadAvgWithPartialPruning() {
     BucketizedSlidingWindow slidingWindow = new BucketizedSlidingWindow(10, 1, TimeUnit.SECONDS);
@@ -142,4 +157,8 @@ public class BucketizedSlidingWindowTest {
     assertEquals(0, slidingWindow.size());
   }
 
+  @Test(expected = AssertionError.class)
+  public void testInit() {
+    BucketizedSlidingWindow slidingWindow = new BucketizedSlidingWindow(10, 10, TimeUnit.SECONDS);
+  }
 }

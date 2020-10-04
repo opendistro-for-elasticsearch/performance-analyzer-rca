@@ -18,6 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.AlarmMonitor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.BucketizedSlidingWindow;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindowData;
+import com.google.common.annotations.VisibleForTesting;
 import java.util.concurrent.TimeUnit;
 
 public class JvmActionsAlarmMonitor implements AlarmMonitor {
@@ -40,7 +41,7 @@ public class JvmActionsAlarmMonitor implements AlarmMonitor {
     dayMonitor.next(dataPoint);
     // If we've breached the day threshold, record it as a bad day this week.
     if (dayMonitor.size() >= DAY_BREACH_THRESHOLD) {
-      weekMonitor.next(dataPoint);
+      weekMonitor.next(new SlidingWindowData(dataPoint.getTimeStamp(), dataPoint.getValue()));
     }
   }
 
@@ -60,5 +61,20 @@ public class JvmActionsAlarmMonitor implements AlarmMonitor {
   public boolean isHealthy() {
     evaluateAlarm();
     return alarmHealthy;
+  }
+
+  @VisibleForTesting
+  BucketizedSlidingWindow getDayMonitor() {
+    return dayMonitor;
+  }
+
+  @VisibleForTesting
+  BucketizedSlidingWindow getWeekMonitor() {
+    return weekMonitor;
+  }
+
+  @VisibleForTesting
+  void setAlarmHealth(boolean isHealthy) {
+    this.alarmHealthy = isHealthy;
   }
 }

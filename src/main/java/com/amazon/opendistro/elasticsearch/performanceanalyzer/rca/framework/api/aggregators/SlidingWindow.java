@@ -53,8 +53,7 @@ public class SlidingWindow<E extends SlidingWindowData> {
 
   protected void pruneExpiredEntries(long endTimeStamp) {
     while (!windowDeque.isEmpty()
-        && TimeUnit.MILLISECONDS.toSeconds(endTimeStamp - windowDeque.peekLast().getTimeStamp())
-        > SLIDING_WINDOW_SIZE) {
+        && TimeUnit.MILLISECONDS.toSeconds(endTimeStamp - windowDeque.peekLast().getTimeStamp()) > SLIDING_WINDOW_SIZE) {
       E lastData = windowDeque.pollLast();
       remove(lastData);
     }

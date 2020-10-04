@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * The BucketizedSlidingWindow provides a SlidingWindow implementation that can aggregate all
- * inserts within a configured time range, {@link BUCKET_WINDOW_SIZE}, into a single data point.
+ * inserts within a configured time range, BUCKET_WINDOW_SIZE, into a single data point.
  *
  * <p> All data within a single bucket window time range is summed by default.
  */
@@ -39,7 +39,6 @@ public class BucketizedSlidingWindow extends SlidingWindow<SlidingWindowData> {
       SlidingWindowData firstElement = windowDeque.getFirst();
       if (TimeUnit.MILLISECONDS.toSeconds(e.getTimeStamp() - firstElement.getTimeStamp()) <= BUCKET_WINDOW_SIZE) {
         firstElement.value += e.getValue();
-        firstElement.timeStamp = e.getTimeStamp();
         add(e);
         pruneExpiredEntries(e.getTimeStamp());
         return;
