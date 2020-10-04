@@ -84,7 +84,7 @@ public class BucketizedSlidingWindowTest {
     slidingWindow.next(new SlidingWindowData(TimeUnit.SECONDS.toMillis(currTimeInSecs - 9), 9));
     slidingWindow.next(new SlidingWindowData(TimeUnit.SECONDS.toMillis(currTimeInSecs - 7), 7));
     assertEquals(3, slidingWindow.windowDeque.size());  // we cannot call slidingWindow.size() as it also prunes expired elements
-    assertEquals((double)(9 + 7)/(double)2, slidingWindow.readAvg(), 0.00000001);
+    assertEquals((double)(9 + 7) / (double)2, slidingWindow.readAvg(), 0.00000001);
     assertEquals(2, slidingWindow.size());
   }
 
@@ -105,7 +105,7 @@ public class BucketizedSlidingWindowTest {
     slidingWindow.next(new SlidingWindowData(TimeUnit.SECONDS.toMillis(currTimeInSecs - 9), 9));
     slidingWindow.next(new SlidingWindowData(TimeUnit.SECONDS.toMillis(currTimeInSecs - 7), 5));
     assertEquals(3, slidingWindow.windowDeque.size());  // we cannot call slidingWindow.size() as it also prunes expired elements
-    assertEquals((double)(9 + 5)/(double)2, slidingWindow.readAvg(TimeUnit.SECONDS), 0.00000001);
+    assertEquals((double)(9 + 5) / (double)2, slidingWindow.readAvg(TimeUnit.SECONDS), 0.00000001);
     assertEquals(2, slidingWindow.size());
   }
 

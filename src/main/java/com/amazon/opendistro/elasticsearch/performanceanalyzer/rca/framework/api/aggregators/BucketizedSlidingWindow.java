@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  * The BucketizedSlidingWindow provides a SlidingWindow implementation that can aggregate all
  * inserts within a configured time range, BUCKET_WINDOW_SIZE, into a single data point.
  *
- * <p> All data within a single bucket window time range is summed by default.
+ * <p>All data within a single bucket window time range is summed by default.
  */
 public class BucketizedSlidingWindow extends SlidingWindow<SlidingWindowData> {
 
