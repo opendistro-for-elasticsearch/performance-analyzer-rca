@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.CacheActionConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.CachePriorityOrderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.DeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.WorkLoadTypeConfig;
@@ -27,6 +28,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.Shard
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Map;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -85,6 +88,11 @@ public class RcaConfTest {
 
   @Test
   public void testValidateRcaConfig() {
+    Integer defaultValue1 = rcaConf.readRcaConfig(FieldDataCacheRcaConfig.CONFIG_NAME,
+            FieldDataCacheRcaConfig.RCA_CONF_KEY_CONSTANTS.FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC,
+            0, s -> s < 1, Integer.class);
+    Assert.assertNotNull(defaultValue1);
+    Assert.assertEquals(0, defaultValue1.intValue());
     Integer defaultValue = rcaConf.readRcaConfig(ShardRequestCacheRcaConfig.CONFIG_NAME,
             ShardRequestCacheRcaConfig.RCA_CONF_KEY_CONSTANTS.SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC,
             0, s -> s < 1, Integer.class);
@@ -103,5 +111,14 @@ public class RcaConfTest {
     WorkLoadTypeConfig workLoadTypeConfig = configObj.getWorkLoadTypeConfig();
     Assert.assertFalse(workLoadTypeConfig.preferSearch());
     Assert.assertTrue(workLoadTypeConfig.preferIngest());
+  }
+
+  @Test
+  public void testReadActionConfig() {
+    Map<String, Object> actionConfig = rcaConf.getActionConfigSettings();
+    NestedConfig cacheSettingsConfig = new NestedConfig("cache-settings", actionConfig);
+    Config<Integer> coolOffPeriodInSeconds = new Config<Integer>("cool-off-period-in-seconds", cacheSettingsConfig.getValue(),
+            300, (s) -> (s > 0), Integer.class);
+    Assert.assertEquals(10, coolOffPeriodInSeconds.getValue().intValue());
   }
 }
