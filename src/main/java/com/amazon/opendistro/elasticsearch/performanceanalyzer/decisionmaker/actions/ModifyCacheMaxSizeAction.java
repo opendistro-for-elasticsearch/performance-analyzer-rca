@@ -120,7 +120,8 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
 
   // Generates action from summary. Passing in appContext because it contains dynamic settings
   public static ModifyCacheMaxSizeAction fromSummary(String jsonRepr, AppContext appContext) {
-    final JsonObject jsonObject = JsonParser.parseString(jsonRepr).getAsJsonObject();
+    final JsonParser jsonParser = new JsonParser();
+    final JsonObject jsonObject = jsonParser.parse(jsonRepr).getAsJsonObject();
     NodeKey esNode = new NodeKey(new InstanceDetails.Id(jsonObject.get("Id").getAsString()),
             new InstanceDetails.Ip(jsonObject.get("Ip").getAsString()));
     ResourceEnum cacheType = ResourceEnum.forNumber(jsonObject.get("resource").getAsInt());

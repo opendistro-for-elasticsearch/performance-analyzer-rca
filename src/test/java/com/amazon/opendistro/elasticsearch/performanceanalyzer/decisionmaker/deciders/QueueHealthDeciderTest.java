@@ -123,7 +123,8 @@ public class QueueHealthDeciderTest {
       assertEquals(1, action.impactedNodes().size());
       String nodeId = action.impactedNodes().get(0).getNodeId().toString();
       String summary = action.summary();
-      JsonObject jsonObject = JsonParser.parseString(summary).getAsJsonObject();
+      JsonParser jsonParser = new JsonParser();
+      JsonObject jsonObject = jsonParser.parse(summary).getAsJsonObject();
 
       if (jsonObject.get("resource").getAsInt() == ResourceEnum.WRITE_THREADPOOL.getNumber()) {
         nodeActionCounter.computeIfAbsent(nodeId, k -> new HashMap<>()).merge(ResourceEnum.WRITE_THREADPOOL, 1, Integer::sum);
