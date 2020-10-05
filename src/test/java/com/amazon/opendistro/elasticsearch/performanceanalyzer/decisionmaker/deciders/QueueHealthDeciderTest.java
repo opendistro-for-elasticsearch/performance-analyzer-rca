@@ -46,6 +46,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class QueueHealthDeciderTest {
+  private static final JsonParser JSON_PARSER = new JsonParser();
   AppContext appContext;
   RcaConf rcaConf;
 
@@ -123,8 +124,7 @@ public class QueueHealthDeciderTest {
       assertEquals(1, action.impactedNodes().size());
       String nodeId = action.impactedNodes().get(0).getNodeId().toString();
       String summary = action.summary();
-      JsonParser jsonParser = new JsonParser();
-      JsonObject jsonObject = jsonParser.parse(summary).getAsJsonObject();
+      JsonObject jsonObject = JSON_PARSER.parse(summary).getAsJsonObject();
 
       if (jsonObject.get("resource").getAsInt() == ResourceEnum.WRITE_THREADPOOL.getNumber()) {
         nodeActionCounter.computeIfAbsent(nodeId, k -> new HashMap<>()).merge(ResourceEnum.WRITE_THREADPOOL, 1, Integer::sum);
