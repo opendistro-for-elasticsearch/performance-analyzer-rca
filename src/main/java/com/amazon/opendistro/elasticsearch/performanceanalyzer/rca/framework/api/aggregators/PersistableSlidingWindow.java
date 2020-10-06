@@ -50,8 +50,7 @@ public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> {
         load(pathToFile);
       }
     } catch (IOException e) {
-      LOG.error("Couldn't create file {} to perform young generation tuning", pathToFile, e);
-      throw new IllegalArgumentException("Couldn't create or read a file at " + filePath);
+      LOG.error("Couldn't load SlidingWindow data from {}", pathToFile, e);
     }
   }
 
