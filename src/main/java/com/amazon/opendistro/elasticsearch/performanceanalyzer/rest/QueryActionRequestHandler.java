@@ -105,20 +105,23 @@ public class QueryActionRequestHandler extends MetricsHandler implements HttpHan
             try {
                 // TODO: Read Last suggested Action Set
                 PersistedAction response = persistable.read(PersistedAction.class);
-                result.addProperty("LastSuggestedAction", response.toJson().toString());
+                if (response != null) {
+                    result.addProperty("LastSuggestedAction", response.toJson().toString());
+                } else {
+                    result.addProperty("LastSuggestedAction", "Nil");
+                }
             } catch (Exception e) {
                 result.addProperty("error", e.getMessage());
             }
         }
-        LOG.info("Here is the result {}", result.toString());
         return result;
     }
 
     public void sendResponse(HttpExchange exchange, String response, int status) throws IOException {
-        try (OutputStream os = exchange.getResponseBody()) {
+        try {
+            OutputStream os = exchange.getResponseBody();
             exchange.sendResponseHeaders(status, response.length());
             os.write(response.getBytes());
-            LOG.info("Response Sent AYAy {} status {}", response, status);
         } catch (Exception e) {
             response = e.toString();
             exchange.sendResponseHeaders(HttpURLConnection.HTTP_INTERNAL_ERROR, response.length());
