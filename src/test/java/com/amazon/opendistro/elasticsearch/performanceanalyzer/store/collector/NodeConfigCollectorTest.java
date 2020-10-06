@@ -20,6 +20,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.Al
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
@@ -30,7 +31,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_QueueCapacity;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.flow_units.MetricFlowUnitTestHelper;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
@@ -85,11 +85,15 @@ public class NodeConfigCollectorTest {
    * generate flowunit and bind the flowunits it generate to metrics
    */
   @SuppressWarnings("unchecked")
-  private void mockHeapMaxSizeFlowUnits(int heapMaxSize) {
+  private void mockHeapMaxSizeFlowUnits(int heapMaxSize, int oldGenMaxSize, int edenMaxSize, int survivorMaxSize) {
     MetricFlowUnit flowUnit =
         MetricFlowUnitTestHelper.createFlowUnit(
             Arrays.asList(MEM_TYPE.toString(), MetricsDB.MAX),
-            Arrays.asList(AllMetrics.GCType.HEAP.toString(), String.valueOf(heapMaxSize)));
+            Arrays.asList(AllMetrics.GCType.HEAP.toString(), String.valueOf(heapMaxSize)),
+            Arrays.asList(GCType.OLD_GEN.toString(), String.valueOf(oldGenMaxSize)),
+            Arrays.asList(GCType.EDEN.toString(), String.valueOf(edenMaxSize)),
+            Arrays.asList(GCType.SURVIVOR.toString(), String.valueOf(survivorMaxSize))
+        );
     heapMax.setLocalFlowUnit(flowUnit);
   }
 
@@ -137,13 +141,23 @@ public class NodeConfigCollectorTest {
 
   @Test
   public void testHeapMaxSizeCollection() {
-    mockHeapMaxSizeFlowUnits(10000);
+    int heapMaxSize = 1000;
+    int oldGenMaxSize = 7500;
+    int edenMaxSize = 2000;
+    int survivorMaxSize = 500;
+    mockHeapMaxSizeFlowUnits(heapMaxSize, oldGenMaxSize, edenMaxSize, survivorMaxSize);
     NodeConfigFlowUnit flowUnit = nodeConfigCollector.operate();
     Assert.assertFalse(flowUnit.isEmpty());
     Assert.assertTrue(flowUnit.hasConfig(ResourceUtil.HEAP_MAX_SIZE));
-    Assert.assertEquals(10000, flowUnit.readConfig(ResourceUtil.HEAP_MAX_SIZE), 0.01);
-
-    Assert.assertEquals(
-            10000, appContext.getNodeConfigCache().get(nodeKey, ResourceUtil.HEAP_MAX_SIZE), 0.01);
+    Assert.assertEquals(heapMaxSize, flowUnit.readConfig(ResourceUtil.HEAP_MAX_SIZE), 0.01);
+    Assert.assertTrue(flowUnit.hasConfig(ResourceUtil.OLD_GEN_MAX_SIZE));
+    Assert.assertEquals(oldGenMaxSize, flowUnit.readConfig(ResourceUtil.OLD_GEN_MAX_SIZE), 0.01);
+    Assert.assertTrue(flowUnit.hasConfig(ResourceUtil.YOUNG_GEN_MAX_SIZE));
+    int expectedYoungGenMaxSize = edenMaxSize + 2 * survivorMaxSize;
+    Assert.assertEquals(expectedYoungGenMaxSize, flowUnit.readConfig(ResourceUtil.YOUNG_GEN_MAX_SIZE), 0.01);
+    // Sanity check on the appContext
+    Assert.assertEquals(heapMaxSize, appContext.getNodeConfigCache().get(nodeKey, ResourceUtil.HEAP_MAX_SIZE), 0.01);
+    Assert.assertEquals(oldGenMaxSize, appContext.getNodeConfigCache().get(nodeKey, ResourceUtil.OLD_GEN_MAX_SIZE), 0.01);
+    Assert.assertEquals(expectedYoungGenMaxSize, appContext.getNodeConfigCache().get(nodeKey, ResourceUtil.YOUNG_GEN_MAX_SIZE), 0.01);
   }
 }
