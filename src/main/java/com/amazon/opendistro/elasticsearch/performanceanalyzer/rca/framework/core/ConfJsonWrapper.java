@@ -19,9 +19,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.uti
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 // TODO: There should be a validation for the expected fields.
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -131,7 +133,7 @@ class ConfJsonWrapper {
     return actionConfigSettings;
   }
 
-  public Map<String, Object> getBucketizationTunings() {
+  public @Nullable  Map<String, Object> getBucketizationTunings() {
     return bucketizationTunings;
   }
 

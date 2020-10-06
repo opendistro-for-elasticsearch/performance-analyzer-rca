@@ -4,15 +4,35 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.bucket.UsageBucket;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.nio.file.Paths;
-import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class BucketAssignerTest {
+  private static final String configStr =
+      "{  "
+          + "\"bucketization\": {"
+          + "\"base1\": {"
+          + "\"UNDER_UTILIZED\": 20.0,"
+          + "\"HEALTHY_WITH_BUFFER\": 40.0,"
+          + "\"HEALTHY\": 80.0},"
+          + "\"base2\": {"
+          + "\"UNDER_UTILIZED\": 30.0,"
+          + "\"HEALTHY_WITH_BUFFER\": 40.0,"
+          + "\"HEALTHY\": 75.0},"
+          + "\"base3\": {"
+          + "\"UNDER_UTILIZED\": 30.1,"
+          + "\"HEALTHY_WITH_BUFFER\": 40.23456,"
+          + "\"HEALTHY\": 75.0"
+          + "}"
+          + "}"
+          + "}";
+
   @Test
-  public void testCreateBucketAssigner() {
-    RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "bucketization", "bucketize.json").toString());
+  public void testCreateBucketAssigner() throws JsonProcessingException {
+    RcaConf rcaConf = new RcaConf();
+    rcaConf.readConfigFromString(configStr);
 
     BucketCalculator bucketCalculatorForBase1 = rcaConf.getBucketizationSettings("base1");
 
@@ -30,8 +50,9 @@ public class BucketAssignerTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void testMisSpelledTunableName() {
-    RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "bucketization", "bucketize.json").toString());
+  public void testMisSpelledTunableName() throws JsonProcessingException {
+    RcaConf rcaConf = new RcaConf();
+    rcaConf.readConfigFromString(configStr);
     rcaConf.getBucketizationSettings("basa3");
   }
 
@@ -42,8 +63,10 @@ public class BucketAssignerTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void testNoThresholds() {
-    RcaConf rcaConf = new RcaConf(Paths.get(RcaConsts.TEST_CONFIG_PATH, "bucketization", "bucketize_no_thresholds.json").toString());
+  public void testNoThresholds() throws JsonProcessingException {
+    final String configStr = "{\"bucketization\": {}}";
+    RcaConf rcaConf = new RcaConf();
+    rcaConf.readConfigFromString(configStr);
     rcaConf.getBucketizationSettings("base1");
   }
 }

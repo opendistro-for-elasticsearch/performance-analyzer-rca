@@ -95,6 +95,7 @@ public class RcaConf {
   // This should only be used for Tests.
   public RcaConf() {
     this.mapper = new ObjectMapper();
+    this.tunableResourceToUsageBucket = new HashMap<>();
   }
 
   /**
@@ -358,16 +359,16 @@ public class RcaConf {
     for (Map.Entry<String, Object> entry : tunableSettingsMap.entrySet()) {
       String currentTunable = entry.getKey();
       if (entry.getValue() instanceof Map) {
-        Map<UsageBucket, Double> usageBucketLimitMap = new HashMap<>();
+        final ImmutableMap.Builder<UsageBucket, Double> usageBucketLimitMapBuilder = ImmutableMap.builder();
 
         Map<String, Double> bucketUpperLimitPair = (Map<String, Double>) entry.getValue();
         for (Map.Entry<String, Double> bucketUpperLimitEntry : bucketUpperLimitPair.entrySet()) {
-          usageBucketLimitMap.put(
+          usageBucketLimitMapBuilder.put(
               UsageBucket.valueOf(bucketUpperLimitEntry.getKey()),
               bucketUpperLimitEntry.getValue()
           );
         }
-        BucketCalculator calculator = new BasicBucketCalculator(usageBucketLimitMap);
+        BucketCalculator calculator = new BasicBucketCalculator(usageBucketLimitMapBuilder.build());
         BucketCalculator old = tunableResourceToUsageBucket.put(currentTunable, calculator);
         if (old != null) {
           throw new IllegalStateException("Entry '" + currentTunable + "' exists twice." + calculator + ";" + old);
