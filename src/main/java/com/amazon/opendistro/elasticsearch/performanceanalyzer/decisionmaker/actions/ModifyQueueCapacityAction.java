@@ -31,6 +31,8 @@ import com.google.gson.JsonParser;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -171,7 +173,7 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
       this.upperBound = queueActionConfig.getThresholdConfig(threadPool).upperBound();
       this.lowerBound = queueActionConfig.getThresholdConfig(threadPool).lowerBound();
       this.stepSize = queueActionConfig.getStepSize(threadPool);
-      this.coolOffPeriodInMillis = queueActionConfig.getCoolOffPeriodInSeconds() * 1_000;
+      this.coolOffPeriodInMillis = TimeUnit.SECONDS.toMillis(queueActionConfig.getCoolOffPeriodInSeconds());
     }
 
     public Builder coolOffPeriod(long coolOffPeriodInMillis) {

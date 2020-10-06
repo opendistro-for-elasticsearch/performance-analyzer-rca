@@ -77,13 +77,13 @@ public class RcaConfTest {
             FieldDataCacheRcaConfig.RCA_CONF_KEY_CONSTANTS.FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC,
             FieldDataCacheRcaConfig.DEFAULT_FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC, Integer.class);
     Assert.assertNotNull(fieldDataTimePeriod);
-    Assert.assertEquals(FieldDataCacheRcaConfig.DEFAULT_FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC, fieldDataTimePeriod.intValue());
+    Assert.assertEquals(10, fieldDataTimePeriod.intValue());
 
     Integer shardRequestTimePeriod = rcaConf.readRcaConfig(ShardRequestCacheRcaConfig.CONFIG_NAME,
             ShardRequestCacheRcaConfig.RCA_CONF_KEY_CONSTANTS.SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC,
             ShardRequestCacheRcaConfig.DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC, Integer.class);
     Assert.assertNotNull(shardRequestTimePeriod);
-    Assert.assertEquals(ShardRequestCacheRcaConfig.DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC, shardRequestTimePeriod.intValue());
+    Assert.assertEquals(10, shardRequestTimePeriod.intValue());
   }
 
   @Test
@@ -118,7 +118,7 @@ public class RcaConfTest {
     Map<String, Object> actionConfig = rcaConf.getActionConfigSettings();
     NestedConfig cacheSettingsConfig = new NestedConfig("cache-settings", actionConfig);
     Config<Integer> coolOffPeriodInSeconds = new Config<Integer>("cool-off-period-in-seconds", cacheSettingsConfig.getValue(),
-            300, (s) -> (s > 0), Integer.class);
+            CacheActionConfig.DEFAULT_COOL_OFF_PERIOD_IN_SECONDS, (s) -> (s > 0), Integer.class);
     Assert.assertEquals(10, coolOffPeriodInSeconds.getValue().intValue());
   }
 }
