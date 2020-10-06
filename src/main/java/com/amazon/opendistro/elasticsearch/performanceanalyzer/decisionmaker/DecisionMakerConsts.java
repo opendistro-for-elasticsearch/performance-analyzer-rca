@@ -15,6 +15,10 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker;
 
+import com.google.gson.JsonParser;
+
 public class DecisionMakerConsts {
     public static final String CACHE_MAX_WEIGHT = "maximumWeight";
+
+    public static final JsonParser JSON_PARSER = new JsonParser();
 }

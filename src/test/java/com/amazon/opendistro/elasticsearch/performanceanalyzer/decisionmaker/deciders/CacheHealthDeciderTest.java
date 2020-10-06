@@ -46,6 +46,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class CacheHealthDeciderTest {
+  private static final JsonParser JSON_PARSER = new JsonParser();
   private AppContext appContext;
   private RcaConf rcaConf;
 
@@ -186,7 +187,7 @@ public class CacheHealthDeciderTest {
       assertEquals(1, action.impactedNodes().size());
       String nodeId = action.impactedNodes().get(0).getNodeId().toString();
       String summary = action.summary();
-      JsonObject jsonObject = JsonParser.parseString(summary).getAsJsonObject();
+      JsonObject jsonObject = JSON_PARSER.parse(summary).getAsJsonObject();
 
       if (jsonObject.get("resource").getAsInt() == ResourceEnum.FIELD_DATA_CACHE.getNumber()) {
         nodeActionCounter
