@@ -21,6 +21,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.HeapMe
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.MetricsPurgeActivity;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.NetworkE2ECollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.NetworkInterfaceCollector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.MountedPartitionMetricsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.jvm.GCMetrics;
@@ -74,5 +75,6 @@ public class MetricsConfiguration {
     CONFIG_MAP.put(DisksCollector.class, cdefault);
     CONFIG_MAP.put(HeapMetricsCollector.class, cdefault);
     CONFIG_MAP.put(GCInfoCollector.class, cdefault);
+    CONFIG_MAP.put(MountedPartitionMetricsCollector.class, cdefault);
   }
 }

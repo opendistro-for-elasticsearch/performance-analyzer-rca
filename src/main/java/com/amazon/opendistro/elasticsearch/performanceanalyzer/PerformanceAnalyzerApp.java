@@ -52,6 +52,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.exception
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.sun.net.httpserver.HttpServer;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -126,6 +127,11 @@ public class PerformanceAnalyzerApp {
       startGrpcServerThread(clientServers.getNetServer(), THREAD_PROVIDER);
       startWebServerThread(clientServers.getHttpServer(), THREAD_PROVIDER);
       startRcaTopLevelThread(clientServers, connectionManager, appContext, THREAD_PROVIDER);
+
+      long start = System.currentTimeMillis();
+
+      LOG.error("kak main: total size = {}. Took: {}", new File(Util.DATA_DIR).getTotalSpace(),
+          System.currentTimeMillis() - start);
     } else {
       LOG.error("Performance analyzer app stopped due to invalid config status.");
       StatsCollector.instance().logException(StatExceptionCode.READER_THREAD_STOPPED);
