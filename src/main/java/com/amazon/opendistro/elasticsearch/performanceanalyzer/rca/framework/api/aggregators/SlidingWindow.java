@@ -51,16 +51,19 @@ public class SlidingWindow<E extends SlidingWindowData> {
     sum -= e.getValue();
   }
 
+  protected void pruneExpiredEntries(long endTimeStamp) {
+    while (!windowDeque.isEmpty()
+        && TimeUnit.MILLISECONDS.toSeconds(endTimeStamp - windowDeque.peekLast().getTimeStamp()) > SLIDING_WINDOW_SIZE) {
+      E lastData = windowDeque.pollLast();
+      remove(lastData);
+    }
+  }
+
   /**
    * insert data into the sliding window
    */
   public void next(E e) {
-    while (!windowDeque.isEmpty()
-        && TimeUnit.MILLISECONDS.toSeconds(e.getTimeStamp() - windowDeque.peekLast().getTimeStamp())
-        > SLIDING_WINDOW_SIZE) {
-      E lastData = windowDeque.pollLast();
-      remove(lastData);
-    }
+    pruneExpiredEntries(e.getTimeStamp());
     add(e);
     windowDeque.addFirst(e);
   }
