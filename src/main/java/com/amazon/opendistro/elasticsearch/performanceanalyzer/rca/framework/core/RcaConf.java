@@ -29,6 +29,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotSh
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.QueueRejectionRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.ShardRequestCacheRcaConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.bucket.BasicBucketCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.bucket.BucketCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.bucket.UsageBucket;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
@@ -49,6 +52,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -68,8 +72,11 @@ public class RcaConf {
   private final ObjectMapper mapper;
   private static final Logger LOG = LogManager.getLogger(PerformanceAnalyzerApp.class);
 
+  private Map<String, BucketCalculator> tunableResourceToUsageBucket;
+
   public RcaConf(String configPath) {
     this.configFileLoc = configPath;
+    this.tunableResourceToUsageBucket = new HashMap<>();
     JsonFactory factory = new JsonFactory();
     factory.enable(JsonParser.Feature.ALLOW_COMMENTS);
     this.mapper = new ObjectMapper(factory);
@@ -88,6 +95,7 @@ public class RcaConf {
   // This should only be used for Tests.
   public RcaConf() {
     this.mapper = new ObjectMapper();
+    this.tunableResourceToUsageBucket = new HashMap<>();
   }
 
   /**
@@ -212,25 +220,25 @@ public class RcaConf {
   public QueueActionConfig getQueueActionConfig() {
     return new QueueActionConfig(this);
   }
-  
+
   public <T> T readRcaConfig(String rcaName, String key, T defaultValue, Class<? extends T> clazz) {
     return readRcaConfig(rcaName, key, defaultValue, (s) -> true, clazz);
   }
-  
+
   @SuppressWarnings("unchecked")
   public <T> T readRcaConfig(String rcaName, String key, T defaultValue, Predicate<T> validator, Class<? extends T> clazz) {
     T setting = defaultValue;
     try {
       Map<String, Object> rcaObj = null;
       if (conf.getRcaConfigSettings() != null
-              && conf.getRcaConfigSettings().containsKey(rcaName)
-              && conf.getRcaConfigSettings().get(rcaName) != null) {
+          && conf.getRcaConfigSettings().containsKey(rcaName)
+          && conf.getRcaConfigSettings().get(rcaName) != null) {
         rcaObj = (Map<String, Object>) conf.getRcaConfigSettings().get(rcaName);
       }
 
       if (rcaObj != null
-              && rcaObj.containsKey(key)
-              && rcaObj.get(key) != null) {
+          && rcaObj.containsKey(key)
+          && rcaObj.get(key) != null) {
         setting = clazz.cast(rcaObj.get(key));
         if (!validator.test(setting)) {
           LOG.error("Config value: [{}] provided for key: [{}] is invalid", setting, key);
@@ -244,7 +252,7 @@ public class RcaConf {
   }
 
   public boolean updateAllRcaConfFiles(final Set<String> mutedRcas, final Set<String> mutedDeciders,
-      final Set<String> mutedActions) {
+                                       final Set<String> mutedActions) {
     boolean updateStatus = true;
     // update all rca.conf files
     List<String> rcaConfFiles = RcaControllerHelper.getAllConfFilePaths();
@@ -261,12 +269,12 @@ public class RcaConf {
   }
 
   private boolean updateRcaConf(String originalFilePath, final Set<String> mutedRcas,
-      final Set<String> mutedDeciders, final Set<String> mutedActions) {
+                                final Set<String> mutedDeciders, final Set<String> mutedActions) {
 
     String updatedPath = originalFilePath + ".updated";
     try (final FileInputStream originalFileInputStream = new FileInputStream(originalFilePath);
-        final Scanner scanner = new Scanner(originalFileInputStream, StandardCharsets.UTF_8.name());
-        final FileOutputStream updatedFileOutputStream = new FileOutputStream(updatedPath)) {
+         final Scanner scanner = new Scanner(originalFileInputStream, StandardCharsets.UTF_8.name());
+         final FileOutputStream updatedFileOutputStream = new FileOutputStream(updatedPath)) {
       // create the config json Object from rca config file
       String jsonText = scanner.useDelimiter("\\A").next();
       ObjectMapper mapper = new ObjectMapper();
@@ -305,5 +313,70 @@ public class RcaConf {
 
   public Map<String, Object> getDeciderConfigSettings() {
     return conf.getDeciderConfigSettings();
+  }
+
+  /**
+   * Given the name of the tunable, it returns the BucketCalculator. The BucketCalculator is constructed
+   * from the thresholds provided as the rca.conf settings. An example will look like this:
+   * "bucketization": {
+   *     "base1": {
+   *       "UNDER_UTILIZED": 20.0,
+   *       "HEALTHY_WITH_BUFFER": 40.0,
+   *       "HEALTHY": 80.0
+   *     },
+   *     "base2": {
+   *       "UNDER_UTILIZED": 30.0,
+   *       "HEALTHY_WITH_BUFFER": 40.0,
+   *       "HEALTHY": 75.0
+   *     },
+   *     "base3": {
+   *       "UNDER_UTILIZED": 30.1,
+   *       "HEALTHY_WITH_BUFFER": 40.23456,
+   *       "HEALTHY": 75.0
+   *     }
+   *   }
+   * @param tunableName The name of the tunable. In the above example, base1, base2, base3 are names of tunables.
+   * @return The BucketCalculator that can be used to bucketize values.
+   */
+  public BucketCalculator getBucketizationSettings(String tunableName) {
+    if (tunableResourceToUsageBucket.isEmpty()) {
+      constructTunableResourceToUsageBucket();
+    }
+    BucketCalculator bucketCalculator = tunableResourceToUsageBucket.get(tunableName);
+    if (bucketCalculator == null) {
+      throw new IllegalArgumentException("No such tunable exists with name " + tunableName
+          + ". Available ones: " + tunableResourceToUsageBucket.keySet());
+    }
+    return bucketCalculator;
+  }
+
+  private void constructTunableResourceToUsageBucket() {
+    Map<String, Object> tunableSettingsMap = conf.getBucketizationTunings();
+    if (tunableSettingsMap == null) {
+      // The bucketization key does not exist in the rca.conf. So we cannot construct BucketCalculators.
+      return;
+    }
+    for (Map.Entry<String, Object> entry : tunableSettingsMap.entrySet()) {
+      String currentTunable = entry.getKey();
+      if (entry.getValue() instanceof Map) {
+        final ImmutableMap.Builder<UsageBucket, Double> usageBucketLimitMapBuilder = ImmutableMap.builder();
+
+        Map<String, Double> bucketUpperLimitPair = (Map<String, Double>) entry.getValue();
+        for (Map.Entry<String, Double> bucketUpperLimitEntry : bucketUpperLimitPair.entrySet()) {
+          usageBucketLimitMapBuilder.put(
+              UsageBucket.valueOf(bucketUpperLimitEntry.getKey()),
+              bucketUpperLimitEntry.getValue()
+          );
+        }
+        BucketCalculator calculator = new BasicBucketCalculator(usageBucketLimitMapBuilder.build());
+        BucketCalculator old = tunableResourceToUsageBucket.put(currentTunable, calculator);
+        if (old != null) {
+          throw new IllegalStateException("Entry '" + currentTunable + "' exists twice." + calculator + ";" + old);
+        }
+      } else {
+        throw new IllegalStateException(
+            "Each tunable resource must be a json Object type. Not so for " + currentTunable);
+      }
+    }
   }
 }
