@@ -29,6 +29,8 @@ import com.google.gson.JsonObject;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -197,7 +199,7 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
       double upperBoundThreshold = cacheActionConfig.getThresholdConfig(cacheType).upperBound();
       double lowerBoundThreshold = cacheActionConfig.getThresholdConfig(cacheType).lowerBound();
       this.stepSizeInPercent = cacheActionConfig.getStepSize(cacheType);
-      this.coolOffPeriodInMillis = cacheActionConfig.getCoolOffPeriodInSeconds() * 1_000;
+      this.coolOffPeriodInMillis = TimeUnit.SECONDS.toMillis(cacheActionConfig.getCoolOffPeriodInSeconds());
       if (heapMaxSizeInBytes != null) {
         this.upperBoundInBytes = getThresholdInBytes(upperBoundThreshold, heapMaxSizeInBytes);
         this.lowerBoundInBytes = getThresholdInBytes(lowerBoundThreshold, heapMaxSizeInBytes);
