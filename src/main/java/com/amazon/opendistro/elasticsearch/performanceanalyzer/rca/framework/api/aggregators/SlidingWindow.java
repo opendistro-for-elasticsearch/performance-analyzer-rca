@@ -99,4 +99,8 @@ public class SlidingWindow<E extends SlidingWindowData> {
   public int size() {
     return windowDeque.size();
   }
+
+  public void clear() {
+    this.windowDeque.clear();
+  }
 }
