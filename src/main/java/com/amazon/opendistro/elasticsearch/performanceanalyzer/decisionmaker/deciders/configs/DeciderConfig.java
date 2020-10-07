@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.jvm.JvmGenTuningPolicyConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.jvm.OldGenDecisionPolicyConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NestedConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
@@ -35,7 +36,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
  *     },
  *     "old-gen-decision-policy-config": {
  *       XXXX
- *     }
+ *     },
+ *     "jvm-gen-tuning-policy-config": {
+ *       XXXX
+ *     },
  *   },
  */
 public class DeciderConfig {
@@ -43,10 +47,12 @@ public class DeciderConfig {
     private static final String CACHE_CONFIG_NAME = "cache-type";
     private static final String WORKLOAD_CONFIG_NAME = "workload-type";
     private static final String OLD_GEN_DECISION_POLICY_CONFIG_NAME = "old-gen-decision-policy-config";
+    private static final String JVM_GEN_TUNING_POLICY_CONFIG_NAME = "jvm-gen-tuning-policy-config";
 
     private final CachePriorityOrderConfig cachePriorityOrderConfig;
     private final WorkLoadTypeConfig workLoadTypeConfig;
     private final OldGenDecisionPolicyConfig oldGenDecisionPolicyConfig;
+    private final JvmGenTuningPolicyConfig jvmGenTuningPolicyConfig;
 
     public DeciderConfig(final RcaConf rcaConf) {
         cachePriorityOrderConfig = new CachePriorityOrderConfig(
@@ -57,6 +63,9 @@ public class DeciderConfig {
         );
         oldGenDecisionPolicyConfig = new OldGenDecisionPolicyConfig(
             new NestedConfig(OLD_GEN_DECISION_POLICY_CONFIG_NAME, rcaConf.getDeciderConfigSettings())
+        );
+        jvmGenTuningPolicyConfig = new JvmGenTuningPolicyConfig(
+            new NestedConfig(JVM_GEN_TUNING_POLICY_CONFIG_NAME, rcaConf.getDeciderConfigSettings())
         );
     }
 
@@ -70,5 +79,9 @@ public class DeciderConfig {
 
     public OldGenDecisionPolicyConfig getOldGenDecisionPolicyConfig() {
         return oldGenDecisionPolicyConfig;
+    }
+
+    public JvmGenTuningPolicyConfig getJvmGenTuningPolicyConfig() {
+        return jvmGenTuningPolicyConfig;
     }
 }
