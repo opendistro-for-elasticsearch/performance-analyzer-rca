@@ -51,24 +51,27 @@ public class HighHeapUsageYoungGenRcaTest {
   private static final double CONVERT_MEGABYTES_TO_BYTES = Math.pow(1024, 2);
   private MetricTestHelper heap_Used;
   private MetricTestHelper gc_Collection_Time;
+  private MetricTestHelper gc_Collection_Event;
   private HighHeapUsageYoungGenRcaX youngGenRcaX;
   private List<String> columnName;
 
   /**
    * generates mock metric flow units that RCAs can consume
    */
-  private void mockFlowUnits(double heapUsageVal, double minorGcTime, double fullGcTime) {
+  private void mockFlowUnits(double heapUsageVal, double minorGcTime, double fullGcTime, double fullGcEvents) {
     heap_Used.createTestFlowUnits(columnName, Arrays.asList(OLD_GEN.toString(), String.valueOf(heapUsageVal * CONVERT_MEGABYTES_TO_BYTES)));
     List<String> youngGcRow = Arrays.asList(TOT_YOUNG_GC.toString(), String.valueOf(minorGcTime));
     List<String> fullGcRow = Arrays.asList(TOT_FULL_GC.toString(), String.valueOf(fullGcTime));
     gc_Collection_Time.createTestFlowUnitsWithMultipleRows(columnName, Lists.newArrayList(youngGcRow, fullGcRow));
+    gc_Collection_Event.createTestFlowUnits(columnName, Arrays.asList(OLD_GEN.toString(), String.valueOf(fullGcEvents)));
   }
 
   @Before
   public void initTestHighHeapYoungGenRca() {
     heap_Used = new MetricTestHelper(5);
     gc_Collection_Time = new MetricTestHelper(5);
-    youngGenRcaX = new HighHeapUsageYoungGenRcaX(1, heap_Used, gc_Collection_Time);
+    gc_Collection_Event = new MetricTestHelper(5);
+    youngGenRcaX = new HighHeapUsageYoungGenRcaX(1, heap_Used, gc_Collection_Time, gc_Collection_Event);
     columnName = Arrays.asList(MEM_TYPE.toString(), MetricsDB.MAX);
   }
 
@@ -78,20 +81,20 @@ public class HighHeapUsageYoungGenRcaTest {
     Clock constantClock = Clock.fixed(ofEpochMilli(0), ZoneId.systemDefault());
 
     // ts = 0, heap = 0, minor gc time = 0, full gc time = 0ms
-    mockFlowUnits(0, 0, 0);
+    mockFlowUnits(0, 0, 0, 0);
     youngGenRcaX.setClock(constantClock);
     flowUnit = youngGenRcaX.operate();
     Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
     // ts = 1, heap = 450MB, minor gc time = 200ms, full gc time = 9000ms
-    mockFlowUnits(450, 200, 9000);
+    mockFlowUnits(450, 200, 9000, 0);
     youngGenRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(1)));
     flowUnit = youngGenRcaX.operate();
     Assert.assertFalse(flowUnit.getResourceContext().isUnhealthy());
 
     // ts = 2, heap = 1050MB, minor gc time = 240ms, full gc time = 12000ms
     // the average full GC time is now 10.5s which is > the threshold of 10s
-    mockFlowUnits(1050, 400, 12000);
+    mockFlowUnits(1050, 400, 12000, 0);
     youngGenRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(2)));
     flowUnit = youngGenRcaX.operate();
     Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
@@ -101,7 +104,7 @@ public class HighHeapUsageYoungGenRcaTest {
 
     // ts = 3, heap = 1650MB, minor gc time = 600ms, full gc time = 0ms
     // the average promotion rate is now 550 MB/s which is > the threshold of 500 MB/s
-    mockFlowUnits(1650, 600, 0);
+    mockFlowUnits(1650, 600, 0, 0);
     youngGenRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(3)));
     flowUnit = youngGenRcaX.operate();
     summary = (HotResourceSummary) flowUnit.getSummary();
@@ -111,7 +114,7 @@ public class HighHeapUsageYoungGenRcaTest {
 
     // ts = 4, heap = 1650MB, minor gc time = 800ms, full gc time = 0ms
     // the average minor gc time is now 500 ms / sec which is > the threshold of 400 ms / sec
-    mockFlowUnits(1650, 800, 0);
+    mockFlowUnits(1650, 800, 0, 0);
     youngGenRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(4)));
     flowUnit = youngGenRcaX.operate();
     summary = (HotResourceSummary) flowUnit.getSummary();
@@ -121,7 +124,7 @@ public class HighHeapUsageYoungGenRcaTest {
 
     // ts = 5, heap = 0MB, minor gc time = 0ms, full gc time = 0ms
     // the average garbage promotion percent is now 100% which is > the threshold of 80%
-    mockFlowUnits(0, 0, 0);
+    mockFlowUnits(0, 0, 0, 1);
     youngGenRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(5)));
     flowUnit = youngGenRcaX.operate();
     summary = (HotResourceSummary) flowUnit.getSummary();
@@ -132,8 +135,8 @@ public class HighHeapUsageYoungGenRcaTest {
 
   private static class HighHeapUsageYoungGenRcaX extends HighHeapUsageYoungGenRca {
     public <M extends Metric> HighHeapUsageYoungGenRcaX(final int rcaPeriod,
-        final M heap_Used, final M gc_Collection_Time) {
-      super(rcaPeriod, heap_Used, gc_Collection_Time);
+        final M heap_Used, final M gc_Collection_Time, final M gc_Collection_Event) {
+      super(rcaPeriod, heap_Used, gc_Collection_Time, gc_Collection_Event);
     }
 
     public void setClock(Clock testClock) {
