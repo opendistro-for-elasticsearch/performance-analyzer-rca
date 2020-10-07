@@ -34,4 +34,6 @@ public interface OSMetricsGenerator {
   IPMetricsGenerator getIPMetricsGenerator();
 
   DiskMetricsGenerator getDiskMetricsGenerator();
+
+  MountedPartitionMetricsGenerator getMountedPartitionMetricsGenerator();
 }
