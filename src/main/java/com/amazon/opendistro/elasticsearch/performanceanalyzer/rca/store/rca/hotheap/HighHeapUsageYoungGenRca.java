@@ -65,6 +65,7 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
   private static final double CONVERT_BYTES_TO_MEGABYTES = Math.pow(1024, 2);
   private final Metric heap_Used;
   private final Metric gc_Collection_Time;
+  private final Metric gc_Collection_Event;
   // the amount of RCA period this RCA needs to run before sending out a flowunit
   private final int rcaPeriod;
   // The lower bound threshold in percentage to decide whether to send out summary.
@@ -90,11 +91,13 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
   public <M extends Metric> HighHeapUsageYoungGenRca(final int rcaPeriod,
                                                      final double lowerBoundThreshold,
                                                      final M heap_Used,
-                                                     final M gc_Collection_Time) {
+                                                     final M gc_Collection_Time,
+                                                     final M gc_Collection_Event) {
     super(5);
     this.clock = Clock.systemUTC();
     this.heap_Used = heap_Used;
     this.gc_Collection_Time = gc_Collection_Time;
+    this.gc_Collection_Event = gc_Collection_Event;
     this.rcaPeriod = rcaPeriod;
     this.lowerBoundThreshold = (lowerBoundThreshold >= 0 && lowerBoundThreshold <= 1.0)
         ? lowerBoundThreshold : 1.0;
@@ -135,8 +138,8 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
   }
 
   public <M extends Metric> HighHeapUsageYoungGenRca(final int rcaPeriod,
-      final M heap_Used, final M gc_Collection_Time) {
-    this(rcaPeriod, 1.0, heap_Used, gc_Collection_Time);
+      final M heap_Used, final M gc_Collection_Time, final M gc_Collection_Event) {
+    this(rcaPeriod, 1.0, heap_Used, gc_Collection_Time, gc_Collection_Event);
   }
 
   private boolean fullGcTimeTooHigh(double avgFullGcTime) {
@@ -224,14 +227,14 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
    * @param currOldGen the current occupancy of the old generation in bytes
    * @param currTimeStamp the current timestamp in UNIX epoch milliseconds
    */
-  private void computePromotionHealth(double currOldGen, long currTimeStamp) {
+  private void computePromotionHealth(double currOldGen, double fullGcCount, long currTimeStamp) {
     if (currOldGen > maxOldGen) {
       maxOldGen = currOldGen;
     }
     double promoted = currOldGen - prevOldGen;
     if (promoted >= 0) {
       youngGenPromotedBytes += promoted;
-    } else { // full GC must have occurred if there's less data in the old gen than before
+    } else if (fullGcCount > 0) {
       double reclaimed = maxOldGen - currOldGen;
       double garbageReclaimedPct = reclaimed / youngGenPromotedBytes;
       if (garbageReclaimedPct <= 1 && garbageReclaimedPct >= 0) {
@@ -249,6 +252,20 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
     long currTimeStamp = this.clock.millis();
     counter += 1;
 
+    double fullGcCount = 0;
+    for (MetricFlowUnit metricFU : gc_Collection_Event.getFlowUnits()) {
+      if (metricFU.isEmpty()) {
+        continue;
+      }
+      fullGcCount = SQLParsingUtil.readDataFromSqlResult(metricFU.getData(),
+          MEM_TYPE.getField(), OLD_GEN.toString(), MetricsDB.MAX);
+      if (Double.isNaN(fullGcCount)) {
+        fullGcCount = 0;
+        LOG.error("Failed to parse metric in FlowUnit from {}", gc_Collection_Event.getClass().getName());
+      }
+    }
+
+
     //parsing flowunits from heap_used and push them into sliding window
     for (MetricFlowUnit metricFU : heap_Used.getFlowUnits()) {
       if (metricFU.isEmpty()) {
@@ -258,7 +275,7 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
           MEM_TYPE.getField(), OLD_GEN.toString(), MetricsDB.MAX);
       if (!Double.isNaN(oldGenHeapUsed)) {
         promotionRateDeque.next(new SlidingWindowData(currTimeStamp, oldGenHeapUsed / CONVERT_BYTES_TO_MEGABYTES));
-        computePromotionHealth(oldGenHeapUsed, currTimeStamp);
+        computePromotionHealth(oldGenHeapUsed, fullGcCount, currTimeStamp);
       }
       else {
         LOG.error("Failed to parse metric in FlowUnit from {}", heap_Used.getClass().getName());
