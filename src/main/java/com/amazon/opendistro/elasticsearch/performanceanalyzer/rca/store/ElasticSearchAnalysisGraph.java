@@ -104,7 +104,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.tem
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.HeapAllocRateTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.ShardSizeDimensionTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.threadpool.QueueRejectionRca;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -115,8 +114,10 @@ import org.apache.logging.log4j.Logger;
 public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
   private static final Logger LOG = LogManager.getLogger(ElasticSearchAnalysisGraph.class);
-  private static final int RCA_PERIOD = 12;  // 1 minute. RCA_PERIOD is measured as number of EVALUATION_INTERVAL_SECONDS
   private static final int EVALUATION_INTERVAL_SECONDS = 5;
+  private static final int SECONDS_IN_MIN = 60;
+  // 1 minute. RCA_PERIOD is measured as number of EVALUATION_INTERVAL_SECONDS
+  private static final int RCA_PERIOD = SECONDS_IN_MIN / EVALUATION_INTERVAL_SECONDS;
 
 
   @Override
@@ -197,7 +198,8 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     largeHeapClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
     // Heap Health Decider
-    HeapHealthDecider heapHealthDecider = new HeapHealthDecider(12, highHeapUsageClusterRca, largeHeapClusterRca);
+    HeapHealthDecider heapHealthDecider = new HeapHealthDecider(RCA_PERIOD, highHeapUsageClusterRca,
+        largeHeapClusterRca);
     heapHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     heapHealthDecider.addAllUpstreams(Collections.singletonList(highHeapUsageClusterRca));
 
@@ -322,7 +324,6 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     Metric cpuUtilization = new CPU_Utilization(EVALUATION_INTERVAL_SECONDS);
     Metric ioTotThroughput = new IO_TotThroughput(EVALUATION_INTERVAL_SECONDS);
     Metric ioTotSyscallRate = new IO_TotalSyscallRate(EVALUATION_INTERVAL_SECONDS);
-    new File("/").getTotalSpace();
 
     cpuUtilization.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     ioTotThroughput.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);

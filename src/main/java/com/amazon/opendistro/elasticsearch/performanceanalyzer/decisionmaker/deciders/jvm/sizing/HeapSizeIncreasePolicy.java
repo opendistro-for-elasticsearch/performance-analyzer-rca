@@ -1,8 +1,23 @@
+/*
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ *  permissions and limitations under the License.
+ */
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.sizing;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.SizeUpJvmAction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.HeapSizeIncreaseAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.DecisionPolicy;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.JvmScaleUpPolicyConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindow;
@@ -14,13 +29,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.LargeHeapClusterRca;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class JvmScaleUpPolicy implements DecisionPolicy {
+public class HeapSizeIncreasePolicy implements DecisionPolicy {
 
   private final LargeHeapClusterRca largeHeapClusterRca;
   private AppContext appContext;
@@ -31,12 +45,15 @@ public class JvmScaleUpPolicy implements DecisionPolicy {
   private int unhealthyNodePercentage;
   private int minimumMinutesUnhealthy;
 
-  public JvmScaleUpPolicy(final LargeHeapClusterRca largeHeapClusterRca,
+  private List<Action> prevActionList;
+
+  public HeapSizeIncreasePolicy(final LargeHeapClusterRca largeHeapClusterRca,
       final long policyEvaluationFrequency) {
     this.largeHeapClusterRca = largeHeapClusterRca;
     this.evalFrequency = policyEvaluationFrequency;
     this.counter = 0;
     this.perNodeSlidingWindow = new PerNodeSlidingWindow(4, TimeUnit.DAYS);
+    this.prevActionList = new ArrayList<>();
   }
 
   @Override
@@ -45,10 +62,13 @@ public class JvmScaleUpPolicy implements DecisionPolicy {
     addToSlidingWindow();
     if (counter == evalFrequency) {
       counter = 0;
-      return evaluateAndEmit();
+      List<Action> actions = evaluateAndEmit();
+      prevActionList.clear();
+      prevActionList.addAll(actions);
+      return actions;
     }
 
-    return Collections.emptyList();
+    return prevActionList;
   }
 
   private void addToSlidingWindow() {
@@ -73,8 +93,8 @@ public class JvmScaleUpPolicy implements DecisionPolicy {
     int numNodesInCluster = appContext.getAllClusterInstances().size();
     int numNodesInClusterUndersizedOldGen = getUnderSizedOldGenCount();
 
-    if (numNodesInClusterUndersizedOldGen * 100 / numNodesInCluster >= unhealthyNodePercentage) {
-      Action jvmSizeUpAction = new SizeUpJvmAction(appContext);
+    if ((numNodesInClusterUndersizedOldGen / (double) numNodesInCluster) * 100d >= unhealthyNodePercentage) {
+      Action jvmSizeUpAction = new HeapSizeIncreaseAction(appContext);
       if (jvmSizeUpAction.isActionable()) {
         actions.add(jvmSizeUpAction);
       }

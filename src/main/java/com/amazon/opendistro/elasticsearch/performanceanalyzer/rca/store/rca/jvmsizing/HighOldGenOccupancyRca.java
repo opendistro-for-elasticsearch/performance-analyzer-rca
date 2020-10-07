@@ -15,30 +15,23 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.OLD_GEN;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
-
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighOldGenOccupancyRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources.State;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindow;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindowData;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
-import java.util.List;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.OldGenRca;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class HighOldGenOccupancyRca extends Rca<ResourceFlowUnit<HotResourceSummary>> {
+public class HighOldGenOccupancyRca extends OldGenRca<ResourceFlowUnit<HotResourceSummary>> {
 
   private static final Logger LOG = LogManager.getLogger(HighOldGenOccupancyRca.class);
   private static final long EVAL_INTERVAL_IN_S = 5;
@@ -65,7 +58,7 @@ public class HighOldGenOccupancyRca extends Rca<ResourceFlowUnit<HotResourceSumm
 
   public HighOldGenOccupancyRca(final Metric heapMax, final Metric heapUsed,
       final long heapUtilizationThreshold, final long rcaEvaluationIntervalInS) {
-    super(EVAL_INTERVAL_IN_S);
+    super(EVAL_INTERVAL_IN_S, heapUsed, heapMax, null);
     this.oldGenUtilizationSlidingWindow = new SlidingWindow<>(1, TimeUnit.MINUTES);
     this.heapUsed = heapUsed;
     this.heapMax = heapMax;
@@ -107,34 +100,15 @@ public class HighOldGenOccupancyRca extends Rca<ResourceFlowUnit<HotResourceSumm
   }
 
   private void addToSlidingWindow() {
-    double oldGenUsed = getOldGenValueForMetric(heapUsed);
-    double maxOldGen = getOldGenValueForMetric(heapMax);
+    double oldGenUsed = getOldGenUsedOrDefault(0d);
+    double maxOldGen = getMaxOldGenSizeOrDefault(Double.MAX_VALUE);
 
     if (maxOldGen == 0d) {
       LOG.info("Max Old Gen capacity cannot be 0. Skipping.");
     }
 
     this.oldGenUtilizationSlidingWindow.next(new SlidingWindowData(System.currentTimeMillis(),
-        oldGenUsed / maxOldGen * 100d));
-  }
-
-  private double getOldGenValueForMetric(Metric heapMetric) {
-    List<MetricFlowUnit> heapMetricFlowUnits = heapMetric.getFlowUnits();
-    double metricValue = 0d;
-    for (final MetricFlowUnit heapMetricFlowUnit : heapMetricFlowUnits) {
-      if (heapMetricFlowUnit.isEmpty()) {
-        continue;
-      }
-
-      double ret = SQLParsingUtil.readDataFromSqlResult(heapMetricFlowUnit.getData(),
-          MEM_TYPE.getField(),
-          OLD_GEN.toString(), MetricsDB.MAX);
-      if (!Double.isNaN(ret)) {
-        metricValue = ret / B_TO_MB;
-      }
-    }
-
-    return metricValue;
+        (oldGenUsed / maxOldGen) * 100d));
   }
 
   @Override

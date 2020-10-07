@@ -1,43 +1,45 @@
+/*
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ *  permissions and limitations under the License.
+ */
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.OLD_GEN;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_FULL_GC;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
-
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources.State;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindow;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindowData;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageOldGenRca.MinOldGenSlidingWindow;
-import java.util.List;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.OldGenRca;
 import java.util.concurrent.TimeUnit;
 
-public class OldGenReclamationRca extends Rca<ResourceFlowUnit<HotResourceSummary>> {
+public class OldGenReclamationRca extends OldGenRca<ResourceFlowUnit<HotResourceSummary>> {
 
   private static final long EVAL_INTERVAL_IN_S = 5;
   private static final double DEFAULT_TARGET_UTILIZATION_AFTER_GC = 75.0d;
-  private static final long DEFAULT_RCA_EVALUATION_INTERVAL_IN_S = 60;
-  private static final long B_TO_MB = 1024 * 1024;
+  private static final int DEFAULT_RCA_EVALUATION_INTERVAL_IN_S = 60;
 
   private final MinOldGenSlidingWindow minOldGenSlidingWindow;
   private final SlidingWindow<SlidingWindowData> gcEventsSlidingWindow;
 
-  private Metric heapUsed;
-  private Metric gcEvent;
-  private Metric heapMax;
   private HotResourceSummary prevSummary;
   private ResourceContext prevContext;
   private double targetHeapUtilizationAfterGc;
-  private long rcaEvaluationIntervalInS;
+  private int rcaEvaluationIntervalInS;
   private long rcaPeriod;
   private int samples;
 
@@ -47,11 +49,8 @@ public class OldGenReclamationRca extends Rca<ResourceFlowUnit<HotResourceSummar
   }
 
   public OldGenReclamationRca(final Metric heapUsed, final Metric heapMax, final Metric gcEvent,
-      final double targetHeapUtilizationAfterGc, final long rcaEvaluationIntervalInS) {
-    super(EVAL_INTERVAL_IN_S);
-    this.heapUsed = heapUsed;
-    this.gcEvent = gcEvent;
-    this.heapMax = heapMax;
+      final double targetHeapUtilizationAfterGc, final int rcaEvaluationIntervalInS) {
+    super(EVAL_INTERVAL_IN_S, heapUsed, heapMax, gcEvent);
     this.targetHeapUtilizationAfterGc = targetHeapUtilizationAfterGc;
     this.rcaEvaluationIntervalInS = rcaEvaluationIntervalInS;
     this.rcaPeriod = rcaEvaluationIntervalInS / EVAL_INTERVAL_IN_S;
@@ -71,9 +70,9 @@ public class OldGenReclamationRca extends Rca<ResourceFlowUnit<HotResourceSummar
   @Override
   public ResourceFlowUnit<HotResourceSummary> operate() {
     samples++;
-    double oldGenMax = getOldGenValueForMetric(heapMax);
-    double oldGenUsed = getOldGenValueForMetric(heapUsed);
-    double gcEvents = getGcEvents();
+    double oldGenMax = getMaxOldGenSizeOrDefault(Double.MAX_VALUE);
+    double oldGenUsed = getOldGenUsedOrDefault(0d);
+    double gcEvents = getFullGcEventsOrDefault(0d);
     long currTime = System.currentTimeMillis();
     minOldGenSlidingWindow.next(new SlidingWindowData(currTime, oldGenUsed));
     gcEventsSlidingWindow.next(new SlidingWindowData(currTime, gcEvents));
@@ -87,13 +86,13 @@ public class OldGenReclamationRca extends Rca<ResourceFlowUnit<HotResourceSummar
         ResourceContext context = null;
         if (minOldGenSlidingWindow.readMin() > threshold) {
           summary = new HotResourceSummary(ResourceUtil.FULL_GC_EFFECTIVENESS,
-              targetHeapUtilizationAfterGc, minOldGenSlidingWindow.readMin(), 60);
+              targetHeapUtilizationAfterGc, minOldGenSlidingWindow.readMin(), rcaEvaluationIntervalInS);
           context = new ResourceContext(State.UNHEALTHY);
 
           return new ResourceFlowUnit<>(currTime, context, summary);
         } else {
           summary = new HotResourceSummary(ResourceUtil.FULL_GC_EFFECTIVENESS,
-              targetHeapUtilizationAfterGc, minOldGenSlidingWindow.readMin(), 60);
+              targetHeapUtilizationAfterGc, minOldGenSlidingWindow.readMin(), rcaEvaluationIntervalInS);
           context = new ResourceContext(State.HEALTHY);
         }
 
@@ -105,43 +104,5 @@ public class OldGenReclamationRca extends Rca<ResourceFlowUnit<HotResourceSummar
     }
 
     return new ResourceFlowUnit<>(currTime, prevContext, prevSummary);
-  }
-
-  private double getGcEvents() {
-    List<MetricFlowUnit> gcEventMetricFlowUnits = gcEvent.getFlowUnits();
-    double metricValue = 0d;
-    for (final MetricFlowUnit gcEventMetricFlowUnit : gcEventMetricFlowUnits) {
-      if (gcEventMetricFlowUnit.isEmpty()) {
-        continue;
-      }
-
-      double ret = SQLParsingUtil.readDataFromSqlResult(gcEventMetricFlowUnit.getData(),
-          MEM_TYPE.getField(),
-          TOT_FULL_GC.toString(), MetricsDB.MAX);
-      if (!Double.isNaN(ret)) {
-        metricValue = ret;
-      }
-    }
-
-    return metricValue;
-  }
-
-  private double getOldGenValueForMetric(Metric heapMetric) {
-    List<MetricFlowUnit> heapMetricFlowUnits = heapMetric.getFlowUnits();
-    double metricValue = 0d;
-    for (final MetricFlowUnit heapMetricFlowUnit : heapMetricFlowUnits) {
-      if (heapMetricFlowUnit.isEmpty()) {
-        continue;
-      }
-
-      double ret = SQLParsingUtil.readDataFromSqlResult(heapMetricFlowUnit.getData(),
-          MEM_TYPE.getField(),
-          OLD_GEN.toString(), MetricsDB.MAX);
-      if (!Double.isNaN(ret)) {
-        metricValue = ret / B_TO_MB;
-      }
-    }
-
-    return metricValue;
   }
 }
