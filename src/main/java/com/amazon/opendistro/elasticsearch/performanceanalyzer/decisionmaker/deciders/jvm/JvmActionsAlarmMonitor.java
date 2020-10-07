@@ -23,16 +23,24 @@ import java.util.concurrent.TimeUnit;
 
 public class JvmActionsAlarmMonitor implements AlarmMonitor {
 
-  public static final int DAY_BREACH_THRESHOLD = 5;
-  public static final int WEEK_BREACH_THRESHOLD = 2;
+  private static final int DEFAULT_DAY_BREACH_THRESHOLD = 5;
+  private static final int DEFAULT_WEEK_BREACH_THRESHOLD = 2;
 
   private BucketizedSlidingWindow dayMonitor;
   private BucketizedSlidingWindow weekMonitor;
+  private int dayBreachThreshold;
+  private int weekBreachThreshold;
   private boolean alarmHealthy = true;
 
-  public JvmActionsAlarmMonitor() {
+  public JvmActionsAlarmMonitor(int dayBreachThreshold, int weekBreachThreshold) {
     dayMonitor = new BucketizedSlidingWindow((int) TimeUnit.DAYS.toMinutes(1), 30, TimeUnit.MINUTES);
     weekMonitor = new BucketizedSlidingWindow(4, 1, TimeUnit.DAYS);
+    this.dayBreachThreshold = dayBreachThreshold;
+    this.weekBreachThreshold = weekBreachThreshold;
+  }
+
+  public JvmActionsAlarmMonitor() {
+    this(DEFAULT_DAY_BREACH_THRESHOLD, DEFAULT_WEEK_BREACH_THRESHOLD);
   }
 
   @Override
@@ -40,14 +48,14 @@ public class JvmActionsAlarmMonitor implements AlarmMonitor {
     SlidingWindowData dataPoint = new SlidingWindowData(timeStamp, value);
     dayMonitor.next(dataPoint);
     // If we've breached the day threshold, record it as a bad day this week.
-    if (dayMonitor.size() >= DAY_BREACH_THRESHOLD) {
+    if (dayMonitor.size() >= dayBreachThreshold) {
       weekMonitor.next(new SlidingWindowData(dataPoint.getTimeStamp(), dataPoint.getValue()));
     }
   }
 
   private void evaluateAlarm() {
     if (alarmHealthy) {
-      if (weekMonitor.size() >= WEEK_BREACH_THRESHOLD) {
+      if (weekMonitor.size() >= weekBreachThreshold) {
         alarmHealthy = false;
       }
     } else {
@@ -61,6 +69,14 @@ public class JvmActionsAlarmMonitor implements AlarmMonitor {
   public boolean isHealthy() {
     evaluateAlarm();
     return alarmHealthy;
+  }
+
+  public int getDayBreachThreshold() {
+    return dayBreachThreshold;
+  }
+
+  public int getWeekBreachThreshold() {
+    return weekBreachThreshold;
   }
 
   @VisibleForTesting

@@ -27,9 +27,9 @@ public interface AlarmMonitor {
    * @param timeStamp Issue timestamp in millis
    * @param value Issues can be recorded with an intensity value
    */
-  public void recordIssue(long timeStamp, double value);
+  void recordIssue(long timeStamp, double value);
 
-  public default void recordIssue() {
+  default void recordIssue() {
     recordIssue(System.currentTimeMillis(), 1);
   }
 
@@ -37,6 +37,6 @@ public interface AlarmMonitor {
    * State of the alarm
    * @return true if alarm is in healthy state, false otherwise
    */
-  public boolean isHealthy();
+  boolean isHealthy();
 
 }

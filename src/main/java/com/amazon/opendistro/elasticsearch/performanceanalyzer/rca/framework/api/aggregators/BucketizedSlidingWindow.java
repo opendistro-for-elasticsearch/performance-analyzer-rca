@@ -30,14 +30,14 @@ public class BucketizedSlidingWindow extends SlidingWindow<SlidingWindowData> {
   public BucketizedSlidingWindow(int SLIDING_WINDOW_SIZE, int BUCKET_WINDOW_SIZE, TimeUnit timeUnit) {
     super(SLIDING_WINDOW_SIZE, timeUnit);
     assert BUCKET_WINDOW_SIZE < SLIDING_WINDOW_SIZE : "BucketWindow size should be less than SlidingWindow size";
-    this.BUCKET_WINDOW_SIZE = timeUnit.toSeconds(BUCKET_WINDOW_SIZE);
+    this.BUCKET_WINDOW_SIZE = timeUnit.toMillis(BUCKET_WINDOW_SIZE);
   }
 
   @Override
   public void next(SlidingWindowData e) {
     if (!windowDeque.isEmpty()) {
       SlidingWindowData firstElement = windowDeque.getFirst();
-      if (TimeUnit.MILLISECONDS.toSeconds(e.getTimeStamp() - firstElement.getTimeStamp()) < BUCKET_WINDOW_SIZE) {
+      if ((e.getTimeStamp() - firstElement.getTimeStamp()) < BUCKET_WINDOW_SIZE) {
         firstElement.value += e.getValue();
         add(e);
         pruneExpiredEntries(e.getTimeStamp());

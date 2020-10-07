@@ -40,11 +40,11 @@ public class JvmActionsAlarmMonitorTest {
 
     // Record issues and breach day threshold
     long currTime;
-    long thresholdBreachTS = startTimeInMins + 30 * jvmMonitor.DAY_BREACH_THRESHOLD;
+    long thresholdBreachTS = startTimeInMins + 30 * jvmMonitor.getDayBreachThreshold();
     for (currTime = startTimeInMins; currTime < thresholdBreachTS; currTime++) {
       monitor.recordIssue(TimeUnit.MINUTES.toMillis(currTime), 1);
     }
-    assertEquals(jvmMonitor.DAY_BREACH_THRESHOLD, jvmMonitor.getDayMonitor().size());
+    assertEquals(jvmMonitor.getDayBreachThreshold(), jvmMonitor.getDayMonitor().size());
     assertEquals(1, jvmMonitor.getWeekMonitor().size());
     assertTrue(monitor.isHealthy());
 
@@ -58,11 +58,11 @@ public class JvmActionsAlarmMonitorTest {
 
     // Add issues after 2 days
     currTime += TimeUnit.DAYS.toMinutes(2);
-    for (int i = 0; i < jvmMonitor.DAY_BREACH_THRESHOLD; i++) {
+    for (int i = 0; i < jvmMonitor.getDayBreachThreshold(); i++) {
       currTime += 30;
       monitor.recordIssue(TimeUnit.MINUTES.toMillis(currTime), 1);
     }
-    assertEquals(jvmMonitor.DAY_BREACH_THRESHOLD, jvmMonitor.getDayMonitor().size());
+    assertEquals(jvmMonitor.getDayBreachThreshold(), jvmMonitor.getDayMonitor().size());
     assertEquals(2, jvmMonitor.getWeekMonitor().size());
     assertFalse(monitor.isHealthy());
   }
