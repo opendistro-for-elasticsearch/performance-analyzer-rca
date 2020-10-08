@@ -70,7 +70,7 @@ public class ShardRequestCacheDeciderValidator implements IValidator {
         Assert.assertEquals(ModifyCacheMaxSizeAction.NAME, persistedAction.getActionName());
         Assert.assertEquals("{DATA_0}", persistedAction.getNodeIds());
         Assert.assertEquals("{127.0.0.1}", persistedAction.getNodeIps());
-        Assert.assertEquals(10000, persistedAction.getCoolOffPeriod());
+        Assert.assertEquals(ModifyCacheMaxSizeAction.Builder.DEFAULT_COOL_OFF_PERIOD_IN_MILLIS, persistedAction.getCoolOffPeriod());
         Assert.assertTrue(persistedAction.isActionable());
         Assert.assertFalse(persistedAction.isMuted());
         Assert.assertEquals(ResourceEnum.SHARD_REQUEST_CACHE, modifyCacheMaxSizeAction.getCacheType());

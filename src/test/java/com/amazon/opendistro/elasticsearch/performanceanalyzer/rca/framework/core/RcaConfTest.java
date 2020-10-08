@@ -15,7 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.CacheActionConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.CachePriorityOrderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.DeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.WorkLoadTypeConfig;
@@ -28,7 +27,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.Shard
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -111,14 +109,5 @@ public class RcaConfTest {
     WorkLoadTypeConfig workLoadTypeConfig = configObj.getWorkLoadTypeConfig();
     Assert.assertFalse(workLoadTypeConfig.preferSearch());
     Assert.assertTrue(workLoadTypeConfig.preferIngest());
-  }
-
-  @Test
-  public void testReadActionConfig() {
-    Map<String, Object> actionConfig = rcaConf.getActionConfigSettings();
-    NestedConfig cacheSettingsConfig = new NestedConfig("cache-settings", actionConfig);
-    Config<Integer> coolOffPeriodInSeconds = new Config<Integer>("cool-off-period-in-seconds", cacheSettingsConfig.getValue(),
-            CacheActionConfig.DEFAULT_COOL_OFF_PERIOD_IN_SECONDS, (s) -> (s > 0), Integer.class);
-    Assert.assertEquals(10, coolOffPeriodInSeconds.getValue().intValue());
   }
 }
