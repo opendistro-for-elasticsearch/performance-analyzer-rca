@@ -54,7 +54,16 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jooq.*;
+import org.jooq.CreateTableConstraintStep;
+import org.jooq.DSLContext;
+import org.jooq.Field;
+import org.jooq.InsertValuesStepN;
+import org.jooq.JSONFormat;
+import org.jooq.Record;
+import org.jooq.Result;
+import org.jooq.SQLDialect;
+import org.jooq.SelectJoinStep;
+import org.jooq.Table;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 
@@ -256,14 +265,15 @@ class SQLitePersistor extends PersistorBase {
   }
 
   @Override
-  public synchronized <T> @org.checkerframework.checker.nullness.qual.Nullable List<T> readForTimestamp(Class<T> clz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, DataAccessException {
+  public synchronized <T> @org.checkerframework.checker.nullness.qual.Nullable List<T> readForTimestamp(Class<T> clz)
+          throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, DataAccessException {
     String tableName = getTableNameFromClassName(clz);
     Field<String> actionName = DSL.field(PersistedAction.SQL_SCHEMA_CONSTANTS.ACTION_COL_NAME, String.class);
     List<Record> maxTimeStampRecordList;
 
     try {
       // Fetch the latest rows with the last timestamp.
-      maxTimeStampRecordList = create.select().from(tableName).groupBy(actionName).fetch() ;
+      maxTimeStampRecordList = create.select().from(tableName).groupBy(actionName).fetch();
     } catch (DataAccessException dex) {
       LOG.error("Error querying table {}", tableName, dex);
       return null;

@@ -61,7 +61,7 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
    */
   public void compute(FlowUnitOperationArgWrapper args) {
     // TODO: Need to add dampening, avoidance etc.
-    List <Action> actionsPublished = new ArrayList<>();
+    List<Action> actionsPublished = new ArrayList<>();
     if (!collator.getFlowUnits().isEmpty()) {
       Decision decision = collator.getFlowUnits().get(0);
       for (Action action : decision.getActions()) {

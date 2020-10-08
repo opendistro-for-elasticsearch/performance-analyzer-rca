@@ -47,11 +47,12 @@ public class PublisherEventsPersistorTest {
     }
 
     @Test
-    public void actionPublished() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, InterruptedException {
+    public void actionPublished()
+            throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, InterruptedException {
         final MockAction mockAction1 = new MockAction("MockAction1");
         final MockAction mockAction2 = new MockAction("MockAction2");
 
-        List <Action> mockActions = new ArrayList<>();
+        List<Action> mockActions = new ArrayList<>();
         mockActions.add(mockAction1);
         mockActions.add(mockAction2);
 
