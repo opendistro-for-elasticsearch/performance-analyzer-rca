@@ -83,7 +83,7 @@ enum MetricEnum {
   // JVM
   HEAP_USAGE = 0 [(additional_fields).name = "heap usage", (additional_fields).description = "memory usage in percentage"];
   PROMOTION_RATE = 1 [(additional_fields).name = "promotion rate", (additional_fields).description = "mb/s"];
-  MINOR_GC = 2 [(additional_fields).name = "minor gc", (additional_fields).description = "time in percentage"];
+  MINOR_GC = 2 [(additional_fields).name = "minor gc", (additional_fields).description = "minor gc pause time in ms"];
 
   // hardware
   CPU_USAGE = 3 [(additional_fields).name = "cpu usage", (additional_fields).description = "num of cores"];
@@ -104,6 +104,8 @@ enum MetricEnum {
 
   // JVM Contd.
   OLD_GEN_USAGE_AFTER_FULL_GC = 31 [(additional_fields).name = "full gc", (additional_fields).description = "old gen usage after full gc in mb"];
+  // GC
+  FULL_GC = 32 [(additional_fields).name = "full gc", (additional_fields).description = "full gc pause time in ms"];
 }
 
 /*

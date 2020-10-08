@@ -13,35 +13,35 @@
  *  permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.validator;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.queue_tuning.validator;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.api.IValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.PersistedAction;
 import org.junit.Assert;
 
-public class ShardRequestCacheDeciderValidator implements IValidator {
+public class QueueDeciderValidator implements IValidator {
     AppContext appContext;
     long startTime;
 
-    public ShardRequestCacheDeciderValidator() {
+    public QueueDeciderValidator() {
         appContext = new AppContext();
         startTime = System.currentTimeMillis();
     }
 
     /**
-     * {"actionName":"ModifyCacheMaxSize",
-     * "resourceValue":11,
+     * {"actionName":"ModifyQueueCapacity",
+     * "resourceValue":4,
      * "timestamp":"1599257910923",
      * "nodeId":"node1",
-     * "nodeIp":1.1.1.1,
+     * "nodeIp":127.0.0.1,
      * "actionable":1,
-     * "coolOffPeriod": 300000,
-     * "muted": 1,
-     * "summary": "Id":"DATA_0","Ip":"127.0.0.1","resource":11,"desiredCacheMaxSizeInBytes":10000,"currentCacheMaxSizeInBytes":100,
-     *            "coolOffPeriodInMillis":300000,"canUpdate":true}
+     * "coolOffPeriod": 10000,
+     * "muted": 0
+     * "summary": "Id":"DATA_0","Ip":"127.0.0.1","resource":4,"desiredCapacity":547,
+     *            "currentCapacity":500,"coolOffPeriodInMillis":10000,"canUpdate":true}
      */
     @Override
     public boolean checkDbObj(Object object) {
@@ -53,29 +53,29 @@ public class ShardRequestCacheDeciderValidator implements IValidator {
     }
 
     /**
-     * {"actionName":"ModifyCacheMaxSize",
-     * "resourceValue":11,
+     * {"actionName":"ModifyQueueCapacity",
+     * "resourceValue":4,
      * "timestamp":"1599257910923",
      * "nodeId":"node1",
-     * "nodeIp":1.1.1.1,
+     * "nodeIp":127.0.0.1,
      * "actionable":1,
-     * "coolOffPeriod": 300000,
-     * "muted": 1
-     * "summary": "Id":"DATA_0","Ip":"127.0.0.1","resource":11,"desiredCacheMaxSizeInBytes":10000,"currentCacheMaxSizeInBytes":100,
-     *            "coolOffPeriodInMillis":300000,"canUpdate":true}
+     * "coolOffPeriod": 10000,
+     * "muted": 0
+     * "summary": "Id":"DATA_0","Ip":"127.0.0.1","resource":4,"desiredCapacity":547,
+     *            "currentCapacity":500,"coolOffPeriodInMillis":10000,"canUpdate":true}
      */
     private boolean checkPersistedAction(final PersistedAction persistedAction) {
-        ModifyCacheMaxSizeAction modifyCacheMaxSizeAction =
-                ModifyCacheMaxSizeAction.fromSummary(persistedAction.getSummary(), appContext);
-        Assert.assertEquals(ModifyCacheMaxSizeAction.NAME, persistedAction.getActionName());
+        ModifyQueueCapacityAction modifyQueueCapacityAction =
+                ModifyQueueCapacityAction.fromSummary(persistedAction.getSummary(), appContext);
+        Assert.assertEquals(ModifyQueueCapacityAction.NAME, persistedAction.getActionName());
         Assert.assertEquals("{DATA_0}", persistedAction.getNodeIds());
         Assert.assertEquals("{127.0.0.1}", persistedAction.getNodeIps());
         Assert.assertEquals(10000, persistedAction.getCoolOffPeriod());
         Assert.assertTrue(persistedAction.isActionable());
         Assert.assertFalse(persistedAction.isMuted());
-        Assert.assertEquals(ResourceEnum.SHARD_REQUEST_CACHE, modifyCacheMaxSizeAction.getCacheType());
-        Assert.assertEquals(100, modifyCacheMaxSizeAction.getCurrentCacheMaxSizeInBytes());
-        Assert.assertEquals(10000, modifyCacheMaxSizeAction.getDesiredCacheMaxSizeInBytes());
+        Assert.assertEquals(ResourceEnum.WRITE_THREADPOOL, modifyQueueCapacityAction.getThreadPool());
+        Assert.assertEquals(547, modifyQueueCapacityAction.getDesiredCapacity());
+        Assert.assertEquals(500, modifyQueueCapacityAction.getCurrentCapacity());
         return true;
     }
 }

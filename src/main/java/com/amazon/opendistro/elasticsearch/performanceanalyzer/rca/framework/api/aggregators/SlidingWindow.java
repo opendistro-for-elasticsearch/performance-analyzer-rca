@@ -28,11 +28,13 @@ public class SlidingWindow<E extends SlidingWindowData> {
   protected final Deque<E> windowDeque;
   protected final long SLIDING_WINDOW_SIZE;
   protected double sum;
+  protected TimeUnit timeUnit;
 
   public SlidingWindow(int SLIDING_WINDOW_SIZE_IN_TIMESTAMP, TimeUnit timeUnit) {
     this.windowDeque = new LinkedList<>();
     this.SLIDING_WINDOW_SIZE = timeUnit.toSeconds(SLIDING_WINDOW_SIZE_IN_TIMESTAMP);
     this.sum = 0.0;
+    this.timeUnit = timeUnit;
   }
 
   /**
@@ -49,16 +51,19 @@ public class SlidingWindow<E extends SlidingWindowData> {
     sum -= e.getValue();
   }
 
+  protected void pruneExpiredEntries(long endTimeStamp) {
+    while (!windowDeque.isEmpty()
+        && TimeUnit.MILLISECONDS.toSeconds(endTimeStamp - windowDeque.peekLast().getTimeStamp()) > SLIDING_WINDOW_SIZE) {
+      E lastData = windowDeque.pollLast();
+      remove(lastData);
+    }
+  }
+
   /**
    * insert data into the sliding window
    */
   public void next(E e) {
-    while (!windowDeque.isEmpty()
-        && TimeUnit.MILLISECONDS.toSeconds(e.getTimeStamp() - windowDeque.peekLast().getTimeStamp())
-        > SLIDING_WINDOW_SIZE) {
-      E lastData = windowDeque.pollLast();
-      remove(lastData);
-    }
+    pruneExpiredEntries(e.getTimeStamp());
     add(e);
     windowDeque.addFirst(e);
   }
@@ -92,5 +97,9 @@ public class SlidingWindow<E extends SlidingWindowData> {
    */
   public double readSum() {
     return this.sum;
+  }
+
+  public int size() {
+    return windowDeque.size();
   }
 }

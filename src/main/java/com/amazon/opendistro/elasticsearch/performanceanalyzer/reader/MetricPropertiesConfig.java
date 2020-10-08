@@ -20,6 +20,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheConfigValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CircuitBreakerDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CircuitBreakerValue;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.DevicePartitionDimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.DevicePartitionValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.DiskDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.DiskValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension;
@@ -164,6 +166,8 @@ public final class MetricPropertiesConfig {
     metricPathMap.put(MetricName.THREAD_POOL, PerformanceAnalyzerMetrics.sThreadPoolPath);
     metricPathMap.put(MetricName.SHARD_STATS, PerformanceAnalyzerMetrics.sIndicesPath);
     metricPathMap.put(MetricName.MASTER_PENDING, PerformanceAnalyzerMetrics.sPendingTasksPath);
+    metricPathMap.put(MetricName.MOUNTED_PARTITION_METRICS,
+        PerformanceAnalyzerMetrics.sMountedPartitionMetricsPath);
 
     eventKeyToMetricNameMap = new HashMap<>();
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sCacheConfigPath, MetricName.CACHE_CONFIG);
@@ -177,6 +181,8 @@ public final class MetricPropertiesConfig {
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sIndicesPath, MetricName.SHARD_STATS);
     eventKeyToMetricNameMap.put(
         PerformanceAnalyzerMetrics.sPendingTasksPath, MetricName.MASTER_PENDING);
+    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sMountedPartitionMetricsPath,
+        MetricName.MOUNTED_PARTITION_METRICS);
 
     metricName2Property = new HashMap<>();
 
@@ -238,6 +244,12 @@ public final class MetricPropertiesConfig {
                 metricPathMap.get(MetricName.MASTER_PENDING),
                 PerformanceAnalyzerMetrics.MASTER_CURRENT,
                 PerformanceAnalyzerMetrics.MASTER_META_DATA)));
+    metricName2Property.put(MetricName.MOUNTED_PARTITION_METRICS,
+        new MetricProperties(
+            DevicePartitionDimension.values(),
+            DevicePartitionValue.values(),
+            createFileHandler(metricPathMap.get(MetricName.MOUNTED_PARTITION_METRICS))
+        ));
   }
 
   public static MetricPropertiesConfig getInstance() {

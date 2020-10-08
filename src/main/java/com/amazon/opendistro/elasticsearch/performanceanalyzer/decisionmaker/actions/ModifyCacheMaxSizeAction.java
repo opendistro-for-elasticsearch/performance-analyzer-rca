@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.DecisionMakerConsts.JSON_PARSER;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.HEAP;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
@@ -25,10 +26,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.uti
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -120,7 +122,7 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
 
   // Generates action from summary. Passing in appContext because it contains dynamic settings
   public static ModifyCacheMaxSizeAction fromSummary(String jsonRepr, AppContext appContext) {
-    final JsonObject jsonObject = JsonParser.parseString(jsonRepr).getAsJsonObject();
+    final JsonObject jsonObject = JSON_PARSER.parse(jsonRepr).getAsJsonObject();
     NodeKey esNode = new NodeKey(new InstanceDetails.Id(jsonObject.get("Id").getAsString()),
             new InstanceDetails.Ip(jsonObject.get("Ip").getAsString()));
     ResourceEnum cacheType = ResourceEnum.forNumber(jsonObject.get("resource").getAsInt());
@@ -197,7 +199,7 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
       double upperBoundThreshold = cacheActionConfig.getThresholdConfig(cacheType).upperBound();
       double lowerBoundThreshold = cacheActionConfig.getThresholdConfig(cacheType).lowerBound();
       this.stepSizeInPercent = cacheActionConfig.getStepSize(cacheType);
-      this.coolOffPeriodInMillis = cacheActionConfig.getCoolOffPeriodInSeconds() * 1_000;
+      this.coolOffPeriodInMillis = TimeUnit.SECONDS.toMillis(cacheActionConfig.getCoolOffPeriodInSeconds());
       if (heapMaxSizeInBytes != null) {
         this.upperBoundInBytes = getThresholdInBytes(upperBoundThreshold, heapMaxSizeInBytes);
         this.lowerBoundInBytes = getThresholdInBytes(lowerBoundThreshold, heapMaxSizeInBytes);

@@ -15,31 +15,21 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
-import static java.time.Instant.ofEpochMilli;
-
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ActionListener;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.CoolOffDetector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.collator.Collator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.plugins.Plugin;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Id;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Ip;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.google.common.collect.Lists;
-import java.time.Clock;
-import java.time.Duration;
-import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -79,40 +69,6 @@ public class PublisherTest {
     Mockito.when(collator.getFlowUnits()).thenReturn(decisionList);
     Mockito.when(decision.getActions()).thenReturn(Lists.newArrayList(action));
     Mockito.when(flowUnitOperationArgWrapper.getPersistable()).thenReturn(persistable);
-  }
-
-  @Test
-  public void testIsCooledOff() throws Exception {
-    NodeKey node1 = new NodeKey(new Id("node1"), new Ip("127.0.0.1"));
-    int coolOffPeriod = 100;
-    int evalStartTimeStamp = coolOffPeriod + 10;
-    CoolOffDetector coolOffDetector = publisher.getCoolOffDetector();
-    Clock constantClock = Clock.fixed(ofEpochMilli(0), ZoneId.systemDefault());
-    coolOffDetector.setClock(constantClock);
-    coolOffDetector.setInitTime(0);
-
-    Mockito.when(action.name()).thenReturn("testIsCooledOffAction");
-    Mockito.when(action.impactedNodes()).thenReturn(new ArrayList<>(
-        Collections.singletonList(node1)));
-    Mockito.when(action.coolOffPeriodInMillis()).thenReturn(TimeUnit.SECONDS.toMillis(coolOffPeriod));
-    // Verify that a newly initialized publisher doesn't execute an action until the publisher object
-    // has been alive for longer than the action's cool off period
-    publisher.compute(flowUnitOperationArgWrapper);
-    Mockito.verify(actionListener, Mockito.times(0)).actionPublished(action);
-
-    coolOffDetector.setClock(Clock.offset(constantClock, Duration.ofSeconds(evalStartTimeStamp)));
-    publisher.compute(flowUnitOperationArgWrapper);
-    Mockito.verify(actionListener, Mockito.times(1)).actionPublished(action);
-    // Verify that a publisher doesn't execute a previously executed action until the action's cool off period
-    // has elapsed
-    Mockito.reset(actionListener);
-    coolOffDetector.setClock(Clock.offset(constantClock, Duration.ofSeconds(evalStartTimeStamp + 20)));
-    publisher.compute(flowUnitOperationArgWrapper);
-    Mockito.verify(actionListener, Mockito.times(0)).actionPublished(action);
-    // Verify that a published executes a previously executed action once the action's cool off period has elapsed
-    coolOffDetector.setClock(Clock.offset(constantClock, Duration.ofSeconds(evalStartTimeStamp + 120)));
-    publisher.compute(flowUnitOperationArgWrapper);
-    Mockito.verify(actionListener, Mockito.times(1)).actionPublished(action);
   }
 
   @Test
