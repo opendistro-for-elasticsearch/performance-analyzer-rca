@@ -54,6 +54,14 @@ public class PublisherEventsPersistorTest {
         List<Action> mockActions = new ArrayList<>();
         mockActions.add(mockAction1);
         mockActions.add(mockAction2);
+        mockActions.clear();
+
+        publisherEventsPersistor.persistAction(mockActions);
+
+        final MockAction mockAction3 = new MockAction("MockAction3");
+        final MockAction mockAction4 = new MockAction("MockAction4");
+        mockActions.add(mockAction3);
+        mockActions.add(mockAction4);
 
         publisherEventsPersistor.persistAction(mockActions);
 
@@ -62,32 +70,9 @@ public class PublisherEventsPersistorTest {
         List<PersistedAction> actionsSummary = persistable.readLatestGroup(PersistedAction.class);
         Assert.assertNotNull(actionsSummary);
         Assert.assertEquals(actionsSummary.size(), 2);
-        int index = 1;
+        int index = 3;
         for (PersistedAction action : actionsSummary) {
-            Assert.assertEquals(action.getActionName(), "MockAction" + index++);
-            Assert.assertEquals(action.getNodeIds(), "{1,2}");
-            Assert.assertEquals(action.getNodeIps(), "{1.1.1.1,2.2.2.2}");
-            Assert.assertEquals(action.isActionable(), mockAction2.isActionable());
-            Assert.assertEquals(action.getCoolOffPeriod(), mockAction2.coolOffPeriodInMillis());
-            Assert.assertEquals(action.isMuted(), mockAction2.isMuted());
-            Assert.assertEquals(action.getSummary(), mockAction2.summary());
-        }
-
-        final MockAction mockAction3 = new MockAction("MockAction3");
-        final MockAction mockAction4 = new MockAction("MockAction4");
-        mockActions.clear();
-        mockActions.add(mockAction3);
-        mockActions.add(mockAction4);
-
-        publisherEventsPersistor.persistAction(mockActions);
-
-        WaitFor.waitFor(() -> persistable.readLatestGroup(PersistedAction.class).size() == 2, 5,
-                TimeUnit.SECONDS);
-        actionsSummary = persistable.readLatestGroup(PersistedAction.class);
-        Assert.assertNotNull(actionsSummary);
-        Assert.assertEquals(actionsSummary.size(), 2);
-        index = 3;
-        for (PersistedAction action : actionsSummary) {
+            System.out.println("Action  " +  action.actionName);
             Assert.assertEquals(action.getActionName(), "MockAction" + index++);
             Assert.assertEquals(action.getNodeIds(), "{1,2}");
             Assert.assertEquals(action.getNodeIps(), "{1.1.1.1,2.2.2.2}");
