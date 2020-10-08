@@ -141,6 +141,7 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
   }
 
   public static final class Builder {
+    public static final long DEFAULT_COOL_OFF_PERIOD_IN_MILLIS = 300 * 1_000;
     public static final boolean DEFAULT_IS_INCREASE = true;
     public static final boolean DEFAULT_CAN_UPDATE = true;
 
@@ -163,6 +164,7 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
       this.threadPool = threadPool;
       this.appContext = appContext;
       this.rcaConf = conf;
+      this.coolOffPeriodInMillis = DEFAULT_COOL_OFF_PERIOD_IN_MILLIS;
       this.increase = DEFAULT_IS_INCREASE;
       this.canUpdate = DEFAULT_CAN_UPDATE;
       this.desiredCapacity = null;
@@ -173,7 +175,6 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
       this.upperBound = queueActionConfig.getThresholdConfig(threadPool).upperBound();
       this.lowerBound = queueActionConfig.getThresholdConfig(threadPool).lowerBound();
       this.stepSize = queueActionConfig.getStepSize(threadPool);
-      this.coolOffPeriodInMillis = TimeUnit.SECONDS.toMillis(queueActionConfig.getCoolOffPeriodInSeconds());
     }
 
     public Builder coolOffPeriod(long coolOffPeriodInMillis) {

@@ -34,7 +34,6 @@ import org.apache.logging.log4j.Logger;
  *     // Queue Capacity bounds are expressed as absolute queue size
  *     "queue-settings": {
  *       "total-step-count": 20,
- *       "cool-off-period-in-seconds": 300,
  *       "search": {
  *         "upper-bound": 3000,
  *         "lower-bound": 500
@@ -54,13 +53,10 @@ public class QueueActionConfig {
   private SearchQueueConfig searchQueueConfig;
   private WriteQueueConfig writeQueueConfig;
   private Config<Integer> totalStepCount;
-  private Config<Integer> coolOffPeriodInSeconds;
   private Map<ResourceEnum, ThresholdConfig<Integer>> thresholdConfigMap;
 
   private static final String TOTAL_STEP_COUNT_CONFIG_NAME = "total-step-count";
-  private static final String COOL_OFF_PERIOD_CONFIG_NAME = "cool-off-period-in-seconds";
   public static final int DEFAULT_TOTAL_STEP_COUNT = 20;
-  public static final int DEFAULT_COOL_OFF_PERIOD_IN_SECONDS = 300;
   public static final int DEFAULT_SEARCH_QUEUE_UPPER_BOUND = 3000;
   public static final int DEFAULT_SEARCH_QUEUE_LOWER_BOUND = 500;
   public static final int DEFAULT_WRITE_QUEUE_UPPER_BOUND = 1000;
@@ -73,17 +69,11 @@ public class QueueActionConfig {
     writeQueueConfig = new WriteQueueConfig(queueSettingsConfig);
     totalStepCount = new Config<>(TOTAL_STEP_COUNT_CONFIG_NAME, queueSettingsConfig.getValue(),
         DEFAULT_TOTAL_STEP_COUNT, (s) -> (s > 0), Integer.class);
-    coolOffPeriodInSeconds = new Config<>(COOL_OFF_PERIOD_CONFIG_NAME, queueSettingsConfig.getValue(),
-            DEFAULT_COOL_OFF_PERIOD_IN_SECONDS, (s) -> (s > 0), Integer.class);
     createThresholdConfigMap();
   }
 
   public int getTotalStepCount() {
     return totalStepCount.getValue();
-  }
-
-  public int getCoolOffPeriodInSeconds() {
-    return coolOffPeriodInSeconds.getValue();
   }
 
   /**
