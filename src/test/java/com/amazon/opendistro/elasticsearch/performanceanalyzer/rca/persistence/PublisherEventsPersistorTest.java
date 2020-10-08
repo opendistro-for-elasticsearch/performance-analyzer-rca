@@ -47,23 +47,61 @@ public class PublisherEventsPersistorTest {
     }
 
     @Test
-    public void actionPublished() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        final MockAction mockAction = new MockAction();
+    public void actionPublished() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, InterruptedException {
+        final MockAction mockAction1 = new MockAction("MockAction1");
+        final MockAction mockAction2 = new MockAction("MockAction2");
 
-        publisherEventsPersistor.persistAction(mockAction);
+        List <Action> mockActions = new ArrayList<>();
+        mockActions.add(mockAction1);
+        mockActions.add(mockAction2);
 
-        PersistedAction actionsSummary = persistable.read(PersistedAction.class);
+        publisherEventsPersistor.persistAction(mockActions);
+
+        List<PersistedAction> actionsSummary = persistable.readForTimestamp(PersistedAction.class);
         Assert.assertNotNull(actionsSummary);
-        Assert.assertEquals(actionsSummary.getActionName(), mockAction.name());
-        Assert.assertEquals(actionsSummary.getNodeIds(), "{1,2}");
-        Assert.assertEquals(actionsSummary.getNodeIps(), "{1.1.1.1,2.2.2.2}");
-        Assert.assertEquals(actionsSummary.isActionable(), mockAction.isActionable());
-        Assert.assertEquals(actionsSummary.getCoolOffPeriod(), mockAction.coolOffPeriodInMillis());
-        Assert.assertEquals(actionsSummary.isMuted(), mockAction.isMuted());
-        Assert.assertEquals(actionsSummary.getSummary(), mockAction.summary());
+        Assert.assertEquals(actionsSummary.size(), 2);
+        int index = 1;
+        for (PersistedAction action : actionsSummary) {
+            Assert.assertEquals(action.getActionName(), "MockAction" + index++);
+            Assert.assertEquals(action.getNodeIds(), "{1,2}");
+            Assert.assertEquals(action.getNodeIps(), "{1.1.1.1,2.2.2.2}");
+            Assert.assertEquals(action.isActionable(), mockAction2.isActionable());
+            Assert.assertEquals(action.getCoolOffPeriod(), mockAction2.coolOffPeriodInMillis());
+            Assert.assertEquals(action.isMuted(), mockAction2.isMuted());
+            Assert.assertEquals(action.getSummary(), mockAction2.summary());
+        }
+
+        Thread.sleep(1);
+
+        final MockAction mockAction3 = new MockAction("MockAction3");
+        final MockAction mockAction4 = new MockAction("MockAction4");
+        mockActions.clear();
+        mockActions.add(mockAction3);
+        mockActions.add(mockAction4);
+        publisherEventsPersistor.persistAction(mockActions);
+
+        actionsSummary = persistable.readForTimestamp(PersistedAction.class);
+        Assert.assertNotNull(actionsSummary);
+        Assert.assertEquals(actionsSummary.size(), 2);
+        index = 3;
+        for (PersistedAction action : actionsSummary) {
+            Assert.assertEquals(action.getActionName(), "MockAction" + index++);
+            Assert.assertEquals(action.getNodeIds(), "{1,2}");
+            Assert.assertEquals(action.getNodeIps(), "{1.1.1.1,2.2.2.2}");
+            Assert.assertEquals(action.isActionable(), mockAction3.isActionable());
+            Assert.assertEquals(action.getCoolOffPeriod(), mockAction3.coolOffPeriodInMillis());
+            Assert.assertEquals(action.isMuted(), mockAction3.isMuted());
+            Assert.assertEquals(action.getSummary(), mockAction3.summary());
+        }
+
     }
 
     public class MockAction implements Action {
+        private String name;
+
+        public MockAction(String name) {
+            this.name = name;
+        }
 
         @Override
         public boolean isActionable() {
@@ -90,7 +128,7 @@ public class PublisherEventsPersistorTest {
 
         @Override
         public String name() {
-            return "MockAction";
+            return this.name;
         }
 
         @Override

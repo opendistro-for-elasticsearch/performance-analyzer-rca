@@ -61,6 +61,7 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
    */
   public void compute(FlowUnitOperationArgWrapper args) {
     // TODO: Need to add dampening, avoidance etc.
+    List <Action> actionsPublished = new ArrayList<>();
     if (!collator.getFlowUnits().isEmpty()) {
       Decision decision = collator.getFlowUnits().get(0);
       for (Action action : decision.getActions()) {
@@ -69,12 +70,13 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
           for (ActionListener listener : actionListeners) {
             listener.actionPublished(action);
           }
-          // Persist actions to sqlite
-          PublisherEventsPersistor persistor = new PublisherEventsPersistor(args.getPersistable());
-          persistor.persistAction(action);
+          actionsPublished.add(action);
         }
       }
     }
+    // Persist actions to sqlite
+    PublisherEventsPersistor persistor = new PublisherEventsPersistor(args.getPersistable());
+    persistor.persistAction(actionsPublished);
   }
 
   @Override

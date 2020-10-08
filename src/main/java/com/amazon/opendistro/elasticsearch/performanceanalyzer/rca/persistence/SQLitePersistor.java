@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
+import static org.jooq.impl.DSL.max;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources.State;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.ResourceFlowUnitFieldValue;
@@ -23,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.NodeLevelDimensionalSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.GenericSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.PersistedAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.response.RcaResponse;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
@@ -51,16 +54,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jooq.CreateTableConstraintStep;
-import org.jooq.DSLContext;
-import org.jooq.Field;
-import org.jooq.InsertValuesStepN;
-import org.jooq.JSONFormat;
-import org.jooq.Record;
-import org.jooq.Result;
-import org.jooq.SQLDialect;
-import org.jooq.SelectJoinStep;
-import org.jooq.Table;
+import org.jooq.*;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 
@@ -233,8 +227,6 @@ class SQLitePersistor extends PersistorBase {
     String primaryKeyCol = SQLiteQueryUtils.getPrimaryKeyColumnName(tableName);
     Field<Integer> primaryKeyField = DSL.field(primaryKeyCol, Integer.class);
 
-    Map<String, GetterSetterPairs> fieldNameToGetterSetterMap = classFieldNamesToGetterSetterMap.get(clz);
-
     List<Record> recordList;
     if (rowId == -1) {
       try {
@@ -260,7 +252,39 @@ class SQLitePersistor extends PersistorBase {
       // We always expect one row whether we query for the latest row or we query for a row by the rowID.
       throw new IllegalStateException("Expected one row, found: '" + recordList + "'");
     }
-    Record record = recordList.get(0);
+    return readFields(clz, recordList.get(0), tableName);
+  }
+
+  @Override
+  public synchronized <T> @org.checkerframework.checker.nullness.qual.Nullable List<T> readForTimestamp(Class<T> clz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, DataAccessException {
+    String tableName = getTableNameFromClassName(clz);
+    Field<String> actionName = DSL.field(PersistedAction.SQL_SCHEMA_CONSTANTS.ACTION_COL_NAME, String.class);
+    List<Record> maxTimeStampRecordList;
+
+    try {
+      // Fetch the latest rows with the last timestamp.
+      maxTimeStampRecordList = create.select().from(tableName).groupBy(actionName).fetch() ;
+    } catch (DataAccessException dex) {
+      LOG.error("Error querying table {}", tableName, dex);
+      return null;
+    }
+
+    List<T> objList = new ArrayList<>();
+
+    LOG.debug("Record List {}", maxTimeStampRecordList);
+    for (Record record : maxTimeStampRecordList) {
+      objList.add(readFields(clz, record, tableName));
+    }
+
+    return objList;
+  }
+
+  public synchronized <T> @org.checkerframework.checker.nullness.qual.Nullable T readFields(Class<T> clz, Record record,
+                                                                               String tableName)
+          throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+
+    Map<String, GetterSetterPairs> fieldNameToGetterSetterMap = classFieldNamesToGetterSetterMap.get(clz);
+    String primaryKeyCol = SQLiteQueryUtils.getPrimaryKeyColumnName(tableName);
     Field<?>[] fields = record.fields();
     T obj = clz.getDeclaredConstructor().newInstance();
 

@@ -67,6 +67,22 @@ public interface Persistable {
   <T> @Nullable T read(Class<T> clz)
       throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, DataAccessException;
 
+
+  /**
+   * This API reads all the rows from the table for the latest timestamp corresponding to the Object.
+   * @param clz The Class whose Object is desired.
+   * @param <T> The generic type of the class
+   * @return An instantiated Object of the class with the fields populated with the data from the latest row in the table and other
+   *     referenced tables or null if the table does not exist yet.
+   * @throws NoSuchMethodException If the expected setter does not exist.
+   * @throws IllegalAccessException If the setter is not Public
+   * @throws InvocationTargetException If invoking the setter by reflection threw an exception.
+   * @throws InstantiationException Creating an Object of the class failed for some reason.
+   * @throws DataAccessException Thrown by the DB layer.
+   */
+  <T> @Nullable List<T> readForTimestamp(Class<T> clz)
+          throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, DataAccessException;
+
   /**
    * Write data to the database.
    *

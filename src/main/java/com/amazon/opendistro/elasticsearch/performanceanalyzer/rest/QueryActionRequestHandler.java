@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.PersistedAction;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -26,6 +27,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.security.InvalidParameterException;
+import java.util.List;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
@@ -79,8 +82,8 @@ public class QueryActionRequestHandler extends MetricsHandler implements HttpHan
             }
         } else {
             exchange.sendResponseHeaders(HttpURLConnection.HTTP_NOT_FOUND, -1);
-            exchange.close();
         }
+        exchange.close();
     }
 
     private void handleActionRequest(HttpExchange exchange)
@@ -104,11 +107,15 @@ public class QueryActionRequestHandler extends MetricsHandler implements HttpHan
         if (persistable != null) {
             try {
                 // TODO: Read Last suggested Action Set
-                PersistedAction response = persistable.read(PersistedAction.class);
-                if (response != null) {
-                    result.addProperty("LastSuggestedAction", response.toJson().toString());
+                List<PersistedAction> actionSet = persistable.readForTimestamp(PersistedAction.class);
+                JsonArray response = new JsonArray();
+                if (actionSet != null) {
+                    for (PersistedAction action : actionSet) {
+                        response.add(action.toJson());
+                    }
+                    result.addProperty("LastSuggestedActionSet", response.toString());
                 } else {
-                    result.addProperty("LastSuggestedAction", "Nil");
+                    result.addProperty("LastSuggestedActionSet", "Nil");
                 }
             } catch (Exception e) {
                 result.addProperty("error", e.getMessage());
