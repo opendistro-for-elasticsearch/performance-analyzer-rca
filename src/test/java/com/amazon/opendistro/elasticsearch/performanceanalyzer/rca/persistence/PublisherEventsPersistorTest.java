@@ -7,7 +7,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.a
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -16,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.WaitFor;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Assert;
@@ -47,8 +47,7 @@ public class PublisherEventsPersistorTest {
     }
 
     @Test
-    public void actionPublished()
-            throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException, InterruptedException {
+    public void actionPublished() throws Exception {
         final MockAction mockAction1 = new MockAction("MockAction1");
         final MockAction mockAction2 = new MockAction("MockAction2");
 
@@ -58,6 +57,8 @@ public class PublisherEventsPersistorTest {
 
         publisherEventsPersistor.persistAction(mockActions);
 
+        WaitFor.waitFor(() -> persistable.readLatestGroup(PersistedAction.class).size() == 2, 5,
+                TimeUnit.SECONDS);
         List<PersistedAction> actionsSummary = persistable.readLatestGroup(PersistedAction.class);
         Assert.assertNotNull(actionsSummary);
         Assert.assertEquals(actionsSummary.size(), 2);
@@ -72,15 +73,16 @@ public class PublisherEventsPersistorTest {
             Assert.assertEquals(action.getSummary(), mockAction2.summary());
         }
 
-        Thread.sleep(1);
-
         final MockAction mockAction3 = new MockAction("MockAction3");
         final MockAction mockAction4 = new MockAction("MockAction4");
         mockActions.clear();
         mockActions.add(mockAction3);
         mockActions.add(mockAction4);
+
         publisherEventsPersistor.persistAction(mockActions);
 
+        WaitFor.waitFor(() -> persistable.readLatestGroup(PersistedAction.class).size() == 2, 5,
+                TimeUnit.SECONDS);
         actionsSummary = persistable.readLatestGroup(PersistedAction.class);
         Assert.assertNotNull(actionsSummary);
         Assert.assertEquals(actionsSummary.size(), 2);
