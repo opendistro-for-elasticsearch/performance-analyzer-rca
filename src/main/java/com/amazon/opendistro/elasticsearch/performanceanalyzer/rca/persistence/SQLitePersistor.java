@@ -263,7 +263,7 @@ class SQLitePersistor extends PersistorBase {
   }
 
   @Override
-  public synchronized <T> @org.checkerframework.checker.nullness.qual.Nullable List<T> readForTimestamp(Class<T> clz)
+  public synchronized <T> @org.checkerframework.checker.nullness.qual.Nullable List<T> readLatestGroup(Class<T> clz)
           throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, DataAccessException {
     String tableName = getTableNameFromClassName(clz);
     Field<String> actionName = DSL.field(PersistedAction.SQL_SCHEMA_CONSTANTS.ACTION_COL_NAME, String.class);

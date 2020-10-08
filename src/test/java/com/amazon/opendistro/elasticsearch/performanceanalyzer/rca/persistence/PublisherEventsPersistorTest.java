@@ -58,7 +58,7 @@ public class PublisherEventsPersistorTest {
 
         publisherEventsPersistor.persistAction(mockActions);
 
-        List<PersistedAction> actionsSummary = persistable.readForTimestamp(PersistedAction.class);
+        List<PersistedAction> actionsSummary = persistable.readLatestGroup(PersistedAction.class);
         Assert.assertNotNull(actionsSummary);
         Assert.assertEquals(actionsSummary.size(), 2);
         int index = 1;
@@ -81,7 +81,7 @@ public class PublisherEventsPersistorTest {
         mockActions.add(mockAction4);
         publisherEventsPersistor.persistAction(mockActions);
 
-        actionsSummary = persistable.readForTimestamp(PersistedAction.class);
+        actionsSummary = persistable.readLatestGroup(PersistedAction.class);
         Assert.assertNotNull(actionsSummary);
         Assert.assertEquals(actionsSummary.size(), 2);
         index = 3;

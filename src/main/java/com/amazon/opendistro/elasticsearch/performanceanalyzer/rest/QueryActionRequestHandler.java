@@ -107,7 +107,7 @@ public class QueryActionRequestHandler extends MetricsHandler implements HttpHan
         if (persistable != null) {
             try {
                 // TODO: Read Last suggested Action Set
-                List<PersistedAction> actionSet = persistable.readForTimestamp(PersistedAction.class);
+                List<PersistedAction> actionSet = persistable.readLatestGroup(PersistedAction.class);
                 JsonArray response = new JsonArray();
                 if (actionSet != null) {
                     for (PersistedAction action : actionSet) {
