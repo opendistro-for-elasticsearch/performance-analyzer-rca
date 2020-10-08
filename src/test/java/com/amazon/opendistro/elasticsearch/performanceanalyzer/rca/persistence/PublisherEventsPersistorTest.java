@@ -5,6 +5,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.PersistedAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.WaitFor;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -15,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.WaitFor;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Assert;
