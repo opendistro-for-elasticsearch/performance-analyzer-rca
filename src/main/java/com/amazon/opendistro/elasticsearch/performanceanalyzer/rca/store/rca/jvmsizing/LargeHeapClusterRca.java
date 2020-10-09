@@ -1,3 +1,18 @@
+/*
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ *  A copy of the License is located at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  or in the "license" file accompanying this file. This file is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ *  express or implied. See the License for the specific language governing
+ *  permissions and limitations under the License.
+ */
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
@@ -10,15 +25,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.Flo
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class LargeHeapClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>> {
 
-  private static final Logger LOG = LogManager.getLogger(LargeHeapClusterRca.class);
   private static final long EVAL_INTERVAL_IN_S = 5;
 
-  private Rca<ResourceFlowUnit<HotNodeSummary>> oldGenContendedRca;
+  private final Rca<ResourceFlowUnit<HotNodeSummary>> oldGenContendedRca;
 
   public LargeHeapClusterRca(final Rca<ResourceFlowUnit<HotNodeSummary>> oldGenContendedRca) {
     super(EVAL_INTERVAL_IN_S);
