@@ -48,9 +48,16 @@ public class PublisherEventsPersistorTest {
 
     @Test
     public void actionPublished() throws Exception {
-        final MockAction mockAction1 = new MockAction("MockAction1", new ArrayList<String>(){{ add("1"); add("11"); }});
-        final MockAction mockAction2 = new MockAction("MockAction2", new ArrayList<String>(){{ add("2"); add("33"); }});
-
+        final MockAction mockAction1 = new MockAction("MockAction1", new ArrayList<String>() {
+            {
+                add("1");
+                add("11");
+            }});
+        final MockAction mockAction2 = new MockAction("MockAction2", new ArrayList<String>() {
+            {
+                add("2");
+                add("33");
+            }});
         List<Action> mockActions = new ArrayList<>();
         mockActions.add(mockAction1);
         mockActions.add(mockAction2);
@@ -58,8 +65,16 @@ public class PublisherEventsPersistorTest {
 
         publisherEventsPersistor.persistAction(mockActions);
 
-        final MockAction mockAction3 = new MockAction("MockAction3",new ArrayList<String>(){{ add("3"); add("33"); }});
-        final MockAction mockAction4 = new MockAction("MockAction4",new ArrayList<String>(){{ add("4"); add("44"); }});
+        final MockAction mockAction3 = new MockAction("MockAction3",new ArrayList<String>() {
+            {
+                add("3");
+                add("33");
+            }});
+        final MockAction mockAction4 = new MockAction("MockAction4",new ArrayList<String>() {
+            {
+                add("4");
+                add("44");
+            }});
         mockActions.add(mockAction3);
         mockActions.add(mockAction4);
 
@@ -73,7 +88,7 @@ public class PublisherEventsPersistorTest {
         int index = 3;
         for (PersistedAction action : actionsSummary) {
             Assert.assertEquals(action.getActionName(), "MockAction" + index);
-            String IP1 = (index + "." ).repeat(4);
+            String IP1 = (index + ".").repeat(4);
             String IP2 = (Integer.toString(index) + index + ".").repeat(4);
             Assert.assertEquals(action.getNodeIps(), "{" + IP1.substring(0, IP1.length() - 1) + ","
                                                          + IP2.substring(0, IP2.length() - 1) +  "}");
