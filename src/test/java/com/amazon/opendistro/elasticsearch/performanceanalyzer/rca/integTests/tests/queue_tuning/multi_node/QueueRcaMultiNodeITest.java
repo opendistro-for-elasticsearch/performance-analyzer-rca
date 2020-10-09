@@ -92,6 +92,8 @@ public class QueueRcaMultiNodeITest {
       reason = "Cache metrics are expected to be missing in this integ test")
   @AErrorPatternIgnored(pattern = "SubscribeResponseHandler:onError()",
       reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
+  @AErrorPatternIgnored(pattern = "NodeConfigCacheReaderUtil",
+      reason = "Node Config Cache are expected to be missing in this integ test.")
   public void testQueueRejectionRca() {
   }
 }

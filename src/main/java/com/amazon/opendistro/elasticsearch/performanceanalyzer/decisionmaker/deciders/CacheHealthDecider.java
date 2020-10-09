@@ -151,6 +151,8 @@ public class CacheHealthDecider extends Decider {
             NodeConfigCacheReaderUtil.readHeapMaxSizeInBytes(nodeConfigCache, esNode),
             NodeConfigCacheReaderUtil.readHeapUsageInBytes(nodeConfigCache, esNode));
 
+    // there is no difference in the action when state is UNDER_SIZED or HEALTHY_WITH_BUFFER.
+    // TODO: Tune action parameters based on the state.
     if (heapUsageBucketCalculator.compute(heapUsedPercent).equals(UsageBucket.HEALTHY_WITH_BUFFER)
                 || heapUsageBucketCalculator.compute(heapUsedPercent).equals(UsageBucket.UNDER_UTILIZED)) {
       return getAction(ModifyCacheMaxSizeAction.NAME, esNode, cacheType, true);

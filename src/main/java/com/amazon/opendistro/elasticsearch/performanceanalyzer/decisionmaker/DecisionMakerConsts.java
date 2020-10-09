@@ -22,6 +22,8 @@ import com.google.gson.JsonParser;
 public class DecisionMakerConsts {
     public static final String HEAP_TUNABLE_NAME = "heap-usage";
 
+    // Currently choosing 0.3, 0.6 and 0.9 as threshold for different usage buckets for heap_usage tunable.
+    // These values are chosen as starting point. We can tune these values after some experimentation.
     public static final ImmutableMap<UsageBucket, Double> HEAP_USAGE_MAP =
             ImmutableMap.<UsageBucket, Double>builder()
                     .put(UsageBucket.UNDER_UTILIZED, 30.0)

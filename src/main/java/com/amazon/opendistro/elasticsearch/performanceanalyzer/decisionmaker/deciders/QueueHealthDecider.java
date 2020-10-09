@@ -114,6 +114,8 @@ public class QueueHealthDecider extends Decider {
             NodeConfigCacheReaderUtil.readHeapUsageInBytes(nodeConfigCache, esNode));
     Action action = null;
 
+    // there is no difference in the action when state is UNDER_SIZED or HEALTHY_WITH_BUFFER.
+    // TODO: Tune action parameters based on the state.
     if (heapUsageBucketCalculator.compute(heapUsedPercent).equals(UsageBucket.HEALTHY_WITH_BUFFER)
                 || heapUsageBucketCalculator.compute(heapUsedPercent).equals(UsageBucket.UNDER_UTILIZED)) {
       for (String actionName : actionsByUserPriority) {
