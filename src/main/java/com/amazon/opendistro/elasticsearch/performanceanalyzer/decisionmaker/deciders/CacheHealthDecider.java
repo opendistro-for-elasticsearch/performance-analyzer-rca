@@ -15,18 +15,27 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.DecisionMakerConsts.HEAP_TUNABLE_NAME;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.DecisionMakerConsts.HEAP_USAGE_MAP;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.util.HeapUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.bucket.BasicBucketCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.bucket.BucketCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.bucket.UsageBucket;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.BaseClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.ShardRequestCacheClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -46,6 +55,7 @@ public class CacheHealthDecider extends Decider {
   private final ImmutableMap<ResourceEnum, BaseClusterRca> cacheTypeBaseClusterRcaMap;
 
   List<ResourceEnum> modifyCacheActionPriorityList = new ArrayList<>();
+  private BucketCalculator heapUsageBucketCalculator;
   private int counter = 0;
 
   public CacheHealthDecider(
@@ -59,10 +69,16 @@ public class CacheHealthDecider extends Decider {
     this.fieldDataCacheClusterRca = fieldDataCacheClusterRca;
     this.shardRequestCacheClusterRca = shardRequestCacheClusterRca;
     this.cacheTypeBaseClusterRcaMap =
-        ImmutableMap.<ResourceEnum, BaseClusterRca>builder()
-            .put(ResourceEnum.SHARD_REQUEST_CACHE, shardRequestCacheClusterRca)
-            .put(ResourceEnum.FIELD_DATA_CACHE, fieldDataCacheClusterRca)
-            .build();
+            ImmutableMap.<ResourceEnum, BaseClusterRca>builder()
+                    .put(ResourceEnum.SHARD_REQUEST_CACHE, shardRequestCacheClusterRca)
+                    .put(ResourceEnum.FIELD_DATA_CACHE, fieldDataCacheClusterRca)
+                    .build();
+    this.heapUsageBucketCalculator = new BasicBucketCalculator(HEAP_USAGE_MAP);
+    try {
+      this.heapUsageBucketCalculator = rcaConf.getBucketizationSettings(HEAP_TUNABLE_NAME);
+    } catch (final Exception e) {
+      LOG.warn("Heap usage tunable does not exist in rca.conf. Using the default values.");
+    }
   }
 
   @Override
@@ -130,7 +146,16 @@ public class CacheHealthDecider extends Decider {
    * signals going forward.
    */
   private Action computeBestAction(final NodeKey esNode, final ResourceEnum cacheType) {
-    return getAction(ModifyCacheMaxSizeAction.NAME, esNode, cacheType, true);
+    final NodeConfigCache nodeConfigCache = getAppContext().getNodeConfigCache();
+    double heapUsedPercent = HeapUtil.getHeapUsedPercentage(
+            NodeConfigCacheReaderUtil.readHeapMaxSizeInBytes(nodeConfigCache, esNode),
+            NodeConfigCacheReaderUtil.readHeapUsageInBytes(nodeConfigCache, esNode));
+
+    if (heapUsageBucketCalculator.compute(heapUsedPercent).equals(UsageBucket.HEALTHY_WITH_BUFFER)
+                || heapUsageBucketCalculator.compute(heapUsedPercent).equals(UsageBucket.UNDER_UTILIZED)) {
+      return getAction(ModifyCacheMaxSizeAction.NAME, esNode, cacheType, true);
+    }
+    return null;
   }
 
   private Action getAction(

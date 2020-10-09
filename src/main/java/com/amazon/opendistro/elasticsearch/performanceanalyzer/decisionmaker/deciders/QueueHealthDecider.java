@@ -15,15 +15,24 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.DecisionMakerConsts.HEAP_TUNABLE_NAME;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.DecisionMakerConsts.HEAP_USAGE_MAP;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.util.HeapUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.bucket.BasicBucketCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.bucket.BucketCalculator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.bucket.UsageBucket;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -39,12 +48,19 @@ public class QueueHealthDecider extends Decider {
 
   private QueueRejectionClusterRca queueRejectionRca;
   List<String> actionsByUserPriority = new ArrayList<>();
+  private BucketCalculator heapUsageBucketCalculator;
   private int counter = 0;
 
   public QueueHealthDecider(long evalIntervalSeconds, int decisionFrequency, QueueRejectionClusterRca queueRejectionClusterRca) {
     super(evalIntervalSeconds, decisionFrequency);
     this.queueRejectionRca = queueRejectionClusterRca;
     configureActionPriority();
+    this.heapUsageBucketCalculator = new BasicBucketCalculator(HEAP_USAGE_MAP);
+    try {
+      this.heapUsageBucketCalculator = rcaConf.getBucketizationSettings(HEAP_TUNABLE_NAME);
+    } catch (final Exception e) {
+      LOG.warn("Heap usage tunable does not exist in rca.conf. Using the default values.");
+    }
   }
 
   @Override
@@ -92,13 +108,20 @@ public class QueueHealthDecider extends Decider {
    * to consume better signals going forward.
    */
   private Action computeBestAction(NodeKey esNode, ResourceEnum threadPool) {
+    final NodeConfigCache nodeConfigCache = getAppContext().getNodeConfigCache();
+    double heapUsedPercent = HeapUtil.getHeapUsedPercentage(
+            NodeConfigCacheReaderUtil.readHeapMaxSizeInBytes(nodeConfigCache, esNode),
+            NodeConfigCacheReaderUtil.readHeapUsageInBytes(nodeConfigCache, esNode));
     Action action = null;
 
-    for (String actionName : actionsByUserPriority) {
-      action =
-        getAction(actionName, esNode, threadPool, true);
-      if (action != null) {
-        break;
+    if (heapUsageBucketCalculator.compute(heapUsedPercent).equals(UsageBucket.HEALTHY_WITH_BUFFER)
+                || heapUsageBucketCalculator.compute(heapUsedPercent).equals(UsageBucket.UNDER_UTILIZED)) {
+      for (String actionName : actionsByUserPriority) {
+        action =
+                getAction(actionName, esNode, threadPool, true);
+        if (action != null) {
+          break;
+        }
       }
     }
     return action;

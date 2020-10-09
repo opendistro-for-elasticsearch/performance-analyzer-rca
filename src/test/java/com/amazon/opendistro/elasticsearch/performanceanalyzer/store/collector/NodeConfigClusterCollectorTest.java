@@ -39,7 +39,7 @@ public class NodeConfigClusterCollectorTest {
 
   @Before
   public void init() {
-    collector = new NodeConfigCollector(1, null, null, null);
+    collector = new NodeConfigCollector(1, null, null, null, null);
     clusterCollector = new NodeConfigClusterCollector(collector);
     observer = new RcaTestHelper<>();
     AppContext appContext = new AppContext();
@@ -200,6 +200,38 @@ public class NodeConfigClusterCollectorTest {
     val1 = observer.readConfig(nodeKey1, ResourceUtil.HEAP_MAX_SIZE);
     Assert.assertEquals(100000, val1, 0.01);
     val2 = observer.readConfig(nodeKey2, ResourceUtil.HEAP_MAX_SIZE);
+    Assert.assertEquals(80000, val2, 0.01);
+  }
+
+  @Test
+  public void testHeapUsageCollection() {
+    NodeKey nodeKey1 = new NodeKey(new InstanceDetails.Id("node1"), new InstanceDetails.Ip("127.0.0.1"));
+    NodeKey nodeKey2 = new NodeKey(new InstanceDetails.Id("node2"), new InstanceDetails.Ip("127.0.0.2"));
+    NodeConfigFlowUnit flowUnit = new NodeConfigFlowUnit(0, nodeKey1);
+    flowUnit.addConfig(ResourceUtil.HEAP_USAGE, 100000);
+    collector.setLocalFlowUnit(flowUnit);
+    clusterCollector.operate();
+    double val1 = observer.readConfig(nodeKey1, ResourceUtil.HEAP_USAGE);
+    Assert.assertEquals(100000, val1, 0.01);
+
+    boolean hasException;
+    double val2;
+    try {
+      observer.readConfig(nodeKey2, ResourceUtil.HEAP_USAGE);
+      hasException = true;
+    } catch (IllegalArgumentException e) {
+      hasException = true;
+    }
+    Assert.assertTrue(hasException);
+
+
+    flowUnit = new NodeConfigFlowUnit(0, nodeKey2);
+    flowUnit.addConfig(ResourceUtil.HEAP_USAGE, 80000);
+    collector.setLocalFlowUnit(flowUnit);
+    clusterCollector.operate();
+    val1 = observer.readConfig(nodeKey1, ResourceUtil.HEAP_USAGE);
+    Assert.assertEquals(100000, val1, 0.01);
+    val2 = observer.readConfig(nodeKey2, ResourceUtil.HEAP_USAGE);
     Assert.assertEquals(80000, val2, 0.01);
   }
 }

@@ -35,6 +35,9 @@ public class ResourceUtil {
   public static final Resource HEAP_MAX_SIZE = Resource.newBuilder()
           .setResourceEnum(ResourceEnum.HEAP)
           .setMetricEnum(MetricEnum.HEAP_MAX).build();
+  public static final Resource HEAP_USAGE = Resource.newBuilder()
+          .setResourceEnum(ResourceEnum.HEAP)
+          .setMetricEnum(MetricEnum.HEAP_USAGE).build();
   public static final Resource OLD_GEN_HEAP_USAGE = Resource.newBuilder()
       .setResourceEnum(ResourceEnum.OLD_GEN)
       .setMetricEnum(MetricEnum.HEAP_USAGE).build();

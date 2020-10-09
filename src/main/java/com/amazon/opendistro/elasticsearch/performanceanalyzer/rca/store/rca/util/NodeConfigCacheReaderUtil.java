@@ -64,4 +64,14 @@ public class NodeConfigCacheReaderUtil {
     }
     return null;
   }
+
+  public static Long readHeapUsageInBytes(
+          final NodeConfigCache nodeConfigCache, final NodeKey esNode) {
+    try {
+      return (long) nodeConfigCache.get(esNode, ResourceUtil.HEAP_USAGE);
+    } catch (final IllegalArgumentException e) {
+      LOG.error("Exception while reading heap usage from Node Config Cache", e);
+    }
+    return null;
+  }
 }

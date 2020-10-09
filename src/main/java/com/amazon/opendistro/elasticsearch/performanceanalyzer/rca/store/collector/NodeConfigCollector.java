@@ -30,6 +30,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.NodeConfigFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Max_Size;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Used;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_QueueCapacity;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
@@ -48,6 +49,7 @@ public class NodeConfigCollector extends EsConfigNode {
   private final ThreadPool_QueueCapacity threadPool_queueCapacity;
   private final Cache_Max_Size cacheMaxSize;
   private final Heap_Max heapMaxSize;
+  private final Heap_Used heapUsed;
   private final int rcaPeriod;
   private int counter;
   private final HashMap<Resource, Double> configResult;
@@ -55,10 +57,12 @@ public class NodeConfigCollector extends EsConfigNode {
   public NodeConfigCollector(int rcaPeriod,
                              ThreadPool_QueueCapacity threadPool_queueCapacity,
                              Cache_Max_Size cacheMaxSize,
-                             Heap_Max heapMaxSize) {
+                             Heap_Max heapMaxSize,
+                             Heap_Used heapUsed) {
     this.threadPool_queueCapacity = threadPool_queueCapacity;
     this.cacheMaxSize = cacheMaxSize;
     this.heapMaxSize = heapMaxSize;
+    this.heapUsed = heapUsed;
     this.rcaPeriod = rcaPeriod;
     this.counter = 0;
     this.configResult = new HashMap<>();
@@ -101,6 +105,13 @@ public class NodeConfigCollector extends EsConfigNode {
     collectAndPublishMetric(ResourceUtil.YOUNG_GEN_MAX_SIZE, edenMaxSize + (2 * survivorMaxSize));
   }
 
+  private void collectHeapUsageStats(MetricFlowUnit heapUsed) {
+    // heap usage
+    final double heapUsage = SQLParsingUtil.readDataFromSqlResult(heapUsed.getData(),
+            MEM_TYPE.getField(), AllMetrics.GCType.HEAP.toString(), MetricsDB.MAX);
+    collectAndPublishMetric(ResourceUtil.HEAP_USAGE, heapUsage);
+  }
+
   private void collectAndPublishMetric(final Resource resource, final double metricValue) {
     if (!Double.isNaN(metricValue)) {
       final NodeConfigCache nodeConfigCache = getAppContext().getNodeConfigCache();
@@ -139,6 +150,12 @@ public class NodeConfigCollector extends EsConfigNode {
         continue;
       }
       collectHeapStats(flowUnit);
+    }
+    for (MetricFlowUnit flowUnit : heapUsed.getFlowUnits()) {
+      if (flowUnit.isEmpty()) {
+        continue;
+      }
+      collectHeapUsageStats(flowUnit);
     }
 
     if (counter == rcaPeriod) {

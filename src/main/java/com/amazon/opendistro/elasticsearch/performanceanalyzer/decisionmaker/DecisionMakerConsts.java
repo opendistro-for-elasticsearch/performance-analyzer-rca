@@ -15,9 +15,20 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.bucket.UsageBucket;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonParser;
 
 public class DecisionMakerConsts {
+    public static final String HEAP_TUNABLE_NAME = "heap-usage";
+
+    public static final ImmutableMap<UsageBucket, Double> HEAP_USAGE_MAP =
+            ImmutableMap.<UsageBucket, Double>builder()
+                    .put(UsageBucket.UNDER_UTILIZED, 30.0)
+                    .put(UsageBucket.HEALTHY_WITH_BUFFER, 60.0)
+                    .put(UsageBucket.HEALTHY, 90.0)
+                    .build();
+
     public static final String CACHE_MAX_WEIGHT = "maximumWeight";
 
     public static final JsonParser JSON_PARSER = new JsonParser();

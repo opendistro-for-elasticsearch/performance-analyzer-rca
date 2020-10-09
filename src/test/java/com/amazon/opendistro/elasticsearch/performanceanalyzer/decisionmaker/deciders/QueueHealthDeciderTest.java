@@ -52,6 +52,9 @@ public class QueueHealthDeciderTest {
 
   @Before
   public void setupCluster() {
+    final long heapMaxSizeInBytes = 12000 * 1_000_000L;
+    final long heapUsageInBytes = 120 * 1_000_000L;
+
     ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
     ClusterDetailsEventProcessor.NodeDetails node1 =
         new ClusterDetailsEventProcessor.NodeDetails(NodeRole.DATA, "node1", "127.0.0.1", false);
@@ -76,6 +79,25 @@ public class QueueHealthDeciderTest {
     appContext.setClusterDetailsEventProcessor(clusterDetailsEventProcessor);
     String rcaConfPath = Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca.conf").toString();
     rcaConf = new RcaConf(rcaConfPath);
+
+    for (final ClusterDetailsEventProcessor.NodeDetails node : nodes) {
+      appContext
+              .getNodeConfigCache()
+              .put(
+                      new NodeKey(
+                              new InstanceDetails.Id(node.getId()),
+                              new InstanceDetails.Ip(node.getHostAddress())),
+                      ResourceUtil.HEAP_MAX_SIZE,
+                      heapMaxSizeInBytes);
+      appContext
+              .getNodeConfigCache()
+              .put(
+                      new NodeKey(
+                              new InstanceDetails.Id(node.getId()),
+                              new InstanceDetails.Ip(node.getHostAddress())),
+                      ResourceUtil.HEAP_USAGE,
+                      heapUsageInBytes);
+    }
   }
 
   @Test

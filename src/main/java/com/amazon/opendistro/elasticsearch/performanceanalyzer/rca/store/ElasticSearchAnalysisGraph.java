@@ -116,7 +116,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
   @Override
   public void construct() {
-    Metric heapUsed = new Heap_Used(EVALUATION_INTERVAL_SECONDS);
+    Heap_Used heapUsed = new Heap_Used(EVALUATION_INTERVAL_SECONDS);
     Metric gcEvent = new GC_Collection_Event(EVALUATION_INTERVAL_SECONDS);
     Heap_Max heapMax = new Heap_Max(EVALUATION_INTERVAL_SECONDS);
     Metric gc_Collection_Time = new GC_Collection_Time(EVALUATION_INTERVAL_SECONDS);
@@ -209,7 +209,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     cacheMaxSize.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     addLeaf(cacheMaxSize);
 
-    NodeConfigCollector nodeConfigCollector = new NodeConfigCollector(RCA_PERIOD, queueCapacity, cacheMaxSize, heapMax);
+    NodeConfigCollector nodeConfigCollector = new NodeConfigCollector(RCA_PERIOD, queueCapacity, cacheMaxSize, heapMax, heapUsed);
     nodeConfigCollector.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     nodeConfigCollector.addAllUpstreams(Arrays.asList(queueCapacity, cacheMaxSize, heapMax));
     NodeConfigClusterCollector nodeConfigClusterCollector = new NodeConfigClusterCollector(nodeConfigCollector);

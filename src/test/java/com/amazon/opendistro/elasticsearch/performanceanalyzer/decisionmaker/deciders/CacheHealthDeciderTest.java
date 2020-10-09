@@ -53,6 +53,7 @@ public class CacheHealthDeciderTest {
   @Before
   public void setupCluster() throws SQLException, ClassNotFoundException {
     final long heapMaxSizeInBytes = 12000 * 1_000_000L;
+    final long heapUsageInBytes = 120 * 1_000_000L;
     final long fieldDataCacheMaxSizeInBytes = 12000;
     final long shardRequestCacheMaxSizeInBytes = 12000;
 
@@ -92,6 +93,14 @@ public class CacheHealthDeciderTest {
                   new InstanceDetails.Ip(node.getHostAddress())),
               ResourceUtil.HEAP_MAX_SIZE,
               heapMaxSizeInBytes);
+      appContext
+          .getNodeConfigCache()
+          .put(
+              new NodeKey(
+                  new InstanceDetails.Id(node.getId()),
+                  new InstanceDetails.Ip(node.getHostAddress())),
+              ResourceUtil.HEAP_USAGE,
+              heapUsageInBytes);
       appContext
           .getNodeConfigCache()
           .put(

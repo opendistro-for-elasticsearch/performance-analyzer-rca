@@ -28,6 +28,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.NodeConfigFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Max_Size;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Used;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_QueueCapacity;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.flow_units.MetricFlowUnitTestHelper;
@@ -48,6 +49,7 @@ public class NodeConfigCollectorTest {
   private ThreadPool_QueueCapacity threadPool_QueueCapacity;
   private Cache_Max_Size cacheMaxSize;
   private Heap_Max heapMax;
+  private Heap_Used heapUsed;
   private NodeConfigCollector nodeConfigCollector;
 
   @Before
@@ -55,7 +57,8 @@ public class NodeConfigCollectorTest {
     threadPool_QueueCapacity = new ThreadPool_QueueCapacity();
     cacheMaxSize = new Cache_Max_Size(5);
     heapMax = new Heap_Max(5);
-    nodeConfigCollector = new NodeConfigCollector(1, threadPool_QueueCapacity, cacheMaxSize, heapMax);
+    heapUsed = new Heap_Used(5);
+    nodeConfigCollector = new NodeConfigCollector(1, threadPool_QueueCapacity, cacheMaxSize, heapMax, heapUsed);
 
     ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
     ClusterDetailsEventProcessor.NodeDetails node1 =
@@ -95,6 +98,22 @@ public class NodeConfigCollectorTest {
             Arrays.asList(GCType.SURVIVOR.toString(), String.valueOf(survivorMaxSize))
         );
     heapMax.setLocalFlowUnit(flowUnit);
+  }
+
+  /**
+   * generate flowunit and bind the flowunits it generate to metrics
+   */
+  @SuppressWarnings("unchecked")
+  private void mockHeapUsageFlowUnits(int heapUsage, int oldGenUsage, int edenUsage, int survivorUsage) {
+    MetricFlowUnit flowUnit =
+            MetricFlowUnitTestHelper.createFlowUnit(
+                    Arrays.asList(MEM_TYPE.toString(), MetricsDB.MAX),
+                    Arrays.asList(AllMetrics.GCType.HEAP.toString(), String.valueOf(heapUsage)),
+                    Arrays.asList(GCType.OLD_GEN.toString(), String.valueOf(oldGenUsage)),
+                    Arrays.asList(GCType.EDEN.toString(), String.valueOf(edenUsage)),
+                    Arrays.asList(GCType.SURVIVOR.toString(), String.valueOf(survivorUsage))
+            );
+    heapUsed.setLocalFlowUnit(flowUnit);
   }
 
   @Test
@@ -159,5 +178,20 @@ public class NodeConfigCollectorTest {
     Assert.assertEquals(heapMaxSize, appContext.getNodeConfigCache().get(nodeKey, ResourceUtil.HEAP_MAX_SIZE), 0.01);
     Assert.assertEquals(oldGenMaxSize, appContext.getNodeConfigCache().get(nodeKey, ResourceUtil.OLD_GEN_MAX_SIZE), 0.01);
     Assert.assertEquals(expectedYoungGenMaxSize, appContext.getNodeConfigCache().get(nodeKey, ResourceUtil.YOUNG_GEN_MAX_SIZE), 0.01);
+  }
+
+  @Test
+  public void testHeapUsageCollection() {
+    int heapUsage = 1000;
+    int oldGenUsage = 7500;
+    int edenUsage = 2000;
+    int survivorUsage = 500;
+    mockHeapUsageFlowUnits(heapUsage, oldGenUsage, edenUsage, survivorUsage);
+    NodeConfigFlowUnit flowUnit = nodeConfigCollector.operate();
+    Assert.assertFalse(flowUnit.isEmpty());
+    Assert.assertTrue(flowUnit.hasConfig(ResourceUtil.HEAP_USAGE));
+    Assert.assertEquals(heapUsage, flowUnit.readConfig(ResourceUtil.HEAP_USAGE), 0.01);
+    // Sanity check on the appContext
+    Assert.assertEquals(heapUsage, appContext.getNodeConfigCache().get(nodeKey, ResourceUtil.HEAP_USAGE), 0.01);
   }
 }
