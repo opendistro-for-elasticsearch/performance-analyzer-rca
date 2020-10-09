@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 
 public class HeapSizeIncreaseAction extends SuppressibleAction {
 
@@ -34,7 +34,7 @@ public class HeapSizeIncreaseAction extends SuppressibleAction {
   private static final long DEFAULT_COOL_OFF_PERIOD_IN_MILLIS = TimeUnit.DAYS.toMillis(3);
   private static final long GB_TO_B = 1024 * 1024 * 1024;
 
-  public HeapSizeIncreaseAction(@NonNull final AppContext appContext) {
+  public HeapSizeIncreaseAction(@Nonnull final AppContext appContext) {
     super(appContext);
     this.esNode = new NodeKey(appContext.getMyInstanceDetails());
     this.canUpdate = Runtime.getRuntime().totalMemory() > 200 * GB_TO_B;

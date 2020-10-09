@@ -33,7 +33,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import javax.annotation.Nonnull;
 
 public class HeapSizeIncreasePolicy implements DecisionPolicy {
 
@@ -121,7 +121,7 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
 
   }
 
-  public void setAppContext(@NonNull final AppContext appContext) {
+  public void setAppContext(@Nonnull final AppContext appContext) {
     this.appContext = appContext;
   }
 

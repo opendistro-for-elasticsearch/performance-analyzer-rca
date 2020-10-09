@@ -24,20 +24,15 @@ public class HeapSizeIncreasePolicyConfig {
   public static final int DEFAULT_MIN_UNHEALTHY_MINUTES = 2 * 24 * 60;
   private final int unhealthyNodePercentage;
 
-  private final int minUnhealthyMinutes;
 
   public HeapSizeIncreasePolicyConfig(final RcaConf rcaConf) {
     this.unhealthyNodePercentage = rcaConf.readRcaConfig(POLICY_NAME,
         HeapSizeIncreasePolicyKeys.UNHEALTHY_NODE_PERCENTAGE_KEY.toString(),
         DEFAULT_UNHEALTHY_NODE_PERCENTAGE, Integer.class);
-    this.minUnhealthyMinutes = rcaConf.readRcaConfig(POLICY_NAME,
-        HeapSizeIncreasePolicyKeys.MIN_UNHEALTHY_MINUTES_KEY.toString(), DEFAULT_MIN_UNHEALTHY_MINUTES,
-        Integer.class);
   }
 
   enum HeapSizeIncreasePolicyKeys {
     UNHEALTHY_NODE_PERCENTAGE_KEY("unhealthy-node-percentage"),
-    MIN_UNHEALTHY_MINUTES_KEY("min-unhealthy-minutes");
 
     private final String value;
 
@@ -53,9 +48,5 @@ public class HeapSizeIncreasePolicyConfig {
 
   public int getUnhealthyNodePercentage() {
     return unhealthyNodePercentage;
-  }
-
-  public int getMinUnhealthyMinutes() {
-    return minUnhealthyMinutes;
   }
 }
