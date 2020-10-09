@@ -21,29 +21,53 @@ public class HeapSizeIncreasePolicyConfig {
 
   private static final String POLICY_NAME = "heap-size-increase-policy";
   public static final int DEFAULT_UNHEALTHY_NODE_PERCENTAGE = 50;
+  public static final int DEFAULT_UNDER_UTILIZED_NODE_PERCENTAGE = 70;
   public static final int DEFAULT_MIN_UNHEALTHY_MINUTES = 2 * 24 * 60;
-  private static final int DEFAULT_DAY_BREACH_THRESHOLD = 8;
-  private static final int DEFAULT_WEEK_BREACH_THRESHOLD = 3;
+  private static final int DEFAULT_DAY_BREACH_THRESHOLD_CONTENTION = 8;
+  private static final int DEFAULT_WEEK_BREACH_THRESHOLD_CONTENTION = 3;
+
+  // 24 30m aggregated values - 12hrs of under utilization needed to breach.
+  private static final int DEFAULT_DAY_BREACH_THRESHOLD_UNDER_UTILIZATION = 24;
+
+  // 4 such days of under utilization needed to breach.
+  private static final int DEFAULT_WEEK_BREACH_THRESHOLD_UNDER_UTILIZATION = 4;
+
   private final int unhealthyNodePercentage;
-  private final int dayBreachThreshold;
-  private final int weekBreachThreshold;
+  private final int underUtilizedNodePercentage;
+  private final int dayBreachThresholdForContention;
+  private final int weekBreachThresholdForContention;
+  private final int dayBreachThresholdForUnderUtilization;
+  private final int weekBreachThresholdForUnderUtilization;
 
   public HeapSizeIncreasePolicyConfig(final RcaConf rcaConf) {
     this.unhealthyNodePercentage = rcaConf.readRcaConfig(POLICY_NAME,
         HeapSizeIncreasePolicyKeys.UNHEALTHY_NODE_PERCENTAGE_KEY.toString(),
         DEFAULT_UNHEALTHY_NODE_PERCENTAGE, Integer.class);
-    this.dayBreachThreshold = rcaConf.readRcaConfig(POLICY_NAME,
-        HeapSizeIncreasePolicyKeys.DAY_BREACH_THRESHOLD_KEY.toString(), DEFAULT_DAY_BREACH_THRESHOLD,
+    this.underUtilizedNodePercentage = rcaConf.readRcaConfig(POLICY_NAME,
+        HeapSizeIncreasePolicyKeys.UNDER_UTILIZED_NODE_PERCENTAGE_KEY.toString(),
+        DEFAULT_UNDER_UTILIZED_NODE_PERCENTAGE, Integer.class);
+    this.dayBreachThresholdForContention = rcaConf.readRcaConfig(POLICY_NAME,
+        HeapSizeIncreasePolicyKeys.DAY_BREACH_THRESHOLD_CONTENTION_KEY.toString(),
+        DEFAULT_DAY_BREACH_THRESHOLD_CONTENTION,
         Integer.class);
-    this.weekBreachThreshold = rcaConf
-        .readRcaConfig(POLICY_NAME, HeapSizeIncreasePolicyKeys.WEEK_BREACH_THRESHOLD_KEY
-            .toString(), DEFAULT_WEEK_BREACH_THRESHOLD, Integer.class);
+    this.weekBreachThresholdForContention = rcaConf
+        .readRcaConfig(POLICY_NAME, HeapSizeIncreasePolicyKeys.WEEK_BREACH_THRESHOLD_CONTENTION_KEY
+            .toString(), DEFAULT_WEEK_BREACH_THRESHOLD_CONTENTION, Integer.class);
+    this.dayBreachThresholdForUnderUtilization = rcaConf.readRcaConfig(POLICY_NAME,
+        HeapSizeIncreasePolicyKeys.DAY_BREACH_THRESHOLD_UNDER_UTILIZATION_KEY.toString(),
+        DEFAULT_DAY_BREACH_THRESHOLD_UNDER_UTILIZATION, Integer.class);
+    this.weekBreachThresholdForUnderUtilization = rcaConf.readRcaConfig(POLICY_NAME,
+            HeapSizeIncreasePolicyKeys.WEEK_BREACH_THRESHOLD_UNDER_UTILIZATION_KEY.toString(),
+            DEFAULT_WEEK_BREACH_THRESHOLD_UNDER_UTILIZATION, Integer.class);
   }
 
   enum HeapSizeIncreasePolicyKeys {
     UNHEALTHY_NODE_PERCENTAGE_KEY("unhealthy-node-percentage"),
-    DAY_BREACH_THRESHOLD_KEY("day-breach-threshold"),
-    WEEK_BREACH_THRESHOLD_KEY("week-breach-threshold");
+    UNDER_UTILIZED_NODE_PERCENTAGE_KEY("under-utilized-node-percentage"),
+    DAY_BREACH_THRESHOLD_CONTENTION_KEY("day-breach-threshold-contention"),
+    DAY_BREACH_THRESHOLD_UNDER_UTILIZATION_KEY("day-breach-threshold-under-utilization"),
+    WEEK_BREACH_THRESHOLD_CONTENTION_KEY("week-breach-threshold-contention"),
+    WEEK_BREACH_THRESHOLD_UNDER_UTILIZATION_KEY("week-breach-threshold-under-utilization");
 
     private final String value;
 
@@ -61,11 +85,23 @@ public class HeapSizeIncreasePolicyConfig {
     return unhealthyNodePercentage;
   }
 
-  public int getDayBreachThreshold() {
-    return dayBreachThreshold;
+  public int getUnderUtilizedNodePercentage() {
+    return underUtilizedNodePercentage;
   }
 
-  public int getWeekBreachThreshold() {
-    return weekBreachThreshold;
+  public int getDayBreachThresholdForContention() {
+    return dayBreachThresholdForContention;
+  }
+
+  public int getWeekBreachThresholdForContention() {
+    return weekBreachThresholdForContention;
+  }
+
+  public int getDayBreachThresholdForUnderUtilization() {
+    return dayBreachThresholdForUnderUtilization;
+  }
+
+  public int getWeekBreachThresholdForUnderUtilization() {
+    return weekBreachThresholdForUnderUtilization;
   }
 }

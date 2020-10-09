@@ -152,7 +152,8 @@ public class Resources {
     UNHEALTHY(Constants.UNHEALTHY_VALUE),
     CONTENDED(Constants.CONTENDED_VALUE),
     STARVED(Constants.STARVED_VALUE),
-    UNKNOWN(Constants.UNKOWN_VALUE);
+    UNKNOWN(Constants.UNKNOWN_VALUE),
+    UNDERUTILIZED(Constants.UNDERUTILIZED_VALUE);
 
     private final String value;
 
@@ -171,7 +172,8 @@ public class Resources {
       public static final String UNHEALTHY_VALUE = "unhealthy";
       public static final String CONTENDED_VALUE = "contended";
       public static final String STARVED_VALUE = "starved";
-      public static final String UNKOWN_VALUE = "unknown";
+      public static final String UNKNOWN_VALUE = "unknown";
+      public static final String UNDERUTILIZED_VALUE = "underutilized";
     }
   }
 }

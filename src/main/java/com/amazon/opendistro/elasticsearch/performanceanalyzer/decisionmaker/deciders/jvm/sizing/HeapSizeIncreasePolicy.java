@@ -29,26 +29,33 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.LargeHeapClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.underutilization.ClusterUnderUtilizedRca;
 import com.google.common.annotations.VisibleForTesting;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nonnull;
 
 public class HeapSizeIncreasePolicy implements DecisionPolicy {
 
   private final LargeHeapClusterRca largeHeapClusterRca;
+  private final ClusterUnderUtilizedRca clusterUnderUtilizedRca;
+  private final HeapSizeIncreaseClusterMonitor heapSizeIncreaseContentionClusterMonitor;
+  private final HeapSizeIncreaseClusterMonitor heapSizeIncreaseUnderUtilizationClusterMonitor;
+
   private AppContext appContext;
   private RcaConf rcaConf;
-  private final HeapSizeIncreaseClusterMonitor heapSizeIncreaseClusterMonitor;
-
   private int unhealthyNodePercentage;
 
-  public HeapSizeIncreasePolicy(final LargeHeapClusterRca largeHeapClusterRca) {
-    this.heapSizeIncreaseClusterMonitor = new HeapSizeIncreaseClusterMonitor();
+  public HeapSizeIncreasePolicy(final LargeHeapClusterRca largeHeapClusterRca, final
+      ClusterUnderUtilizedRca clusterUnderUtilizedRca) {
+    this.heapSizeIncreaseContentionClusterMonitor = new HeapSizeIncreaseClusterMonitor();
+    this.heapSizeIncreaseUnderUtilizationClusterMonitor = new HeapSizeIncreaseClusterMonitor();
     this.largeHeapClusterRca = largeHeapClusterRca;
+    this.clusterUnderUtilizedRca = clusterUnderUtilizedRca;
   }
 
   @Override
@@ -56,17 +63,37 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
     addToClusterMonitor();
 
     List<Action> actions = new ArrayList<>();
-    if (!heapSizeIncreaseClusterMonitor.isHealthy()) {
-      Action heapSizeIncreaseAction = new HeapSizeIncreaseAction(appContext);
-      if (heapSizeIncreaseAction.isActionable()) {
-        actions.add(heapSizeIncreaseAction);
+    if (!heapSizeIncreaseContentionClusterMonitor.isHealthy()) {
+      getHeapSizeIncreaseActionIfActionable().ifPresent(actions::add);
+    }
+
+    // Since both contention and under utilization add the same action, we don't want to add
+    // the same action twice. If the action is already added as part of contention, then skip
+    // checking for under utilization.
+    if (actions.isEmpty()) {
+      if (!heapSizeIncreaseUnderUtilizationClusterMonitor.isHealthy()) {
+        getHeapSizeIncreaseActionIfActionable().ifPresent(actions::add);
       }
     }
 
     return actions;
   }
 
+  private Optional<Action> getHeapSizeIncreaseActionIfActionable() {
+    final Action heapSizeIncreaseAction = new HeapSizeIncreaseAction(appContext);
+    if (heapSizeIncreaseAction.isActionable()) {
+      return Optional.of(heapSizeIncreaseAction);
+    }
+
+    return Optional.empty();
+  }
+
   private void addToClusterMonitor() {
+    addToContentionClusterMonitor();
+    addToUnderUtilizationClusterMonitor();
+  }
+
+  private void addToContentionClusterMonitor() {
     long currTime = System.currentTimeMillis();
     if (largeHeapClusterRca.getFlowUnits().isEmpty()) {
       return;
@@ -79,7 +106,27 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
     List<HotNodeSummary> hotNodeSummaries = flowUnit.getSummary().getHotNodeSummaryList();
     hotNodeSummaries.forEach(hotNodeSummary -> {
       NodeKey nodeKey = new NodeKey(hotNodeSummary.getNodeID(), hotNodeSummary.getHostAddress());
-      heapSizeIncreaseClusterMonitor.recordIssue(nodeKey, currTime);
+      heapSizeIncreaseContentionClusterMonitor.recordIssue(nodeKey, currTime);
+    });
+  }
+
+  private void addToUnderUtilizationClusterMonitor() {
+    long currTime = System.currentTimeMillis();
+    if (clusterUnderUtilizedRca.getFlowUnits().isEmpty()) {
+      return;
+    }
+
+    final ResourceFlowUnit<HotClusterSummary> flowUnit =
+        clusterUnderUtilizedRca.getFlowUnits().get(0);
+
+    if (!flowUnit.getResourceContext().isUnderUtilized()) {
+      return;
+    }
+
+    List<HotNodeSummary> hotNodeSummaries = flowUnit.getSummary().getHotNodeSummaryList();
+    hotNodeSummaries.forEach(hotNodeSummary -> {
+      NodeKey key = new NodeKey(hotNodeSummary.getNodeID(), hotNodeSummary.getHostAddress());
+      heapSizeIncreaseUnderUtilizationClusterMonitor.recordIssue(key, currTime);
     });
   }
 
@@ -136,9 +183,14 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
   private void readThresholdValuesFromConf() {
     HeapSizeIncreasePolicyConfig policyConfig = rcaConf.getJvmScaleUpPolicyConfig();
     this.unhealthyNodePercentage = policyConfig.getUnhealthyNodePercentage();
-    this.heapSizeIncreaseClusterMonitor.setDayBreachThreshold(policyConfig.getDayBreachThreshold());
-    this.heapSizeIncreaseClusterMonitor
-        .setWeekBreachThreshold(policyConfig.getWeekBreachThreshold());
+    this.heapSizeIncreaseContentionClusterMonitor.setDayBreachThreshold(policyConfig.getDayBreachThresholdForContention());
+    this.heapSizeIncreaseContentionClusterMonitor
+        .setWeekBreachThreshold(policyConfig.getWeekBreachThresholdForContention());
+
+    this.heapSizeIncreaseUnderUtilizationClusterMonitor
+        .setDayBreachThreshold(policyConfig.getDayBreachThresholdForUnderUtilization());
+    this.heapSizeIncreaseUnderUtilizationClusterMonitor
+        .setWeekBreachThreshold(policyConfig.getWeekBreachThresholdForUnderUtilization());
   }
 
   @VisibleForTesting

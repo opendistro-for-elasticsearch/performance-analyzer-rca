@@ -21,6 +21,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.QueueActionConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.DeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaControllerHelper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.CpuUnderUtilizedRcaConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.DiskUnderUtilizedRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.FieldDataCacheRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HeapSizeIncreasePolicyConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
@@ -234,6 +236,14 @@ public class RcaConf {
 
   public OldGenContendedRcaConfig getOldGenContendedRcaConfig() {
     return new OldGenContendedRcaConfig(this);
+  }
+
+  public CpuUnderUtilizedRcaConfig getCpuUnderUtilizedRcaConfig() {
+    return new CpuUnderUtilizedRcaConfig(this);
+  }
+
+  public DiskUnderUtilizedRcaConfig getDiskUnderUtilizedRcaConfig() {
+    return new DiskUnderUtilizedRcaConfig(this);
   }
 
   public <T> T readRcaConfig(String rcaName, String key, T defaultValue, Class<? extends T> clazz) {

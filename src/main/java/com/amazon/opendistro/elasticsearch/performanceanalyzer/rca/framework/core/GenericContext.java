@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources.State;
 
 public abstract class GenericContext {
     private final Resources.State state;
@@ -38,6 +39,10 @@ public abstract class GenericContext {
 
     public boolean isUnknown() {
         return this.state == Resources.State.UNKNOWN;
+    }
+
+    public boolean isUnderUtilized() {
+        return this.state == State.UNDERUTILIZED;
     }
 
     @Override

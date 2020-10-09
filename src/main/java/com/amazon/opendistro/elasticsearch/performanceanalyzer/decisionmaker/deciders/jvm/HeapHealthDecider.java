@@ -24,6 +24,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.dec
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.LargeHeapClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.underutilization.ClusterUnderUtilizedRca;
 import java.util.List;
 
 /**
@@ -39,12 +40,13 @@ public class HeapHealthDecider extends Decider {
   private int counter = 0;
 
   public HeapHealthDecider(int decisionFrequency,
-      final HighHeapUsageClusterRca highHeapUsageClusterRca, LargeHeapClusterRca largeHeapClusterRca) {
+      final HighHeapUsageClusterRca highHeapUsageClusterRca,
+      LargeHeapClusterRca largeHeapClusterRca, ClusterUnderUtilizedRca underUtilizedRca) {
     //TODO : refactor parent class to remove evalIntervalSeconds completely
     super(EVAL_INTERVAL_IN_S, decisionFrequency);
     oldGenDecisionPolicy = new OldGenDecisionPolicy(highHeapUsageClusterRca);
     jvmGenTuningPolicy = new JvmGenTuningPolicy(highHeapUsageClusterRca);
-    heapSizeIncreasePolicy = new HeapSizeIncreasePolicy(largeHeapClusterRca);
+    heapSizeIncreasePolicy = new HeapSizeIncreasePolicy(largeHeapClusterRca, underUtilizedRca);
   }
 
   @Override

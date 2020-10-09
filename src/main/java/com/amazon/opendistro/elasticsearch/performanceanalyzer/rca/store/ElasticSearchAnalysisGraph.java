@@ -53,15 +53,16 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.IO_TotalSyscallRate;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.IndexWriter_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Norms_Memory;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Partition_TotalSpace;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Points_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Segments_Memory;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ShardSize;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.StoredFields_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.TermVectors_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Terms_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_QueueCapacity;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_RejectedReqs;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.VersionMap_Memory;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
@@ -98,6 +99,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvm
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.LargeHeapClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.OldGenContendedRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.OldGenReclamationRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.underutilization.ClusterUnderUtilizedRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.underutilization.CpuUnderUtilizedRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.underutilization.DiskUnderUtilizedRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.underutilization.NodeUnderUtilizedRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
@@ -129,18 +134,27 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     Metric cpuUtilizationGroupByOperation = new AggregateMetric(1, CPU_Utilization.NAME,
             AggregateFunction.SUM,
             MetricsDB.AVG, CommonDimension.OPERATION.toString());
+    Metric cpuUtilization = new CPU_Utilization(EVALUATION_INTERVAL_SECONDS);
+    Metric totalDiskSpace = new Partition_TotalSpace(EVALUATION_INTERVAL_SECONDS);
+    Metric shardSizeInBytes = new ShardSize(EVALUATION_INTERVAL_SECONDS);
 
     heapUsed.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     gcEvent.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     heapMax.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     gc_Collection_Time.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     cpuUtilizationGroupByOperation.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    cpuUtilization.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    totalDiskSpace.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    shardSizeInBytes.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
 
     addLeaf(heapUsed);
     addLeaf(gcEvent);
     addLeaf(heapMax);
     addLeaf(gc_Collection_Time);
     addLeaf(cpuUtilizationGroupByOperation);
+    addLeaf(cpuUtilization);
+    addLeaf(totalDiskSpace);
+    addLeaf(shardSizeInBytes);
 
     //add node stats metrics
     List<Metric> nodeStatsMetrics = constructNodeStatsMetrics();
@@ -177,6 +191,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     hotNodeClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     hotNodeClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
 
+    //128g heap - contention based
     final HighOldGenOccupancyRca oldGenOccupancyRca = new HighOldGenOccupancyRca(heapMax, heapUsed);
     oldGenOccupancyRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     oldGenOccupancyRca.addAllUpstreams(Arrays.asList(heapMax, heapUsed));
@@ -196,11 +211,33 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     largeHeapClusterRca.addAllUpstreams(Collections.singletonList(oldGenContendedRca));
     largeHeapClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
+    // 128g - under-utilization based
+    final CpuUnderUtilizedRca cpuUnderUtilizedRca = new CpuUnderUtilizedRca(cpuUtilization);
+    cpuUnderUtilizedRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    cpuUnderUtilizedRca.addAllUpstreams(Collections.singletonList(cpuUtilization));
+
+    final DiskUnderUtilizedRca diskUnderUtilizedRca = new DiskUnderUtilizedRca(totalDiskSpace,
+        shardSizeInBytes);
+    diskUnderUtilizedRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    diskUnderUtilizedRca.addAllUpstreams(Arrays.asList(totalDiskSpace, shardSizeInBytes));
+
+    final NodeUnderUtilizedRca nodeUnderUtilizedRca =
+        new NodeUnderUtilizedRca(cpuUnderUtilizedRca, diskUnderUtilizedRca);
+    nodeUnderUtilizedRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    nodeUnderUtilizedRca.addAllUpstreams(Arrays.asList(cpuUnderUtilizedRca, diskUnderUtilizedRca));
+
+    final ClusterUnderUtilizedRca clusterUnderUtilizedRca = new ClusterUnderUtilizedRca(
+        nodeUnderUtilizedRca);
+    clusterUnderUtilizedRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    clusterUnderUtilizedRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
+    clusterUnderUtilizedRca.addAllUpstreams(Collections.singletonList(nodeUnderUtilizedRca));
+
     // Heap Health Decider
     HeapHealthDecider heapHealthDecider = new HeapHealthDecider(RCA_PERIOD, highHeapUsageClusterRca,
-        largeHeapClusterRca);
+        largeHeapClusterRca, clusterUnderUtilizedRca);
     heapHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    heapHealthDecider.addAllUpstreams(Collections.singletonList(highHeapUsageClusterRca));
+    heapHealthDecider.addAllUpstreams(Arrays.asList(highHeapUsageClusterRca,
+        largeHeapClusterRca, clusterUnderUtilizedRca));
 
     /* Queue Rejection RCAs
      */

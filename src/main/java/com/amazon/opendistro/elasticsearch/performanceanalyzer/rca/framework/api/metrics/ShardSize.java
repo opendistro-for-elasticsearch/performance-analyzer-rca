@@ -28,6 +28,6 @@ public class ShardSize extends Metric {
     public static final String NAME = AllMetrics.ShardStatsValue.SHARD_SIZE_IN_BYTES.toString();
 
     public ShardSize(long evaluationIntervalSeconds) {
-        super(AllMetrics.ShardStatsValue.SHARD_SIZE_IN_BYTES.name(), evaluationIntervalSeconds);
+        super(NAME, evaluationIntervalSeconds);
     }
 }

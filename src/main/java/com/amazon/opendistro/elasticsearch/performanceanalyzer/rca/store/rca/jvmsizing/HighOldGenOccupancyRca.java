@@ -35,7 +35,6 @@ public class HighOldGenOccupancyRca extends OldGenRca<ResourceFlowUnit<HotResour
 
   private static final Logger LOG = LogManager.getLogger(HighOldGenOccupancyRca.class);
   private static final long EVAL_INTERVAL_IN_S = 5;
-  private static final int B_TO_MB = 1024 * 1024;
 
   private final Metric heapUsed;
   private final Metric heapMax;

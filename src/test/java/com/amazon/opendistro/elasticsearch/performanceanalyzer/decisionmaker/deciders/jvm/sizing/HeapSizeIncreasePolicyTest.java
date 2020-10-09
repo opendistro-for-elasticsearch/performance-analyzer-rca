@@ -85,7 +85,7 @@ public class HeapSizeIncreasePolicyTest {
     setupDataNodes();
     setupMockAppContext();
     setupMockRcaConf();
-    testPolicy = new HeapSizeIncreasePolicy(mockLargeHeapClusterRca);
+    testPolicy = new HeapSizeIncreasePolicy(mockLargeHeapClusterRca, null);
     testPolicy.setAppContext(mockAppContext);
     testPolicy.setRcaConf(mockRcaConf);
   }
@@ -148,8 +148,8 @@ public class HeapSizeIncreasePolicyTest {
   private void setupMockRcaConf() {
     when(mockRcaConf.getJvmScaleUpPolicyConfig()).thenReturn(config);
     when(config.getUnhealthyNodePercentage()).thenReturn(UNHEALTHY_NODE_PERCENTAGE);
-    when(config.getDayBreachThreshold()).thenReturn(DAY_BREACH);
-    when(config.getWeekBreachThreshold()).thenReturn(WEEK_BREACH);
+    when(config.getDayBreachThresholdForContention()).thenReturn(DAY_BREACH);
+    when(config.getWeekBreachThresholdForContention()).thenReturn(WEEK_BREACH);
   }
 
   private void evalAt(Instant currentInstant) {

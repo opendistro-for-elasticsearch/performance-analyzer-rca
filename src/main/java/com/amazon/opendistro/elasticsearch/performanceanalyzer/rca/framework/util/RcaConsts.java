@@ -16,10 +16,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
@@ -49,6 +45,8 @@ public class RcaConsts {
   public static final String MUTE_ERROR_METRIC = "MuteError";
   public static final String HOT_SHARD_RCA_ERROR_METRIC = "HotShardError";
   public static final String WRITE_UPDATED_RCA_CONF_ERROR = "WriteUpdatedRcaConfError";
+  public static final String CPU_UU_RCA = "CpuUnderUtilizedRcaError";
+  public static final String DISK_UU_RCA = "DiskUnderUtilizedRcaError";
 
   static final String dir = System.getProperty("user.dir");
   public static final String TEST_CONFIG_PATH =

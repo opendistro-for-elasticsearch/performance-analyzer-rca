@@ -415,7 +415,7 @@ public class AllMetrics {
     }
   }
 
-  public enum DevicePartitionDimension implements MetricDimension {
+  public enum DevicePartitionDimension implements MetricDimension, JooqFieldValue {
     MOUNT_POINT(Constants.MOUNT_POINT_VALUE),
     DEVICE_PARTITION(Constants.DEVICE_PARTITION_VALUE);
 
@@ -428,6 +428,16 @@ public class AllMetrics {
     @Override
     public String toString() {
       return this.value;
+    }
+
+    @Override
+    public String getName() {
+      return this.value;
+    }
+
+    @Override
+    public Field<String> getField() {
+      return DSL.field(DSL.name(this.value), String.class);
     }
 
     public static class Constants {
