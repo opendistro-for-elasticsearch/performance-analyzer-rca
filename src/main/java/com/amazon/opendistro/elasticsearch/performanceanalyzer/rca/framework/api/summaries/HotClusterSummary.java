@@ -57,6 +57,7 @@ public class HotClusterSummary extends GenericSummary {
     super();
     this.numOfNodes = numOfNodes;
     this.numOfUnhealthyNodes = numOfUnhealthyNodes;
+    this.hotNodeSummaryList = new ArrayList<>();
   }
 
   /**

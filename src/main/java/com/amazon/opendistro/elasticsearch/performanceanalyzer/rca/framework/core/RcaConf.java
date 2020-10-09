@@ -22,13 +22,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.DeciderConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaControllerHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.FieldDataCacheRcaConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HeapSizeIncreasePolicyConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageYoungGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighOldGenOccupancyRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNodeClusterRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardClusterRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardRcaConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.JvmScaleUpPolicyConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.QueueRejectionRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.ShardRequestCacheRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.bucket.BasicBucketCalculator;
@@ -227,8 +227,8 @@ public class RcaConf {
     return new QueueActionConfig(this);
   }
 
-  public JvmScaleUpPolicyConfig getJvmScaleUpPolicyConfig() {
-    return new JvmScaleUpPolicyConfig(this);
+  public HeapSizeIncreasePolicyConfig getJvmScaleUpPolicyConfig() {
+    return new HeapSizeIncreasePolicyConfig(this);
   }
 
   public <T> T readRcaConfig(String rcaName, String key, T defaultValue, Class<? extends T> clazz) {

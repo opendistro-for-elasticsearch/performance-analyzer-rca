@@ -18,12 +18,12 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.ac
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class HeapSizeIncreaseAction extends SuppressibleAction {
 
@@ -34,7 +34,7 @@ public class HeapSizeIncreaseAction extends SuppressibleAction {
   private static final long DEFAULT_COOL_OFF_PERIOD_IN_MILLIS = TimeUnit.DAYS.toMillis(3);
   private static final long GB_TO_B = 1024 * 1024 * 1024;
 
-  public HeapSizeIncreaseAction(final AppContext appContext) {
+  public HeapSizeIncreaseAction(@NonNull final AppContext appContext) {
     super(appContext);
     this.esNode = new NodeKey(appContext.getMyInstanceDetails());
     this.canUpdate = Runtime.getRuntime().totalMemory() > 200 * GB_TO_B;
@@ -52,24 +52,22 @@ public class HeapSizeIncreaseAction extends SuppressibleAction {
 
   @Override
   public List<NodeKey> impactedNodes() {
-    List<NodeKey> impactedNodes = new ArrayList<>();
-    if (appContext != null) {
 
-      impactedNodes.addAll(appContext.getDataNodeInstances()
-                                     .stream()
-                                     .map(NodeKey::new)
-                                     .collect(Collectors.toList()));
-    }
-
-    return impactedNodes;
+    return appContext.getDataNodeInstances()
+                     .stream()
+                     .map(NodeKey::new).collect(Collectors.toList());
   }
 
   @Override
   public Map<NodeKey, ImpactVector> impact() {
-    final ImpactVector impactVector = new ImpactVector();
-    impactVector.decreasesPressure(Dimension.HEAP);
+    final Map<NodeKey, ImpactVector> impactMap = new HashMap<>();
+    for (NodeKey nodeKey : impactedNodes()) {
+      final ImpactVector impactVector = new ImpactVector();
+      impactVector.decreasesPressure(Dimension.HEAP);
+      impactMap.put(nodeKey, impactVector);
+    }
 
-    return Collections.singletonMap(esNode, impactVector);
+    return impactMap;
   }
 
   @Override

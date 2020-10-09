@@ -21,17 +21,19 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.AlarmMonitor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.DecisionPolicy;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.JvmActionsAlarmMonitor;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.JvmScaleUpPolicyConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HeapSizeIncreasePolicyConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.LargeHeapClusterRca;
+import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class HeapSizeIncreasePolicy implements DecisionPolicy {
 
@@ -39,8 +41,8 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
   private AppContext appContext;
   private RcaConf rcaConf;
   private final HeapSizeIncreaseClusterMonitor heapSizeIncreaseClusterMonitor;
+
   private int unhealthyNodePercentage;
-  private int minimumMinutesUnhealthy;
 
   public HeapSizeIncreasePolicy(final LargeHeapClusterRca largeHeapClusterRca) {
     this(largeHeapClusterRca, null);
@@ -114,12 +116,12 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
           unhealthyCount++;
         }
       }
-      return (unhealthyCount / numDataNodesInCluster) * 100d >= unhealthyNodePercentage;
+      return (unhealthyCount / numDataNodesInCluster) * 100d < unhealthyNodePercentage;
     }
 
   }
 
-  public void setAppContext(final AppContext appContext) {
+  public void setAppContext(@NonNull final AppContext appContext) {
     this.appContext = appContext;
   }
 
@@ -129,8 +131,12 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
   }
 
   private void readThresholdValuesFromConf() {
-    JvmScaleUpPolicyConfig policyConfig = rcaConf.getJvmScaleUpPolicyConfig();
+    HeapSizeIncreasePolicyConfig policyConfig = rcaConf.getJvmScaleUpPolicyConfig();
     this.unhealthyNodePercentage = policyConfig.getUnhealthyNodePercentage();
-    this.minimumMinutesUnhealthy = policyConfig.getMinUnhealthyMinutes();
+  }
+
+  @VisibleForTesting
+  public int getUnhealthyNodePercentage() {
+    return unhealthyNodePercentage;
   }
 }

@@ -39,6 +39,7 @@ public abstract class OldGenRca<T extends ResourceFlowUnit<?>> extends Rca<T> {
   protected final Metric heap_Used;
   protected final Metric heap_Max;
   protected final Metric gc_event;
+
   public OldGenRca(long evaluationIntervalSeconds, Metric heapUsed, Metric heapMax,
       Metric gcEvent) {
     super(evaluationIntervalSeconds);
