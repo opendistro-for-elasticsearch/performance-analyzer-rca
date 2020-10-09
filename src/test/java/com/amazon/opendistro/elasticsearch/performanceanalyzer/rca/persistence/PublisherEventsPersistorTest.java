@@ -48,8 +48,8 @@ public class PublisherEventsPersistorTest {
 
     @Test
     public void actionPublished() throws Exception {
-        final MockAction mockAction1 = new MockAction("MockAction1");
-        final MockAction mockAction2 = new MockAction("MockAction2");
+        final MockAction mockAction1 = new MockAction("MockAction1", new ArrayList<String>(){{ add("1"); add("11"); }});
+        final MockAction mockAction2 = new MockAction("MockAction2", new ArrayList<String>(){{ add("2"); add("33"); }});
 
         List<Action> mockActions = new ArrayList<>();
         mockActions.add(mockAction1);
@@ -58,8 +58,8 @@ public class PublisherEventsPersistorTest {
 
         publisherEventsPersistor.persistAction(mockActions);
 
-        final MockAction mockAction3 = new MockAction("MockAction3");
-        final MockAction mockAction4 = new MockAction("MockAction4");
+        final MockAction mockAction3 = new MockAction("MockAction3",new ArrayList<String>(){{ add("3"); add("33"); }});
+        final MockAction mockAction4 = new MockAction("MockAction4",new ArrayList<String>(){{ add("4"); add("44"); }});
         mockActions.add(mockAction3);
         mockActions.add(mockAction4);
 
@@ -72,23 +72,27 @@ public class PublisherEventsPersistorTest {
         Assert.assertEquals(actionsSummary.size(), 2);
         int index = 3;
         for (PersistedAction action : actionsSummary) {
-            System.out.println("Action  " +  action.actionName);
-            Assert.assertEquals(action.getActionName(), "MockAction" + index++);
-            Assert.assertEquals(action.getNodeIds(), "{1,2}");
-            Assert.assertEquals(action.getNodeIps(), "{1.1.1.1,2.2.2.2}");
+            Assert.assertEquals(action.getActionName(), "MockAction" + index);
+            String IP1 = (index + "." ).repeat(4);
+            String IP2 = (Integer.toString(index) + index + ".").repeat(4);
+            Assert.assertEquals(action.getNodeIps(), "{" + IP1.substring(0, IP1.length() - 1) + ","
+                                                         + IP2.substring(0, IP2.length() - 1) +  "}");
             Assert.assertEquals(action.isActionable(), mockAction3.isActionable());
             Assert.assertEquals(action.getCoolOffPeriod(), mockAction3.coolOffPeriodInMillis());
             Assert.assertEquals(action.isMuted(), mockAction3.isMuted());
             Assert.assertEquals(action.getSummary(), mockAction3.summary());
+            index++;
         }
 
     }
 
     public class MockAction implements Action {
         private String name;
+        private List<String> nodeIps;
 
-        public MockAction(String name) {
+        public MockAction(String name, List<String> nodeIps) {
             this.name = name;
+            this.nodeIps = nodeIps;
         }
 
         @Override
@@ -104,8 +108,10 @@ public class PublisherEventsPersistorTest {
         @Override
         public List<NodeKey> impactedNodes() {
             List<NodeKey> nodeKeys = new ArrayList<>();
-            nodeKeys.add(new NodeKey(new InstanceDetails.Id("1"), new InstanceDetails.Ip("1.1.1.1")));
-            nodeKeys.add(new NodeKey(new InstanceDetails.Id("2"), new InstanceDetails.Ip("2.2.2.2")));
+            String IP1 = (nodeIps.get(0) + ".").repeat(4);
+            String IP2 = (nodeIps.get(1) + ".").repeat(4);
+            nodeKeys.add(new NodeKey(new InstanceDetails.Id(nodeIps.get(0)), new InstanceDetails.Ip(IP1.substring(0, IP1.length() - 1))));
+            nodeKeys.add(new NodeKey(new InstanceDetails.Id(nodeIps.get(1)), new InstanceDetails.Ip(IP2.substring(0, IP2.length() - 1))));
             return nodeKeys;
         }
 
