@@ -25,7 +25,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.LargeHeapClusterRca;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * decider to bring down heap usage in young gen / old gen
@@ -43,8 +42,7 @@ public class HeapHealthDecider extends Decider {
     //TODO : refactor parent class to remove evalIntervalSeconds completely
     super(EVAL_INTERVAL_IN_S, decisionFrequency);
     oldGenDecisionPolicy = new OldGenDecisionPolicy(highHeapUsageClusterRca);
-    heapSizeIncreasePolicy = new HeapSizeIncreasePolicy(largeHeapClusterRca,
-        TimeUnit.DAYS.toSeconds(2) / EVAL_INTERVAL_IN_S);
+    heapSizeIncreasePolicy = new HeapSizeIncreasePolicy(largeHeapClusterRca);
   }
 
   @Override

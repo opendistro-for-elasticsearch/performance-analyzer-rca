@@ -18,10 +18,10 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.HeapSizeIncreaseAction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.AlarmMonitor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.DecisionPolicy;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.JvmActionsAlarmMonitor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.JvmScaleUpPolicyConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindow;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindowData;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
@@ -32,46 +32,47 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class HeapSizeIncreasePolicy implements DecisionPolicy {
 
   private final LargeHeapClusterRca largeHeapClusterRca;
   private AppContext appContext;
   private RcaConf rcaConf;
-  private PerNodeSlidingWindow perNodeSlidingWindow;
-  private long evalFrequency;
-  private long counter;
+  private final HeapSizeIncreaseClusterMonitor heapSizeIncreaseClusterMonitor;
   private int unhealthyNodePercentage;
   private int minimumMinutesUnhealthy;
 
-  private List<Action> prevActionList;
+  public HeapSizeIncreasePolicy(final LargeHeapClusterRca largeHeapClusterRca) {
+    this(largeHeapClusterRca, null);
+  }
 
   public HeapSizeIncreasePolicy(final LargeHeapClusterRca largeHeapClusterRca,
-      final long policyEvaluationFrequency) {
+      final HeapSizeIncreaseClusterMonitor clusterMonitor) {
     this.largeHeapClusterRca = largeHeapClusterRca;
-    this.evalFrequency = policyEvaluationFrequency;
-    this.counter = 0;
-    this.perNodeSlidingWindow = new PerNodeSlidingWindow(4, TimeUnit.DAYS);
-    this.prevActionList = new ArrayList<>();
+    if (clusterMonitor != null) {
+      this.heapSizeIncreaseClusterMonitor = clusterMonitor;
+    } else {
+      this.heapSizeIncreaseClusterMonitor = new HeapSizeIncreaseClusterMonitor();
+    }
   }
 
   @Override
   public List<Action> evaluate() {
-    counter++;
-    addToSlidingWindow();
-    if (counter == evalFrequency) {
-      counter = 0;
-      List<Action> actions = evaluateAndEmit();
-      prevActionList.clear();
-      prevActionList.addAll(actions);
-      return actions;
+    addToClusterMonitor();
+
+    List<Action> actions = new ArrayList<>();
+    if (!heapSizeIncreaseClusterMonitor.isHealthy()) {
+      Action heapSizeIncreaseAction = new HeapSizeIncreaseAction(appContext);
+      if (heapSizeIncreaseAction.isActionable()) {
+        actions.add(heapSizeIncreaseAction);
+        return actions;
+      }
     }
 
-    return prevActionList;
+    return actions;
   }
 
-  private void addToSlidingWindow() {
+  private void addToClusterMonitor() {
     long currTime = System.currentTimeMillis();
     if (largeHeapClusterRca.getFlowUnits().isEmpty()) {
       return;
@@ -84,68 +85,38 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
     List<HotNodeSummary> hotNodeSummaries = flowUnit.getSummary().getHotNodeSummaryList();
     hotNodeSummaries.forEach(hotNodeSummary -> {
       NodeKey nodeKey = new NodeKey(hotNodeSummary.getNodeID(), hotNodeSummary.getHostAddress());
-      perNodeSlidingWindow.next(nodeKey, new SlidingWindowData(currTime, 1d));
+      heapSizeIncreaseClusterMonitor.recordIssue(nodeKey, currTime);
     });
   }
 
-  private List<Action> evaluateAndEmit() {
-    List<Action> actions = new ArrayList<>();
-    int numNodesInCluster = appContext.getAllClusterInstances().size();
-    int numNodesInClusterUndersizedOldGen = getUnderSizedOldGenCount();
+  private class HeapSizeIncreaseClusterMonitor {
 
-    if ((numNodesInClusterUndersizedOldGen / (double) numNodesInCluster) * 100d >= unhealthyNodePercentage) {
-      Action jvmSizeUpAction = new HeapSizeIncreaseAction(appContext);
-      if (jvmSizeUpAction.isActionable()) {
-        actions.add(jvmSizeUpAction);
+    private static final int DEFAULT_DAY_BREACH_THRESHOLD = 8;
+    private static final int DEFAULT_WEEK_BREACH_THRESHOLD = 3;
+    private final Map<NodeKey, AlarmMonitor> perNodeMonitor;
+
+    HeapSizeIncreaseClusterMonitor() {
+      this.perNodeMonitor = new HashMap<>();
+    }
+
+    public void recordIssue(final NodeKey nodeKey, long currTimeStamp) {
+      perNodeMonitor.computeIfAbsent(nodeKey,
+          key -> new JvmActionsAlarmMonitor(DEFAULT_DAY_BREACH_THRESHOLD,
+              DEFAULT_WEEK_BREACH_THRESHOLD))
+                    .recordIssue(currTimeStamp, 1d);
+    }
+
+    public boolean isHealthy() {
+      int numDataNodesInCluster = appContext.getDataNodeInstances().size();
+      double unhealthyCount = 0;
+      for (Map.Entry<NodeKey, AlarmMonitor> entry : perNodeMonitor.entrySet()) {
+        if (!entry.getValue().isHealthy()) {
+          unhealthyCount++;
+        }
       }
+      return (unhealthyCount / numDataNodesInCluster) * 100d >= unhealthyNodePercentage;
     }
 
-    return actions;
-  }
-
-  /**
-   * Gets the number of nodes that have had a significant number of unhealthy data points in the
-   * last 96 hours.
-   *
-   * @return number of nodes that cross the threshold for unhealthy data points in the last 96
-   * hours.
-   */
-  private int getUnderSizedOldGenCount() {
-    int count = 0;
-    for (NodeKey key : perNodeSlidingWindow.perNodeSlidingWindow.keySet()) {
-      if (perNodeSlidingWindow.readCount(key) >= minimumMinutesUnhealthy) {
-        count++;
-      }
-    }
-
-    return count;
-  }
-
-  private static class PerNodeSlidingWindow {
-    private final int slidingWindowSize;
-    private final TimeUnit windowSizeTimeUnit;
-    private final Map<NodeKey, SlidingWindow<SlidingWindowData>> perNodeSlidingWindow;
-
-    public PerNodeSlidingWindow(final int slidingWindowSize, final TimeUnit timeUnit) {
-      this.slidingWindowSize = slidingWindowSize;
-      this.windowSizeTimeUnit = timeUnit;
-      this.perNodeSlidingWindow = new HashMap<>();
-    }
-
-    public void next(NodeKey node, SlidingWindowData data) {
-      perNodeSlidingWindow.computeIfAbsent(node, n1 -> new SlidingWindow<>(slidingWindowSize,
-          windowSizeTimeUnit)).next(data);
-    }
-
-    public int readCount(NodeKey node) {
-      if (perNodeSlidingWindow.containsKey(node)) {
-        SlidingWindow<SlidingWindowData> slidingWindow = perNodeSlidingWindow.get(node);
-        double count = slidingWindow.readSum();
-        return (int)count;
-      }
-
-      return 0;
-    }
   }
 
   public void setAppContext(final AppContext appContext) {
