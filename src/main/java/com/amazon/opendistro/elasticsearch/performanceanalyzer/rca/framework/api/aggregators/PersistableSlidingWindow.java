@@ -15,7 +15,14 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors.EXCEPTION_IN_PERSIST;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors.EXCEPTION_IN_READ;
+
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaVerticesMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.FileRotate;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.Statistics;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -23,11 +30,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,20 +45,32 @@ import org.apache.logging.log4j.Logger;
 public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> {
   private static final Logger LOG = LogManager.getLogger(PersistableSlidingWindow.class);
   private static final ObjectMapper objectMapper = new ObjectMapper();
+  // The time to wait between writes, currently 5 minutes TODO (make this configurable)
+  private static final long WRITE_PERIOD_MS = 300000L;
 
   private Path pathToFile;
+  private boolean enablePersistence;
+  private long lastWriteTimeEpochMs;
 
   public PersistableSlidingWindow(int slidingWindowSize,
                                   TimeUnit timeUnit,
                                   Path filePath) {
     super(slidingWindowSize, timeUnit);
     this.pathToFile = filePath;
-    try {
-      if (Files.exists(pathToFile)) {
-        load(pathToFile);
+    if (this.pathToFile == null) {
+      this.enablePersistence = false;
+    } else {
+      this.enablePersistence = true;
+      // setting the last write time to now will cause our first write to occur 5 minutes after construction
+      this.lastWriteTimeEpochMs = Instant.now().toEpochMilli();
+      try {
+        load(this.pathToFile);
+      } catch (IOException ex) {
+        LOG.error("Unable to load previous data from {} into {}", this.pathToFile,
+            getClass().getSimpleName());
+        PerformanceAnalyzerApp.RCA_VERTICES_METRICS_AGGREGATOR.updateStat(EXCEPTION_IN_READ,
+            getClass().getSimpleName(), 1);
       }
-    } catch (IOException e) {
-      LOG.error("Couldn't load SlidingWindow data from {}", pathToFile, e);
     }
   }
 
@@ -60,6 +80,9 @@ public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> {
    * @throws IOException If there is an error reading the file
    */
   protected synchronized void load(Path path) throws IOException {
+    if (!enablePersistence) {
+      return;
+    }
     LineIterator it = FileUtils.lineIterator(path.toFile(), "UTF-8");
     try {
       while (it.hasNext()) {
@@ -81,7 +104,11 @@ public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> {
    * @throws IOException If there is a CRUD error with the files involved
    */
   protected synchronized void write() throws IOException {
-    String tmpFile = pathToFile.toString() + RandomStringUtils.randomAlphanumeric(32);
+    // only write if persistence is enabled and once every write period
+    if (!enablePersistence || WRITE_PERIOD_MS < Instant.now().toEpochMilli() - lastWriteTimeEpochMs) {
+      return;
+    }
+    String tmpFile = pathToFile.toString();
     Path tmpPath = Paths.get(tmpFile);
     Files.createFile(Paths.get(tmpFile));
     BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile, false));
@@ -94,5 +121,6 @@ public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> {
     writer.flush();
     // atomic rotate
     FileRotate.rotateFile(tmpPath, pathToFile);
+    lastWriteTimeEpochMs = Instant.now().toEpochMilli();
   }
 }

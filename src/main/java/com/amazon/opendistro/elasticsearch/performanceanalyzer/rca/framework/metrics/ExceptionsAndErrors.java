@@ -42,7 +42,12 @@ public enum ExceptionsAndErrors implements MeasurementSet {
   /**
    * When persisting action or flowunits, the persistable throws an exception when it is unable to write to DB.
    */
-  EXCEPTION_IN_PERSIST("ExceptionInPersist", "namedCount", Statistics.NAMED_COUNTERS);
+  EXCEPTION_IN_PERSIST("ExceptionInPersist", "namedCount", Statistics.NAMED_COUNTERS),
+
+  /**
+   * When attempting to read data from some datastore fails unexpectedly
+   */
+  EXCEPTION_IN_READ("ExceptionInRead", "namedCount", Statistics.NAMED_COUNTERS);
 
   /** What we want to appear as the metric name. */
   private String name;

@@ -15,7 +15,15 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors.EXCEPTION_IN_PERSIST;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors.EXCEPTION_IN_READ;
+
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * The BucketizedSlidingWindow provides a SlidingWindow implementation that can aggregate all
@@ -23,12 +31,29 @@ import java.util.concurrent.TimeUnit;
  *
  * <p>All data within a single bucket window time range is summed by default.
  */
-public class BucketizedSlidingWindow extends SlidingWindow<SlidingWindowData> {
-
+public class BucketizedSlidingWindow extends PersistableSlidingWindow {
+  private static final Logger LOG = LogManager.getLogger(BucketizedSlidingWindow.class);
   private final long BUCKET_WINDOW_SIZE;
 
+  /**
+   * Creates a BucketizedSlidingWindow which won't persist data on disk
+   * @param SLIDING_WINDOW_SIZE Length of the window in units of time
+   * @param BUCKET_WINDOW_SIZE Length of each bucket in units of time
+   * @param timeUnit The unit of time
+   */
   public BucketizedSlidingWindow(int SLIDING_WINDOW_SIZE, int BUCKET_WINDOW_SIZE, TimeUnit timeUnit) {
-    super(SLIDING_WINDOW_SIZE, timeUnit);
+    this(SLIDING_WINDOW_SIZE, BUCKET_WINDOW_SIZE, timeUnit, null);
+  }
+
+  /**
+   * Creates a BucketizedSlidingWindow which will persist data on disk
+   * @param SLIDING_WINDOW_SIZE Length of the window in units of time
+   * @param BUCKET_WINDOW_SIZE Length of each bucket in units of time
+   * @param timeUnit The unit of time
+   * @param persistFilePath Path to the file to use for persistence
+   */
+  public BucketizedSlidingWindow(int SLIDING_WINDOW_SIZE, int BUCKET_WINDOW_SIZE, TimeUnit timeUnit, Path persistFilePath) {
+    super(SLIDING_WINDOW_SIZE, timeUnit, persistFilePath);
     assert BUCKET_WINDOW_SIZE < SLIDING_WINDOW_SIZE : "BucketWindow size should be less than SlidingWindow size";
     this.BUCKET_WINDOW_SIZE = timeUnit.toMillis(BUCKET_WINDOW_SIZE);
   }
@@ -41,6 +66,13 @@ public class BucketizedSlidingWindow extends SlidingWindow<SlidingWindowData> {
         firstElement.value += e.getValue();
         add(e);
         pruneExpiredEntries(e.getTimeStamp());
+        try {
+          write(); // Try to persist the data whenever we complete writing a bucket
+        } catch (IOException ex) {
+          LOG.error("Failed to persist {} data", this.getClass().getSimpleName(), ex);
+          PerformanceAnalyzerApp.RCA_VERTICES_METRICS_AGGREGATOR.updateStat(EXCEPTION_IN_PERSIST,
+              getClass().getSimpleName(), 1);
+        }
         return;
       }
     }
