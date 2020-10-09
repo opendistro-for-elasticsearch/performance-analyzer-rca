@@ -17,8 +17,11 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.t
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.queue_tuning.Constants.QUEUE_TUNING_RESOURCES_DIR;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Used;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_QueueCapacity;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_RejectedReqs;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker;
@@ -61,7 +64,6 @@ import org.junit.runner.RunWith;
         )
     }
 )
-
 @AMetric(name = ThreadPool_QueueCapacity.class,
     dimensionNames = {ThreadPoolDimension.Constants.TYPE_VALUE},
     tables = {
@@ -75,6 +77,37 @@ import org.junit.runner.RunWith;
         )
     }
 )
+@AMetric(name = Heap_Max.class,
+    dimensionNames = {AllMetrics.HeapDimension.Constants.TYPE_VALUE},
+    tables = {
+        @ATable(hostTag = HostTag.DATA_0,
+            tuple = {
+                @ATuple(dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
+                        sum = 1000000.0, avg = 1000000.0, min = 1000000.0, max = 1000000.0)
+            }),
+        @ATable(hostTag = {HostTag.ELECTED_MASTER},
+            tuple = {
+                @ATuple(dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
+                        sum = 1000000.0, avg = 1000000.0, min = 1000000.0, max = 1000000.0)
+            })
+    }
+)
+@AMetric(name = Heap_Used.class,
+    dimensionNames = {AllMetrics.HeapDimension.Constants.TYPE_VALUE},
+    tables = {
+        @ATable(hostTag = HostTag.DATA_0,
+            tuple = {
+                @ATuple(dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
+                        sum = 10000.0, avg = 10000.0, min = 10000.0, max = 10000.0)
+                }),
+        @ATable(hostTag = {HostTag.ELECTED_MASTER},
+            tuple = {
+                @ATuple(dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
+                        sum = 10000.0, avg = 10000.0, min = 10000.0, max = 10000.0)
+                })
+    }
+)
+
 public class QueueDeciderDedicatedMasterITest {
   // This integ test is built to test Decision Maker framework and queue remediation actions
   // This test injects queue rejection metrics on one of the data node and queries the
@@ -92,6 +125,14 @@ public class QueueDeciderDedicatedMasterITest {
       reason = "Cache metrics are expected to be missing in this integ test")
   @AErrorPatternIgnored(pattern = "SubscribeResponseHandler:onError()",
       reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
+  @AErrorPatternIgnored(pattern = "SQLParsingUtil:readDataFromSqlResult()",
+      reason = "Old gen metrics is expected to be missing in this integ test.")
+  @AErrorPatternIgnored(pattern = "HighHeapUsageOldGenRca:operate()",
+      reason = "Old gen rca is expected to be missing in this integ test.")
+  @AErrorPatternIgnored(pattern = "HighHeapUsageYoungGenRca:operate()",
+      reason = "Young gen rca is expected to be missing in this integ test.")
+  @AErrorPatternIgnored(pattern = "NodeConfigCollector:collectAndPublishMetric()",
+      reason = "Metrics is expected to be missing")
   public void testQueueCapacityDecider() {
   }
 }

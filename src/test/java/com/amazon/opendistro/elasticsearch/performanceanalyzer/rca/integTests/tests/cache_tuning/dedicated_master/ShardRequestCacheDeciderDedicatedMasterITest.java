@@ -25,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Hit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Size;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Used;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AClusterType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AErrorPatternIgnored;
@@ -133,6 +134,25 @@ import org.junit.runner.RunWith;
                                         sum = 1000000.0, avg = 1000000.0, min = 1000000.0, max = 1000000.0)
                         })
         })
+@AMetric(
+        name = Heap_Used.class,
+        dimensionNames = {AllMetrics.HeapDimension.Constants.TYPE_VALUE},
+        tables = {
+                @ATable(
+                        hostTag = HostTag.DATA_0,
+                        tuple = {
+                                @ATuple(
+                                        dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
+                                        sum = 10000.0, avg = 10000.0, min = 10000.0, max = 10000.0)
+                        }),
+                @ATable(
+                        hostTag = {HostTag.ELECTED_MASTER},
+                        tuple = {
+                                @ATuple(
+                                        dimensionValues = {AllMetrics.GCType.Constants.HEAP_VALUE},
+                                        sum = 10000.0, avg = 10000.0, min = 10000.0, max = 10000.0)
+                        })
+        })
 
 public class ShardRequestCacheDeciderDedicatedMasterITest {
     // Test CacheDecider for ModifyCacheAction (shard request cache).
@@ -171,6 +191,9 @@ public class ShardRequestCacheDeciderDedicatedMasterITest {
     @AErrorPatternIgnored(
             pattern = "CacheUtil:getCacheMaxSize()",
             reason = "Field data cache metrics is expected to be missing.")
+    @AErrorPatternIgnored(
+            pattern = "HighHeapUsageYoungGenRca:operate()",
+            reason = "Young gen rca is expected to be missing in this integ test.")
     public void testShardRequestCacheAction() {
     }
 }
