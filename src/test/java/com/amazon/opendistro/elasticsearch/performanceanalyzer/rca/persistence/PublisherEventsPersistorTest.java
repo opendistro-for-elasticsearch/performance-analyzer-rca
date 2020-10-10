@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
+import org.jooq.impl.DSL;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -79,9 +80,12 @@ public class PublisherEventsPersistorTest {
 
         publisherEventsPersistor.persistAction(mockActions, 987654321);
 
-        WaitFor.waitFor(() -> persistable.readAllForMaxTimeStamp(PersistedAction.class).size() == 2, 5,
+        WaitFor.waitFor(() -> persistable.readAllForMaxField(PersistedAction.class,
+                DSL.field(PersistedAction.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, String.class)
+                ).size() == 2, 5,
                 TimeUnit.SECONDS);
-        List<PersistedAction> actionsSummary = persistable.readAllForMaxTimeStamp(PersistedAction.class);
+        List<PersistedAction> actionsSummary = persistable.readAllForMaxField(PersistedAction.class,
+                DSL.field(PersistedAction.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, String.class));
         Assert.assertNotNull(actionsSummary);
         Assert.assertEquals(actionsSummary.size(), 2);
         int index = 3;

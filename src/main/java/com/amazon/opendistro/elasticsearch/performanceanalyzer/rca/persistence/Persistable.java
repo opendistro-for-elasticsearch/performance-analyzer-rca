@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.Result;
 import org.jooq.exception.DataAccessException;
@@ -80,7 +81,7 @@ public interface Persistable {
    * @throws InstantiationException Creating an Object of the class failed for some reason.
    * @throws DataAccessException Thrown by the DB layer.
    */
-  <T> @Nullable List<T> readAllForMaxTimeStamp(Class<T> clz)
+  <T, E> @Nullable List<T> readAllForMaxField(Class<T> clz, Field<E> field)
           throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, DataAccessException;
 
   /**

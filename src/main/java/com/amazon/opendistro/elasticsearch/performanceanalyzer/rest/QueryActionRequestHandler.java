@@ -33,6 +33,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
 import org.apache.logging.log4j.util.Supplier;
+import org.jooq.impl.DSL;
 
 public class QueryActionRequestHandler extends MetricsHandler implements HttpHandler {
 
@@ -106,7 +107,8 @@ public class QueryActionRequestHandler extends MetricsHandler implements HttpHan
         JsonObject result = new JsonObject();
         if (persistable != null) {
             try {
-                List<PersistedAction> actionSet = persistable.readAllForMaxTimeStamp(PersistedAction.class);
+                List<PersistedAction> actionSet = persistable.readAllForMaxField(PersistedAction.class,
+                        DSL.field(PersistedAction.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, String.class));
                 JsonArray response = new JsonArray();
                 if (actionSet != null) {
                     for (PersistedAction action : actionSet) {
