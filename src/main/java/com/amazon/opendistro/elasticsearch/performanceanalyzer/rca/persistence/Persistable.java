@@ -80,7 +80,7 @@ public interface Persistable {
    * @throws InstantiationException Creating an Object of the class failed for some reason.
    * @throws DataAccessException Thrown by the DB layer.
    */
-  <T> @Nullable List<T> readLatestGroup(Class<T> clz)
+  <T> @Nullable List<T> readAllForMaxTimeStamp(Class<T> clz)
           throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, DataAccessException;
 
   /**

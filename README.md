@@ -124,6 +124,25 @@ In order to get the temperature of a particular node, we can use:
 
 `curl "localhost:9600/_opendistro/_performanceanalyzer/rca?name=AllTemperatureDimensions&local=true"`
 
+## Actions API
+This API provides the last suggested action set via the Decision Maker framework. All the suggested action sets are persisted in the SQL tables. This API provides the action set which was published with the latest timestamp.
+
+
+### SAMPLE REQUEST
+
+GET `_opendistro/_performanceanalyzer/actions`
+
+The sample response from above api
+
+```
+{
+    "LastSuggestedActionSet": "[{\"nodeIps\":\"{1.1.1.1,2.2.2.2}\",\"muted\":false,\"actionName\":\"M1\",\"timestamp\":1602190468123,\"nodeIds\":\"{1,2}\",\"summary\":\"MockSummary\",\"actionable\":false,\"coolOffPeriod\":0},
+                                {\"nodeIps\":\"{1.1.1.1,2.2.2.2}\",\"muted\":false,\"actionName\":\"M2\",\"timestamp\":1602190468123,\"nodeIds\":\"{1,2}\",\"summary\":\"MockSummary\",\"actionable\":false,\"coolOffPeriod\":0}]"
+}
+
+```
+
+
 ## Building, Deploying, and Running the RCA Framework
 Please refer to the [Install Guide](./INSTALL.md) for detailed information on building, installing and running the RCA framework.
 

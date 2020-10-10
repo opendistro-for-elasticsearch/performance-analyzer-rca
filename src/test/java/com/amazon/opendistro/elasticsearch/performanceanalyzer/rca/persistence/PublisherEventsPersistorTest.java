@@ -56,15 +56,14 @@ public class PublisherEventsPersistorTest {
         final MockAction mockAction2 = new MockAction("MockAction2", new ArrayList<String>() {
             {
                 add("2");
-                add("33");
+                add("22");
             }});
         List<Action> mockActions = new ArrayList<>();
         mockActions.add(mockAction1);
         mockActions.add(mockAction2);
+        publisherEventsPersistor.persistAction(mockActions,123456789);
+
         mockActions.clear();
-
-        publisherEventsPersistor.persistAction(mockActions);
-
         final MockAction mockAction3 = new MockAction("MockAction3",new ArrayList<String>() {
             {
                 add("3");
@@ -78,11 +77,11 @@ public class PublisherEventsPersistorTest {
         mockActions.add(mockAction3);
         mockActions.add(mockAction4);
 
-        publisherEventsPersistor.persistAction(mockActions);
+        publisherEventsPersistor.persistAction(mockActions, 987654321);
 
-        WaitFor.waitFor(() -> persistable.readLatestGroup(PersistedAction.class).size() == 2, 5,
+        WaitFor.waitFor(() -> persistable.readAllForMaxTimeStamp(PersistedAction.class).size() == 2, 5,
                 TimeUnit.SECONDS);
-        List<PersistedAction> actionsSummary = persistable.readLatestGroup(PersistedAction.class);
+        List<PersistedAction> actionsSummary = persistable.readAllForMaxTimeStamp(PersistedAction.class);
         Assert.assertNotNull(actionsSummary);
         Assert.assertEquals(actionsSummary.size(), 2);
         int index = 3;
@@ -90,8 +89,8 @@ public class PublisherEventsPersistorTest {
             Assert.assertEquals(action.getActionName(), "MockAction" + index);
             String IP1 = (index + ".").repeat(4);
             String IP2 = (Integer.toString(index) + index + ".").repeat(4);
-            Assert.assertEquals(action.getNodeIps(), "{" + IP1.substring(0, IP1.length() - 1) + ","
-                                                         + IP2.substring(0, IP2.length() - 1) +  "}");
+            Assert.assertEquals(action.getNodeIps(), IP1.substring(0, IP1.length() - 1) + ","
+                                                         + IP2.substring(0, IP2.length() - 1));
             Assert.assertEquals(action.isActionable(), mockAction3.isActionable());
             Assert.assertEquals(action.getCoolOffPeriod(), mockAction3.coolOffPeriodInMillis());
             Assert.assertEquals(action.isMuted(), mockAction3.isMuted());

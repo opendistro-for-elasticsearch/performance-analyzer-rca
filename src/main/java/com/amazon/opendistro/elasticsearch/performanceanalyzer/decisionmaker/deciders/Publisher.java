@@ -76,7 +76,7 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
     }
     // Persist actions to sqlite
     PublisherEventsPersistor persistor = new PublisherEventsPersistor(args.getPersistable());
-    persistor.persistAction(actionsPublished);
+    persistor.persistAction(actionsPublished, Instant.now().toEpochMilli());
   }
 
   @Override

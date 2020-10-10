@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
 
+import static org.jooq.impl.DSL.max;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources.State;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit.ResourceFlowUnitFieldValue;
@@ -263,15 +265,16 @@ class SQLitePersistor extends PersistorBase {
   }
 
   @Override
-  public synchronized <T> @org.checkerframework.checker.nullness.qual.Nullable List<T> readLatestGroup(Class<T> clz)
+  public synchronized <T> @org.checkerframework.checker.nullness.qual.Nullable List<T> readAllForMaxTimeStamp(Class<T> clz)
           throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, DataAccessException {
     String tableName = getTableNameFromClassName(clz);
-    Field<String> actionName = DSL.field(PersistedAction.SQL_SCHEMA_CONSTANTS.ACTION_COL_NAME, String.class);
+    Field<String> timestamp = DSL.field(PersistedAction.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, String.class);
     List<Record> maxTimeStampRecordList;
 
     try {
       // Fetch the latest rows with the last timestamp.
-      maxTimeStampRecordList = create.select().from(tableName).groupBy(actionName).fetch();
+      maxTimeStampRecordList = create.select().from(tableName).where(DSL.field(timestamp)
+              .eq(create.select(max(timestamp)).from(tableName))).fetch();
     } catch (DataAccessException dex) {
       LOG.error("Error querying table {}", tableName, dex);
       return null;
