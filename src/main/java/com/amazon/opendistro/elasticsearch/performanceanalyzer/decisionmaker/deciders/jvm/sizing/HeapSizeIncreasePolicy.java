@@ -26,23 +26,29 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.LargeHeapClusterRca;
 import com.google.common.annotations.VisibleForTesting;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class HeapSizeIncreasePolicy implements DecisionPolicy {
 
+  private static final Logger LOG = LogManager.getLogger(HeapSizeIncreasePolicy.class);
   private final LargeHeapClusterRca largeHeapClusterRca;
   private AppContext appContext;
   private RcaConf rcaConf;
   private final HeapSizeIncreaseClusterMonitor heapSizeIncreaseClusterMonitor;
 
   private int unhealthyNodePercentage;
+  private long minimumTotalMemoryRequiredInGB = 200; // Default: 200GB min total mem required.
 
   public HeapSizeIncreasePolicy(final LargeHeapClusterRca largeHeapClusterRca) {
     this.heapSizeIncreaseClusterMonitor = new HeapSizeIncreaseClusterMonitor();
@@ -55,7 +61,8 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
 
     List<Action> actions = new ArrayList<>();
     if (!heapSizeIncreaseClusterMonitor.isHealthy()) {
-      Action heapSizeIncreaseAction = new HeapSizeIncreaseAction(appContext);
+      Action heapSizeIncreaseAction = new HeapSizeIncreaseAction(appContext,
+          minimumTotalMemoryRequiredInGB);
       if (heapSizeIncreaseAction.isActionable()) {
         actions.add(heapSizeIncreaseAction);
       }
@@ -85,7 +92,10 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
 
     private static final int DEFAULT_DAY_BREACH_THRESHOLD = 8;
     private static final int DEFAULT_WEEK_BREACH_THRESHOLD = 3;
+    private static final String PERSISTENCE_PREFIX = "heap-size-increase-alarm-";
     private final Map<NodeKey, AlarmMonitor> perNodeMonitor;
+    private int dayBreachThreshold = DEFAULT_DAY_BREACH_THRESHOLD;
+    private int weekBreachThreshold = DEFAULT_WEEK_BREACH_THRESHOLD;
 
     HeapSizeIncreaseClusterMonitor() {
       this.perNodeMonitor = new HashMap<>();
@@ -93,8 +103,9 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
 
     public void recordIssue(final NodeKey nodeKey, long currTimeStamp) {
       perNodeMonitor.computeIfAbsent(nodeKey,
-          key -> new JvmActionsAlarmMonitor(DEFAULT_DAY_BREACH_THRESHOLD,
-              DEFAULT_WEEK_BREACH_THRESHOLD))
+          key -> new JvmActionsAlarmMonitor(dayBreachThreshold,
+              weekBreachThreshold, Paths.get(RcaConsts.CONFIG_DIR_PATH,
+              PERSISTENCE_PREFIX + key.getNodeId().toString())))
                     .recordIssue(currTimeStamp, 1d);
     }
 
@@ -109,6 +120,13 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
       return (unhealthyCount / numDataNodesInCluster) * 100d < unhealthyNodePercentage;
     }
 
+    public void setDayBreachThreshold(int dayBreachThreshold) {
+      this.dayBreachThreshold = dayBreachThreshold;
+    }
+
+    public void setWeekBreachThreshold(int weekBreachThreshold) {
+      this.weekBreachThreshold = weekBreachThreshold;
+    }
   }
 
   public void setAppContext(@Nonnull final AppContext appContext) {
@@ -123,6 +141,10 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
   private void readThresholdValuesFromConf() {
     HeapSizeIncreasePolicyConfig policyConfig = rcaConf.getJvmScaleUpPolicyConfig();
     this.unhealthyNodePercentage = policyConfig.getUnhealthyNodePercentage();
+    this.minimumTotalMemoryRequiredInGB = policyConfig.getMinimumTotalMemoryInGB();
+    this.heapSizeIncreaseClusterMonitor.setDayBreachThreshold(policyConfig.getDayBreachThreshold());
+    this.heapSizeIncreaseClusterMonitor
+        .setWeekBreachThreshold(policyConfig.getWeekBreachThreshold());
   }
 
   @VisibleForTesting

@@ -21,7 +21,7 @@ public class HighOldGenOccupancyRcaConfig {
 
   private static final String CONFIG_NAME = "high-old-gen-occupancy-config";
   public static final long DEFAULT_UTILIZATION = 75;
-  public static final long DEFAULT_EVALUATION_INTERVAL_IN_S = 5;
+  public static final long DEFAULT_EVALUATION_INTERVAL_IN_S = 60;
   private final Long heapUtilizationThreshold;
 
   private final long evaluationIntervalInS;

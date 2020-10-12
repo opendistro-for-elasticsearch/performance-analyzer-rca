@@ -44,7 +44,8 @@ import org.junit.runner.RunWith;
 @RunWith(RcaItNotEncryptedRunner.class)
 @AClusterType(ClusterType.MULTI_NODE_CO_LOCATED_MASTER)
 @ARcaGraph(ElasticSearchAnalysisGraph.class)
-@ARcaConf(dataNode = JvmSizingITConstants.RCA_CONF_PATH + "rca.conf")
+@ARcaConf(dataNode = JvmSizingITConstants.RCA_CONF_PATH + "rca.conf", electedMaster =
+    JvmSizingITConstants.RCA_CONF_PATH + "rca_master.conf")
 @AMetric(
     name = Heap_Max.class,
     dimensionNames = {Constants.TYPE_VALUE},
@@ -110,7 +111,7 @@ import org.junit.runner.RunWith;
             hostTag = HostTag.ELECTED_MASTER,
             tuple = {
                 @ATuple(
-                    dimensionValues = {GCType.Constants.OLD_GEN_VALUE},
+                    dimensionValues = {GCType.Constants.TOT_FULL_GC_VALUE},
                     sum = 10.0, avg = 10.0, max = 10.0, min = 10.0
                 )
             }
@@ -155,12 +156,12 @@ public class HeapSizeIncreaseIT {
       pattern = "CacheUtil:getCacheMaxSize()",
       reason = "Shard request cache metrics is expected to be missing.")
   @AErrorPatternIgnored(
-      pattern = "OldGenRca:getFullGcEventsOrDefault()",
-      reason = "Expected to be missing for some reason."
-  )
-  @AErrorPatternIgnored(
       pattern = "HighHeapUsageYoungGenRca:operate()",
       reason = "YoungGen metrics is expected to be missing."
+  )
+  @AErrorPatternIgnored(
+      pattern = "PersistableSlidingWindow:<init>()",
+      reason = "Persistence base path can be null for integration test."
   )
   public void testHeapSizeIncrease() {
 
