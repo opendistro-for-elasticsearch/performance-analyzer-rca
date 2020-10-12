@@ -70,11 +70,11 @@ public interface Persistable {
 
 
   /**
-   * This API reads all the rows from the table for the latest timestamp corresponding to the Object.
+   * This API reads all the rows from the table corresponding to the maximum value in the field Object.
    * @param clz The Class whose Object is desired.
-   * @param <T> The generic type of the class
-   * @return An instantiated Object of the class with the fields populated with the data from the latest row in the table and other
-   *     referenced tables or null if the table does not exist yet.
+   * @param <T> The generic type of the class.
+   * @param field DSL field for which the maximum value is desired.
+   * @return An instantiated Object of the class with the fields populated with the data from the corresponding rows in the table.
    * @throws NoSuchMethodException If the expected setter does not exist.
    * @throws IllegalAccessException If the setter is not Public
    * @throws InvocationTargetException If invoking the setter by reflection threw an exception.
