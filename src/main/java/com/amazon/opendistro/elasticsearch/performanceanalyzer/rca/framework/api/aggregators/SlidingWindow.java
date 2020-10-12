@@ -28,7 +28,7 @@ public class SlidingWindow<E extends SlidingWindowData> {
   protected final Deque<E> windowDeque;
   protected final long SLIDING_WINDOW_SIZE;
   protected double sum;
-  protected TimeUnit timeUnit;
+  private final TimeUnit timeUnit;
 
   public SlidingWindow(int SLIDING_WINDOW_SIZE_IN_TIMESTAMP, TimeUnit timeUnit) {
     this.windowDeque = new LinkedList<>();

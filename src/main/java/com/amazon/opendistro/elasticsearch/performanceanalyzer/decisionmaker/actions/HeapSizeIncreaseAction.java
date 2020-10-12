@@ -17,7 +17,11 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.ac
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Id;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Ip;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +33,9 @@ public class HeapSizeIncreaseAction extends SuppressibleAction {
 
   public static final String NAME = "HeapSizeIncreaseAction";
   private static final String SUMMARY = "Update heap size to 128GB";
+  private static final String ID_KEY = "Id";
+  private static final String IP_KEY = "Ip";
+  private static final String CAN_UPDATE_KEY = "canUpdate";
   private final boolean canUpdate;
   private final NodeKey esNode;
   private static final long DEFAULT_COOL_OFF_PERIOD_IN_MILLIS = TimeUnit.DAYS.toMillis(3);
@@ -37,7 +44,17 @@ public class HeapSizeIncreaseAction extends SuppressibleAction {
   public HeapSizeIncreaseAction(@Nonnull final AppContext appContext) {
     super(appContext);
     this.esNode = new NodeKey(appContext.getMyInstanceDetails());
-    this.canUpdate = Runtime.getRuntime().totalMemory() > 200 * GB_TO_B;
+    this.canUpdate = Runtime.getRuntime().totalMemory() > 200;
+  }
+
+  /**
+   * Constructor used when building the action from a summary.
+   */
+  public HeapSizeIncreaseAction(final NodeKey nodeKey, final boolean canUpdate,
+      final AppContext appContext) {
+    super(appContext);
+    this.esNode = nodeKey;
+    this.canUpdate = canUpdate;
   }
 
   @Override
@@ -77,10 +94,22 @@ public class HeapSizeIncreaseAction extends SuppressibleAction {
 
   @Override
   public String summary() {
-    if (!isActionable()) {
-      return String.format("No action to take for: [%s]", NAME);
-    }
+    JsonObject summaryJson = new JsonObject();
+    summaryJson.addProperty(ID_KEY, esNode.getNodeId().toString());
+    summaryJson.addProperty(IP_KEY, esNode.getHostAddress().toString());
+    summaryJson.addProperty(CAN_UPDATE_KEY, canUpdate);
 
-    return SUMMARY;
+    return summaryJson.toString();
+  }
+
+  public static HeapSizeIncreaseAction fromSummary(@Nonnull final String summary,
+      @Nonnull final AppContext appContext) {
+    JsonObject jsonObject = JsonParser.parseString(summary).getAsJsonObject();
+    NodeKey node = new NodeKey(new Id(jsonObject.get(ID_KEY).getAsString()),
+        new Ip(jsonObject.get(IP_KEY).getAsString()));
+    boolean canUpdateFlag = jsonObject.get(CAN_UPDATE_KEY).getAsBoolean();
+
+    return new HeapSizeIncreaseAction(node, canUpdateFlag,
+        appContext);
   }
 }

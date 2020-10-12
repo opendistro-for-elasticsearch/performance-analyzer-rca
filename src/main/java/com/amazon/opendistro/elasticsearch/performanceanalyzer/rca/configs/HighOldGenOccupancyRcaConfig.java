@@ -19,20 +19,20 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 
 public class HighOldGenOccupancyRcaConfig {
 
-  private static final String RCA_NAME = "HighOldGenOccupancyRca";
+  private static final String CONFIG_NAME = "high-old-gen-occupancy-config";
   public static final long DEFAULT_UTILIZATION = 75;
-  public static final long DEFAULT_EVALUATION_INTERVAL_IN_S = 60;
+  public static final long DEFAULT_EVALUATION_INTERVAL_IN_S = 5;
   private final Long heapUtilizationThreshold;
 
   private final long evaluationIntervalInS;
 
   public HighOldGenOccupancyRcaConfig(final RcaConf conf) {
-    this.evaluationIntervalInS = conf.readRcaConfig(RCA_NAME,
+    this.evaluationIntervalInS = conf.readRcaConfig(CONFIG_NAME,
         HighOldGenOccupancyRcaConfigKeys.EVALUATION_INTERVAL_IN_S.toString(),
         DEFAULT_EVALUATION_INTERVAL_IN_S, Long.class);
 
     this.heapUtilizationThreshold = conf
-        .readRcaConfig(RCA_NAME, HighOldGenOccupancyRcaConfigKeys.HEAP_UTILIZATION_THRESHOLD
+        .readRcaConfig(CONFIG_NAME, HighOldGenOccupancyRcaConfigKeys.HEAP_UTILIZATION_THRESHOLD
             .toString(), DEFAULT_UTILIZATION, Long.class);
   }
 

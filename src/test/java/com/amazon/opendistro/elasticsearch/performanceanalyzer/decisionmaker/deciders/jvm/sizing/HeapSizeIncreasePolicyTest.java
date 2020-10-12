@@ -88,7 +88,7 @@ public class HeapSizeIncreasePolicyTest {
     mockStatic(Runtime.class);
     PowerMockito.when(Runtime.getRuntime()).thenReturn(mockRuntime);
     when(mockRuntime.totalMemory()).thenReturn(201L * 1024 * 1024 * 1024);
-    testPolicy = new HeapSizeIncreasePolicy(mockLargeHeapClusterRca, null);
+    testPolicy = new HeapSizeIncreasePolicy(mockLargeHeapClusterRca);
     testPolicy.setAppContext(mockAppContext);
     testPolicy.setRcaConf(mockRcaConf);
   }
@@ -169,8 +169,8 @@ public class HeapSizeIncreasePolicyTest {
       hotClusterSummary.appendNestedSummary(hotNodeSummary);
     }
     ResourceContext ctxt = new ResourceContext(State.CONTENDED);
-    ResourceFlowUnit<HotClusterSummary> fu = new ResourceFlowUnit<>(currentInstant.toEpochMilli()
-        , ctxt, hotClusterSummary);
+    ResourceFlowUnit<HotClusterSummary> fu = new ResourceFlowUnit<>(currentInstant.toEpochMilli(),
+        ctxt, hotClusterSummary);
     when(mockLargeHeapClusterRca.getFlowUnits()).thenReturn(Collections.singletonList(fu));
     testPolicy.evaluate();
   }

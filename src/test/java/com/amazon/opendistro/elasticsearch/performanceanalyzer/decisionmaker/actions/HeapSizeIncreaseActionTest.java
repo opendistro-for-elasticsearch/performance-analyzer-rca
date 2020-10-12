@@ -29,6 +29,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.uti
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Id;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Ip;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -112,6 +114,20 @@ public class HeapSizeIncreaseActionTest {
       assertEquals(dataNode.getHostAddress(), nodeKey.getHostAddress());
       assertEquals(Impact.DECREASES_PRESSURE, vector.getImpact().get(Dimension.HEAP));
     }
+  }
+
+  @Test
+  public void testSummary() {
+    String summaryStr = testAction.summary();
+    JsonObject summaryObj = JsonParser.parseString(summaryStr).getAsJsonObject();
+    String nodeId = summaryObj.get("Id").getAsString();
+    String nodeIp = summaryObj.get("Ip").getAsString();
+    assertEquals(selfId, nodeId);
+    assertEquals(selfIp, nodeIp);
+
+    HeapSizeIncreaseAction rebuiltAction = HeapSizeIncreaseAction
+        .fromSummary(summaryStr, mockAppContext);
+    assertFalse(rebuiltAction.canUpdate());
   }
 
   private NodeKey getNodeKeyFor(String id, String ip) {

@@ -92,6 +92,7 @@ public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> {
     }
     // write to temporary file
     writer.flush();
+    writer.close();
     // atomic rotate
     FileRotate.rotateFile(tmpPath, pathToFile);
   }

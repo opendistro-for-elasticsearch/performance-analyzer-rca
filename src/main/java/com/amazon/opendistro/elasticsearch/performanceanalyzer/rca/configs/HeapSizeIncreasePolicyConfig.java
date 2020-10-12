@@ -32,7 +32,7 @@ public class HeapSizeIncreasePolicyConfig {
   }
 
   enum HeapSizeIncreasePolicyKeys {
-    UNHEALTHY_NODE_PERCENTAGE_KEY("unhealthy-node-percentage"),
+    UNHEALTHY_NODE_PERCENTAGE_KEY("unhealthy-node-percentage");
 
     private final String value;
 

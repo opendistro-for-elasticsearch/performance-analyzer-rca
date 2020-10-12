@@ -45,17 +45,8 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
   private int unhealthyNodePercentage;
 
   public HeapSizeIncreasePolicy(final LargeHeapClusterRca largeHeapClusterRca) {
-    this(largeHeapClusterRca, null);
-  }
-
-  public HeapSizeIncreasePolicy(final LargeHeapClusterRca largeHeapClusterRca,
-      final HeapSizeIncreaseClusterMonitor clusterMonitor) {
+    this.heapSizeIncreaseClusterMonitor = new HeapSizeIncreaseClusterMonitor();
     this.largeHeapClusterRca = largeHeapClusterRca;
-    if (clusterMonitor != null) {
-      this.heapSizeIncreaseClusterMonitor = clusterMonitor;
-    } else {
-      this.heapSizeIncreaseClusterMonitor = new HeapSizeIncreaseClusterMonitor();
-    }
   }
 
   @Override
@@ -67,7 +58,6 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
       Action heapSizeIncreaseAction = new HeapSizeIncreaseAction(appContext);
       if (heapSizeIncreaseAction.isActionable()) {
         actions.add(heapSizeIncreaseAction);
-        return actions;
       }
     }
 
@@ -111,8 +101,8 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
     public boolean isHealthy() {
       int numDataNodesInCluster = appContext.getDataNodeInstances().size();
       double unhealthyCount = 0;
-      for (Map.Entry<NodeKey, AlarmMonitor> entry : perNodeMonitor.entrySet()) {
-        if (!entry.getValue().isHealthy()) {
+      for (final AlarmMonitor monitor : perNodeMonitor.values()) {
+        if (!monitor.isHealthy()) {
           unhealthyCount++;
         }
       }
