@@ -36,7 +36,7 @@ public class RcaConsts {
   private static final String RCA_CONF_FILENAME = "rca.conf";
   private static final String RCA_CONF_IDLE_MASTER_FILENAME = "rca_idle_master.conf";
   private static final String THRESHOLDS_DIR_NAME = "thresholds";
-  private static final String CONFIG_DIR_PATH =
+  public static final String CONFIG_DIR_PATH =
       Paths.get(Util.READER_LOCATION, "pa_config").toString();
   public static final String RCA_CONF_PATH =
       Paths.get(CONFIG_DIR_PATH, RCA_CONF_FILENAME).toString();

@@ -19,12 +19,20 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.dec
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.BucketizedSlidingWindow;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindowData;
 import com.google.common.annotations.VisibleForTesting;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Nullable;
 
 public class JvmActionsAlarmMonitor implements AlarmMonitor {
 
   private static final int DEFAULT_DAY_BREACH_THRESHOLD = 5;
   private static final int DEFAULT_WEEK_BREACH_THRESHOLD = 2;
+  private static final String DAY_PREFIX = "day-";
+  private static final String WEEK_PREFIX = "week-";
+
+  public static final int DAY_MONITOR_BUCKET_WINDOW_MINUTES = 30;
+  public static final int WEEK_MONITOR_BUCKET_WINDOW_MINUTES = 86400;
 
   private BucketizedSlidingWindow dayMonitor;
   private BucketizedSlidingWindow weekMonitor;
@@ -32,11 +40,27 @@ public class JvmActionsAlarmMonitor implements AlarmMonitor {
   private int weekBreachThreshold;
   private boolean alarmHealthy = true;
 
-  public JvmActionsAlarmMonitor(int dayBreachThreshold, int weekBreachThreshold) {
-    dayMonitor = new BucketizedSlidingWindow((int) TimeUnit.DAYS.toMinutes(1), 30, TimeUnit.MINUTES);
-    weekMonitor = new BucketizedSlidingWindow(4, 1, TimeUnit.DAYS);
+  public JvmActionsAlarmMonitor(int dayBreachThreshold, int weekBreachThreshold, @Nullable Path persistencePath) {
+    Path dayMonitorPath = null;
+    Path weekMonitorPath = null;
+    if (persistencePath != null) {
+      String persistenceBase = persistencePath.getParent().toString();
+      String persistenceFile = persistencePath.getFileName().toString();
+      dayMonitorPath = Paths.get(persistenceBase, DAY_PREFIX + persistenceFile);
+      weekMonitorPath = Paths.get(persistenceBase, WEEK_PREFIX + persistenceFile);
+    }
+    dayMonitor = new BucketizedSlidingWindow((int) TimeUnit.DAYS.toMinutes(1), 30, TimeUnit.MINUTES, dayMonitorPath);
+    weekMonitor = new BucketizedSlidingWindow(4, 1, TimeUnit.DAYS, weekMonitorPath);
     this.dayBreachThreshold = dayBreachThreshold;
     this.weekBreachThreshold = weekBreachThreshold;
+  }
+
+  public JvmActionsAlarmMonitor(int dayBreachThreshold, int weekBreachThreshold) {
+    this(dayBreachThreshold, weekBreachThreshold, null);
+  }
+
+  public JvmActionsAlarmMonitor(@Nullable Path persistencePath) {
+    this(DEFAULT_DAY_BREACH_THRESHOLD, DEFAULT_WEEK_BREACH_THRESHOLD, persistencePath);
   }
 
   public JvmActionsAlarmMonitor() {
