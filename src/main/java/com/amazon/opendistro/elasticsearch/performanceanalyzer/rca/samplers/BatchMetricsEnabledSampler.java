@@ -1,13 +1,13 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.samplers;
 
-import java.util.Objects;
-
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ReaderMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.collectors.SampleAggregator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.emitters.ISampler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
+
+import java.util.Objects;
 
 public class BatchMetricsEnabledSampler implements ISampler {
   private final AppContext appContext;
@@ -20,7 +20,7 @@ public class BatchMetricsEnabledSampler implements ISampler {
   @Override
   public void sample(SampleAggregator sampleCollector) {
     sampleCollector.updateStat(ReaderMetrics.BATCH_METRICS_ENABLED, "",
-        isBatchMetricsEnabled()? 1 : 0);
+        isBatchMetricsEnabled() ? 1 : 0);
   }
 
   boolean isBatchMetricsEnabled() {
