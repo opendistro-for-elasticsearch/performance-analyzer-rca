@@ -80,7 +80,7 @@ public class PublisherEventsPersistorTest {
 
         addActions();
         WaitFor.waitFor(() -> persistable.readAllForMaxField(PersistedAction.class,
-                DSL.field(PersistedAction.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, String.class)
+                DSL.field(PersistedAction.SQL_SCHEMA_CONSTANTS.COOLOFFPERIOD_NAME, String.class)
                 ).size() == 2, 5,
                 TimeUnit.SECONDS);
         List<PersistedAction> actionsSummary = persistable.readAllForMaxField(PersistedAction.class,
@@ -139,7 +139,7 @@ public class PublisherEventsPersistorTest {
             {
                 add("5");
                 add("55");
-            }}, 50);
+            }}, 60);
         final MockAction mockAction6 = new MockAction("MockAction6",new ArrayList<String>() {
             {
                 add("6");
