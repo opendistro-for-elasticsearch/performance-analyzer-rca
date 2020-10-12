@@ -20,7 +20,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatEx
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.PersistedAction;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import java.io.IOException;
@@ -34,6 +36,61 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
 import org.apache.logging.log4j.util.Supplier;
 import org.jooq.impl.DSL;
+
+/**
+ * Request Handler that supports querying the latest action set
+ *
+ * <p> To get the response for the latest action set suggested via DM Framework
+ * curl --url "localhost:9600/_opendistro/_performanceanalyzer/actions" -XGET
+ * @<code>
+ *     {
+ *     "LastSuggestedActionSet": [
+ *         {
+ *             "actionName": "MockAction1",
+ *             "actionable": false,
+ *             "coolOffPeriod": 10,
+ *             "muted": false,
+ *             "nodeIds": "1,11",
+ *             "nodeIps": "1.1.1.1,11.11.11.11",
+ *             "summary": "MockSummary",
+ *             "timestamp": 1602538860025
+ *         },
+ *         {
+ *             "actionName": "MockAction2",
+ *             "actionable": false,
+ *             "coolOffPeriod": 20,
+ *             "muted": false,
+ *             "nodeIds": "2,22",
+ *             "nodeIps": "2.2.2.2,22.22.22.22",
+ *             "summary": "MockSummary",
+ *             "timestamp": 1602538860025
+ *         },
+ *         {
+ *             "actionName": "MockAction1",
+ *             "actionable": false,
+ *             "coolOffPeriod": 30,
+ *             "muted": false,
+ *             "nodeIds": "1,11",
+ *             "nodeIps": "1.1.1.1,11.11.11.11",
+ *             "summary": "MockSummary",
+ *             "timestamp": 1602538860025
+ *         },
+ *         {
+ *             "actionName": "MockAction2",
+ *             "actionable": false,
+ *             "coolOffPeriod": 40,
+ *             "muted": false,
+ *             "nodeIds": "2,22",
+ *             "nodeIps": "2.2.2.2,22.22.22.22",
+ *             "summary": "MockSummary",
+ *             "timestamp": 1602538860025
+ *         }
+ *     ]
+ * }
+ *
+ * </code>
+ *     <p/>
+ */
 
 public class QueryActionRequestHandler extends MetricsHandler implements HttpHandler {
 
@@ -102,7 +159,7 @@ public class QueryActionRequestHandler extends MetricsHandler implements HttpHan
         sendResponse(exchange, response, HttpURLConnection.HTTP_OK);
     }
 
-    private JsonObject getActionData(Persistable persistable) {
+    private JsonElement getActionData(Persistable persistable) {
         LOG.debug("Action: in getActionData");
         JsonObject result = new JsonObject();
         if (persistable != null) {
@@ -114,12 +171,12 @@ public class QueryActionRequestHandler extends MetricsHandler implements HttpHan
                     for (PersistedAction action : actionSet) {
                         response.add(action.toJson());
                     }
-                    result.addProperty("LastSuggestedActionSet", response.toString());
+                    result.add("LastSuggestedActionSet", response);
                 } else {
-                    result.addProperty("LastSuggestedActionSet", "Nil");
+                    result.add("LastSuggestedActionSet", new JsonArray());
                 }
             } catch (Exception e) {
-                result.addProperty("error", e.getMessage());
+                result.add("error", new JsonParser().parse(e.getMessage()).getAsJsonObject());
             }
         }
         return result;

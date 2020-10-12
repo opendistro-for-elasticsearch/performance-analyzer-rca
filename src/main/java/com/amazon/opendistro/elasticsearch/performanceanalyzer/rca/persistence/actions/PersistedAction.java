@@ -2,6 +2,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.ValueColumn;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -106,7 +107,7 @@ public class PersistedAction {
 
     }
 
-    public JsonObject toJson() {
+    public JsonElement toJson() {
         JsonObject summaryObj = new JsonObject();
         summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NODE_IPS_NAME, this.nodeIps);
         summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.MUTED_NAME, this.muted);

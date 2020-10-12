@@ -136,8 +136,48 @@ The sample response from above api
 
 ```
 {
-    "LastSuggestedActionSet": "[{\"nodeIps\":\"{1.1.1.1,2.2.2.2}\",\"muted\":false,\"actionName\":\"M1\",\"timestamp\":1602190468123,\"nodeIds\":\"{1,2}\",\"summary\":\"MockSummary\",\"actionable\":false,\"coolOffPeriod\":0},
-                                {\"nodeIps\":\"{1.1.1.1,2.2.2.2}\",\"muted\":false,\"actionName\":\"M2\",\"timestamp\":1602190468123,\"nodeIds\":\"{1,2}\",\"summary\":\"MockSummary\",\"actionable\":false,\"coolOffPeriod\":0}]"
+    "LastSuggestedActionSet": [
+        {
+            "actionName": "MockAction1",
+            "actionable": false,
+            "coolOffPeriod": 10,
+            "muted": false,
+            "nodeIds": "1,11",
+            "nodeIps": "1.1.1.1,11.11.11.11",
+            "summary": "MockSummary",
+            "timestamp": 1602538860025
+        },
+        {
+            "actionName": "MockAction2",
+            "actionable": false,
+            "coolOffPeriod": 20,
+            "muted": false,
+            "nodeIds": "2,22",
+            "nodeIps": "2.2.2.2,22.22.22.22",
+            "summary": "MockSummary",
+            "timestamp": 1602538860025
+        },
+        {
+            "actionName": "MockAction1",
+            "actionable": false,
+            "coolOffPeriod": 30,
+            "muted": false,
+            "nodeIds": "1,11",
+            "nodeIps": "1.1.1.1,11.11.11.11",
+            "summary": "MockSummary",
+            "timestamp": 1602538860025
+        },
+        {
+            "actionName": "MockAction2",
+            "actionable": false,
+            "coolOffPeriod": 40,
+            "muted": false,
+            "nodeIds": "2,22",
+            "nodeIps": "2.2.2.2,22.22.22.22",
+            "summary": "MockSummary",
+            "timestamp": 1602538860025
+        }
+    ]
 }
 
 ```

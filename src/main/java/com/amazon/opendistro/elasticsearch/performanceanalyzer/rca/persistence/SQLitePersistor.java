@@ -268,11 +268,11 @@ class SQLitePersistor extends PersistorBase {
   public synchronized <T, E> @org.checkerframework.checker.nullness.qual.Nullable List<T> readAllForMaxField(Class<T> clz, Field<E> field)
           throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, DataAccessException {
     String tableName = getTableNameFromClassName(clz);
-    List<Record> maxTimeStampRecordList;
+    List<Record> recordsWithMaxFieldValue;
 
     try {
       // Fetch the latest rows with the last timestamp.
-      maxTimeStampRecordList = create.select().from(tableName).where(DSL.field(field)
+      recordsWithMaxFieldValue = create.select().from(tableName).where(DSL.field(field)
               .eq(create.select(max(field)).from(tableName))).fetch();
     } catch (DataAccessException dex) {
       LOG.error("Error querying table {}", tableName, dex);
@@ -281,8 +281,8 @@ class SQLitePersistor extends PersistorBase {
 
     List<T> objList = new ArrayList<>();
 
-    LOG.debug("Record List {}", maxTimeStampRecordList);
-    for (Record record : maxTimeStampRecordList) {
+    LOG.debug("Record List {}", recordsWithMaxFieldValue);
+    for (Record record : recordsWithMaxFieldValue) {
       objList.add(readFields(clz, record, tableName));
     }
 
