@@ -96,6 +96,8 @@ public class QueueDeciderDedicatedMasterITest {
       reason = "Cache metrics are expected to be missing in this integ test")
   @AErrorPatternIgnored(pattern = "SubscribeResponseHandler:onError()",
       reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
+  @AErrorPatternIgnored(pattern = "NodeConfigCacheReaderUtil:readQueueCapacity()",
+      reason = "Metrics is expected to be missing")
   public void testQueueCapacityDecider() {
   }
 
