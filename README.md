@@ -124,65 +124,6 @@ In order to get the temperature of a particular node, we can use:
 
 `curl "localhost:9600/_opendistro/_performanceanalyzer/rca?name=AllTemperatureDimensions&local=true"`
 
-## Actions API
-This API provides the last suggested action set via the Decision Maker framework. All the suggested action sets are persisted in the SQL tables. This API provides the action set which was published with the latest timestamp.
-
-
-### SAMPLE REQUEST
-
-GET `_opendistro/_performanceanalyzer/actions`
-
-The sample response from above api
-
-```
-{
-    "LastSuggestedActionSet": [
-        {
-            "actionName": "MockAction1",
-            "actionable": false,
-            "coolOffPeriod": 10,
-            "muted": false,
-            "nodeIds": "1,11",
-            "nodeIps": "1.1.1.1,11.11.11.11",
-            "summary": "MockSummary",
-            "timestamp": 1602538860025
-        },
-        {
-            "actionName": "MockAction2",
-            "actionable": false,
-            "coolOffPeriod": 20,
-            "muted": false,
-            "nodeIds": "2,22",
-            "nodeIps": "2.2.2.2,22.22.22.22",
-            "summary": "MockSummary",
-            "timestamp": 1602538860025
-        },
-        {
-            "actionName": "MockAction1",
-            "actionable": false,
-            "coolOffPeriod": 30,
-            "muted": false,
-            "nodeIds": "1,11",
-            "nodeIps": "1.1.1.1,11.11.11.11",
-            "summary": "MockSummary",
-            "timestamp": 1602538860025
-        },
-        {
-            "actionName": "MockAction2",
-            "actionable": false,
-            "coolOffPeriod": 40,
-            "muted": false,
-            "nodeIds": "2,22",
-            "nodeIps": "2.2.2.2,22.22.22.22",
-            "summary": "MockSummary",
-            "timestamp": 1602538860025
-        }
-    ]
-}
-
-```
-
-
 ## Building, Deploying, and Running the RCA Framework
 Please refer to the [Install Guide](./INSTALL.md) for detailed information on building, installing and running the RCA framework.
 
