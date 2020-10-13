@@ -31,7 +31,7 @@ public abstract class HeapBasedDecider extends Decider {
   /**
    * The Queue and Cache deciders should only be able to suggest increase of the queue size or increase of cache size if the Java heap can
    * sustain more live objects in it without de-gradation. What is an acceptable heap usage limit to determine this, comes from the
-   * <i>bucketization</> object in rca.conf. We compare the oldGen usage percent reported by the HighHeapUsage RCA to determine that.
+   * bucketization object in rca.conf. We compare the oldGen usage percent reported by the HighHeapUsage RCA to determine that.
    *
    * @param esNode The EsNode we are trying to make a decision for.
    * @return return if the OldGen heap is under-utilized or healthy and yet more can be consumed, return true; or false otherwise.
