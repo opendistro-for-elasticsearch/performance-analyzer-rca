@@ -67,15 +67,6 @@ import org.junit.runner.RunWith;
                     sum = 1000000000.0, avg = 1000000000.0, min = 1000000000.0, max = 1000000000.0
                 )
             }
-        ),
-        @ATable(
-            hostTag = HostTag.ELECTED_MASTER,
-            tuple = {
-                @ATuple(
-                    dimensionValues = {GCType.Constants.OLD_GEN_VALUE},
-                    sum = 1000000000.0, avg = 1000000000.0, max = 1000000000.0, min = 1000000000.0
-                )
-            }
         )
     }
 )
@@ -100,15 +91,6 @@ import org.junit.runner.RunWith;
                     sum = 950000000.0, avg = 950000000.0, min = 950000000.0, max = 950000000.0
                 )
             }
-        ),
-        @ATable(
-            hostTag = HostTag.ELECTED_MASTER,
-            tuple = {
-                @ATuple(
-                    dimensionValues = {GCType.Constants.OLD_GEN_VALUE},
-                    sum = 950000000.0, avg = 950000000.0, min = 950000000.0, max = 950000000.0
-                )
-            }
         )
     }
 )
@@ -127,15 +109,6 @@ import org.junit.runner.RunWith;
         ),
         @ATable(
             hostTag = HostTag.DATA_1,
-            tuple = {
-                @ATuple(
-                    dimensionValues = {GCType.Constants.TOT_FULL_GC_VALUE},
-                    sum = 10.0, avg = 10.0, max = 10.0, min = 10.0
-                )
-            }
-        ),
-        @ATable(
-            hostTag = HostTag.ELECTED_MASTER,
             tuple = {
                 @ATuple(
                     dimensionValues = {GCType.Constants.TOT_FULL_GC_VALUE},

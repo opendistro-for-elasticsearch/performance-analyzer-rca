@@ -103,7 +103,6 @@ public class HighOldGenOccupancyRca extends OldGenRca<ResourceFlowUnit<HotResour
     }
     this.previousSummary = summary;
     this.previousContext = context;
-    LOG.warn("kak: returning OCCUPANCY: {}", context.getState().toString());
     return new ResourceFlowUnit<>(currTime, context, summary);
   }
 
