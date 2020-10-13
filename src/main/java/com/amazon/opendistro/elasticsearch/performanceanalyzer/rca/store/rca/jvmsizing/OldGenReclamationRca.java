@@ -88,7 +88,8 @@ public class OldGenReclamationRca extends OldGenRca<ResourceFlowUnit<HotResource
           summary = new HotResourceSummary(ResourceUtil.FULL_GC_EFFECTIVENESS,
               targetHeapUtilizationAfterGc, minOldGenSlidingWindow.readMin(), rcaEvaluationIntervalInS);
           context = new ResourceContext(State.UNHEALTHY);
-
+          prevSummary = summary;
+          prevContext = context;
           return new ResourceFlowUnit<>(currTime, context, summary);
         } else {
           summary = new HotResourceSummary(ResourceUtil.FULL_GC_EFFECTIVENESS,
@@ -102,7 +103,6 @@ public class OldGenReclamationRca extends OldGenRca<ResourceFlowUnit<HotResource
         return new ResourceFlowUnit<>(currTime, context, summary);
       }
     }
-
     return new ResourceFlowUnit<>(currTime, prevContext, prevSummary);
   }
 }

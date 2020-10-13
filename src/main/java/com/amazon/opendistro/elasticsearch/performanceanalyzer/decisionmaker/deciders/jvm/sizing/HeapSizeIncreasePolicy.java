@@ -36,12 +36,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class HeapSizeIncreasePolicy implements DecisionPolicy {
 
-  private static final Logger LOG = LogManager.getLogger(HeapSizeIncreasePolicy.class);
   private final LargeHeapClusterRca largeHeapClusterRca;
   private AppContext appContext;
   private RcaConf rcaConf;

@@ -33,7 +33,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.ClusterType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.HostTag;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners.RcaItNotEncryptedRunner;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.jvmsizing.validator.HeapSizeIncreaseValidatorColocatedMaster;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.jvmsizing.validator.HeapSizeIncreaseValidatorDedicatedMaster;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.PersistedAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.ElasticSearchAnalysisGraph;
 import org.junit.Test;
@@ -42,7 +42,7 @@ import org.junit.runner.RunWith;
 
 @Category(RcaItMarker.class)
 @RunWith(RcaItNotEncryptedRunner.class)
-@AClusterType(ClusterType.MULTI_NODE_CO_LOCATED_MASTER)
+@AClusterType(ClusterType.MULTI_NODE_DEDICATED_MASTER)
 @ARcaGraph(ElasticSearchAnalysisGraph.class)
 @ARcaConf(dataNode = JvmSizingITConstants.RCA_CONF_PATH + "rca.conf", electedMaster =
     JvmSizingITConstants.RCA_CONF_PATH + "rca_master.conf")
@@ -52,6 +52,15 @@ import org.junit.runner.RunWith;
     tables = {
         @ATable(
             hostTag = HostTag.DATA_0,
+            tuple = {
+                @ATuple(
+                    dimensionValues = {GCType.Constants.OLD_GEN_VALUE},
+                    sum = 1000000000.0, avg = 1000000000.0, min = 1000000000.0, max = 1000000000.0
+                )
+            }
+        ),
+        @ATable(
+            hostTag = HostTag.DATA_1,
             tuple = {
                 @ATuple(
                     dimensionValues = {GCType.Constants.OLD_GEN_VALUE},
@@ -84,6 +93,15 @@ import org.junit.runner.RunWith;
             }
         ),
         @ATable(
+            hostTag = HostTag.DATA_1,
+            tuple = {
+                @ATuple(
+                    dimensionValues = {GCType.Constants.OLD_GEN_VALUE},
+                    sum = 950000000.0, avg = 950000000.0, min = 950000000.0, max = 950000000.0
+                )
+            }
+        ),
+        @ATable(
             hostTag = HostTag.ELECTED_MASTER,
             tuple = {
                 @ATuple(
@@ -108,6 +126,15 @@ import org.junit.runner.RunWith;
             }
         ),
         @ATable(
+            hostTag = HostTag.DATA_1,
+            tuple = {
+                @ATuple(
+                    dimensionValues = {GCType.Constants.TOT_FULL_GC_VALUE},
+                    sum = 10.0, avg = 10.0, max = 10.0, min = 10.0
+                )
+            }
+        ),
+        @ATable(
             hostTag = HostTag.ELECTED_MASTER,
             tuple = {
                 @ATuple(
@@ -118,13 +145,13 @@ import org.junit.runner.RunWith;
         )
     }
 )
-public class HeapSizeIncreaseIT {
+public class HeapSizeIncreaseDedicatedMasterIT {
 
   @Test
   @AExpect(
       what = Type.DB_QUERY,
       on = HostTag.ELECTED_MASTER,
-      validator = HeapSizeIncreaseValidatorColocatedMaster.class,
+      validator = HeapSizeIncreaseValidatorDedicatedMaster.class,
       forRca = PersistedAction.class,
       timeoutSeconds = 190
   )
@@ -163,7 +190,7 @@ public class HeapSizeIncreaseIT {
       pattern = "PersistableSlidingWindow:<init>()",
       reason = "Persistence base path can be null for integration test."
   )
-  public void testHeapSizeIncrease() {
+  public void testHeapSizeIncreaseDedicatedMaster() {
 
   }
 }

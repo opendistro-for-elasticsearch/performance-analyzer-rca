@@ -46,6 +46,9 @@ public class HighOldGenOccupancyRca extends OldGenRca<ResourceFlowUnit<HotResour
   private long rcaSamplesBeforeEval;
   private long samples;
 
+  private ResourceContext previousContext;
+  private HotResourceSummary previousSummary;
+
   /**
    * Create HighOldGenOccupancyRca with default values.
    * @param heapMax The heapMax metric.
@@ -66,6 +69,8 @@ public class HighOldGenOccupancyRca extends OldGenRca<ResourceFlowUnit<HotResour
     this.rcaEvaluationIntervalInS = rcaEvaluationIntervalInS;
     this.rcaSamplesBeforeEval = rcaEvaluationIntervalInS / EVAL_INTERVAL_IN_S;
     this.samples = 0;
+    this.previousContext = new ResourceContext(State.UNKNOWN);
+    this.previousSummary = null;
   }
 
   @Override
@@ -83,7 +88,7 @@ public class HighOldGenOccupancyRca extends OldGenRca<ResourceFlowUnit<HotResour
       return evaluateAndEmit();
     }
 
-    return new ResourceFlowUnit<>(System.currentTimeMillis());
+    return new ResourceFlowUnit<>(System.currentTimeMillis(), previousContext, previousSummary);
   }
 
   private ResourceFlowUnit<HotResourceSummary> evaluateAndEmit() {
@@ -96,6 +101,9 @@ public class HighOldGenOccupancyRca extends OldGenRca<ResourceFlowUnit<HotResour
     if (averageUtilizationPercentage >= heapUtilizationThreshold) {
       context = new ResourceContext(State.UNHEALTHY);
     }
+    this.previousSummary = summary;
+    this.previousContext = context;
+    LOG.warn("kak: returning OCCUPANCY: {}", context.getState().toString());
     return new ResourceFlowUnit<>(currTime, context, summary);
   }
 
