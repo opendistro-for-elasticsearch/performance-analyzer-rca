@@ -341,19 +341,10 @@ public class MetricsModel {
             MetricUnits.MILLISECOND.toString(), AllMetrics.MasterMetricDimensions.values()));
 
     allMetricsInitializer.put(
-            AllMetrics.ShardStateValue.SHARD_STATE_ACTIVE.toString(),
+            AllMetrics.ShardStateValue.SHARD_STATE.toString(),
             new MetricAttributes(
                     MetricUnits.COUNT.toString(), AllMetrics.ShardStateDimension.values()));
 
-    allMetricsInitializer.put(
-            AllMetrics.ShardStateValue.SHARD_STATE_INITIALIZING.toString(),
-            new MetricAttributes(
-                    MetricUnits.COUNT.toString(), AllMetrics.ShardStateDimension.values()));
-
-    allMetricsInitializer.put(
-            AllMetrics.ShardStateValue.SHARD_STATE_UNASSIGNED.toString(),
-            new MetricAttributes(
-                    MetricUnits.COUNT.toString(), AllMetrics.ShardStateDimension.values()));
 
     ALL_METRICS = Collections.unmodifiableMap(allMetricsInitializer);
   }

@@ -54,6 +54,7 @@ public abstract class PerformanceAnalyzerMetricsCollector implements Runnable {
 
   public void run() {
     try {
+      long startTime = System.nanoTime();
       Util.invokePrivileged(() -> collectMetrics(startTime));
     } catch (Exception ex) {
       // - should not be any...but in case, absorbing here
@@ -65,6 +66,7 @@ public abstract class PerformanceAnalyzerMetricsCollector implements Runnable {
           () -> StatExceptionCode.OTHER_COLLECTION_ERROR.toString());
       StatsCollector.instance().logException(StatExceptionCode.OTHER_COLLECTION_ERROR);
     } finally {
+      LOG.debug("{} took {} time to execute", collectorName, System.nanoTime() - startTime);
       bInProgress.set(false);
     }
   }

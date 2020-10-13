@@ -74,7 +74,7 @@ public class ReaderMetricsProcessor implements Runnable {
   private NavigableMap<Long, ShardStateMetricsSnapshot> shardStateMetricsMap;
   private static final int MAX_DATABASES = 2;
   private static final int OS_SNAPSHOTS = 4;
-  private static final int SHARD_STATE_SNAPSHOTS = 4;
+  private static final int SHARD_STATE_SNAPSHOTS = 2;
   private static final int RQ_SNAPSHOTS = 4;
   private static final int HTTP_RQ_SNAPSHOTS = 4;
   private static final int MASTER_EVENT_SNAPSHOTS = 4;
