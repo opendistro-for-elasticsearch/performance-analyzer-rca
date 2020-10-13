@@ -49,10 +49,10 @@ public class PublisherEventsPersistor {
             if (action.impactedNodes() != null) {
                 final String nodeIds = action.impactedNodes().stream()
                         .map(n -> n.getNodeId().toString())
-                        .collect(Collectors.joining(","));
+                        .collect(Collectors.joining(",", "{", "}"));
                 final String nodeIps = action.impactedNodes().stream()
                         .map(n -> n.getHostAddress().toString())
-                        .collect(Collectors.joining(","));
+                        .collect(Collectors.joining(",", "{", "}"));
                 final PersistedAction actionsSummary = new PersistedAction();
                 actionsSummary.setActionName(action.name());
                 actionsSummary.setNodeIds(nodeIds);

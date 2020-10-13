@@ -65,8 +65,8 @@ public class PublisherEventsPersistorTest {
             Assert.assertEquals(action.getActionName(), "MockAction" + index);
             String IP1 = (index + ".").repeat(4);
             String IP2 = (Integer.toString(index) + index + ".").repeat(4);
-            Assert.assertEquals(action.getNodeIps(), IP1.substring(0, IP1.length() - 1) + ","
-                                                         + IP2.substring(0, IP2.length() - 1));
+            Assert.assertEquals(action.getNodeIps(), "{" + IP1.substring(0, IP1.length() - 1) + ","
+                                                         + IP2.substring(0, IP2.length() - 1)  + "}");
             Assert.assertEquals(action.isActionable(), false);
             Assert.assertEquals(action.isMuted(), false);
             Assert.assertEquals(action.getSummary(), "MockSummary");
@@ -93,8 +93,8 @@ public class PublisherEventsPersistorTest {
             Assert.assertEquals(action.getActionName(), "MockAction" + index);
             String IP1 = (index + ".").repeat(4);
             String IP2 = (Integer.toString(index) + index + ".").repeat(4);
-            Assert.assertEquals(action.getNodeIps(), IP1.substring(0, IP1.length() - 1) + ","
-                    + IP2.substring(0, IP2.length() - 1));
+            Assert.assertEquals(action.getNodeIps(),"{" + IP1.substring(0, IP1.length() - 1) + ","
+                    + IP2.substring(0, IP2.length() - 1) + "}");
             Assert.assertEquals(action.isActionable(), false);
             Assert.assertEquals(action.isMuted(), false);
             Assert.assertEquals(action.getSummary(), "MockSummary");
