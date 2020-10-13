@@ -350,7 +350,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     ReaderMetricsProcessor.setCurrentInstance(mp);
 
     // Test default
-    assertTrue(mp.getBatchMetricsEnabled()== ReaderMetricsProcessor.defaultBatchMetricsEnabled);
+    assertTrue(mp.getBatchMetricsEnabled() == ReaderMetricsProcessor.defaultBatchMetricsEnabled);
 
     // Test disabled
     Files.write(batchMetricsEnabledConfFile, Boolean.toString(false).getBytes());
@@ -360,7 +360,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     // Test reverts back to default when file is deleted
     Files.delete(batchMetricsEnabledConfFile);
     mp.readBatchMetricsEnabledFromConfShim();
-    assertTrue(mp.getBatchMetricsEnabled()== ReaderMetricsProcessor.defaultBatchMetricsEnabled);
+    assertTrue(mp.getBatchMetricsEnabled() == ReaderMetricsProcessor.defaultBatchMetricsEnabled);
 
     // Test enabled
     Files.write(batchMetricsEnabledConfFile, Boolean.toString(true).getBytes());
@@ -370,7 +370,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     // Test reverts back to default when file is deleted
     Files.delete(batchMetricsEnabledConfFile);
     mp.readBatchMetricsEnabledFromConfShim();
-    assertTrue(mp.getBatchMetricsEnabled()== ReaderMetricsProcessor.defaultBatchMetricsEnabled);
+    assertTrue(mp.getBatchMetricsEnabled() == ReaderMetricsProcessor.defaultBatchMetricsEnabled);
   }
 
   @Test
@@ -596,6 +596,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     Files.createDirectories(Paths.get(Util.DATA_DIR));
     Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(true).getBytes());
     PluginSettings.instance().setShouldCleanupMetricsDBFiles(true);
+    PluginSettings.instance().setBatchMetricsRetentionPeriodMinutes(7);
 
     long currTime = System.currentTimeMillis();
     long ts1 = currTime - 1 * 60 * 1000;
@@ -610,7 +611,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     try {
       MetricsDB.fetchExisting(ts3);
       fail();
-    } catch (Exception e){
+    } catch (Exception e) {
     }
   }
 
@@ -621,6 +622,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     Files.createDirectories(Paths.get(Util.DATA_DIR));
     Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(true).getBytes());
     PluginSettings.instance().setShouldCleanupMetricsDBFiles(false);
+    PluginSettings.instance().setBatchMetricsRetentionPeriodMinutes(7);
 
     long currTime = System.currentTimeMillis();
     long ts1 = currTime - 1 * 60 * 1000;
@@ -634,7 +636,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     assertTrue(restored.containsAll(List.of(ts1, ts2)) && restored.size() == 2);
     try {
       MetricsDB.fetchExisting(ts3).remove();
-    } catch (Exception e){
+    } catch (Exception e) {
       fail();
     }
   }
@@ -646,6 +648,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     Files.createDirectories(Paths.get(Util.DATA_DIR));
     Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(false).getBytes());
     PluginSettings.instance().setShouldCleanupMetricsDBFiles(true);
+    PluginSettings.instance().setBatchMetricsRetentionPeriodMinutes(7);
 
     long currTime = System.currentTimeMillis();
     long ts1 = currTime - 1 * 60 * 1000;
@@ -675,6 +678,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     Files.createDirectories(Paths.get(Util.DATA_DIR));
     Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(false).getBytes());
     PluginSettings.instance().setShouldCleanupMetricsDBFiles(false);
+    PluginSettings.instance().setBatchMetricsRetentionPeriodMinutes(7);
 
     long currTime = System.currentTimeMillis();
     long ts1 = currTime - 1 * 60 * 1000;
