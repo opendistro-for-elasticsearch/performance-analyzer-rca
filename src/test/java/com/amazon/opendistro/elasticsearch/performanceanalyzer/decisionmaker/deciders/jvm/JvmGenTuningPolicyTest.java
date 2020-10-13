@@ -28,9 +28,8 @@ import static org.mockito.Mockito.when;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.JvmGenAction;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.AlarmMonitor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.DeciderConfig;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.jvm.JvmGenTuningPolicyConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.jvm.young_gen.JvmGenTuningPolicyConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
@@ -59,9 +58,9 @@ public class JvmGenTuningPolicyTest {
   @Mock
   private JvmGenTuningPolicyConfig policyConfig;
   @Mock
-  private AlarmMonitor tooSmallAlarm;
+  private JvmActionsAlarmMonitor tooSmallAlarm;
   @Mock
-  private AlarmMonitor tooLargeAlarm;
+  private JvmActionsAlarmMonitor tooLargeAlarm;
   @Mock
   private RcaConf rcaConf;
   @Mock

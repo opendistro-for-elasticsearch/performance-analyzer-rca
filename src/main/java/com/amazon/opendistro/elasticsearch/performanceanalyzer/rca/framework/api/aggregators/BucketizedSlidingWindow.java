@@ -54,6 +54,10 @@ public class BucketizedSlidingWindow extends PersistableSlidingWindow {
     this.BUCKET_WINDOW_SIZE = timeUnit.toMillis(BUCKET_WINDOW_SIZE);
   }
 
+  public BucketizedSlidingWindow(BucketizedSlidingWindowConfig config) {
+    this(config.getSlidingWindowSizeMinutes(), config.getBucketSizeMinutes(), config.getTimeUnit(), config.getPersistencePath());
+  }
+
   @Override
   public void next(SlidingWindowData e) {
     if (!windowDeque.isEmpty()) {

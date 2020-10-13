@@ -23,10 +23,10 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.JvmGenAction;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.AlarmMonitor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.DecisionPolicy;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.jvm.JvmGenTuningPolicyConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.jvm.young_gen.JvmGenTuningPolicyConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.BucketizedSlidingWindowConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
@@ -43,6 +43,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -71,29 +72,21 @@ public class JvmGenTuningPolicy implements DecisionPolicy {
 
   // Tracks issues which suggest that the young generation is too small
   @VisibleForTesting
-  AlarmMonitor tooSmallAlarm;
+  JvmActionsAlarmMonitor tooSmallAlarm;
   // Tracks issues which suggest that the young generation is too large
   @VisibleForTesting
-  AlarmMonitor tooLargeAlarm;
+  JvmActionsAlarmMonitor tooLargeAlarm;
 
   public JvmGenTuningPolicy(HighHeapUsageClusterRca highHeapUsageClusterRca) {
     this(highHeapUsageClusterRca, null, null);
   }
 
   public JvmGenTuningPolicy(HighHeapUsageClusterRca highHeapUsageClusterRca,
-                            AlarmMonitor tooSmallAlarm,
-                            AlarmMonitor tooLargeAlarm) {
+                            JvmActionsAlarmMonitor tooSmallAlarm,
+                            JvmActionsAlarmMonitor tooLargeAlarm) {
     this.highHeapUsageClusterRca = highHeapUsageClusterRca;
-    if (tooSmallAlarm == null) {
-      this.tooSmallAlarm = new JvmActionsAlarmMonitor(UNDERSIZED_DATA_FILE_PATH);
-    } else {
-      this.tooSmallAlarm = tooSmallAlarm;
-    }
-    if (tooLargeAlarm == null) {
-      this.tooLargeAlarm = new JvmActionsAlarmMonitor(OVERSIZED_DATA_FILE_PATH);
-    } else {
-      this.tooLargeAlarm = tooLargeAlarm;
-    }
+    this.tooSmallAlarm = tooSmallAlarm;
+    this.tooLargeAlarm = tooLargeAlarm;
   }
 
   /**
@@ -101,9 +94,12 @@ public class JvmGenTuningPolicy implements DecisionPolicy {
    * @param issue an issue with the application
    */
   private void record(HotResourceSummary issue) {
+    LOG.debug("JVMGenTuningPolicy#record()");
     if (YOUNG_GEN_OVERSIZED_SIGNALS.contains(issue.getResource())) {
+      LOG.debug("Recording issue in tooLargeAlarm");
       tooLargeAlarm.recordIssue();
     } else if (YOUNG_GEN_UNDERSIZED_SIGNALS.contains(issue.getResource())) {
+      LOG.debug("Recording issue in tooSmallAlarm");
       tooSmallAlarm.recordIssue();
     }
   }
@@ -112,19 +108,20 @@ public class JvmGenTuningPolicy implements DecisionPolicy {
    * gathers and records all issues observed in the application
    */
   private void recordIssues() {
+    LOG.info("Recording issues...");
     if (highHeapUsageClusterRca.getFlowUnits().isEmpty()) {
       return;
     }
-
-    ResourceFlowUnit<HotClusterSummary> flowUnit = highHeapUsageClusterRca.getFlowUnits().get(0);
-    if (!flowUnit.hasResourceSummary()) {
-      return;
-    }
-
-    HotClusterSummary clusterSummary = flowUnit.getSummary();
-    for (HotNodeSummary nodeSummary : clusterSummary.getHotNodeSummaryList()) {
-      for (HotResourceSummary summary : nodeSummary.getHotResourceSummaryList()) {
-        record(summary);
+    for (ResourceFlowUnit<HotClusterSummary> flowUnit : highHeapUsageClusterRca.getFlowUnits()) {
+      if (!flowUnit.hasResourceSummary()) {
+        LOG.info("FlowUnit has no resource summary");
+        continue;
+      }
+      HotClusterSummary clusterSummary = flowUnit.getSummary();
+      for (HotNodeSummary nodeSummary : clusterSummary.getHotNodeSummaryList()) {
+        for (HotResourceSummary summary : nodeSummary.getHotResourceSummaryList()) {
+          record(summary);
+        }
       }
     }
   }
@@ -134,16 +131,22 @@ public class JvmGenTuningPolicy implements DecisionPolicy {
    * @return the current old:young generation sizing ratio
    */
   public double getCurrentRatio() {
+    LOG.debug("Computing current ratio...");
     if (appContext == null) {
+      LOG.debug("JvmGenTuningPolicy AppContext is null");
       return -1;
     }
     NodeConfigCache cache = appContext.getNodeConfigCache();
     NodeKey key = new NodeKey(appContext.getDataNodeInstances().get(0));
     try {
       Double oldGenMaxSizeInBytes = cache.get(key, ResourceUtil.OLD_GEN_MAX_SIZE);
+      LOG.debug("old gen max size is {}", oldGenMaxSizeInBytes);
       Double youngGenMaxSizeInBytes = cache.get(key, ResourceUtil.YOUNG_GEN_MAX_SIZE);
+      LOG.debug("young gen max size is {}", youngGenMaxSizeInBytes);
+      LOG.debug("current ratio is {}", (oldGenMaxSizeInBytes / youngGenMaxSizeInBytes));
       return (oldGenMaxSizeInBytes / youngGenMaxSizeInBytes);
     } catch (IllegalArgumentException | NullPointerException e) {
+      LOG.error("Exception while computing old:young generation sizing ratio", e);
       return -1;
     }
   }
@@ -190,8 +193,34 @@ public class JvmGenTuningPolicy implements DecisionPolicy {
     return !tooLargeAlarm.isHealthy();
   }
 
+  public JvmActionsAlarmMonitor createAlarmMonitor(Path persistenceBasePath) {
+    BucketizedSlidingWindowConfig dayMonitorConfig = new BucketizedSlidingWindowConfig(
+        policyConfig.getDayMonitorWindowSizeMinutes(),
+        policyConfig.getDayMonitorBucketSizeMinutes(),
+        TimeUnit.MINUTES,
+        persistenceBasePath);
+    BucketizedSlidingWindowConfig weekMonitorConfig = new BucketizedSlidingWindowConfig(
+        policyConfig.getWeekMonitorWindowSizeMinutes(),
+        policyConfig.getWeekMonitorBucketSizeMinutes(),
+        TimeUnit.MINUTES,
+        persistenceBasePath);
+    return new JvmActionsAlarmMonitor(policyConfig.getDayBreachThreshold(),
+        policyConfig.getWeekBreachThreshold(), UNDERSIZED_DATA_FILE_PATH, dayMonitorConfig, weekMonitorConfig);
+  }
+
+  public void initialize() {
+    LOG.debug("Initializing alarms...");
+    if (tooSmallAlarm == null) {
+      tooSmallAlarm = createAlarmMonitor(UNDERSIZED_DATA_FILE_PATH);
+    }
+    if (tooLargeAlarm == null) {
+      tooLargeAlarm = createAlarmMonitor(OVERSIZED_DATA_FILE_PATH);
+    }
+  }
+
   @Override
   public List<Action> evaluate() {
+    LOG.debug("Evaluating JvmGenTuningPolicy...");
     List<Action> actions = new ArrayList<>();
     if (rcaConf == null || appContext ==  null) {
       LOG.error("rca conf/app context is null, return empty action list");
@@ -199,11 +228,15 @@ public class JvmGenTuningPolicy implements DecisionPolicy {
     }
     policyConfig = rcaConf.getDeciderConfig().getJvmGenTuningPolicyConfig();
     if (!policyConfig.isEnabled()) {
-      LOG.debug("JvmGenerationTuningPolicy is disabled");
+      LOG.info("JvmGenerationTuningPolicy is disabled");
       return actions;
     }
+    initialize();
+    LOG.info("My day breach threshold is {} and week is {}", tooSmallAlarm.getDayBreachThreshold(), tooSmallAlarm.getWeekBreachThreshold());
+
     recordIssues();
     if (youngGenerationIsTooLarge()) {
+      LOG.debug("The young generation is too large!");
       // only decrease the young generation if the config allows it
       if (policyConfig.allowYoungGenDownsize()) {
         int newRatio = computeDecrease(getCurrentRatio());
@@ -213,8 +246,10 @@ public class JvmGenTuningPolicy implements DecisionPolicy {
         }
       }
     } else if (youngGenerationIsTooSmall()) {
+      LOG.debug("The young generation is too small!");
       int newRatio = computeIncrease(getCurrentRatio());
       if (newRatio >= 1) {
+        LOG.debug("Adding new JvmGenAction with ratio {}", newRatio);
         actions.add(new JvmGenAction(appContext, newRatio, COOLOFF_PERIOD_IN_MILLIS, true));
       }
     }

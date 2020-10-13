@@ -19,10 +19,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 
 /**
  * JvmGenAction modifies a generational Garbage Collector's tuning parameters
@@ -30,9 +32,12 @@ import java.util.stream.Collectors;
  * <p>This class is currently used to tune the young generation size when the CMS collector is being used
  */
 public class JvmGenAction extends SuppressibleAction {
-  public static final String NAME = "JvmGenAction";
   private static final ImpactVector NO_IMPACT = new ImpactVector();
-
+  private static final String RESOURCE_KEY = "resource";
+  private static final String TARGET_RATIO_KEY = "targetRatio";
+  private static final String COOLOFF_KEY = "coolOffPeriodInMillis";
+  private static final String CAN_UPDATE_KEY = "canUpdate";
+  public static final String NAME = "JvmGenAction";
   private final long targetRatio;
   private final long coolOffPeriodInMillis;
   private final boolean canUpdate;
@@ -87,11 +92,20 @@ public class JvmGenAction extends SuppressibleAction {
   @Override
   public String summary() {
     JsonObject jsonObject = new JsonObject();
-    jsonObject.addProperty("resource", ResourceEnum.YOUNG_GEN.getNumber());
-    jsonObject.addProperty("targetRatio", targetRatio);
-    jsonObject.addProperty("coolOffPeriodInMillis", coolOffPeriodInMillis);
-    jsonObject.addProperty("canUpdate", canUpdate);
+    jsonObject.addProperty(RESOURCE_KEY, ResourceEnum.YOUNG_GEN.getNumber());
+    jsonObject.addProperty(TARGET_RATIO_KEY, targetRatio);
+    jsonObject.addProperty(COOLOFF_KEY, coolOffPeriodInMillis);
+    jsonObject.addProperty(CAN_UPDATE_KEY, canUpdate);
     return jsonObject.toString();
+  }
+
+  public static JvmGenAction fromSummary(@Nonnull final String summary,
+      @Nonnull final AppContext appContext) {
+    JsonObject jsonObject = JsonParser.parseString(summary).getAsJsonObject();
+    int targetRatio = jsonObject.get(TARGET_RATIO_KEY).getAsInt();
+    long coolOff = jsonObject.get(COOLOFF_KEY).getAsLong();
+    boolean canUpdate = jsonObject.get(CAN_UPDATE_KEY).getAsBoolean();
+    return new JvmGenAction(appContext, targetRatio, coolOff, canUpdate);
   }
 
   @Override

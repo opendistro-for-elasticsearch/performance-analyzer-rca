@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.AlarmMonitor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.BucketizedSlidingWindow;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.BucketizedSlidingWindowConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindowData;
 import com.google.common.annotations.VisibleForTesting;
 import java.nio.file.Path;
@@ -40,7 +41,11 @@ public class JvmActionsAlarmMonitor implements AlarmMonitor {
   private int weekBreachThreshold;
   private boolean alarmHealthy = true;
 
-  public JvmActionsAlarmMonitor(int dayBreachThreshold, int weekBreachThreshold, @Nullable Path persistencePath) {
+  public JvmActionsAlarmMonitor(int dayBreachThreshold,
+                                int weekBreachThreshold,
+                                @Nullable Path persistencePath,
+                                @Nullable BucketizedSlidingWindowConfig dayMonitorConfig,
+                                @Nullable BucketizedSlidingWindowConfig weekMonitorConfig) {
     Path dayMonitorPath = null;
     Path weekMonitorPath = null;
     if (persistencePath != null) {
@@ -51,14 +56,29 @@ public class JvmActionsAlarmMonitor implements AlarmMonitor {
         weekMonitorPath = Paths.get(persistenceBase.toString(), WEEK_PREFIX + persistenceFile.toString());
       }
     }
-    dayMonitor = new BucketizedSlidingWindow((int) TimeUnit.DAYS.toMinutes(1), 30, TimeUnit.MINUTES, dayMonitorPath);
-    weekMonitor = new BucketizedSlidingWindow(4, 1, TimeUnit.DAYS, weekMonitorPath);
+    // initialize dayMonitor
+    if (dayMonitorConfig == null) {
+      dayMonitor = new BucketizedSlidingWindow((int) TimeUnit.DAYS.toMinutes(1), 30,
+          TimeUnit.MINUTES, dayMonitorPath);
+    } else {
+      dayMonitor = new BucketizedSlidingWindow(dayMonitorConfig);
+    }
+    // initialize weekMonitor
+    if (weekMonitorConfig == null) {
+      weekMonitor = new BucketizedSlidingWindow(4, 1, TimeUnit.DAYS, weekMonitorPath);
+    } else {
+      weekMonitor = new BucketizedSlidingWindow(weekMonitorConfig);
+    }
     this.dayBreachThreshold = dayBreachThreshold;
     this.weekBreachThreshold = weekBreachThreshold;
   }
 
+  public JvmActionsAlarmMonitor(int dayBreachThreshold, int weekBreachThreshold, @Nullable Path persistencePath) {
+    this(dayBreachThreshold, weekBreachThreshold, persistencePath, null, null);
+  }
+
   public JvmActionsAlarmMonitor(int dayBreachThreshold, int weekBreachThreshold) {
-    this(dayBreachThreshold, weekBreachThreshold, null);
+    this(dayBreachThreshold, weekBreachThreshold, null, null, null);
   }
 
   public JvmActionsAlarmMonitor(@Nullable Path persistencePath) {
