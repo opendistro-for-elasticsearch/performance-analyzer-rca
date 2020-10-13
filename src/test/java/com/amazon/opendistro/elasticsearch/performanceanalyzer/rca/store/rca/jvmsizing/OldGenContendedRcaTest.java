@@ -34,8 +34,17 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.uti
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({OldGenContendedRca.class, OldGenContendedRcaTest.class})
+@PowerMockIgnore({"com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.management.*",
+    "org.w3c.*"})
 public class OldGenContendedRcaTest {
   @Mock
   private HighOldGenOccupancyRca mockOldGenOccupancyRca;
@@ -46,14 +55,23 @@ public class OldGenContendedRcaTest {
   @Mock
   private AppContext mockAppContext;
 
+  @Mock
+  private Runtime mockRuntime;
+
   private final InstanceDetails currentInstance = new InstanceDetails(new Id("nodeId"),
       new Ip("1.2.3.4"), 0);
   private OldGenContendedRca testRca;
+  private static final long GB_TO_B = 1024L * 1024 * 1024;
+  private static final long GB_201_IN_BYTES = 201 * GB_TO_B;
+  private static final long GB_32_IN_BYTES = 32 * GB_TO_B;
 
   @Before
   public void setup() throws Exception {
     initMocks(this);
+    PowerMockito.mockStatic(Runtime.class);
     when(mockAppContext.getMyInstanceDetails()).thenReturn(currentInstance);
+    PowerMockito.when(Runtime.getRuntime()).thenReturn(mockRuntime);
+    when(mockRuntime.totalMemory()).thenReturn(GB_201_IN_BYTES);
     this.testRca = new OldGenContendedRca(mockOldGenOccupancyRca, mockOldGenReclamationRca);
     this.testRca.setAppContext(mockAppContext);
   }
@@ -106,6 +124,20 @@ public class OldGenContendedRcaTest {
     assertFalse(flowUnit.isEmpty());
     assertEquals(currentInstance.getInstanceId(), flowUnit.getSummary().getNodeID());
     assertEquals(currentInstance.getInstanceIp(), flowUnit.getSummary().getHostAddress());
+  }
+
+  @Test
+  public void testInsufficientMemory() {
+    when(mockRuntime.totalMemory()).thenReturn(GB_32_IN_BYTES);
+    when(mockOldGenOccupancyRca.getFlowUnits()).thenReturn(Collections
+        .singletonList(new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(
+            State.UNHEALTHY), new HotResourceSummary(ResourceUtil.OLD_GEN_HEAP_USAGE, 0d, 0d, 0))));
+    when(mockOldGenReclamationRca.getFlowUnits()).thenReturn(Collections
+        .singletonList(new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(
+            State.UNHEALTHY), new HotResourceSummary(ResourceUtil.FULL_GC_EFFECTIVENESS, 0d, 0d,
+            0))));
+
+    assertTrue(testRca.operate().isEmpty());
   }
 
 }

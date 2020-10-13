@@ -29,6 +29,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighO
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotNodeClusterRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardClusterRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HotShardRcaConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.OldGenContendedRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.QueueRejectionRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.ShardRequestCacheRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.bucket.BasicBucketCalculator;
@@ -229,6 +230,10 @@ public class RcaConf {
 
   public HeapSizeIncreasePolicyConfig getJvmScaleUpPolicyConfig() {
     return new HeapSizeIncreasePolicyConfig(this);
+  }
+
+  public OldGenContendedRcaConfig getOldGenContendedRcaConfig() {
+    return new OldGenContendedRcaConfig(this);
   }
 
   public <T> T readRcaConfig(String rcaName, String key, T defaultValue, Class<? extends T> clazz) {

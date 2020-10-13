@@ -15,13 +15,17 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.OldGenContendedRcaConfig.DEFAULT_MIN_TOTAL_MEMORY_IN_GB;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.OldGenContendedRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources.State;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.util.List;
@@ -33,9 +37,11 @@ import org.apache.logging.log4j.Logger;
 public class OldGenContendedRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
 
   private static final Logger LOG = LogManager.getLogger(OldGenContendedRca.class);
+  private static final long GB_TO_B = 1024 * 1024 * 1024;
   private static final long EVAL_INTERVAL_IN_S = 5;
   private Rca<ResourceFlowUnit<HotResourceSummary>> highOldGenOccupancyRca;
   private Rca<ResourceFlowUnit<HotResourceSummary>> oldGenReclamationRca;
+  private int minTotalMemoryThresholdInGB = DEFAULT_MIN_TOTAL_MEMORY_IN_GB;
 
   public OldGenContendedRca(final Rca<ResourceFlowUnit<HotResourceSummary>> highOldGenOccupancyRca,
       final Rca<ResourceFlowUnit<HotResourceSummary>> oldGenReclamationRca) {
@@ -72,6 +78,10 @@ public class OldGenContendedRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
       return new ResourceFlowUnit<>(currTime);
     }
 
+    if (Runtime.getRuntime().totalMemory() < minTotalMemoryThresholdInGB * GB_TO_B) {
+      return new ResourceFlowUnit<>(currTime);
+    }
+
     ResourceFlowUnit<HotResourceSummary> oldGenOccupancyFlowUnit = oldGenOccupancyFlowUnits.get(0);
     ResourceFlowUnit<HotResourceSummary> oldGenReclamationFlowUnit =
         oldGenReclamationFlowUnits.get(0);
@@ -93,5 +103,16 @@ public class OldGenContendedRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
     }
 
     return new ResourceFlowUnit<>(currTime);
+  }
+
+  @Override
+  public void readRcaConf(RcaConf conf) {
+    super.readRcaConf(conf);
+    readTotalMemThresholdFromConf(conf);
+  }
+
+  private void readTotalMemThresholdFromConf(final RcaConf conf) {
+    OldGenContendedRcaConfig rcaConfig = conf.getOldGenContendedRcaConfig();
+    this.minTotalMemoryThresholdInGB = rcaConfig.getMinTotalMemoryThresholdInGb();
   }
 }

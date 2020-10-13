@@ -48,7 +48,6 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
   private final HeapSizeIncreaseClusterMonitor heapSizeIncreaseClusterMonitor;
 
   private int unhealthyNodePercentage;
-  private long minimumTotalMemoryRequiredInGB = 200; // Default: 200GB min total mem required.
 
   public HeapSizeIncreasePolicy(final LargeHeapClusterRca largeHeapClusterRca) {
     this.heapSizeIncreaseClusterMonitor = new HeapSizeIncreaseClusterMonitor();
@@ -61,8 +60,7 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
 
     List<Action> actions = new ArrayList<>();
     if (!heapSizeIncreaseClusterMonitor.isHealthy()) {
-      Action heapSizeIncreaseAction = new HeapSizeIncreaseAction(appContext,
-          minimumTotalMemoryRequiredInGB);
+      Action heapSizeIncreaseAction = new HeapSizeIncreaseAction(appContext);
       if (heapSizeIncreaseAction.isActionable()) {
         actions.add(heapSizeIncreaseAction);
       }
@@ -141,7 +139,6 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
   private void readThresholdValuesFromConf() {
     HeapSizeIncreasePolicyConfig policyConfig = rcaConf.getJvmScaleUpPolicyConfig();
     this.unhealthyNodePercentage = policyConfig.getUnhealthyNodePercentage();
-    this.minimumTotalMemoryRequiredInGB = policyConfig.getMinimumTotalMemoryInGB();
     this.heapSizeIncreaseClusterMonitor.setDayBreachThreshold(policyConfig.getDayBreachThreshold());
     this.heapSizeIncreaseClusterMonitor
         .setWeekBreachThreshold(policyConfig.getWeekBreachThreshold());

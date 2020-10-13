@@ -17,7 +17,6 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.ac
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HeapSizeIncreasePolicyConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Id;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Ip;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
@@ -33,41 +32,27 @@ import javax.annotation.Nonnull;
 public class HeapSizeIncreaseAction extends SuppressibleAction {
 
   public static final String NAME = "HeapSizeIncreaseAction";
-  private static final long GB_TO_B = 1024 * 1024 * 1024;
   private static final String ID_KEY = "Id";
   private static final String IP_KEY = "Ip";
-  private static final String MEMORY_THRESHOLD_KEY = "memory-threshold";
-  private static final String CAN_UPDATE_KEY = "canUpdate";
-  private final boolean canUpdate;
   private final NodeKey esNode;
   private static final long DEFAULT_COOL_OFF_PERIOD_IN_MILLIS = TimeUnit.DAYS.toMillis(3);
-  private final long memoryThreshold;
 
   public HeapSizeIncreaseAction(@Nonnull final AppContext appContext) {
-    this(appContext, HeapSizeIncreasePolicyConfig.DEFAULT_MIN_TOTAL_MEM_IN_GB * GB_TO_B);
-  }
-
-  public HeapSizeIncreaseAction(@Nonnull final AppContext appContext, final long memoryThreshold) {
     super(appContext);
     this.esNode = new NodeKey(appContext.getMyInstanceDetails());
-    this.memoryThreshold = memoryThreshold;
-    this.canUpdate = Runtime.getRuntime().totalMemory() > memoryThreshold;
   }
 
   /**
    * Constructor used when building the action from a summary.
    */
-  public HeapSizeIncreaseAction(final NodeKey nodeKey, final boolean canUpdate,
-      final AppContext appContext, final long memoryThreshold) {
+  public HeapSizeIncreaseAction(final NodeKey nodeKey, final AppContext appContext) {
     super(appContext);
     this.esNode = nodeKey;
-    this.canUpdate = canUpdate;
-    this.memoryThreshold = memoryThreshold;
   }
 
   @Override
   public boolean canUpdate() {
-    return canUpdate;
+    return true;
   }
 
   @Override
@@ -105,8 +90,6 @@ public class HeapSizeIncreaseAction extends SuppressibleAction {
     JsonObject summaryJson = new JsonObject();
     summaryJson.addProperty(ID_KEY, esNode.getNodeId().toString());
     summaryJson.addProperty(IP_KEY, esNode.getHostAddress().toString());
-    summaryJson.addProperty(MEMORY_THRESHOLD_KEY, memoryThreshold);
-    summaryJson.addProperty(CAN_UPDATE_KEY, canUpdate);
 
     return summaryJson.toString();
   }
@@ -116,10 +99,7 @@ public class HeapSizeIncreaseAction extends SuppressibleAction {
     JsonObject jsonObject = JsonParser.parseString(summary).getAsJsonObject();
     NodeKey node = new NodeKey(new Id(jsonObject.get(ID_KEY).getAsString()),
         new Ip(jsonObject.get(IP_KEY).getAsString()));
-    boolean canUpdateFlag = jsonObject.get(CAN_UPDATE_KEY).getAsBoolean();
-    long threshold = jsonObject.get(MEMORY_THRESHOLD_KEY).getAsLong();
 
-    return new HeapSizeIncreaseAction(node, canUpdateFlag,
-        appContext, threshold);
+    return new HeapSizeIncreaseAction(node, appContext);
   }
 }

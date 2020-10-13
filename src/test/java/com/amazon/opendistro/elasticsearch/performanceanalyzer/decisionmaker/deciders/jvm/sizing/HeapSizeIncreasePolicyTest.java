@@ -85,9 +85,6 @@ public class HeapSizeIncreasePolicyTest {
     setupDataNodes();
     setupMockAppContext();
     setupMockRcaConf();
-    mockStatic(Runtime.class);
-    PowerMockito.when(Runtime.getRuntime()).thenReturn(mockRuntime);
-    when(mockRuntime.totalMemory()).thenReturn(201L * 1024 * 1024 * 1024);
     testPolicy = new HeapSizeIncreasePolicy(mockLargeHeapClusterRca);
     testPolicy.setAppContext(mockAppContext);
     testPolicy.setRcaConf(mockRcaConf);
@@ -112,13 +109,6 @@ public class HeapSizeIncreasePolicyTest {
     preWarmPolicy(DAY_BREACH, WEEK_BREACH - 1);
     List<Action> actions = testPolicy.evaluate();
     assertEquals(0, actions.size());
-  }
-
-  @Test
-  public void testInsufficientMemory() throws Exception {
-    preWarmPolicy(DAY_BREACH, WEEK_BREACH);
-    when(mockRuntime.totalMemory()).thenReturn(100L); // something lesser than 200GB
-    assertEquals(0, testPolicy.evaluate().size());
   }
 
   @Test
@@ -158,6 +148,8 @@ public class HeapSizeIncreasePolicyTest {
   private void setupMockRcaConf() {
     when(mockRcaConf.getJvmScaleUpPolicyConfig()).thenReturn(config);
     when(config.getUnhealthyNodePercentage()).thenReturn(UNHEALTHY_NODE_PERCENTAGE);
+    when(config.getDayBreachThreshold()).thenReturn(DAY_BREACH);
+    when(config.getWeekBreachThreshold()).thenReturn(WEEK_BREACH);
   }
 
   private void evalAt(Instant currentInstant) {
