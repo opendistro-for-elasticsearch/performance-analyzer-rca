@@ -270,9 +270,9 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
     // Cache Health Decider
     CacheHealthDecider cacheHealthDecider = new CacheHealthDecider(
-            EVALUATION_INTERVAL_SECONDS, 12, fieldDataCacheClusterRca, shardRequestCacheClusterRca);
+            EVALUATION_INTERVAL_SECONDS, 12, fieldDataCacheClusterRca, shardRequestCacheClusterRca, highHeapUsageClusterRca);
     cacheHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    cacheHealthDecider.addAllUpstreams(Arrays.asList(fieldDataCacheClusterRca, shardRequestCacheClusterRca));
+    cacheHealthDecider.addAllUpstreams(Arrays.asList(fieldDataCacheClusterRca, shardRequestCacheClusterRca, highHeapUsageClusterRca));
 
     constructShardResourceUsageGraph();
 

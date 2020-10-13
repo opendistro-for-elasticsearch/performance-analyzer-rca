@@ -23,6 +23,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.BaseClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
@@ -37,7 +38,7 @@ import org.apache.logging.log4j.Logger;
 
 // TODO: 1. Create separate ActionConfig objects for different actions
 
-public class CacheHealthDecider extends Decider {
+public class CacheHealthDecider extends HeapBasedDecider {
   private static final Logger LOG = LogManager.getLogger(CacheHealthDecider.class);
   public static final String NAME = "cacheHealthDecider";
 
@@ -52,8 +53,9 @@ public class CacheHealthDecider extends Decider {
       final long evalIntervalSeconds,
       final int decisionFrequency,
       final FieldDataCacheClusterRca fieldDataCacheClusterRca,
-      final ShardRequestCacheClusterRca shardRequestCacheClusterRca) {
-    super(evalIntervalSeconds, decisionFrequency);
+      final ShardRequestCacheClusterRca shardRequestCacheClusterRca,
+      final HighHeapUsageClusterRca highHeapUsageClusterRca) {
+    super(evalIntervalSeconds, decisionFrequency, highHeapUsageClusterRca);
     configureModifyCacheActionPriority();
 
     this.fieldDataCacheClusterRca = fieldDataCacheClusterRca;
@@ -130,7 +132,11 @@ public class CacheHealthDecider extends Decider {
    * signals going forward.
    */
   private Action computeBestAction(final NodeKey esNode, final ResourceEnum cacheType) {
-    return getAction(ModifyCacheMaxSizeAction.NAME, esNode, cacheType, true);
+    Action action = null;
+    if (canUseMoreHeap(esNode)) {
+      action = getAction(ModifyCacheMaxSizeAction.NAME, esNode, cacheType, true);
+    }
+    return action;
   }
 
   private Action getAction(
