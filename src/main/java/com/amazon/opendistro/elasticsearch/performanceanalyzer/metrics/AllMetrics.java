@@ -821,6 +821,27 @@ public class AllMetrics {
     }
   }
 
+  public enum MasterThrottlingValue implements MetricValue {
+    MASTER_THROTTLED_PENDING_TASK_COUNT(MasterThrottlingValue.Constants.THROTTLED_PENDING_TASK_COUNT),
+    DATA_RETRYING_TASK_COUNT(MasterThrottlingValue.Constants.RETRYING_TASK_COUNT);
+
+    private final String value;
+
+    MasterThrottlingValue(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String THROTTLED_PENDING_TASK_COUNT = "Master_ThrottledPendingTasksCount";
+      public static final String RETRYING_TASK_COUNT = "Data_RetryingPendingTasksCount";
+    }
+  }
+
   public enum OSMetrics {
     CPU_UTILIZATION(Constants.CPU_VALUE),
     PAGING_MAJ_FLT_RATE(Constants.PAGING_MAJFLT_VALUE),

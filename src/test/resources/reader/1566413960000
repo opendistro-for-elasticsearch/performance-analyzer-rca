@@ -5,6 +5,10 @@
 {"DestAddr":"00000000000000000000000000000000","Net_TCP_NumFlows":4,"Net_TCP_TxQ":0.0,"Net_TCP_RxQ":0.0,"Net_TCP_Lost":0.0,"Net_TCP_SendCWND":10.0,"Net_TCP_SSThresh":0.0}
 {"DestAddr":"0000000000000000FFFF0000534ED40A","Net_TCP_NumFlows":26,"Net_TCP_TxQ":0.0,"Net_TCP_RxQ":0.0,"Net_TCP_Lost":0.0,"Net_TCP_SendCWND":14.461538461538462,"Net_TCP_SSThresh":13.153846153846153}
 $
+^master_throttling_metrics
+{"current_time":1566413936555}
+{"Data_RetryingPendingTasksCount":0,"Master_ThrottledPendingTasksCount":33}
+$
 ^thread_pool
 {"current_time":1566413936488}
 {"ThreadPoolType":"analyze","ThreadPool_QueueSize":0,"ThreadPool_RejectedReqs":0,"ThreadPool_TotalThreads":0,"ThreadPool_ActiveThreads":0}
