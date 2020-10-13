@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
@@ -37,6 +38,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Set;
@@ -342,34 +344,41 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
   @Test
   public void testReadBatchMetricsEnabledFromConf() throws Exception {
     Files.createDirectories(Paths.get(Util.DATA_DIR));
+    Path batchMetricsEnabledConfFile = Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE);
+    Files.deleteIfExists(batchMetricsEnabledConfFile);
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation);
     ReaderMetricsProcessor.setCurrentInstance(mp);
 
-    Path batchMetricsEnabledConfFile = Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE);
+    // Test default
+    assertTrue(mp.getBatchMetricsEnabled()== ReaderMetricsProcessor.defaultBatchMetricsEnabled);
 
     // Test disabled
     Files.write(batchMetricsEnabledConfFile, Boolean.toString(false).getBytes());
     mp.readBatchMetricsEnabledFromConfShim();
     assertFalse(mp.getBatchMetricsEnabled());
 
-    // Test no state change when the file is deleted
+    // Test reverts back to default when file is deleted
     Files.delete(batchMetricsEnabledConfFile);
-    assertFalse(mp.getBatchMetricsEnabled());
+    mp.readBatchMetricsEnabledFromConfShim();
+    assertTrue(mp.getBatchMetricsEnabled()== ReaderMetricsProcessor.defaultBatchMetricsEnabled);
 
-    // Test disabled
+    // Test enabled
     Files.write(batchMetricsEnabledConfFile, Boolean.toString(true).getBytes());
     mp.readBatchMetricsEnabledFromConfShim();
     assertTrue(mp.getBatchMetricsEnabled());
 
-    // Test no state change when the file is deleted
+    // Test reverts back to default when file is deleted
     Files.delete(batchMetricsEnabledConfFile);
-    assertTrue(mp.getBatchMetricsEnabled());
+    mp.readBatchMetricsEnabledFromConfShim();
+    assertTrue(mp.getBatchMetricsEnabled()== ReaderMetricsProcessor.defaultBatchMetricsEnabled);
   }
 
   @Test
   public void testGetBatchMetrics() throws Exception {
     deleteAll();
     Files.createDirectories(Paths.get(Util.DATA_DIR));
+    Path batchMetricsEnabledConfFile = Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE);
+    Files.deleteIfExists(batchMetricsEnabledConfFile);
     long currentTimestamp = System.currentTimeMillis();
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation);
     ReaderMetricsProcessor.setCurrentInstance(mp);
@@ -377,7 +386,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     PluginSettings.instance().setShouldCleanupMetricsDBFiles(true);
 
     // Test with batch metrics disabled
-    Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(false).getBytes());
+    Files.write(batchMetricsEnabledConfFile, Boolean.toString(false).getBytes());
     mp.processMetrics(rootLocation, currentTimestamp);
     mp.trimOldSnapshots();
     mp.trimOldMetricsDBFiles();
@@ -387,7 +396,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     boolean secondRun = false;
     do {
       // Test with batch metrics recently enabled
-      Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(true).getBytes());
+      Files.write(batchMetricsEnabledConfFile, Boolean.toString(true).getBytes());
       for (int i = 0; i <= 12; i++) {
         mp.processMetrics(rootLocation, currentTimestamp);
         mp.trimOldSnapshots();
@@ -406,7 +415,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
       }
 
       // Test batch metrics data as it's being disabled
-      Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(false).getBytes());
+      Files.write(batchMetricsEnabledConfFile, Boolean.toString(false).getBytes());
       mp.processMetrics(rootLocation, currentTimestamp);
       currentTimestamp += MetricsConfiguration.SAMPLING_INTERVAL;
       assertEquals(12, mp.getBatchMetrics().size());
@@ -424,6 +433,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
   public void testTrimOldSnapshots() throws Exception {
     deleteAll();
     Files.createDirectories(Paths.get(Util.DATA_DIR));
+    Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(false).getBytes());
     long currentTimestamp = 1597091740000L;
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
     ReaderMetricsProcessor.setCurrentInstance(mp);
@@ -431,7 +441,6 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     PluginSettings.instance().setShouldCleanupMetricsDBFiles(true);
     NavigableSet<Long> expectedTimestamps = new TreeSet<>();
     long metricsDBTimestamp = 1597091720000L;
-    Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(false).getBytes());
 
     // Test ramp up
     for (int i = 0; i < 2; i++) {
@@ -529,6 +538,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
   public void testTrimOldSnapshots_fileCleanupDisabled() throws Exception {
     deleteAll();
     Files.createDirectories(Paths.get(Util.DATA_DIR));
+    Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(false).getBytes());
     long currentTimestamp = 1597091740000L;
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
     ReaderMetricsProcessor.setCurrentInstance(mp);
@@ -536,7 +546,6 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     PluginSettings.instance().setShouldCleanupMetricsDBFiles(false);
     NavigableSet<Long> expectedTimestamps = new TreeSet<>();
     long metricsDBTimestamp = 1597091720000L;
-    Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(false).getBytes());
 
 
     // Test metrics rampup and steady state
@@ -581,37 +590,111 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
   }
 
   @Test
-  public void testCleanupMetricsDBFiles_empty() throws Exception {
+  public void testRestoreBatchMetricsState_restoreCleanup() throws Exception {
+    // Test behavior when batch metrics is enabled and metricsdb cleanup is enabled
     deleteAll();
+    Files.createDirectories(Paths.get(Util.DATA_DIR));
+    Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(true).getBytes());
     PluginSettings.instance().setShouldCleanupMetricsDBFiles(true);
+
+    long currTime = System.currentTimeMillis();
+    long ts1 = currTime - 1 * 60 * 1000;
+    long ts2 = currTime - 2 * 60 * 1000;
+    long ts3 = currTime - (PluginSettings.instance().getBatchMetricsRetentionPeriodMinutes() + 1) * 60 * 1000;
+    for (Long ts: List.of(ts1, ts2, ts3)) {
+      new MetricsDB(ts).remove();
+    }
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
-    assertEquals(ImmutableSet.of(), MetricsDB.listOnDiskFiles());
+    NavigableSet<Long> restored = mp.getBatchMetrics();
+    assertTrue(restored.containsAll(List.of(ts1, ts2)) && restored.size() == 2);
+    try {
+      MetricsDB.fetchExisting(ts3);
+      fail();
+    } catch (Exception e){
+    }
   }
 
   @Test
-  public void testCleanupMetricsDBFiles_enabled() throws Exception {
+  public void testRestoreBatchMetricsState_restoreRetain() throws Exception {
+    // Test behavior when batch metrics is enabled and metricsdb cleanup is disabled
     deleteAll();
-    Set<Long> expected = ImmutableSet.of(1000000000L, 500L, 0L);
-    for (Long ts : expected) {
-      (new MetricsDB(ts)).remove();
-    }
-    assertEquals(expected, MetricsDB.listOnDiskFiles());
-    PluginSettings.instance().setShouldCleanupMetricsDBFiles(true);
-    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
-    assertEquals(ImmutableSet.of(), MetricsDB.listOnDiskFiles());
-  }
-
-  @Test
-  public void testCleanupMetricsDBFiles_disabled() throws Exception {
-    deleteAll();
-    Set<Long> expected = ImmutableSet.of(1000000000L, 500L, 0L);
-    for (Long ts : expected) {
-      (new MetricsDB(ts)).remove();
-    }
-    assertEquals(expected, MetricsDB.listOnDiskFiles());
+    Files.createDirectories(Paths.get(Util.DATA_DIR));
+    Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(true).getBytes());
     PluginSettings.instance().setShouldCleanupMetricsDBFiles(false);
+
+    long currTime = System.currentTimeMillis();
+    long ts1 = currTime - 1 * 60 * 1000;
+    long ts2 = currTime - 2 * 60 * 1000;
+    long ts3 = currTime - (PluginSettings.instance().getBatchMetricsRetentionPeriodMinutes() + 1) * 60 * 1000;
+    for (Long ts: List.of(ts1, ts2, ts3)) {
+      new MetricsDB(ts).remove();
+    }
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
-    assertEquals(expected, MetricsDB.listOnDiskFiles());
+    NavigableSet<Long> restored = mp.getBatchMetrics();
+    assertTrue(restored.containsAll(List.of(ts1, ts2)) && restored.size() == 2);
+    try {
+      MetricsDB.fetchExisting(ts3).remove();
+    } catch (Exception e){
+      fail();
+    }
+  }
+
+  @Test
+  public void testRestoreBatchMetricsState_ignoreCleanup() throws Exception {
+    // Test behavior when batch metrics is disabled and metricsdb cleanup is enabled
+    deleteAll();
+    Files.createDirectories(Paths.get(Util.DATA_DIR));
+    Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(false).getBytes());
+    PluginSettings.instance().setShouldCleanupMetricsDBFiles(true);
+
+    long currTime = System.currentTimeMillis();
+    long ts1 = currTime - 1 * 60 * 1000;
+    long ts2 = currTime - 2 * 60 * 1000;
+    long ts3 = currTime - (PluginSettings.instance().getBatchMetricsRetentionPeriodMinutes() + 1) * 60 * 1000;
+    for (Long ts: List.of(ts1, ts2, ts3)) {
+      new MetricsDB(ts).remove();
+    }
+    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
+    Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(true).getBytes());
+    mp.readBatchMetricsEnabledFromConfShim();
+    NavigableSet<Long> restored = mp.getBatchMetrics();
+    assertTrue(restored.isEmpty());
+    for (Long ts: List.of(ts1, ts2, ts3)) {
+      try {
+        MetricsDB.fetchExisting(ts3);
+        fail();
+      } catch (Exception e) {
+      }
+    }
+  }
+
+  @Test
+  public void testRestoreBatchMetricsState_ignoreRetain() throws Exception {
+    // Test behavior when batch metrics is disabled and metricsdb cleanup is disabled
+    deleteAll();
+    Files.createDirectories(Paths.get(Util.DATA_DIR));
+    Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(false).getBytes());
+    PluginSettings.instance().setShouldCleanupMetricsDBFiles(false);
+
+    long currTime = System.currentTimeMillis();
+    long ts1 = currTime - 1 * 60 * 1000;
+    long ts2 = currTime - 2 * 60 * 1000;
+    long ts3 = currTime - (PluginSettings.instance().getBatchMetricsRetentionPeriodMinutes() + 1) * 60 * 1000;
+    for (Long ts: List.of(ts1, ts2, ts3)) {
+      new MetricsDB(ts).remove();
+    }
+    ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation, true, new AppContext());
+    Files.write(Paths.get(Util.DATA_DIR, BATCH_METRICS_ENABLED_CONF_FILE), Boolean.toString(true).getBytes());
+    mp.readBatchMetricsEnabledFromConfShim();
+    NavigableSet<Long> restored = mp.getBatchMetrics();
+    assertTrue(restored.isEmpty());
+    try {
+      for (Long ts: List.of(ts1, ts2, ts3)) {
+        MetricsDB.fetchExisting(ts3).remove();
+      }
+    } catch (Exception e) {
+      fail();
+    }
   }
 
   public void verifyAvailableFiles(Set<Long> expectedFiles) {

@@ -36,8 +36,11 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
@@ -47,6 +50,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -87,7 +91,7 @@ public class ReaderMetricsProcessor implements Runnable {
 
   public static final String BATCH_METRICS_ENABLED_CONF_FILE = "batch_metrics_enabled.conf";
   private boolean batchMetricsEnabled;
-  private static final boolean defaultBatchMetricsEnabled = false;
+  public static final boolean defaultBatchMetricsEnabled = false;
   // This needs to be concurrent since it may be concurrently accessed by the metrics processor thread and the query handler thread.
   private ConcurrentSkipListSet<Long> batchMetricsDBSet;
 
@@ -133,7 +137,8 @@ public class ReaderMetricsProcessor implements Runnable {
     this.appContext = appContext;
     batchMetricsEnabled = defaultBatchMetricsEnabled;
     batchMetricsDBSet = new ConcurrentSkipListSet<>();
-    cleanupMetricsDBFiles();
+    readBatchMetricsEnabledFromConf();
+    restoreBatchMetricsState();
   }
 
   @Override
@@ -221,12 +226,29 @@ public class ReaderMetricsProcessor implements Runnable {
     }
   }
 
-  public void cleanupMetricsDBFiles() {
-    if (PluginSettings.instance().shouldCleanupMetricsDBFiles()) {
-      Set<Long> fileTimestamps = MetricsDB.listOnDiskFiles();
-      for (Long ts : fileTimestamps) {
-        MetricsDB.deleteOnDiskFile(ts);
+  /**
+   * Restore batch metrics state based on files from disk.
+   */
+  private void restoreBatchMetricsState() {
+    Set<Long> recoveredMetricsdbFiles = MetricsDB.listOnDiskFiles();
+    boolean shouldCleanup = PluginSettings.instance().shouldCleanupMetricsDBFiles();
+    if (batchMetricsEnabled) {
+      long minTime = System.currentTimeMillis()
+          - PluginSettings.instance().getBatchMetricsRetentionPeriodMinutes() * 60 * 1000;
+      if (shouldCleanup) {
+        for (Long ts : recoveredMetricsdbFiles) {
+          if (ts >= minTime) {
+            batchMetricsDBSet.add(ts);
+          } else {
+            MetricsDB.deleteOnDiskFile(ts);
+          }
+        }
+      } else {
+        recoveredMetricsdbFiles.stream().filter(ts -> ts >= minTime)
+            .collect(Collectors.toCollection(() -> batchMetricsDBSet));
       }
+    } else if (shouldCleanup) {
+      recoveredMetricsdbFiles.forEach(ts -> MetricsDB.deleteOnDiskFile(ts));
     }
   }
 
