@@ -62,15 +62,10 @@ public class FaultDetectionMetricsProcessor implements EventProcessor {
     public void processEvent(Event event) {
         String[] keyItems = event.key.split(File.separatorChar == '\\' ? "\\\\" : File.separator);
 
-        for (String key:keyItems) {
-            LOG.error("Hello Key - " +  key);
-        }
         if (keyItems[0].equals(PerformanceAnalyzerMetrics.sFaultDetection)) {
-            LOG.error("It is starting");
             if (keyItems[3].equals(PerformanceAnalyzerMetrics.START_FILE_NAME)) {
                 emitStartMetric(event, keyItems);
             } else if (keyItems[3].equals(PerformanceAnalyzerMetrics.FINISH_FILE_NAME)) {
-                LOG.error("It is finishing");
                 emitFinishMetric(event, keyItems);
             }
         }
@@ -104,9 +99,6 @@ public class FaultDetectionMetricsProcessor implements EventProcessor {
         String targetNodeId = keyValueMap.get(AllMetrics.FaultDetectionDimension.TARGET_NODE_ID.toString());
         String startTimeVal = keyValueMap.get(AllMetrics.CommonMetric.START_TIME.toString());
         String fault_detection_type = keyItems[1];
-
-        LOG.error("You know what the values are - " + sourceNodeId + " " + targetNodeId + " " + startTimeVal + fault_detection_type);
-
         try {
             long st = Long.parseLong(startTimeVal);
             // A keyItem is of the form : [fault_detection, follower_check, 76543, start]
@@ -135,9 +127,6 @@ public class FaultDetectionMetricsProcessor implements EventProcessor {
         String finishTimeVal = keyValueMap.get(AllMetrics.CommonMetric.FINISH_TIME.toString());
         String errorString = keyValueMap.get(PerformanceAnalyzerMetrics.ERROR);
         String fault_detection_type = keyItems[1];
-
-        LOG.error("Lets see finish values - " + sourceNodeId + " " + targetNodeId + " " + finishTimeVal + " " + errorString);
-
         try {
             long et = Long.parseLong(finishTimeVal);
             int error = Integer.parseInt(errorString);
