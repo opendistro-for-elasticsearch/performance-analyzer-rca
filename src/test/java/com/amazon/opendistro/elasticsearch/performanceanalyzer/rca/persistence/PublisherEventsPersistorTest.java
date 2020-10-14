@@ -61,8 +61,8 @@ public class PublisherEventsPersistorTest {
         int index = 3;
         for (PersistedAction action : actionsSummary) {
             Assert.assertEquals(action.getActionName(), "MockAction" + index);
-            String IP1 = (index + ".").repeat(4);
-            String IP2 = (Integer.toString(index) + index + ".").repeat(4);
+            String IP1 = new String(new char[4]).replace("\0", index + ".");
+            String IP2 = new String(new char[4]).replace("\0", Integer.toString(index) + index + ".");
             Assert.assertEquals(action.getNodeIps(), "{" + IP1.substring(0, IP1.length() - 1) + ","
                                                          + IP2.substring(0, IP2.length() - 1)  + "}");
             Assert.assertEquals(action.isActionable(), false);
@@ -89,8 +89,8 @@ public class PublisherEventsPersistorTest {
         int index = 5;
         for (PersistedAction action : actionsSummary) {
             Assert.assertEquals(action.getActionName(), "MockAction" + index);
-            String IP1 = (index + ".").repeat(4);
-            String IP2 = (Integer.toString(index) + index + ".").repeat(4);
+            String IP1 = new String(new char[4]).replace("\0", index + ".");
+            String IP2 = new String(new char[4]).replace("\0", Integer.toString(index) + index + ".");
             Assert.assertEquals(action.getNodeIps(),"{" + IP1.substring(0, IP1.length() - 1) + ","
                     + IP2.substring(0, IP2.length() - 1) + "}");
             Assert.assertEquals(action.isActionable(), false);
@@ -172,8 +172,8 @@ public class PublisherEventsPersistorTest {
         @Override
         public List<NodeKey> impactedNodes() {
             List<NodeKey> nodeKeys = new ArrayList<>();
-            String IP1 = (nodeIps.get(0) + ".").repeat(4);
-            String IP2 = (nodeIps.get(1) + ".").repeat(4);
+            String IP1 = new String(new char[4]).replace("\0", nodeIps.get(0) + ".");
+            String IP2 = new String(new char[4]).replace("\0", nodeIps.get(1) + ".");
             nodeKeys.add(new NodeKey(new InstanceDetails.Id(nodeIps.get(0)), new InstanceDetails.Ip(IP1.substring(0, IP1.length() - 1))));
             nodeKeys.add(new NodeKey(new InstanceDetails.Id(nodeIps.get(1)), new InstanceDetails.Ip(IP2.substring(0, IP2.length() - 1))));
             return nodeKeys;
