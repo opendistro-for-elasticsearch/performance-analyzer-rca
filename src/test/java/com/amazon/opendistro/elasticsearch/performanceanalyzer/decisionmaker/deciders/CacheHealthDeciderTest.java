@@ -30,6 +30,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.ShardRequestCacheClusterRca;
@@ -167,8 +168,12 @@ public class CacheHealthDeciderTest {
     shardRequestCacheClusterRca.setAppContext(appContext);
     shardRequestCacheClusterRca.generateFlowUnitListFromLocal(null);
 
+
+    RcaTestHelper<HotNodeSummary> nodeRca = new RcaTestHelper<>("QueueRejectionNodeRca");
+    nodeRca.setAppContext(appContext);
+    HighHeapUsageClusterRca clusterRca = new HighHeapUsageClusterRca(1, nodeRca);
     CacheHealthDecider decider =
-        new CacheHealthDecider(5, 12, fieldDataCacheClusterRca, shardRequestCacheClusterRca);
+        new CacheHealthDecider(5, 12, fieldDataCacheClusterRca, shardRequestCacheClusterRca, clusterRca);
     decider.setAppContext(appContext);
     decider.readRcaConf(rcaConf);
 

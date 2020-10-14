@@ -254,7 +254,11 @@ public class Host {
     }
     clientServers.getHttpServer().stop(10);
     clientServers.getNetClient().stop();
-    clientServers.getNetServer().shutdown();
+    try {
+      clientServers.getNetServer().shutdown();
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
 
     connectionManager.shutdown();
 
