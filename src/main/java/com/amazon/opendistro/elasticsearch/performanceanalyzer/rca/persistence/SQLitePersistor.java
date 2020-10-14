@@ -265,7 +265,9 @@ class SQLitePersistor extends PersistorBase {
   }
 
   @Override
-  public synchronized <T, E> @org.checkerframework.checker.nullness.qual.Nullable List<T> readAllForMaxField(Class<T> clz, String fieldName, Class <E> fieldClz)
+  public synchronized <T, E> @org.checkerframework.checker.nullness.qual.Nullable List<T> readAllForMaxField(Class<T> clz,
+                                                                                                             String fieldName,
+                                                                                                             Class<E> fieldClz)
           throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, DataAccessException {
     String tableName = getTableNameFromClassName(clz);
     List<Record> recordsWithMaxFieldValue;
