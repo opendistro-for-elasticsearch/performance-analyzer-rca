@@ -19,7 +19,7 @@ public abstract class HeapBasedDecider extends Decider {
   private static final Logger LOG = LogManager.getLogger(HeapBasedDecider.class);
   private static final String OLD_GEN_TUNABLE_KEY = "old-gen";
   private static final ResourceEnum DECIDING_HEAP_RESOURCE_TYPE = ResourceEnum.OLD_GEN;
-  public static final ImmutableMap<UsageBucket, Double> HEAP_USAGE_MAP = ImmutableMap.<UsageBucket, Double>builder()
+  public static final ImmutableMap<UsageBucket, Double> DEFAULT_HEAP_USAGE_THRESHOLDS = ImmutableMap.<UsageBucket, Double>builder()
       .put(UsageBucket.UNDER_UTILIZED, 10.0)
       .put(UsageBucket.HEALTHY_WITH_BUFFER, 60.0)
       .put(UsageBucket.HEALTHY, 80.0)
@@ -56,7 +56,7 @@ public abstract class HeapBasedDecider extends Decider {
                 try {
                   bucketCalculator = rcaConf.getBucketizationSettings(OLD_GEN_TUNABLE_KEY);
                 } catch (Exception jsonEx) {
-                  bucketCalculator = new BasicBucketCalculator(HEAP_USAGE_MAP);
+                  bucketCalculator = new BasicBucketCalculator(DEFAULT_HEAP_USAGE_THRESHOLDS);
                   LOG.debug("rca.conf does not have bucketization limits specified. Using default map.");
                 }
                 UsageBucket bucket = bucketCalculator.compute(oldGenUsedPercent);

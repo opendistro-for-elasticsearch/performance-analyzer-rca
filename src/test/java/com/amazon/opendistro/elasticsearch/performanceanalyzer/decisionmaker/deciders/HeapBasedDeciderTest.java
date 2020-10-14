@@ -50,22 +50,22 @@ public class HeapBasedDeciderTest {
   public void canUseMoreHeap() {
     NodeKey nodeKey = new NodeKey(new InstanceDetails.Id("xyz"), new InstanceDetails.Ip("1.1.1.1"));
 
-    double percent = HeapBasedDecider.HEAP_USAGE_MAP.get(UsageBucket.UNDER_UTILIZED);
+    double percent = HeapBasedDecider.DEFAULT_HEAP_USAGE_THRESHOLDS.get(UsageBucket.UNDER_UTILIZED);
     double ratio = percent / 100.0;
     HeapBasedDecider heapBasedDecider = createClusterRcaWithOldGenVal(ratio, nodeKey);
     Assert.assertTrue(heapBasedDecider.canUseMoreHeap(nodeKey));
 
-    percent = HeapBasedDecider.HEAP_USAGE_MAP.get(UsageBucket.HEALTHY_WITH_BUFFER);
+    percent = HeapBasedDecider.DEFAULT_HEAP_USAGE_THRESHOLDS.get(UsageBucket.HEALTHY_WITH_BUFFER);
     ratio = percent / 100.0;
     heapBasedDecider = createClusterRcaWithOldGenVal(ratio, nodeKey);
     Assert.assertTrue(heapBasedDecider.canUseMoreHeap(nodeKey));
 
-    percent = HeapBasedDecider.HEAP_USAGE_MAP.get(UsageBucket.HEALTHY);
+    percent = HeapBasedDecider.DEFAULT_HEAP_USAGE_THRESHOLDS.get(UsageBucket.HEALTHY);
     ratio = percent / 100.0;
     heapBasedDecider = createClusterRcaWithOldGenVal(ratio, nodeKey);
     Assert.assertFalse(heapBasedDecider.canUseMoreHeap(nodeKey));
 
-    percent = HeapBasedDecider.HEAP_USAGE_MAP.get(UsageBucket.HEALTHY) + 10;
+    percent = HeapBasedDecider.DEFAULT_HEAP_USAGE_THRESHOLDS.get(UsageBucket.HEALTHY) + 10;
     ratio = percent / 100.0;
     heapBasedDecider = createClusterRcaWithOldGenVal(ratio, nodeKey);
     Assert.assertFalse(heapBasedDecider.canUseMoreHeap(nodeKey));
