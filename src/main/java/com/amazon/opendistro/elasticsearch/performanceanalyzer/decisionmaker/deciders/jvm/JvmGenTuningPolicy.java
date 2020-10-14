@@ -108,13 +108,11 @@ public class JvmGenTuningPolicy implements DecisionPolicy {
    * gathers and records all issues observed in the application
    */
   private void recordIssues() {
-    LOG.info("Recording issues...");
     if (highHeapUsageClusterRca.getFlowUnits().isEmpty()) {
       return;
     }
     for (ResourceFlowUnit<HotClusterSummary> flowUnit : highHeapUsageClusterRca.getFlowUnits()) {
       if (!flowUnit.hasResourceSummary()) {
-        LOG.info("FlowUnit has no resource summary");
         continue;
       }
       HotClusterSummary clusterSummary = flowUnit.getSummary();
@@ -228,11 +226,12 @@ public class JvmGenTuningPolicy implements DecisionPolicy {
     }
     policyConfig = rcaConf.getDeciderConfig().getJvmGenTuningPolicyConfig();
     if (!policyConfig.isEnabled()) {
-      LOG.info("JvmGenerationTuningPolicy is disabled");
+      LOG.debug("JvmGenerationTuningPolicy is disabled");
       return actions;
     }
     initialize();
-    LOG.info("My day breach threshold is {} and week is {}", tooSmallAlarm.getDayBreachThreshold(), tooSmallAlarm.getWeekBreachThreshold());
+    LOG.debug("Day breach threshold is {} and week breach threashold is {}",
+        tooSmallAlarm.getDayBreachThreshold(), tooSmallAlarm.getWeekBreachThreshold());
 
     recordIssues();
     if (youngGenerationIsTooLarge()) {

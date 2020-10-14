@@ -32,13 +32,14 @@ import javax.annotation.Nonnull;
  * <p>This class is currently used to tune the young generation size when the CMS collector is being used
  */
 public class JvmGenAction extends SuppressibleAction {
+  private static final JsonParser jsonParser = new JsonParser();
   private static final ImpactVector NO_IMPACT = new ImpactVector();
   private static final String RESOURCE_KEY = "resource";
   private static final String TARGET_RATIO_KEY = "targetRatio";
   private static final String COOLOFF_KEY = "coolOffPeriodInMillis";
   private static final String CAN_UPDATE_KEY = "canUpdate";
   public static final String NAME = "JvmGenAction";
-  private final long targetRatio;
+  private final int targetRatio;
   private final long coolOffPeriodInMillis;
   private final boolean canUpdate;
 
@@ -53,7 +54,7 @@ public class JvmGenAction extends SuppressibleAction {
     this.canUpdate = canUpdate;
   }
 
-  public long getTargetRatio() {
+  public int getTargetRatio() {
     return targetRatio;
   }
 
@@ -101,7 +102,7 @@ public class JvmGenAction extends SuppressibleAction {
 
   public static JvmGenAction fromSummary(@Nonnull final String summary,
       @Nonnull final AppContext appContext) {
-    JsonObject jsonObject = JsonParser.parseString(summary).getAsJsonObject();
+    JsonObject jsonObject = jsonParser.parse(summary).getAsJsonObject();
     int targetRatio = jsonObject.get(TARGET_RATIO_KEY).getAsInt();
     long coolOff = jsonObject.get(COOLOFF_KEY).getAsLong();
     boolean canUpdate = jsonObject.get(CAN_UPDATE_KEY).getAsBoolean();
