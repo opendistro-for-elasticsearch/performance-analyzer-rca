@@ -157,7 +157,7 @@ public class BucketizedSlidingWindowTest {
     assertEquals(0, slidingWindow.size());
   }
 
-  @Test(expected = AssertionError.class)
+  @Test(expected = IllegalArgumentException.class)
   public void testInit() {
     BucketizedSlidingWindow slidingWindow = new BucketizedSlidingWindow(10, 10, TimeUnit.SECONDS);
   }
