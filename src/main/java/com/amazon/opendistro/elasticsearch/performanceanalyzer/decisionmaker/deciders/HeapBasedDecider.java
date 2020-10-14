@@ -50,28 +50,33 @@ public abstract class HeapBasedDecider extends Decider {
             for (HotResourceSummary hotResourceSummary : nodeSummary.getHotResourceSummaryList()) {
               Resource resource = hotResourceSummary.getResource();
               if (resource.getResourceEnum() == DECIDING_HEAP_RESOURCE_TYPE) {
-                double oldGenUsedRatio = hotResourceSummary.getValue();
-                double oldGenUsedPercent = oldGenUsedRatio * 100;
-                BucketCalculator bucketCalculator;
-                try {
-                  bucketCalculator = rcaConf.getBucketizationSettings(OLD_GEN_TUNABLE_KEY);
-                } catch (Exception jsonEx) {
-                  bucketCalculator = new BasicBucketCalculator(DEFAULT_HEAP_USAGE_THRESHOLDS);
-                  LOG.debug("rca.conf does not have bucketization limits specified. Using default map.");
-                }
-                UsageBucket bucket = bucketCalculator.compute(oldGenUsedPercent);
-                LOG.debug("Value ({}) bucketized to {}, using {}", oldGenUsedPercent, bucket.toString(), bucketCalculator.toString());
-                if (bucket == UsageBucket.UNDER_UTILIZED || bucket == UsageBucket.HEALTHY_WITH_BUFFER) {
-                  return true;
-                } else {
-                  return false;
-                }
+                return checkIfResourceCanBeTuned(hotResourceSummary.getValue());
               }
             }
           }
         }
       }
     }
+    // If the heapUsageRca does not have the oldGen details, we assume that we can use more heap.
     return true;
+  }
+
+  private boolean checkIfResourceCanBeTuned(double oldGenUsedRatio) {
+    double oldGenUsedPercent = oldGenUsedRatio * 100;
+    BucketCalculator bucketCalculator;
+    try {
+      bucketCalculator = rcaConf.getBucketizationSettings(OLD_GEN_TUNABLE_KEY);
+    } catch (Exception jsonEx) {
+      bucketCalculator = new BasicBucketCalculator(DEFAULT_HEAP_USAGE_THRESHOLDS);
+      LOG.debug("rca.conf does not have bucketization limits specified. Using default map.");
+    }
+    UsageBucket bucket = bucketCalculator.compute(oldGenUsedPercent);
+    LOG.debug("Value ({}) bucketized to {}, using {}", oldGenUsedPercent, bucket.toString(), bucketCalculator.toString());
+
+    boolean canTune = false;
+    if (bucket == UsageBucket.UNDER_UTILIZED || bucket == UsageBucket.HEALTHY_WITH_BUFFER) {
+      canTune = true;
+    }
+    return canTune;
   }
 }
