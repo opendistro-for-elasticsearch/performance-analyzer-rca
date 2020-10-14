@@ -73,7 +73,8 @@ public interface Persistable {
    * This API reads all the rows from the table corresponding to the maximum value in the field Object.
    * @param clz The Class whose Object is desired.
    * @param <T> The generic type of the class.
-   * @param field DSL field for which the maximum value is desired.
+   * @param fieldName DSL field for which the maximum value is desired.
+   * @param fieldClz Class Type of the field for which the maximum value is desired.
    * @return A List of instantiated Objects of the class with the fields populated with the data from the corresponding rows in the table.
    * @throws NoSuchMethodException If the expected setter does not exist.
    * @throws IllegalAccessException If the setter is not Public
@@ -81,7 +82,7 @@ public interface Persistable {
    * @throws InstantiationException Creating an Object of the class failed for some reason.
    * @throws DataAccessException Thrown by the DB layer.
    */
-  <T, E> @Nullable List<T> readAllForMaxField(Class<T> clz, Field<E> field)
+  <T, E> @Nullable List<T> readAllForMaxField(Class<T> clz, String fieldName, Class<E> fieldClz)
           throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, DataAccessException;
 
   /**

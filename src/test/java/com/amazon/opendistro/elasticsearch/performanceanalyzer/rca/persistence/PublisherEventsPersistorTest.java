@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
-import org.jooq.impl.DSL;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -52,11 +51,10 @@ public class PublisherEventsPersistorTest {
 
         addActions();
         WaitFor.waitFor(() -> persistable.readAllForMaxField(PersistedAction.class,
-                DSL.field(PersistedAction.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, String.class)
-                ).size() == 2, 5,
+                PersistedAction.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, Long.class).size() == 2, 5,
                 TimeUnit.SECONDS);
         List<PersistedAction> actionsSummary = persistable.readAllForMaxField(PersistedAction.class,
-                DSL.field(PersistedAction.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, String.class));
+                PersistedAction.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, Long.class);
         Assert.assertNotNull(actionsSummary);
         Assert.assertEquals(actionsSummary.size(), 2);
         // MockAction3 and MockAction4 should be returned as those have the highed Timestamps.
@@ -80,11 +78,11 @@ public class PublisherEventsPersistorTest {
 
         addActions();
         WaitFor.waitFor(() -> persistable.readAllForMaxField(PersistedAction.class,
-                DSL.field(PersistedAction.SQL_SCHEMA_CONSTANTS.COOLOFFPERIOD_NAME, String.class)
+                PersistedAction.SQL_SCHEMA_CONSTANTS.COOLOFFPERIOD_NAME, Long.class
                 ).size() == 2, 5,
                 TimeUnit.SECONDS);
         List<PersistedAction> actionsSummary = persistable.readAllForMaxField(PersistedAction.class,
-                DSL.field(PersistedAction.SQL_SCHEMA_CONSTANTS.COOLOFFPERIOD_NAME, String.class));
+                PersistedAction.SQL_SCHEMA_CONSTANTS.COOLOFFPERIOD_NAME, Long.class);
         Assert.assertNotNull(actionsSummary);
         Assert.assertEquals(actionsSummary.size(), 2);
         // MockAction5 and MockAction6 should be returned as those have the highed CooloffPeriods.
