@@ -12,9 +12,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.google.common.collect.ImmutableMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public abstract class HeapBasedDecider extends Decider {
-  private HighHeapUsageClusterRca highHeapUsageClusterRca;
+  private static final Logger LOG = LogManager.getLogger(HeapBasedDecider.class);
   private static final String OLD_GEN_TUNABLE_KEY = "old-gen";
   private static final ResourceEnum DECIDING_HEAP_RESOURCE_TYPE = ResourceEnum.OLD_GEN;
   public static final ImmutableMap<UsageBucket, Double> HEAP_USAGE_MAP = ImmutableMap.<UsageBucket, Double>builder()
@@ -22,6 +24,8 @@ public abstract class HeapBasedDecider extends Decider {
       .put(UsageBucket.HEALTHY_WITH_BUFFER, 60.0)
       .put(UsageBucket.HEALTHY, 80.0)
       .build();
+
+  private HighHeapUsageClusterRca highHeapUsageClusterRca;
 
   public HeapBasedDecider(long evalIntervalSeconds, int decisionFrequency, HighHeapUsageClusterRca highHeapUsageClusterRca) {
     super(evalIntervalSeconds, decisionFrequency);
@@ -53,8 +57,10 @@ public abstract class HeapBasedDecider extends Decider {
                   bucketCalculator = rcaConf.getBucketizationSettings(OLD_GEN_TUNABLE_KEY);
                 } catch (Exception jsonEx) {
                   bucketCalculator = new BasicBucketCalculator(HEAP_USAGE_MAP);
+                  LOG.debug("rca.conf does not have bucketization limits specified. Using default map.");
                 }
                 UsageBucket bucket = bucketCalculator.compute(oldGenUsedPercent);
+                LOG.debug("Value ({}) bucketized to {}, using {}", oldGenUsedPercent, bucket.toString(), bucketCalculator.toString());
                 if (bucket == UsageBucket.UNDER_UTILIZED || bucket == UsageBucket.HEALTHY_WITH_BUFFER) {
                   return true;
                 } else {
