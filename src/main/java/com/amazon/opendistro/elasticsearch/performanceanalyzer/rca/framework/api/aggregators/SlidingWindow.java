@@ -100,4 +100,8 @@ public class SlidingWindow<E extends SlidingWindowData> {
   public int size() {
     return windowDeque.size();
   }
+
+  public TimeUnit readTimeUnit() {
+    return this.timeUnit;
+  }
 }
