@@ -22,6 +22,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCInfoDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCInfoValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.OSMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Dimensions;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -847,4 +848,141 @@ public class MetricsEmitter {
           "Total time taken for writing {} metrics metricsdb: {}", tableName, mFinalT - mCurrT);
     }
   }
+
+    public static void emitFaultDetectionMetrics(DSLContext create, MetricsDB db, FaultDetectionMetricsSnapshot faultDetectionSnapshot) {
+
+      long mCurrT = System.currentTimeMillis();
+      Dimensions dimensions = new Dimensions();
+      Result<Record> res = faultDetectionSnapshot.fetchAggregatedTable();
+      LOG.error("AHH record size is " + res.size());
+      List<String> dims =
+              new ArrayList<String>() {
+                {
+                  this.add(AllMetrics.FaultDetectionDimension.SOURCE_NODE_ID.toString());
+                  this.add(AllMetrics.FaultDetectionDimension.TARGET_NODE_ID.toString());
+                }
+              };
+
+      db.createMetric(
+              new Metric<Double>(AllMetrics.FaultDetectionMetric.LATENCY_FOLLOWER_CHECK.toString(), 0d),
+              dims);
+
+      db.createMetric(
+              new Metric<Double>(AllMetrics.FaultDetectionMetric.LATENCY_LEADER_CHECK.toString(), 0d),
+              dims);
+
+      db.createMetric(
+              new Metric<Double>(AllMetrics.FaultDetectionMetric.FAILURE_FOLLOWER_CHECK.toString(), 0d),
+              dims);
+
+      db.createMetric(
+              new Metric<Double>(AllMetrics.FaultDetectionMetric.FAILURE_LEADER_CHECK.toString(), 0d),
+              dims);
+
+      for (Record r : res) {
+        dimensions.put(
+                AllMetrics.FaultDetectionDimension.SOURCE_NODE_ID.toString(),
+                r.get(AllMetrics.FaultDetectionDimension.SOURCE_NODE_ID.toString()).toString());
+        dimensions.put(
+                AllMetrics.FaultDetectionDimension.TARGET_NODE_ID.toString(),
+                r.get(AllMetrics.FaultDetectionDimension.TARGET_NODE_ID.toString()).toString());
+
+        Double sumLatency =
+                Double.parseDouble(
+                        r.get(
+                                DBUtils.getAggFieldName(
+                                        FaultDetectionMetricsSnapshot.Fields.LAT.toString(), MetricsDB.SUM))
+                                .toString());
+        Double avgLatency =
+                Double.parseDouble(
+                        r.get(
+                                DBUtils.getAggFieldName(
+                                        FaultDetectionMetricsSnapshot.Fields.LAT.toString(), MetricsDB.AVG))
+                                .toString());
+        Double minLatency =
+                Double.parseDouble(
+                        r.get(
+                                DBUtils.getAggFieldName(
+                                        FaultDetectionMetricsSnapshot.Fields.LAT.toString(), MetricsDB.MIN))
+                                .toString());
+        Double maxLatency =
+                Double.parseDouble(
+                        r.get(
+                                DBUtils.getAggFieldName(
+                                        FaultDetectionMetricsSnapshot.Fields.LAT.toString(), MetricsDB.MAX))
+                                .toString());
+
+        Double sumError =
+                Double.parseDouble(
+                        r.get(
+                                DBUtils.getAggFieldName(
+                                        FaultDetectionMetricsSnapshot.Fields.ERROR.toString(),
+                                        MetricsDB.SUM))
+                                .toString());
+        Double avgError =
+                Double.parseDouble(
+                        r.get(
+                                DBUtils.getAggFieldName(
+                                        FaultDetectionMetricsSnapshot.Fields.ERROR.toString(),
+                                        MetricsDB.AVG))
+                                .toString());
+        Double minError =
+                Double.parseDouble(
+                        r.get(
+                                DBUtils.getAggFieldName(
+                                        FaultDetectionMetricsSnapshot.Fields.ERROR.toString(),
+                                        MetricsDB.MIN))
+                                .toString());
+        Double maxError =
+                Double.parseDouble(
+                        r.get(
+                                DBUtils.getAggFieldName(
+                                        FaultDetectionMetricsSnapshot.Fields.ERROR.toString(),
+                                        MetricsDB.MAX))
+                                .toString());
+        if (r.get(FaultDetectionMetricsSnapshot.Fields.FAULT_DETECTION_TYPE.toString()).toString()
+                .equals(PerformanceAnalyzerMetrics.FAULT_DETECTION_FOLLOWER_CHECK)) {
+          db.putMetric(
+                  new Metric<Double>(
+                          AllMetrics.FaultDetectionMetric.LATENCY_FOLLOWER_CHECK.toString(),
+                          sumLatency,
+                          avgLatency,
+                          minLatency,
+                          maxLatency),
+                  dimensions,
+                  0);
+          db.putMetric(
+                  new Metric<Double>(
+                          AllMetrics.FaultDetectionMetric.FAILURE_FOLLOWER_CHECK.toString(),
+                          sumError,
+                          avgError,
+                          minError,
+                          maxError),
+                  dimensions,
+                  0);
+        } else if (r.get(FaultDetectionMetricsSnapshot.Fields.FAULT_DETECTION_TYPE.toString()).toString()
+                .equals(PerformanceAnalyzerMetrics.FAULT_DETECTION_LEADER_CHECK)) {
+          db.putMetric(
+                  new Metric<Double>(
+                          AllMetrics.FaultDetectionMetric.LATENCY_LEADER_CHECK.toString(),
+                          sumLatency,
+                          avgLatency,
+                          minLatency,
+                          maxLatency),
+                  dimensions,
+                  0);
+          db.putMetric(
+                  new Metric<Double>(
+                          AllMetrics.FaultDetectionMetric.FAILURE_LEADER_CHECK.toString(),
+                          sumError,
+                          avgError,
+                          minError,
+                          maxError),
+                  dimensions,
+                  0);
+        }
+      }
+      long mFinalT = System.currentTimeMillis();
+      LOG.debug("Total time taken for writing fault detection metrics to metricsdb: {}", mFinalT - mCurrT);
+    }
 }

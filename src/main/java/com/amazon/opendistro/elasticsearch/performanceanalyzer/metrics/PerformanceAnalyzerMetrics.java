@@ -43,6 +43,7 @@ public class PerformanceAnalyzerMetrics {
   public static final String sShardFetchPath = "shardfetch";
   public static final String sShardQueryPath = "shardquery";
   public static final String sMasterTaskPath = "master_task";
+  public static final String sFaultDetection = "fault_detection";
   public static final String sHttpPath = "http";
   public static final String sOSPath = "os_metrics";
   public static final String sHeapPath = "heap_metrics";
@@ -60,6 +61,9 @@ public class PerformanceAnalyzerMetrics {
   public static final String MASTER_CURRENT = "current";
   public static final String MASTER_META_DATA = "metadata";
   public static final String METRIC_CURRENT_TIME = "current_time";
+  public static final String FAULT_DETECTION_FOLLOWER_CHECK = "follower_check";
+  public static final String FAULT_DETECTION_LEADER_CHECK = "leader_check";
+  public static final String ERROR = "error";
   public static final int QUEUE_SIZE = PluginSettings.instance().getWriterQueueSize();
 
   // TODO: Comeup with a more sensible number.

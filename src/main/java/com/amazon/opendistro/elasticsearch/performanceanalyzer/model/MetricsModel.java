@@ -340,6 +340,26 @@ public class MetricsModel {
         new MetricAttributes(
             MetricUnits.MILLISECOND.toString(), AllMetrics.MasterMetricDimensions.values()));
 
+    allMetricsInitializer.put(
+            AllMetrics.FaultDetectionMetric.LATENCY_FOLLOWER_CHECK.toString(),
+            new MetricAttributes(
+                    MetricUnits.MILLISECOND.toString(), AllMetrics.FaultDetectionDimension.values()));
+
+    allMetricsInitializer.put(
+            AllMetrics.FaultDetectionMetric.LATENCY_LEADER_CHECK.toString(),
+            new MetricAttributes(
+                    MetricUnits.MILLISECOND.toString(), AllMetrics.FaultDetectionDimension.values()));
+
+    allMetricsInitializer.put(
+            AllMetrics.FaultDetectionMetric.FAILURE_FOLLOWER_CHECK.toString(),
+            new MetricAttributes(
+                    MetricUnits.COUNT.toString(), AllMetrics.FaultDetectionDimension.values()));
+
+    allMetricsInitializer.put(
+            AllMetrics.FaultDetectionMetric.FAILURE_LEADER_CHECK.toString(),
+            new MetricAttributes(
+                    MetricUnits.COUNT.toString(), AllMetrics.FaultDetectionDimension.values()));
+
 
     ALL_METRICS = Collections.unmodifiableMap(allMetricsInitializer);
   }
