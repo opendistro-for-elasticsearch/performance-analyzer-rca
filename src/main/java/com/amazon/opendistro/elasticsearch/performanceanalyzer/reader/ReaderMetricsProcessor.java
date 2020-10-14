@@ -376,7 +376,7 @@ public class ReaderMetricsProcessor implements Runnable {
       MetricsEmitter.emitFaultDetectionMetrics(create, metricsDB, prevFaultDetectionSnap);
     } else {
       LOG.debug(
-              "Http request snapshot for the previous window does not exist. Not emitting metrics.");
+              "Fault Detection snapshot for the previous window does not exist. Not emitting metrics.");
     }
   }
 

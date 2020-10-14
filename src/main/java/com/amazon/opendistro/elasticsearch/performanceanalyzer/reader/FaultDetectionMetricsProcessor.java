@@ -61,7 +61,6 @@ public class FaultDetectionMetricsProcessor implements EventProcessor {
     @Override
     public void processEvent(Event event) {
         String[] keyItems = event.key.split(File.separatorChar == '\\' ? "\\\\" : File.separator);
-
         if (keyItems[0].equals(PerformanceAnalyzerMetrics.sFaultDetection)) {
             if (keyItems[3].equals(PerformanceAnalyzerMetrics.START_FILE_NAME)) {
                 emitStartMetric(event, keyItems);
@@ -111,13 +110,14 @@ public class FaultDetectionMetricsProcessor implements EventProcessor {
         }
     }
 
-    // A keyItem is of the form : [threads, http, bulk, 43369, start]
+    // A keyItem is of the form : [fault_detection, follower_check, 76532, finish]
     //
     // Example value part of the entry is:
     // current_time:1566413979979
-    // StartTime:1566413987986
+    // FinishTime:1566413987986
     // SourceNodeID:g52i9a93a762cd59dda8d3379b09a752a
     // TargetNodeID:b2a5a93a762cd59dda8d3379b09a752a
+    // Error:0
     // $
     private void emitFinishMetric(Event entry, String[] keyItems) {
         Map<String, String> keyValueMap = ReaderMetricsProcessor.extractEntryData(entry.value);
