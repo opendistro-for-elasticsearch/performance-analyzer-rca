@@ -98,6 +98,8 @@ public class QueueDeciderDedicatedMasterITest {
       reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
   @AErrorPatternIgnored(pattern = "NodeConfigCacheReaderUtil:readQueueCapacity()",
       reason = "Metrics is expected to be missing")
+  @AErrorPatternIgnored(pattern = "ModifyQueueCapacityAction:build()",
+      reason = "Metrics is expected to be missing")
   public void testQueueCapacityDecider() {
   }
 
