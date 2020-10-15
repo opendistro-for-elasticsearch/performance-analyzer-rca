@@ -44,10 +44,12 @@ public class JvmActionsAlarmMonitor implements AlarmMonitor {
     Path dayMonitorPath = null;
     Path weekMonitorPath = null;
     if (persistencePath != null) {
-      String persistenceBase = persistencePath.getParent().toString();
-      String persistenceFile = persistencePath.getFileName().toString();
-      dayMonitorPath = Paths.get(persistenceBase, DAY_PREFIX + persistenceFile);
-      weekMonitorPath = Paths.get(persistenceBase, WEEK_PREFIX + persistenceFile);
+      Path persistenceBase = persistencePath.getParent();
+      Path persistenceFile = persistencePath.getFileName();
+      if (persistenceBase != null && persistenceFile != null) {
+        dayMonitorPath = Paths.get(persistenceBase.toString(), DAY_PREFIX + persistenceFile.toString());
+        weekMonitorPath = Paths.get(persistenceBase.toString(), WEEK_PREFIX + persistenceFile.toString());
+      }
     }
     dayMonitor = new BucketizedSlidingWindow((int) TimeUnit.DAYS.toMinutes(1), 30, TimeUnit.MINUTES, dayMonitorPath);
     weekMonitor = new BucketizedSlidingWindow(4, 1, TimeUnit.DAYS, weekMonitorPath);
