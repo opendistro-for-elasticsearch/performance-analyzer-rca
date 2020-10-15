@@ -27,6 +27,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.exception.DataTypeException;
@@ -81,6 +82,7 @@ public class HotClusterSummary extends GenericSummary {
     return numOfUnhealthyNodes;
   }
 
+  @NonNull
   public List<HotNodeSummary> getHotNodeSummaryList() {
     return hotNodeSummaryList;
   }

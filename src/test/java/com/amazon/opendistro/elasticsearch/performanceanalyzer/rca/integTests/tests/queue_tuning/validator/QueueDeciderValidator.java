@@ -38,7 +38,7 @@ public class QueueDeciderValidator implements IValidator {
      * "nodeId":"node1",
      * "nodeIp":127.0.0.1,
      * "actionable":1,
-     * "coolOffPeriod": 10000,
+     * "coolOffPeriod": 300000,
      * "muted": 0
      * "summary": "Id":"DATA_0","Ip":"127.0.0.1","resource":4,"desiredCapacity":547,
      *            "currentCapacity":500,"coolOffPeriodInMillis":10000,"canUpdate":true}
@@ -59,7 +59,7 @@ public class QueueDeciderValidator implements IValidator {
      * "nodeId":"node1",
      * "nodeIp":127.0.0.1,
      * "actionable":1,
-     * "coolOffPeriod": 10000,
+     * "coolOffPeriod": 300000,
      * "muted": 0
      * "summary": "Id":"DATA_0","Ip":"127.0.0.1","resource":4,"desiredCapacity":547,
      *            "currentCapacity":500,"coolOffPeriodInMillis":10000,"canUpdate":true}
@@ -70,7 +70,7 @@ public class QueueDeciderValidator implements IValidator {
         Assert.assertEquals(ModifyQueueCapacityAction.NAME, persistedAction.getActionName());
         Assert.assertEquals("{DATA_0}", persistedAction.getNodeIds());
         Assert.assertEquals("{127.0.0.1}", persistedAction.getNodeIps());
-        Assert.assertEquals(10000, persistedAction.getCoolOffPeriod());
+        Assert.assertEquals(ModifyQueueCapacityAction.Builder.DEFAULT_COOL_OFF_PERIOD_IN_MILLIS, persistedAction.getCoolOffPeriod());
         Assert.assertTrue(persistedAction.isActionable());
         Assert.assertFalse(persistedAction.isMuted());
         Assert.assertEquals(ResourceEnum.WRITE_THREADPOOL, modifyQueueCapacityAction.getThreadPool());

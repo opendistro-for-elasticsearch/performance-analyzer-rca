@@ -48,6 +48,11 @@ public enum RcaRuntimeMetrics implements MeasurementSet {
   /**
    * Metric tracking the actions published by the publisher that are persisted in sqlite.
    */
+  NO_INCREASE_ACTION_SUGGESTED("NoIncreaseAction", "namedCount", Collections.singletonList(Statistics.NAMED_COUNTERS)),
+
+  /**
+   * Metric tracking the actions published by the publisher that are persisted in sqlite.
+   */
   ACTIONS_PUBLISHED("ActionsPublished", "namedCount", Collections.singletonList(Statistics.NAMED_COUNTERS));
 
   /**

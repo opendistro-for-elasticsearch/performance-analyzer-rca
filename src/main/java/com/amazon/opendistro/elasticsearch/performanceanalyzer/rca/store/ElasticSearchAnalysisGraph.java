@@ -94,6 +94,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hot
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageYoungGenRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.HighOldGenOccupancyRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.LargeHeapClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.OldGenContendedRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.OldGenReclamationRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
@@ -110,8 +114,10 @@ import org.apache.logging.log4j.Logger;
 public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
   private static final Logger LOG = LogManager.getLogger(ElasticSearchAnalysisGraph.class);
-  private static final int RCA_PERIOD = 12;  // 1 minute. RCA_PERIOD is measured as number of EVALUATION_INTERVAL_SECONDS
   private static final int EVALUATION_INTERVAL_SECONDS = 5;
+  private static final int SECONDS_IN_MIN = 60;
+  // 1 minute. RCA_PERIOD is measured as number of EVALUATION_INTERVAL_SECONDS
+  private static final int RCA_PERIOD = SECONDS_IN_MIN / EVALUATION_INTERVAL_SECONDS;
 
 
   @Override
@@ -147,9 +153,9 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     highHeapUsageOldGenRca.addAllUpstreams(upstream);
 
     Rca<ResourceFlowUnit<HotResourceSummary>> highHeapUsageYoungGenRca = new HighHeapUsageYoungGenRca(RCA_PERIOD, heapUsed,
-            gc_Collection_Time);
+            gc_Collection_Time, gcEvent);
     highHeapUsageYoungGenRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    highHeapUsageYoungGenRca.addAllUpstreams(Arrays.asList(heapUsed, gc_Collection_Time));
+    highHeapUsageYoungGenRca.addAllUpstreams(Arrays.asList(heapUsed, gc_Collection_Time, gcEvent));
 
     Rca<ResourceFlowUnit<HotResourceSummary>> highCpuRca = new HighCpuRca(RCA_PERIOD, cpuUtilizationGroupByOperation);
     highCpuRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
@@ -167,13 +173,32 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     highHeapUsageClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
     highHeapUsageClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
-    Rca<ResourceFlowUnit<HotClusterSummary>> hotNodeClusterRca =
-            new HotNodeClusterRca(RCA_PERIOD, hotJVMNodeRca);
+    HotNodeClusterRca hotNodeClusterRca = new HotNodeClusterRca(RCA_PERIOD, hotJVMNodeRca);
     hotNodeClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     hotNodeClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
 
+    final HighOldGenOccupancyRca oldGenOccupancyRca = new HighOldGenOccupancyRca(heapMax, heapUsed);
+    oldGenOccupancyRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    oldGenOccupancyRca.addAllUpstreams(Arrays.asList(heapMax, heapUsed));
+
+    final OldGenReclamationRca oldGenReclamationRca = new OldGenReclamationRca(heapUsed,
+        heapMax, gcEvent);
+    oldGenReclamationRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    oldGenReclamationRca.addAllUpstreams(Arrays.asList(heapUsed, heapMax, gcEvent));
+
+    final OldGenContendedRca oldGenContendedRca = new OldGenContendedRca(oldGenOccupancyRca,
+        oldGenReclamationRca);
+    oldGenContendedRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    oldGenContendedRca.addAllUpstreams(Arrays.asList(oldGenOccupancyRca, oldGenReclamationRca));
+
+    final LargeHeapClusterRca largeHeapClusterRca = new LargeHeapClusterRca(oldGenContendedRca);
+    largeHeapClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    largeHeapClusterRca.addAllUpstreams(Collections.singletonList(oldGenContendedRca));
+    largeHeapClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
+
     // Heap Health Decider
-    HeapHealthDecider heapHealthDecider = new HeapHealthDecider(12, highHeapUsageClusterRca);
+    HeapHealthDecider heapHealthDecider = new HeapHealthDecider(RCA_PERIOD, highHeapUsageClusterRca,
+        largeHeapClusterRca);
     heapHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     heapHealthDecider.addAllUpstreams(Collections.singletonList(highHeapUsageClusterRca));
 
@@ -196,9 +221,10 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     queueRejectionClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
     // Queue Health Decider
-    QueueHealthDecider queueHealthDecider = new QueueHealthDecider(EVALUATION_INTERVAL_SECONDS, 12, queueRejectionClusterRca);
+    QueueHealthDecider queueHealthDecider = new QueueHealthDecider(
+        EVALUATION_INTERVAL_SECONDS, 12, queueRejectionClusterRca, highHeapUsageClusterRca);
     queueHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    queueHealthDecider.addAllUpstreams(Collections.singletonList(queueRejectionClusterRca));
+    queueHealthDecider.addAllUpstreams(Arrays.asList(queueRejectionClusterRca, highHeapUsageClusterRca));
 
     // Node Config Collector
     ThreadPool_QueueCapacity queueCapacity = new ThreadPool_QueueCapacity();
@@ -270,9 +296,9 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
     // Cache Health Decider
     CacheHealthDecider cacheHealthDecider = new CacheHealthDecider(
-            EVALUATION_INTERVAL_SECONDS, 12, fieldDataCacheClusterRca, shardRequestCacheClusterRca);
+            EVALUATION_INTERVAL_SECONDS, 12, fieldDataCacheClusterRca, shardRequestCacheClusterRca, highHeapUsageClusterRca);
     cacheHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    cacheHealthDecider.addAllUpstreams(Arrays.asList(fieldDataCacheClusterRca, shardRequestCacheClusterRca));
+    cacheHealthDecider.addAllUpstreams(Arrays.asList(fieldDataCacheClusterRca, shardRequestCacheClusterRca, highHeapUsageClusterRca));
 
     constructShardResourceUsageGraph();
 

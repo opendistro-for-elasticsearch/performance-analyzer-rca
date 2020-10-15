@@ -50,6 +50,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.P
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.PersistenceFactory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCAScheduler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RcaSchedulerState;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryActionRequestHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryRcaRequestHandler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
 import com.google.common.annotations.VisibleForTesting;
@@ -110,6 +111,7 @@ public class RcaController {
   private NodeStateManager nodeStateManager;
   private HttpServer httpServer;
   private QueryRcaRequestHandler queryRcaRequestHandler;
+  private QueryActionRequestHandler queryActionRequestHandler;
 
   private SubscriptionManager subscriptionManager;
   private volatile RcaConf rcaConf;
@@ -154,6 +156,7 @@ public class RcaController {
     subscriptionManager = new SubscriptionManager(grpcConnectionManager);
     nodeStateManager = new NodeStateManager(this.appContext);
     queryRcaRequestHandler = new QueryRcaRequestHandler(this.appContext);
+    queryActionRequestHandler = new QueryActionRequestHandler(this.appContext);
     this.rcaScheduler = null;
     this.rcaStateCheckIntervalMillis = rcaStateCheckIntervalMillis;
     this.roleCheckPeriodicity = nodeRoleCheckPeriodicityMillis;
@@ -204,6 +207,8 @@ public class RcaController {
           .set(RcaControllerHelper.buildNetworkThreadPool(rcaConf.getNetworkQueueLength()));
       addRcaRequestHandler();
       queryRcaRequestHandler.setPersistable(persistenceProvider);
+      addActionsRequestHandler();
+      queryActionRequestHandler.setPersistable(persistenceProvider);
       receivedFlowUnitStore = new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength());
       WireHopper net =
           new WireHopper(nodeStateManager, rcaNetClient, subscriptionManager,
@@ -500,6 +505,10 @@ public class RcaController {
 
   private void addRcaRequestHandler() {
     httpServer.createContext(Util.RCA_QUERY_URL, queryRcaRequestHandler);
+  }
+
+  private void addActionsRequestHandler() {
+    httpServer.createContext(Util.ACTIONS_QUERY_URL, queryActionRequestHandler);
   }
 
   public void setDeliberateInterrupt() {
