@@ -111,6 +111,7 @@ public class QueryBatchRequestHandlerTest {
 
   @Test
   public void testHandle_batchEmpty() throws Exception {
+    deleteAll();
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation);
     ReaderMetricsProcessor.setCurrentInstance(mp);
     setBatchMetricsEnabled(true);
@@ -413,6 +414,7 @@ public class QueryBatchRequestHandlerTest {
   }
 
   private void prepareMP() throws Exception {
+    deleteAll();
     ReaderMetricsProcessor mp = new ReaderMetricsProcessor(rootLocation);
     ReaderMetricsProcessor.setCurrentInstance(mp);
     setBatchMetricsEnabled(true);

@@ -85,7 +85,7 @@ public class MetricsDB implements Removable {
 
   private long windowStartTime;
 
-  private static String getDBFilePath(long windowStartTime) {
+  public static String getDBFilePath(long windowStartTime) {
     return PluginSettings.instance()
             .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT) + windowStartTime;
   }
