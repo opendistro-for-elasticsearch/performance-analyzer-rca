@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
@@ -26,10 +27,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ReaderMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.EventLog;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.EventLogFileHandler;
 import com.google.common.annotations.VisibleForTesting;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -90,6 +93,8 @@ public class ReaderMetricsProcessor implements Runnable {
   private static final boolean defaultBatchMetricsEnabled = false;
   // This needs to be concurrent since it may be concurrently accessed by the metrics processor thread and the query handler thread.
   private ConcurrentSkipListSet<Long> batchMetricsDBSet;
+  private Map<Long, Long> batchMetricsDBSizes;
+  private long batchMetricsTotalData;
 
   static {
     STATS_DATA.put("MethodName", "ProcessMetrics");
@@ -133,6 +138,8 @@ public class ReaderMetricsProcessor implements Runnable {
     this.appContext = appContext;
     batchMetricsEnabled = defaultBatchMetricsEnabled;
     batchMetricsDBSet = new ConcurrentSkipListSet<>();
+    batchMetricsDBSizes = new HashMap<>();
+    batchMetricsTotalData = 0;
     cleanupMetricsDBFiles();
   }
 
@@ -283,6 +290,8 @@ public class ReaderMetricsProcessor implements Runnable {
         }
       }
       batchMetricsDBSet.clear();
+      batchMetricsDBSizes.clear();
+      batchMetricsTotalData = 0;
     }
     readBatchMetricsEnabledFromConf();
     // The (retentionPeriod * 12 + 2)'th database can be safely removed, since getBatchMetrics never returns more than
@@ -295,7 +304,12 @@ public class ReaderMetricsProcessor implements Runnable {
       if (deleteDBFiles && !metricsDBMap.containsKey(timestamp)) {
         MetricsDB.deleteOnDiskFile(timestamp);
       }
+      batchMetricsTotalData -= batchMetricsDBSizes.remove(timestamp);
     }
+    PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(
+        ReaderMetrics.BATCH_METRICS_NUM_METRICSDB_FILES, "", batchMetricsDBSizes.size());
+    PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(
+        ReaderMetrics.BATCH_METRICS_DATA_SIZE, "", batchMetricsTotalData);
   }
 
   /** Deletes the lowest entries in the map till the size of the map is equal to maxSize. */
@@ -356,8 +370,13 @@ public class ReaderMetricsProcessor implements Runnable {
 
     metricsDB.commit();
     metricsDBMap.put(prevWindowStartTime, metricsDB);
+    long metricsDBSize = new File(metricsDB.getDBFilePath()).length();
+    PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(
+        ReaderMetrics.METRICSDB_FILE_SIZE, "", metricsDBSize);
     if (batchMetricsEnabled) {
       batchMetricsDBSet.add(prevWindowStartTime);
+      batchMetricsDBSizes.put(prevWindowStartTime, metricsDBSize);
+      batchMetricsTotalData += metricsDBSize;
     }
     mFinalT = System.currentTimeMillis();
     LOG.debug("Total time taken for emitting Metrics: {}", mFinalT - mCurrT);
@@ -877,6 +896,10 @@ public class ReaderMetricsProcessor implements Runnable {
             });
   }
 
+  public boolean getBatchMetricsEnabled() {
+    return batchMetricsEnabled;
+  }
+
   /**
    * An example value is this: current_time:1566413987194 StartTime:1566413987194 ItemCount:359
    * IndexName:nyc_taxis ShardID:25 Primary:true Each pair is separated by new line and the key and
@@ -939,11 +962,6 @@ public class ReaderMetricsProcessor implements Runnable {
   @VisibleForTesting
   NavigableMap<Long, MetricsDB> getMetricsDBMap() {
     return metricsDBMap;
-  }
-
-  @VisibleForTesting
-  public boolean getBatchMetricsEnabled() {
-    return batchMetricsEnabled;
   }
 
   @VisibleForTesting
