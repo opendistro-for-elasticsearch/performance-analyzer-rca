@@ -78,7 +78,7 @@ public class ShardStateMetricsProcessor implements EventProcessor {
                             shardStateMap.get(AllMetrics.ShardStateDimension.SHARD_ID.toString()),
                             shardStateMap.get(AllMetrics.ShardStateDimension.SHARD_TYPE.toString()),
                             shardStateMap.get(AllMetrics.ShardStateDimension.NODE_NAME.toString()),
-                            shardStateMap.get(AllMetrics.ShardStateValue.SHARD_STATE.toString()));
+                            shardStateMap.get(AllMetrics.ShardStateDimension.SHARD_STATE.toString()));
                 }
             }
         }

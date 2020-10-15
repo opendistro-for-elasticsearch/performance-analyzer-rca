@@ -823,7 +823,7 @@ public class MetricsEmitter {
                 this.add(AllMetrics.ShardStateDimension.SHARD_ID.toString());
                 this.add(AllMetrics.ShardStateDimension.SHARD_TYPE.toString());
                 this.add(AllMetrics.ShardStateDimension.NODE_NAME.toString());
-                this.add(AllMetrics.ShardStateValue.SHARD_STATE.toString());
+                this.add(AllMetrics.ShardStateDimension.SHARD_STATE.toString());
               }
             };
     metricsDB.createMetric(
@@ -874,7 +874,7 @@ public class MetricsEmitter {
               r.get(AllMetrics.ShardStateDimension.SHARD_ID.toString()).toString(),
               r.get(AllMetrics.ShardStateDimension.SHARD_TYPE.toString()).toString(),
               r.get(AllMetrics.ShardStateDimension.NODE_NAME.toString()).toString(),
-              r.get(AllMetrics.ShardStateValue.SHARD_STATE.toString()).toString(),
+              r.get(AllMetrics.ShardStateDimension.SHARD_STATE.toString()).toString(),
               sumShardState,
               avgShardState,
               minShardState,

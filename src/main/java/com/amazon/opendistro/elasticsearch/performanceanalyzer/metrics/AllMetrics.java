@@ -1060,7 +1060,8 @@ public class AllMetrics {
     INDEX_NAME(CommonDimension.INDEX_NAME.toString()),
     SHARD_ID(CommonDimension.SHARD_ID.toString()),
     SHARD_TYPE(Constants.SHARD_TYPE),
-    NODE_NAME(Constants.NODE_NAME);
+    NODE_NAME(Constants.NODE_NAME),
+    SHARD_STATE(Constants.SHARD_STATE);
 
     private final String value;
 
@@ -1076,6 +1077,7 @@ public class AllMetrics {
     public static class Constants {
       public static final String NODE_NAME = "NodeName";
       public static final String SHARD_TYPE = "ShardType";
+      public static final String SHARD_STATE = "Shard_State";
     }
   }
 

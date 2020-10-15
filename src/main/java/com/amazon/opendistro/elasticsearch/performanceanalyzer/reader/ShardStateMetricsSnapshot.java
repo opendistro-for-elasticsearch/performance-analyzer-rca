@@ -48,7 +48,7 @@ public class ShardStateMetricsSnapshot implements Removable {
                                     String.class));
                     this.add(
                             DSL.field(
-                                    DSL.name(AllMetrics.ShardStateValue.SHARD_STATE.toString()),
+                                    DSL.name(AllMetrics.ShardStateDimension.SHARD_STATE.toString()),
                                     String.class));
                 }
             };
@@ -84,7 +84,7 @@ public class ShardStateMetricsSnapshot implements Removable {
         }
         create
                 .insertInto(DSL.table(this.tableName))
-                .set(DSL.field(DSL.name(AllMetrics.ShardStateValue.SHARD_STATE.toString()), String.class),
+                .set(DSL.field(DSL.name(AllMetrics.ShardStateDimension.SHARD_STATE.toString()), String.class),
                         shard_state)
                 .set(dimensionMap)
                 .execute();
@@ -119,7 +119,7 @@ public class ShardStateMetricsSnapshot implements Removable {
                 );
                 this.add(
                         DSL.field(
-                                DSL.name(AllMetrics.ShardStateValue.SHARD_STATE.toString()),
+                                DSL.name(AllMetrics.ShardStateDimension.SHARD_STATE.toString()),
                                 String.class)
                 );
                 this.add(
