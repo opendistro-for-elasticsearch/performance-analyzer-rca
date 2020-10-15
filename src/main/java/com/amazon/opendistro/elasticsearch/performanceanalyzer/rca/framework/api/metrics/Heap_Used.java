@@ -16,10 +16,12 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class Heap_Used extends Metric {
-  public static final String NAME = AllMetrics.HeapValue.HEAP_USED.toString();
+
+  public static final String NAME = HeapValue.HEAP_USED.toString();
 
   public Heap_Used(long evaluationIntervalSeconds) {
     super(AllMetrics.HeapValue.HEAP_USED.toString(), evaluationIntervalSeconds);
