@@ -20,8 +20,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Decider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Decision;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.old_gen.OldGenDecisionPolicy;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.sizing.HeapSizeIncreasePolicy;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.LargeHeapClusterRca;
 import java.util.List;
 
 /**
@@ -29,14 +31,18 @@ import java.util.List;
  */
 public class HeapHealthDecider extends Decider {
 
+  private static final int EVAL_INTERVAL_IN_S = 5;
   public static final String NAME = "HeapHealthDecider";
   private final OldGenDecisionPolicy oldGenDecisionPolicy;
+  private final HeapSizeIncreasePolicy heapSizeIncreasePolicy;
   private int counter = 0;
 
-  public HeapHealthDecider(int decisionFrequency, final HighHeapUsageClusterRca highHeapUsageClusterRca) {
+  public HeapHealthDecider(int decisionFrequency,
+      final HighHeapUsageClusterRca highHeapUsageClusterRca, LargeHeapClusterRca largeHeapClusterRca) {
     //TODO : refactor parent class to remove evalIntervalSeconds completely
-    super(5, decisionFrequency);
+    super(EVAL_INTERVAL_IN_S, decisionFrequency);
     oldGenDecisionPolicy = new OldGenDecisionPolicy(highHeapUsageClusterRca);
+    heapSizeIncreasePolicy = new HeapSizeIncreasePolicy(largeHeapClusterRca);
   }
 
   @Override
@@ -57,9 +63,10 @@ public class HeapHealthDecider extends Decider {
     List<Action> oldGenPolicyActions = oldGenDecisionPolicy.evaluate();
     oldGenPolicyActions.forEach(decision::addAction);
 
-    // TODO: Add actions from JvmScaleUpPolicy (128gb heaps)
-    // TODO: If no JvmScaleUpPolicy actions found, fetch and add genTuningPolicy actions
-
+    // TODO: Add actions from HeapSizeIncreasePolicy (128gb heaps)
+    List<Action> jvmScaleUpActions = heapSizeIncreasePolicy.evaluate();
+    jvmScaleUpActions.forEach(decision::addAction);
+    // TODO: If no HeapSizeIncreasePolicy actions found, fetch and add genTuningPolicy actions
     return decision;
   }
 
@@ -67,11 +74,13 @@ public class HeapHealthDecider extends Decider {
   public void readRcaConf(RcaConf conf) {
     super.readRcaConf(conf);
     oldGenDecisionPolicy.setRcaConf(conf);
+    heapSizeIncreasePolicy.setRcaConf(conf);
   }
 
   @Override
   public void setAppContext(final AppContext appContext) {
     super.setAppContext(appContext);
     oldGenDecisionPolicy.setAppContext(appContext);
+    heapSizeIncreasePolicy.setAppContext(appContext);
   }
 }
