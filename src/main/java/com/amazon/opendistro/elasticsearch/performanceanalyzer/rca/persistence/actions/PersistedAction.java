@@ -2,6 +2,8 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.ValueColumn;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -90,5 +92,31 @@ public class PersistedAction {
 
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public static class SQL_SCHEMA_CONSTANTS {
+
+        public static final String TIMESTAMP_COL_NAME = "timestamp";
+        public static final String ACTION_COL_NAME = "actionName";
+        public static final String NODE_IDS_NAME = "nodeIds";
+        public static final String NODE_IPS_NAME = "nodeIps";
+        public static final String MUTED_NAME = "muted";
+        public static final String SUMMARY_NAME = "summary";
+        public static final String ACTIONABLE_NAME = "actionable";
+        public static final String COOLOFFPERIOD_NAME = "coolOffPeriod";
+
+    }
+
+    public JsonElement toJson() {
+        JsonObject summaryObj = new JsonObject();
+        summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NODE_IPS_NAME, this.nodeIps);
+        summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.MUTED_NAME, this.muted);
+        summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.ACTION_COL_NAME, this.actionName);
+        summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, this.timestamp);
+        summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NODE_IDS_NAME, this.nodeIds);
+        summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.SUMMARY_NAME, this.summary);
+        summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.ACTIONABLE_NAME, this.actionable);
+        summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.COOLOFFPERIOD_NAME, this.coolOffPeriod);
+        return summaryObj;
     }
 }

@@ -48,14 +48,6 @@ public class HotNodeRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
     hasUnhealthyFlowUnit = false;
   }
 
-  public <R extends Rca<ResourceFlowUnit<HotResourceSummary>>> HotNodeRca(final int rcaPeriod, Collection<R> hotResourceRcas) {
-    super(5);
-    this.hotResourceRcas = hotResourceRcas.toArray(new Rca[hotResourceRcas.size()]);
-    this.rcaPeriod = rcaPeriod;
-    this.counter = 0;
-    hasUnhealthyFlowUnit = false;
-  }
-
   @Override
   public ResourceFlowUnit<HotNodeSummary> operate() {
     counter++;

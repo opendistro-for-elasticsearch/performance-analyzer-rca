@@ -173,8 +173,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     highHeapUsageClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
     highHeapUsageClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
-    Rca<ResourceFlowUnit<HotClusterSummary>> hotNodeClusterRca =
-            new HotNodeClusterRca(RCA_PERIOD, hotJVMNodeRca);
+    HotNodeClusterRca hotNodeClusterRca = new HotNodeClusterRca(RCA_PERIOD, hotJVMNodeRca);
     hotNodeClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     hotNodeClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
 
@@ -222,9 +221,10 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     queueRejectionClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
     // Queue Health Decider
-    QueueHealthDecider queueHealthDecider = new QueueHealthDecider(EVALUATION_INTERVAL_SECONDS, 12, queueRejectionClusterRca);
+    QueueHealthDecider queueHealthDecider = new QueueHealthDecider(
+        EVALUATION_INTERVAL_SECONDS, 12, queueRejectionClusterRca, highHeapUsageClusterRca);
     queueHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    queueHealthDecider.addAllUpstreams(Collections.singletonList(queueRejectionClusterRca));
+    queueHealthDecider.addAllUpstreams(Arrays.asList(queueRejectionClusterRca, highHeapUsageClusterRca));
 
     // Node Config Collector
     ThreadPool_QueueCapacity queueCapacity = new ThreadPool_QueueCapacity();
@@ -296,9 +296,9 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
     // Cache Health Decider
     CacheHealthDecider cacheHealthDecider = new CacheHealthDecider(
-            EVALUATION_INTERVAL_SECONDS, 12, fieldDataCacheClusterRca, shardRequestCacheClusterRca);
+            EVALUATION_INTERVAL_SECONDS, 12, fieldDataCacheClusterRca, shardRequestCacheClusterRca, highHeapUsageClusterRca);
     cacheHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    cacheHealthDecider.addAllUpstreams(Arrays.asList(fieldDataCacheClusterRca, shardRequestCacheClusterRca));
+    cacheHealthDecider.addAllUpstreams(Arrays.asList(fieldDataCacheClusterRca, shardRequestCacheClusterRca, highHeapUsageClusterRca));
 
     constructShardResourceUsageGraph();
 
