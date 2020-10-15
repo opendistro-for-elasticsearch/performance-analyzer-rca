@@ -180,12 +180,15 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
                                                                double avgYoungGCTime,
                                                                double avgGarbagePromoted,
                                                                double avgFullGCTime) {
+    LOG.debug("computing avgPromotionRate = {} , avgGCTime = {}, avgGarbagePromoted = {}, avgFullGcTime = {},",
+        avgPromotionRate, avgYoungGCTime, avgGarbagePromoted, avgFullGCTime);
     ResourceContext context = new ResourceContext(State.UNHEALTHY);
     HotResourceSummary summary = null;
     boolean unhealthy = true;
 
     // Check if the RCA is unhealthy
     if (fullGcTimeTooHigh(avgFullGCTime)) {
+      LOG.info("Average full GC time is unhealthy " + avgFullGCTime);
       summary = new HotResourceSummary(FULL_GC_PAUSE_TIME, getFollowerCheckTimeoutMs(), avgFullGCTime,
           PROMOTION_RATE_SLIDING_WINDOW_IN_MINS * 60);
       PerformanceAnalyzerApp.RCA_VERTICES_METRICS_AGGREGATOR.updateStat(
@@ -252,6 +255,7 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
     long currTimeStamp = this.clock.millis();
     counter += 1;
 
+    LOG.debug("HighHeapUsageYoungGenRca getting collection event flow units");
     double fullGcCount = 0;
     for (MetricFlowUnit metricFU : gc_Collection_Event.getFlowUnits()) {
       if (metricFU.isEmpty()) {
@@ -265,7 +269,7 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
       }
     }
 
-
+    LOG.debug("HighHeapUsageYoungGenRca getting heap used flow units");
     //parsing flowunits from heap_used and push them into sliding window
     for (MetricFlowUnit metricFU : heap_Used.getFlowUnits()) {
       if (metricFU.isEmpty()) {
@@ -282,6 +286,7 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
       }
     }
 
+    LOG.debug("HighHeapUsageYoungGenRca getting collection time flow units");
     //parsing flowunits from gc_Collection_Time and push them into sliding window
     for (MetricFlowUnit metricFU : gc_Collection_Time.getFlowUnits()) {
       if (metricFU.isEmpty()) {
@@ -303,11 +308,12 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
     }
 
     if (counter == rcaPeriod) {
+      LOG.debug("HighHeapUsageYoungGenRca computing data...");
       counter = 0;
       double avgPromotionRate = promotionRateDeque.readAvg(TimeUnit.SECONDS);
       double avgYoungGCTime = minorGcTimeDeque.readAvg(TimeUnit.SECONDS);
       double avgGarbagePromoted = garbagePromotedDeque.readAvg();
-      double avgFullGCTime = fullGcTimeDeque.readAvg(TimeUnit.SECONDS);
+      double avgFullGCTime = fullGcTimeDeque.readAvg();
       return computeFlowUnit(avgPromotionRate, avgYoungGCTime, avgGarbagePromoted, avgFullGCTime);
     } else {
       // we return an empty FlowUnit RCA for now. Can change to healthy (or previous known RCA state)

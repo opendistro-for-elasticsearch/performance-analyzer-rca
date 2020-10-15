@@ -34,6 +34,7 @@ public class HeapHealthDecider extends Decider {
   private static final int EVAL_INTERVAL_IN_S = 5;
   public static final String NAME = "HeapHealthDecider";
   private final OldGenDecisionPolicy oldGenDecisionPolicy;
+  private final JvmGenTuningPolicy jvmGenTuningPolicy;
   private final HeapSizeIncreasePolicy heapSizeIncreasePolicy;
   private int counter = 0;
 
@@ -42,6 +43,7 @@ public class HeapHealthDecider extends Decider {
     //TODO : refactor parent class to remove evalIntervalSeconds completely
     super(EVAL_INTERVAL_IN_S, decisionFrequency);
     oldGenDecisionPolicy = new OldGenDecisionPolicy(highHeapUsageClusterRca);
+    jvmGenTuningPolicy = new JvmGenTuningPolicy(highHeapUsageClusterRca);
     heapSizeIncreasePolicy = new HeapSizeIncreasePolicy(largeHeapClusterRca);
   }
 
@@ -63,10 +65,14 @@ public class HeapHealthDecider extends Decider {
     List<Action> oldGenPolicyActions = oldGenDecisionPolicy.evaluate();
     oldGenPolicyActions.forEach(decision::addAction);
 
-    // TODO: Add actions from HeapSizeIncreasePolicy (128gb heaps)
+    // Add actions from HeapSizeIncreasePolicy (128gb heaps)
     List<Action> jvmScaleUpActions = heapSizeIncreasePolicy.evaluate();
     jvmScaleUpActions.forEach(decision::addAction);
-    // TODO: If no HeapSizeIncreasePolicy actions found, fetch and add genTuningPolicy actions
+    // If the HeapSizeIncreasePolicy has no suggestions, tune according to the JvmGenTuningPolicy
+    if (jvmScaleUpActions == null || jvmScaleUpActions.isEmpty()) {
+      List<Action> jvmGenTuningActions = jvmGenTuningPolicy.evaluate();
+      jvmGenTuningActions.forEach(decision::addAction);
+    }
     return decision;
   }
 
@@ -74,6 +80,7 @@ public class HeapHealthDecider extends Decider {
   public void readRcaConf(RcaConf conf) {
     super.readRcaConf(conf);
     oldGenDecisionPolicy.setRcaConf(conf);
+    jvmGenTuningPolicy.setRcaConf(conf);
     heapSizeIncreasePolicy.setRcaConf(conf);
   }
 
@@ -81,6 +88,7 @@ public class HeapHealthDecider extends Decider {
   public void setAppContext(final AppContext appContext) {
     super.setAppContext(appContext);
     oldGenDecisionPolicy.setAppContext(appContext);
+    jvmGenTuningPolicy.setAppContext(appContext);
     heapSizeIncreasePolicy.setAppContext(appContext);
   }
 }
