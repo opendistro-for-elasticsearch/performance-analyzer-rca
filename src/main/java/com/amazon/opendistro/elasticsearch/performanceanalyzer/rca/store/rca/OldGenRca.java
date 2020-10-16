@@ -19,6 +19,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.Al
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_FULL_GC;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCInfoDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
@@ -31,21 +32,27 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jooq.Field;
+import org.jooq.Record;
+import org.jooq.Result;
 
 public abstract class OldGenRca<T extends ResourceFlowUnit<?>> extends Rca<T> {
 
   private static final Logger LOG = LogManager.getLogger(OldGenRca.class);
   private static final double CONVERT_BYTES_TO_MEGABYTES = Math.pow(1024, 2);
+  private static final String CMS_COLLECTOR = "ConcurrentMarkSweep";
   protected final Metric heap_Used;
   protected final Metric heap_Max;
   protected final Metric gc_event;
+  protected final Metric gc_type;
 
   public OldGenRca(long evaluationIntervalSeconds, Metric heapUsed, Metric heapMax,
-      Metric gcEvent) {
+      Metric gcEvent, Metric gcType) {
     super(evaluationIntervalSeconds);
     this.heap_Max = heapMax;
     this.heap_Used = heapUsed;
     this.gc_event = gcEvent;
+    this.gc_type = gcType;
   }
 
   protected double getMaxOldGenSizeOrDefault(final double defaultValue) {
@@ -90,8 +97,7 @@ public abstract class OldGenRca<T extends ResourceFlowUnit<?>> extends Rca<T> {
           SQLParsingUtil.readDataFromSqlResult(gcEventMetric.getData(), MEM_TYPE.getField(), TOT_FULL_GC.toString(), MetricsDB.MAX);
       if (Double.isNaN(ret)) {
         LOG.error("Failed to parse metric in FlowUnit from {}", gc_event.getClass().getName());
-      } else {
-        fullGcEvents = ret;
+      } else { fullGcEvents = ret;
       }
     }
 
@@ -120,6 +126,35 @@ public abstract class OldGenRca<T extends ResourceFlowUnit<?>> extends Rca<T> {
     }
 
     return oldGenHeapUsed;
+  }
+
+  protected boolean isOldGenCollectorCMS() {
+    if (gc_type == null) {
+      throw new IllegalStateException("RCA: " + this.name() + "was not configured in the graph to "
+          + "take GC_Type as a metric. Please check the analysis graph!");
+    }
+
+    final List<MetricFlowUnit> gcTypeFlowUnits = gc_type.getFlowUnits();
+    Field<String> memTypeField = GCInfoDimension.MEMORY_POOL.getField();
+    Field<String> collectorField = GCInfoDimension.COLLECTOR_NAME.getField();
+    for (MetricFlowUnit gcTypeFlowUnit : gcTypeFlowUnits) {
+      if (gcTypeFlowUnit.isEmpty()) {
+        continue;
+      }
+
+      Result<Record> records = gcTypeFlowUnit.getData();
+      for (final Record record : records) {
+        final String memType = record.get(memTypeField);
+        if (OLD_GEN.toString().equals(memType)) {
+          return CMS_COLLECTOR.equals(record.get(collectorField));
+        }
+      }
+    }
+
+    // We want to return true here because we don't want to hold up evaluation of RCAs due to
+    // transient metric delays. We don't want to tune the JVM only when we know for sure that the
+    // collector is not CMS, in all other cases, give JVM RCAs the benefit of the doubt.
+    return true;
   }
 
   /**
