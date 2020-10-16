@@ -61,7 +61,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_QueueCapacity;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_RejectedReqs;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.VersionMap_Memory;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
@@ -200,7 +199,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     HeapHealthDecider heapHealthDecider = new HeapHealthDecider(RCA_PERIOD, highHeapUsageClusterRca,
         largeHeapClusterRca);
     heapHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    heapHealthDecider.addAllUpstreams(Collections.singletonList(highHeapUsageClusterRca));
+    heapHealthDecider.addAllUpstreams(Arrays.asList(highHeapUsageClusterRca, largeHeapClusterRca));
 
     /* Queue Rejection RCAs
      */
