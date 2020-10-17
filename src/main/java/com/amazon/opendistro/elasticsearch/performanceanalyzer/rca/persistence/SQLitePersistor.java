@@ -278,7 +278,7 @@ class SQLitePersistor extends PersistorBase {
       recordsWithMaxFieldValue = create.select().from(tableName).where(DSL.field(field)
               .eq(create.select(max(field)).from(tableName))).fetch();
     } catch (DataAccessException dex) {
-      LOG.error("Error querying table {}", tableName, dex);
+      //LOG.warn("Error querying table {}", tableName, dex);
       return null;
     }
 

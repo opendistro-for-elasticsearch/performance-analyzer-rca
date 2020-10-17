@@ -23,11 +23,17 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionma
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.QueueActionConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.impl.Sum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import com.google.gson.annotations.SerializedName;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -96,18 +102,20 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
 
   @Override
   public String summary() {
-    JsonObject jsonObject = new JsonObject();
-    jsonObject.addProperty("Id", esNode.getNodeId().toString());
-    jsonObject.addProperty("Ip", esNode.getHostAddress().toString());
-    jsonObject.addProperty("resource", threadPool.getNumber());
-    jsonObject.addProperty("desiredCapacity", desiredCapacity);
-    jsonObject.addProperty("currentCapacity", currentCapacity);
-    jsonObject.addProperty("coolOffPeriodInMillis", coolOffPeriodInMillis);
-    jsonObject.addProperty("canUpdate", canUpdate);
-    return jsonObject.toString();
+    Summary summary = new Summary(
+        esNode.getNodeId().toString(),
+        esNode.getHostAddress().toString(),
+        threadPool.getNumber(),
+        desiredCapacity,
+        currentCapacity,
+        coolOffPeriodInMillis,
+        canUpdate);
+    return summary.toJson();
   }
 
+  // TODO: we should remove this function from this class and add it as a testing util function instead
   // Generates action from summary. Passing in appContext because it contains dynamic settings
+  @VisibleForTesting
   public static ModifyQueueCapacityAction fromSummary(String jsonRepr, AppContext appContext) {
     final JsonObject jsonObject = JSON_PARSER.parse(jsonRepr).getAsJsonObject();
 
@@ -217,6 +225,76 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
       desiredCapacity = Math.max(desiredCapacity, lowerBound);
       return new ModifyQueueCapacityAction(esNode, threadPool, appContext,
           desiredCapacity, currentCapacity, coolOffPeriodInMillis, canUpdate);
+    }
+  }
+
+  public static class Summary {
+    public static final String ID = "Id";
+    public static final String IP = "Ip";
+    public static final String RESOURCE = "resource";
+    public static final String DESIRED_CAPACITY = "desiredCapacity";
+    public static final String CURRENT_CAPACITY = "currentCapacity";
+    public static final String COOL_OFF_PERIOD = "coolOffPeriodInMillis";
+    public static final String CAN_UPDATE = "canUpdate";
+    @SerializedName(value = ID)
+    private String id;
+    @SerializedName(value = IP)
+    private String ip;
+    @SerializedName(value = RESOURCE)
+    private int resource;
+    @SerializedName(value = DESIRED_CAPACITY)
+    private int desiredCapacity;
+    @SerializedName(value = CURRENT_CAPACITY)
+    private int currentCapacity;
+    // TODO: remove coolOffPeriodInMillis and canUpdate from summary
+    //  as those already exist in baseline action object
+    @SerializedName(value = COOL_OFF_PERIOD)
+    private long coolOffPeriodInMillis;
+    @SerializedName(value = CAN_UPDATE)
+    private boolean canUpdate;
+
+    public Summary(String id, String ip, int resource, int desiredCapacity,
+        int currentCapacity, long coolOffPeriodInMillis, boolean canUpdate) {
+      this.id = id;
+      this.ip = ip;
+      this.resource = resource;
+      this.desiredCapacity = desiredCapacity;
+      this.currentCapacity = currentCapacity;
+      this.coolOffPeriodInMillis = coolOffPeriodInMillis;
+      this.canUpdate = canUpdate;
+    }
+
+    public String toJson() {
+      Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+      return gson.toJson(this);
+    }
+
+    public String getId() {
+      return this.id;
+    }
+
+    public String getIp() {
+      return this.ip;
+    }
+
+    public ResourceEnum getResource() {
+      return ResourceEnum.forNumber(this.resource);
+    }
+
+    public int getCurrentCapacity() {
+      return currentCapacity;
+    }
+
+    public int getDesiredCapacity() {
+      return desiredCapacity;
+    }
+
+    public long getCoolOffPeriodInMillis() {
+      return coolOffPeriodInMillis;
+    }
+
+    public boolean getCanUpdate() {
+      return canUpdate;
     }
   }
 }

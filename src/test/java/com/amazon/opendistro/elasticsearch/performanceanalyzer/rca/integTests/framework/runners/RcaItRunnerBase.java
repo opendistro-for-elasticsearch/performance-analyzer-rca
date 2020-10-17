@@ -1,5 +1,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.Cluster;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.TestEnvironment;
@@ -10,13 +11,17 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.api.TestApi;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.ClusterType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.log.AppenderHelper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.PersistedAction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryRcaRequestHandler;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -262,7 +267,16 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner, Fi
 
           switch (what) {
             case REST_API:
-              successful = validator.checkJsonResp(testApi.getRcaDataOnHost(expect.on(), rca.getSimpleName()));
+              Map<String, String> params = new HashMap<>();
+              if (rca == PersistedAction.class) {
+                successful = validator.checkJsonResp(
+                    testApi.getRestResponse(Util.ACTIONS_QUERY_URL, params, expect.on()));
+              }
+              else {
+                //TODO: we should read RCA output directly from rest endpoint if what = REST_API
+                // the current getRcaDataOnHost read data from sql DB file
+                successful = validator.checkJsonResp(testApi.getRcaDataOnHost(expect.on(), rca.getSimpleName()));
+              }
               break;
             case DB_QUERY:
               try {

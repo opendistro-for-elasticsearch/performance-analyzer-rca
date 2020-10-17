@@ -25,7 +25,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import com.google.gson.annotations.SerializedName;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -109,17 +112,18 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
 
   @Override
   public String summary() {
-    JsonObject jsonObject = new JsonObject();
-    jsonObject.addProperty("Id", esNode.getNodeId().toString());
-    jsonObject.addProperty("Ip", esNode.getHostAddress().toString());
-    jsonObject.addProperty("resource", cacheType.getNumber());
-    jsonObject.addProperty("desiredCacheMaxSizeInBytes", desiredCacheMaxSizeInBytes);
-    jsonObject.addProperty("currentCacheMaxSizeInBytes", currentCacheMaxSizeInBytes);
-    jsonObject.addProperty("coolOffPeriodInMillis", coolOffPeriodInMillis);
-    jsonObject.addProperty("canUpdate", canUpdate);
-    return jsonObject.toString();
+    Summary summary = new Summary(
+        esNode.getNodeId().toString(),
+        esNode.getHostAddress().toString(),
+        cacheType.getNumber(),
+        desiredCacheMaxSizeInBytes,
+        currentCacheMaxSizeInBytes,
+        coolOffPeriodInMillis,
+        canUpdate);
+    return summary.toJson();
   }
 
+  // TODO: we should remove this function from this class and add it as a testing util function instead
   // Generates action from summary. Passing in appContext because it contains dynamic settings
   public static ModifyCacheMaxSizeAction fromSummary(String jsonRepr, AppContext appContext) {
     final JsonObject jsonObject = JSON_PARSER.parse(jsonRepr).getAsJsonObject();
@@ -259,6 +263,76 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
 
       return new ModifyCacheMaxSizeAction(esNode, cacheType, appContext,
           desiredCacheMaxSizeInBytes, currentCacheMaxSizeInBytes, coolOffPeriodInMillis, canUpdate);
+    }
+  }
+
+  public static class Summary {
+    public static final String ID = "Id";
+    public static final String IP = "Ip";
+    public static final String RESOURCE = "resource";
+    public static final String DESIRED_MAX_SIZE = "desiredCacheMaxSizeInBytes";
+    public static final String CURRENT_MAX_SIZE = "currentCacheMaxSizeInBytes";
+    public static final String COOL_OFF_PERIOD = "coolOffPeriodInMillis";
+    public static final String CAN_UPDATE = "canUpdate";
+    @SerializedName(value = ID)
+    private String id;
+    @SerializedName(value = IP)
+    private String ip;
+    @SerializedName(value = RESOURCE)
+    private int resource;
+    @SerializedName(value = DESIRED_MAX_SIZE)
+    private long desiredCacheMaxSizeInBytes;
+    @SerializedName(value = CURRENT_MAX_SIZE)
+    private long currentCacheMaxSizeInBytes;
+    // TODO: remove coolOffPeriodInMillis and canUpdate from summary
+    //  as those already exist in baseline action object
+    @SerializedName(value = COOL_OFF_PERIOD)
+    private long coolOffPeriodInMillis;
+    @SerializedName(value = CAN_UPDATE)
+    private boolean canUpdate;
+
+    public Summary(String id, String ip, int resource, long desiredCacheMaxSizeInBytes,
+        long currentCacheMaxSizeInBytes, long coolOffPeriodInMillis, boolean canUpdate) {
+      this.id = id;
+      this.ip = ip;
+      this.resource = resource;
+      this.desiredCacheMaxSizeInBytes = desiredCacheMaxSizeInBytes;
+      this.currentCacheMaxSizeInBytes = currentCacheMaxSizeInBytes;
+      this.coolOffPeriodInMillis = coolOffPeriodInMillis;
+      this.canUpdate = canUpdate;
+    }
+
+    public String toJson() {
+      Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+      return gson.toJson(this);
+    }
+
+    public String getId() {
+      return this.id;
+    }
+
+    public String getIp() {
+      return this.ip;
+    }
+
+    public ResourceEnum getResource() {
+      return ResourceEnum.forNumber(this.resource);
+    }
+
+    public long getCurrentCacheMaxSizeInBytes() {
+      return currentCacheMaxSizeInBytes;
+    }
+
+    public long getDesiredCacheMaxSizeInBytes() {
+      return desiredCacheMaxSizeInBytes;
+    }
+
+    public long getCoolOffPeriodInMillis() {
+      return coolOffPeriodInMillis;
+    }
+
+    public boolean getCanUpdate() {
+      return canUpdate;
     }
   }
 }
