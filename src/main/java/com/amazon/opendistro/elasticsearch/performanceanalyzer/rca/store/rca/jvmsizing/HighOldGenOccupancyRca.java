@@ -115,6 +115,8 @@ public class HighOldGenOccupancyRca extends OldGenRca<ResourceFlowUnit<HotResour
     if (maxOldGen == 0d) {
       LOG.info("Max Old Gen capacity cannot be 0. Skipping.");
       StatsCollector.instance().logException(StatExceptionCode.INVALID_OLD_GEN_SIZE);
+      // TODO: Unit test for this RCA and OldGenReclamation are in the PR where we are checking
+      //  for GC type before evaluating.
       return;
     }
 
