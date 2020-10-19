@@ -273,6 +273,10 @@ public class Cluster {
     return tagToHostMapping.get(hostTag).getDataForRca(rcaName);
   }
 
+  public JsonElement getActionDataOnHost(HostTag hostTag) {
+    return tagToHostMapping.get(hostTag).getActionData();
+  }
+
   public <T> Object constructObjectFromDBOnHost(HostTag hostTag, Class<T> className) throws Exception {
     return tagToHostMapping.get(hostTag).constructObjectFromDB(className);
   }

@@ -261,8 +261,11 @@ public abstract class RcaItRunnerBase extends Runner implements IRcaItRunner, Fi
           Class rca = expect.forRca();
 
           switch (what) {
-            case REST_API:
+            case RCA_REST_API:
               successful = validator.checkJsonResp(testApi.getRcaDataOnHost(expect.on(), rca.getSimpleName()));
+              break;
+            case ACTIONS_REST_API:
+              successful = validator.checkJsonResp(testApi.getActionDataOnHost(expect.on()));
               break;
             case DB_QUERY:
               try {

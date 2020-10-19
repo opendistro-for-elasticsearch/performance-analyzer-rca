@@ -31,7 +31,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ATable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.ATuple;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.ClusterType;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.Consts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.HostTag;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners.RcaItNotEncryptedRunner;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.queue_tuning.validator.QueueRejectionValidator;
@@ -81,7 +80,7 @@ public class QueueRcaMultiNodeITest {
   // rest API on master to check whether queue rejection cluster RCA becomes unhealthy
   @Test
   @AExpect(
-      what = AExpect.Type.REST_API,
+      what = AExpect.Type.RCA_REST_API,
       on = HostTag.ELECTED_MASTER,
       validator = QueueRejectionValidator.class,
       forRca = QueueRejectionClusterRca.class,

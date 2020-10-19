@@ -57,7 +57,7 @@ public class RcaItPocCoLocatedMaster {
 
   @Test
   @AExpect(
-      what = AExpect.Type.REST_API,
+      what = AExpect.Type.RCA_REST_API,
       on = HostTag.ELECTED_MASTER,
       validator = PocValidator.class,
       forRca = RcaItPocSingleNode.SimpleAnalysisGraphForCoLocated.ClusterRca.class)

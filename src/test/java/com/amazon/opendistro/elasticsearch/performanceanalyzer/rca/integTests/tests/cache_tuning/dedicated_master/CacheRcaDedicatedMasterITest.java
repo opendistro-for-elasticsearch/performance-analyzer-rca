@@ -158,7 +158,7 @@ public class CacheRcaDedicatedMasterITest {
     // This rca should be un-healthy when cache size is higher than threshold with evictions.
     @Test
     @AExpect(
-            what = AExpect.Type.REST_API,
+            what = AExpect.Type.RCA_REST_API,
             on = HostTag.ELECTED_MASTER,
             validator = FieldDataCacheValidator.class,
             forRca = FieldDataCacheClusterRca.class,
@@ -188,7 +188,7 @@ public class CacheRcaDedicatedMasterITest {
     // This rca should be un-healthy when cache size is higher than threshold with evictions and hits.
     @Test
     @AExpect(
-            what = AExpect.Type.REST_API,
+            what = AExpect.Type.RCA_REST_API,
             on = HostTag.ELECTED_MASTER,
             validator = ShardRequestCacheValidator.class,
             forRca = ShardRequestCacheClusterRca.class,

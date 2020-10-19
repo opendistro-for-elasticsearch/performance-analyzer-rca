@@ -29,13 +29,17 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.HostTag;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.overrides.RcaControllerIt;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.overrides.RcaItMetricsDBProvider;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.PersistedAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCAScheduler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RcaSchedulerState;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
@@ -369,6 +373,30 @@ public class Host {
     obj.addProperty(Consts.HOST_ROLE_KEY, role.toString());
     obj.add(Consts.DATA_KEY, data);
     return obj;
+  }
+
+  public JsonElement getActionData() {
+    LOG.debug("Action: in getActionData");
+    JsonObject result = new JsonObject();
+    Persistable persistable = this.rcaController.getPersistenceProvider();
+    if (persistable != null) {
+      try {
+        List<PersistedAction> actionSet = persistable.readAllForMaxField(PersistedAction.class,
+                PersistedAction.SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, Long.class);
+        JsonArray response = new JsonArray();
+        if (actionSet != null) {
+          for (PersistedAction action : actionSet) {
+            response.add(action.toJson());
+          }
+          result.add("LastSuggestedActionSet", response);
+        } else {
+          result.add("LastSuggestedActionSet", new JsonArray());
+        }
+      } catch (Exception e) {
+        result.add("error", new JsonParser().parse(e.getMessage()).getAsJsonObject());
+      }
+    }
+    return result;
   }
 
   public <T> Object constructObjectFromDB(Class<T> className) throws Exception {

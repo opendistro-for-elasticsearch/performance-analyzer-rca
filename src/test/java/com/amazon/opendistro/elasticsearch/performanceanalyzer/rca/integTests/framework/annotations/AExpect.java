@@ -53,8 +53,9 @@ public @interface AExpect {
    * Currently supported places to look for RCA outputs are the SQLite file or by hitting the rest endpoint.
    */
   enum Type {
-    REST_API,
-    DB_QUERY
+    RCA_REST_API,
+    DB_QUERY,
+    ACTIONS_REST_API
   }
 
   @Retention(RetentionPolicy.RUNTIME)

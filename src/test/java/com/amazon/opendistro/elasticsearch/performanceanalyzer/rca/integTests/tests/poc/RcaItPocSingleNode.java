@@ -23,7 +23,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.ClusterType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.HostTag;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners.RcaItNotEncryptedRunner;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners.RcaItRunnerBase;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.poc.validator.PocValidator;
 import java.util.Arrays;
 import java.util.Collections;
@@ -59,7 +58,7 @@ public class RcaItPocSingleNode {
 
   @Test
   @AExpect(
-      what = AExpect.Type.REST_API,
+      what = AExpect.Type.RCA_REST_API,
       on = HostTag.DATA_0,
       validator = PocValidator.class,
       forRca = SimpleAnalysisGraphForCoLocated.ClusterRca.class)
