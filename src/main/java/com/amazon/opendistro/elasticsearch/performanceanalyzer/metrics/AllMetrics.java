@@ -822,7 +822,13 @@ public class AllMetrics {
   }
 
   public enum MasterThrottlingValue implements MetricValue {
+    /**
+     * Sum of total pending tasks throttled by master node.
+     */
     MASTER_THROTTLED_PENDING_TASK_COUNT(MasterThrottlingValue.Constants.THROTTLED_PENDING_TASK_COUNT),
+    /**
+     * Number of pending tasks on which data nodes are actively performing retries.
+     */
     DATA_RETRYING_TASK_COUNT(MasterThrottlingValue.Constants.RETRYING_TASK_COUNT);
 
     private final String value;

@@ -18,7 +18,7 @@ import org.jooq.BatchBindStep;
 
 public class MasterThrottlingMetricsEventProcessor implements EventProcessor {
     private static final Logger LOG = LogManager.getLogger(MasterThrottlingMetricsEventProcessor.class);
-    private MasterThrottlingMetricsSnapshot masterThrottlingMetricsSnapshot;
+    private final MasterThrottlingMetricsSnapshot masterThrottlingMetricsSnapshot;
     private BatchBindStep handle;
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final TypeReference<HashMap<String, String>> TYPE_REF = new TypeReference<HashMap<String, String>>() {};
@@ -66,11 +66,15 @@ public class MasterThrottlingMetricsEventProcessor implements EventProcessor {
         for (String line : lines) {
             Map<String, String> masterThrottlingMap = extractEntryData(line);
             if (!masterThrottlingMap.containsKey(PerformanceAnalyzerMetrics.METRIC_CURRENT_TIME)) {
-                handle.bind(
-                        Long.parseLong(masterThrottlingMap.get(
-                                AllMetrics.MasterThrottlingValue.DATA_RETRYING_TASK_COUNT.toString())),
-                        Long.parseLong(masterThrottlingMap.get(
-                                AllMetrics.MasterThrottlingValue.MASTER_THROTTLED_PENDING_TASK_COUNT.toString())));
+                try {
+                    handle.bind(
+                            Long.parseLong(masterThrottlingMap.get(
+                                    AllMetrics.MasterThrottlingValue.DATA_RETRYING_TASK_COUNT.toString())),
+                            Long.parseLong(masterThrottlingMap.get(
+                                    AllMetrics.MasterThrottlingValue.MASTER_THROTTLED_PENDING_TASK_COUNT.toString())));
+                } catch (Exception ex) {
+                    LOG.error( "Fail to get master throttling metrics ",  ex);
+                }
             }
         }
     }
@@ -90,8 +94,7 @@ public class MasterThrottlingMetricsEventProcessor implements EventProcessor {
 
     static Map<String, String> extractEntryData(String line) {
         try {
-            Map<String, String> map = MAPPER.readValue(line, TYPE_REF);
-            return map;
+            return MAPPER.readValue(line, TYPE_REF);
         } catch (IOException ioe) {
             LOG.error("Error occurred while parsing tmp file", ioe);
         }

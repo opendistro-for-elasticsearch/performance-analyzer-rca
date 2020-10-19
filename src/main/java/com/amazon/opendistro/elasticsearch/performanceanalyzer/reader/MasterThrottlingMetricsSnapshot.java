@@ -11,8 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jooq.BatchBindStep;
 import org.jooq.DSLContext;
 import org.jooq.Field;
@@ -23,7 +21,6 @@ import org.jooq.SelectField;
 import org.jooq.impl.DSL;
 
 public class MasterThrottlingMetricsSnapshot implements Removable {
-    private static final Logger LOG = LogManager.getLogger(MasterThrottlingMetricsSnapshot.class);
 
     private final DSLContext create;
     private final Long windowStartTime;
