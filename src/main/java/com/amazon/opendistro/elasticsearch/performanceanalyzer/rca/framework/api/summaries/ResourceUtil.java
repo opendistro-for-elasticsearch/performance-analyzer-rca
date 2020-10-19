@@ -41,6 +41,9 @@ public class ResourceUtil {
   public static final Resource YOUNG_GEN_PROMOTION_RATE = Resource.newBuilder()
       .setResourceEnum(ResourceEnum.YOUNG_GEN)
       .setMetricEnum(MetricEnum.PROMOTION_RATE).build();
+  public static final Resource FULL_GC_EFFECTIVENESS = Resource.newBuilder()
+      .setResourceEnum(ResourceEnum.OLD_GEN)
+      .setMetricEnum(MetricEnum.OLD_GEN_USAGE_AFTER_FULL_GC).build();
   public static final Resource FULL_GC_PAUSE_TIME = Resource.newBuilder()
       .setResourceEnum(ResourceEnum.OLD_GEN)
       .setMetricEnum(MetricEnum.FULL_GC).build();

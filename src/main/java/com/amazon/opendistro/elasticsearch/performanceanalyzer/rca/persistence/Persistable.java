@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.Result;
 import org.jooq.exception.DataAccessException;
@@ -66,6 +67,23 @@ public interface Persistable {
    */
   <T> @Nullable T read(Class<T> clz)
       throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, DataAccessException;
+
+
+  /**
+   * This API reads all the rows from the table corresponding to the maximum value in the field Object.
+   * @param clz The Class whose Object is desired.
+   * @param <T> The generic type of the class.
+   * @param fieldName DSL field for which the maximum value is desired.
+   * @param fieldClz Class Type of the field for which the maximum value is desired.
+   * @return A List of instantiated Objects of the class with the fields populated with the data from the corresponding rows in the table.
+   * @throws NoSuchMethodException If the expected setter does not exist.
+   * @throws IllegalAccessException If the setter is not Public
+   * @throws InvocationTargetException If invoking the setter by reflection threw an exception.
+   * @throws InstantiationException Creating an Object of the class failed for some reason.
+   * @throws DataAccessException Thrown by the DB layer.
+   */
+  <T, E> @Nullable List<T> readAllForMaxField(Class<T> clz, String fieldName, Class<E> fieldClz)
+          throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, DataAccessException;
 
   /**
    * Write data to the database.

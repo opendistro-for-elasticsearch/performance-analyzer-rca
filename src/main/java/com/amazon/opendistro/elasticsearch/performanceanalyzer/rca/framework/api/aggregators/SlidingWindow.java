@@ -28,13 +28,11 @@ public class SlidingWindow<E extends SlidingWindowData> {
   protected final Deque<E> windowDeque;
   protected final long SLIDING_WINDOW_SIZE;
   protected double sum;
-  protected TimeUnit timeUnit;
 
   public SlidingWindow(int SLIDING_WINDOW_SIZE_IN_TIMESTAMP, TimeUnit timeUnit) {
     this.windowDeque = new LinkedList<>();
     this.SLIDING_WINDOW_SIZE = timeUnit.toSeconds(SLIDING_WINDOW_SIZE_IN_TIMESTAMP);
     this.sum = 0.0;
-    this.timeUnit = timeUnit;
   }
 
   /**
@@ -101,5 +99,9 @@ public class SlidingWindow<E extends SlidingWindowData> {
 
   public int size() {
     return windowDeque.size();
+  }
+
+  public void clear() {
+    this.windowDeque.clear();
   }
 }

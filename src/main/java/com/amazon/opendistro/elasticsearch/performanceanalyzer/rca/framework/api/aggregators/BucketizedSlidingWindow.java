@@ -50,8 +50,14 @@ public class BucketizedSlidingWindow extends PersistableSlidingWindow {
    */
   public BucketizedSlidingWindow(int SLIDING_WINDOW_SIZE, int BUCKET_WINDOW_SIZE, TimeUnit timeUnit, Path persistFilePath) {
     super(SLIDING_WINDOW_SIZE, timeUnit, persistFilePath);
-    assert BUCKET_WINDOW_SIZE < SLIDING_WINDOW_SIZE : "BucketWindow size should be less than SlidingWindow size";
+    if (BUCKET_WINDOW_SIZE >= SLIDING_WINDOW_SIZE) {
+      throw new IllegalArgumentException("BucketWindow size should be less than SlidingWindow size");
+    }
     this.BUCKET_WINDOW_SIZE = timeUnit.toMillis(BUCKET_WINDOW_SIZE);
+  }
+
+  public BucketizedSlidingWindow(BucketizedSlidingWindowConfig config) {
+    this(config.getSlidingWindowSizeMinutes(), config.getBucketSizeMinutes(), config.getTimeUnit(), config.getPersistencePath());
   }
 
   @Override

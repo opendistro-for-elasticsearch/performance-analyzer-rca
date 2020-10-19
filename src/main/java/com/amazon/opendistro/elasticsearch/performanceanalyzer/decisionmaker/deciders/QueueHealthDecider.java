@@ -15,13 +15,19 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.bucket.UsageBucket;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaRuntimeMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
 import java.util.ArrayList;
@@ -32,7 +38,7 @@ import org.apache.logging.log4j.Logger;
 // This is a sample decider implementation to finalize decision maker interfaces.
 // TODO: 1. Read action priorities from a configurable yml
 
-public class QueueHealthDecider extends Decider {
+public class QueueHealthDecider extends HeapBasedDecider {
 
   private static final Logger LOG = LogManager.getLogger(Decider.class);
   public static final String NAME = "queue_health";
@@ -41,8 +47,9 @@ public class QueueHealthDecider extends Decider {
   List<String> actionsByUserPriority = new ArrayList<>();
   private int counter = 0;
 
-  public QueueHealthDecider(long evalIntervalSeconds, int decisionFrequency, QueueRejectionClusterRca queueRejectionClusterRca) {
-    super(evalIntervalSeconds, decisionFrequency);
+  public QueueHealthDecider(long evalIntervalSeconds, int decisionFrequency, QueueRejectionClusterRca queueRejectionClusterRca,
+                            HighHeapUsageClusterRca highHeapUsageClusterRca) {
+    super(evalIntervalSeconds, decisionFrequency, highHeapUsageClusterRca);
     this.queueRejectionRca = queueRejectionClusterRca;
     configureActionPriority();
   }
@@ -76,7 +83,6 @@ public class QueueHealthDecider extends Decider {
         decision.addAction(computeBestAction(esNode, resource.getResource().getResourceEnum()));
       }
     }
-
     return decision;
   }
 
@@ -93,13 +99,16 @@ public class QueueHealthDecider extends Decider {
    */
   private Action computeBestAction(NodeKey esNode, ResourceEnum threadPool) {
     Action action = null;
-
-    for (String actionName : actionsByUserPriority) {
-      action =
-        getAction(actionName, esNode, threadPool, true);
-      if (action != null) {
-        break;
+    if (canUseMoreHeap(esNode)) {
+      for (String actionName : actionsByUserPriority) {
+        action = getAction(actionName, esNode, threadPool, true);
+        if (action != null) {
+          break;
+        }
       }
+    } else {
+      PerformanceAnalyzerApp.RCA_RUNTIME_METRICS_AGGREGATOR.updateStat(
+          RcaRuntimeMetrics.NO_INCREASE_ACTION_SUGGESTED, NAME + ":" + esNode.getHostAddress(), 1);
     }
     return action;
   }
@@ -115,9 +124,9 @@ public class QueueHealthDecider extends Decider {
 
   private ModifyQueueCapacityAction configureQueueCapacity(NodeKey esNode, ResourceEnum threadPool, boolean increase) {
     ModifyQueueCapacityAction action = ModifyQueueCapacityAction
-            .newBuilder(esNode, threadPool, getAppContext(), rcaConf)
-            .increase(increase)
-            .build();
+        .newBuilder(esNode, threadPool, getAppContext(), rcaConf)
+        .increase(increase)
+        .build();
     if (action != null && action.isActionable()) {
       return action;
     }
