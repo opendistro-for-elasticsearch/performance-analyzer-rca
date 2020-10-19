@@ -1,0 +1,56 @@
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics;
+
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.Statistics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.measurements.MeasurementSet;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+public enum WriterMetrics implements MeasurementSet {
+    SHARD_STATE_COLLECTOR_EXECUTION_TIME("ShardStateCollectorExecutionTime", "millis", Arrays.asList(
+            Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM));
+
+    /** What we want to appear as the metric name. */
+    private String name;
+
+    /**
+     * The unit the measurement is in. This is not used for the statistics calculations but as an
+     * information that will be dumped with the metrics.
+     */
+    private String unit;
+
+    /**
+     * Multiple statistics can be collected for each measurement like MAX, MIN and MEAN. This is a
+     * collection of one or more such statistics.
+     */
+    private List<Statistics> statsList;
+
+    WriterMetrics(String name, String unit, List<Statistics> stats) {
+        this.name = name;
+        this.unit = unit;
+        this.statsList = stats;
+    }
+
+    WriterMetrics(String name, String unit, Statistics stats) {
+        this(name, unit, Collections.singletonList(stats));
+    }
+
+    public String toString() {
+        return new StringBuilder(name).append("-").append(unit).toString();
+    }
+    @Override
+    public List<Statistics> getStatsList() {
+        return statsList;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public String getUnit() {
+        return unit;
+    }
+}
