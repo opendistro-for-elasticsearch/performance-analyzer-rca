@@ -16,9 +16,11 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.DBUtils;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.Removable;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -83,7 +85,7 @@ public class MetricsDB implements Removable {
 
   private long windowStartTime;
 
-  private static String getDBFilePath(long windowStartTime) {
+  public static String getDBFilePath(long windowStartTime) {
     return PluginSettings.instance()
             .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT) + windowStartTime;
   }
@@ -95,8 +97,14 @@ public class MetricsDB implements Removable {
   public MetricsDB(long windowStartTime) throws Exception {
     this.windowStartTime = windowStartTime;
     String url = DB_URL + getDBFilePath();
-    conn = DriverManager.getConnection(url);
-    conn.setAutoCommit(false);
+    try {
+      conn = DriverManager.getConnection(url);
+      conn.setAutoCommit(false);
+    } catch (Exception e) {
+      PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
+          ExceptionsAndErrors.READER_METRICSDB_ACCESS_ERRORS, "", 1);
+      throw e;
+    }
     create = DSL.using(conn, SQLDialect.SQLITE);
   }
 
@@ -110,6 +118,8 @@ public class MetricsDB implements Removable {
   public static MetricsDB fetchExisting(long windowStartTime) throws Exception {
     String filePath = getDBFilePath(windowStartTime);
     if (!(new File(filePath)).exists()) {
+      PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
+          ExceptionsAndErrors.READER_METRICSDB_ACCESS_ERRORS, "", 1);
       throw new FileNotFoundException(String.format("MetricsDB file %s could not be found.", filePath));
     }
     return new MetricsDB(windowStartTime);
@@ -325,9 +335,10 @@ public class MetricsDB implements Removable {
     try {
       Files.delete(dbFilePath);
     } catch (IOException | SecurityException e) {
-            LOG.error("Failed to delete File - {} with ExceptionCode: {}",
-              dbFilePath, StatExceptionCode.OTHER.toString(), e);
-      StatsCollector.instance().logException();
+      LOG.error("Failed to delete File - {} with ExceptionCode: {}",
+          dbFilePath, ExceptionsAndErrors.READER_METRICSDB_ACCESS_ERRORS, e);
+      PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
+          ExceptionsAndErrors.READER_METRICSDB_ACCESS_ERRORS, "", 1);
     }
   }
 
@@ -355,8 +366,9 @@ public class MetricsDB implements Removable {
               });
     } catch (IOException | SecurityException e) {
       LOG.error("Failed to access metricsdb directory - {} with ExceptionCode: {}",
-              parentPath, StatExceptionCode.OTHER.toString(), e);
-      StatsCollector.instance().logException();
+          parentPath, ExceptionsAndErrors.READER_METRICSDB_ACCESS_ERRORS, e);
+      PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
+          ExceptionsAndErrors.READER_METRICSDB_ACCESS_ERRORS, "", 1);
     }
     return found;
   }

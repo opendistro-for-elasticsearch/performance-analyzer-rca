@@ -87,7 +87,7 @@ public class ModifyQueueCapacityActionTest {
     Assert.assertNotNull(modifyQueueCapacityAction);
     assertTrue(modifyQueueCapacityAction.getDesiredCapacity() < modifyQueueCapacityAction.getCurrentCapacity());
     assertTrue(modifyQueueCapacityAction.isActionable());
-    assertEquals(Builder.DEFAULT_COOL_OFF_PERIOD_IN_MILLIS,
+    assertEquals(ModifyQueueCapacityAction.Builder.DEFAULT_COOL_OFF_PERIOD_IN_MILLIS,
             modifyQueueCapacityAction.coolOffPeriodInMillis());
     assertEquals(ResourceEnum.SEARCH_THREADPOOL, modifyQueueCapacityAction.getThreadPool());
     assertEquals(1, modifyQueueCapacityAction.impactedNodes().size());
@@ -207,6 +207,21 @@ public class ModifyQueueCapacityActionTest {
     testAppContext.updateMutedActions(ImmutableSet.of(modifyQueueCapacityAction.name()));
 
     assertFalse(modifyQueueCapacityAction.isActionable());
+  }
+
+  @Test
+  public void testSummary() {
+    NodeKey node1 = new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
+    dummyCache.put(node1, ResourceUtil.WRITE_QUEUE_CAPACITY, 500);
+    ModifyQueueCapacityAction.Builder builder =
+            ModifyQueueCapacityAction.newBuilder(node1, ResourceEnum.WRITE_THREADPOOL, testAppContext, rcaConf);
+    ModifyQueueCapacityAction modifyQueueCapacityAction = builder.increase(true).build();
+    String summary = modifyQueueCapacityAction.summary();
+
+    ModifyQueueCapacityAction objectFromSummary = ModifyQueueCapacityAction.fromSummary(summary, testAppContext);
+    assertEquals(modifyQueueCapacityAction.getCurrentCapacity(), objectFromSummary.getCurrentCapacity());
+    assertEquals(modifyQueueCapacityAction.getDesiredCapacity(), objectFromSummary.getDesiredCapacity());
+    assertEquals(modifyQueueCapacityAction.getThreadPool(), objectFromSummary.getThreadPool());
   }
 
   private void assertNoImpact(NodeKey node, ModifyQueueCapacityAction modifyQueueCapacityAction) {

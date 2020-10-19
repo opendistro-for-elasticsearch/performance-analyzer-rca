@@ -25,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.dec
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Publisher;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.QueueHealthDecider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.collator.Collator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.HeapHealthDecider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardStatsDerivedDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -60,7 +61,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_QueueCapacity;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_RejectedReqs;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.VersionMap_Memory;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Node;
@@ -93,6 +93,10 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hot
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageYoungGenRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.HotShardRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.HighOldGenOccupancyRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.LargeHeapClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.OldGenContendedRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.OldGenReclamationRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.NodeTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
@@ -109,15 +113,17 @@ import org.apache.logging.log4j.Logger;
 public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
   private static final Logger LOG = LogManager.getLogger(ElasticSearchAnalysisGraph.class);
-  private static final int RCA_PERIOD = 12;  // 1 minute. RCA_PERIOD is measured as number of EVALUATION_INTERVAL_SECONDS
   private static final int EVALUATION_INTERVAL_SECONDS = 5;
+  private static final int SECONDS_IN_MIN = 60;
+  // 1 minute. RCA_PERIOD is measured as number of EVALUATION_INTERVAL_SECONDS
+  private static final int RCA_PERIOD = SECONDS_IN_MIN / EVALUATION_INTERVAL_SECONDS;
 
 
   @Override
   public void construct() {
     Metric heapUsed = new Heap_Used(EVALUATION_INTERVAL_SECONDS);
     Metric gcEvent = new GC_Collection_Event(EVALUATION_INTERVAL_SECONDS);
-    Metric heapMax = new Heap_Max(EVALUATION_INTERVAL_SECONDS);
+    Heap_Max heapMax = new Heap_Max(EVALUATION_INTERVAL_SECONDS);
     Metric gc_Collection_Time = new GC_Collection_Time(EVALUATION_INTERVAL_SECONDS);
     Metric cpuUtilizationGroupByOperation = new AggregateMetric(1, CPU_Utilization.NAME,
             AggregateFunction.SUM,
@@ -146,9 +152,9 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     highHeapUsageOldGenRca.addAllUpstreams(upstream);
 
     Rca<ResourceFlowUnit<HotResourceSummary>> highHeapUsageYoungGenRca = new HighHeapUsageYoungGenRca(RCA_PERIOD, heapUsed,
-            gc_Collection_Time);
+            gc_Collection_Time, gcEvent);
     highHeapUsageYoungGenRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    highHeapUsageYoungGenRca.addAllUpstreams(Arrays.asList(heapUsed, gc_Collection_Time));
+    highHeapUsageYoungGenRca.addAllUpstreams(Arrays.asList(heapUsed, gc_Collection_Time, gcEvent));
 
     Rca<ResourceFlowUnit<HotResourceSummary>> highCpuRca = new HighCpuRca(RCA_PERIOD, cpuUtilizationGroupByOperation);
     highCpuRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
@@ -160,16 +166,40 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     hotJVMNodeRca.addAllUpstreams(
             Arrays.asList(highHeapUsageOldGenRca, highHeapUsageYoungGenRca, highCpuRca));
 
-    Rca<ResourceFlowUnit<HotClusterSummary>> highHeapUsageClusterRca =
+    HighHeapUsageClusterRca highHeapUsageClusterRca =
             new HighHeapUsageClusterRca(RCA_PERIOD, hotJVMNodeRca);
     highHeapUsageClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     highHeapUsageClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
     highHeapUsageClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
-    Rca<ResourceFlowUnit<HotClusterSummary>> hotNodeClusterRca =
-            new HotNodeClusterRca(RCA_PERIOD, hotJVMNodeRca);
+    HotNodeClusterRca hotNodeClusterRca = new HotNodeClusterRca(RCA_PERIOD, hotJVMNodeRca);
     hotNodeClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     hotNodeClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
+
+    final HighOldGenOccupancyRca oldGenOccupancyRca = new HighOldGenOccupancyRca(heapMax, heapUsed);
+    oldGenOccupancyRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    oldGenOccupancyRca.addAllUpstreams(Arrays.asList(heapMax, heapUsed));
+
+    final OldGenReclamationRca oldGenReclamationRca = new OldGenReclamationRca(heapUsed,
+        heapMax, gcEvent);
+    oldGenReclamationRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    oldGenReclamationRca.addAllUpstreams(Arrays.asList(heapUsed, heapMax, gcEvent));
+
+    final OldGenContendedRca oldGenContendedRca = new OldGenContendedRca(oldGenOccupancyRca,
+        oldGenReclamationRca);
+    oldGenContendedRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    oldGenContendedRca.addAllUpstreams(Arrays.asList(oldGenOccupancyRca, oldGenReclamationRca));
+
+    final LargeHeapClusterRca largeHeapClusterRca = new LargeHeapClusterRca(oldGenContendedRca);
+    largeHeapClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    largeHeapClusterRca.addAllUpstreams(Collections.singletonList(oldGenContendedRca));
+    largeHeapClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
+
+    // Heap Health Decider
+    HeapHealthDecider heapHealthDecider = new HeapHealthDecider(RCA_PERIOD, highHeapUsageClusterRca,
+        largeHeapClusterRca);
+    heapHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    heapHealthDecider.addAllUpstreams(Arrays.asList(highHeapUsageClusterRca, largeHeapClusterRca));
 
     /* Queue Rejection RCAs
      */
@@ -190,9 +220,10 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     queueRejectionClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
     // Queue Health Decider
-    QueueHealthDecider queueHealthDecider = new QueueHealthDecider(EVALUATION_INTERVAL_SECONDS, 12, queueRejectionClusterRca);
+    QueueHealthDecider queueHealthDecider = new QueueHealthDecider(
+        EVALUATION_INTERVAL_SECONDS, 12, queueRejectionClusterRca, highHeapUsageClusterRca);
     queueHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    queueHealthDecider.addAllUpstreams(Collections.singletonList(queueRejectionClusterRca));
+    queueHealthDecider.addAllUpstreams(Arrays.asList(queueRejectionClusterRca, highHeapUsageClusterRca));
 
     // Node Config Collector
     ThreadPool_QueueCapacity queueCapacity = new ThreadPool_QueueCapacity();
@@ -203,9 +234,9 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     cacheMaxSize.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     addLeaf(cacheMaxSize);
 
-    NodeConfigCollector nodeConfigCollector = new NodeConfigCollector(RCA_PERIOD, queueCapacity, cacheMaxSize, (Heap_Max) heapMax);
+    NodeConfigCollector nodeConfigCollector = new NodeConfigCollector(RCA_PERIOD, queueCapacity, cacheMaxSize, heapMax);
     nodeConfigCollector.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    nodeConfigCollector.addAllUpstreams(Arrays.asList(threadpool_RejectedReqs, cacheMaxSize));
+    nodeConfigCollector.addAllUpstreams(Arrays.asList(queueCapacity, cacheMaxSize, heapMax));
     NodeConfigClusterCollector nodeConfigClusterCollector = new NodeConfigClusterCollector(nodeConfigCollector);
     nodeConfigClusterCollector.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     nodeConfigClusterCollector.addAllUpstreams(Collections.singletonList(nodeConfigCollector));
@@ -264,18 +295,18 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
     // Cache Health Decider
     CacheHealthDecider cacheHealthDecider = new CacheHealthDecider(
-            EVALUATION_INTERVAL_SECONDS, 12, fieldDataCacheClusterRca, shardRequestCacheClusterRca);
+            EVALUATION_INTERVAL_SECONDS, 12, fieldDataCacheClusterRca, shardRequestCacheClusterRca, highHeapUsageClusterRca);
     cacheHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    cacheHealthDecider.addAllUpstreams(Arrays.asList(fieldDataCacheClusterRca, shardRequestCacheClusterRca));
+    cacheHealthDecider.addAllUpstreams(Arrays.asList(fieldDataCacheClusterRca, shardRequestCacheClusterRca, highHeapUsageClusterRca));
 
     constructShardResourceUsageGraph();
 
     //constructResourceHeatMapGraph();
 
     // Collator - Collects actions from all deciders and aligns impact vectors
-    Collator collator = new Collator(queueHealthDecider, cacheHealthDecider);
+    Collator collator = new Collator(queueHealthDecider, cacheHealthDecider, heapHealthDecider);
     collator.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    collator.addAllUpstreams(Arrays.asList(queueHealthDecider, cacheHealthDecider));
+    collator.addAllUpstreams(Arrays.asList(queueHealthDecider, cacheHealthDecider, heapHealthDecider));
 
     // Publisher - Executes decisions output from collator
     Publisher publisher = new Publisher(EVALUATION_INTERVAL_SECONDS, collator);

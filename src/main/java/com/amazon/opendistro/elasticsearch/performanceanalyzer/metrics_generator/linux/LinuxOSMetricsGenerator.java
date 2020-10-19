@@ -16,12 +16,14 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.linux;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.hwnet.Disks;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.hwnet.MountedPartitions;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.hwnet.NetworkE2E;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.hwnet.NetworkInterface;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.CPUPagingActivityGenerator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.DiskIOMetricsGenerator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.DiskMetricsGenerator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.IPMetricsGenerator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.MountedPartitionMetricsGenerator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.OSMetricsGenerator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.SchedMetricsGenerator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.TCPMetricsGenerator;
@@ -89,5 +91,10 @@ public class LinuxOSMetricsGenerator implements OSMetricsGenerator {
   public DiskMetricsGenerator getDiskMetricsGenerator() {
 
     return Disks.getDiskMetricsHandler();
+  }
+
+  @Override
+  public MountedPartitionMetricsGenerator getMountedPartitionMetricsGenerator() {
+    return MountedPartitions.getLinuxMountedPartitionMetricsGenerator();
   }
 }

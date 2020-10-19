@@ -15,17 +15,22 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.DecisionMakerConsts.JSON_PARSER;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.HEAP;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.CacheActionConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.util.NodeConfigCacheReaderUtil;
+import com.google.gson.JsonObject;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -104,15 +109,30 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
 
   @Override
   public String summary() {
-    if (!isActionable()) {
-      return String.format("No action to take for: [%s]", NAME);
-    }
-    return String.format(
-        "Update [%s] capacity from [%d] to [%d] on node [%s]",
-        cacheType.toString(),
-        currentCacheMaxSizeInBytes,
-        desiredCacheMaxSizeInBytes,
-        esNode.getNodeId());
+    JsonObject jsonObject = new JsonObject();
+    jsonObject.addProperty("Id", esNode.getNodeId().toString());
+    jsonObject.addProperty("Ip", esNode.getHostAddress().toString());
+    jsonObject.addProperty("resource", cacheType.getNumber());
+    jsonObject.addProperty("desiredCacheMaxSizeInBytes", desiredCacheMaxSizeInBytes);
+    jsonObject.addProperty("currentCacheMaxSizeInBytes", currentCacheMaxSizeInBytes);
+    jsonObject.addProperty("coolOffPeriodInMillis", coolOffPeriodInMillis);
+    jsonObject.addProperty("canUpdate", canUpdate);
+    return jsonObject.toString();
+  }
+
+  // Generates action from summary. Passing in appContext because it contains dynamic settings
+  public static ModifyCacheMaxSizeAction fromSummary(String jsonRepr, AppContext appContext) {
+    final JsonObject jsonObject = JSON_PARSER.parse(jsonRepr).getAsJsonObject();
+    NodeKey esNode = new NodeKey(new InstanceDetails.Id(jsonObject.get("Id").getAsString()),
+            new InstanceDetails.Ip(jsonObject.get("Ip").getAsString()));
+    ResourceEnum cacheType = ResourceEnum.forNumber(jsonObject.get("resource").getAsInt());
+    long desiredCacheMaxSizeInBytes = jsonObject.get("desiredCacheMaxSizeInBytes").getAsLong();
+    long currentCacheMaxSizeInBytes = jsonObject.get("currentCacheMaxSizeInBytes").getAsLong();
+    long coolOffPeriodInMillis = jsonObject.get("coolOffPeriodInMillis").getAsLong();
+    boolean canUpdate = jsonObject.get("canUpdate").getAsBoolean();
+
+    return new ModifyCacheMaxSizeAction(esNode, cacheType, appContext,
+            desiredCacheMaxSizeInBytes, currentCacheMaxSizeInBytes, coolOffPeriodInMillis, canUpdate);
   }
 
   @Override
@@ -222,6 +242,10 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
             + "Return an non-actionable action");
         return new ModifyCacheMaxSizeAction(esNode, cacheType, appContext,
             -1, -1, coolOffPeriodInMillis, false);
+      }
+      // check if fielddata cache is -1 (unbounded).
+      if (currentCacheMaxSizeInBytes == -1) {
+        currentCacheMaxSizeInBytes = heapMaxSizeInBytes;
       }
 
       long stepSizeInBytes = (long) (stepSizeInPercent * heapMaxSizeInBytes);

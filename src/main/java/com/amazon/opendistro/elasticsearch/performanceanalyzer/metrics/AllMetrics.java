@@ -40,7 +40,8 @@ public class AllMetrics {
     IP_METRICS,
     THREAD_POOL,
     SHARD_STATS,
-    MASTER_PENDING
+    MASTER_PENDING,
+    MOUNTED_PARTITION_METRICS
   }
 
   // we don't store node details as a metric on reader side database.  We
@@ -319,6 +320,57 @@ public class AllMetrics {
     }
   }
 
+  public enum GCInfoDimension implements MetricDimension, JooqFieldValue {
+
+    MEMORY_POOL(Constants.MEMORY_POOL_VALUE),
+    COLLECTOR_NAME(Constants.COLLECTOR_NAME_VALUE);
+
+    private final String value;
+
+    GCInfoDimension(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String getName() {
+      return value;
+    }
+
+    @Override
+    public Field<String> getField() {
+      return DSL.field(DSL.name(this.value), String.class);
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String MEMORY_POOL_VALUE = "MemoryPool";
+      public static final String COLLECTOR_NAME_VALUE = "CollectorName";
+    }
+  }
+
+  public enum GCInfoValue implements MetricValue {
+    GARBAGE_COLLECTOR_TYPE(Constants.GC_TYPE_VALUE);
+
+    private final String value;
+
+    GCInfoValue(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String GC_TYPE_VALUE = "GC_Type";
+    }
+  }
+
   public enum DiskDimension implements MetricDimension {
     DISK_NAME(Constants.NAME_VALUE);
 
@@ -360,6 +412,52 @@ public class AllMetrics {
       public static final String WAIT_VALUE = "Disk_WaitTime";
 
       public static final String SRATE_VALUE = "Disk_ServiceRate";
+    }
+  }
+
+  public enum DevicePartitionDimension implements MetricDimension {
+    MOUNT_POINT(Constants.MOUNT_POINT_VALUE),
+    DEVICE_PARTITION(Constants.DEVICE_PARTITION_VALUE);
+
+    private final String value;
+
+    DevicePartitionDimension(final String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return this.value;
+    }
+
+    public static class Constants {
+
+      public static final String MOUNT_POINT_VALUE = "MountPoint";
+      public static final String DEVICE_PARTITION_VALUE = "DevicePartition";
+    }
+  }
+
+  public enum DevicePartitionValue implements MetricValue {
+    TOTAL_SPACE(Constants.TOTAL_SPACE_VALUE),
+    FREE_SPACE(Constants.FREE_SPACE_VALUE),
+    USABLE_FREE_SPACE(Constants.USABLE_FREE_SPACE_VALUE);
+
+    private final String value;
+
+    DevicePartitionValue(final String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return this.value;
+    }
+
+    public static class Constants {
+
+      public static final String TOTAL_SPACE_VALUE = "Partition_TotalSpace";
+      public static final String FREE_SPACE_VALUE = "Partition_FreeSpace";
+      public static final String USABLE_FREE_SPACE_VALUE = "Partition_UsableFreeSpace";
     }
   }
 

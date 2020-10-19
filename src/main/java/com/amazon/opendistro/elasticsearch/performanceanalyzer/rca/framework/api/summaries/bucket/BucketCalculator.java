@@ -26,7 +26,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum
  * HEALTHY_WITH_BUFFER for CPU on Node "B". A consumer of this information can then read out these
  * bucket values by calling something like getUsageBucket(NodeA, CPU).
  */
-interface BucketCalculator {
+public interface BucketCalculator {
   /**
    * Identifies which {@link UsageBucket} a {@link Resource} should be placed
    * in given that resource's value.
@@ -37,4 +37,11 @@ interface BucketCalculator {
    * @return The {@link UsageBucket} that the {@link Resource} should be associated with
    */
   UsageBucket compute(ResourceEnum resource, double value);
+
+  /**
+   * Given  value, try to find a bucket for it.
+   * @param value The double value we want to find a bucket for.
+   * @return The Bucket that can fit this value.
+   */
+  UsageBucket compute(double value);
 }

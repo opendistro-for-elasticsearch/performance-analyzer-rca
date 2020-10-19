@@ -36,7 +36,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadPro
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
@@ -255,7 +254,11 @@ public class Host {
     }
     clientServers.getHttpServer().stop(10);
     clientServers.getNetClient().stop();
-    clientServers.getNetServer().shutdown();
+    try {
+      clientServers.getNetServer().shutdown();
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
 
     connectionManager.shutdown();
 
@@ -366,6 +369,10 @@ public class Host {
     obj.addProperty(Consts.HOST_ROLE_KEY, role.toString());
     obj.add(Consts.DATA_KEY, data);
     return obj;
+  }
+
+  public <T> Object constructObjectFromDB(Class<T> className) throws Exception {
+      return this.rcaController.getPersistenceProvider().read(className);
   }
 
   public Map<String, Result<Record>> getRecordsForAllTables() {

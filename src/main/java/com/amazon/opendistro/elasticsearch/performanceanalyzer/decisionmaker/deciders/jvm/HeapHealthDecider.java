@@ -15,17 +15,15 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Decider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Decision;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.old_gen.OldGenDecisionPolicy;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.sizing.HeapSizeIncreasePolicy;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.LargeHeapClusterRca;
 import java.util.List;
 
 /**
@@ -33,16 +31,20 @@ import java.util.List;
  */
 public class HeapHealthDecider extends Decider {
 
+  private static final int EVAL_INTERVAL_IN_S = 5;
   public static final String NAME = "HeapHealthDecider";
-  private final HighHeapUsageClusterRca highHeapUsageClusterRca;
   private final OldGenDecisionPolicy oldGenDecisionPolicy;
+  private final JvmGenTuningPolicy jvmGenTuningPolicy;
+  private final HeapSizeIncreasePolicy heapSizeIncreasePolicy;
   private int counter = 0;
 
-  public HeapHealthDecider(int decisionFrequency, final HighHeapUsageClusterRca highHeapUsageClusterRca) {
+  public HeapHealthDecider(int decisionFrequency,
+      final HighHeapUsageClusterRca highHeapUsageClusterRca, LargeHeapClusterRca largeHeapClusterRca) {
     //TODO : refactor parent class to remove evalIntervalSeconds completely
-    super(5, decisionFrequency);
-    this.highHeapUsageClusterRca = highHeapUsageClusterRca;
-    oldGenDecisionPolicy = new OldGenDecisionPolicy(this.getAppContext(), rcaConf);
+    super(EVAL_INTERVAL_IN_S, decisionFrequency);
+    oldGenDecisionPolicy = new OldGenDecisionPolicy(highHeapUsageClusterRca);
+    jvmGenTuningPolicy = new JvmGenTuningPolicy(highHeapUsageClusterRca);
+    heapSizeIncreasePolicy = new HeapSizeIncreasePolicy(largeHeapClusterRca);
   }
 
   @Override
@@ -59,25 +61,34 @@ public class HeapHealthDecider extends Decider {
     }
 
     counter = 0;
-    if (highHeapUsageClusterRca.getFlowUnits().isEmpty()) {
-      return decision;
-    }
+    // oldGenDecisionPolicy are always accepted
+    List<Action> oldGenPolicyActions = oldGenDecisionPolicy.evaluate();
+    oldGenPolicyActions.forEach(decision::addAction);
 
-    ResourceFlowUnit<HotClusterSummary> flowUnit = highHeapUsageClusterRca.getFlowUnits().get(0);
-    if (!flowUnit.hasResourceSummary()) {
-      return decision;
-    }
-    HotClusterSummary clusterSummary = flowUnit.getSummary();
-    for (HotNodeSummary nodeSummary : clusterSummary.getHotNodeSummaryList()) {
-      NodeKey esNode = new NodeKey(nodeSummary.getNodeID(), nodeSummary.getHostAddress());
-      for (HotResourceSummary resource : nodeSummary.getHotResourceSummaryList()) {
-        if (resource.getResource().equals(ResourceUtil.OLD_GEN_HEAP_USAGE)) {
-          List<Action> actions = oldGenDecisionPolicy.actions(esNode, resource.getValue());
-          actions.forEach(decision::addAction);
-        }
-        //TODO : Add policy for young gen
-      }
+    // Add actions from HeapSizeIncreasePolicy (128gb heaps)
+    List<Action> jvmScaleUpActions = heapSizeIncreasePolicy.evaluate();
+    jvmScaleUpActions.forEach(decision::addAction);
+    // If the HeapSizeIncreasePolicy has no suggestions, tune according to the JvmGenTuningPolicy
+    if (jvmScaleUpActions == null || jvmScaleUpActions.isEmpty()) {
+      List<Action> jvmGenTuningActions = jvmGenTuningPolicy.evaluate();
+      jvmGenTuningActions.forEach(decision::addAction);
     }
     return decision;
+  }
+
+  @Override
+  public void readRcaConf(RcaConf conf) {
+    super.readRcaConf(conf);
+    oldGenDecisionPolicy.setRcaConf(conf);
+    jvmGenTuningPolicy.setRcaConf(conf);
+    heapSizeIncreasePolicy.setRcaConf(conf);
+  }
+
+  @Override
+  public void setAppContext(final AppContext appContext) {
+    super.setAppContext(appContext);
+    oldGenDecisionPolicy.setAppContext(appContext);
+    jvmGenTuningPolicy.setAppContext(appContext);
+    heapSizeIncreasePolicy.setAppContext(appContext);
   }
 }

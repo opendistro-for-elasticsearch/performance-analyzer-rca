@@ -19,6 +19,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class Heap_Max extends Metric {
+  public static final String NAME = AllMetrics.HeapValue.HEAP_MAX.name();
+
   public Heap_Max(long evaluationIntervalSeconds) {
     super(AllMetrics.HeapValue.HEAP_MAX.name(), evaluationIntervalSeconds);
   }

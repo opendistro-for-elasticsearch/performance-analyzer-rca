@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rest;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
@@ -22,6 +23,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsRe
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.model.MetricsModel;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ReaderMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ReaderMetricsProcessor;
 import com.google.common.annotations.VisibleForTesting;
 import com.sun.net.httpserver.HttpExchange;
@@ -39,10 +42,9 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.message.ParameterizedMessage;
-import org.apache.logging.log4j.util.Supplier;
 import org.jooq.Record;
 import org.jooq.Result;
+import org.jooq.exception.DataAccessException;
 
 /**
  * Request handler that supports querying batch metrics from an EC2 instance
@@ -202,31 +204,32 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
         throw new InvalidParameterException("starttime must be within the retention period");
       }
 
+      long processingStartTime = System.currentTimeMillis();
       String queryResponse = queryFromBatchMetrics(batchMetrics, metrics, startTime, endTime, samplingPeriod,
               DEFAULT_MAX_DATAPOINTS);
+      PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(
+          ReaderMetrics.BATCH_METRICS_QUERY_PROCESSING_TIME, "", System.currentTimeMillis() - processingStartTime);
+      PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(
+          ReaderMetrics.BATCH_METRICS_HTTP_SUCCESS, "", 1);
       sendResponse(exchange, queryResponse, HttpURLConnection.HTTP_OK);
+    } catch (DataAccessException e) {
+      PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
+          ExceptionsAndErrors.READER_METRICSDB_ACCESS_ERRORS, "", 1);
+      LOG.error("QueryException {} ExceptionCode: {}.", e, ReaderMetrics.BATCH_METRICS_HTTP_HOST_ERROR, e);
+      PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(
+          ReaderMetrics.BATCH_METRICS_HTTP_HOST_ERROR, "", 1);
+      String response = "{\"error\":\"" + e.toString() + "\"}";
+      sendResponse(exchange, response, HttpURLConnection.HTTP_INTERNAL_ERROR);
     } catch (InvalidParameterException e) {
-      LOG.error(
-              (Supplier<?>)
-                      () ->
-                              new ParameterizedMessage(
-                                      "QueryException {} ExceptionCode: {}.",
-                                      e.toString(),
-                                      StatExceptionCode.REQUEST_ERROR.toString()),
-              e);
-      StatsCollector.instance().logException(StatExceptionCode.REQUEST_ERROR);
+      LOG.error("QueryException {} ExceptionCode: {}.", e, ReaderMetrics.BATCH_METRICS_HTTP_CLIENT_ERROR, e);
+      PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(
+          ReaderMetrics.BATCH_METRICS_HTTP_CLIENT_ERROR, "", 1);
       String response = "{\"error\":\"" + e.getMessage() + ".\"}";
       sendResponse(exchange, response, HttpURLConnection.HTTP_BAD_REQUEST);
     } catch (Exception e) {
-      LOG.error(
-              (Supplier<?>)
-                      () ->
-                              new ParameterizedMessage(
-                                      "QueryException {} ExceptionCode: {}.",
-                                      e.toString(),
-                                      StatExceptionCode.REQUEST_ERROR.toString()),
-              e);
-      StatsCollector.instance().logException(StatExceptionCode.REQUEST_ERROR);
+      LOG.error("QueryException {} ExceptionCode: {}.", e, ReaderMetrics.BATCH_METRICS_HTTP_HOST_ERROR, e);
+      PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(
+          ReaderMetrics.BATCH_METRICS_HTTP_HOST_ERROR, "", 1);
       String response = "{\"error\":\"" + e.toString() + "\"}";
       sendResponse(exchange, response, HttpURLConnection.HTTP_INTERNAL_ERROR);
     }
@@ -244,6 +247,8 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
       if (results != null) {
         maxDatapoints -= results.size();
         if (maxDatapoints <= 0) {
+          PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(
+              ReaderMetrics.BATCH_METRICS_EXCEEDED_MAX_DATAPOINTS, "", 1);
           throw new InvalidParameterException(String.format("requested data exceeds the %d datapoints limit", DEFAULT_MAX_DATAPOINTS));
         }
         builder.append("\"");
@@ -256,6 +261,8 @@ public class QueryBatchRequestHandler extends MetricsHandler implements HttpHand
           if (results != null) {
             maxDatapoints -= results.size();
             if (maxDatapoints <= 0) {
+              PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(
+                  ReaderMetrics.BATCH_METRICS_EXCEEDED_MAX_DATAPOINTS, "", 1);
               throw new InvalidParameterException(String.format("requested data exceeds the %d datapoints limit", DEFAULT_MAX_DATAPOINTS));
             }
             builder.append(",\"");

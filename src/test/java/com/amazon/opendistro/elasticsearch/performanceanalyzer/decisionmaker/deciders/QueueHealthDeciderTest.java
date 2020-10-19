@@ -32,9 +32,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,6 +48,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class QueueHealthDeciderTest {
+  private static final JsonParser JSON_PARSER = new JsonParser();
   AppContext appContext;
   RcaConf rcaConf;
 
@@ -103,7 +108,9 @@ public class QueueHealthDeciderTest {
     QueueRejectionClusterRca queueClusterRca = new QueueRejectionClusterRca(1, nodeRca);
     queueClusterRca.setAppContext(appContext);
     queueClusterRca.generateFlowUnitListFromLocal(null);
-    QueueHealthDecider decider = new QueueHealthDecider(5, 12, queueClusterRca);
+
+    HighHeapUsageClusterRca clusterRca = new HighHeapUsageClusterRca(1, nodeRca);
+    QueueHealthDecider decider = new QueueHealthDecider(5, 12, queueClusterRca, clusterRca);
     decider.setAppContext(appContext);
     decider.readRcaConf(rcaConf);
 
@@ -121,10 +128,12 @@ public class QueueHealthDeciderTest {
       assertEquals(1, action.impactedNodes().size());
       String nodeId = action.impactedNodes().get(0).getNodeId().toString();
       String summary = action.summary();
-      if (summary.contains(ResourceEnum.WRITE_THREADPOOL.toString())) {
+      JsonObject jsonObject = JSON_PARSER.parse(summary).getAsJsonObject();
+
+      if (jsonObject.get("resource").getAsInt() == ResourceEnum.WRITE_THREADPOOL.getNumber()) {
         nodeActionCounter.computeIfAbsent(nodeId, k -> new HashMap<>()).merge(ResourceEnum.WRITE_THREADPOOL, 1, Integer::sum);
       }
-      if (summary.contains(ResourceEnum.SEARCH_THREADPOOL.toString())) {
+      if (jsonObject.get("resource").getAsInt() == ResourceEnum.SEARCH_THREADPOOL.getNumber()) {
         nodeActionCounter.computeIfAbsent(nodeId, k -> new HashMap<>()).merge(ResourceEnum.SEARCH_THREADPOOL, 1, Integer::sum);
       }
     }

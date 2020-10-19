@@ -30,11 +30,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.ShardRequestCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
-
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -45,6 +47,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class CacheHealthDeciderTest {
+  private static final JsonParser JSON_PARSER = new JsonParser();
   private AppContext appContext;
   private RcaConf rcaConf;
 
@@ -165,8 +168,12 @@ public class CacheHealthDeciderTest {
     shardRequestCacheClusterRca.setAppContext(appContext);
     shardRequestCacheClusterRca.generateFlowUnitListFromLocal(null);
 
+
+    RcaTestHelper<HotNodeSummary> nodeRca = new RcaTestHelper<>("QueueRejectionNodeRca");
+    nodeRca.setAppContext(appContext);
+    HighHeapUsageClusterRca clusterRca = new HighHeapUsageClusterRca(1, nodeRca);
     CacheHealthDecider decider =
-        new CacheHealthDecider(5, 12, fieldDataCacheClusterRca, shardRequestCacheClusterRca);
+        new CacheHealthDecider(5, 12, fieldDataCacheClusterRca, shardRequestCacheClusterRca, clusterRca);
     decider.setAppContext(appContext);
     decider.readRcaConf(rcaConf);
 
@@ -185,12 +192,14 @@ public class CacheHealthDeciderTest {
       assertEquals(1, action.impactedNodes().size());
       String nodeId = action.impactedNodes().get(0).getNodeId().toString();
       String summary = action.summary();
-      if (summary.contains(ResourceEnum.FIELD_DATA_CACHE.toString())) {
+      JsonObject jsonObject = JSON_PARSER.parse(summary).getAsJsonObject();
+
+      if (jsonObject.get("resource").getAsInt() == ResourceEnum.FIELD_DATA_CACHE.getNumber()) {
         nodeActionCounter
             .computeIfAbsent(nodeId, k -> new HashMap<>())
             .merge(ResourceEnum.FIELD_DATA_CACHE, 1, Integer::sum);
       }
-      if (summary.contains(ResourceEnum.SHARD_REQUEST_CACHE.toString())) {
+      if (jsonObject.get("resource").getAsInt() == ResourceEnum.SHARD_REQUEST_CACHE.getNumber()) {
         nodeActionCounter
             .computeIfAbsent(nodeId, k -> new HashMap<>())
             .merge(ResourceEnum.SHARD_REQUEST_CACHE, 1, Integer::sum);

@@ -27,6 +27,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.Shard
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import java.nio.file.Paths;
 import java.util.Arrays;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -74,17 +75,22 @@ public class RcaConfTest {
             FieldDataCacheRcaConfig.RCA_CONF_KEY_CONSTANTS.FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC,
             FieldDataCacheRcaConfig.DEFAULT_FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC, Integer.class);
     Assert.assertNotNull(fieldDataTimePeriod);
-    Assert.assertEquals(FieldDataCacheRcaConfig.DEFAULT_FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC, fieldDataTimePeriod.intValue());
+    Assert.assertEquals(10, fieldDataTimePeriod.intValue());
 
     Integer shardRequestTimePeriod = rcaConf.readRcaConfig(ShardRequestCacheRcaConfig.CONFIG_NAME,
             ShardRequestCacheRcaConfig.RCA_CONF_KEY_CONSTANTS.SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC,
             ShardRequestCacheRcaConfig.DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC, Integer.class);
     Assert.assertNotNull(shardRequestTimePeriod);
-    Assert.assertEquals(ShardRequestCacheRcaConfig.DEFAULT_SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC, shardRequestTimePeriod.intValue());
+    Assert.assertEquals(10, shardRequestTimePeriod.intValue());
   }
 
   @Test
   public void testValidateRcaConfig() {
+    Integer defaultValue1 = rcaConf.readRcaConfig(FieldDataCacheRcaConfig.CONFIG_NAME,
+            FieldDataCacheRcaConfig.RCA_CONF_KEY_CONSTANTS.FIELD_DATA_COLLECTOR_TIME_PERIOD_IN_SEC,
+            0, s -> s < 1, Integer.class);
+    Assert.assertNotNull(defaultValue1);
+    Assert.assertEquals(0, defaultValue1.intValue());
     Integer defaultValue = rcaConf.readRcaConfig(ShardRequestCacheRcaConfig.CONFIG_NAME,
             ShardRequestCacheRcaConfig.RCA_CONF_KEY_CONSTANTS.SHARD_REQUEST_COLLECTOR_TIME_PERIOD_IN_SEC,
             0, s -> s < 1, Integer.class);

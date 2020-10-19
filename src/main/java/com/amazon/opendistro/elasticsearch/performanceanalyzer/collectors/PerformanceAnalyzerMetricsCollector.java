@@ -60,7 +60,7 @@ public abstract class PerformanceAnalyzerMetricsCollector implements Runnable {
       // - should not be any...but in case, absorbing here
       // - logging...we shouldn't be doing as it will slow down; as well as fill up the log. Need to
       // find a way to catch these
-      LOG.debug(
+      LOG.error(
           "Error In Collect Metrics: {} with ExceptionCode: {}",
           () -> ex.toString(),
           () -> StatExceptionCode.OTHER_COLLECTION_ERROR.toString());

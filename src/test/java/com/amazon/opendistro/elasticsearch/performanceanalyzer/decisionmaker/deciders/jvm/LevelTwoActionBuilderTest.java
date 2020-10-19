@@ -183,7 +183,7 @@ public class LevelTwoActionBuilderTest {
                 + "\"prefer-ingest\": true"
               + "}, "
               + "\"old-gen-decision-policy-config\": { "
-                + "\"queue-bucket-size\": 5 "
+                + "\"queue-bucket-size\": 20 "
               + "} "
             + "} "
         + "} ";
@@ -195,7 +195,7 @@ public class LevelTwoActionBuilderTest {
                 + "\"prefer-search\": true"
               + "}, "
               + "\"old-gen-decision-policy-config\": { "
-                + "\"queue-bucket-size\": 5 "
+                + "\"queue-bucket-size\": 20 "
               + "} "
             + "} "
         + "} ";
@@ -210,9 +210,9 @@ public class LevelTwoActionBuilderTest {
     final double shardRequestCacheSizeInPercent = CacheActionConfig.DEFAULT_SHARD_REQUEST_CACHE_LOWER_BOUND;
     // bucket size for search queue = 500 / write queue = 190
     //bucket index = 2
-    final int writeQueueSize = 420;
+    final int writeQueueSize = 155;
     //bucket index = 2
-    final int searchQueueSize = 1400;
+    final int searchQueueSize = 770;
     dummyCache.put(node, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE,
         (long) (heapMaxSizeInBytes * fielddataCacheSizeInPercent));
     dummyCache.put(node, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE,
@@ -245,10 +245,10 @@ public class LevelTwoActionBuilderTest {
     final double fielddataCacheSizeInPercent = CacheActionConfig.DEFAULT_FIELDDATA_CACHE_LOWER_BOUND;
     final double shardRequestCacheSizeInPercent = CacheActionConfig.DEFAULT_SHARD_REQUEST_CACHE_LOWER_BOUND;
     // bucket size for search queue = 500 / write queue = 190
-    //bucket index = 2
-    final int writeQueueSize = 420;
-    //bucket index = 2
-    final int searchQueueSize = 1400;
+    //bucket index = 0
+    final int writeQueueSize = QueueActionConfig.DEFAULT_WRITE_QUEUE_LOWER_BOUND + 5;
+    //bucket index = 0
+    final int searchQueueSize = QueueActionConfig.DEFAULT_SEARCH_QUEUE_LOWER_BOUND + 20;
     dummyCache.put(node, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE,
         (long) (heapMaxSizeInBytes * fielddataCacheSizeInPercent));
     dummyCache.put(node, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE,
@@ -269,8 +269,7 @@ public class LevelTwoActionBuilderTest {
     ModifyQueueCapacityAction searchQueueAction = deciderActionParser.readQueueAction(ResourceEnum.SEARCH_THREADPOOL);
     Assert.assertNull(searchQueueAction);
     Assert.assertTrue(writeQueueAction.isActionable());
-    int expectedQueueSize = writeQueueSize - writeQueueStep;
-    Assert.assertEquals(expectedQueueSize, writeQueueAction.getDesiredCapacity());
+    Assert.assertEquals(QueueActionConfig.DEFAULT_WRITE_QUEUE_LOWER_BOUND, writeQueueAction.getDesiredCapacity());
     Assert.assertEquals(writeQueueSize, writeQueueAction.getCurrentCapacity());
   }
 

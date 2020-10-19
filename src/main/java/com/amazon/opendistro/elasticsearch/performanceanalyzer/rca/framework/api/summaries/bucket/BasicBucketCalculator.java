@@ -17,10 +17,10 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.ap
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
+import java.util.Map;
 
 /**
- * BasicBucketCalculator is a {@link BucketCalculator} which places {@link Resource}s into
- * {@link UsageBucket}s based on defined ranges.
+ * BasicBucketCalculator is a {@link BucketCalculator} which places {@link Resource}s into {@link UsageBucket}s based on defined ranges.
  */
 public class BasicBucketCalculator implements BucketCalculator {
   // a value in (-inf, underUtilized] is considered underutilized and signals that additional
@@ -44,8 +44,19 @@ public class BasicBucketCalculator implements BucketCalculator {
     }
   }
 
+  public BasicBucketCalculator(final Map<UsageBucket, Double> bucketThresholdMap) {
+    this(bucketThresholdMap.get(UsageBucket.UNDER_UTILIZED),
+        bucketThresholdMap.get(UsageBucket.HEALTHY_WITH_BUFFER),
+        bucketThresholdMap.get(UsageBucket.HEALTHY));
+  }
+
   @Override
   public UsageBucket compute(ResourceEnum resource, double value) {
+    return compute(value);
+  }
+
+  @Override
+  public UsageBucket compute(double value) {
     if (value <= underUtilized) {
       return UsageBucket.UNDER_UTILIZED;
     } else if (value <= healthyWithBuffer) {

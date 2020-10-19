@@ -18,13 +18,13 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ActionListener;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.CoolOffDetector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.FlipFlopDetector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.TimedFlipFlopDetector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.collator.Collator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.NonLeafNode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.PublisherEventsPersistor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import com.google.common.annotations.VisibleForTesting;
 import java.time.Instant;
@@ -41,32 +41,42 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
   private Collator collator;
   private FlipFlopDetector flipFlopDetector;
   private boolean isMuted = false;
-  private CoolOffDetector coolOffDetector;
   private List<ActionListener> actionListeners;
 
   public Publisher(int evalIntervalSeconds, Collator collator) {
     super(0, evalIntervalSeconds);
     this.collator = collator;
     this.actionListeners = new ArrayList<>();
-    this.coolOffDetector = new CoolOffDetector();
     // TODO please bring in guice so we can configure this with DI
     this.flipFlopDetector = new TimedFlipFlopDetector(1, TimeUnit.HOURS);
   }
 
   @Override
   public EmptyFlowUnit operate() {
-    // TODO: Need to add dampening, avoidance, state persistence etc.
-    Decision decision = collator.getFlowUnits().get(0);
-    for (Action action : decision.getActions()) {
-      if (coolOffDetector.isCooledOff(action) && !flipFlopDetector.isFlipFlop(action)) {
-        flipFlopDetector.recordAction(action);
-        coolOffDetector.recordAction(action);
-        for (ActionListener listener : actionListeners) {
-          listener.actionPublished(action);
+    return new EmptyFlowUnit(Instant.now().toEpochMilli());
+  }
+
+  /**
+   * Publish the decisions to action listeners and persist actions.
+   */
+  public void compute(FlowUnitOperationArgWrapper args) {
+    // TODO: Need to add dampening, avoidance etc.
+    List<Action> actionsPublished = new ArrayList<>();
+    if (!collator.getFlowUnits().isEmpty()) {
+      Decision decision = collator.getFlowUnits().get(0);
+      for (Action action : decision.getActions()) {
+        if (!flipFlopDetector.isFlipFlop(action)) {
+          flipFlopDetector.recordAction(action);
+          for (ActionListener listener : actionListeners) {
+            listener.actionPublished(action);
+          }
+          actionsPublished.add(action);
         }
       }
     }
-    return new EmptyFlowUnit(Instant.now().toEpochMilli());
+    // Persist actions to sqlite
+    PublisherEventsPersistor persistor = new PublisherEventsPersistor(args.getPersistable());
+    persistor.persistAction(actionsPublished, Instant.now().toEpochMilli());
   }
 
   @Override
@@ -75,11 +85,11 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
     long startTime = System.currentTimeMillis();
 
     try {
-      this.operate();
+      this.compute(args);
     } catch (Exception ex) {
-      LOG.error("Publisher: Exception in operate", ex);
+      LOG.error("Publisher: Exception in compute", ex);
       PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
-          ExceptionsAndErrors.EXCEPTION_IN_OPERATE, name(), 1);
+          ExceptionsAndErrors.EXCEPTION_IN_COMPUTE, name(), 1);
     }
     long duration = System.currentTimeMillis() - startTime;
 
@@ -117,10 +127,5 @@ public class Publisher extends NonLeafNode<EmptyFlowUnit> {
   @VisibleForTesting
   protected FlipFlopDetector getFlipFlopDetector() {
     return this.flipFlopDetector;
-  }
-
-  @VisibleForTesting
-  protected CoolOffDetector getCoolOffDetector() {
-    return this.coolOffDetector;
   }
 }

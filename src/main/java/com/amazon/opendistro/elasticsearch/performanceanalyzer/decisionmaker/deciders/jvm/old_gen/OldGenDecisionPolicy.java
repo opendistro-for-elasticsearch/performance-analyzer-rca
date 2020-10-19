@@ -17,11 +17,20 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.de
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.DecisionPolicy;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.jvm.OldGenDecisionPolicyConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HighHeapUsageClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Decision policy for old gen related actions
@@ -30,18 +39,53 @@ import java.util.List;
  * and create dedicated action builders {@link LevelOneActionBuilder}, {@link LevelTwoActionBuilder},
  * {@link LevelThreeActionBuilder} for each level of unhealthiness
  */
-public class OldGenDecisionPolicy {
-  private final AppContext appContext;
-  private final RcaConf rcaConf;
+public class OldGenDecisionPolicy implements DecisionPolicy {
+  private static final Logger LOG = LogManager.getLogger(OldGenDecisionPolicy.class);
+  private AppContext appContext;
+  private RcaConf rcaConf;
+  private final HighHeapUsageClusterRca highHeapUsageClusterRca;
 
-  public OldGenDecisionPolicy(final AppContext appContext, final RcaConf rcaConf) {
-    this.appContext = appContext;
-    //decider config will not be null unless there is a bug in RCAScheduler.
-    assert rcaConf != null : "DeciderConfig is null";
+  public OldGenDecisionPolicy(final HighHeapUsageClusterRca highHeapUsageClusterRca) {
+    this.highHeapUsageClusterRca = highHeapUsageClusterRca;
+  }
+
+  public void setRcaConf(final RcaConf rcaConf) {
     this.rcaConf = rcaConf;
   }
 
-  public List<Action> actions(final NodeKey esNode, double oldGenUsage) {
+  public void setAppContext(final AppContext appContext) {
+    this.appContext = appContext;
+  }
+
+  @Override
+  public List<Action> evaluate() {
+    List<Action> actions = new ArrayList<>();
+    if (highHeapUsageClusterRca.getFlowUnits().isEmpty()) {
+      return actions;
+    }
+
+    ResourceFlowUnit<HotClusterSummary> flowUnit = highHeapUsageClusterRca.getFlowUnits().get(0);
+    if (!flowUnit.hasResourceSummary()) {
+      return actions;
+    }
+    HotClusterSummary clusterSummary = flowUnit.getSummary();
+    for (HotNodeSummary nodeSummary : clusterSummary.getHotNodeSummaryList()) {
+      NodeKey esNode = new NodeKey(nodeSummary.getNodeID(), nodeSummary.getHostAddress());
+      for (HotResourceSummary resource : nodeSummary.getHotResourceSummaryList()) {
+        if (resource.getResource().equals(ResourceUtil.OLD_GEN_HEAP_USAGE)) {
+          actions.addAll(evaluate(esNode, resource.getValue()));
+        }
+      }
+    }
+    return actions;
+  }
+
+  private List<Action> evaluate(final NodeKey esNode, double oldGenUsage) {
+    //rca config / app context will not be null unless there is a bug in RCAScheduler.
+    if (rcaConf == null || appContext == null) {
+      LOG.error("rca conf/app context is null, return empty action list");
+      return new ArrayList<>();
+    }
     OldGenDecisionPolicyConfig oldGenDecisionPolicyConfig =
         rcaConf.getDeciderConfig().getOldGenDecisionPolicyConfig();
     if (oldGenUsage >= oldGenDecisionPolicyConfig.oldGenThresholdLevelThree()) {

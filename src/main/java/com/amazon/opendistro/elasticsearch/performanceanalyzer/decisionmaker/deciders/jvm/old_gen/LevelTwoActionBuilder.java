@@ -150,7 +150,7 @@ public class LevelTwoActionBuilder {
    */
   private int bucketization(int lowerBound, int upperBound, int val, int bucketSize) {
     double step = (double) (upperBound - lowerBound) / (double) bucketSize;
-    return (int) ((double) val / step);
+    return (int) ((double) (val - lowerBound) / step);
   }
 
   private void tieBreaker() {

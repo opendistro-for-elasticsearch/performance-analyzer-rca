@@ -16,8 +16,10 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.DisksCollector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.GCInfoCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.HeapMetricsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.MetricsPurgeActivity;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.MountedPartitionMetricsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.NetworkE2ECollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.NetworkInterfaceCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
@@ -29,7 +31,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.os.OSGlobals;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.os.ThreadCPU;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.os.ThreadDiskIO;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.os.ThreadSched;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -73,5 +74,7 @@ public class MetricsConfiguration {
     CONFIG_MAP.put(StatsCollector.class, new MetricConfig(STATS_ROTATION_INTERVAL, 0, 0));
     CONFIG_MAP.put(DisksCollector.class, cdefault);
     CONFIG_MAP.put(HeapMetricsCollector.class, cdefault);
+    CONFIG_MAP.put(GCInfoCollector.class, cdefault);
+    CONFIG_MAP.put(MountedPartitionMetricsCollector.class, cdefault);
   }
 }
