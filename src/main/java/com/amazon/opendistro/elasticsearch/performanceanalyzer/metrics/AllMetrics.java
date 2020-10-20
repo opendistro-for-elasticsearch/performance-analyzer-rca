@@ -1181,6 +1181,79 @@ public class AllMetrics {
     }
   }
 
+  /*
+   * column names of Shard_State table
+   * IndexName | ShardID | ShardType | NodeName | Shard_State | sum | avg | min |max
+   *
+   * <p>Example:
+   * pmc|4|p|elasticsearch1|UNASSIGNED|1.0|1.0|1.0|1.0
+   * pmc|2|p|elasticsearch2|INITIALIZING|1.0|1.0|1.0|1.0
+   */
+  public enum ShardStateDimension implements MetricDimension {
+    INDEX_NAME(CommonDimension.INDEX_NAME.toString()),
+    SHARD_ID(CommonDimension.SHARD_ID.toString()),
+    SHARD_TYPE(Constants.SHARD_TYPE),
+    NODE_NAME(Constants.NODE_NAME),
+    SHARD_STATE(Constants.SHARD_STATE);
+
+    private final String value;
+
+    ShardStateDimension(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String NODE_NAME = "NodeName";
+      public static final String SHARD_TYPE = "ShardType";
+      public static final String SHARD_STATE = "Shard_State";
+    }
+  }
+
+  public enum ShardType {
+    SHARD_PRIMARY(Constants.SHARD_PRIMARY),
+    SHARD_REPLICA(Constants.SHARD_REPLICA);
+
+    private final String value;
+
+    ShardType(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String SHARD_PRIMARY = "p";
+      public static final String SHARD_REPLICA = "r";
+    }
+  }
+
+  public enum ShardStateValue implements MetricValue {
+    SHARD_STATE(Constants.SHARD_STATE);
+
+    private final String value;
+
+    ShardStateValue(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String SHARD_STATE = "Shard_State";
+    }
+  }
+
   public enum MetricUnits {
     CORES(Constants.CORES_VALUE),
     COUNT_PER_SEC(Constants.COUNT_PER_SEC_VALUE),

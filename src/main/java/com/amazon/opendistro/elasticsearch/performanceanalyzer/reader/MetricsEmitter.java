@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.DBUtils;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.TroubleshootingConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonMetric;
@@ -25,6 +26,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Dimensions;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ReaderMetrics;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +35,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.BatchBindStep;
@@ -86,6 +90,17 @@ public class MetricsEmitter {
           this.add(ShardRequestMetricsSnapshot.Fields.SHARD_ROLE.toString());
         }
       };
+
+  private static final List<String> SHARD_STATE_TABLE_DIMENSIONS =
+          new ArrayList<String>() {
+            {
+              this.add(AllMetrics.ShardStateDimension.INDEX_NAME.toString());
+              this.add(AllMetrics.ShardStateDimension.SHARD_ID.toString());
+              this.add(AllMetrics.ShardStateDimension.SHARD_TYPE.toString());
+              this.add(AllMetrics.ShardStateDimension.NODE_NAME.toString());
+              this.add(AllMetrics.ShardStateDimension.SHARD_STATE.toString());
+            }
+          };
 
   public static void emitAggregatedOSMetrics(
       final DSLContext create,
@@ -968,5 +983,38 @@ public class MetricsEmitter {
               maxDataRetryingTask);
     }
     handle.execute();
+  }
+
+  public static void emitShardStateMetric(
+          MetricsDB metricsDB, ShardStateMetricsSnapshot shardStateMetricsSnapshot) {
+    long mCurrT = System.currentTimeMillis();
+    Result<Record> shardStateMetrics = shardStateMetricsSnapshot.fetchAll();
+    metricsDB.createMetric(
+            new Metric<Double>(AllMetrics.ShardStateValue.SHARD_STATE.toString(), 0d),
+            SHARD_STATE_TABLE_DIMENSIONS);
+
+    BatchBindStep handle =
+            metricsDB.startBatchPut(
+                    new Metric<Double>(AllMetrics.ShardStateValue.SHARD_STATE.toString(), 0d),
+                    SHARD_STATE_TABLE_DIMENSIONS);
+
+    for (Record r : shardStateMetrics) {
+      handle.bind(
+              r.get(AllMetrics.ShardStateDimension.INDEX_NAME.toString()).toString(),
+              r.get(AllMetrics.ShardStateDimension.SHARD_ID.toString()).toString(),
+              r.get(AllMetrics.ShardStateDimension.SHARD_TYPE.toString()).toString(),
+              r.get(AllMetrics.ShardStateDimension.NODE_NAME.toString()).toString(),
+              r.get(AllMetrics.ShardStateDimension.SHARD_STATE.toString()).toString(),
+              1.0,
+              1.0,
+              1.0,
+              1.0);
+    }
+    handle.execute();
+    long mFinalT = System.currentTimeMillis();
+    LOG.debug(
+            "Total time taken for writing shard state event queue metrics metricsdb: {}", mFinalT - mCurrT);
+    PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(ReaderMetrics.SHARD_STATE_EMITTER_EXECUTION_TIME,
+            "", mFinalT - mCurrT);
   }
 }

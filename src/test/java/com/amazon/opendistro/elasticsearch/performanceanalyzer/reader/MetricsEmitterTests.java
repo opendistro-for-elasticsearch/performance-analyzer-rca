@@ -376,6 +376,28 @@ public class MetricsEmitterTests extends AbstractReaderTests {
     }
     db.remove();
   }
+  
+  @Test
+  public void testShardStateMetricsEmitter() throws Exception {
+    Connection conn = DriverManager.getConnection(DB_URL);
+    ShardStateMetricsSnapshot shardStateMetricsSnapshot = new ShardStateMetricsSnapshot(conn, 1L);
+    Map<String, String> dimensions = new HashMap<>();
+    dimensions.put(AllMetrics.ShardStateDimension.INDEX_NAME.toString(), "indexName");
+    dimensions.put(AllMetrics.ShardStateDimension.SHARD_ID.toString(), "shardId");
+    dimensions.put(AllMetrics.ShardStateDimension.SHARD_TYPE.toString(), "p");
+    dimensions.put(AllMetrics.ShardStateDimension.NODE_NAME.toString(), "nodeName");
+
+    shardStateMetricsSnapshot.putMetrics("Unassigned", dimensions);
+    MetricsDB db = new MetricsDB(1553713438);
+    MetricsEmitter.emitShardStateMetric(db, shardStateMetricsSnapshot);
+
+    Result<Record> res =
+            db.queryMetric(AllMetrics.ShardStateValue.SHARD_STATE.toString());
+
+    String shard_state = res.get(0).get(AllMetrics.ShardStateValue.SHARD_STATE.toString()).toString();
+    db.remove();
+    assertEquals("Unassigned", shard_state);
+  }
 
   @Test
   public void testEmitGCTypeMetric() throws Exception {

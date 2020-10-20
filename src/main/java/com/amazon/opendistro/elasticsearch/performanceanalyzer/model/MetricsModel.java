@@ -350,6 +350,11 @@ public class MetricsModel {
             new MetricAttributes(MetricUnits.COUNT.toString(),
                     EmptyDimension.values()));
 
+    allMetricsInitializer.put(
+        AllMetrics.ShardStateValue.SHARD_STATE.toString(),
+        new MetricAttributes(
+            MetricUnits.COUNT.toString(), AllMetrics.ShardStateDimension.values()));
+
     ALL_METRICS = Collections.unmodifiableMap(allMetricsInitializer);
   }
 }
