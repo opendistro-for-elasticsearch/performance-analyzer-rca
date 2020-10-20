@@ -97,7 +97,8 @@ public abstract class OldGenRca<T extends ResourceFlowUnit<?>> extends Rca<T> {
           SQLParsingUtil.readDataFromSqlResult(gcEventMetric.getData(), MEM_TYPE.getField(), TOT_FULL_GC.toString(), MetricsDB.MAX);
       if (Double.isNaN(ret)) {
         LOG.error("Failed to parse metric in FlowUnit from {}", gc_event.getClass().getName());
-      } else { fullGcEvents = ret;
+      } else {
+        fullGcEvents = ret;
       }
     }
 
