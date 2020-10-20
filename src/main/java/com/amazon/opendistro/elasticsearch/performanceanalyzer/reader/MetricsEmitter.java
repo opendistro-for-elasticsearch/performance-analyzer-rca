@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.DBUtils;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.TroubleshootingConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonMetric;
@@ -32,6 +33,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ReaderMetrics;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.BatchBindStep;
@@ -86,6 +89,17 @@ public class MetricsEmitter {
           this.add(ShardRequestMetricsSnapshot.Fields.SHARD_ROLE.toString());
         }
       };
+
+  private static final List<String> SHARD_STATE_TABLE_DIMENSIONS =
+          new ArrayList<String>() {
+            {
+              this.add(AllMetrics.ShardStateDimension.INDEX_NAME.toString());
+              this.add(AllMetrics.ShardStateDimension.SHARD_ID.toString());
+              this.add(AllMetrics.ShardStateDimension.SHARD_TYPE.toString());
+              this.add(AllMetrics.ShardStateDimension.NODE_NAME.toString());
+              this.add(AllMetrics.ShardStateDimension.SHARD_STATE.toString());
+            }
+          };
 
   public static void emitAggregatedOSMetrics(
       final DSLContext create,
@@ -852,74 +866,33 @@ public class MetricsEmitter {
   public static void emitShardStateMetric(
           MetricsDB metricsDB, ShardStateMetricsSnapshot shardStateMetricsSnapshot) {
     long mCurrT = System.currentTimeMillis();
-    Result<Record> shardStateMetrics = shardStateMetricsSnapshot.fetchAggregatedShardStateMetrics();
-    List<String> dims =
-            new ArrayList<String>() {
-              {
-                this.add(AllMetrics.ShardStateDimension.INDEX_NAME.toString());
-                this.add(AllMetrics.ShardStateDimension.SHARD_ID.toString());
-                this.add(AllMetrics.ShardStateDimension.SHARD_TYPE.toString());
-                this.add(AllMetrics.ShardStateDimension.NODE_NAME.toString());
-                this.add(AllMetrics.ShardStateDimension.SHARD_STATE.toString());
-              }
-            };
+    Result<Record> shardStateMetrics = shardStateMetricsSnapshot.fetchAll();
     metricsDB.createMetric(
             new Metric<Double>(AllMetrics.ShardStateValue.SHARD_STATE.toString(), 0d),
-            dims);
+            SHARD_STATE_TABLE_DIMENSIONS);
 
     BatchBindStep handle =
             metricsDB.startBatchPut(
                     new Metric<Double>(AllMetrics.ShardStateValue.SHARD_STATE.toString(), 0d),
-                    dims);
+                    SHARD_STATE_TABLE_DIMENSIONS);
 
     for (Record r : shardStateMetrics) {
-
-      Double sumShardState =
-              Double.parseDouble(
-                      r.get(
-                              DBUtils.getAggFieldName(
-                                      AllMetrics.ShardStateValue.SHARD_STATE.toString(),
-                                      MetricsDB.SUM))
-                              .toString());
-
-      Double avgShardState =
-              Double.parseDouble(
-                      r.get(
-                              DBUtils.getAggFieldName(
-                                      AllMetrics.ShardStateValue.SHARD_STATE.toString(),
-                                      MetricsDB.AVG))
-                              .toString());
-
-      Double minShardState =
-              Double.parseDouble(
-                      r.get(
-                              DBUtils.getAggFieldName(
-                                      AllMetrics.ShardStateValue.SHARD_STATE.toString(),
-                                      MetricsDB.MIN))
-                              .toString());
-
-      Double maxShardState =
-              Double.parseDouble(
-                      r.get(
-                              DBUtils.getAggFieldName(
-                                      AllMetrics.ShardStateValue.SHARD_STATE.toString(),
-                                      MetricsDB.MAX))
-                              .toString());
-
       handle.bind(
               r.get(AllMetrics.ShardStateDimension.INDEX_NAME.toString()).toString(),
               r.get(AllMetrics.ShardStateDimension.SHARD_ID.toString()).toString(),
               r.get(AllMetrics.ShardStateDimension.SHARD_TYPE.toString()).toString(),
               r.get(AllMetrics.ShardStateDimension.NODE_NAME.toString()).toString(),
               r.get(AllMetrics.ShardStateDimension.SHARD_STATE.toString()).toString(),
-              sumShardState,
-              avgShardState,
-              minShardState,
-              maxShardState);
+              1.0,
+              1.0,
+              1.0,
+              1.0);
     }
     handle.execute();
     long mFinalT = System.currentTimeMillis();
     LOG.debug(
             "Total time taken for writing shard state event queue metrics metricsdb: {}", mFinalT - mCurrT);
+    PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(ReaderMetrics.SHARD_STATE_EMITTER_EXECUTION_TIME,
+            "", mFinalT - mCurrT);
   }
 }

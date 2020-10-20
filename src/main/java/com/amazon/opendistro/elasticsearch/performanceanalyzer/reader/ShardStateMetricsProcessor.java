@@ -1,3 +1,18 @@
+/*
+ *  Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License").
+ *  You may not use this file except in compliance with the License.
+ *  A copy of the License is located at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  or in the "license" file accompanying this file. This file is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ *  express or implied. See the License for the specific language governing
+ *  permissions and limitations under the License.
+ */
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
@@ -23,6 +38,8 @@ public class ShardStateMetricsProcessor implements EventProcessor {
     private BatchBindStep handle;
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final TypeReference<HashMap<String, String>> TYPE_REF = new TypeReference<HashMap<String, String>>() {};
+    private long startTime;
+    private long endTime;
 
     private ShardStateMetricsProcessor(ShardStateMetricsSnapshot snapshot) {
         this.shardStateMetricsSnapshot = snapshot;
@@ -31,7 +48,8 @@ public class ShardStateMetricsProcessor implements EventProcessor {
     static ShardStateMetricsProcessor buildShardStateMetricEventsProcessor(
             long currWindowStartTime,
             Connection conn,
-            NavigableMap<Long, ShardStateMetricsSnapshot> shardStateEventMetricsMap) {
+            NavigableMap<Long,
+                ShardStateMetricsSnapshot> shardStateEventMetricsMap) {
         ShardStateMetricsSnapshot shardStateSnap = shardStateEventMetricsMap.get(currWindowStartTime);
         if (shardStateSnap == null) {
             shardStateSnap = new ShardStateMetricsSnapshot(conn, currWindowStartTime);
@@ -43,6 +61,8 @@ public class ShardStateMetricsProcessor implements EventProcessor {
     @Override
     public void initializeProcessing(long startTime, long endTime) {
         this.handle = shardStateMetricsSnapshot.startBatchPut();
+        this.startTime = startTime;
+        this.endTime = endTime;
     }
 
     @Override

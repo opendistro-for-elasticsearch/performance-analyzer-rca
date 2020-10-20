@@ -61,8 +61,6 @@ public class PerformanceAnalyzerMetrics {
   public static final String MASTER_CURRENT = "current";
   public static final String MASTER_META_DATA = "metadata";
   public static final String METRIC_CURRENT_TIME = "current_time";
-  public static final String SHARD_PRIMARY = "p";
-  public static final String SHARD_REPLICA = "r";
   public static final int QUEUE_SIZE = PluginSettings.instance().getWriterQueueSize();
 
   // TODO: Comeup with a more sensible number.

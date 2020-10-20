@@ -1,8 +1,21 @@
+/*
+ *  Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License").
+ *  You may not use this file except in compliance with the License.
+ *  A copy of the License is located at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  or in the "license" file accompanying this file. This file is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ *  express or implied. See the License for the specific language governing
+ *  permissions and limitations under the License.
+ */
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.DBUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.google.common.annotations.VisibleForTesting;
 
 import java.sql.Connection;
@@ -26,7 +39,6 @@ public class ShardStateMetricsSnapshot implements Removable {
     private static final Logger LOG = LogManager.getLogger(ShardStateMetricsSnapshot.class);
     private final DSLContext create;
     private final String tableName;
-    private static final Long EXPIRE_AFTER = 1200000L;
     private static final List<Field<?>> columns =
             new ArrayList<Field<?>>() {
                 {
@@ -89,70 +101,4 @@ public class ShardStateMetricsSnapshot implements Removable {
                 .set(dimensionMap)
                 .execute();
     }
-
-    /** This method returns the aggregated ShardState metrics with Shard State column as the value and dummy values
-     *  "1.0" in aggreagted columns[sum, avg, min and max]
-     *  @return Result of records.
-     */
-    public Result<Record> fetchAggregatedShardStateMetrics() {
-        List<SelectField<?>> fields = new ArrayList<SelectField<?>>() {
-            {
-                this.add(
-                        DSL.field(
-                                DSL.name(AllMetrics.ShardStateDimension.INDEX_NAME.toString()),
-                                String.class)
-                );
-                this.add(
-                        DSL.field(
-                                DSL.name(AllMetrics.ShardStateDimension.SHARD_ID.toString()),
-                                String.class)
-                );
-                this.add(
-                        DSL.field(
-                                DSL.name(AllMetrics.ShardStateDimension.SHARD_TYPE.toString()),
-                                String.class)
-                );
-                this.add(
-                        DSL.field(
-                                DSL.name(AllMetrics.ShardStateDimension.NODE_NAME.toString()),
-                                String.class)
-                );
-                this.add(
-                        DSL.field(
-                                DSL.name(AllMetrics.ShardStateDimension.SHARD_STATE.toString()),
-                                String.class)
-                );
-                this.add(
-                        DSL.val(1.0)
-                                .as(
-                                        DBUtils.getAggFieldName(
-                                                AllMetrics.ShardStateValue.SHARD_STATE.toString(),
-                                                MetricsDB.SUM))
-                );
-                this.add(
-                        DSL.val(1.0)
-                                .as(
-                                        DBUtils.getAggFieldName(
-                                                AllMetrics.ShardStateValue.SHARD_STATE.toString(),
-                                                MetricsDB.AVG))
-                );
-                this.add(
-                        DSL.val(1.0)
-                                .as(
-                                        DBUtils.getAggFieldName(
-                                                AllMetrics.ShardStateValue.SHARD_STATE.toString(),
-                                                MetricsDB.MIN))
-                );
-                this.add(
-                        DSL.val(1.0)
-                                .as(
-                                        DBUtils.getAggFieldName(
-                                                AllMetrics.ShardStateValue.SHARD_STATE.toString(),
-                                                MetricsDB.MAX))
-                );
-            }
-        };
-        return create.select(fields).from(DSL.table(this.tableName)).fetch();
-    }
-
 }
