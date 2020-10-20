@@ -79,8 +79,10 @@ public class ReaderMetricsProcessor implements Runnable {
   private NavigableMap<Long, MasterEventMetricsSnapshot> masterEventMetricsMap;
   private NavigableMap<Long, GarbageCollectorInfoSnapshot> gcInfoMap;
   private Map<AllMetrics.MetricName, NavigableMap<Long, MemoryDBSnapshot>> nodeMetricsMap;
+  private NavigableMap<Long, ShardStateMetricsSnapshot> shardStateMetricsMap;
   private static final int MAX_DATABASES = 2;
   private static final int OS_SNAPSHOTS = 4;
+  private static final int SHARD_STATE_SNAPSHOTS = 2;
   private static final int RQ_SNAPSHOTS = 4;
   private static final int HTTP_RQ_SNAPSHOTS = 4;
   private static final int MASTER_EVENT_SNAPSHOTS = 4;
@@ -128,6 +130,7 @@ public class ReaderMetricsProcessor implements Runnable {
     shardRqMetricsMap = new TreeMap<>();
     httpRqMetricsMap = new TreeMap<>();
     masterEventMetricsMap = new TreeMap<>();
+    shardStateMetricsMap = new TreeMap<>();
     gcInfoMap = new TreeMap<>();
     this.rootLocation = rootLocation;
     this.configOverridesApplier = new ConfigOverridesApplier();
@@ -267,6 +270,7 @@ public class ReaderMetricsProcessor implements Runnable {
     trimMap(shardRqMetricsMap, RQ_SNAPSHOTS);
     trimMap(httpRqMetricsMap, HTTP_RQ_SNAPSHOTS);
     trimMap(masterEventMetricsMap, MASTER_EVENT_SNAPSHOTS);
+    trimMap(shardStateMetricsMap, SHARD_STATE_SNAPSHOTS);
     trimMap(gcInfoMap, GC_INFO_SNAPSHOTS);
 
     for (NavigableMap<Long, MemoryDBSnapshot> snap : nodeMetricsMap.values()) {
@@ -387,6 +391,7 @@ public class ReaderMetricsProcessor implements Runnable {
     emitShardRequestMetrics(prevWindowStartTime, alignedOSSnapHolder, osAlignedSnap, metricsDB);
     emitHttpRequestMetrics(prevWindowStartTime, metricsDB);
     emitNodeMetrics(currWindowStartTime, metricsDB);
+    emitShardStateMetrics(prevWindowStartTime, metricsDB);
 
     metricsDB.commit();
     metricsDBMap.put(prevWindowStartTime, metricsDB);
@@ -403,6 +408,16 @@ public class ReaderMetricsProcessor implements Runnable {
     TIMING_STATS.put("emitMetrics", (double) (mFinalT - mCurrT));
   }
 
+  private void emitShardStateMetrics(long prevWindowStartTime, MetricsDB metricsDB) {
+    if (shardStateMetricsMap.containsKey(prevWindowStartTime)) {
+      ShardStateMetricsSnapshot prevShardsStateMetricsSnapshot = shardStateMetricsMap.get(prevWindowStartTime);
+      MetricsEmitter.emitShardStateMetric(metricsDB, prevShardsStateMetricsSnapshot);
+    } else {
+      LOG.debug(
+              "Shard State snapshot for the previous window does not exist. Not emitting metrics.");
+    }
+  }
+  
   private void emitGarbageCollectionInfo(long prevWindowStartTime, MetricsDB metricsDB) throws Exception {
     if (gcInfoMap.containsKey(prevWindowStartTime)) {
       GarbageCollectorInfoSnapshot prevGcSnap = gcInfoMap.get(prevWindowStartTime);
@@ -558,6 +573,9 @@ public class ReaderMetricsProcessor implements Runnable {
     EventProcessor nodeEventsProcessor =
         NodeMetricsEventProcessor.buildNodeMetricEventsProcessor(
             currWindowStartTime, conn, nodeMetricsMap);
+    EventProcessor shardStateMetricsProcessor =
+            ShardStateMetricsProcessor.buildShardStateMetricEventsProcessor(
+                    currWindowStartTime, conn, shardStateMetricsMap);
     EventProcessor garbageCollectorInfoProcessor =
         GarbageCollectorInfoProcessor.buildGarbageCollectorInfoProcessor(
             currWindowStartTime, conn, gcInfoMap);
@@ -578,6 +596,7 @@ public class ReaderMetricsProcessor implements Runnable {
     eventDispatcher.registerEventProcessor(httpProcessor);
     eventDispatcher.registerEventProcessor(nodeEventsProcessor);
     eventDispatcher.registerEventProcessor(masterEventsProcessor);
+    eventDispatcher.registerEventProcessor(shardStateMetricsProcessor);
     eventDispatcher.registerEventProcessor(clusterDetailsEventsProcessor);
     eventDispatcher.registerEventProcessor(garbageCollectorInfoProcessor);
 
@@ -971,6 +990,11 @@ public class ReaderMetricsProcessor implements Runnable {
   @VisibleForTesting
   NavigableMap<Long, MasterEventMetricsSnapshot> getMasterEventMetricsMap() {
     return masterEventMetricsMap;
+  }
+
+  @VisibleForTesting
+  NavigableMap<Long, ShardStateMetricsSnapshot> getShardStateMetricsMap() {
+    return shardStateMetricsMap;
   }
 
   @VisibleForTesting

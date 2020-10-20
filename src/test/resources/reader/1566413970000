@@ -5,6 +5,16 @@
 {"DestAddr":"00000000000000000000000000000000","Net_TCP_NumFlows":4,"Net_TCP_TxQ":0.0,"Net_TCP_RxQ":0.0,"Net_TCP_Lost":0.0,"Net_TCP_SendCWND":10.0,"Net_TCP_SSThresh":0.0}
 {"DestAddr":"0000000000000000FFFF0000534ED40A","Net_TCP_NumFlows":26,"Net_TCP_TxQ":6077.807692307692,"Net_TCP_RxQ":0.0,"Net_TCP_Lost":0.0,"Net_TCP_SendCWND":14.576923076923077,"Net_TCP_SSThresh":12.0}
 $
+^shard_state_metrics
+{"current_time":1566413996664}
+{"IndexName":"pmc"}
+{"ShardID":2,"ShardType":"p","NodeName":"elasticsearch2","Shard_State":"Unassigned"}
+{"ShardID":3,"ShardType":"p","NodeName":"elasticsearch1","Shard_State":"Initializing"}
+{"ShardID":4,"ShardType":"r","NodeName":"elasticsearch2","Shard_State":"Unassigned"}
+{"IndexName":"pmc1"}
+{"ShardID":1,"ShardType":"r","NodeName":"elasticsearch1","Shard_State":"Initializing"}
+{"ShardID":0,"ShardType":"p","NodeName":"elasticsearch2","Shard_State":"Unassigned"}
+$
 ^thread_pool
 {"current_time":1566413996664}
 {"ThreadPoolType":"analyze","ThreadPool_QueueSize":0,"ThreadPool_RejectedReqs":0,"ThreadPool_TotalThreads":0,"ThreadPool_ActiveThreads":0}

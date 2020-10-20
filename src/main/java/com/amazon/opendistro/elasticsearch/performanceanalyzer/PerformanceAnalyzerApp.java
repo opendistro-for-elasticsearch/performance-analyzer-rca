@@ -35,6 +35,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.met
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaRuntimeMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaVerticesMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ReaderMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.WriterMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.sys.AllJvmSamplers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.listener.MisbehavingGraphOperateMethodListener;
@@ -88,6 +89,8 @@ public class PerformanceAnalyzerApp {
       new SampleAggregator(RcaVerticesMetrics.values());
   public static final SampleAggregator READER_METRICS_AGGREGATOR =
       new SampleAggregator(ReaderMetrics.values());
+  public static final SampleAggregator WRITER_METRICS_AGGREGATOR =
+          new SampleAggregator(WriterMetrics.values());
 
   private static final IListener MISBEHAVING_NODES_LISTENER =
       new MisbehavingGraphOperateMethodListener();
@@ -102,7 +105,7 @@ public class PerformanceAnalyzerApp {
   public static final RcaStatsReporter RCA_STATS_REPORTER =
       new RcaStatsReporter(Arrays.asList(RCA_GRAPH_METRICS_AGGREGATOR,
           RCA_RUNTIME_METRICS_AGGREGATOR, RCA_VERTICES_METRICS_AGGREGATOR,
-          READER_METRICS_AGGREGATOR,
+          READER_METRICS_AGGREGATOR, WRITER_METRICS_AGGREGATOR,
           ERRORS_AND_EXCEPTIONS_AGGREGATOR, PERIODIC_SAMPLE_AGGREGATOR));
   public static PeriodicSamplers PERIODIC_SAMPLERS;
   public static final BlockingQueue<PAThreadException> exceptionQueue =
