@@ -46,7 +46,9 @@ public enum StatExceptionCode {
   JVM_THREAD_ID_NO_LONGER_EXISTS("JVM_THREAD_ID_NO_LONGER_EXISTS"),
   ES_REQUEST_INTERCEPTOR_ERROR("ES_REQUEST_INTERCEPTOR_ERROR"),
   INVALID_OLD_GEN_SIZE("InvalidOldGenSize"),
-  MISCONFIGURED_OLD_GEN_RCA("MisconfiguredOldGenRca"),
+  MISCONFIGURED_OLD_GEN_RCA_HEAP_MAX_MISSING("MisconfiguredOldGenRcaHeapMaxMissing"),
+  MISCONFIGURED_OLD_GEN_RCA_HEAP_USED_MISSING("MisconfiguredOldGenRcaHeapUsedMissing"),
+  MISCONFIGURED_OLD_GEN_RCA_GC_EVENTS_MISSING("MisconfiguredOldGenRcaGcEventsMissing"),
   OTHER("Other");
 
   private final String value;

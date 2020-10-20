@@ -52,7 +52,7 @@ public abstract class OldGenRca<T extends ResourceFlowUnit<?>> extends Rca<T> {
 
   protected double getMaxOldGenSizeOrDefault(final double defaultValue) {
     if (heap_Max == null) {
-      StatsCollector.instance().logException(StatExceptionCode.MISCONFIGURED_OLD_GEN_RCA);
+      StatsCollector.instance().logException(StatExceptionCode.MISCONFIGURED_OLD_GEN_RCA_HEAP_MAX_MISSING);
       throw new IllegalStateException("RCA: " + this.name() + "was not configured in the graph to "
           + "take heap_Max as a metric. Please check the analysis graph!");
     }
@@ -78,7 +78,7 @@ public abstract class OldGenRca<T extends ResourceFlowUnit<?>> extends Rca<T> {
 
   protected int getFullGcEventsOrDefault(final double defaultValue) {
     if (gc_event == null) {
-      StatsCollector.instance().logException(StatExceptionCode.MISCONFIGURED_OLD_GEN_RCA);
+      StatsCollector.instance().logException(StatExceptionCode.MISCONFIGURED_OLD_GEN_RCA_GC_EVENTS_MISSING);
       throw new IllegalStateException("RCA: " + this.name() + "was not configured in the graph to "
           + "take gc_event as a metric. Please check the analysis graph!");
     }
@@ -104,7 +104,7 @@ public abstract class OldGenRca<T extends ResourceFlowUnit<?>> extends Rca<T> {
 
   protected double getOldGenUsedOrDefault(final double defaultValue) {
     if (heap_Used == null) {
-      StatsCollector.instance().logException(StatExceptionCode.MISCONFIGURED_OLD_GEN_RCA);
+      StatsCollector.instance().logException(StatExceptionCode.MISCONFIGURED_OLD_GEN_RCA_HEAP_USED_MISSING);
       throw new IllegalStateException("RCA: " + this.name() + "was not configured in the graph to "
           + "take heap_Used as a metric. Please check the analysis graph!");
     }
