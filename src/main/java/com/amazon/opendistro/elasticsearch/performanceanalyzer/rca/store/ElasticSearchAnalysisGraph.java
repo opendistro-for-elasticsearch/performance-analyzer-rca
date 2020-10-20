@@ -138,14 +138,12 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     gc_Collection_Time.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     cpuUtilizationGroupByOperation.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
 
-
     addLeaf(heapUsed);
     addLeaf(gcEvent);
     addLeaf(gcType);
     addLeaf(heapMax);
     addLeaf(gc_Collection_Time);
     addLeaf(cpuUtilizationGroupByOperation);
-
 
     //add node stats metrics
     List<Metric> nodeStatsMetrics = constructNodeStatsMetrics();
@@ -185,12 +183,12 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     final HighOldGenOccupancyRca oldGenOccupancyRca = new HighOldGenOccupancyRca(heapMax,
         heapUsed, gcType);
     oldGenOccupancyRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    oldGenOccupancyRca.addAllUpstreams(Arrays.asList(heapMax, heapUsed));
+    oldGenOccupancyRca.addAllUpstreams(Arrays.asList(heapMax, heapUsed, gcType));
 
     final OldGenReclamationRca oldGenReclamationRca = new OldGenReclamationRca(heapUsed,
         heapMax, gcEvent, gcType);
     oldGenReclamationRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    oldGenReclamationRca.addAllUpstreams(Arrays.asList(heapUsed, heapMax, gcEvent));
+    oldGenReclamationRca.addAllUpstreams(Arrays.asList(heapUsed, heapMax, gcEvent, gcType));
 
     final OldGenContendedRca oldGenContendedRca = new OldGenContendedRca(oldGenOccupancyRca,
         oldGenReclamationRca);
