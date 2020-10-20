@@ -54,6 +54,7 @@ public enum WriterMetrics implements MeasurementSet {
     public String toString() {
         return new StringBuilder(name).append("-").append(unit).toString();
     }
+
     @Override
     public List<Statistics> getStatsList() {
         return statsList;

@@ -395,7 +395,7 @@ public class MetricsEmitterTests extends AbstractReaderTests {
 
     String shard_state = res.get(0).get(AllMetrics.ShardStateValue.SHARD_STATE.toString()).toString();
     db.remove();
-    assertEquals("Unassigned", shard_state );
+    assertEquals("Unassigned", shard_state);
   }
 
   @Test

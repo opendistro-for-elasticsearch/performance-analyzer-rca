@@ -15,17 +15,17 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
+import static org.junit.Assert.assertEquals;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
+import java.sql.Connection;
+import java.sql.DriverManager;
+
 import org.jooq.BatchBindStep;
 import org.jooq.Record;
 import org.jooq.Result;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-
-import static org.junit.Assert.assertEquals;
 
 public class ShardStateMetricsSnapshotTest {
     private static final String DB_URL = "jdbc:sqlite:";
