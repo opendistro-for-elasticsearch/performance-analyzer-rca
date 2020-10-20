@@ -24,6 +24,12 @@ import java.util.List;
 
 public enum WriterMetrics implements MeasurementSet {
     SHARD_STATE_COLLECTOR_EXECUTION_TIME("ShardStateCollectorExecutionTime", "millis", Arrays.asList(
+            Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
+
+    MASTER_THROTTLING_COLLECTOR_EXECUTION_TIME("MasterThrottlingCollectorExecutionTime", "millis", Arrays.asList(
+            Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
+
+    MASTER_THROTTLING_COLLECTOR_NOT_AVAILABLE("MasterThrottlingCollectorNotAvailable", "count", Arrays.asList(
             Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM));
 
     /** What we want to appear as the metric name. */

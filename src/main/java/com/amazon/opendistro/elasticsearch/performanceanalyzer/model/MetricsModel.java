@@ -340,6 +340,16 @@ public class MetricsModel {
         new MetricAttributes(
             MetricUnits.MILLISECOND.toString(), AllMetrics.MasterMetricDimensions.values()));
 
+    // Master Throttling Metrics
+    allMetricsInitializer.put(
+            AllMetrics.MasterThrottlingValue.MASTER_THROTTLED_PENDING_TASK_COUNT.toString(),
+            new MetricAttributes(MetricUnits.COUNT.toString(), EmptyDimension.values()));
+
+    allMetricsInitializer.put(
+            AllMetrics.MasterThrottlingValue.DATA_RETRYING_TASK_COUNT.toString(),
+            new MetricAttributes(MetricUnits.COUNT.toString(),
+                    EmptyDimension.values()));
+
     allMetricsInitializer.put(
         AllMetrics.ShardStateValue.SHARD_STATE.toString(),
         new MetricAttributes(

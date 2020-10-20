@@ -48,6 +48,7 @@ public class PerformanceAnalyzerMetrics {
   public static final String sHeapPath = "heap_metrics";
   public static final String sNodesPath = "node_metrics";
   public static final String sPendingTasksPath = "pending_tasks";
+  public static final String sMasterThrottledTasksPath = "master_throttling_metrics";
   public static final String sShardStatePath = "shard_state_metrics";
   public static final String sDisksPath = "disk_metrics";
   public static final String sTCPPath = "tcp_metrics";

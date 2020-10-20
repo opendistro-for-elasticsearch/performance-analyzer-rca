@@ -863,6 +863,129 @@ public class MetricsEmitter {
     }
   }
 
+  public static void emitMasterThrottledTaskMetric(
+          MetricsDB metricsDB, MasterThrottlingMetricsSnapshot masterThrottlingMetricsSnapshot) {
+    long mCurrT = System.currentTimeMillis();
+    Result<Record> masterThrottlingMetrics = masterThrottlingMetricsSnapshot.fetchAggregatedMetrics();
+
+    List<String> dims =
+            new ArrayList<String>();
+    emitMasterThrottlingCount(metricsDB, masterThrottlingMetrics, dims);
+    emitDataThrottlingRetryingCount(metricsDB, masterThrottlingMetrics, dims);
+
+    long mFinalT = System.currentTimeMillis();
+    LOG.debug(
+            "Total time taken for writing master throttling metrics metricsdb: {}", mFinalT - mCurrT);
+    PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(ReaderMetrics.MASTER_THROTTLING_EMITTER_EXECUTION_TIME,
+            "", mFinalT - mCurrT);
+  }
+
+  public static void emitMasterThrottlingCount(MetricsDB metricsDB, Result<Record> res, List<String> dims) {
+    metricsDB.createMetric(
+            new Metric<Double>(AllMetrics.MasterThrottlingValue.MASTER_THROTTLED_PENDING_TASK_COUNT.toString(), 0d),
+            dims);
+
+    BatchBindStep handle =
+            metricsDB.startBatchPut(
+                    new Metric<Double>(AllMetrics.MasterThrottlingValue.MASTER_THROTTLED_PENDING_TASK_COUNT.toString(), 0d),
+                    dims);
+
+    for (Record r : res) {
+
+      Double sumMasterThrottledTask =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.MasterThrottlingValue.MASTER_THROTTLED_PENDING_TASK_COUNT.toString(),
+                                      MetricsDB.SUM))
+                              .toString());
+
+      Double avgMasterThrottledTask =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.MasterThrottlingValue.MASTER_THROTTLED_PENDING_TASK_COUNT.toString(),
+                                      MetricsDB.AVG))
+                              .toString());
+
+      Double minMasterThrottledTask =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.MasterThrottlingValue.MASTER_THROTTLED_PENDING_TASK_COUNT.toString(),
+                                      MetricsDB.MIN))
+                              .toString());
+
+      Double maxMasterThrottledTask =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.MasterThrottlingValue.MASTER_THROTTLED_PENDING_TASK_COUNT.toString(),
+                                      MetricsDB.MAX))
+                              .toString());
+
+      handle.bind(
+              sumMasterThrottledTask,
+              avgMasterThrottledTask,
+              minMasterThrottledTask,
+              maxMasterThrottledTask);
+    }
+
+    handle.execute();
+  }
+
+  public static void emitDataThrottlingRetryingCount(MetricsDB metricsDB, Result<Record> res, List<String> dims) {
+    metricsDB.createMetric(
+            new Metric<Double>(AllMetrics.MasterThrottlingValue.DATA_RETRYING_TASK_COUNT.toString(), 0d),
+            dims);
+
+    BatchBindStep handle =
+            metricsDB.startBatchPut(
+                    new Metric<Double>(AllMetrics.MasterThrottlingValue.DATA_RETRYING_TASK_COUNT.toString(), 0d),
+                    dims);
+
+    for (Record r : res) {
+
+      Double sumDataRetryingTask =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.MasterThrottlingValue.DATA_RETRYING_TASK_COUNT.toString(),
+                                      MetricsDB.SUM))
+                              .toString());
+
+      Double avgDataRetryingTask =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.MasterThrottlingValue.DATA_RETRYING_TASK_COUNT.toString(),
+                                      MetricsDB.AVG))
+                              .toString());
+
+      Double minDataRetryingTask =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.MasterThrottlingValue.DATA_RETRYING_TASK_COUNT.toString(),
+                                      MetricsDB.MIN))
+                              .toString());
+
+      Double maxDataRetryingTask =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.MasterThrottlingValue.DATA_RETRYING_TASK_COUNT.toString(),
+                                      MetricsDB.MAX))
+                              .toString());
+
+      handle.bind(
+              sumDataRetryingTask,
+              avgDataRetryingTask,
+              minDataRetryingTask,
+              maxDataRetryingTask);
+    }
+    handle.execute();
+  }
 
   public static void emitShardStateMetric(
           MetricsDB metricsDB, ShardStateMetricsSnapshot shardStateMetricsSnapshot) {

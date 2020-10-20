@@ -49,7 +49,9 @@ public enum ExceptionsAndErrors implements MeasurementSet {
    */
   READER_METRICSDB_ACCESS_ERRORS("ReaderMetricsdbAccessError"),
 
-  SHARD_STATE_COLLECTOR_ERROR("ShardStateCollectorError");
+  SHARD_STATE_COLLECTOR_ERROR("ShardStateCollectorError"),
+
+  MASTER_THROTTLING_COLLECTOR_ERROR("MasterThrottlingMetricsCollector");
 
   /** What we want to appear as the metric name. */
   private String name;
