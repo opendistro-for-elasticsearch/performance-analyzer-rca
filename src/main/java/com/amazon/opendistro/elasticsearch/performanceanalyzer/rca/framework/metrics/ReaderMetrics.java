@@ -55,7 +55,13 @@ public enum ReaderMetrics implements MeasurementSet {
      * Amount of locally stored data within the batch metrics retention period.
      */
     BATCH_METRICS_DATA_SIZE("BatchMetricsDataSize", "bytes",
-        Arrays.asList(Statistics.MAX, Statistics.MEAN));
+        Arrays.asList(Statistics.MAX, Statistics.MEAN)),
+
+    /**
+     * Amount of time taken to emit Shard State metrics.
+     */
+    SHARD_STATE_EMITTER_EXECUTION_TIME("ShardStateEmitterExecutionTime", "millis",
+        Arrays.asList(Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM));
 
     /** What we want to appear as the metric name. */
     private String name;
