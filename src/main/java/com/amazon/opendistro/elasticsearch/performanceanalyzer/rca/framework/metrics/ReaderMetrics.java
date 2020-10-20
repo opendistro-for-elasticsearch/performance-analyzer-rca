@@ -61,6 +61,12 @@ public enum ReaderMetrics implements MeasurementSet {
      * Amount of time taken to emit Shard State metrics.
      */
     SHARD_STATE_EMITTER_EXECUTION_TIME("ShardStateEmitterExecutionTime", "millis",
+        Arrays.asList(Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
+
+    /**
+     * Amount of time taken to emit Master throttling metrics.
+     */
+    MASTER_THROTTLING_EMITTER_EXECUTION_TIME("MasterThrottlingEmitterExecutionTime", "millis",
         Arrays.asList(Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM));
 
     /** What we want to appear as the metric name. */

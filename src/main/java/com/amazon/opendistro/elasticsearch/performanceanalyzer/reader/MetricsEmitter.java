@@ -875,7 +875,9 @@ public class MetricsEmitter {
 
     long mFinalT = System.currentTimeMillis();
     LOG.debug(
-            "Total time taken for writing master throttling state event queue metrics metricsdb: {}", mFinalT - mCurrT);
+            "Total time taken for writing master throttling metrics metricsdb: {}", mFinalT - mCurrT);
+    PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(ReaderMetrics.MASTER_THROTTLING_EMITTER_EXECUTION_TIME,
+            "", mFinalT - mCurrT);
   }
 
   public static void emitMasterThrottlingCount(MetricsDB metricsDB, Result<Record> res, List<String> dims) {
