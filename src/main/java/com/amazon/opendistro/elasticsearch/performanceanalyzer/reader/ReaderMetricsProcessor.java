@@ -135,7 +135,7 @@ public class ReaderMetricsProcessor implements Runnable {
     shardRqMetricsMap = new TreeMap<>();
     httpRqMetricsMap = new TreeMap<>();
     masterEventMetricsMap = new TreeMap<>();
-	faultDetectionMetricsMap = new TreeMap<>();
+    faultDetectionMetricsMap = new TreeMap<>();
     shardStateMetricsMap = new TreeMap<>();
     gcInfoMap = new TreeMap<>();
     masterThrottlingMetricsMap = new TreeMap<>();
@@ -277,7 +277,7 @@ public class ReaderMetricsProcessor implements Runnable {
     trimMap(shardRqMetricsMap, RQ_SNAPSHOTS);
     trimMap(httpRqMetricsMap, HTTP_RQ_SNAPSHOTS);
     trimMap(masterEventMetricsMap, MASTER_EVENT_SNAPSHOTS);
-	trimMap(faultDetectionMetricsMap, FAULT_DETECTION_SNAPSHOTS);
+    trimMap(faultDetectionMetricsMap, FAULT_DETECTION_SNAPSHOTS);
     trimMap(shardStateMetricsMap, SHARD_STATE_SNAPSHOTS);
     trimMap(gcInfoMap, GC_INFO_SNAPSHOTS);
     trimMap(masterThrottlingMetricsMap, MASTER_THROTTLING_SNAPSHOTS);
@@ -423,7 +423,7 @@ public class ReaderMetricsProcessor implements Runnable {
     if (faultDetectionMetricsMap.containsKey(prevWindowStartTime)) {
 
       FaultDetectionMetricsSnapshot prevFaultDetectionSnap = faultDetectionMetricsMap.get(prevWindowStartTime);
-      MetricsEmitter.emitFaultDetectionMetrics(create, metricsDB, prevFaultDetectionSnap);
+      MetricsEmitter.emitFaultDetectionMetrics(metricsDB, prevFaultDetectionSnap);
     } else {
       LOG.debug(
               "Fault Detection snapshot for the previous window does not exist. Not emitting metrics.");
@@ -637,7 +637,7 @@ public class ReaderMetricsProcessor implements Runnable {
     eventDispatcher.registerEventProcessor(masterThrottlingEventsProcessor);
     eventDispatcher.registerEventProcessor(shardStateMetricsProcessor);
     eventDispatcher.registerEventProcessor(clusterDetailsEventsProcessor);
-	eventDispatcher.registerEventProcessor(faultDetectionProcessor);
+    eventDispatcher.registerEventProcessor(faultDetectionProcessor);
     eventDispatcher.registerEventProcessor(garbageCollectorInfoProcessor);
 
     eventDispatcher.initializeProcessing(

@@ -341,22 +341,22 @@ public class MetricsModel {
             MetricUnits.MILLISECOND.toString(), AllMetrics.MasterMetricDimensions.values()));
 
     allMetricsInitializer.put(
-        AllMetrics.FaultDetectionMetric.LATENCY_FOLLOWER_CHECK.toString(),
+        AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString(),
         new MetricAttributes(
             MetricUnits.MILLISECOND.toString(), AllMetrics.FaultDetectionDimension.values()));
 
     allMetricsInitializer.put(
-        AllMetrics.FaultDetectionMetric.LATENCY_LEADER_CHECK.toString(),
+        AllMetrics.FaultDetectionMetric.LEADER_CHECK_LATENCY.toString(),
         new MetricAttributes(
             MetricUnits.MILLISECOND.toString(), AllMetrics.FaultDetectionDimension.values()));
 
     allMetricsInitializer.put(
-        AllMetrics.FaultDetectionMetric.FAILURE_FOLLOWER_CHECK.toString(),
+        AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_FAILURE.toString(),
         new MetricAttributes(
             MetricUnits.COUNT.toString(), AllMetrics.FaultDetectionDimension.values()));
 
     allMetricsInitializer.put(
-        AllMetrics.FaultDetectionMetric.FAILURE_LEADER_CHECK.toString(),
+        AllMetrics.FaultDetectionMetric.LEADER_CHECK_FAILURE.toString(),
         new MetricAttributes(
             MetricUnits.COUNT.toString(), AllMetrics.FaultDetectionDimension.values()));
 

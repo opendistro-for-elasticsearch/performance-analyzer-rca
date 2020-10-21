@@ -1056,12 +1056,28 @@ public class AllMetrics {
       public static final String SHARD_OP_COUNT_VALUE = "ShardEvents";
     }
   }
+  /*
+   * column names of FollowerCheck_Latency table
+   * SourceNodeId | TargetNodeID | sum | avg | min |max
+   *
+   * column names of LeaderCheck_Latency table
+   * SourceNodeId | TargetNodeID | sum | avg | min |max
+   *
+   * column names of FollowerCheck_Failure table
+   * SourceNodeId | TargetNodeID | sum | avg | min |max
+   *
+   * column names of LeaderCheck_Failure table
+   * SourceNodeId | TargetNodeID | sum | avg | min |max
+   *
+   * <p>Example:
+   * chMe07whRwGrOAqyLTP9vw|hgi7an4RwGrOAqyLTP9vw|1.0|0.2|0.0|1.0
+   */
 
   public enum FaultDetectionMetric implements MetricValue {
-    LATENCY_FOLLOWER_CHECK(Constants.LATENCY_FOLLOWER_CHECK),
-    LATENCY_LEADER_CHECK(Constants.LATENCY_LEADER_CHECK),
-    FAILURE_FOLLOWER_CHECK(Constants.FAILURE_FOLLOWER_CHECK),
-    FAILURE_LEADER_CHECK(Constants.FAILURE_LEADER_CHECK);
+    FOLLOWER_CHECK_LATENCY(Constants.FOLLOWER_CHECK_LATENCY),
+    LEADER_CHECK_LATENCY(Constants.LEADER_CHECK_LATENCY),
+    FOLLOWER_CHECK_FAILURE(Constants.FOLLOWER_CHECK_FAILURE),
+    LEADER_CHECK_FAILURE(Constants.LEADER_CHECK_FAILURE);
 
     private final String value;
 
@@ -1075,10 +1091,10 @@ public class AllMetrics {
     }
 
     public static class Constants {
-      public static final String LATENCY_FOLLOWER_CHECK = "Latency_FollowerCheck";
-      public static final String LATENCY_LEADER_CHECK = "Latency_LeaderCheck";
-      public static final String FAILURE_FOLLOWER_CHECK = "Failure_FollowerCheck";
-      public static final String FAILURE_LEADER_CHECK = "Failure_LeaderCheck";
+      public static final String FOLLOWER_CHECK_LATENCY = "FollowerCheck_Latency";
+      public static final String LEADER_CHECK_LATENCY = "LeaderCheck_Latency";
+      public static final String FOLLOWER_CHECK_FAILURE = "FollowerCheck_Failure";
+      public static final String LEADER_CHECK_FAILURE = "LeaderCheck_Failure";
     }
   }
 

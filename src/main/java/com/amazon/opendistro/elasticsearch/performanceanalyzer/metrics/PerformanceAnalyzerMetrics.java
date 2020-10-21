@@ -65,7 +65,7 @@ public class PerformanceAnalyzerMetrics {
   public static final String METRIC_CURRENT_TIME = "current_time";
   public static final String FAULT_DETECTION_FOLLOWER_CHECK = "follower_check";
   public static final String FAULT_DETECTION_LEADER_CHECK = "leader_check";
-  public static final String ERROR = "error";
+  public static final String FAULT = "fault";
   public static final int QUEUE_SIZE = PluginSettings.instance().getWriterQueueSize();
 
   // TODO: Comeup with a more sensible number.

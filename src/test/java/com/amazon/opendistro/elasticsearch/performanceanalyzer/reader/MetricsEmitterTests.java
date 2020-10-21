@@ -396,18 +396,17 @@ public class MetricsEmitterTests extends AbstractReaderTests {
     faultDetectionMetricsSnapshot.putStartMetric(10000L, dimensions);
     faultDetectionMetricsSnapshot.putEndMetric(30000L, 1, dimensions);
 
-    DSLContext create = DSL.using(conn, SQLDialect.SQLITE);
     MetricsDB db = new MetricsDB(1553713438);
-    MetricsEmitter.emitFaultDetectionMetrics(create, db, faultDetectionMetricsSnapshot);
+    MetricsEmitter.emitFaultDetectionMetrics(db, faultDetectionMetricsSnapshot);
     Result<Record> res =
             db.queryMetric(
                     Arrays.asList(
-                            AllMetrics.FaultDetectionMetric.LATENCY_FOLLOWER_CHECK.toString(),
-                            AllMetrics.FaultDetectionMetric.FAILURE_FOLLOWER_CHECK.toString()),
+                            AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString(),
+                            AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_FAILURE.toString()),
                     Arrays.asList("avg", "sum"),
                     Arrays.asList(AllMetrics.FaultDetectionDimension.SOURCE_NODE_ID.toString()));
 
-    Float latency = Float.parseFloat(res.get(0).get(AllMetrics.FaultDetectionMetric.LATENCY_FOLLOWER_CHECK.toString())
+    Float latency = Float.parseFloat(res.get(0).get(AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString())
             .toString());
     db.remove();
     assertEquals(20490.0f, latency.floatValue(), 0);
