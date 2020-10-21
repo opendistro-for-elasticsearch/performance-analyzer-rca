@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.sizing;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.Action;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.HeapSizeIncreaseAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.AlarmMonitor;
@@ -39,6 +40,7 @@ import javax.annotation.Nonnull;
 
 public class HeapSizeIncreasePolicy implements DecisionPolicy {
 
+  private static final String HEAP_SIZE_INCREASE_ACTION_RECOMMENDED = "RecommendHeapSizeIncrease";
   private final LargeHeapClusterRca largeHeapClusterRca;
   private AppContext appContext;
   private RcaConf rcaConf;
@@ -59,6 +61,7 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
     if (!heapSizeIncreaseClusterMonitor.isHealthy()) {
       Action heapSizeIncreaseAction = new HeapSizeIncreaseAction(appContext);
       if (heapSizeIncreaseAction.isActionable()) {
+        StatsCollector.instance().logMetric(HEAP_SIZE_INCREASE_ACTION_RECOMMENDED);
         actions.add(heapSizeIncreaseAction);
       }
     }
