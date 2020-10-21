@@ -27,6 +27,7 @@ public class Util {
   private static final Logger LOG = LogManager.getLogger(Util.class);
   public static final String METRICS_QUERY_URL = "/_opendistro/_performanceanalyzer/metrics";
   public static final String RCA_QUERY_URL = "/_opendistro/_performanceanalyzer/rca";
+  public static final String ACTIONS_QUERY_URL = "/_opendistro/_performanceanalyzer/actions";
   public static final String ES_HOME = System.getProperty("es.path.home");
   // TODO: Make this configurable.
   public static final int RPC_PORT = 9650;

@@ -341,25 +341,38 @@ public class MetricsModel {
             MetricUnits.MILLISECOND.toString(), AllMetrics.MasterMetricDimensions.values()));
 
     allMetricsInitializer.put(
-            AllMetrics.FaultDetectionMetric.LATENCY_FOLLOWER_CHECK.toString(),
-            new MetricAttributes(
-                    MetricUnits.MILLISECOND.toString(), AllMetrics.FaultDetectionDimension.values()));
+        AllMetrics.FaultDetectionMetric.LATENCY_FOLLOWER_CHECK.toString(),
+        new MetricAttributes(
+            MetricUnits.MILLISECOND.toString(), AllMetrics.FaultDetectionDimension.values()));
 
     allMetricsInitializer.put(
-            AllMetrics.FaultDetectionMetric.LATENCY_LEADER_CHECK.toString(),
-            new MetricAttributes(
-                    MetricUnits.MILLISECOND.toString(), AllMetrics.FaultDetectionDimension.values()));
+        AllMetrics.FaultDetectionMetric.LATENCY_LEADER_CHECK.toString(),
+        new MetricAttributes(
+            MetricUnits.MILLISECOND.toString(), AllMetrics.FaultDetectionDimension.values()));
 
     allMetricsInitializer.put(
-            AllMetrics.FaultDetectionMetric.FAILURE_FOLLOWER_CHECK.toString(),
-            new MetricAttributes(
-                    MetricUnits.COUNT.toString(), AllMetrics.FaultDetectionDimension.values()));
+        AllMetrics.FaultDetectionMetric.FAILURE_FOLLOWER_CHECK.toString(),
+        new MetricAttributes(
+            MetricUnits.COUNT.toString(), AllMetrics.FaultDetectionDimension.values()));
 
     allMetricsInitializer.put(
-            AllMetrics.FaultDetectionMetric.FAILURE_LEADER_CHECK.toString(),
-            new MetricAttributes(
-                    MetricUnits.COUNT.toString(), AllMetrics.FaultDetectionDimension.values()));
+        AllMetrics.FaultDetectionMetric.FAILURE_LEADER_CHECK.toString(),
+        new MetricAttributes(
+            MetricUnits.COUNT.toString(), AllMetrics.FaultDetectionDimension.values()));
 
+    allMetricsInitializer.put(
+            AllMetrics.MasterThrottlingValue.MASTER_THROTTLED_PENDING_TASK_COUNT.toString(),
+            new MetricAttributes(MetricUnits.COUNT.toString(), EmptyDimension.values()));
+
+    allMetricsInitializer.put(
+            AllMetrics.MasterThrottlingValue.DATA_RETRYING_TASK_COUNT.toString(),
+            new MetricAttributes(MetricUnits.COUNT.toString(),
+                    EmptyDimension.values()));
+
+    allMetricsInitializer.put(
+        AllMetrics.ShardStateValue.SHARD_STATE.toString(),
+        new MetricAttributes(
+            MetricUnits.COUNT.toString(), AllMetrics.ShardStateDimension.values()));
 
     ALL_METRICS = Collections.unmodifiableMap(allMetricsInitializer);
   }

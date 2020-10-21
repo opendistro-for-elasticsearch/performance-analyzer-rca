@@ -156,8 +156,8 @@ public class QueryRcaRequestHandler extends MetricsHandler implements HttpHandle
       }
     } else {
       exchange.sendResponseHeaders(HttpURLConnection.HTTP_NOT_FOUND, -1);
-      exchange.close();
     }
+    exchange.close();
   }
 
   private void handleClusterRcaRequest(Map<String, String> params, HttpExchange exchange)

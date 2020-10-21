@@ -34,9 +34,12 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.met
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaRuntimeMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaVerticesMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ReaderMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.WriterMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.sys.AllJvmSamplers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.listener.MisbehavingGraphOperateMethodListener;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.samplers.BatchMetricsEnabledSampler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.samplers.RcaStateSamplers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.RcaStatsReporter;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.collectors.SampleAggregator;
@@ -84,6 +87,10 @@ public class PerformanceAnalyzerApp {
       new SampleAggregator(RcaRuntimeMetrics.values());
   public static final SampleAggregator RCA_VERTICES_METRICS_AGGREGATOR =
       new SampleAggregator(RcaVerticesMetrics.values());
+  public static final SampleAggregator READER_METRICS_AGGREGATOR =
+      new SampleAggregator(ReaderMetrics.values());
+  public static final SampleAggregator WRITER_METRICS_AGGREGATOR =
+          new SampleAggregator(WriterMetrics.values());
 
   private static final IListener MISBEHAVING_NODES_LISTENER =
       new MisbehavingGraphOperateMethodListener();
@@ -98,6 +105,7 @@ public class PerformanceAnalyzerApp {
   public static final RcaStatsReporter RCA_STATS_REPORTER =
       new RcaStatsReporter(Arrays.asList(RCA_GRAPH_METRICS_AGGREGATOR,
           RCA_RUNTIME_METRICS_AGGREGATOR, RCA_VERTICES_METRICS_AGGREGATOR,
+          READER_METRICS_AGGREGATOR, WRITER_METRICS_AGGREGATOR,
           ERRORS_AND_EXCEPTIONS_AGGREGATOR, PERIODIC_SAMPLE_AGGREGATOR));
   public static PeriodicSamplers PERIODIC_SAMPLERS;
   public static final BlockingQueue<PAThreadException> exceptionQueue =
@@ -296,6 +304,7 @@ public class PerformanceAnalyzerApp {
     List<ISampler> allSamplers = new ArrayList<>();
     allSamplers.addAll(AllJvmSamplers.getJvmSamplers());
     allSamplers.add(RcaStateSamplers.getRcaEnabledSampler(appContext));
+    allSamplers.add(new BatchMetricsEnabledSampler(appContext));
 
     return allSamplers;
   }
@@ -304,6 +313,7 @@ public class PerformanceAnalyzerApp {
     List<MeasurementSet> measurementSets = new ArrayList<>();
     measurementSets.addAll(Arrays.asList(JvmMetrics.values()));
     measurementSets.add(RcaRuntimeMetrics.RCA_ENABLED);
+    measurementSets.add(ReaderMetrics.BATCH_METRICS_ENABLED);
 
     return measurementSets.toArray(new MeasurementSet[]{});
   }

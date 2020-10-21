@@ -15,28 +15,22 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.OLD_GEN;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_FULL_GC;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.OLD_GEN_HEAP_USAGE;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighHeapUsageOldGenRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindow;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindowData;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.contexts.ResourceContext;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.TopConsumerSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaVerticesMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.OldGenRca;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,14 +60,11 @@ import org.apache.logging.log4j.Logger;
  * Points_Memory / DocValues_Memory / IndexWriter_Memory / Bitset_Memory / VersionMap_Memory
  </p>
  */
-public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit<HotResourceSummary>> {
+public class HighHeapUsageOldGenRca extends OldGenRca<ResourceFlowUnit<HotResourceSummary>> {
 
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageOldGenRca.class);
   private int counter;
   private double maxOldGenHeapSize;
-  private final Metric heap_Used;
-  private final Metric heap_Max;
-  private final Metric gc_event;
   //list of node stat aggregator to collect node stats
   private final List<NodeStatAggregator> nodeStatAggregators;
   // the amount of RCA period this RCA needs to run before sending out a flowunit
@@ -89,18 +80,14 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit<HotResourceSumm
   // FullGC needs to occur at least once during the entire sliding window in order to capture the
   // minimum
   private static final double OLD_GEN_GC_THRESHOLD = 1;
-  private static final double CONVERT_BYTES_TO_MEGABYTES = Math.pow(1024, 3);
   private int topK;
   protected Clock clock;
 
 
   public <M extends Metric> HighHeapUsageOldGenRca(final int rcaPeriod, final double lowerBoundThreshold,
       final M heap_Used, final M gc_event, final M heap_Max, final List<Metric> consumers) {
-    super(5);
+    super(5, heap_Used, heap_Max, gc_event);
     this.clock = Clock.systemUTC();
-    this.heap_Used = heap_Used;
-    this.gc_event = gc_event;
-    this.heap_Max = heap_Max;
     this.maxOldGenHeapSize = Double.MAX_VALUE;
     this.rcaPeriod = rcaPeriod;
     this.lowerBoundThreshold = (lowerBoundThreshold >= 0 && lowerBoundThreshold <= 1.0)
@@ -125,50 +112,11 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit<HotResourceSumm
 
   @Override
   public ResourceFlowUnit<HotResourceSummary> operate() {
-    List<MetricFlowUnit> heapUsedMetrics = heap_Used.getFlowUnits();
-    List<MetricFlowUnit> gcEventMetrics = gc_event.getFlowUnits();
-    List<MetricFlowUnit> heapMaxMetrics = heap_Max.getFlowUnits();
-    double oldGenHeapUsed = Double.NaN;
-    int oldGenGCEvent = 0;
     counter += 1;
-    for (MetricFlowUnit heapUsedMetric : heapUsedMetrics) {
-      if (heapUsedMetric.isEmpty()) {
-        continue;
-      }
-      double ret =
-          SQLParsingUtil.readDataFromSqlResult(heapUsedMetric.getData(), MEM_TYPE.getField(), OLD_GEN.toString(), MetricsDB.MAX);
-      if (Double.isNaN(ret)) {
-        LOG.error("Failed to parse metric in FlowUnit from {}", heap_Used.getClass().getName());
-      } else {
-        oldGenHeapUsed = ret / CONVERT_BYTES_TO_MEGABYTES;
-      }
-    }
 
-    for (MetricFlowUnit gcEventMetric : gcEventMetrics) {
-      if (gcEventMetric.isEmpty()) {
-        continue;
-      }
-      double ret =
-          SQLParsingUtil.readDataFromSqlResult(gcEventMetric.getData(), MEM_TYPE.getField(), TOT_FULL_GC.toString(), MetricsDB.MAX);
-      if (Double.isNaN(ret)) {
-        LOG.error("Failed to parse metric in FlowUnit from {}", gc_event.getClass().getName());
-      } else {
-        oldGenGCEvent = (int) ret;
-      }
-    }
-
-    for (MetricFlowUnit heapMaxMetric : heapMaxMetrics) {
-      if (heapMaxMetric.isEmpty()) {
-        continue;
-      }
-      double ret =
-          SQLParsingUtil.readDataFromSqlResult(heapMaxMetric.getData(), MEM_TYPE.getField(), OLD_GEN.toString(), MetricsDB.MAX);
-      if (Double.isNaN(ret)) {
-        LOG.error("Failed to parse metric in FlowUnit from {}", heap_Max.getClass().getName());
-      } else {
-        maxOldGenHeapSize = ret / CONVERT_BYTES_TO_MEGABYTES;
-      }
-    }
+    double oldGenHeapUsed = getOldGenUsedOrDefault(Double.NaN);
+    int oldGenGCEvent = getFullGcEventsOrDefault(0);
+    maxOldGenHeapSize = getMaxOldGenSizeOrDefault(Double.MAX_VALUE);
 
     long currTimeStamp = this.clock.millis();
     if (!Double.isNaN(oldGenHeapUsed)) {
@@ -242,37 +190,6 @@ public class HighHeapUsageOldGenRca extends Rca<ResourceFlowUnit<HotResourceSumm
     }
   }
 
-  /**
-   * Sliding window to check the minimal olg gen usage within a given time frame
-   */
-  private static class MinOldGenSlidingWindow extends SlidingWindow<SlidingWindowData> {
-
-    public MinOldGenSlidingWindow(int SLIDING_WINDOW_SIZE_IN_TIMESTAMP, TimeUnit timeUnit) {
-      super(SLIDING_WINDOW_SIZE_IN_TIMESTAMP, timeUnit);
-    }
-
-    @Override
-    public void next(SlidingWindowData e) {
-      while (!windowDeque.isEmpty()
-          && windowDeque.peekFirst().getValue() >= e.getValue()) {
-        windowDeque.pollFirst();
-      }
-      windowDeque.addFirst(e);
-      while (!windowDeque.isEmpty()
-          &&
-          TimeUnit.MILLISECONDS.toSeconds(e.getTimeStamp() - windowDeque.peekLast().getTimeStamp())
-              > SLIDING_WINDOW_SIZE) {
-        windowDeque.pollLast();
-      }
-    }
-
-    public double readMin() {
-      if (!windowDeque.isEmpty()) {
-        return windowDeque.peekLast().getValue();
-      }
-      return Double.NaN;
-    }
-  }
 
   /**
    * read top k value from rca.conf
