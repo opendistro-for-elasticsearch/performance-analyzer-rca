@@ -49,18 +49,20 @@ public class ConfigOverrides {
 
     /**
      * Class containing the overridable attributes of the system. Currently, overriding the
-     * enabled/disabled state for RCAs, deciders, and actions are supported. More attributes can
+     * enabled/disabled state for RCAs, deciders, actions and collectors are supported. More attributes can
      * be added as needed.
      */
     public static class Overrides {
         private List<String> rcas;
         private List<String> deciders;
         private List<String> actions;
+        private List<String> collectors;
 
         public Overrides() {
             this.rcas = new ArrayList<>();
             this.deciders = new ArrayList<>();
             this.actions = new ArrayList<>();
+            this.collectors = new ArrayList<>();
         }
 
         public List<String> getRcas() {
@@ -85,6 +87,14 @@ public class ConfigOverrides {
 
         public void setActions(List<String> actions) {
             this.actions = actions;
+        }
+
+        public List<String> getCollectors() {
+            return collectors;
+        }
+
+        public void setCollectors(List<String> collectors) {
+            this.collectors = collectors;
         }
     }
 }
