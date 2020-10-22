@@ -33,6 +33,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.uti
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.List;
+import java.util.Random;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -87,8 +88,10 @@ public class LevelTwoActionBuilderTest {
   public void testDownSizeAllResources() {
     final double fielddataCacheSizeInPercent = 0.3;
     final double shardRequestCacheSizeInPercent = 0.04;
-    final int writeQueueSize = 800;
-    final int searchQueueSize = 2000;
+    //bucket index = 2
+    final int writeQueueSize = generateQueueSize(ResourceEnum.WRITE_THREADPOOL, 6);
+    //bucket index = 2
+    final int searchQueueSize = generateQueueSize(ResourceEnum.SEARCH_THREADPOOL, 6);
     dummyCache.put(node, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE,
         (long) (heapMaxSizeInBytes * fielddataCacheSizeInPercent));
     dummyCache.put(node, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE,
@@ -203,16 +206,26 @@ public class LevelTwoActionBuilderTest {
     rcaConf.readConfigFromString(configStr);
   }
 
+  //generate a random queue size within the given bucket index
+  private int generateQueueSize(ResourceEnum queueType, int index) {
+    Random rand = new Random();
+    int queueStepSize = rcaConf.getQueueActionConfig().getStepSize(queueType);
+    int lowerBound = rcaConf.getQueueActionConfig().getThresholdConfig(queueType).lowerBound();
+    return lowerBound + index * queueStepSize + rand.nextInt(queueStepSize);
+  }
+
   @Test
   public void testSameBucketsAndPreferIngest() throws Exception {
     updateWorkLoadType(true);
     final double fielddataCacheSizeInPercent = CacheActionConfig.DEFAULT_FIELDDATA_CACHE_LOWER_BOUND;
     final double shardRequestCacheSizeInPercent = CacheActionConfig.DEFAULT_SHARD_REQUEST_CACHE_LOWER_BOUND;
-    // bucket size for search queue = 500 / write queue = 190
+    int writeQueueStepSize = rcaConf.getQueueActionConfig().getStepSize(ResourceEnum.WRITE_THREADPOOL);
+    int searchQueueStepSize = rcaConf.getQueueActionConfig().getStepSize(ResourceEnum.SEARCH_THREADPOOL);
+    // bucket size for search queue = 100 / write queue = 40
     //bucket index = 2
-    final int writeQueueSize = 155;
+    final int writeQueueSize = generateQueueSize(ResourceEnum.WRITE_THREADPOOL, 2);
     //bucket index = 2
-    final int searchQueueSize = 770;
+    final int searchQueueSize = generateQueueSize(ResourceEnum.SEARCH_THREADPOOL, 2);
     dummyCache.put(node, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE,
         (long) (heapMaxSizeInBytes * fielddataCacheSizeInPercent));
     dummyCache.put(node, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE,
@@ -244,11 +257,10 @@ public class LevelTwoActionBuilderTest {
     updateWorkLoadType(false);
     final double fielddataCacheSizeInPercent = CacheActionConfig.DEFAULT_FIELDDATA_CACHE_LOWER_BOUND;
     final double shardRequestCacheSizeInPercent = CacheActionConfig.DEFAULT_SHARD_REQUEST_CACHE_LOWER_BOUND;
-    // bucket size for search queue = 500 / write queue = 190
     //bucket index = 0
-    final int writeQueueSize = QueueActionConfig.DEFAULT_WRITE_QUEUE_LOWER_BOUND + 5;
+    final int writeQueueSize = generateQueueSize(ResourceEnum.WRITE_THREADPOOL, 0);
     //bucket index = 0
-    final int searchQueueSize = QueueActionConfig.DEFAULT_SEARCH_QUEUE_LOWER_BOUND + 20;
+    final int searchQueueSize = generateQueueSize(ResourceEnum.SEARCH_THREADPOOL, 0);
     dummyCache.put(node, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE,
         (long) (heapMaxSizeInBytes * fielddataCacheSizeInPercent));
     dummyCache.put(node, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE,
@@ -278,11 +290,10 @@ public class LevelTwoActionBuilderTest {
     updateWorkLoadType(false);
     final double fielddataCacheSizeInPercent = CacheActionConfig.DEFAULT_FIELDDATA_CACHE_LOWER_BOUND;
     final double shardRequestCacheSizeInPercent = CacheActionConfig.DEFAULT_SHARD_REQUEST_CACHE_LOWER_BOUND;
-    // bucket size for search queue = 500 / write queue = 190
     //bucket index = 1
-    final int writeQueueSize = 280;
+    final int writeQueueSize = generateQueueSize(ResourceEnum.WRITE_THREADPOOL, 1);
     //bucket index = 5
-    final int searchQueueSize = 2100;
+    final int searchQueueSize = generateQueueSize(ResourceEnum.SEARCH_THREADPOOL, 5);
     dummyCache.put(node, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE,
         (long) (heapMaxSizeInBytes * fielddataCacheSizeInPercent));
     dummyCache.put(node, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE,
@@ -314,11 +325,10 @@ public class LevelTwoActionBuilderTest {
     updateWorkLoadType(true);
     final double fielddataCacheSizeInPercent = CacheActionConfig.DEFAULT_FIELDDATA_CACHE_LOWER_BOUND;
     final double shardRequestCacheSizeInPercent = CacheActionConfig.DEFAULT_SHARD_REQUEST_CACHE_LOWER_BOUND;
-    // bucket size for search queue = 500 / write queue = 190
     //bucket index = 4
-    final int writeQueueSize = 690;
+    final int writeQueueSize = generateQueueSize(ResourceEnum.WRITE_THREADPOOL, 4);
     //bucket index = 2
-    final int searchQueueSize = 900;
+    final int searchQueueSize = generateQueueSize(ResourceEnum.SEARCH_THREADPOOL, 2);
     dummyCache.put(node, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE,
         (long) (heapMaxSizeInBytes * fielddataCacheSizeInPercent));
     dummyCache.put(node, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE,
