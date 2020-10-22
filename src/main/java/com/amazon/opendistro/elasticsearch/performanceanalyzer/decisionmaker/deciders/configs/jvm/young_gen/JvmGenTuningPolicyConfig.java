@@ -49,7 +49,7 @@ public class JvmGenTuningPolicyConfig {
   private static final String DAY_MONITOR_BUCKET_SIZE_MINUTES = "day-monitor-bucket-size-minutes";
   private static final String WEEK_MONITOR_BUCKET_SIZE_MINUTES = "week-monitor-bucket-size-minutes";
 
-  public static final boolean DEFAULT_ENABLED = false;
+  public static final boolean DEFAULT_ENABLED = true;
   public static final boolean DEFAULT_ALLOW_YOUNG_GEN_DOWNSIZE = false;
   public static final int DEFAULT_DAY_BREACH_THRESHOLD = 5;
   public static final int DEFAULT_WEEK_BREACH_THRESHOLD = 2;
