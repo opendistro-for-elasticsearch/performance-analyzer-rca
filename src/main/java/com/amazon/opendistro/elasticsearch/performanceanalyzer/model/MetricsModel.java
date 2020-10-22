@@ -340,7 +340,26 @@ public class MetricsModel {
         new MetricAttributes(
             MetricUnits.MILLISECOND.toString(), AllMetrics.MasterMetricDimensions.values()));
 
-    // Master Throttling Metrics
+    allMetricsInitializer.put(
+        AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString(),
+        new MetricAttributes(
+            MetricUnits.MILLISECOND.toString(), AllMetrics.FaultDetectionDimension.values()));
+
+    allMetricsInitializer.put(
+        AllMetrics.FaultDetectionMetric.LEADER_CHECK_LATENCY.toString(),
+        new MetricAttributes(
+            MetricUnits.MILLISECOND.toString(), AllMetrics.FaultDetectionDimension.values()));
+
+    allMetricsInitializer.put(
+        AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_FAILURE.toString(),
+        new MetricAttributes(
+            MetricUnits.COUNT.toString(), AllMetrics.FaultDetectionDimension.values()));
+
+    allMetricsInitializer.put(
+        AllMetrics.FaultDetectionMetric.LEADER_CHECK_FAILURE.toString(),
+        new MetricAttributes(
+            MetricUnits.COUNT.toString(), AllMetrics.FaultDetectionDimension.values()));
+
     allMetricsInitializer.put(
             AllMetrics.MasterThrottlingValue.MASTER_THROTTLED_PENDING_TASK_COUNT.toString(),
             new MetricAttributes(MetricUnits.COUNT.toString(), EmptyDimension.values()));

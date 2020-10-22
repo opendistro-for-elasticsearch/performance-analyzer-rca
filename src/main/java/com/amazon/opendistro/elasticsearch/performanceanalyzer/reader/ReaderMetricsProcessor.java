@@ -79,14 +79,17 @@ public class ReaderMetricsProcessor implements Runnable {
   private NavigableMap<Long, MasterEventMetricsSnapshot> masterEventMetricsMap;
   private NavigableMap<Long, GarbageCollectorInfoSnapshot> gcInfoMap;
   private Map<AllMetrics.MetricName, NavigableMap<Long, MemoryDBSnapshot>> nodeMetricsMap;
+  private NavigableMap<Long, FaultDetectionMetricsSnapshot> faultDetectionMetricsMap;
   private NavigableMap<Long, MasterThrottlingMetricsSnapshot> masterThrottlingMetricsMap;
   private NavigableMap<Long, ShardStateMetricsSnapshot> shardStateMetricsMap;
+
   private static final int MAX_DATABASES = 2;
   private static final int OS_SNAPSHOTS = 4;
   private static final int SHARD_STATE_SNAPSHOTS = 2;
   private static final int RQ_SNAPSHOTS = 4;
   private static final int HTTP_RQ_SNAPSHOTS = 4;
   private static final int MASTER_EVENT_SNAPSHOTS = 4;
+  private static final int FAULT_DETECTION_SNAPSHOTS = 2;
   private static final int GC_INFO_SNAPSHOTS = 4;
   private static final int MASTER_THROTTLING_SNAPSHOTS = 2;
   private final String rootLocation;
@@ -132,6 +135,7 @@ public class ReaderMetricsProcessor implements Runnable {
     shardRqMetricsMap = new TreeMap<>();
     httpRqMetricsMap = new TreeMap<>();
     masterEventMetricsMap = new TreeMap<>();
+    faultDetectionMetricsMap = new TreeMap<>();
     shardStateMetricsMap = new TreeMap<>();
     gcInfoMap = new TreeMap<>();
     masterThrottlingMetricsMap = new TreeMap<>();
@@ -273,6 +277,7 @@ public class ReaderMetricsProcessor implements Runnable {
     trimMap(shardRqMetricsMap, RQ_SNAPSHOTS);
     trimMap(httpRqMetricsMap, HTTP_RQ_SNAPSHOTS);
     trimMap(masterEventMetricsMap, MASTER_EVENT_SNAPSHOTS);
+    trimMap(faultDetectionMetricsMap, FAULT_DETECTION_SNAPSHOTS);
     trimMap(shardStateMetricsMap, SHARD_STATE_SNAPSHOTS);
     trimMap(gcInfoMap, GC_INFO_SNAPSHOTS);
     trimMap(masterThrottlingMetricsMap, MASTER_THROTTLING_SNAPSHOTS);
@@ -395,6 +400,7 @@ public class ReaderMetricsProcessor implements Runnable {
     emitShardRequestMetrics(prevWindowStartTime, alignedOSSnapHolder, osAlignedSnap, metricsDB);
     emitHttpRequestMetrics(prevWindowStartTime, metricsDB);
     emitNodeMetrics(currWindowStartTime, metricsDB);
+    emitFaultDetectionMetrics(prevWindowStartTime, metricsDB);
     emitMasterThrottlingMetrics(prevWindowStartTime, metricsDB);
     emitShardStateMetrics(prevWindowStartTime, metricsDB);
 
@@ -411,6 +417,17 @@ public class ReaderMetricsProcessor implements Runnable {
     mFinalT = System.currentTimeMillis();
     LOG.debug("Total time taken for emitting Metrics: {}", mFinalT - mCurrT);
     TIMING_STATS.put("emitMetrics", (double) (mFinalT - mCurrT));
+  }
+  
+  private void emitFaultDetectionMetrics(long prevWindowStartTime, MetricsDB metricsDB) {
+    if (faultDetectionMetricsMap.containsKey(prevWindowStartTime)) {
+
+      FaultDetectionMetricsSnapshot prevFaultDetectionSnap = faultDetectionMetricsMap.get(prevWindowStartTime);
+      MetricsEmitter.emitFaultDetectionMetrics(metricsDB, prevFaultDetectionSnap);
+    } else {
+      LOG.debug(
+              "Fault Detection snapshot for the previous window does not exist. Not emitting metrics.");
+    }
   }
 
   private void emitShardStateMetrics(long prevWindowStartTime, MetricsDB metricsDB) {
@@ -582,6 +599,9 @@ public class ReaderMetricsProcessor implements Runnable {
     EventProcessor httpProcessor =
         HttpRequestEventProcessor.buildHttpRequestMetricEventsProcessor(
             currWindowStartTime, currWindowEndTime, conn, httpRqMetricsMap);
+    EventProcessor faultDetectionProcessor =
+            FaultDetectionMetricsProcessor.buildFaultDetectionMetricsProcessor(
+                    currWindowStartTime, conn, faultDetectionMetricsMap);
     EventProcessor masterEventsProcessor =
         MasterMetricsEventProcessor.buildMasterMetricEventsProcessor(
             currWindowStartTime, conn, masterEventMetricsMap);
@@ -617,6 +637,7 @@ public class ReaderMetricsProcessor implements Runnable {
     eventDispatcher.registerEventProcessor(masterThrottlingEventsProcessor);
     eventDispatcher.registerEventProcessor(shardStateMetricsProcessor);
     eventDispatcher.registerEventProcessor(clusterDetailsEventsProcessor);
+    eventDispatcher.registerEventProcessor(faultDetectionProcessor);
     eventDispatcher.registerEventProcessor(garbageCollectorInfoProcessor);
 
     eventDispatcher.initializeProcessing(

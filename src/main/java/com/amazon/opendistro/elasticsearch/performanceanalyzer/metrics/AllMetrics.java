@@ -1056,6 +1056,68 @@ public class AllMetrics {
       public static final String SHARD_OP_COUNT_VALUE = "ShardEvents";
     }
   }
+  /*
+   * column names of FollowerCheck_Latency table
+   * SourceNodeId | TargetNodeID | sum | avg | min |max
+   *
+   * column names of LeaderCheck_Latency table
+   * SourceNodeId | TargetNodeID | sum | avg | min |max
+   *
+   * column names of FollowerCheck_Failure table
+   * SourceNodeId | TargetNodeID | sum | avg | min |max
+   *
+   * column names of LeaderCheck_Failure table
+   * SourceNodeId | TargetNodeID | sum | avg | min |max
+   *
+   * <p>Example:
+   * chMe07whRwGrOAqyLTP9vw|hgi7an4RwGrOAqyLTP9vw|1.0|0.2|0.0|1.0
+   */
+
+  public enum FaultDetectionMetric implements MetricValue {
+    FOLLOWER_CHECK_LATENCY(Constants.FOLLOWER_CHECK_LATENCY),
+    LEADER_CHECK_LATENCY(Constants.LEADER_CHECK_LATENCY),
+    FOLLOWER_CHECK_FAILURE(Constants.FOLLOWER_CHECK_FAILURE),
+    LEADER_CHECK_FAILURE(Constants.LEADER_CHECK_FAILURE);
+
+    private final String value;
+
+    FaultDetectionMetric(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String FOLLOWER_CHECK_LATENCY = "FollowerCheck_Latency";
+      public static final String LEADER_CHECK_LATENCY = "LeaderCheck_Latency";
+      public static final String FOLLOWER_CHECK_FAILURE = "FollowerCheck_Failure";
+      public static final String LEADER_CHECK_FAILURE = "LeaderCheck_Failure";
+    }
+  }
+
+  public enum FaultDetectionDimension implements MetricDimension {
+    SOURCE_NODE_ID(Constants.SOURCE_NODE_ID),
+    TARGET_NODE_ID(Constants.TARGET_NODE_ID);
+
+    private final String value;
+
+    FaultDetectionDimension(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String SOURCE_NODE_ID = "SourceNodeID";
+      public static final String TARGET_NODE_ID = "TargetNodeID";
+    }
+  }
 
   public enum CommonDimension implements MetricDimension {
     INDEX_NAME(Constants.INDEX_NAME_VALUE),

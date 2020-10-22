@@ -67,8 +67,10 @@ public enum ReaderMetrics implements MeasurementSet {
      * Amount of time taken to emit Master throttling metrics.
      */
     MASTER_THROTTLING_EMITTER_EXECUTION_TIME("MasterThrottlingEmitterExecutionTime", "millis",
-        Arrays.asList(Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM));
+        Arrays.asList(Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
 
+    FAULT_DETECTION_METRICS_EMITTER_EXECUTION_TIME("FaultDetectionMetricsEmitterExecutionTime", "millis",
+        Arrays.asList(Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM));
     /** What we want to appear as the metric name. */
     private String name;
 
