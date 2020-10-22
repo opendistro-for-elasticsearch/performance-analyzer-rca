@@ -15,6 +15,8 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.HighOldGenOccupancyRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources.State;
@@ -118,6 +120,8 @@ public class HighOldGenOccupancyRca extends OldGenRca<ResourceFlowUnit<HotResour
 
     if (maxOldGen == 0d) {
       LOG.info("Max Old Gen capacity cannot be 0. Skipping.");
+
+      StatsCollector.instance().logException(StatExceptionCode.INVALID_OLD_GEN_SIZE);
       return;
     }
 

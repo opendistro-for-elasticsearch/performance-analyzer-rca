@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.DBUtils;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.TroubleshootingConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonMetric;
@@ -25,6 +26,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Dimensions;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ReaderMetrics;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +35,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.BatchBindStep;
@@ -86,6 +90,17 @@ public class MetricsEmitter {
           this.add(ShardRequestMetricsSnapshot.Fields.SHARD_ROLE.toString());
         }
       };
+
+  private static final List<String> SHARD_STATE_TABLE_DIMENSIONS =
+          new ArrayList<String>() {
+            {
+              this.add(AllMetrics.ShardStateDimension.INDEX_NAME.toString());
+              this.add(AllMetrics.ShardStateDimension.SHARD_ID.toString());
+              this.add(AllMetrics.ShardStateDimension.SHARD_TYPE.toString());
+              this.add(AllMetrics.ShardStateDimension.NODE_NAME.toString());
+              this.add(AllMetrics.ShardStateDimension.SHARD_STATE.toString());
+            }
+          };
 
   public static void emitAggregatedOSMetrics(
       final DSLContext create,
@@ -846,5 +861,162 @@ public class MetricsEmitter {
       LOG.debug(
           "Total time taken for writing {} metrics metricsdb: {}", tableName, mFinalT - mCurrT);
     }
+  }
+
+  public static void emitMasterThrottledTaskMetric(
+          MetricsDB metricsDB, MasterThrottlingMetricsSnapshot masterThrottlingMetricsSnapshot) {
+    long mCurrT = System.currentTimeMillis();
+    Result<Record> masterThrottlingMetrics = masterThrottlingMetricsSnapshot.fetchAggregatedMetrics();
+
+    List<String> dims =
+            new ArrayList<String>();
+    emitMasterThrottlingCount(metricsDB, masterThrottlingMetrics, dims);
+    emitDataThrottlingRetryingCount(metricsDB, masterThrottlingMetrics, dims);
+
+    long mFinalT = System.currentTimeMillis();
+    LOG.debug(
+            "Total time taken for writing master throttling metrics metricsdb: {}", mFinalT - mCurrT);
+    PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(ReaderMetrics.MASTER_THROTTLING_EMITTER_EXECUTION_TIME,
+            "", mFinalT - mCurrT);
+  }
+
+  public static void emitMasterThrottlingCount(MetricsDB metricsDB, Result<Record> res, List<String> dims) {
+    metricsDB.createMetric(
+            new Metric<Double>(AllMetrics.MasterThrottlingValue.MASTER_THROTTLED_PENDING_TASK_COUNT.toString(), 0d),
+            dims);
+
+    BatchBindStep handle =
+            metricsDB.startBatchPut(
+                    new Metric<Double>(AllMetrics.MasterThrottlingValue.MASTER_THROTTLED_PENDING_TASK_COUNT.toString(), 0d),
+                    dims);
+
+    for (Record r : res) {
+
+      Double sumMasterThrottledTask =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.MasterThrottlingValue.MASTER_THROTTLED_PENDING_TASK_COUNT.toString(),
+                                      MetricsDB.SUM))
+                              .toString());
+
+      Double avgMasterThrottledTask =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.MasterThrottlingValue.MASTER_THROTTLED_PENDING_TASK_COUNT.toString(),
+                                      MetricsDB.AVG))
+                              .toString());
+
+      Double minMasterThrottledTask =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.MasterThrottlingValue.MASTER_THROTTLED_PENDING_TASK_COUNT.toString(),
+                                      MetricsDB.MIN))
+                              .toString());
+
+      Double maxMasterThrottledTask =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.MasterThrottlingValue.MASTER_THROTTLED_PENDING_TASK_COUNT.toString(),
+                                      MetricsDB.MAX))
+                              .toString());
+
+      handle.bind(
+              sumMasterThrottledTask,
+              avgMasterThrottledTask,
+              minMasterThrottledTask,
+              maxMasterThrottledTask);
+    }
+
+    handle.execute();
+  }
+
+  public static void emitDataThrottlingRetryingCount(MetricsDB metricsDB, Result<Record> res, List<String> dims) {
+    metricsDB.createMetric(
+            new Metric<Double>(AllMetrics.MasterThrottlingValue.DATA_RETRYING_TASK_COUNT.toString(), 0d),
+            dims);
+
+    BatchBindStep handle =
+            metricsDB.startBatchPut(
+                    new Metric<Double>(AllMetrics.MasterThrottlingValue.DATA_RETRYING_TASK_COUNT.toString(), 0d),
+                    dims);
+
+    for (Record r : res) {
+
+      Double sumDataRetryingTask =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.MasterThrottlingValue.DATA_RETRYING_TASK_COUNT.toString(),
+                                      MetricsDB.SUM))
+                              .toString());
+
+      Double avgDataRetryingTask =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.MasterThrottlingValue.DATA_RETRYING_TASK_COUNT.toString(),
+                                      MetricsDB.AVG))
+                              .toString());
+
+      Double minDataRetryingTask =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.MasterThrottlingValue.DATA_RETRYING_TASK_COUNT.toString(),
+                                      MetricsDB.MIN))
+                              .toString());
+
+      Double maxDataRetryingTask =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.MasterThrottlingValue.DATA_RETRYING_TASK_COUNT.toString(),
+                                      MetricsDB.MAX))
+                              .toString());
+
+      handle.bind(
+              sumDataRetryingTask,
+              avgDataRetryingTask,
+              minDataRetryingTask,
+              maxDataRetryingTask);
+    }
+    handle.execute();
+  }
+
+  public static void emitShardStateMetric(
+          MetricsDB metricsDB, ShardStateMetricsSnapshot shardStateMetricsSnapshot) {
+    long mCurrT = System.currentTimeMillis();
+    Result<Record> shardStateMetrics = shardStateMetricsSnapshot.fetchAll();
+    metricsDB.createMetric(
+            new Metric<Double>(AllMetrics.ShardStateValue.SHARD_STATE.toString(), 0d),
+            SHARD_STATE_TABLE_DIMENSIONS);
+
+    BatchBindStep handle =
+            metricsDB.startBatchPut(
+                    new Metric<Double>(AllMetrics.ShardStateValue.SHARD_STATE.toString(), 0d),
+                    SHARD_STATE_TABLE_DIMENSIONS);
+
+    for (Record r : shardStateMetrics) {
+      handle.bind(
+              r.get(AllMetrics.ShardStateDimension.INDEX_NAME.toString()).toString(),
+              r.get(AllMetrics.ShardStateDimension.SHARD_ID.toString()).toString(),
+              r.get(AllMetrics.ShardStateDimension.SHARD_TYPE.toString()).toString(),
+              r.get(AllMetrics.ShardStateDimension.NODE_NAME.toString()).toString(),
+              r.get(AllMetrics.ShardStateDimension.SHARD_STATE.toString()).toString(),
+              1.0,
+              1.0,
+              1.0,
+              1.0);
+    }
+    handle.execute();
+    long mFinalT = System.currentTimeMillis();
+    LOG.debug(
+            "Total time taken for writing shard state event queue metrics metricsdb: {}", mFinalT - mCurrT);
+    PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(ReaderMetrics.SHARD_STATE_EMITTER_EXECUTION_TIME,
+            "", mFinalT - mCurrT);
   }
 }

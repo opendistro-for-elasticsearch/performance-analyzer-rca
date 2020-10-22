@@ -32,7 +32,13 @@ public enum RcaVerticesMetrics implements MeasurementSet {
   NUM_HIGH_HEAP_CLUSTER_RCA_TRIGGERED(
       "HighHeapClusterRcaCount", "count", Collections.singletonList(Statistics.COUNT)),
   YOUNG_GEN_RCA_NAMED_COUNT(
-      "YoungGenRcaNamedCount", "namedCount", Collections.singletonList(Statistics.NAMED_COUNTERS));
+      "YoungGenRcaNamedCount", "namedCount", Collections.singletonList(Statistics.NAMED_COUNTERS)),
+  NUM_FIELD_DATA_CACHE_RCA_TRIGGERED(
+      "FieldDataCacheRcaCount", "count", Collections.singletonList(Statistics.COUNT)),
+  NUM_SHARD_REQUEST_CACHE_RCA_TRIGGERED(
+          "ShardRequestCacheCount", "count", Collections.singletonList(Statistics.COUNT)),
+  CLUSTER_RCA_NAMED_COUNT(
+          "ClusterRcaNamedCount", "namedCount", Collections.singletonList(Statistics.NAMED_COUNTERS));
 
   /** What we want to appear as the metric name. */
   private String name;

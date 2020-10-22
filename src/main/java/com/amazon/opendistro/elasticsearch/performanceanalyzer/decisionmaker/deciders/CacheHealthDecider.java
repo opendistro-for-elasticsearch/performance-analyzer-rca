@@ -121,8 +121,6 @@ public class CacheHealthDecider extends HeapBasedDecider {
   }
 
   private void configureModifyCacheActionPriority() {
-    // Assigning shard request cache higher priority over field data cache
-    // TODO: Modify as per the performance test results
     this.modifyCacheActionPriorityList.add(ResourceEnum.SHARD_REQUEST_CACHE);
     this.modifyCacheActionPriorityList.add(ResourceEnum.FIELD_DATA_CACHE);
   }

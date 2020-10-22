@@ -18,17 +18,22 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.t
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaControllerHelper;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.api.IValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.PersistedAction;
 import org.junit.Assert;
 
 public class QueueDeciderValidator implements IValidator {
     AppContext appContext;
+    RcaConf rcaConf;
     long startTime;
 
     public QueueDeciderValidator() {
         appContext = new AppContext();
         startTime = System.currentTimeMillis();
+        rcaConf = RcaControllerHelper.pickRcaConfForRole(NodeRole.ELECTED_MASTER);
     }
 
     /**
@@ -74,7 +79,8 @@ public class QueueDeciderValidator implements IValidator {
         Assert.assertTrue(persistedAction.isActionable());
         Assert.assertFalse(persistedAction.isMuted());
         Assert.assertEquals(ResourceEnum.WRITE_THREADPOOL, modifyQueueCapacityAction.getThreadPool());
-        Assert.assertEquals(547, modifyQueueCapacityAction.getDesiredCapacity());
+        int writeQueueStepSize = rcaConf.getQueueActionConfig().getStepSize(ResourceEnum.WRITE_THREADPOOL);
+        Assert.assertEquals(500 + writeQueueStepSize, modifyQueueCapacityAction.getDesiredCapacity());
         Assert.assertEquals(500, modifyQueueCapacityAction.getCurrentCapacity());
         return true;
     }

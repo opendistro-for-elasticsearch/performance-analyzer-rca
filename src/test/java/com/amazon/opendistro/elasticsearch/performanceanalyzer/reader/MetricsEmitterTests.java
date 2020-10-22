@@ -22,6 +22,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.TroubleshootingConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCInfoDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCInfoValue;
@@ -38,6 +39,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metrics
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -374,6 +376,28 @@ public class MetricsEmitterTests extends AbstractReaderTests {
     }
     db.remove();
   }
+  
+  @Test
+  public void testShardStateMetricsEmitter() throws Exception {
+    Connection conn = DriverManager.getConnection(DB_URL);
+    ShardStateMetricsSnapshot shardStateMetricsSnapshot = new ShardStateMetricsSnapshot(conn, 1L);
+    Map<String, String> dimensions = new HashMap<>();
+    dimensions.put(AllMetrics.ShardStateDimension.INDEX_NAME.toString(), "indexName");
+    dimensions.put(AllMetrics.ShardStateDimension.SHARD_ID.toString(), "shardId");
+    dimensions.put(AllMetrics.ShardStateDimension.SHARD_TYPE.toString(), "p");
+    dimensions.put(AllMetrics.ShardStateDimension.NODE_NAME.toString(), "nodeName");
+
+    shardStateMetricsSnapshot.putMetrics("Unassigned", dimensions);
+    MetricsDB db = new MetricsDB(1553713438);
+    MetricsEmitter.emitShardStateMetric(db, shardStateMetricsSnapshot);
+
+    Result<Record> res =
+            db.queryMetric(AllMetrics.ShardStateValue.SHARD_STATE.toString());
+
+    String shard_state = res.get(0).get(AllMetrics.ShardStateValue.SHARD_STATE.toString()).toString();
+    db.remove();
+    assertEquals("Unassigned", shard_state);
+  }
 
   @Test
   public void testEmitGCTypeMetric() throws Exception {
@@ -397,5 +421,27 @@ public class MetricsEmitterTests extends AbstractReaderTests {
     assertEquals(1, result.size());
     assertEquals(memPool, result.get(0).get(GCInfoDimension.MEMORY_POOL.getField()));
     assertEquals(collectorName, result.get(0).get(GCInfoDimension.COLLECTOR_NAME.getField()));
+  }
+
+  @Test
+  public void testMasterThrottlingMetricsEmitter() throws Exception {
+    Connection conn = DriverManager.getConnection(DB_URL);
+    MasterThrottlingMetricsSnapshot masterThrottlingMetricsSnapshot = new MasterThrottlingMetricsSnapshot(conn, 1L);
+    Map<String, String> dimensions = new HashMap<>();
+
+    masterThrottlingMetricsSnapshot.putMetrics(1, dimensions);
+    MetricsDB db = new MetricsDB(1553713438);
+    MetricsEmitter.emitMasterThrottledTaskMetric(db, masterThrottlingMetricsSnapshot);
+
+    Result<Record> res =
+            db.queryMetric(
+                    Arrays.asList(AllMetrics.MasterThrottlingValue.DATA_RETRYING_TASK_COUNT.toString()),
+                    Arrays.asList("sum"),
+                    new ArrayList<>());
+
+    Double retrying_task = Double.parseDouble(res.get(0).get(
+            AllMetrics.MasterThrottlingValue.DATA_RETRYING_TASK_COUNT.toString()).toString());
+    db.remove();
+    assertEquals(1.0, retrying_task.doubleValue(), 0);
   }
 }

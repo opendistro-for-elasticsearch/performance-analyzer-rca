@@ -36,11 +36,11 @@ import org.apache.logging.log4j.Logger;
  *       "total-step-count": 20,
  *       "search": {
  *         "upper-bound": 3000,
- *         "lower-bound": 500
+ *         "lower-bound": 1000
  *       },
  *       "write": {
  *         "upper-bound": 1000,
- *         "lower-bound": 50
+ *         "lower-bound": 200
  *       }
  *     }
  * }
@@ -58,9 +58,9 @@ public class QueueActionConfig {
   private static final String TOTAL_STEP_COUNT_CONFIG_NAME = "total-step-count";
   public static final int DEFAULT_TOTAL_STEP_COUNT = 20;
   public static final int DEFAULT_SEARCH_QUEUE_UPPER_BOUND = 3000;
-  public static final int DEFAULT_SEARCH_QUEUE_LOWER_BOUND = 500;
+  public static final int DEFAULT_SEARCH_QUEUE_LOWER_BOUND = 1000;
   public static final int DEFAULT_WRITE_QUEUE_UPPER_BOUND = 1000;
-  public static final int DEFAULT_WRITE_QUEUE_LOWER_BOUND = 50;
+  public static final int DEFAULT_WRITE_QUEUE_LOWER_BOUND = 200;
 
   public QueueActionConfig(RcaConf conf) {
     Map<String, Object> actionConfig = conf.getActionConfigSettings();
