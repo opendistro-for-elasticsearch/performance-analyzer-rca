@@ -126,7 +126,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     Metric gcEvent = new GC_Collection_Event(EVALUATION_INTERVAL_SECONDS);
     Heap_Max heapMax = new Heap_Max(EVALUATION_INTERVAL_SECONDS);
     Metric gc_Collection_Time = new GC_Collection_Time(EVALUATION_INTERVAL_SECONDS);
-    Metric gcType = new GC_Type(EVALUATION_INTERVAL_SECONDS);
+    GC_Type gcType = new GC_Type(EVALUATION_INTERVAL_SECONDS);
     Metric cpuUtilizationGroupByOperation = new AggregateMetric(1, CPU_Utilization.NAME,
             AggregateFunction.SUM,
             MetricsDB.AVG, CommonDimension.OPERATION.toString());
@@ -156,9 +156,9 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     highHeapUsageOldGenRca.addAllUpstreams(upstream);
 
     Rca<ResourceFlowUnit<HotResourceSummary>> highHeapUsageYoungGenRca = new HighHeapUsageYoungGenRca(RCA_PERIOD, heapUsed,
-            gc_Collection_Time, gcEvent);
+            gc_Collection_Time, gcEvent, gcType);
     highHeapUsageYoungGenRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    highHeapUsageYoungGenRca.addAllUpstreams(Arrays.asList(heapUsed, gc_Collection_Time, gcEvent));
+    highHeapUsageYoungGenRca.addAllUpstreams(Arrays.asList(heapUsed, gc_Collection_Time, gcEvent, gcType));
 
     Rca<ResourceFlowUnit<HotResourceSummary>> highCpuRca = new HighCpuRca(RCA_PERIOD, cpuUtilizationGroupByOperation);
     highCpuRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);

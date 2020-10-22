@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca.hotheap;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.EDEN;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.OLD_GEN;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_FULL_GC;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_YOUNG_GC;
@@ -24,10 +25,13 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.YOUNG_GEN_PROMOTION_RATE;
 import static java.time.Instant.ofEpochMilli;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCInfoDimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCInfoDimension.Constants;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.GC_Type;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.MetricTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap.HighHeapUsageYoungGenRca;
@@ -49,9 +53,11 @@ import org.junit.experimental.categories.Category;
 @Category(GradleTaskForRca.class)
 public class HighHeapUsageYoungGenRcaTest {
   private static final double CONVERT_MEGABYTES_TO_BYTES = Math.pow(1024, 2);
+  private static final String CMS_COLLECTOR = "ConcurrentMarkSweep";
   private MetricTestHelper heap_Used;
   private MetricTestHelper gc_Collection_Time;
   private MetricTestHelper gc_Collection_Event;
+  private MetricTestHelper gc_Type;
   private HighHeapUsageYoungGenRcaX youngGenRcaX;
   private List<String> columnName;
 
@@ -64,6 +70,8 @@ public class HighHeapUsageYoungGenRcaTest {
     List<String> fullGcRow = Arrays.asList(TOT_FULL_GC.toString(), String.valueOf(fullGcTime));
     gc_Collection_Time.createTestFlowUnitsWithMultipleRows(columnName, Lists.newArrayList(youngGcRow, fullGcRow));
     gc_Collection_Event.createTestFlowUnits(columnName, Arrays.asList(OLD_GEN.toString(), String.valueOf(fullGcEvents)));
+    gc_Type.createTestFlowUnits(Arrays.asList(GCInfoDimension.MEMORY_POOL.toString(),
+        GCInfoDimension.COLLECTOR_NAME.toString()), Arrays.asList(EDEN.toString(), CMS_COLLECTOR));
   }
 
   @Before
@@ -71,7 +79,8 @@ public class HighHeapUsageYoungGenRcaTest {
     heap_Used = new MetricTestHelper(5);
     gc_Collection_Time = new MetricTestHelper(5);
     gc_Collection_Event = new MetricTestHelper(5);
-    youngGenRcaX = new HighHeapUsageYoungGenRcaX(1, heap_Used, gc_Collection_Time, gc_Collection_Event);
+    gc_Type = new MetricTestHelper(5);
+    youngGenRcaX = new HighHeapUsageYoungGenRcaX(1, heap_Used, gc_Collection_Time, gc_Collection_Event, gc_Type);
     columnName = Arrays.asList(MEM_TYPE.toString(), MetricsDB.MAX);
   }
 
@@ -94,13 +103,13 @@ public class HighHeapUsageYoungGenRcaTest {
 
     // ts = 2, heap = 1050MB, minor gc time = 240ms, full gc time = 12000ms
     // the average full GC time is now 10.5s which is > the threshold of 10s
-    mockFlowUnits(1050, 400, 12000, 0);
+    mockFlowUnits(1050, 400, 24000, 0);
     youngGenRcaX.setClock(Clock.offset(constantClock, Duration.ofSeconds(2)));
     flowUnit = youngGenRcaX.operate();
     Assert.assertTrue(flowUnit.getResourceContext().isUnhealthy());
     HotResourceSummary summary = (HotResourceSummary) flowUnit.getSummary();
     Assert.assertEquals(FULL_GC_PAUSE_TIME, summary.getResource());
-    Assert.assertEquals(10500, summary.getValue(), 0.1);
+    Assert.assertEquals(11000, summary.getValue(), 0.1);
 
     // ts = 3, heap = 1650MB, minor gc time = 600ms, full gc time = 0ms
     // the average promotion rate is now 550 MB/s which is > the threshold of 500 MB/s
@@ -135,8 +144,8 @@ public class HighHeapUsageYoungGenRcaTest {
 
   private static class HighHeapUsageYoungGenRcaX extends HighHeapUsageYoungGenRca {
     public <M extends Metric> HighHeapUsageYoungGenRcaX(final int rcaPeriod,
-        final M heap_Used, final M gc_Collection_Time, final M gc_Collection_Event) {
-      super(rcaPeriod, heap_Used, gc_Collection_Time, gc_Collection_Event);
+        final M heap_Used, final M gc_Collection_Time, final M gc_Collection_Event, final M gc_Type) {
+      super(rcaPeriod, heap_Used, gc_Collection_Time, gc_Collection_Event, gc_Type);
     }
 
     public void setClock(Clock testClock) {
