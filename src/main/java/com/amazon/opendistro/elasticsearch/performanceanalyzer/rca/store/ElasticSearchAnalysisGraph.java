@@ -47,6 +47,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.DocValues_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.GC_Collection_Event;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.GC_Collection_Time;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.GC_Type;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Used;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.IO_TotThroughput;
@@ -125,18 +126,21 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     Metric gcEvent = new GC_Collection_Event(EVALUATION_INTERVAL_SECONDS);
     Heap_Max heapMax = new Heap_Max(EVALUATION_INTERVAL_SECONDS);
     Metric gc_Collection_Time = new GC_Collection_Time(EVALUATION_INTERVAL_SECONDS);
+    Metric gcType = new GC_Type(EVALUATION_INTERVAL_SECONDS);
     Metric cpuUtilizationGroupByOperation = new AggregateMetric(1, CPU_Utilization.NAME,
             AggregateFunction.SUM,
             MetricsDB.AVG, CommonDimension.OPERATION.toString());
 
     heapUsed.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     gcEvent.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    gcType.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     heapMax.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     gc_Collection_Time.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     cpuUtilizationGroupByOperation.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
 
     addLeaf(heapUsed);
     addLeaf(gcEvent);
+    addLeaf(gcType);
     addLeaf(heapMax);
     addLeaf(gc_Collection_Time);
     addLeaf(cpuUtilizationGroupByOperation);
@@ -176,14 +180,15 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     hotNodeClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     hotNodeClusterRca.addAllUpstreams(Collections.singletonList(hotJVMNodeRca));
 
-    final HighOldGenOccupancyRca oldGenOccupancyRca = new HighOldGenOccupancyRca(heapMax, heapUsed);
+    final HighOldGenOccupancyRca oldGenOccupancyRca = new HighOldGenOccupancyRca(heapMax,
+        heapUsed, gcType);
     oldGenOccupancyRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    oldGenOccupancyRca.addAllUpstreams(Arrays.asList(heapMax, heapUsed));
+    oldGenOccupancyRca.addAllUpstreams(Arrays.asList(heapMax, heapUsed, gcType));
 
     final OldGenReclamationRca oldGenReclamationRca = new OldGenReclamationRca(heapUsed,
-        heapMax, gcEvent);
+        heapMax, gcEvent, gcType);
     oldGenReclamationRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    oldGenReclamationRca.addAllUpstreams(Arrays.asList(heapUsed, heapMax, gcEvent));
+    oldGenReclamationRca.addAllUpstreams(Arrays.asList(heapUsed, heapMax, gcEvent, gcType));
 
     final OldGenContendedRca oldGenContendedRca = new OldGenContendedRca(oldGenOccupancyRca,
         oldGenReclamationRca);

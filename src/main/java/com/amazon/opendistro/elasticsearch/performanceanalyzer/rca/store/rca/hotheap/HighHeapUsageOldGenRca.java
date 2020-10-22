@@ -86,7 +86,7 @@ public class HighHeapUsageOldGenRca extends OldGenRca<ResourceFlowUnit<HotResour
 
   public <M extends Metric> HighHeapUsageOldGenRca(final int rcaPeriod, final double lowerBoundThreshold,
       final M heap_Used, final M gc_event, final M heap_Max, final List<Metric> consumers) {
-    super(5, heap_Used, heap_Max, gc_event);
+    super(5, heap_Used, heap_Max, gc_event, null);
     this.clock = Clock.systemUTC();
     this.maxOldGenHeapSize = Double.MAX_VALUE;
     this.rcaPeriod = rcaPeriod;

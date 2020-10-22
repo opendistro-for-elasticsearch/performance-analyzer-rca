@@ -42,11 +42,8 @@ public class MetricTestHelper extends Metric {
     context = DSL.using(new MockConnection(Mock.of(0)));
   }
 
-  public void createTestFlowUnits(final List<String> fieldName, final List<String> row) {
-    List<String[]> stringData = new ArrayList<>();
-    stringData.add(fieldName.toArray(new String[0]));
-    stringData.add(row.toArray(new String[0]));
-    Result<Record> newRecordList = context.fetchFromStringData(stringData);
+  public void createTestFlowUnits(final List<String> fieldNames, final List<String> row) {
+    Result<Record> newRecordList = createTestResult(fieldNames, row);
     this.flowUnits = Collections.singletonList(new MetricFlowUnit(0, newRecordList));
   }
 
@@ -58,5 +55,12 @@ public class MetricTestHelper extends Metric {
     }
     Result<Record> newRecordList = context.fetchFromStringData(stringData);
     this.flowUnits = Collections.singletonList(new MetricFlowUnit(0, newRecordList));
+  }
+
+  public Result<Record> createTestResult(final List<String> fieldNames, final List<String> row) {
+    List<String[]> stringData = new ArrayList<>();
+    stringData.add(fieldNames.toArray(new String[0]));
+    stringData.add(row.toArray(new String[0]));
+    return context.fetchFromStringData(stringData);
   }
 }

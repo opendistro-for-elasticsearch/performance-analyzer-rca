@@ -41,6 +41,7 @@ public class HighOldGenOccupancyRca extends OldGenRca<ResourceFlowUnit<HotResour
 
   private final Metric heapUsed;
   private final Metric heapMax;
+  private final Metric gcType;
   private final SlidingWindow<SlidingWindowData> oldGenUtilizationSlidingWindow;
 
   private long heapUtilizationThreshold;
@@ -56,17 +57,18 @@ public class HighOldGenOccupancyRca extends OldGenRca<ResourceFlowUnit<HotResour
    * @param heapMax The heapMax metric.
    * @param heapUsed The heapUsed metric.
    */
-  public HighOldGenOccupancyRca(final Metric heapMax, final Metric heapUsed) {
-    this(heapMax, heapUsed, HighOldGenOccupancyRcaConfig.DEFAULT_UTILIZATION,
+  public HighOldGenOccupancyRca(final Metric heapMax, final Metric heapUsed, Metric gcType) {
+    this(heapMax, heapUsed, gcType, HighOldGenOccupancyRcaConfig.DEFAULT_UTILIZATION,
         HighOldGenOccupancyRcaConfig.DEFAULT_EVALUATION_INTERVAL_IN_S);
   }
 
-  public HighOldGenOccupancyRca(final Metric heapMax, final Metric heapUsed,
+  public HighOldGenOccupancyRca(final Metric heapMax, final Metric heapUsed, Metric gcType,
       final long heapUtilizationThreshold, final long rcaEvaluationIntervalInS) {
-    super(EVAL_INTERVAL_IN_S, heapUsed, heapMax, null);
+    super(EVAL_INTERVAL_IN_S, heapUsed, heapMax, null, gcType);
     this.oldGenUtilizationSlidingWindow = new SlidingWindow<>(1, TimeUnit.MINUTES);
     this.heapUsed = heapUsed;
     this.heapMax = heapMax;
+    this.gcType = gcType;
     this.heapUtilizationThreshold = heapUtilizationThreshold;
     this.rcaEvaluationIntervalInS = rcaEvaluationIntervalInS;
     this.rcaSamplesBeforeEval = rcaEvaluationIntervalInS / EVAL_INTERVAL_IN_S;
@@ -83,6 +85,10 @@ public class HighOldGenOccupancyRca extends OldGenRca<ResourceFlowUnit<HotResour
 
   @Override
   public ResourceFlowUnit<HotResourceSummary> operate() {
+    if (!isOldGenCollectorCMS()) {
+      // return an empty flow unit. We don't want to tune the JVM when the collector is not CMS.
+      return new ResourceFlowUnit<>(System.currentTimeMillis());
+    }
     samples++;
     addToSlidingWindow();
     if (samples == rcaSamplesBeforeEval) {
@@ -114,9 +120,8 @@ public class HighOldGenOccupancyRca extends OldGenRca<ResourceFlowUnit<HotResour
 
     if (maxOldGen == 0d) {
       LOG.info("Max Old Gen capacity cannot be 0. Skipping.");
+
       StatsCollector.instance().logException(StatExceptionCode.INVALID_OLD_GEN_SIZE);
-      // TODO: Unit test for this RCA and OldGenReclamation are in the PR where we are checking
-      //  for GC type before evaluating.
       return;
     }
 

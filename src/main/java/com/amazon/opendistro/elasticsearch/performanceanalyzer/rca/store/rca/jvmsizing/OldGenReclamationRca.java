@@ -43,14 +43,16 @@ public class OldGenReclamationRca extends OldGenRca<ResourceFlowUnit<HotResource
   private long rcaPeriod;
   private int samples;
 
-  public OldGenReclamationRca(final Metric heapUsed, final Metric heapMax, final Metric gcEvent) {
-    this(heapUsed, heapMax, gcEvent, DEFAULT_TARGET_UTILIZATION_AFTER_GC,
+  public OldGenReclamationRca(final Metric heapUsed, final Metric heapMax, final Metric gcEvent,
+      final Metric gcType) {
+    this(heapUsed, heapMax, gcEvent, gcType, DEFAULT_TARGET_UTILIZATION_AFTER_GC,
         DEFAULT_RCA_EVALUATION_INTERVAL_IN_S);
   }
 
   public OldGenReclamationRca(final Metric heapUsed, final Metric heapMax, final Metric gcEvent,
-      final double targetHeapUtilizationAfterGc, final int rcaEvaluationIntervalInS) {
-    super(EVAL_INTERVAL_IN_S, heapUsed, heapMax, gcEvent);
+      final Metric gcType, final double targetHeapUtilizationAfterGc,
+      final int rcaEvaluationIntervalInS) {
+    super(EVAL_INTERVAL_IN_S, heapUsed, heapMax, gcEvent, gcType);
     this.targetHeapUtilizationAfterGc = targetHeapUtilizationAfterGc;
     this.rcaEvaluationIntervalInS = rcaEvaluationIntervalInS;
     this.rcaPeriod = rcaEvaluationIntervalInS / EVAL_INTERVAL_IN_S;
@@ -69,6 +71,10 @@ public class OldGenReclamationRca extends OldGenRca<ResourceFlowUnit<HotResource
 
   @Override
   public ResourceFlowUnit<HotResourceSummary> operate() {
+    if (!isOldGenCollectorCMS()) {
+      // return an empty flow unit, we don't want to tune JVM when the collector is not CMS.
+      return new ResourceFlowUnit<>(System.currentTimeMillis());
+    }
     samples++;
     double oldGenMax = getMaxOldGenSizeOrDefault(Double.MAX_VALUE);
     double oldGenUsed = getOldGenUsedOrDefault(0d);
@@ -86,14 +92,16 @@ public class OldGenReclamationRca extends OldGenRca<ResourceFlowUnit<HotResource
         ResourceContext context = null;
         if (minOldGenSlidingWindow.readMin() > threshold) {
           summary = new HotResourceSummary(ResourceUtil.FULL_GC_EFFECTIVENESS,
-              targetHeapUtilizationAfterGc, minOldGenSlidingWindow.readMin(), rcaEvaluationIntervalInS);
+              targetHeapUtilizationAfterGc, minOldGenSlidingWindow.readMin(),
+              rcaEvaluationIntervalInS);
           context = new ResourceContext(State.UNHEALTHY);
           prevSummary = summary;
           prevContext = context;
           return new ResourceFlowUnit<>(currTime, context, summary);
         } else {
           summary = new HotResourceSummary(ResourceUtil.FULL_GC_EFFECTIVENESS,
-              targetHeapUtilizationAfterGc, minOldGenSlidingWindow.readMin(), rcaEvaluationIntervalInS);
+              targetHeapUtilizationAfterGc, minOldGenSlidingWindow.readMin(),
+              rcaEvaluationIntervalInS);
           context = new ResourceContext(State.HEALTHY);
         }
 
