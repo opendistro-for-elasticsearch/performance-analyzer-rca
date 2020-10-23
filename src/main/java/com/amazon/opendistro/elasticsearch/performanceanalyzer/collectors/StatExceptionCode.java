@@ -49,6 +49,7 @@ public enum StatExceptionCode {
   MISCONFIGURED_OLD_GEN_RCA_HEAP_MAX_MISSING("MisconfiguredOldGenRcaHeapMaxMissing"),
   MISCONFIGURED_OLD_GEN_RCA_HEAP_USED_MISSING("MisconfiguredOldGenRcaHeapUsedMissing"),
   MISCONFIGURED_OLD_GEN_RCA_GC_EVENTS_MISSING("MisconfiguredOldGenRcaGcEventsMissing"),
+  TOTAL_MEM_READ_ERROR("TotalMemReadError"),
   OTHER("Other");
 
   private final String value;
