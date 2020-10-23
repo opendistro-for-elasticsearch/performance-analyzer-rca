@@ -99,7 +99,9 @@ public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> {
     }
     String tmpFile = pathToFile.toString();
     Path tmpPath = Paths.get(tmpFile);
-    Files.createFile(Paths.get(tmpFile));
+    if (!Files.exists(tmpPath)) {
+      Files.createFile(tmpPath);
+    }
     try (BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile, false))) {
       Iterator<SlidingWindowData> it = windowDeque.descendingIterator();
       while (it.hasNext()) {
