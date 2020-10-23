@@ -36,6 +36,7 @@ import org.apache.logging.log4j.Logger;
 public class HighOldGenOccupancyRca extends OldGenRca<ResourceFlowUnit<HotResourceSummary>> {
 
   private static final Logger LOG = LogManager.getLogger(HighOldGenOccupancyRca.class);
+  private static final String OLD_GEN_OVER_OCCUPIED_METRIC = "OldGenOverOccupied";
   private static final long EVAL_INTERVAL_IN_S = 5;
   private static final int B_TO_MB = 1024 * 1024;
 
@@ -107,6 +108,7 @@ public class HighOldGenOccupancyRca extends OldGenRca<ResourceFlowUnit<HotResour
         (double)heapUtilizationThreshold,
         averageUtilizationPercentage, (int)rcaEvaluationIntervalInS);
     if (averageUtilizationPercentage >= heapUtilizationThreshold) {
+      StatsCollector.instance().logMetric(OLD_GEN_OVER_OCCUPIED_METRIC);
       context = new ResourceContext(State.UNHEALTHY);
     }
     this.previousSummary = summary;

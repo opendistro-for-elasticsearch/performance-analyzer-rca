@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Resources.State;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.aggregators.SlidingWindow;
@@ -29,6 +30,8 @@ import java.util.concurrent.TimeUnit;
 
 public class OldGenReclamationRca extends OldGenRca<ResourceFlowUnit<HotResourceSummary>> {
 
+  private static final String OLD_GEN_RECLAMATION_INEFFECTIVE_METRIC =
+      "OldGenReclamationIneffective";
   private static final long EVAL_INTERVAL_IN_S = 5;
   private static final double DEFAULT_TARGET_UTILIZATION_AFTER_GC = 75.0d;
   private static final int DEFAULT_RCA_EVALUATION_INTERVAL_IN_S = 60;
@@ -95,6 +98,7 @@ public class OldGenReclamationRca extends OldGenRca<ResourceFlowUnit<HotResource
               targetHeapUtilizationAfterGc, minOldGenSlidingWindow.readMin(),
               rcaEvaluationIntervalInS);
           context = new ResourceContext(State.UNHEALTHY);
+          StatsCollector.instance().logMetric(OLD_GEN_RECLAMATION_INEFFECTIVE_METRIC);
           prevSummary = summary;
           prevContext = context;
           return new ResourceFlowUnit<>(currTime, context, summary);

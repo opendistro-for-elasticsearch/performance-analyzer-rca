@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jv
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.OldGenContendedRcaConfig.DEFAULT_MIN_TOTAL_MEMORY_IN_GB;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.OldGenContendedRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
@@ -38,6 +39,7 @@ import org.apache.logging.log4j.Logger;
 public class OldGenContendedRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
 
   private static final Logger LOG = LogManager.getLogger(OldGenContendedRca.class);
+  private static final String OLD_GEN_CONTENDED_METRIC = "OldGenContended";
   private static final long GB_TO_B = 1024 * 1024 * 1024;
   private static final long EVAL_INTERVAL_IN_S = 5;
   private Rca<ResourceFlowUnit<HotResourceSummary>> highOldGenOccupancyRca;
@@ -101,6 +103,7 @@ public class OldGenContendedRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
         summary.appendNestedSummary(oldGenReclamationFlowUnit.getSummary());
 
         ResourceContext context = new ResourceContext(State.CONTENDED);
+        StatsCollector.instance().logMetric(OLD_GEN_CONTENDED_METRIC);
         return new ResourceFlowUnit<>(currTime, context, summary);
       }
     }
