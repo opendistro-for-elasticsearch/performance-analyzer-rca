@@ -31,6 +31,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Id;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails.Ip;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.util.MemInfoParser;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,7 +43,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({OldGenContendedRca.class, OldGenContendedRcaTest.class})
+@PrepareForTest({OldGenContendedRca.class, OldGenContendedRcaTest.class, MemInfoParser.class})
 @PowerMockIgnore({"com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.management.*",
     "org.w3c.*"})
 public class OldGenContendedRcaTest {
@@ -55,9 +56,6 @@ public class OldGenContendedRcaTest {
   @Mock
   private AppContext mockAppContext;
 
-  @Mock
-  private Runtime mockRuntime;
-
   private final InstanceDetails currentInstance = new InstanceDetails(new Id("nodeId"),
       new Ip("1.2.3.4"), 0);
   private OldGenContendedRca testRca;
@@ -68,10 +66,9 @@ public class OldGenContendedRcaTest {
   @Before
   public void setup() throws Exception {
     initMocks(this);
-    PowerMockito.mockStatic(Runtime.class);
+    PowerMockito.mockStatic(MemInfoParser.class);
     when(mockAppContext.getMyInstanceDetails()).thenReturn(currentInstance);
-    PowerMockito.when(Runtime.getRuntime()).thenReturn(mockRuntime);
-    when(mockRuntime.totalMemory()).thenReturn(GB_201_IN_BYTES);
+    when(MemInfoParser.getTotalMemory()).thenReturn(GB_201_IN_BYTES);
     this.testRca = new OldGenContendedRca(mockOldGenOccupancyRca, mockOldGenReclamationRca);
     this.testRca.setAppContext(mockAppContext);
   }
@@ -128,7 +125,10 @@ public class OldGenContendedRcaTest {
 
   @Test
   public void testInsufficientMemory() {
-    when(mockRuntime.totalMemory()).thenReturn(GB_32_IN_BYTES);
+    when(MemInfoParser.getTotalMemory()).thenReturn(GB_32_IN_BYTES);
+    // reconstruct the test obj as total memory is read only once.
+    this.testRca = new OldGenContendedRca(mockOldGenOccupancyRca, mockOldGenReclamationRca);
+    this.testRca.setAppContext(mockAppContext);
     when(mockOldGenOccupancyRca.getFlowUnits()).thenReturn(Collections
         .singletonList(new ResourceFlowUnit<>(System.currentTimeMillis(), new ResourceContext(
             State.UNHEALTHY), new HotResourceSummary(ResourceUtil.OLD_GEN_HEAP_USAGE, 0d, 0d, 0))));
