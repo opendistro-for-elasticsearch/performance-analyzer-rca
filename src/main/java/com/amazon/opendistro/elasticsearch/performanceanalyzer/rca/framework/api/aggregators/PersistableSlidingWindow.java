@@ -72,6 +72,10 @@ public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> {
     if (!enablePersistence) {
       return;
     }
+    if (!Files.exists(path)) {
+      LOG.debug("{}#load({}) called but the file doesn't exist", this.getClass().getSimpleName(), path);
+      return;
+    }
     LineIterator it = FileUtils.lineIterator(path.toFile(), "UTF-8");
     try {
       while (it.hasNext()) {
