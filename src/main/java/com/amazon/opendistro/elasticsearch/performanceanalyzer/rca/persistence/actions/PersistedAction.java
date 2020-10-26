@@ -4,6 +4,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.V
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -114,7 +115,7 @@ public class PersistedAction {
         summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.ACTION_COL_NAME, this.actionName);
         summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, this.timestamp);
         summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NODE_IDS_NAME, this.nodeIds);
-        summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.SUMMARY_NAME, this.summary);
+        summaryObj.add(SQL_SCHEMA_CONSTANTS.SUMMARY_NAME, new JsonParser().parse(this.summary));
         summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.ACTIONABLE_NAME, this.actionable);
         summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.COOLOFFPERIOD_NAME, this.coolOffPeriod);
         return summaryObj;
