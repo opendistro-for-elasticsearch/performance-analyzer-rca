@@ -46,44 +46,22 @@ import org.apache.logging.log4j.util.Supplier;
  *     {
  *     "LastSuggestedActionSet": [
  *         {
- *             "actionName": "MockAction1",
- *             "actionable": false,
- *             "coolOffPeriod": 10,
+ *             "actionName": "ModifyQueueCapacity",
+ *             "actionable": true,
+ *             "coolOffPeriod": 300000,
  *             "muted": false,
- *             "nodeIds": "1,11",
- *             "nodeIps": "1.1.1.1,11.11.11.11",
- *             "summary": "MockSummary",
- *             "timestamp": 1602538860025
- *         },
- *         {
- *             "actionName": "MockAction2",
- *             "actionable": false,
- *             "coolOffPeriod": 20,
- *             "muted": false,
- *             "nodeIds": "2,22",
- *             "nodeIps": "2.2.2.2,22.22.22.22",
- *             "summary": "MockSummary",
- *             "timestamp": 1602538860025
- *         },
- *         {
- *             "actionName": "MockAction1",
- *             "actionable": false,
- *             "coolOffPeriod": 30,
- *             "muted": false,
- *             "nodeIds": "1,11",
- *             "nodeIps": "1.1.1.1,11.11.11.11",
- *             "summary": "MockSummary",
- *             "timestamp": 1602538860025
- *         },
- *         {
- *             "actionName": "MockAction2",
- *             "actionable": false,
- *             "coolOffPeriod": 40,
- *             "muted": false,
- *             "nodeIds": "2,22",
- *             "nodeIps": "2.2.2.2,22.22.22.22",
- *             "summary": "MockSummary",
- *             "timestamp": 1602538860025
+ *             "nodeIds": "{oSN5LEstThe25y8NrCGyAg}",
+ *             "nodeIps": "{10.212.52.87}",
+ *             "summary": {
+ *                 "Id": "oSN5LEstThe25y8NrCGyAg",
+ *                 "Ip": "10.212.52.87",
+ *                 "canUpdate": true,
+ *                 "coolOffPeriodInMillis": 300000,
+ *                 "currentCapacity": 0,
+ *                 "desiredCapacity": 1000,
+ *                 "resource": 5
+ *             }
+ *             "timestamp": 1603671580290
  *         }
  *     ]
  * }

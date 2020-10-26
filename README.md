@@ -113,7 +113,6 @@ The sample RCA response from above api
 ```
 
 ### Temperature profiles
-------------------------
 There are ways to get the temperature profile of a cluster and of individual nodes.
 
 The cluster level RCA can only be queried from the elected master using the following rest API.
@@ -123,6 +122,41 @@ The cluster level RCA can only be queried from the elected master using the foll
 In order to get the temperature of a particular node, we can use:
 
 `curl "localhost:9600/_opendistro/_performanceanalyzer/rca?name=AllTemperatureDimensions&local=true"`
+
+## Rest API to get the ACTIONS suggested by the decider
+
+This api returns the last suggested action set by the decider framework.
+
+```
+curl --url "localhost:9650/_opendistro/_performanceanalyzer/actions" -XGET
+```
+
+The sample response from the above API:
+
+```
+{
+    "LastSuggestedActionSet": [
+        {
+            "actionName": "ModifyQueueCapacity",
+            "actionable": true,
+            "coolOffPeriod": 300000,
+            "muted": false,
+            "nodeIds": "{oSN5LEstThe25y8NrCGyAg}",
+            "nodeIps": "{10.212.52.87}",
+            "summary": {
+                "Id": "oSN5LEstThe25y8NrCGyAg",
+                "Ip": "10.212.52.87",
+                "canUpdate": true,
+                "coolOffPeriodInMillis": 300000,
+                "currentCapacity": 0,
+                "desiredCapacity": 1000,
+                "resource": 5
+            }
+            "timestamp": 1603671580290
+        }
+    ]
+}
+```
 
 ## Building, Deploying, and Running the RCA Framework
 Please refer to the [Install Guide](./INSTALL.md) for detailed information on building, installing and running the RCA framework.
