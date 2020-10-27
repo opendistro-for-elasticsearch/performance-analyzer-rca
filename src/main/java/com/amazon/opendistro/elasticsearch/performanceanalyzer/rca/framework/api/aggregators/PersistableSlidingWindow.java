@@ -50,14 +50,21 @@ public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> {
     super(slidingWindowSize, timeUnit);
     this.pathToFile = filePath;
     this.enablePersistence = this.pathToFile != null;
-    // setting the last write time to now will cause our first write to occur 5 minutes after construction
+    if (!enablePersistence) {
+      LOG.debug("Persistence is not enabled for {}:{}", this.getClass().getSimpleName(), this);
+      return;
+    }
     this.lastWriteTimeEpochMs = Instant.now().toEpochMilli();
-    try {
-      if (enablePersistence && Files.exists(filePath)) {
+    if (Files.exists(filePath)) {
+      try {
         load(this.pathToFile);
+      } catch (IOException ex) {
+        LOG.error("Unable to load previous data from {} into {}", this.pathToFile,
+            getClass().getSimpleName(), ex);
       }
-    } catch (IOException ex) {
-      LOG.error("Unable to load previous data from {} into {}", this.pathToFile, getClass().getSimpleName());
+    } else {
+      LOG.warn("{}:{} attempted to load data from {}, but the file doesn't exist",
+          this.getClass().getSimpleName(), this, filePath);
     }
   }
 
