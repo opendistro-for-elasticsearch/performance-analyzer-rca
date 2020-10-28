@@ -339,10 +339,6 @@ public class ReaderMetricsProcessor implements Runnable {
       }
       batchMetricsTotalData -= batchMetricsDBSizes.remove(timestamp);
     }
-    PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(
-        ReaderMetrics.BATCH_METRICS_NUM_METRICSDB_FILES, "", batchMetricsDBSizes.size());
-    PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(
-        ReaderMetrics.BATCH_METRICS_DATA_SIZE, "", batchMetricsTotalData);
   }
 
   /** Deletes the lowest entries in the map till the size of the map is equal to maxSize. */
@@ -410,6 +406,10 @@ public class ReaderMetricsProcessor implements Runnable {
     PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(
         ReaderMetrics.METRICSDB_FILE_SIZE, "", metricsDBSize);
     if (batchMetricsEnabled) {
+      PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(
+          ReaderMetrics.BATCH_METRICS_NUM_METRICSDB_FILES, "", batchMetricsDBSizes.size());
+      PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(
+          ReaderMetrics.BATCH_METRICS_DATA_SIZE, "", batchMetricsTotalData);
       batchMetricsDBSet.add(prevWindowStartTime);
       batchMetricsDBSizes.put(prevWindowStartTime, metricsDBSize);
       batchMetricsTotalData += metricsDBSize;
