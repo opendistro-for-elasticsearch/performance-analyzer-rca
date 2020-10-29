@@ -155,5 +155,8 @@ public class FieldDataCacheDeciderMultiNodeITest {
     @AErrorPatternIgnored(
             pattern = "CacheUtil:getCacheMaxSize()",
             reason = "Shard request cache metrics is expected to be missing.")
+    @AErrorPatternIgnored(
+            pattern = "OldGenRca:getMaxOldGenSizeOrDefault()",
+            reason = "Old gen metrics is expected to be missing in this integ test.")
     public void testFieldDataCacheAction() {}
 }

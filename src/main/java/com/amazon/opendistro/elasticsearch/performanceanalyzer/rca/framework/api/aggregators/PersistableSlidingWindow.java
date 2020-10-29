@@ -49,17 +49,22 @@ public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> {
                                   Path filePath) {
     super(slidingWindowSize, timeUnit);
     this.pathToFile = filePath;
-    if (this.pathToFile == null) {
-      this.enablePersistence = false;
-    } else {
-      this.enablePersistence = true;
-      // setting the last write time to now will cause our first write to occur 5 minutes after construction
-      this.lastWriteTimeEpochMs = Instant.now().toEpochMilli();
+    this.enablePersistence = this.pathToFile != null;
+    if (!enablePersistence) {
+      LOG.debug("Persistence is not enabled for {}:{}", this.getClass().getSimpleName(), this);
+      return;
+    }
+    this.lastWriteTimeEpochMs = Instant.now().toEpochMilli();
+    if (Files.exists(filePath)) {
       try {
         load(this.pathToFile);
       } catch (IOException ex) {
-        LOG.error("Unable to load previous data from {} into {}", this.pathToFile, getClass().getSimpleName());
+        LOG.error("Unable to load previous data from {} into {}", this.pathToFile,
+            getClass().getSimpleName(), ex);
       }
+    } else {
+      LOG.warn("{}:{} attempted to load data from {}, but the file doesn't exist",
+          this.getClass().getSimpleName(), this, filePath);
     }
   }
 
@@ -69,9 +74,6 @@ public class PersistableSlidingWindow extends SlidingWindow<SlidingWindowData> {
    * @throws IOException If there is an error reading the file
    */
   protected synchronized void load(Path path) throws IOException {
-    if (!enablePersistence) {
-      return;
-    }
     LineIterator it = FileUtils.lineIterator(path.toFile(), "UTF-8");
     try {
       while (it.hasNext()) {
