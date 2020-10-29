@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.HEAP;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.OLD_GEN;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_FULL_GC;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
@@ -55,6 +56,32 @@ public abstract class OldGenRca<T extends ResourceFlowUnit<?>> extends Rca<T> {
     this.heap_Used = heapUsed;
     this.gc_event = gcEvent;
     this.gc_type = gcType;
+  }
+
+  protected double getMaxHeapSizeOrDefault(final double defaultValue) {
+    if (heap_Max == null) {
+      StatsCollector.instance().logException(StatExceptionCode.MISCONFIGURED_OLD_GEN_RCA_HEAP_MAX_MISSING);
+      throw new IllegalStateException("RCA: " + this.name() + "was not configured in the graph to "
+          + "take heap_Max as a metric. Please check the analysis graph!");
+    }
+
+    double maxHeapSize = defaultValue;
+    final List<MetricFlowUnit> heapMaxMetrics = heap_Max.getFlowUnits();
+    for (MetricFlowUnit heapMaxMetric : heapMaxMetrics) {
+      if (heapMaxMetric.isEmpty()) {
+        continue;
+      }
+      double ret =
+          SQLParsingUtil
+              .readDataFromSqlResult(heapMaxMetric.getData(), MEM_TYPE.getField(), HEAP.toString(), MetricsDB.MAX);
+      if (Double.isNaN(ret)) {
+        LOG.error("Failed to parse metric in FlowUnit from {}", heap_Max.getClass().getName());
+      } else {
+        maxHeapSize = ret / CONVERT_BYTES_TO_MEGABYTES;
+      }
+    }
+
+    return maxHeapSize;
   }
 
   protected double getMaxOldGenSizeOrDefault(final double defaultValue) {

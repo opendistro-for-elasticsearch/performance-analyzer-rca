@@ -163,6 +163,9 @@ public class HeapSizeIncreaseIT {
       pattern = "PersistableSlidingWindow:<init>()",
       reason = "Persistence base path can be null for integration test."
   )
+  @AErrorPatternIgnored(
+      pattern = "OldGenRca:getMaxHeapSizeOrDefault()",
+      reason = "YoungGen metrics is expected to be missing.")
   public void testHeapSizeIncrease() {
 
   }
