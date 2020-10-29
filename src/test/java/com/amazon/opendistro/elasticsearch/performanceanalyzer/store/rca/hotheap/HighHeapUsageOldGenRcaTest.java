@@ -15,11 +15,13 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.store.rca.hotheap;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.HEAP;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.OLD_GEN;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_FULL_GC;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.MEM_TYPE;
 import static java.time.Instant.ofEpochMilli;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
@@ -85,7 +87,7 @@ public class HighHeapUsageOldGenRcaTest {
     oldGenRcaX = new HighHeapUsageOldGenRcaX(1, heap_Used, gc_event, heap_Max, node_stats);
     columnName = Arrays.asList(MEM_TYPE.toString(), MetricsDB.MAX);
     // set max heap size to 100MB
-    heap_Max.createTestFlowUnits(columnName, Arrays.asList(OLD_GEN.toString(), String.valueOf(100 * CONVERT_MEGABYTES_TO_BYTES)));
+    heap_Max.createTestFlowUnits(columnName, Arrays.asList(HEAP.toString(), String.valueOf(100 * CONVERT_MEGABYTES_TO_BYTES)));
   }
 
   @Test

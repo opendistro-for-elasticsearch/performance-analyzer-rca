@@ -58,6 +58,32 @@ public abstract class OldGenRca<T extends ResourceFlowUnit<?>> extends Rca<T> {
     this.gc_type = gcType;
   }
 
+  protected double getMaxHeapSizeOrDefault(final double defaultValue) {
+    if (heap_Max == null) {
+      StatsCollector.instance().logException(StatExceptionCode.MISCONFIGURED_OLD_GEN_RCA_HEAP_MAX_MISSING);
+      throw new IllegalStateException("RCA: " + this.name() + "was not configured in the graph to "
+          + "take heap_Max as a metric. Please check the analysis graph!");
+    }
+
+    double maxHeapSize = defaultValue;
+    final List<MetricFlowUnit> heapMaxMetrics = heap_Max.getFlowUnits();
+    for (MetricFlowUnit heapMaxMetric : heapMaxMetrics) {
+      if (heapMaxMetric.isEmpty()) {
+        continue;
+      }
+      double ret =
+          SQLParsingUtil
+              .readDataFromSqlResult(heapMaxMetric.getData(), MEM_TYPE.getField(), HEAP.toString(), MetricsDB.MAX);
+      if (Double.isNaN(ret)) {
+        LOG.error("Failed to parse metric in FlowUnit from {}", heap_Max.getClass().getName());
+      } else {
+        maxHeapSize = ret / CONVERT_BYTES_TO_MEGABYTES;
+      }
+    }
+
+    return maxHeapSize;
+  }
+
   protected double getMaxOldGenSizeOrDefault(final double defaultValue) {
     if (heap_Max == null) {
       StatsCollector.instance().logException(StatExceptionCode.MISCONFIGURED_OLD_GEN_RCA_HEAP_MAX_MISSING);
@@ -73,7 +99,7 @@ public abstract class OldGenRca<T extends ResourceFlowUnit<?>> extends Rca<T> {
       }
       double ret =
           SQLParsingUtil
-              .readDataFromSqlResult(heapMaxMetric.getData(), MEM_TYPE.getField(), HEAP.toString(), MetricsDB.MAX);
+              .readDataFromSqlResult(heapMaxMetric.getData(), MEM_TYPE.getField(), OLD_GEN.toString(), MetricsDB.MAX);
       if (Double.isNaN(ret)) {
         LOG.error("Failed to parse metric in FlowUnit from {}", heap_Max.getClass().getName());
       } else {

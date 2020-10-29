@@ -170,9 +170,6 @@ public class LevelTwoDedicatedMasterITest {
   @AErrorPatternIgnored(
       pattern = "HighHeapUsageYoungGenRca:operate()",
       reason = "YoungGen metrics is expected to be missing.")
-  @AErrorPatternIgnored(
-      pattern = "PersistableSlidingWindow:<init>()",
-      reason = "Persistence base path can be null for integration test.")
   public void testActionBuilder() {
   }
 }
