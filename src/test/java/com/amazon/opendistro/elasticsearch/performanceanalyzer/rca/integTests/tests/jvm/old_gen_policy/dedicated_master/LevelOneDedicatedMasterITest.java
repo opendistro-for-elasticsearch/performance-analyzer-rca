@@ -170,6 +170,12 @@ public class LevelOneDedicatedMasterITest {
   @AErrorPatternIgnored(
       pattern = "HighHeapUsageYoungGenRca:operate()",
       reason = "YoungGen metrics is expected to be missing.")
+  @AErrorPatternIgnored(
+      pattern = "OldGenRca:getMaxHeapSizeOrDefault()",
+      reason = "YoungGen metrics is expected to be missing.")
+  @AErrorPatternIgnored(
+      pattern = "OldGenRca:getMaxOldGenSizeOrDefault()",
+      reason = "YoungGen metrics is expected to be missing.")
   public void testActionBuilder() {
   }
 }
