@@ -1,22 +1,16 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.collator;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.Constants.INDEX_NAME;
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.cache_tuning.Constants.SHARD_ID;
-
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCInfoDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension.Constants;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_FieldData_Eviction;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_FieldData_Size;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Max_Size;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Eviction;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Hit;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Size;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolDimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.GC_Collection_Event;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.GC_Type;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Used;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_QueueCapacity;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_RejectedReqs;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AClusterType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AExpect;
@@ -29,8 +23,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.ClusterType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.HostTag;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners.RcaItNotEncryptedRunner;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.collator.validator.CollatorAlignedValidator;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.collator.validator.CollatorMisalignedValidator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.collator.validator.CollatorValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.jvmsizing.JvmSizingITConstants;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.PersistedAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.ElasticSearchAnalysisGraph;
@@ -141,116 +134,30 @@ import org.junit.runner.RunWith;
         )
     }
 )
-@AMetric(
-    name = Cache_FieldData_Size.class,
-    dimensionNames = {
-        AllMetrics.CommonDimension.Constants.INDEX_NAME_VALUE,
-        AllMetrics.CommonDimension.Constants.SHARDID_VALUE
-    },
+
+@AMetric(name = ThreadPool_RejectedReqs.class,
+    dimensionNames = {ThreadPoolDimension.Constants.TYPE_VALUE},
     tables = {
-        @ATable(
-            hostTag = HostTag.DATA_0,
+        @ATable(hostTag = HostTag.DATA_0,
             tuple = {
-                @ATuple(
-                    dimensionValues = {INDEX_NAME, SHARD_ID},
-                    sum = 8500.0, avg = 8500.0, min = 8500.0, max = 8500.0
-                )
+                @ATuple(dimensionValues = {ThreadPoolType.Constants.WRITE_NAME},
+                    sum = 1.0, avg = 1.0, min = 1.0, max = 1.0),
+                @ATuple(dimensionValues = {ThreadPoolType.Constants.SEARCH_NAME},
+                    sum = 0.0, avg = 0.0, min = 0.0, max = 0.0)
             }
         )
     }
 )
-@AMetric(
-    name = Cache_FieldData_Eviction.class,
-    dimensionNames = {
-        AllMetrics.CommonDimension.Constants.INDEX_NAME_VALUE,
-        AllMetrics.CommonDimension.Constants.SHARDID_VALUE
-    },
+
+@AMetric(name = ThreadPool_QueueCapacity.class,
+    dimensionNames = {ThreadPoolDimension.Constants.TYPE_VALUE},
     tables = {
-        @ATable(
-            hostTag = HostTag.DATA_0,
+        @ATable(hostTag = HostTag.DATA_0,
             tuple = {
-                @ATuple(
-                    dimensionValues = {INDEX_NAME, SHARD_ID},
-                    sum = 1.0, avg = 1.0, min = 1.0, max = 1.0)
-            }
-        )
-    }
-)
-@AMetric(
-    name = Cache_Request_Size.class,
-    dimensionNames = {
-        AllMetrics.CommonDimension.Constants.INDEX_NAME_VALUE,
-        AllMetrics.CommonDimension.Constants.SHARDID_VALUE
-    },
-    tables = {
-        @ATable(
-            hostTag = HostTag.DATA_0,
-            tuple = {
-                @ATuple(
-                    dimensionValues = {INDEX_NAME, SHARD_ID},
-                    sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
-            }
-        )
-    }
-)
-@AMetric(
-    name = Cache_Request_Eviction.class,
-    dimensionNames = {
-        AllMetrics.CommonDimension.Constants.INDEX_NAME_VALUE,
-        AllMetrics.CommonDimension.Constants.SHARDID_VALUE
-    },
-    tables = {
-        @ATable(
-            hostTag = HostTag.DATA_0,
-            tuple = {
-                @ATuple(
-                    dimensionValues = {INDEX_NAME, SHARD_ID},
-                    sum = 1.0, avg = 1.0, min = 1.0, max = 1.0)
-            }
-        )
-    }
-)
-@AMetric(
-    name = Cache_Request_Hit.class,
-    dimensionNames = {
-        AllMetrics.CommonDimension.Constants.INDEX_NAME_VALUE,
-        AllMetrics.CommonDimension.Constants.SHARDID_VALUE
-    },
-    tables = {
-        @ATable(
-            hostTag = HostTag.DATA_0,
-            tuple = {
-                @ATuple(
-                    dimensionValues = {INDEX_NAME, SHARD_ID},
-                    sum = 1.0, avg = 1.0, min = 1.0, max = 1.0)
-            }
-        )
-    }
-)
-@AMetric(
-    name = Cache_Max_Size.class,
-    dimensionNames = {AllMetrics.CacheConfigDimension.Constants.TYPE_VALUE},
-    tables = {
-        @ATable(
-            hostTag = HostTag.DATA_0,
-            tuple = {
-                @ATuple(
-                    dimensionValues = {AllMetrics.CacheType.Constants.FIELD_DATA_CACHE_NAME},
-                    sum = 10000.0, avg = 10000.0, min = 10000.0, max = 10000.0),
-                @ATuple(
-                    dimensionValues = {AllMetrics.CacheType.Constants.SHARD_REQUEST_CACHE_NAME},
-                    sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
-            }
-        ),
-        @ATable(
-            hostTag = HostTag.ELECTED_MASTER,
-            tuple = {
-                @ATuple(
-                    dimensionValues = {AllMetrics.CacheType.Constants.FIELD_DATA_CACHE_NAME},
-                    sum = 10000.0, avg = 10000.0, min = 10000.0, max = 10000.0),
-                @ATuple(
-                    dimensionValues = {AllMetrics.CacheType.Constants.SHARD_REQUEST_CACHE_NAME},
-                    sum = 100.0, avg = 100.0, min = 100.0, max = 100.0)
+                @ATuple(dimensionValues = {ThreadPoolType.Constants.WRITE_NAME},
+                    sum = 500, avg = 500, min = 500, max = 500),
+                @ATuple(dimensionValues = {ThreadPoolType.Constants.SEARCH_NAME},
+                    sum = 1500, avg = 1500, min = 1500, max = 1500)
             }
         )
     }
@@ -261,18 +168,7 @@ public class CollatorIT {
   @AExpect(
       what = Type.REST_API,
       on = HostTag.ELECTED_MASTER,
-      validator = CollatorAlignedValidator.class,
-      forRca = PersistedAction.class,
-      timeoutSeconds = 190
-  )
-  public void testCollatorAligned() {
-  }
-
-  @Test
-  @AExpect(
-      what = Type.REST_API,
-      on = HostTag.ELECTED_MASTER,
-      validator = CollatorMisalignedValidator.class,
+      validator = CollatorValidator.class,
       forRca = PersistedAction.class,
       timeoutSeconds = 190
   )
