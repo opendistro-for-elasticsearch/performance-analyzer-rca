@@ -144,7 +144,6 @@ public class CacheHealthDecider extends HeapBasedDecider {
 
   private Action getAction(
       final String actionName, final NodeKey esNode, final ResourceEnum cacheType, final boolean increase) {
-    LOG.warn("increase = " + increase);
     if (ModifyCacheMaxSizeAction.NAME.equals(actionName)) {
       return configureCacheMaxSize(esNode, cacheType, increase);
     }

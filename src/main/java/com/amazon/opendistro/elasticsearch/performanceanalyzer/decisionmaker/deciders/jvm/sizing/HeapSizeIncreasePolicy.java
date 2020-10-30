@@ -27,9 +27,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotClusterSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.jvmsizing.LargeHeapClusterRca;
 import com.google.common.annotations.VisibleForTesting;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -64,7 +66,6 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
       }
     }
 
-    System.out.println("HeapSizeIncreaseAction ? " + !actions.isEmpty());
     return actions;
   }
 
@@ -101,7 +102,8 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
     public void recordIssue(final NodeKey nodeKey, long currTimeStamp) {
       perNodeMonitor.computeIfAbsent(nodeKey,
           key -> new JvmActionsAlarmMonitor(dayBreachThreshold,
-              weekBreachThreshold))
+              weekBreachThreshold, Paths.get(RcaConsts.CONFIG_DIR_PATH,
+              PERSISTENCE_PREFIX + key.getNodeId().toString())))
                     .recordIssue(currTimeStamp, 1d);
     }
 

@@ -105,7 +105,6 @@ public class Collator extends Decider {
     // actions combined have on all the affected nodes.
 
     List<Action> allActions = getProposedActions();
-    System.out.println("~~~~~");
     Map<NodeKey, ImpactAssessment> overallImpactAssessment =
         impactAssessor.assessOverallImpact(allActions);
 
@@ -120,7 +119,6 @@ public class Collator extends Decider {
 
     allActions.sort(actionComparator);
     allActions.forEach(action -> {
-      System.out.println("action = " + action.name());
       if (impactAssessor.isImpactAligned(action, overallImpactAssessment)) {
         allowedActions.add(action);
       } else {
