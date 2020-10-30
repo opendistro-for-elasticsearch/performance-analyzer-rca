@@ -1,14 +1,15 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.collator.validator;
 
+import static org.junit.Assert.assertEquals;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.HeapSizeIncreaseAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.api.IValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.PersistedAction;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public abstract class CollatorValidator implements IValidator {
+public class CollatorValidator implements IValidator {
 
   private static final Logger LOG = LogManager.getLogger(CollatorValidator.class);
   protected AppContext appContext;
@@ -26,21 +27,13 @@ public abstract class CollatorValidator implements IValidator {
     }
 
     PersistedAction persistedAction = (PersistedAction) object;
-    return checkPersistedAction(persistedAction);
+    // In this case, we expect pressure-mismatched actions to be suggested by the deciders. I.e.
+    // JvmDecider asking to reduce heap pressure and QueueHealthDecider asking to increase heap
+    // pressure. We expect the collator to have picked the pressure decreasing action which is
+    // the HeapSizeIncreaseAction.
+
+    assertEquals(HeapSizeIncreaseAction.NAME, persistedAction.getActionName());
+    return true;
   }
 
-  @Override
-  public boolean checkJsonResp(JsonElement response) {
-    if (response == null) {
-      return false;
-    }
-    JsonArray arr = response.getAsJsonObject().get("data").getAsJsonArray();
-    if (arr.size() > 0) {
-      LOG.error("kak: {}", arr);
-      return true;
-    }
-    return false;
-  }
-
-  protected abstract boolean checkPersistedAction(final PersistedAction persistedAction);
 }
