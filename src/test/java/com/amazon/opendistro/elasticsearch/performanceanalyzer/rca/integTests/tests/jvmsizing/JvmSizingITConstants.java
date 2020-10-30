@@ -6,4 +6,5 @@ public final class JvmSizingITConstants {
 
   public static final String RCA_CONF_PATH = Consts.INTEG_TESTS_SRC_DIR + "tests/jvmsizing"
       + "/resources/";
+  public static final String CMS_COLLECTOR = "ConcurrentMarkSweep";
 }
