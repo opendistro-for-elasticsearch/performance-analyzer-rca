@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.graalvm.compiler.options.SuppressFBWarnings;
 
 public class CacheClearAction extends SuppressibleAction {
   public static final String NAME = "CacheClear";
@@ -130,8 +131,10 @@ public class CacheClearAction extends SuppressibleAction {
     @SerializedName(value = IP)
     private String[] ip;
     @SerializedName(value = COOL_OFF_PERIOD)
+//    @SuppressFBWarnings(value = "URF_UNREAD_FIELD", justification = "Used in Summary Serializing")
     private long coolOffPeriodInMillis;
     @SerializedName(value = CAN_UPDATE)
+//    @SuppressFBWarnings(value = "URF_UNREAD_FIELD", justification = "Used in Summary Serializing")
     private boolean canUpdate;
 
     public Summary(final List<NodeKey> impactedNodes,
