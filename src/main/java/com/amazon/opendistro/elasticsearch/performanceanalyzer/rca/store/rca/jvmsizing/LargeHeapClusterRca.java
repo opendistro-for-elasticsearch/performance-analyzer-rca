@@ -71,7 +71,6 @@ public class LargeHeapClusterRca extends Rca<ResourceFlowUnit<HotClusterSummary>
       summary.appendNestedSummary(hotNodeSummary);
     }
 
-    System.out.println("LargeHeapClusterRca");
     final ResourceContext context = new ResourceContext(State.CONTENDED);
 
     return new ResourceFlowUnit<>(currTime, context, summary);
