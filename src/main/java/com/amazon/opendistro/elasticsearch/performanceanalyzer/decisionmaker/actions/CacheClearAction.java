@@ -22,13 +22,11 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.clu
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 import org.graalvm.compiler.options.SuppressFBWarnings;
 
 public class CacheClearAction extends SuppressibleAction {
