@@ -277,8 +277,8 @@ public class Cluster {
     return tagToHostMapping.get(hostTag).constructObjectFromDB(className);
   }
 
-  public String getRcaRestResponse(final Map<String, String> params, HostTag hostByTag) {
-    return verifyTag(hostByTag).makeRestRequest(params);
+  public String getRcaRestResponse(final String queryUrl, final Map<String, String> params, HostTag hostByTag) {
+    return verifyTag(hostByTag).makeRestRequest(queryUrl, params);
   }
 
   public Map<String, Result<Record>> getRecordsForAllTablesOnHost(HostTag hostTag) {

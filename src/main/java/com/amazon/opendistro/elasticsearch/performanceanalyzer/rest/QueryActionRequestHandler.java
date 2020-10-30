@@ -71,7 +71,7 @@ import org.apache.logging.log4j.util.Supplier;
  */
 
 public class QueryActionRequestHandler extends MetricsHandler implements HttpHandler {
-
+    public static final String ACTION_SET_JSON_NAME = "LastSuggestedActionSet";
     private static final Logger LOG = LogManager.getLogger(QueryActionRequestHandler.class);
     private Persistable persistable;
     private AppContext appContext;
@@ -149,12 +149,13 @@ public class QueryActionRequestHandler extends MetricsHandler implements HttpHan
                     for (PersistedAction action : actionSet) {
                         response.add(action.toJson());
                     }
-                    result.add("LastSuggestedActionSet", response);
+                    result.add(ACTION_SET_JSON_NAME, response);
                 } else {
-                    result.add("LastSuggestedActionSet", new JsonArray());
+                    result.add(ACTION_SET_JSON_NAME, new JsonArray());
                 }
             } catch (Exception e) {
-                result.add("error", new JsonParser().parse(e.getMessage()).getAsJsonObject());
+                LOG.error("Fail to query DB, message : {}", e.getMessage());
+                result.add("error", new JsonParser().parse("Fail to query db").getAsJsonObject());
             }
         }
         return result;

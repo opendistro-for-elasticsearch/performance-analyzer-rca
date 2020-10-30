@@ -379,7 +379,7 @@ public class Host {
     return this.rcaController.getPersistenceProvider().getRecordsForAllTables();
   }
 
-  public String makeRestRequest(final Map<String, String> kvRequestParams) {
+  public String makeRestRequest(final String queryUrl, final Map<String, String> kvRequestParams) {
     StringBuilder queryString = new StringBuilder();
 
     String appender = "";
@@ -388,8 +388,10 @@ public class Host {
       appender = "&";
     }
     StringBuilder uri =
-        new StringBuilder("http://localhost:" + webServerPort + Util.RCA_QUERY_URL);
-    uri.append("?").append(queryString);
+        new StringBuilder("http://localhost:" + webServerPort + queryUrl);
+    if (!appender.isEmpty()) {
+      uri.append("?").append(queryString);
+    }
 
     URL url = null;
     try {

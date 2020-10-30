@@ -64,7 +64,6 @@ public class HighHeapUsageOldGenRca extends OldGenRca<ResourceFlowUnit<HotResour
 
   private static final Logger LOG = LogManager.getLogger(HighHeapUsageOldGenRca.class);
   private int counter;
-  private double maxOldGenHeapSize;
   //list of node stat aggregator to collect node stats
   private final List<NodeStatAggregator> nodeStatAggregators;
   // the amount of RCA period this RCA needs to run before sending out a flowunit
@@ -88,7 +87,6 @@ public class HighHeapUsageOldGenRca extends OldGenRca<ResourceFlowUnit<HotResour
       final M heap_Used, final M gc_event, final M heap_Max, final List<Metric> consumers) {
     super(5, heap_Used, heap_Max, gc_event, null);
     this.clock = Clock.systemUTC();
-    this.maxOldGenHeapSize = Double.MAX_VALUE;
     this.rcaPeriod = rcaPeriod;
     this.lowerBoundThreshold = (lowerBoundThreshold >= 0 && lowerBoundThreshold <= 1.0)
         ? lowerBoundThreshold : 1.0;
@@ -116,7 +114,7 @@ public class HighHeapUsageOldGenRca extends OldGenRca<ResourceFlowUnit<HotResour
 
     double oldGenHeapUsed = getOldGenUsedOrDefault(Double.NaN);
     int oldGenGCEvent = getFullGcEventsOrDefault(0);
-    maxOldGenHeapSize = getMaxOldGenSizeOrDefault(Double.MAX_VALUE);
+    double maxTotalHeapSize = getMaxHeapSizeOrDefault(Double.MAX_VALUE);
 
     long currTimeStamp = this.clock.millis();
     if (!Double.isNaN(oldGenHeapUsed)) {
@@ -124,7 +122,7 @@ public class HighHeapUsageOldGenRca extends OldGenRca<ResourceFlowUnit<HotResour
           "oldGenHeapUsed = {}, oldGenGCEvent = {}, maxOldGenHeapSize = {}",
           oldGenHeapUsed,
           oldGenGCEvent,
-          maxOldGenHeapSize);
+          maxTotalHeapSize);
       gcEventSlidingWindow.next(new SlidingWindowData(currTimeStamp, oldGenGCEvent));
       minOldGenSlidingWindow.next(new SlidingWindowData(currTimeStamp, oldGenHeapUsed));
     }
@@ -144,10 +142,10 @@ public class HighHeapUsageOldGenRca extends OldGenRca<ResourceFlowUnit<HotResour
 
       if (gcEventSlidingWindow.readSum() >= OLD_GEN_GC_THRESHOLD
           && !Double.isNaN(currentMinOldGenUsage)
-          && currentMinOldGenUsage / maxOldGenHeapSize > OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE) {
+          && currentMinOldGenUsage / maxTotalHeapSize > OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE) {
         LOG.debug("heapUsage is above threshold. OldGGenGCEvent = {}, oldGenUsage percentage = {}",
             gcEventSlidingWindow.readSum(),
-            currentMinOldGenUsage / maxOldGenHeapSize);
+            currentMinOldGenUsage / maxTotalHeapSize);
         context = new ResourceContext(Resources.State.UNHEALTHY);
         PerformanceAnalyzerApp.RCA_VERTICES_METRICS_AGGREGATOR.updateStat(
             RcaVerticesMetrics.NUM_OLD_GEN_RCA_TRIGGERED, "", 1);
@@ -158,9 +156,9 @@ public class HighHeapUsageOldGenRca extends OldGenRca<ResourceFlowUnit<HotResour
       //check to see if the value is above lower bound thres
       if (gcEventSlidingWindow.readSum() >= OLD_GEN_GC_THRESHOLD
           && !Double.isNaN(currentMinOldGenUsage)
-          && currentMinOldGenUsage / maxOldGenHeapSize > OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE * this.lowerBoundThreshold) {
+          && currentMinOldGenUsage / maxTotalHeapSize > OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE * this.lowerBoundThreshold) {
         summary = new HotResourceSummary(OLD_GEN_HEAP_USAGE,
-            OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE, currentMinOldGenUsage / maxOldGenHeapSize, SLIDING_WINDOW_SIZE_IN_MINS * 60);
+            OLD_GEN_USED_THRESHOLD_IN_PERCENTAGE, currentMinOldGenUsage / maxTotalHeapSize, SLIDING_WINDOW_SIZE_IN_MINS * 60);
         addTopConsumers(summary);
       }
 

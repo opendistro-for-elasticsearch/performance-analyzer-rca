@@ -19,11 +19,15 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionma
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.SerializedName;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.graalvm.compiler.options.SuppressFBWarnings;
 
 public class CacheClearAction extends SuppressibleAction {
   public static final String NAME = "CacheClear";
@@ -78,14 +82,9 @@ public class CacheClearAction extends SuppressibleAction {
 
   @Override
   public String summary() {
-    if (!isActionable()) {
-      return String.format("No action to take for: [%s]", NAME);
-    }
-    return String.format(
-        "clear caches on node [%s]",
-        impactedNodes.stream()
-            .map(node -> node.getNodeId().toString())
-            .collect(Collectors.joining("][", "[", "]")));
+    Summary summary = new Summary(impactedNodes,
+        coolOffPeriodInMillis, canUpdate);
+    return summary.toJson();
   }
 
   @Override
@@ -118,6 +117,43 @@ public class CacheClearAction extends SuppressibleAction {
 
     public CacheClearAction build() {
       return new CacheClearAction(appContext, coolOffPeriodInMillis, canUpdate);
+    }
+  }
+
+  public static class Summary {
+
+    public static final String ID = "id";
+    public static final String IP = "ip";
+    public static final String COOL_OFF_PERIOD = "coolOffPeriodInMillis";
+    public static final String CAN_UPDATE = "canUpdate";
+    @SerializedName(value = ID)
+    private String[] id;
+    @SerializedName(value = IP)
+    private String[] ip;
+    @SerializedName(value = COOL_OFF_PERIOD)
+    @SuppressFBWarnings(value = "URF_UNREAD_FIELD", justification = "Used in Summary Serializing")
+    private long coolOffPeriodInMillis;
+    @SerializedName(value = CAN_UPDATE)
+    @SuppressFBWarnings(value = "URF_UNREAD_FIELD", justification = "Used in Summary Serializing")
+    private boolean canUpdate;
+
+    public Summary(final List<NodeKey> impactedNodes,
+        long coolOffPeriodInMillis,
+        boolean canUpdate) {
+      int sz = impactedNodes.size();
+      id = new String[sz];
+      ip = new String[sz];
+      for (int i = 0; i < sz; i++) {
+        id[i] = impactedNodes.get(i).getNodeId().toString();
+        ip[i] = impactedNodes.get(i).getHostAddress().toString();
+      }
+      this.coolOffPeriodInMillis = coolOffPeriodInMillis;
+      this.canUpdate = canUpdate;
+    }
+
+    public String toJson() {
+      Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+      return gson.toJson(this);
     }
   }
 }

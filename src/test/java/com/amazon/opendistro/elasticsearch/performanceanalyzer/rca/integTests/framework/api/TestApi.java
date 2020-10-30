@@ -3,6 +3,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.f
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.Cluster;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.HostTag;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nonnull;
@@ -40,10 +41,12 @@ public class TestApi {
    * @param hostByTag The host whose rest endpoint we will hit.
    * @return The response serialized as a String.
    */
-  public String getRcaRestResponse(@Nonnull final Map<String, String> params,
-                                   HostTag hostByTag) {
+  public JsonElement getRestResponse(@Nonnull final String queryUrl,
+                                @Nonnull final Map<String, String> params,
+                                HostTag hostByTag) {
     Objects.requireNonNull(params);
-    return cluster.getRcaRestResponse(params, hostByTag);
+    JsonElement json = JsonParser.parseString(cluster.getRcaRestResponse(queryUrl, params, hostByTag));
+    return json;
   }
 
   /**
