@@ -132,10 +132,10 @@ public class CacheClearAction extends SuppressibleAction {
     @SerializedName(value = IP)
     private String[] ip;
     @SerializedName(value = COOL_OFF_PERIOD)
-    @SuppressFBWarnings(value = "URF_UNREAD_FIELD", justification = "ahsda")
+    @SuppressFBWarnings(value = "URF_UNREAD_FIELD", justification = "Used in Summary Deserializing")
     private long coolOffPeriodInMillis;
     @SerializedName(value = CAN_UPDATE)
-    @SuppressFBWarnings(value = "URF_UNREAD_FIELD", justification = "ahsda")
+    @SuppressFBWarnings(value = "URF_UNREAD_FIELD", justification = "Used in Summary Deserializing")
     private boolean canUpdate;
 
     public Summary(final List<NodeKey> impactedNodes,
