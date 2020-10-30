@@ -66,6 +66,7 @@ public class HeapSizeIncreasePolicy implements DecisionPolicy {
       }
     }
 
+    System.out.println("HeapSizeIncreaseAction ? " + !actions.isEmpty());
     return actions;
   }
 

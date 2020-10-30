@@ -88,6 +88,8 @@ public class CacheHealthDecider extends HeapBasedDecider {
     for (final ResourceEnum cacheType : modifyCacheActionPriorityList) {
       getActionsFromRca(cacheTypeBaseClusterRcaMap.get(cacheType), impactedNodes).forEach(decision::addAction);
     }
+    LOG.warn("======= CHD =======");
+    LOG.warn("nActions = " + decision.getActions().size());
     return decision;
   }
 
@@ -144,6 +146,7 @@ public class CacheHealthDecider extends HeapBasedDecider {
 
   private Action getAction(
       final String actionName, final NodeKey esNode, final ResourceEnum cacheType, final boolean increase) {
+    LOG.warn("increase = " + increase);
     if (ModifyCacheMaxSizeAction.NAME.equals(actionName)) {
       return configureCacheMaxSize(esNode, cacheType, increase);
     }
