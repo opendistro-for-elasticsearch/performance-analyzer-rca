@@ -22,6 +22,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.clu
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
+import org.graalvm.compiler.options.SuppressFBWarnings;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -131,10 +133,10 @@ public class CacheClearAction extends SuppressibleAction {
     @SerializedName(value = IP)
     private String[] ip;
     @SerializedName(value = COOL_OFF_PERIOD)
-//    @SuppressFBWarnings(value = "URF_UNREAD_FIELD", justification = "Used in Summary Serializing")
+    @SuppressFBWarnings(value = "URF_UNREAD_FIELD", justification = "Used in Summary Serializing")
     private long coolOffPeriodInMillis;
     @SerializedName(value = CAN_UPDATE)
-//    @SuppressFBWarnings(value = "URF_UNREAD_FIELD", justification = "Used in Summary Serializing")
+    @SuppressFBWarnings(value = "URF_UNREAD_FIELD", justification = "Used in Summary Serializing")
     private boolean canUpdate;
 
     public Summary(final List<NodeKey> impactedNodes,
