@@ -99,7 +99,6 @@ public class QueueHealthDecider extends HeapBasedDecider {
     if (canUseMoreHeap(esNode)) {
       for (String actionName : actionsByUserPriority) {
         action = getAction(actionName, esNode, threadPool, true);
-        System.out.println("Quu");
         if (action != null) {
           break;
         }
