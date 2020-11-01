@@ -154,7 +154,7 @@ public class Host {
         null,
         null,
         useHttps,
-        String.valueOf(webServerPort),
+        webServerPort,
         null,  // A null host is fine as this will use the loopback address
         this.appContext);
 

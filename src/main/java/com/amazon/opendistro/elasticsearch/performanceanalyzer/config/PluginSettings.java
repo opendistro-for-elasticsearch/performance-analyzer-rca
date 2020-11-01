@@ -20,7 +20,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.google.common.annotations.VisibleForTesting;
 
 import java.io.File;
-import java.security.InvalidParameterException;
 import java.util.Properties;
 
 import javax.annotation.Nullable;
@@ -49,6 +48,10 @@ public class PluginSettings {
   private static final long BATCH_METRICS_RETENTION_PERIOD_MINUTES_DEFAULT = 7;
   private static final long BATCH_METRICS_RETENTION_PERIOD_MINUTES_MIN = 1;
   private static final long BATCH_METRICS_RETENTION_PERIOD_MINUTES_MAX = 60;
+  public static final String RPC_PORT_CONF_NAME = "rpc-port";
+  public static final int RPC_DEFAULT_PORT = 9650;
+  public static final String WEBSERVICE_PORT_CONF_NAME = "webservice-listener-port";
+  public static final int WEBSERVICE_DEFAULT_PORT = 9600;
 
   /** Determines whether the metricsdb files should be cleaned up. */
   public static final String DB_FILE_CLEANUP_CONF_NAME = "cleanup-metrics-db-files";
@@ -66,6 +69,9 @@ public class PluginSettings {
 
   /** Determines how many minutes worth of metricsdb files will be retained if batch metrics is enabled. */
   private long batchMetricsRetentionPeriodMinutes;
+
+  private int rpcPort;
+  private int webServicePort;
 
   static {
     Util.invokePrivilegedAndLogError(PluginSettings::createInstance);
@@ -89,6 +95,14 @@ public class PluginSettings {
 
   public long getBatchMetricsRetentionPeriodMinutes() {
     return batchMetricsRetentionPeriodMinutes;
+  }
+
+  public int getRpcPort() {
+    return rpcPort;
+  }
+
+  public int getWebServicePort() {
+    return webServicePort;
   }
 
   @VisibleForTesting
@@ -166,6 +180,7 @@ public class PluginSettings {
       loadHttpsEnabled();
       loadMetricsDBFilesCleanupEnabled();
       loadBatchMetricsRetentionPeriodMinutesFromConfig();
+      loadPortsFromConfig();
     } catch (ConfigFileException e) {
       LOG.error(
           "Loading config file {} failed with error: {}. Disabling plugin.",
@@ -319,6 +334,39 @@ public class PluginSettings {
       LOG.error("Invalid batch-metrics-retention-period-minutes {}. Using default value {}.",
               settings.getProperty(BATCH_METRICS_RETENTION_PERIOD_MINUTES),
               batchMetricsRetentionPeriodMinutes);
+    }
+  }
+
+  public void loadPortsFromConfig() {
+    try {
+      String rpcPortValue = settings.getProperty(RPC_PORT_CONF_NAME);
+      String webServicePortValue = settings.getProperty(WEBSERVICE_PORT_CONF_NAME);
+      if (rpcPortValue == null) {
+        LOG.info(
+                "{} not configured; using default value: {}",
+                RPC_PORT_CONF_NAME,
+                RPC_DEFAULT_PORT);
+        this.rpcPort = RPC_DEFAULT_PORT;
+      } else {
+        this.rpcPort = Integer.parseInt(rpcPortValue);
+      }
+      if (webServicePortValue == null) {
+        LOG.info(
+                "{} not configured; using default value: {}",
+                WEBSERVICE_PORT_CONF_NAME,
+                WEBSERVICE_DEFAULT_PORT);
+        this.webServicePort = WEBSERVICE_DEFAULT_PORT;
+      } else {
+        this.webServicePort = Integer.parseInt(webServicePortValue);
+      }
+    } catch (Exception ex) {
+      LOG.error(
+              "Invalid Configuration: {} Using default value: {} AND Error: {}",
+              RPC_PORT_CONF_NAME,
+              RPC_DEFAULT_PORT,
+              ex.toString());
+      this.rpcPort = RPC_DEFAULT_PORT;
+      this.webServicePort = WEBSERVICE_DEFAULT_PORT;
     }
   }
 }
