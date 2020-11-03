@@ -165,6 +165,9 @@ public class PluginSettings {
     metricsDeletionInterval = DELETION_INTERVAL_DEFAULT;
     writerQueueSize = WRITER_QUEUE_SIZE_DEFAULT;
     batchMetricsRetentionPeriodMinutes = BATCH_METRICS_RETENTION_PERIOD_MINUTES_DEFAULT;
+    rpcPort = RPC_DEFAULT_PORT;
+    webServicePort = WEBSERVICE_DEFAULT_PORT;
+    System.out.println("Here We arex1\n");
     if (cfPath == null || cfPath.isEmpty()) {
       this.configFilePath = DEFAULT_CONFIG_FILE_PATH;
     } else {
@@ -196,12 +199,15 @@ public class PluginSettings {
     }
     LOG.info(
         "Config: metricsLocation: {}, metricsDeletionInterval: {}, httpsEnabled: {},"
-            + " cleanup-metrics-db-files: {}, batch-metrics-retention-period-minutes: {}",
+            + " cleanup-metrics-db-files: {}, batch-metrics-retention-period-minutes: {}, rpc-port: {}, " +
+                "webservice-port {}",
         metricsLocation,
         metricsDeletionInterval,
         httpsEnabled,
         shouldCleanupMetricsDBFiles,
-        batchMetricsRetentionPeriodMinutes);
+        batchMetricsRetentionPeriodMinutes,
+        rpcPort,
+        webServicePort);
   }
 
   public static PluginSettings instance() {
