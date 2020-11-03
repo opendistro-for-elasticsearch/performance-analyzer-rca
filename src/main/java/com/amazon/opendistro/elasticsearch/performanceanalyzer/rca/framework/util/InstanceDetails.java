@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.NodeRole;
@@ -101,7 +102,7 @@ public class InstanceDetails {
   private final int grpcPort;
 
   public InstanceDetails(AllMetrics.NodeRole role, Id instanceId, Ip instanceIp, boolean isMaster) {
-    this(role, instanceId, instanceIp, isMaster, Util.RPC_PORT);
+    this(role, instanceId, instanceIp, isMaster, PluginSettings.instance().getRpcPort());
   }
 
   public InstanceDetails(AllMetrics.NodeRole role, Id instanceId, Ip instanceIp, boolean isMaster, int grpcPort) {

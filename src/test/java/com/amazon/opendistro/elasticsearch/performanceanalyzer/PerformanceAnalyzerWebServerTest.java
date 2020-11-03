@@ -1,5 +1,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings.WEBSERVICE_PORT_CONF_NAME;
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.sun.net.httpserver.HttpServer;
 
@@ -47,7 +49,7 @@ public class PerformanceAnalyzerWebServerTest {
     public void setup() {
         // Save old PluginSettings values
         oldBindHost = PluginSettings.instance().getSettingValue(PerformanceAnalyzerWebServer.WEBSERVICE_BIND_HOST_NAME);
-        oldPort = PluginSettings.instance().getSettingValue(PerformanceAnalyzerWebServer.WEBSERVICE_PORT_CONF_NAME);
+        oldPort = PluginSettings.instance().getProperty(WEBSERVICE_PORT_CONF_NAME);
         oldCertificateFilePath = PluginSettings.instance().getSettingValue(CertificateUtils.CERTIFICATE_FILE_PATH);
         oldPrivateKeyFilePath = PluginSettings.instance().getSettingValue(CertificateUtils.PRIVATE_KEY_FILE_PATH);
         oldTrustedCasFilePath = PluginSettings.instance().getSettingValue(CertificateUtils.TRUSTED_CAS_FILE_PATH);
@@ -57,7 +59,7 @@ public class PerformanceAnalyzerWebServerTest {
         oldHttpsEnabled = PluginSettings.instance().getHttpsEnabled();
         // Update bind host, port, and server certs for the test
         PluginSettings.instance().overrideProperty(PerformanceAnalyzerWebServer.WEBSERVICE_BIND_HOST_NAME, BIND_HOST);
-        PluginSettings.instance().overrideProperty(PerformanceAnalyzerWebServer.WEBSERVICE_PORT_CONF_NAME, PORT);
+        PluginSettings.instance().overrideProperty(WEBSERVICE_PORT_CONF_NAME, PORT);
         ClassLoader classLoader = getClass().getClassLoader();
         PluginSettings.instance().overrideProperty(CertificateUtils.CERTIFICATE_FILE_PATH,
                 Objects.requireNonNull(classLoader.getResource("tls/server/localhost.crt")).getFile());
@@ -74,9 +76,9 @@ public class PerformanceAnalyzerWebServerTest {
             PluginSettings.instance().overrideProperty(PerformanceAnalyzerWebServer.WEBSERVICE_BIND_HOST_NAME, "localhost");
         }
         if (oldPort != null) {
-            PluginSettings.instance().overrideProperty(PerformanceAnalyzerWebServer.WEBSERVICE_PORT_CONF_NAME, oldPort);
+            PluginSettings.instance().overrideProperty(WEBSERVICE_PORT_CONF_NAME, oldPort);
         } else {
-            PluginSettings.instance().overrideProperty(PerformanceAnalyzerWebServer.WEBSERVICE_PORT_CONF_NAME, "9600");
+            PluginSettings.instance().overrideProperty(WEBSERVICE_PORT_CONF_NAME, "9600");
         }
         if (oldCertificateFilePath != null) {
             PluginSettings.instance().overrideProperty(CertificateUtils.CERTIFICATE_FILE_PATH, oldCertificateFilePath);
@@ -110,7 +112,7 @@ public class PerformanceAnalyzerWebServerTest {
 
     public void initializeServer(boolean useHttps) {
         PluginSettings.instance().setHttpsEnabled(useHttps);
-        server = PerformanceAnalyzerWebServer.createInternalServer(PORT, BIND_HOST, useHttps);
+        server = PerformanceAnalyzerWebServer.createInternalServer(Integer.parseInt(PORT), BIND_HOST, useHttps);
         Assert.assertNotNull(server);
         server.setExecutor(Executors.newFixedThreadPool(1));
         // Setup basic /test endpoint. When the server receives any request on /test, it responds with "hello"

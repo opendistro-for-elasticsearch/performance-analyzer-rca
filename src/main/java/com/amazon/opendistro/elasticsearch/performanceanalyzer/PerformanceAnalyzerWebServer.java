@@ -42,28 +42,24 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 public class PerformanceAnalyzerWebServer {
 
   private static final Logger LOG = LogManager.getLogger(PerformanceAnalyzerWebServer.class);
-  public static final int WEBSERVICE_DEFAULT_PORT = 9600;
   @VisibleForTesting
   public static final String WEBSERVICE_BIND_HOST_NAME = "webservice-bind-host";
-  @VisibleForTesting
-  public static final String WEBSERVICE_PORT_CONF_NAME = "webservice-listener-port";
   // Use system default for max backlog.
   private static final int INCOMING_QUEUE_LENGTH = 1;
 
-  public static HttpServer createInternalServer(String portFromSetting, String hostFromSetting, boolean httpsEnabled) {
-    int internalPort = getPortNumber(portFromSetting);
+  public static HttpServer createInternalServer(int webServerPort, String hostFromSetting, boolean httpsEnabled) {
     try {
       Security.addProvider(new BouncyCastleProvider());
       HttpServer server;
       if (httpsEnabled) {
-        server = createHttpsServer(internalPort, hostFromSetting);
+        server = createHttpsServer(webServerPort, hostFromSetting);
       } else {
-        server = createHttpServer(internalPort, hostFromSetting);
+        server = createHttpServer(webServerPort, hostFromSetting);
       }
       server.setExecutor(Executors.newCachedThreadPool());
       return server;
     } catch (java.net.BindException ex) {
-      LOG.error("Could not create HttpServer on port {}", internalPort, ex);
+      LOG.error("Could not create HttpServer on port {}", webServerPort, ex);
       Runtime.getRuntime().halt(1);
     } catch (Exception ex) {
       ex.printStackTrace();
@@ -156,26 +152,5 @@ public class PerformanceAnalyzerWebServer {
     }
 
     return server;
-  }
-
-  private static int getPortNumber(String readerPortValue) {
-    try {
-      if (readerPortValue == null) {
-        LOG.info(
-            "{} not configured; using default value: {}",
-            WEBSERVICE_PORT_CONF_NAME,
-            WEBSERVICE_DEFAULT_PORT);
-        return WEBSERVICE_DEFAULT_PORT;
-      }
-
-      return Integer.parseInt(readerPortValue);
-    } catch (Exception ex) {
-      LOG.error(
-          "Invalid Configuration: {} Using default value: {} AND Error: {}",
-          WEBSERVICE_PORT_CONF_NAME,
-          WEBSERVICE_DEFAULT_PORT,
-          ex.toString());
-      return WEBSERVICE_DEFAULT_PORT;
-    }
   }
 }

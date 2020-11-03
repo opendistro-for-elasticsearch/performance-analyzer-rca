@@ -265,11 +265,11 @@ public class PerformanceAnalyzerApp {
     boolean useHttps = settings.getHttpsEnabled();
     return createClientServers(
         connectionManager,
-        Util.RPC_PORT,
+        settings.getRpcPort(),
         new MetricsServerHandler(),
         new MetricsRestUtil(),
         useHttps,
-        settings.getSettingValue(PerformanceAnalyzerWebServer.WEBSERVICE_PORT_CONF_NAME),
+        settings.getWebServicePort(),
         settings.getSettingValue(PerformanceAnalyzerWebServer.WEBSERVICE_BIND_HOST_NAME),
         appContext);
   }
@@ -279,7 +279,7 @@ public class PerformanceAnalyzerApp {
                                                   final MetricsServerHandler metricsServerHandler,
                                                   final MetricsRestUtil metricsRestUtil,
                                                   boolean useHttps,
-                                                  final String webServerPortFromSetting,
+                                                  int webServerPort,
                                                   final String hostFromSetting,
                                                   final AppContext appContext) {
     NetServer netServer = new NetServer(rpcPort, 1, useHttps);
@@ -290,7 +290,7 @@ public class PerformanceAnalyzerApp {
     }
 
     HttpServer httpServer =
-        PerformanceAnalyzerWebServer.createInternalServer(webServerPortFromSetting, hostFromSetting, useHttps);
+        PerformanceAnalyzerWebServer.createInternalServer(webServerPort, hostFromSetting, useHttps);
 
     if (metricsRestUtil != null) {
       httpServer.createContext(QUERY_URL, new QueryMetricsRequestHandler(netClient, metricsRestUtil, appContext));

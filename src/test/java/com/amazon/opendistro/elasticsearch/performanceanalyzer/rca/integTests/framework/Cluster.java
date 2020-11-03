@@ -17,6 +17,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.f
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerWebServer;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AMetric;
@@ -119,8 +120,8 @@ public class Cluster {
   }
 
   private void createMultiNodeDedicatedMaster() {
-    int currWebServerPort = PerformanceAnalyzerWebServer.WEBSERVICE_DEFAULT_PORT;
-    int currGrpcServerPort = Util.RPC_PORT;
+    int currWebServerPort = PluginSettings.WEBSERVICE_DEFAULT_PORT;
+    int currGrpcServerPort = PluginSettings.RPC_DEFAULT_PORT;
     int hostIdx = 0;
 
     createHost(hostIdx, AllMetrics.NodeRole.ELECTED_MASTER, currWebServerPort, currGrpcServerPort);
@@ -200,16 +201,16 @@ public class Cluster {
   }
 
   private void createSingleNodeCluster() {
-    int currWebServerPort = PerformanceAnalyzerWebServer.WEBSERVICE_DEFAULT_PORT;
-    int currGrpcServerPort = Util.RPC_PORT;
+    int currWebServerPort = PluginSettings.WEBSERVICE_DEFAULT_PORT;
+    int currGrpcServerPort = PluginSettings.RPC_DEFAULT_PORT;
     int hostIdx = 0;
 
     createHost(hostIdx, AllMetrics.NodeRole.ELECTED_MASTER, currWebServerPort, currGrpcServerPort);
   }
 
   private void createMultiNodeCoLocatedMaster() {
-    int currWebServerPort = PerformanceAnalyzerWebServer.WEBSERVICE_DEFAULT_PORT;
-    int currGrpcServerPort = Util.RPC_PORT;
+    int currWebServerPort = PluginSettings.WEBSERVICE_DEFAULT_PORT;
+    int currGrpcServerPort = PluginSettings.RPC_DEFAULT_PORT;
     int hostIdx = 0;
 
     createHost(hostIdx, AllMetrics.NodeRole.ELECTED_MASTER, currWebServerPort, currGrpcServerPort);

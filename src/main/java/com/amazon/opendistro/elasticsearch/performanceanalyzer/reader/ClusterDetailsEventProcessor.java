@@ -15,14 +15,13 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.overrides.ConfigOverridesApplier;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaControllerHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.JsonConverter;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -170,7 +169,7 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
     private String hostAddress;
     private String role;
     private Boolean isMasterNode;
-    private int grpcPort = Util.RPC_PORT;
+    private int grpcPort = PluginSettings.instance().getRpcPort();
 
     NodeDetails(String stringifiedMetrics) {
       Map<String, Object> map = JsonConverter
@@ -183,7 +182,7 @@ public class ClusterDetailsEventProcessor implements EventProcessor {
     }
 
     public NodeDetails(AllMetrics.NodeRole role, String id, String hostAddress, boolean isMaster) {
-      this(role, id, hostAddress, isMaster, Util.RPC_PORT);
+      this(role, id, hostAddress, isMaster, PluginSettings.instance().getRpcPort());
     }
 
     public NodeDetails(final NodeDetails other) {
