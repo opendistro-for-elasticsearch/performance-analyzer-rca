@@ -167,7 +167,6 @@ public class PluginSettings {
     batchMetricsRetentionPeriodMinutes = BATCH_METRICS_RETENTION_PERIOD_MINUTES_DEFAULT;
     rpcPort = RPC_DEFAULT_PORT;
     webServicePort = WEBSERVICE_DEFAULT_PORT;
-    System.out.println("Here We arex1\n");
     if (cfPath == null || cfPath.isEmpty()) {
       this.configFilePath = DEFAULT_CONFIG_FILE_PATH;
     } else {
