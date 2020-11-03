@@ -47,19 +47,19 @@ public class PerformanceAnalyzerWebServer {
   // Use system default for max backlog.
   private static final int INCOMING_QUEUE_LENGTH = 1;
 
-  public static HttpServer createInternalServer(int internalPort, String hostFromSetting, boolean httpsEnabled) {
+  public static HttpServer createInternalServer(int webServerPort, String hostFromSetting, boolean httpsEnabled) {
     try {
       Security.addProvider(new BouncyCastleProvider());
       HttpServer server;
       if (httpsEnabled) {
-        server = createHttpsServer(internalPort, hostFromSetting);
+        server = createHttpsServer(webServerPort, hostFromSetting);
       } else {
-        server = createHttpServer(internalPort, hostFromSetting);
+        server = createHttpServer(webServerPort, hostFromSetting);
       }
       server.setExecutor(Executors.newCachedThreadPool());
       return server;
     } catch (java.net.BindException ex) {
-      LOG.error("Could not create HttpServer on port {}", internalPort, ex);
+      LOG.error("Could not create HttpServer on port {}", webServerPort, ex);
       Runtime.getRuntime().halt(1);
     } catch (Exception ex) {
       ex.printStackTrace();
