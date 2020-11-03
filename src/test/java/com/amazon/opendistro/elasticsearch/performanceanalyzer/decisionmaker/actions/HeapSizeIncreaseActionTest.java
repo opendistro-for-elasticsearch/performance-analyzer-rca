@@ -16,11 +16,9 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
-import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension;
@@ -70,21 +68,6 @@ public class HeapSizeIncreaseActionTest {
   }
 
   @Test
-  public void testCanUpdate() throws Exception {
-    when(Runtime.getRuntime()).thenReturn(mockRuntime);
-    Mockito.when(mockRuntime.totalMemory()).thenReturn(201L * 1024L * 1024L * 1024L);
-
-    testAction = new HeapSizeIncreaseAction(mockAppContext);
-    assertTrue(testAction.canUpdate());
-
-    // Basically something smaller than 200GB
-    Mockito.when(mockRuntime.totalMemory()).thenReturn(10L);
-
-    testAction = new HeapSizeIncreaseAction(mockAppContext);
-    assertFalse(testAction.canUpdate());
-  }
-
-  @Test
   public void testImpactedNodes() throws Exception {
     NodeKey dataNode = getNodeKeyFor("node1", "2.3.4.5");
     Mockito.when(mockAppContext.getDataNodeInstances())
@@ -127,7 +110,7 @@ public class HeapSizeIncreaseActionTest {
 
     HeapSizeIncreaseAction rebuiltAction = HeapSizeIncreaseAction
         .fromSummary(summaryStr, mockAppContext);
-    assertFalse(rebuiltAction.canUpdate());
+    assertTrue(rebuiltAction.canUpdate());
   }
 
   private NodeKey getNodeKeyFor(String id, String ip) {
