@@ -199,8 +199,8 @@ public class PluginSettings {
     }
     LOG.info(
         "Config: metricsLocation: {}, metricsDeletionInterval: {}, httpsEnabled: {},"
-            + " cleanup-metrics-db-files: {}, batch-metrics-retention-period-minutes: {}, rpc-port: {}, " +
-                "webservice-port {}",
+            + " cleanup-metrics-db-files: {}, batch-metrics-retention-period-minutes: {}, rpc-port: {}, "
+            +    "webservice-port {}",
         metricsLocation,
         metricsDeletionInterval,
         httpsEnabled,
