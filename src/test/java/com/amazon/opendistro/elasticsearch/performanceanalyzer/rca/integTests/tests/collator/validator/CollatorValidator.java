@@ -15,12 +15,16 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.collator.validator;
 
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rest.QueryActionRequestHandler.ACTION_SET_JSON_NAME;
 import static org.junit.Assert.assertEquals;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.HeapSizeIncreaseAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.api.IValidator;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.PersistedAction;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.PersistedAction.SQL_SCHEMA_CONSTANTS;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,19 +40,20 @@ public class CollatorValidator implements IValidator {
   }
 
   @Override
-  public boolean checkDbObj(Object object) {
-    if (object == null) {
+  public boolean checkJsonResp(JsonElement response) {
+    JsonArray array = response.getAsJsonObject().get(ACTION_SET_JSON_NAME).getAsJsonArray();
+    if (array.size() == 0) {
       return false;
     }
 
-    PersistedAction persistedAction = (PersistedAction) object;
-    // In this case, we expect pressure-mismatched actions to be suggested by the deciders. I.e.
-    // JvmDecider asking to reduce heap pressure and QueueHealthDecider asking to increase heap
-    // pressure. We expect the collator to have picked the pressure decreasing action which is
-    // the HeapSizeIncreaseAction.
+    assertEquals(1, array.size());
+    JsonObject obj = array.get(0).getAsJsonObject();
 
-    assertEquals(HeapSizeIncreaseAction.NAME, persistedAction.getActionName());
-    return true;
+    if (!obj.get(SQL_SCHEMA_CONSTANTS.ACTION_COL_NAME).getAsString().equals(
+        HeapSizeIncreaseAction.NAME)) {
+      return false;
+    }
+
+    return obj.get(SQL_SCHEMA_CONSTANTS.ACTIONABLE_NAME).getAsBoolean();
   }
-
 }
