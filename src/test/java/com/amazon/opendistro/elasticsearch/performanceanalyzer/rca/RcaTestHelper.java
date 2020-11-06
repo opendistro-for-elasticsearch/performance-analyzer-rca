@@ -171,7 +171,8 @@ public class RcaTestHelper {
     }
   }
 
-  public static void updateConfFileForMutedRcas(String rcaConfPath, List<String> mutedRcas) throws Exception {
+  public static void updateConfFileForMutedComponents(String rcaConfPath,
+      List<String> mutedComponents, String componentKey) throws Exception {
 
     // create the config json Object from rca config file
     Scanner scanner = new Scanner(new FileInputStream(rcaConfPath), StandardCharsets.UTF_8.name());
@@ -182,8 +183,8 @@ public class RcaTestHelper {
     JsonNode configObject = mapper.readTree(jsonText);
 
     // update the `MUTED_RCAS_CONFIG` value in config Object
-    ArrayNode array = mapper.valueToTree(mutedRcas);
-    ((ObjectNode) configObject).putArray("muted-rcas").addAll(array);
+    ArrayNode array = mapper.valueToTree(mutedComponents);
+    ((ObjectNode) configObject).putArray(componentKey).addAll(array);
     mapper.writeValue(new FileOutputStream(rcaConfPath), configObject);
   }
 

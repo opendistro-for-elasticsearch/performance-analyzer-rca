@@ -30,7 +30,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetClient;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.net.NetServer;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.exceptions.MalformedConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ConnectedComponent;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.MetricsDBProvider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Stats;
@@ -410,7 +409,15 @@ public class RcaController {
 
       LOG.info("Updating the muted graph nodes to : {}", graphNodesForMute);
       Stats.getInstance().updateMutedGraphNodes(graphNodesForMute);
+      // We need to update muted actions in two places. One is in the controller which could
+      // potentially serve as a snapshot when creating a new rca scheduler, and the other place
+      // is in the rca scheduler itself. The scheduler maintains a snapshot of the appcontext(see
+      // the comment above near scheduler instantiation) that it uses to determine staleness. It
+      // also happens to be the appcontext that will be passed to the graph nodes.
       appContext.updateMutedActions(actionsForMute);
+      if (rcaScheduler != null) {
+        rcaScheduler.updateAppContextWithMutedActions(actionsForMute);
+      }
     } catch (Exception e) {
       LOG.error("Couldn't read/update the muted RCAs", e);
       StatsCollector.instance().logMetric(MUTE_ERROR_METRIC);

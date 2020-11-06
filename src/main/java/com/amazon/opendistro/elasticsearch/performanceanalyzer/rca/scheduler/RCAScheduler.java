@@ -21,18 +21,17 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.ThresholdMain;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -138,7 +137,8 @@ public class RCAScheduler {
         appContext);
 
     schedulerState = RcaSchedulerState.STATE_STARTED;
-    LOG.info("RCA scheduler thread started successfully on node: {}", appContext.getMyInstanceDetails().getInstanceId());
+    LOG.info("RCA scheduler thread started successfully on node: {}",
+        appContext.getMyInstanceDetails().getInstanceId());
     if (schedulerTrackingLatch != null) {
       schedulerTrackingLatch.countDown();
     }
@@ -206,6 +206,17 @@ public class RCAScheduler {
     rcaSchedulerPeriodicExecutor = Executors.newFixedThreadPool(2, taskThreadFactory);
   }
 
+  /**
+   * Updates the list of muted actions in the current instance of {@link AppContext}.
+   *
+   * @param mutedActions The set of actions names that need to be muted.
+   */
+  public void updateAppContextWithMutedActions(final Set<String> mutedActions) {
+    if (this.appContext != null) {
+      this.appContext.updateMutedActions(mutedActions);
+    }
+  }
+
   public NodeRole getRole() {
     return role;
   }
@@ -217,5 +228,10 @@ public class RCAScheduler {
   @VisibleForTesting
   public void setQueryable(Queryable queryable) {
     this.db = queryable;
+  }
+
+  @VisibleForTesting
+  public AppContext getAppContext() {
+    return this.appContext;
   }
 }
