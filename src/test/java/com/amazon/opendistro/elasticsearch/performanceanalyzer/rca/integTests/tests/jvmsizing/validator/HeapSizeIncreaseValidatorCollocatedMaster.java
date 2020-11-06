@@ -23,7 +23,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.PersistedAction;
 import java.util.concurrent.TimeUnit;
 
-public class HeapSizeIncreaseValidatorColocatedMaster extends HeapSizeIncreaseValidator {
+public class HeapSizeIncreaseValidatorCollocatedMaster extends HeapSizeIncreaseValidator {
 
   @Override
   public boolean checkPersistedAction(final PersistedAction persistedAction) {
