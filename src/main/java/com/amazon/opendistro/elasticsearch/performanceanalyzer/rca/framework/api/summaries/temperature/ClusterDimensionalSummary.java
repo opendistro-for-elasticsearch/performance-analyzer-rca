@@ -30,6 +30,7 @@ import com.google.gson.JsonParser;
 import com.google.protobuf.GeneratedMessageV3;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.jooq.DSLContext;

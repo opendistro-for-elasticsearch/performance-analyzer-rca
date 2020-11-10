@@ -75,10 +75,10 @@ public class DimensionalTemperatureCalculator {
         List<MetricFlowUnit> shardIdIndependentFlowUnits = resourceShardIndependent.getFlowUnits();
         List<MetricFlowUnit> resourcePeakFlowUnits = resourcePeakUsage.getFlowUnits();
 
-        LOG.info("shardIdBasedFlowUnits: {}", shardIdBasedFlowUnits);
-        LOG.info("avgResUsageFlowUnits: {}", avgResUsageFlowUnits);
-        LOG.info("shardIdIndependentFlowUnits: {}", shardIdIndependentFlowUnits);
-        LOG.info("resourcePeakFlowUnits: {}", resourcePeakFlowUnits);
+        LOG.debug("shardIdBasedFlowUnits: {}", shardIdBasedFlowUnits);
+        LOG.debug("avgResUsageFlowUnits: {}", avgResUsageFlowUnits);
+        LOG.debug("shardIdIndependentFlowUnits: {}", shardIdIndependentFlowUnits);
+        LOG.debug("resourcePeakFlowUnits: {}", resourcePeakFlowUnits);
 
         // example:
         // [0: [[IndexName, ShardID, sum], [geonames, 0, 0.35558242693567], [geonames, 2, 0.0320651297686606]]]
@@ -134,7 +134,10 @@ public class DimensionalTemperatureCalculator {
             }
         }
 
-        double avgValOverShards = -1.0;
+        // avgUsageAcrossShards contains the average of resource consumed over all the shards.
+        // e.g. If Total CPU consumed by shards is 50% and total number of shards on the node
+        // are 5, This would have the value as 10.
+        double avgUsageAcrossShards = -1.0;
         try {
             Result<Record> flowUnitData = avgResUsageFlowUnits.get(0).getData();
             if (flowUnitData == null) {
@@ -143,7 +146,7 @@ public class DimensionalTemperatureCalculator {
             List<Double> values = flowUnitData.getValues(
                 AvgShardBasedTemperatureCalculator.SHARD_AVG, Double.class);
             if (values != null && values.get(0) != null) {
-                avgValOverShards = values.get(0);
+                avgUsageAcrossShards = values.get(0);
             } else {
                 // This means that there are no shards on this node. So we will return an empty FlowUnit.
                 return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
@@ -153,7 +156,8 @@ public class DimensionalTemperatureCalculator {
             return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
         }
 
-        double totalConsumedInNode = -1.0;
+        // totalUsageInNode contains the value consumed by the resource on the node.
+        double totalUsageInNode = -1.0;
         try {
             Result<Record> flowUnitData = resourcePeakFlowUnits.get(0).getData();
             if (flowUnitData == null) {
@@ -162,7 +166,7 @@ public class DimensionalTemperatureCalculator {
             List<Double> values = flowUnitData.getValues(
                     TemperatureMetricsBase.AGGR_OVER_AGGR_NAME, Double.class);
             if (values != null && values.get(0) != null) {
-                totalConsumedInNode = values.get(0);
+                totalUsageInNode = values.get(0);
             } else {
                 // This means that there are no shards on this node. So we will return an empty FlowUnit.
                 return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
@@ -172,28 +176,37 @@ public class DimensionalTemperatureCalculator {
             return new DimensionalTemperatureFlowUnit(System.currentTimeMillis());
         }
 
-        TemperatureVector.NormalizedValue avgUsageAcrossShards =
-                TemperatureVector.NormalizedValue.calculate(avgValOverShards, totalConsumedInNode);
+        // normalizedConsumptionAcrossShards contains average normalized value (on a scale of 10) the of the resource
+        // e.g. If the total resource(CPU) used is 50% and there are 6 shards on the node. 
+        // normalizedConsumptionAcrossShards would be equal to ((50/6)*10)/50 = 1.67
+        TemperatureVector.NormalizedValue normalizedConsumptionAcrossShards =
+                TemperatureVector.NormalizedValue.calculate(avgUsageAcrossShards, totalUsageInNode);
 
-        Result<Record> rowsPerShard = shardIdBasedFlowUnits.get(0).getData();
+        // valuesOverShards contains the usage of resource over every shard.
+        Result<Record> valuesOverShards = shardIdBasedFlowUnits.get(0).getData();
 
         NodeLevelDimensionalSummary nodeDimensionProfile =
-                new NodeLevelDimensionalSummary(metricType, avgUsageAcrossShards, totalConsumedInNode);
+                new NodeLevelDimensionalSummary(metricType, normalizedConsumptionAcrossShards, totalUsageInNode);
 
         // The shardIdBasedFlowUnits is supposed to contain one row per shard.
-        nodeDimensionProfile.setNumberOfShards(rowsPerShard.size());
+        nodeDimensionProfile.setNumberOfShards(valuesOverShards.size());
 
-        for (Record record : rowsPerShard) {
+        for (Record record : valuesOverShards) {
             // Each row has columns like:
             // IndexName, ShardID, sum
             String indexName = record.getValue(ColumnTypes.IndexName.name(), String.class);
             int shardId = record.getValue(ColumnTypes.ShardID.name(), Integer.class);
-            double usage = record.getValue(ColumnTypes.sum.name(), Double.class);
+            double usageByShard = record.getValue(ColumnTypes.sum.name(), Double.class);
 
+            // normalizedConsumptionByShard contains the normalized value of the resource consumed
+            // by this shard. e.g. If the If the total resource(CPU) used is 50% and
+            // CPU consumed by this shard is 6%, normalizedConsumptionByShard = (6*10/50) = 1.2
             TemperatureVector.NormalizedValue normalizedConsumptionByShard =
-                    TemperatureVector.NormalizedValue.calculate(usage, totalConsumedInNode);
+                    TemperatureVector.NormalizedValue.calculate(usageByShard, totalUsageInNode);
+
+            // heatZone for shard contains the heat zone assigned to this particular shard.
             HeatZoneAssigner.Zone heatZoneForShard =
-                    HeatZoneAssigner.assign(normalizedConsumptionByShard, avgUsageAcrossShards, threshold);
+                    HeatZoneAssigner.assign(normalizedConsumptionByShard, normalizedConsumptionAcrossShards, threshold);
 
             ShardProfileSummary shardProfileSummary = shardStore.getOrCreateIfAbsent(indexName, shardId);
             shardProfileSummary.addTemperatureForDimension(metricType, normalizedConsumptionByShard);

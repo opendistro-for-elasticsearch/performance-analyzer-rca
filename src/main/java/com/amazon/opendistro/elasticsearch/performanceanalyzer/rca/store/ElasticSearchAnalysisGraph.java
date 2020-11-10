@@ -306,7 +306,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
     constructShardResourceUsageGraph();
 
-    //constructResourceHeatMapGraph();
+    constructResourceHeatMapGraph();
 
     // Collator - Collects actions from all deciders and aligns impact vectors
     Collator collator = new Collator(queueHealthDecider, cacheHealthDecider, heapHealthDecider);

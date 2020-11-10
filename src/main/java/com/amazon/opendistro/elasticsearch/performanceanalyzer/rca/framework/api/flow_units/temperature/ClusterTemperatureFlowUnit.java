@@ -30,9 +30,18 @@ public class ClusterTemperatureFlowUnit extends ResourceFlowUnit<ClusterTemperat
         clusterTemperatureSummary = resourceSummary;
     }
 
+    public ClusterTemperatureFlowUnit(long timeStamp) {
+        super(timeStamp);
+        clusterTemperatureSummary = null;
+    }
+
     @Override
     public FlowUnitMessage buildFlowUnitMessage(String graphNode, InstanceDetails.Id esNode) {
         throw new IllegalStateException(this.getClass().getSimpleName() + " should not be passed "
                 + "over the wire.");
+    }
+
+    public ClusterTemperatureSummary getClusterTemperatureSummary() {
+        return clusterTemperatureSummary;
     }
 }

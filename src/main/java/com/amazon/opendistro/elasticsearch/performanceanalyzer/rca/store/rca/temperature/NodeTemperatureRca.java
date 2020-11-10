@@ -31,6 +31,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.tem
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.ShardSizeDimensionTemperatureRca;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -74,45 +76,38 @@ public class NodeTemperatureRca extends Rca<CompactNodeTemperatureFlowUnit> {
    */
   @Override
   public CompactNodeTemperatureFlowUnit operate() {
-    // TODO: Make this process a list of dimensions instead of writing them out and add the
-    //  processed dimension profiles to the summary.
-    List<DimensionalTemperatureFlowUnit> cpuFlowUnits = cpuUtilDimensionTemperatureRca
-        .getFlowUnits();
-    List<DimensionalTemperatureFlowUnit> heapAllocRateFlowUnits = heapAllocRateTemperatureRca
-        .getFlowUnits();
-    List<DimensionalTemperatureFlowUnit> shardSizeFlowUnits = shardSizeDimensionTemperatureRca
-        .getFlowUnits();
+
+    List<List<DimensionalTemperatureFlowUnit>> flowUnitsAcrossDimensions = new ArrayList<>();
+    flowUnitsAcrossDimensions.add(cpuUtilDimensionTemperatureRca.getFlowUnits());
+    flowUnitsAcrossDimensions.add(heapAllocRateTemperatureRca.getFlowUnits());
+    flowUnitsAcrossDimensions.add(shardSizeDimensionTemperatureRca.getFlowUnits());
+
     // EachResourceLevelHeat RCA should generate a one @{code DimensionalFlowUnit}.
-    if (cpuFlowUnits.size() < 1) {
-      cpuFlowUnits.add(new DimensionalTemperatureFlowUnit(System.currentTimeMillis()));
+    for (List<DimensionalTemperatureFlowUnit> flowUnitAcrossOneDimension : flowUnitsAcrossDimensions) {
+      if (flowUnitAcrossOneDimension.size() < 1) {
+        flowUnitAcrossOneDimension.add(new DimensionalTemperatureFlowUnit(System.currentTimeMillis()));
+      }
     }
 
-    if (heapAllocRateFlowUnits.size() < 1) {
-      heapAllocRateFlowUnits.add(new DimensionalTemperatureFlowUnit(System.currentTimeMillis()));
-    }
+    // This means that the input RCAs didn't calculate anything. We can move on as well.
+    AtomicBoolean nonEmptyFlowUnit = new AtomicBoolean(false);
+    flowUnitsAcrossDimensions.forEach(flowUnitAcrossOneDimension -> {
+      if (!flowUnitAcrossOneDimension.get(0).isEmpty()) {
+        nonEmptyFlowUnit.set(true);
+      }
+    });
 
-    if (shardSizeFlowUnits.size() < 1) {
-      shardSizeFlowUnits.add(new DimensionalTemperatureFlowUnit(System.currentTimeMillis()));
-    }
-
-    // This means that the input RCA didn't calculate anything. We can move on as well.
-    if (cpuFlowUnits.get(0).isEmpty() && heapAllocRateFlowUnits.get(0).isEmpty()
-            && shardSizeFlowUnits.get(0).isEmpty()) {
+    if (!nonEmptyFlowUnit.get()) {
       return new CompactNodeTemperatureFlowUnit(System.currentTimeMillis());
     }
 
     List<NodeLevelDimensionalSummary> nodeDimensionProfiles = new ArrayList<>();
-    if (!cpuFlowUnits.get(0).isEmpty()) {
-      nodeDimensionProfiles.add(cpuFlowUnits.get(0).getNodeDimensionProfile());
-    }
+    flowUnitsAcrossDimensions.forEach(flowUnitAcrossOneDimension -> {
+      if (!flowUnitAcrossOneDimension.get(0).isEmpty()) {
+        nodeDimensionProfiles.add(flowUnitAcrossOneDimension.get(0).getNodeDimensionProfile());
+      }
+    });
 
-    if (!heapAllocRateFlowUnits.get(0).isEmpty()) {
-      nodeDimensionProfiles.add(heapAllocRateFlowUnits.get(0).getNodeDimensionProfile());
-    }
-
-    if (!shardSizeFlowUnits.get(0).isEmpty()) {
-      nodeDimensionProfiles.add(shardSizeFlowUnits.get(0).getNodeDimensionProfile());
-    }
     FullNodeTemperatureSummary nodeProfile = buildNodeProfile(nodeDimensionProfiles);
 
     ResourceContext resourceContext = new ResourceContext(Resources.State.UNKNOWN);

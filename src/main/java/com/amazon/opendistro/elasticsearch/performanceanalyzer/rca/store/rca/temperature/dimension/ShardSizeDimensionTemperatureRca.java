@@ -76,10 +76,6 @@ public class ShardSizeDimensionTemperatureRca extends Rca<DimensionalTemperature
                 THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT);
         LOG.info("Shard Size temperature calculated: {}",
                 shardSizeTemperatureFlowUnit.getNodeDimensionProfile());
-        ResourceContext context = (shardSizeTemperatureFlowUnit.getNodeDimensionProfile().getMeanTemperature()
-                .isGreaterThan(THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT)) ? new ResourceContext(Resources.State.UNHEALTHY) :
-                new ResourceContext(Resources.State.HEALTHY);
-        shardSizeTemperatureFlowUnit.setResourceContext(context);
         return shardSizeTemperatureFlowUnit;
     }
 }

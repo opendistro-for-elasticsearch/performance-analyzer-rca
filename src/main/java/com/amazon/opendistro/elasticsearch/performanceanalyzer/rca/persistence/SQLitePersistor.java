@@ -914,13 +914,11 @@ class SQLitePersistor extends PersistorBase {
       // made from a data node, it returns a 400 saying it can only be queried from the elected
       // master.
       if (rca.equals(ClusterTemperatureRca.TABLE_NAME)) {
-        Field<Integer> foreignKeyField = DSL.field(
-            SQLiteQueryUtils.getPrimaryKeyColumnName(ResourceFlowUnit.RCA_TABLE_NAME),
-            Integer.class);
-        SelectJoinStep<Record> query = SQLiteQueryUtils
-            .buildSummaryQuery(create, ClusterTemperatureSummary.TABLE_NAME,
-                mostRecentRecord.get(primaryKeyField),
-                foreignKeyField);
+        SelectJoinStep<Record> query = SQLiteQueryUtils.buildSummaryQuery(
+            create,
+            ClusterTemperatureSummary.TABLE_NAME,
+            mostRecentRecord.get(primaryKeyField),
+            primaryKeyField);
         Result<Record> temperatureSummary = query.fetch();
         GenericSummary summary =
             ClusterTemperatureSummary.buildSummaryFromDatabase(temperatureSummary, create);
@@ -933,8 +931,7 @@ class SQLitePersistor extends PersistorBase {
             primaryKeyField);
         Result<Record> nodeTemperatureCompactSummary = query.fetch();
         GenericSummary summary =
-            CompactNodeSummary.buildSummaryFromDatabase(
-                nodeTemperatureCompactSummary, create);
+            CompactNodeSummary.buildSummaryFromDatabase(nodeTemperatureCompactSummary, create);
         response.addNestedSummaryList(summary);
       } else {
         // This gives you the full temperature profile for this node.
