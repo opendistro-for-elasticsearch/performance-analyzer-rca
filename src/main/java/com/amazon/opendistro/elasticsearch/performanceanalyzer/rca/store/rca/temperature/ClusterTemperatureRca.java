@@ -68,7 +68,6 @@ public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
         // level. Note that temperature is a normalized value, normalized by total usage. At node
         // level, the total usage is at the node level (over all shards and shard-independent
         // factors), at the master the total usage is the sum over all nodes.
-        boolean noFlowUnitAcrossDimensions = true;
         for (TemperatureDimension dimension : TemperatureDimension.values()) {
             double totalForDimension = 0.0;
             boolean allFlowUnitSummariesNull = true;
