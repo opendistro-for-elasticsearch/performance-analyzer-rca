@@ -16,11 +16,10 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ShardProfileSummary;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.IndexShardKey;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
-
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.IndexShardKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,11 +53,11 @@ public class ShardStore {
         return shardProfileSummary;
     }
 
-//    public List<ShardProfileSummary> getAllShards() {
-//        List<ShardProfileSummary> shardProfileSummaryList = new ArrayList<>();
-//        for (Map<Integer, ShardProfileSummary> shardIdToShardMap : shardToShardProfileMap.values()) {
-//            shardProfileSummaryList.addAll(shardIdToShardMap.values());
-//        }
-//        return shardProfileSummaryList;
-//    }
+    //    public List<ShardProfileSummary> getAllShards() {
+    //        List<ShardProfileSummary> shardProfileSummaryList = new ArrayList<>();
+    //        for (Map<Integer, ShardProfileSummary> shardIdToShardMap : shardToShardProfileMap.values()) {
+    //            shardProfileSummaryList.addAll(shardIdToShardMap.values());
+    //        }
+    //        return shardProfileSummaryList;
+    //    }
 }
