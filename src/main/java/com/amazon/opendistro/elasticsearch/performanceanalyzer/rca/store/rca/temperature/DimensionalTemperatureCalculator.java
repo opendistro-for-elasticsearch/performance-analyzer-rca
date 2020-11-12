@@ -31,6 +31,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.DiskUsageShardIndependentTemperatureCalculator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.temperature.shardIndependent.calculators.ShardIndependentTemperatureCalculator;
 import java.util.List;
+
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.IndexShardKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.Record;
@@ -208,7 +210,8 @@ public class DimensionalTemperatureCalculator {
             HeatZoneAssigner.Zone heatZoneForShard =
                     HeatZoneAssigner.assign(normalizedConsumptionByShard, normalizedConsumptionAcrossShards, threshold);
 
-            ShardProfileSummary shardProfileSummary = shardStore.getOrCreateIfAbsent(indexName, shardId);
+            IndexShardKey indexShardKey = new IndexShardKey(indexName, shardId);
+            ShardProfileSummary shardProfileSummary = shardStore.getOrCreateIfAbsent(indexShardKey);
             shardProfileSummary.addTemperatureForDimension(metricType, normalizedConsumptionByShard);
             nodeDimensionProfile.addShardToZone(shardProfileSummary, heatZoneForShard);
         }

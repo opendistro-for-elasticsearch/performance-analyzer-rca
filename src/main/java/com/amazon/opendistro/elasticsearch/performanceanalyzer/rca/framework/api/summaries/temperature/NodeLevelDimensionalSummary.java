@@ -22,6 +22,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.IndexShardKey;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -245,7 +246,8 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
                     element.getAsJsonObject().get(ShardProfileSummary.INDEX_NAME_KEY).getAsString();
             int shardId =
                     element.getAsJsonObject().get(ShardProfileSummary.SHARD_ID_KEY).getAsInt();
-            ShardProfileSummary shard = shardStore.getOrCreateIfAbsent(indexName, shardId);
+            IndexShardKey indexShardKey = new IndexShardKey(indexName, shardId);
+            ShardProfileSummary shard = shardStore.getOrCreateIfAbsent(indexShardKey);
             JsonArray temperatureProfiles =
                     element.getAsJsonObject().get(ShardProfileSummary.TEMPERATURE_KEY).getAsJsonArray();
 

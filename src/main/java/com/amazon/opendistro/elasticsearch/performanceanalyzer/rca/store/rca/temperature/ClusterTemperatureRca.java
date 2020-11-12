@@ -77,7 +77,6 @@ public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
                 if (summary != null) {
                     totalForDimension += summary.getTotalConsumedByDimension(dimension);
                     allFlowUnitSummariesNull = false;
-                    noFlowUnitAcrossDimensions = false;
                 }
             }
             if (allFlowUnitSummariesNull) {
@@ -94,12 +93,10 @@ public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
             recalibrateNodeTemperaturesAtClusterLevelUsage(flowUnits, nodeTemperatureSummaryMap,
                     dimension, totalForDimension);
         }
-        if (noFlowUnitAcrossDimensions) {
-            return new ClusterTemperatureFlowUnit(System.currentTimeMillis());
-        }
         clusterTemperatureSummary.addNodesSummaries(nodeTemperatureSummaryMap);
         return new ClusterTemperatureFlowUnit(System.currentTimeMillis(),
-                new ResourceContext(Resources.State.UNKNOWN), clusterTemperatureSummary);
+                                              new ResourceContext(Resources.State.UNKNOWN),
+                                              clusterTemperatureSummary);
     }
 
     private void recalibrateNodeTemperaturesAtClusterLevelUsage(List<CompactNodeTemperatureFlowUnit> flowUnits,

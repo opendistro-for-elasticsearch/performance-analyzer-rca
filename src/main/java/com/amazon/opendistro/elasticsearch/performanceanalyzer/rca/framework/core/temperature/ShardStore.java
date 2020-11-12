@@ -16,11 +16,11 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature.ShardProfileSummary;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
+
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.IndexShardKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,44 +32,33 @@ public class ShardStore {
     private static final Logger LOG = LogManager.getLogger(ShardStore.class);
 
     /**
-     * The key for the outer map is indexName. The key for inner map is the ShardID. Given an
-     * indexName and shardId, a shard can be uniquely identified.
-     *
-     * <p>TODO: Try replace with 'IndexShardKey' after
-     * https://github.com/opendistro-for-elasticsearch/performance-analyzer-rca/pull/141
-     * is merged.
+     * The key for the map is indexShardKey Given an IndexShardKey a shard can be uniquely identified.
      */
-    Map<String, Map<Integer, ShardProfileSummary>> list;
+    Map<IndexShardKey, ShardProfileSummary> shardToShardProfileMap;
 
     public ShardStore() {
         // ShardStore is modified by all the RcaGraph nodes that calculate temperature along a
         // dimension. As these nodes are in the same level of the RCA DAG, different threads can
         // execute them and hence we need this map to be synchronized.
-        list = new ConcurrentHashMap<>();
+        shardToShardProfileMap = new ConcurrentHashMap<>();
     }
 
     @Nonnull
-    public synchronized ShardProfileSummary getOrCreateIfAbsent(String indexName, int shardId) {
-        Map<Integer, ShardProfileSummary> innerMap = list.get(indexName);
-        if (innerMap == null) {
-            // No element with the index name exists; create one.
-            innerMap = new ConcurrentHashMap<>();
-            list.put(indexName, innerMap);
-        }
-        ShardProfileSummary shardProfileSummary = innerMap.get(shardId);
+    public synchronized ShardProfileSummary getOrCreateIfAbsent(IndexShardKey indexShardKey) {
+        ShardProfileSummary shardProfileSummary = shardToShardProfileMap.get(indexShardKey);
         if (shardProfileSummary == null) {
-            // Could not find a shard with the given indexname and shardId; create one.
-            shardProfileSummary = new ShardProfileSummary(indexName, shardId);
-            innerMap.put(shardId, shardProfileSummary);
+            // Could not find a shard with the given IndexShardKey; create one.
+            shardProfileSummary = new ShardProfileSummary(indexShardKey.getIndexName(), indexShardKey.getShardId());
+            shardToShardProfileMap.put(indexShardKey, shardProfileSummary);
         }
         return shardProfileSummary;
     }
 
-    public List<ShardProfileSummary> getAllShards() {
-        List<ShardProfileSummary> shardProfileSummaryList = new ArrayList<>();
-        for (Map<Integer, ShardProfileSummary> shardIdToShardMap : list.values()) {
-            shardProfileSummaryList.addAll(shardIdToShardMap.values());
-        }
-        return shardProfileSummaryList;
-    }
+//    public List<ShardProfileSummary> getAllShards() {
+//        List<ShardProfileSummary> shardProfileSummaryList = new ArrayList<>();
+//        for (Map<Integer, ShardProfileSummary> shardIdToShardMap : shardToShardProfileMap.values()) {
+//            shardProfileSummaryList.addAll(shardIdToShardMap.values());
+//        }
+//        return shardProfileSummaryList;
+//    }
 }
