@@ -38,7 +38,6 @@ import org.apache.logging.log4j.util.Supplier;
 
 /**
  * Request Handler that supports querying the latest action set
- *TODO: Update with actual Action Values here and in the README.
  *
  * <p>To get the response for the latest action set suggested via DM Framework
  * curl --url "localhost:9600/_opendistro/_performanceanalyzer/actions" -XGET
@@ -75,9 +74,11 @@ public class QueryActionRequestHandler extends MetricsHandler implements HttpHan
     private static final Logger LOG = LogManager.getLogger(QueryActionRequestHandler.class);
     private Persistable persistable;
     private AppContext appContext;
+    JsonParser jsonParser;
 
     public QueryActionRequestHandler(final AppContext appContext) {
         this.appContext = appContext;
+         jsonParser = new JsonParser();
     }
 
     @Override
@@ -147,7 +148,7 @@ public class QueryActionRequestHandler extends MetricsHandler implements HttpHan
                 JsonArray response = new JsonArray();
                 if (actionSet != null) {
                     for (PersistedAction action : actionSet) {
-                        response.add(action.toJson());
+                        response.add(action.toJson(this.jsonParser));
                     }
                     result.add(ACTION_SET_JSON_NAME, response);
                 } else {
@@ -155,7 +156,7 @@ public class QueryActionRequestHandler extends MetricsHandler implements HttpHan
                 }
             } catch (Exception e) {
                 LOG.error("Fail to query DB, message : {}", e.getMessage());
-                result.add("error", new JsonParser().parse("Fail to query db").getAsJsonObject());
+                result.add("error", this.jsonParser.parse("Fail to query db").getAsJsonObject());
             }
         }
         return result;

@@ -108,14 +108,14 @@ public class PersistedAction {
 
     }
 
-    public JsonElement toJson() {
+    public JsonElement toJson(JsonParser jsonParser) {
         JsonObject summaryObj = new JsonObject();
         summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NODE_IPS_NAME, this.nodeIps);
         summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.MUTED_NAME, this.muted);
         summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.ACTION_COL_NAME, this.actionName);
         summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.TIMESTAMP_COL_NAME, this.timestamp);
         summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.NODE_IDS_NAME, this.nodeIds);
-        summaryObj.add(SQL_SCHEMA_CONSTANTS.SUMMARY_NAME, new JsonParser().parse(this.summary));
+        summaryObj.add(SQL_SCHEMA_CONSTANTS.SUMMARY_NAME, jsonParser.parse(this.summary));
         summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.ACTIONABLE_NAME, this.actionable);
         summaryObj.addProperty(SQL_SCHEMA_CONSTANTS.COOLOFFPERIOD_NAME, this.coolOffPeriod);
         return summaryObj;
