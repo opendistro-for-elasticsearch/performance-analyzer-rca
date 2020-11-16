@@ -93,7 +93,6 @@ public class PersistableSlidingWindowTest {
     long curTimestamp = Instant.now().toEpochMilli();
     slidingWindow.next(new SlidingWindowData(curTimestamp, 10));
     slidingWindow.write();
-    // This call to next removes the previous data from the window
     slidingWindow.next(new SlidingWindowData(curTimestamp, 10));
     slidingWindow.write();
     PersistableSlidingWindow slidingWindow2 = new PersistableSlidingWindow(1, TimeUnit.SECONDS, persistFile);
