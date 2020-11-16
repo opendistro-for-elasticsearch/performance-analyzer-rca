@@ -84,7 +84,21 @@ public class PersistableSlidingWindowTest {
     Assert.assertEquals(1, slidingWindow.size());
   }
 
-
+  /**
+   * Tests that a PSW can call write() multiple times and still have its data read
+   */
+  @Test
+  public void testMultipleWrites() throws IOException {
+    PersistableSlidingWindow slidingWindow = new PersistableSlidingWindow(1, TimeUnit.SECONDS, persistFile);
+    long curTimestamp = Instant.now().toEpochMilli();
+    slidingWindow.next(new SlidingWindowData(curTimestamp, 10));
+    slidingWindow.write();
+    // This call to next removes the previous data from the window
+    slidingWindow.next(new SlidingWindowData(curTimestamp, 10));
+    slidingWindow.write();
+    PersistableSlidingWindow slidingWindow2 = new PersistableSlidingWindow(1, TimeUnit.SECONDS, persistFile);
+    Assert.assertEquals(20, slidingWindow2.readSum(), 0.0);
+  }
 
   @AfterClass
   public static void tearDown() {
