@@ -90,14 +90,17 @@ public class NodeTemperatureRca extends Rca<CompactNodeTemperatureFlowUnit> {
     }
 
     // This means that the input RCAs didn't calculate anything. We can move on as well.
-    AtomicBoolean nonEmptyFlowUnit = new AtomicBoolean(false);
+    AtomicBoolean emptyFlowUnit = new AtomicBoolean(false);
     flowUnitsAcrossDimensions.forEach(flowUnitAcrossOneDimension -> {
-      if (!flowUnitAcrossOneDimension.get(0).isEmpty()) {
-        nonEmptyFlowUnit.set(true);
+      if (flowUnitAcrossOneDimension.get(0).isEmpty()) {
+        LOG.debug("Empty flowUnitAcrossOneDimension");
+        emptyFlowUnit.set(true);
+      } else {
+        emptyFlowUnit.set(false);
       }
     });
 
-    if (!nonEmptyFlowUnit.get()) {
+    if (emptyFlowUnit.get()) {
       return new CompactNodeTemperatureFlowUnit(System.currentTimeMillis());
     }
 
@@ -110,13 +113,12 @@ public class NodeTemperatureRca extends Rca<CompactNodeTemperatureFlowUnit> {
 
     FullNodeTemperatureSummary nodeProfile = buildNodeProfile(nodeDimensionProfiles);
 
-    ResourceContext resourceContext = new ResourceContext(Resources.State.UNKNOWN);
-    CompactNodeSummary summary = new CompactNodeSummary(nodeProfile.getNodeId(),
-        nodeProfile.getHostAddress());
+    CompactNodeSummary summary = new CompactNodeSummary(nodeProfile.getNodeId(), nodeProfile.getHostAddress());
     summary.fillFromNodeProfile(nodeProfile);
 
     return new CompactNodeTemperatureFlowUnit(
-        System.currentTimeMillis(), resourceContext,
+        System.currentTimeMillis(),
+        new ResourceContext(Resources.State.UNKNOWN),
         summary,
         true);
   }

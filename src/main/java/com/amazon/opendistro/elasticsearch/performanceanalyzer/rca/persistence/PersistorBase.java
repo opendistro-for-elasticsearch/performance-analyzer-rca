@@ -291,7 +291,15 @@ public abstract class PersistorBase implements Persistable {
     List<Object> values = summary.getSqlValue();
     values.add(Integer.valueOf(referenceTablePrimaryKeyFieldValue));
     int lastPrimaryKey = insertRow(tableName, values);
+    LOG.error("summary {}",summary);
+    LOG.error("referenceTable {}",referenceTable);
+    LOG.error("referenceTablePrimaryKeyFieldName {}",referenceTablePrimaryKeyFieldName);
+    LOG.error("referenceTablePrimaryKeyFieldValue {}",referenceTablePrimaryKeyFieldValue);
     for (GenericSummary nestedSummary : summary.getNestedSummaryList()) {
+      LOG.error("nestedsummary {}",nestedSummary);
+      LOG.error("nestedreferenceTable {}",tableName);
+      LOG.error("nestedreferenceTablePrimaryKeyFieldName {}",getPrimaryKeyColumnName(tableName));
+      LOG.error("nestedreferenceTablePrimaryKeyFieldValue {}",lastPrimaryKey);
       writeSummary(nestedSummary, tableName, getPrimaryKeyColumnName(tableName), lastPrimaryKey);
     }
   }

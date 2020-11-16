@@ -42,7 +42,8 @@ import org.jooq.SelectJoinStep;
 import org.jooq.impl.DSL;
 
 /**
- * A node dimension profile is categorization of all shards in the node into different heatZones.
+ * A node dimension profile is categorization of all shards in the node into different heatZones across 1 dimension.
+ * The dimension_key stores the dimension value.
  */
 public class NodeLevelDimensionalSummary extends GenericSummary {
 
@@ -61,6 +62,14 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
     private final NodeLevelZoneSummary[] zoneProfiles;
     private int numberOfShards;
 
+    // Mean Temperature is a mean of the normalized heat of the resource used across shards on the node.
+    // e.g. if there are 10 shards on the node and the normalized sum of the resource used
+    // across shards is 33. The mean would be 3.3
+    // This aim is the balance this parameter across the nodes and have as little delta
+    // as possible across nodes.
+    // TotalUsage is the total value of the resource used in that node.
+    // Note that normalized(totalUsage) != meanTemperature*numberofshards as total usage
+    // also has shard Independent component.
     public NodeLevelDimensionalSummary(final TemperatureDimension profileForDimension,
                                        final TemperatureVector.NormalizedValue meanTemperature,
                                        double totalUsage) {

@@ -22,6 +22,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.ClusterTemperatureRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.temperature.dimension.CpuUtilDimensionTemperatureRca;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -33,6 +34,9 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import jdk.internal.org.jline.utils.Log;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
@@ -46,6 +50,8 @@ import org.jooq.impl.DSL;
  * object is created on the elected master. One such object is created per tracked dimension.
  */
 public class ClusterDimensionalSummary extends GenericSummary {
+
+    private static final Logger LOG = LogManager.getLogger(ClusterDimensionalSummary.class);
     /**
      * The name of the table in which this summary is persisted.
      */
@@ -256,6 +262,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
 
         Result<Record> recordList = rcaQuery.fetch();
         for (Record zoneSummary : recordList) {
+            LOG.error("Zone Summary {} ", zoneSummary.toString ());
             buildZoneProfile(zoneSummary, summary, context);
         }
         return summary;
@@ -290,6 +297,7 @@ public class ClusterDimensionalSummary extends GenericSummary {
 
                 CompactClusterLevelNodeSummary nodeSummary =
                         new CompactClusterLevelNodeSummary(nodeId, hostIp);
+                LOG.error("Node Summary {} ", nodeSummary.toJson());
                 zone.addNode(nodeSummary);
             }
         }

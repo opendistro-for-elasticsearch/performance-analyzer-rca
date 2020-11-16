@@ -31,6 +31,12 @@ import org.apache.logging.log4j.Logger;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
 
+/**
+ * Full Node Temperature Summary contains the Node Details (ID and Address) and the list of dimensional
+ * summaries for a node. This summary is used to construct the compact node level summary which
+ *  is passed over the wire to the master which is then used to construct the cluster temperature profile.
+*/
+
 public class FullNodeTemperatureSummary extends GenericSummary {
     private static final Logger LOG = LogManager.getLogger(FullNodeTemperatureSummary.class);
 
@@ -78,7 +84,7 @@ public class FullNodeTemperatureSummary extends GenericSummary {
     public void updateNodeDimensionProfile(NodeLevelDimensionalSummary nodeDimensionProfile) {
         TemperatureDimension dimension = nodeDimensionProfile.getProfileForDimension();
         this.nodeDimensionProfiles[dimension.ordinal()] = nodeDimensionProfile;
-        temperatureVector.updateTemperatureForDimension(dimension, nodeDimensionProfile.getMeanTemperature());
+        this.temperatureVector.updateTemperatureForDimension(dimension, nodeDimensionProfile.getMeanTemperature());
     }
 
     public List<GenericSummary> getNestedSummaryList() {

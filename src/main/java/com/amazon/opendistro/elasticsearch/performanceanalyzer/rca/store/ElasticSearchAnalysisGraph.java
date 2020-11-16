@@ -454,9 +454,9 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     nodeTemperatureRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     nodeTemperatureRca.addAllUpstreams(Arrays.asList(cpuUtilHeat, heapAllocRateHeat, shardSizeHeat));
 
-    //    ClusterTemperatureRca clusterTemperatureRca = new ClusterTemperatureRca(nodeTemperatureRca);
-    //    clusterTemperatureRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    //    clusterTemperatureRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
-    //    clusterTemperatureRca.addAllUpstreams(Collections.singletonList(nodeTemperatureRca));
+    ClusterTemperatureRca clusterTemperatureRca = new ClusterTemperatureRca(nodeTemperatureRca);
+    clusterTemperatureRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    clusterTemperatureRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
+    clusterTemperatureRca.addAllUpstreams(Collections.singletonList(nodeTemperatureRca));
   }
 }

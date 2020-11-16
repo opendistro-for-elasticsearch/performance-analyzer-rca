@@ -29,6 +29,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.Flo
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -53,13 +54,39 @@ public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
      */
     @Override
     public ClusterTemperatureFlowUnit operate() {
-        List<CompactNodeTemperatureFlowUnit> flowUnits = nodeTemperatureRca.getFlowUnits();
+        List<CompactNodeTemperatureFlowUnit> flowUnitsAcrossNodes = nodeTemperatureRca.getFlowUnits();
 
-        Map<String, CompactClusterLevelNodeSummary> nodeTemperatureSummaryMap =
-                new HashMap<>();
-        final int NUM_NODES = flowUnits.size();
+        // EachNodeTemperatureRCA should generate a one @{code DimensionalFlowUnit}.
+        if (flowUnitsAcrossNodes.size() < 1) {
+            LOG.debug("Empty flowUnitsAcrossNodes");
+            return new ClusterTemperatureFlowUnit(System.currentTimeMillis());
+        }
 
-        ClusterTemperatureSummary clusterTemperatureSummary = new ClusterTemperatureSummary(NUM_NODES);
+        AtomicBoolean emptyFlowUnit = new AtomicBoolean(false);
+        flowUnitsAcrossNodes.forEach(flowUnitForOneNode -> {
+            if (flowUnitForOneNode.isEmpty()) {
+                LOG.debug("Empty flowUnitAcrossOneDimension");
+                emptyFlowUnit.set(true);
+            } else {
+                emptyFlowUnit.set(false);
+            }
+        });
+
+        if (emptyFlowUnit.get()) {
+            return new ClusterTemperatureFlowUnit(System.currentTimeMillis());
+        }
+
+        LOG.error("Number of dataNode Instances in the cluster {}", getDataNodeInstances().size());
+
+        if (flowUnitsAcrossNodes.size() > getDataNodeInstances().size()){
+            LOG.error("Extra flowUnitsAcrossNodes Received {}", flowUnitsAcrossNodes.toString());
+            return new ClusterTemperatureFlowUnit(System.currentTimeMillis());
+        }
+
+        Map<String, CompactClusterLevelNodeSummary> nodeTemperatureSummaryMap = new HashMap<>();
+        final int TOTAL_NODES_IN_CLUSTER = flowUnitsAcrossNodes.size();
+
+        ClusterTemperatureSummary clusterTemperatureSummary = new ClusterTemperatureSummary(TOTAL_NODES_IN_CLUSTER);
 
         // For each dimension go through the temperature profiles sent by each node and figure
         // out the cluster level average along that dimension. Then this method recreates a
@@ -69,12 +96,12 @@ public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
         // level, the total usage is at the node level (over all shards and shard-independent
         // factors), at the master the total usage is the sum over all nodes.
         for (TemperatureDimension dimension : TemperatureDimension.values()) {
-            double totalForDimension = 0.0;
+            double totalUsageInClusterForDimension = 0.0;
             boolean allFlowUnitSummariesNull = true;
-            for (CompactNodeTemperatureFlowUnit nodeFlowUnit : flowUnits) {
+            for (CompactNodeTemperatureFlowUnit nodeFlowUnit : flowUnitsAcrossNodes) {
                 CompactNodeSummary summary = nodeFlowUnit.getCompactNodeTemperatureSummary();
                 if (summary != null) {
-                    totalForDimension += summary.getTotalConsumedByDimension(dimension);
+                    totalUsageInClusterForDimension += summary.getTotalConsumedByDimension(dimension);
                     allFlowUnitSummariesNull = false;
                 }
             }
@@ -82,29 +109,37 @@ public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
                 continue;
             }
 
-            double nodeAverageForDimension = totalForDimension / NUM_NODES;
+            double nodeAverageForDimension = totalUsageInClusterForDimension / TOTAL_NODES_IN_CLUSTER;
             TemperatureVector.NormalizedValue normalizedAvgForDimension =
-                    TemperatureVector.NormalizedValue.calculate(nodeAverageForDimension, totalForDimension);
+                    TemperatureVector.NormalizedValue.calculate(nodeAverageForDimension, totalUsageInClusterForDimension);
 
             clusterTemperatureSummary.createClusterDimensionalTemperature(dimension,
-                    normalizedAvgForDimension, totalForDimension);
+                    normalizedAvgForDimension, totalUsageInClusterForDimension);
 
-            recalibrateNodeTemperaturesAtClusterLevelUsage(flowUnits, nodeTemperatureSummaryMap,
-                    dimension, totalForDimension);
+            recalibrateNodeTemperaturesAtClusterLevelUsage(flowUnitsAcrossNodes, nodeTemperatureSummaryMap,
+                    dimension, totalUsageInClusterForDimension);
         }
+        LOG.error("total Nodes in cluster {}", TOTAL_NODES_IN_CLUSTER);
+        LOG.error("clusterTemperatureSummaryasa {}" , clusterTemperatureSummary);
+        LOG.error("clusterTemperatureSummaryasa json{}" , clusterTemperatureSummary.toJson());
+        LOG.error("clusterTemperatureSummaryasa  SQL {}" , clusterTemperatureSummary.getSqlValue());
+        LOG.error("nodeTemperatureSummaryMap {}" , nodeTemperatureSummaryMap);
         clusterTemperatureSummary.addNodesSummaries(nodeTemperatureSummaryMap);
+        LOG.error("clusterTemperatureSummarybahs2 {}" , clusterTemperatureSummary);
+        LOG.error("clusterTemperatureSummarybahs2 {}" , clusterTemperatureSummary.toJson());
+        LOG.error("clusterTemperatureSummarybahs2 sql value{}" , clusterTemperatureSummary.getSqlValue());
         return new ClusterTemperatureFlowUnit(System.currentTimeMillis(),
                                               new ResourceContext(Resources.State.UNKNOWN),
                                               clusterTemperatureSummary);
     }
 
-    private void recalibrateNodeTemperaturesAtClusterLevelUsage(List<CompactNodeTemperatureFlowUnit> flowUnits,
+    private void recalibrateNodeTemperaturesAtClusterLevelUsage(List<CompactNodeTemperatureFlowUnit> flowUnitsAcrossNodes,
                                                                 Map<String,
                                                                 CompactClusterLevelNodeSummary> nodeTemperatureSummaryMap,
                                                                 TemperatureDimension dimension,
                                                                 double totalForDimension) {
 
-        for (CompactNodeTemperatureFlowUnit nodeFlowUnit : flowUnits) {
+        for (CompactNodeTemperatureFlowUnit nodeFlowUnit : flowUnitsAcrossNodes) {
             CompactNodeSummary obtainedNodeTempSummary = nodeFlowUnit.getCompactNodeTemperatureSummary();
             if (obtainedNodeTempSummary == null) {
                 continue;
@@ -117,6 +152,10 @@ public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
             CompactClusterLevelNodeSummary constructedCompactNodeTemperatureSummary = nodeTemperatureSummaryMap.get(key);
 
             double obtainedTotal = obtainedNodeTempSummary.getTotalConsumedByDimension(dimension);
+
+            // This value is the calculated at the cluster level along each dimension.
+            // It represents the usage of the resource on this node wrt to the total usage of the
+            // resource on other nodes.
             TemperatureVector.NormalizedValue newClusterBasedValue =
                     TemperatureVector.NormalizedValue.calculate(obtainedTotal, totalForDimension);
 

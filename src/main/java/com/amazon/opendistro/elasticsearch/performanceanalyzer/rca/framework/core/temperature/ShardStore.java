@@ -53,11 +53,4 @@ public class ShardStore {
         return shardProfileSummary;
     }
 
-    //    public List<ShardProfileSummary> getAllShards() {
-    //        List<ShardProfileSummary> shardProfileSummaryList = new ArrayList<>();
-    //        for (Map<Integer, ShardProfileSummary> shardIdToShardMap : shardToShardProfileMap.values()) {
-    //            shardProfileSummaryList.addAll(shardIdToShardMap.values());
-    //        }
-    //        return shardProfileSummaryList;
-    //    }
 }
