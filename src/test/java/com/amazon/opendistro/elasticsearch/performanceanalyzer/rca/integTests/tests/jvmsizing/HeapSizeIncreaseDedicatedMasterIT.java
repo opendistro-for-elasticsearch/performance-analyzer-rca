@@ -163,6 +163,11 @@ public class HeapSizeIncreaseDedicatedMasterIT {
       pattern = "PersistableSlidingWindow:<init>()",
       reason = "Persistence base path can be null for integration test."
   )
+  @AErrorPatternIgnored(
+      pattern = "OldGenRca:getMaxHeapSizeOrDefault()",
+      reason = "This method is called by HighHeapUsageOldGenRca which is not part of the jvm "
+          + "sizing rcas."
+  )
   public void testHeapSizeIncreaseDedicatedMaster() {
 
   }
