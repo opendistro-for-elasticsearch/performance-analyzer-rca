@@ -262,7 +262,6 @@ public class ClusterDimensionalSummary extends GenericSummary {
 
         Result<Record> recordList = rcaQuery.fetch();
         for (Record zoneSummary : recordList) {
-            LOG.error("Zone Summary {} ", zoneSummary.toString ());
             buildZoneProfile(zoneSummary, summary, context);
         }
         return summary;
@@ -297,7 +296,6 @@ public class ClusterDimensionalSummary extends GenericSummary {
 
                 CompactClusterLevelNodeSummary nodeSummary =
                         new CompactClusterLevelNodeSummary(nodeId, hostIp);
-                LOG.error("Node Summary {} ", nodeSummary.toJson());
                 zone.addNode(nodeSummary);
             }
         }

@@ -216,43 +216,43 @@ public class ResourceHeatMapGraphTest {
     return response;
   }
 
-  @Test
-  public void clusterTemperatureProfile() throws Exception {
-    AppContext appContext = RcaTestHelper.setMyIp("192.168.0.2", AllMetrics.NodeRole.ELECTED_MASTER);
-
-    List<ConnectedComponent> connectedComponents = createAndExecuteRcaGraph(appContext);
-    System.out.println("Now for the MAster RCA.");
-    String masterNodeRcaConf =
-        Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_elected_master.conf").toString();
-    RcaConf rcaConf2 = new RcaConf(masterNodeRcaConf);
-    SubscriptionManager subscriptionManager2 =
-        new SubscriptionManager(new GRPCConnectionManager(false));
-    subscriptionManager2.setCurrentLocus(rcaConf2.getTagMap().get("locus"));
-
-
-    WireHopper wireHopper2 = new WireHopper(new NodeStateManager(new AppContext()), clientServers.getNetClient(),
-        subscriptionManager2,
-        networkThreadPoolReference,
-        new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()), appContext);
-
-    InstanceDetails instanceDetails = appContext.getMyInstanceDetails();
-    RCASchedulerTask rcaSchedulerTaskMaster =
-        new RCASchedulerTask(
-            1000,
-            Executors.newFixedThreadPool(THREADS),
-            connectedComponents,
-            reader,
-            persistable,
-            rcaConf2,
-            wireHopper2,
-            appContext);
-    AllMetrics.NodeRole nodeRole2 = instanceDetails.getRole();
-    RcaTestHelper.setMyIp(instanceDetails.getInstanceIp().toString(), nodeRole2);
-    rcaSchedulerTaskMaster.run();
-
-    String resp = makeRestRequest(new String[]{"name", ClusterTemperatureRca.TABLE_NAME});
-    testJsonResponse(resp);
-  }
+  //@Test
+  //  public void clusterTemperatureProfile() throws Exception {
+  //    AppContext appContext = RcaTestHelper.setMyIp("192.168.0.2", AllMetrics.NodeRole.ELECTED_MASTER);
+  //
+  //    List<ConnectedComponent> connectedComponents = createAndExecuteRcaGraph(appContext);
+  //    System.out.println("Now for the MAster RCA.");
+  //    String masterNodeRcaConf =
+  //        Paths.get(RcaConsts.TEST_CONFIG_PATH, "rca_elected_master.conf").toString();
+  //    RcaConf rcaConf2 = new RcaConf(masterNodeRcaConf);
+  //    SubscriptionManager subscriptionManager2 =
+  //        new SubscriptionManager(new GRPCConnectionManager(false));
+  //    subscriptionManager2.setCurrentLocus(rcaConf2.getTagMap().get("locus"));
+  //
+  //
+  //    WireHopper wireHopper2 = new WireHopper(new NodeStateManager(new AppContext()), clientServers.getNetClient(),
+  //        subscriptionManager2,
+  //        networkThreadPoolReference,
+  //        new ReceivedFlowUnitStore(rcaConf.getPerVertexBufferLength()), appContext);
+  //
+  //    InstanceDetails instanceDetails = appContext.getMyInstanceDetails();
+  //    RCASchedulerTask rcaSchedulerTaskMaster =
+  //        new RCASchedulerTask(
+  //            1000,
+  //            Executors.newFixedThreadPool(THREADS),
+  //            connectedComponents,
+  //            reader,
+  //            persistable,
+  //            rcaConf2,
+  //            wireHopper2,
+  //            appContext);
+  //    AllMetrics.NodeRole nodeRole2 = instanceDetails.getRole();
+  //    RcaTestHelper.setMyIp(instanceDetails.getInstanceIp().toString(), nodeRole2);
+  //    rcaSchedulerTaskMaster.run();
+  //
+  //    String resp = makeRestRequest(new String[]{"name", ClusterTemperatureRca.TABLE_NAME});
+  //    testJsonResponse(resp);
+  //  }
 
   /**
    *<p>

@@ -78,7 +78,7 @@ public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
 
         LOG.error("Number of dataNode Instances in the cluster {}", getDataNodeInstances().size());
 
-        if (flowUnitsAcrossNodes.size() > getDataNodeInstances().size()){
+        if (flowUnitsAcrossNodes.size() > getDataNodeInstances().size()) {
             LOG.error("Extra flowUnitsAcrossNodes Received {}", flowUnitsAcrossNodes.toString());
             return new ClusterTemperatureFlowUnit(System.currentTimeMillis());
         }
@@ -119,15 +119,7 @@ public class ClusterTemperatureRca extends Rca<ClusterTemperatureFlowUnit> {
             recalibrateNodeTemperaturesAtClusterLevelUsage(flowUnitsAcrossNodes, nodeTemperatureSummaryMap,
                     dimension, totalUsageInClusterForDimension);
         }
-        LOG.error("total Nodes in cluster {}", TOTAL_NODES_IN_CLUSTER);
-        LOG.error("clusterTemperatureSummaryasa {}" , clusterTemperatureSummary);
-        LOG.error("clusterTemperatureSummaryasa json{}" , clusterTemperatureSummary.toJson());
-        LOG.error("clusterTemperatureSummaryasa  SQL {}" , clusterTemperatureSummary.getSqlValue());
-        LOG.error("nodeTemperatureSummaryMap {}" , nodeTemperatureSummaryMap);
         clusterTemperatureSummary.addNodesSummaries(nodeTemperatureSummaryMap);
-        LOG.error("clusterTemperatureSummarybahs2 {}" , clusterTemperatureSummary);
-        LOG.error("clusterTemperatureSummarybahs2 {}" , clusterTemperatureSummary.toJson());
-        LOG.error("clusterTemperatureSummarybahs2 sql value{}" , clusterTemperatureSummary.getSqlValue());
         return new ClusterTemperatureFlowUnit(System.currentTimeMillis(),
                                               new ResourceContext(Resources.State.UNKNOWN),
                                               clusterTemperatureSummary);

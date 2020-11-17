@@ -77,7 +77,7 @@ public class DimensionalTemperatureCalculator {
             TotalNodeTemperatureCalculator resourcePeakUsage,
             TemperatureVector.NormalizedValue threshold) {
 
-        List <List<MetricFlowUnit>> allFlowUnits = new ArrayList<>();
+        List<List<MetricFlowUnit>> allFlowUnits = new ArrayList<>();
         List<MetricFlowUnit> shardIdBasedFlowUnits = resourceByShardId.getFlowUnits();
         List<MetricFlowUnit> avgResUsageFlowUnits = avgResUsageByAllShards.getFlowUnits();
         List<MetricFlowUnit> resourcePeakFlowUnits = resourcePeakUsage.getFlowUnits();
