@@ -19,6 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.OSMetricsGenerato
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.OSMetricsGenerator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.TCPMetricsGenerator;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,16 +35,13 @@ public class NetworkE2ECollector extends PerformanceAnalyzerMetricsCollector
 
   @Override
   public void collectMetrics(long startTime) {
-    TCPMetricsGenerator tcpMetricsGenerator =
-        OSMetricsGeneratorFactory.getInstance().getTCPMetricsGenerator();
+    OSMetricsGenerator generator = OSMetricsGeneratorFactory.getInstance();
+    if (generator == null) {
+      return;
+    }
+    TCPMetricsGenerator tcpMetricsGenerator = generator.getTCPMetricsGenerator();
     tcpMetricsGenerator.addSample();
-
-    String value =
-        PerformanceAnalyzerMetrics.getJsonCurrentMilliSeconds()
-            + PerformanceAnalyzerMetrics.sMetricNewLineDelimitor
-            + getMetrics(tcpMetricsGenerator);
-
-    saveMetricValues(value, startTime);
+    saveMetricValues(getMetrics(tcpMetricsGenerator), startTime);
   }
 
   @Override
@@ -79,10 +77,13 @@ public class NetworkE2ECollector extends PerformanceAnalyzerMetricsCollector
   private String getMetrics(TCPMetricsGenerator tcpMetricsGenerator) {
 
     Map<String, TCPStatus> map = getMetricsMap(tcpMetricsGenerator);
-    StringBuilder value = new StringBuilder();
     value.setLength(0);
-    for (TCPStatus tcpStatus : map.values()) {
 
+    // first line is the timestamp
+    value.append(PerformanceAnalyzerMetrics.getJsonCurrentMilliSeconds())
+        .append(PerformanceAnalyzerMetrics.sMetricNewLineDelimitor);
+
+    for (TCPStatus tcpStatus : map.values()) {
       value
           .append(tcpStatus.serialize())
           .append(PerformanceAnalyzerMetrics.sMetricNewLineDelimitor);

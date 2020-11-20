@@ -24,6 +24,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsCo
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
 import java.lang.management.MemoryUsage;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -36,11 +37,9 @@ public class HeapMetricsCollector extends PerformanceAnalyzerMetricsCollector
   public static final int SAMPLING_TIME_INTERVAL =
       MetricsConfiguration.CONFIG_MAP.get(HeapMetricsCollector.class).samplingInterval;
   private static final int KEYS_PATH_LENGTH = 0;
-  private StringBuilder value;
 
   public HeapMetricsCollector() {
     super(SAMPLING_TIME_INTERVAL, "HeapMetrics");
-    value = new StringBuilder();
   }
 
   @Override
@@ -100,11 +99,12 @@ public class HeapMetricsCollector extends PerformanceAnalyzerMetricsCollector
 
   public static class HeapStatus extends MetricStatus {
     // GC type like survivor
-    private final String type;
+    private String type;
 
     // -2 means this metric is undefined for a memory pool.  For example,
     // The memory pool Eden has no collectionCount metric.
-    private static final long UNDEFINED = -2;
+    @VisibleForTesting
+    static final long UNDEFINED = -2;
 
     // the total number of collections that have occurred
     private long collectionCount = UNDEFINED;
@@ -125,8 +125,10 @@ public class HeapMetricsCollector extends PerformanceAnalyzerMetricsCollector
     // the amount of used memory in bytes
     private long used = UNDEFINED;
 
-    public HeapStatus(String type, long collectionCount, long collectionTime) {
+    // Allows for automatic JSON deserialization
+    public HeapStatus() {}
 
+    public HeapStatus(String type, long collectionCount, long collectionTime) {
       this.type = type;
       this.collectionCount = collectionCount;
       this.collectionTime = collectionTime;
