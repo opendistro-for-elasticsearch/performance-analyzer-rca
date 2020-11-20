@@ -18,22 +18,21 @@ public abstract class AbstractCollectorTest {
   // This is the only line that implementors need to modify
   public abstract void validateMetric(String metric) throws Exception;
 
-  // This function does not need to be modified
   @Test
   public void validateMetrics() throws Exception {
     uut.collectMetrics(Instant.now().toEpochMilli());
     String metricString = uut.getValue().toString();
     // chop off current time json
     int end = metricString.indexOf(PerformanceAnalyzerMetrics.sMetricNewLineDelimitor);
-    metricString = metricString.substring(end+1);
+    metricString = metricString.substring(end + 1);
     while (!metricString.isEmpty()) {
       end = metricString.indexOf(PerformanceAnalyzerMetrics.sMetricNewLineDelimitor);
-      if (end < 0) {
+      if (end == -1) {
         break;
       }
       String metric = metricString.substring(0, end);
       validateMetric(metric);
-      metricString = metricString.substring(end+1);
+      metricString = metricString.substring(end + 1);
     }
   }
 }
