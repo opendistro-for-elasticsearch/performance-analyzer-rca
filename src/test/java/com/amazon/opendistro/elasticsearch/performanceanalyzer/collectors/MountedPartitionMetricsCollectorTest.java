@@ -10,7 +10,7 @@ public class MountedPartitionMetricsCollectorTest extends AbstractCollectorTest 
   }
 
   @Override
-  public void validateMetric(String metric) throws Exception{
+  public void validateMetric(String metric) throws Exception {
     MountedPartitionMetrics partitionMetrics = mapper.readValue(metric, MountedPartitionMetrics.class);
     // TODO implement further validation of the MetricStatus
     Assert.assertFalse(partitionMetrics.getMountPoint().isEmpty());

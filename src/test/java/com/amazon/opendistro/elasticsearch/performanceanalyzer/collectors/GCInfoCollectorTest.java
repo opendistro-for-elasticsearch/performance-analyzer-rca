@@ -11,7 +11,7 @@ public class GCInfoCollectorTest extends AbstractCollectorTest {
   }
 
   @Override
-  public void validateMetric(String metric) throws Exception{
+  public void validateMetric(String metric) throws Exception {
     GCInfo info = mapper.readValue(metric, GCInfo.class);
     // TODO implement further validation of the MetricStatus
     Assert.assertFalse(info.getCollectorName().isEmpty());

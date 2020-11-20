@@ -10,7 +10,7 @@ public class DisksCollectorTest extends AbstractCollectorTest {
   }
 
   @Override
-  public void validateMetric(String metric) throws Exception{
+  public void validateMetric(String metric) throws Exception {
     DiskMetrics diskMetrics = mapper.readValue(metric, DiskMetrics.class);
     // TODO implement further validation of the MetricStatus
     Assert.assertFalse(diskMetrics.getName().isEmpty());

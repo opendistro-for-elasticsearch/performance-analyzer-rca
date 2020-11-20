@@ -10,7 +10,7 @@ public class NetworkInterfaceCollectorTest extends AbstractCollectorTest {
   }
 
   @Override
-  public void validateMetric(String metric) throws Exception{
+  public void validateMetric(String metric) throws Exception {
     NetInterfaceSummary interfaceSummary = mapper.readValue(metric, NetInterfaceSummary.class);
     // TODO implement further validation of the MetricStatus
     Direction direction = interfaceSummary.getDirection();

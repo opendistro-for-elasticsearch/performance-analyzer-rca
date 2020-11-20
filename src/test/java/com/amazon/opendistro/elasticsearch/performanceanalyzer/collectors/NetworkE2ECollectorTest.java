@@ -10,7 +10,7 @@ public class NetworkE2ECollectorTest extends AbstractCollectorTest {
   }
 
   @Override
-  public void validateMetric(String metric) throws Exception{
+  public void validateMetric(String metric) throws Exception {
     TCPStatus tcpStatus = mapper.readValue(metric, TCPStatus.class);
     Assert.assertFalse(tcpStatus.getDest().isEmpty());
     // TODO implement further validation of the MetricStatus

@@ -11,7 +11,7 @@ public class HeapMetricsCollectorTest extends AbstractCollectorTest {
   }
 
   @Override
-  public void validateMetric(String metric) throws Exception{
+  public void validateMetric(String metric) throws Exception {
     HeapStatus heapStatus = mapper.readValue(metric, HeapStatus.class);
     // TODO implement further validation of the MetricStatus
     Assert.assertFalse(heapStatus.getType().isEmpty());
