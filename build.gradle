@@ -70,14 +70,14 @@ publishing {
         maven(MavenPublication) {
             groupId = 'com.amazon.opendistro.elasticsearch'
             artifactId = 'performanceanalyzer-rca'
-            version = '1.11'
+            version = '1.12'
             from components.java
         }
     }
 }
 
 ext {
-    opendistroVersion = '1.11'
+    opendistroVersion = '1.12'
     isSnapshot = "true" == System.getProperty("build.snapshot", "true")
 }
 
@@ -343,7 +343,7 @@ task cloneGitRepo(type: GitClone) {
 
 task removeLicenses(type: Delete) {
     dependsOn(cloneGitRepo)
-    def toDelete = Paths.get(paDir, 'licenses', 'performanceanalyzer-rca-1.11.jar.sha1')
+    def toDelete = Paths.get(paDir, 'licenses', 'performanceanalyzer-rca-1.12.jar.sha1')
     delete(toDelete)
 }
 
@@ -366,7 +366,7 @@ task copyAllArtifacts(type: Copy) {
     def projectPathStr = getProjectDir().toPath().toString()
     def dockerArtifacts = Paths.get(projectPathStr, 'docker').toString()
     def rcaArtifacts = Paths.get(projectPathStr, 'build', 'distributions', 'performance-analyzer-rca.zip')
-    def paArtifacts = Paths.get(paDir, 'build', 'distributions', 'opendistro_performance_analyzer-1.11.0.0-SNAPSHOT.zip')
+    def paArtifacts = Paths.get(paDir, 'build', 'distributions', 'opendistro_performance_analyzer-1.12.0.0-SNAPSHOT.zip')
 
     dockerArtifactsDir = Paths.get(dockerBuildDir, 'rca-docker')
     from(dockerArtifacts)
