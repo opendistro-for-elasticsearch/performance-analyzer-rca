@@ -1,6 +1,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import org.junit.Test;
 
@@ -8,6 +9,7 @@ import org.junit.Test;
  * A base class that others can extend to validate their Metrics Collectors behavior
  */
 public abstract class AbstractCollectorTest {
+  protected static final ObjectMapper mapper = new ObjectMapper();
   private PerformanceAnalyzerMetricsCollector uut;
 
   // Implementors should call this in a setup() function to set their collector

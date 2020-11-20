@@ -31,6 +31,7 @@ public abstract class PerformanceAnalyzerMetricsCollector implements Runnable {
   protected PerformanceAnalyzerMetricsCollector(int timeInterval, String collectorName) {
     this.timeInterval = timeInterval;
     this.collectorName = collectorName;
+    this.value = new StringBuilder();
   }
 
   private AtomicBoolean bInProgress = new AtomicBoolean(false);

@@ -38,7 +38,6 @@ public class GCInfoCollector extends PerformanceAnalyzerMetricsCollector impleme
 
   public GCInfoCollector() {
     super(SAMPLING_TIME_INTERVAL, "GCInfo");
-    this.value = new StringBuilder();
   }
 
   @Override
@@ -88,14 +87,6 @@ public class GCInfoCollector extends PerformanceAnalyzerMetricsCollector impleme
     @JsonProperty(GCInfoDimension.Constants.COLLECTOR_NAME_VALUE)
     public String getCollectorName() {
       return collectorName;
-    }
-
-    public void setMemoryPool(String memoryPool) {
-      this.memoryPool = memoryPool;
-    }
-
-    public void setCollectorName(String collectorName) {
-      this.collectorName = collectorName;
     }
   }
 }
