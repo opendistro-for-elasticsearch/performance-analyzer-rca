@@ -28,7 +28,7 @@ plugins {
     id 'com.google.protobuf' version '0.8.8'
     id 'jacoco'
     id 'idea'
-    id 'com.github.spotbugs' version '4.0.0'
+    id 'com.github.spotbugs' version '4.6.0'
     id "de.undercouch.download" version "4.0.4"
     id 'com.adarshr.test-logger' version '2.1.0'
 }
