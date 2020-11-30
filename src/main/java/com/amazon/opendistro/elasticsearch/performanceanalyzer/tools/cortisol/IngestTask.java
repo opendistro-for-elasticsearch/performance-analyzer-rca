@@ -81,6 +81,8 @@ public class IngestTask implements Runnable {
                     break;
                 }
             }
+
+            br.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -130,6 +132,9 @@ public class IngestTask implements Runnable {
         requestCount.addAndGet(bulkDocs.size());
     }
 
+    /**
+     * Custom token bucket class that lets at most {@code nTokens} be available every second.
+     */
     private class TokenBucket {
         private final Lock lock = new ReentrantLock();
         private final Condition hasTokens = lock.newCondition();
