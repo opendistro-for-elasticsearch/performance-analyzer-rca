@@ -35,9 +35,7 @@ public enum WriterMetrics implements MeasurementSet {
     FAULT_DETECTION_COLLECTOR_EXECUTION_TIME("FaultDetectionCollectorExecutionTime", "millis", Arrays.asList(
     Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
 
-    STALE_METRICS("StaleMetrics", "count", Arrays.asList(
-        Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
-
+    STALE_METRICS("StaleMetrics", "count", Arrays.asList( Statistics.COUNT)),
     ;
 
     /** What we want to appear as the metric name. */
