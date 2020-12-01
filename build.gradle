@@ -31,6 +31,7 @@ plugins {
     id 'com.github.spotbugs' version '4.6.0'
     id "de.undercouch.download" version "4.0.4"
     id 'com.adarshr.test-logger' version '2.1.0'
+    id 'org.gradle.test-retry' version '1.2.0'
 }
 
 application {
@@ -191,12 +192,17 @@ if (isSnapshot) {
 
 test {
     enabled = true
-
+    retry {
+        maxRetries = 2
+    }
 }
 
 task rcaTest(type: Test) {
     dependsOn checkstyleMain
     dependsOn checkstyleTest
+    retry {
+        maxRetries = 2
+    }
     useJUnit {
         includeCategories 'com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca'
     }
@@ -207,6 +213,9 @@ task rcaIt(type: Test) {
     dependsOn checkstyleMain
     dependsOn checkstyleTest
     dependsOn spotbugsMain
+    retry {
+        maxRetries = 2
+    }
     useJUnit {
         includeCategories 'com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker'
     }
