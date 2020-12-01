@@ -71,6 +71,7 @@ public abstract class Metric extends LeafNode<MetricFlowUnit> {
     }
     try {
       Result<Record> result = queryable.queryMetrics(db, name);
+      LOG.info(result);
       return new MetricFlowUnit(queryable.getDBTimestamp(db), result);
     } catch (DataAccessException dex) {
       // This can happen if the RCA started querying for metrics before the Reader obtained them.

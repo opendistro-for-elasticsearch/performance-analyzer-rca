@@ -64,7 +64,7 @@ e.g.
 ### Adding your own tests
 - You can add a unit tests using the junit framework
 - There is also a mechanism to add integration tests for the RCA framework. For details, please
- see [here](docs/rcait.md).
+ see [here](docs/gauntlet.md).
 
 Before submitting the PR, we request that you also run
 ```shell script
