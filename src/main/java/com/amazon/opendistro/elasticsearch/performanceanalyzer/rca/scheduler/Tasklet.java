@@ -21,6 +21,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.Data
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.NetPersistor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
+import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,10 @@ public class Tasklet {
   protected List<Tasklet> predecessors;
 
   private Node<?> node;
-  private final Queryable db;
+
+  // This member should be ideally final, but to be able to change it for the
+  // tests, we are making it non-final.
+  private Queryable db;
   private final Persistable persistable;
   private final Map<Node<?>, List<Node<?>>> remotelyDesirableNodeSet;
   private final WireHopper hopper;
@@ -138,5 +142,10 @@ public class Tasklet {
 
   public Node<?> getNode() {
     return node;
+  }
+
+  @VisibleForTesting
+  public void setDb(final Queryable db) {
+    this.db = db;
   }
 }
