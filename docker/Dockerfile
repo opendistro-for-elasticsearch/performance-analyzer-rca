@@ -62,6 +62,7 @@ RUN chown -R elasticsearch:0 . && \
 
 RUN unzip config/performance-analyzer-rca.zip
 
+RUN cp -r performance-analyzer-rca/* plugins/opendistro_performance_analyzer/
 RUN chmod 755 /usr/share/elasticsearch/plugins/opendistro_performance_analyzer/pa_bin/performance-analyzer-agent
 RUN chmod -R 755 /dev/shm
 ################################################################################
