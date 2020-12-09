@@ -248,7 +248,7 @@ public class HeapSizeIncreaseMissingMetricsTest {
       pattern = "BucketizedSlidingWindow:next()",
       reason = "Since the persistence path can be null for integration test, calls to next() is "
           + "expected to fail")
-  public void testMissingHeapMetrics() {
+  public void testMissingHeapMetrics() throws Exception {
     // Same reasoning as the test case above.
     testApi.updateMetrics(MissingHeapMetricsAnnotationHolder.class);
     try {
