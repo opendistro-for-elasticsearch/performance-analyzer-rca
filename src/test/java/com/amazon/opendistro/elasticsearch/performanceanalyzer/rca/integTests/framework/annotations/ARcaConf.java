@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  * therefore, it uses the rca.conf* files in the test/resources as defaults.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
+@Target({ElementType.TYPE, ElementType.METHOD})
 public @interface ARcaConf {
   // full path to the rca.conf file to be used by elected master node.
   String electedMaster() default Consts.RCAIT_DEFAULT_RCA_CONF_ELECTED_MASTER_NODE;

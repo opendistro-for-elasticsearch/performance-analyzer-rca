@@ -35,18 +35,23 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.ClusterType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.configs.HostTag;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.runners.RcaItNotEncryptedRunner;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.jvmsizing.validator.HeapSizeIncreaseValidatorCollocatedMaster;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.jvmsizing.validator.HeapSizeIncreaseNonBreachingValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.PersistedAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.ElasticSearchAnalysisGraph;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+/**
+ * Negative test: Tests that the action is NOT emitted if the threshold is not breached.
+ * The threshold is controlled by the rca.conf and rca_master.conf files.
+ */
+
 @Category(RcaItMarker.class)
 @RunWith(RcaItNotEncryptedRunner.class)
 @AClusterType(ClusterType.MULTI_NODE_CO_LOCATED_MASTER)
 @ARcaGraph(ElasticSearchAnalysisGraph.class)
-@ARcaConf(dataNode = JvmSizingITConstants.RCA_CONF_PATH + "rca.conf", electedMaster =
+@ARcaConf(dataNode = JvmSizingITConstants.RCA_CONF_PATH + "rca_high_threshold.conf", electedMaster =
     JvmSizingITConstants.RCA_CONF_PATH + "rca_master.conf")
 @AMetric(
     name = Heap_Max.class,
@@ -145,15 +150,18 @@ import org.junit.runner.RunWith;
         )
     }
 )
-public class HeapSizeIncreaseIT {
+public class HeapSizeIncreaseHighThresholdTest {
+
+  private static final int S_TO_MS = 1000;
+  public static final int SLEEP_DURATION_IN_S = 190;
 
   @Test
   @AExpect(
       what = Type.DB_QUERY,
       on = HostTag.ELECTED_MASTER,
-      validator = HeapSizeIncreaseValidatorCollocatedMaster.class,
+      validator = HeapSizeIncreaseNonBreachingValidator.class,
       forRca = PersistedAction.class,
-      timeoutSeconds = 190
+      timeoutSeconds = 240
   )
   @AErrorPatternIgnored(
       pattern = "AggregateMetric:gather()",
@@ -197,7 +205,78 @@ public class HeapSizeIncreaseIT {
       pattern = "BucketizedSlidingWindow:next()",
       reason = "Since the persistence path can be null for integration test, calls to next() is "
           + "expected to fail")
-  public void testHeapSizeIncrease() {
+  public void testDataNodeThresholdNotBreached() {
+    // We know that it takes at most 180 seconds(in the case of a multinode cluster) to fire the
+    // action based on the decider and rca thresholds set for integration tests.
+    // In order to prove that no action has been taken, we sleep for 190 seconds in the test
+    // while the rest of the framework goes on emitting metrics, ticking the scheduler etc. On
+    // wakeup, we check if the actions table contains the relevant row.
 
+    try {
+      Thread.sleep(SLEEP_DURATION_IN_S * S_TO_MS);
+    } catch (InterruptedException e) {
+      throw new RuntimeException("Sleep was interrupted. Underlying exception: ", e);
+    }
+  }
+
+  @Test
+  @ARcaConf(dataNode = JvmSizingITConstants.RCA_CONF_PATH + "rca.conf", electedMaster =
+      JvmSizingITConstants.RCA_CONF_PATH + "rca_master_high_threshold.conf")
+  @AExpect(
+      what = Type.DB_QUERY,
+      on = HostTag.ELECTED_MASTER,
+      validator = HeapSizeIncreaseNonBreachingValidator.class,
+      forRca = PersistedAction.class,
+      timeoutSeconds = 240
+  )
+  @AErrorPatternIgnored(
+      pattern = "AggregateMetric:gather()",
+      reason = "CPU metrics are expected to be missing in this integ test")
+  @AErrorPatternIgnored(
+      pattern = "Metric:gather()",
+      reason = "Metrics are expected to be missing in this integ test")
+  @AErrorPatternIgnored(
+      pattern = "NodeConfigCacheReaderUtil",
+      reason = "Node Config Cache are expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+      pattern = "SubscribeResponseHandler:onError()",
+      reason = "A unit test expressly calls SubscribeResponseHandler#onError, which writes an error log")
+  @AErrorPatternIgnored(
+      pattern = "SQLParsingUtil:readDataFromSqlResult()",
+      reason = "Old gen metrics is expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+      pattern = "HighHeapUsageOldGenRca:operate()",
+      reason = "Old gen rca is expected to be missing in this integ test.")
+  @AErrorPatternIgnored(
+      pattern = "ModifyCacheMaxSizeAction:build()",
+      reason = "Node config cache is expected to be missing during shutdown")
+  @AErrorPatternIgnored(
+      pattern = "NodeConfigCollector:collectAndPublishMetric()",
+      reason = "Shard request cache metrics is expected to be missing")
+  @AErrorPatternIgnored(
+      pattern = "CacheUtil:getCacheMaxSize()",
+      reason = "Shard request cache metrics is expected to be missing.")
+  @AErrorPatternIgnored(
+      pattern = "HighHeapUsageYoungGenRca:operate()",
+      reason = "YoungGen metrics is expected to be missing."
+  )
+  @AErrorPatternIgnored(
+      pattern = "PersistableSlidingWindow:<init>()",
+      reason = "Persistence base path can be null for integration test."
+  )
+  @AErrorPatternIgnored(
+      pattern = "OldGenRca:getMaxHeapSizeOrDefault()",
+      reason = "YoungGen metrics is expected to be missing.")
+  @AErrorPatternIgnored(
+      pattern = "BucketizedSlidingWindow:next()",
+      reason = "Since the persistence path can be null for integration test, calls to next() is "
+          + "expected to fail")
+  public void testMasterNodeThresholdNotBreached() {
+    // Same reasoning as the test case above.
+    try {
+      Thread.sleep(SLEEP_DURATION_IN_S * S_TO_MS);
+    } catch (InterruptedException e) {
+      throw new RuntimeException("Sleep was interrupted. Underlying exception: ", e);
+    }
   }
 }

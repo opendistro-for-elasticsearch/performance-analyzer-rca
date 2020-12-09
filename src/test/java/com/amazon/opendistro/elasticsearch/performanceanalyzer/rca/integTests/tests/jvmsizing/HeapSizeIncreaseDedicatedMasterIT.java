@@ -168,6 +168,10 @@ public class HeapSizeIncreaseDedicatedMasterIT {
       reason = "This method is called by HighHeapUsageOldGenRca which is not part of the jvm "
           + "sizing rcas."
   )
+  @AErrorPatternIgnored(
+      pattern = "BucketizedSlidingWindow:next()",
+      reason = "Since the persistence path can be null for integration test, calls to next() is "
+          + "expected to fail")
   public void testHeapSizeIncreaseDedicatedMaster() {
 
   }
