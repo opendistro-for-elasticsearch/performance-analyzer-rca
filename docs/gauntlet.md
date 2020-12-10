@@ -1,4 +1,4 @@
-# Rca Integration test framework
+# Gauntlet: Rca Integration test framework
 
 ## Scope
 To be able to test scenarios where multiple RCA Schedulers are running on different hosts of a

@@ -38,7 +38,7 @@ WORKDIR /usr/share/elasticsearch
 ENV BUST_CACHE 1576286189
 
 # Download and extract defined ES version.
-RUN curl -fsSL https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-oss-7.9.1-linux-x86_64.tar.gz | \
+RUN curl -fsSL https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-oss-7.10.0-linux-x86_64.tar.gz | \
     tar zx --strip-components=1
 
 RUN set -ex && for esdirs in config data logs; do \
@@ -49,10 +49,10 @@ COPY --chown=1000:0 elasticsearch.yml log4j2.properties config/
 
 COPY --chown=1000:0 performance-analyzer-rca.zip config/
 
-COPY --chown=1000:0 opendistro_performance_analyzer-1.11.0.0-SNAPSHOT.zip /tmp/
+COPY --chown=1000:0 opendistro_performance_analyzer-1.12.0.0-SNAPSHOT.zip /tmp/
 
-RUN elasticsearch-plugin install --batch file:///tmp/opendistro_performance_analyzer-1.11.0.0-SNAPSHOT.zip; \
-        rm /tmp/opendistro_performance_analyzer-1.11.0.0-SNAPSHOT.zip
+RUN elasticsearch-plugin install --batch file:///tmp/opendistro_performance_analyzer-1.12.0.0-SNAPSHOT.zip; \
+        rm /tmp/opendistro_performance_analyzer-1.12.0.0-SNAPSHOT.zip
 
 USER 0
 
@@ -62,6 +62,7 @@ RUN chown -R elasticsearch:0 . && \
 
 RUN unzip config/performance-analyzer-rca.zip
 
+RUN cp -r performance-analyzer-rca/* plugins/opendistro_performance_analyzer/
 RUN chmod 755 /usr/share/elasticsearch/plugins/opendistro_performance_analyzer/pa_bin/performance-analyzer-agent
 RUN chmod -R 755 /dev/shm
 ################################################################################
