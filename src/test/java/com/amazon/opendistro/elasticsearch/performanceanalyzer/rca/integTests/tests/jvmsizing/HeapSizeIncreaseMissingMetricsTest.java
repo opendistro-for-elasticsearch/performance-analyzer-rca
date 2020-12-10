@@ -44,8 +44,8 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 /**
- * Negative test: Tests that the action is NOT emitted if the threshold is not breached.
- * The threshold is controlled by the rca.conf and rca_master.conf files.
+ * Negative test: Tests that the action is NOT emitted if the threshold is not breached. The
+ * threshold is controlled by the rca.conf and rca_master.conf files.
  */
 
 @Category(RcaItMarker.class)
@@ -111,7 +111,8 @@ import org.junit.runner.RunWith;
             hostTag = HostTag.DATA_0,
             tuple = {
                 @ATuple(
-                    dimensionValues = {GCType.Constants.OLD_GEN_VALUE, JvmSizingITConstants.CMS_COLLECTOR},
+                    dimensionValues = {GCType.Constants.OLD_GEN_VALUE,
+                        JvmSizingITConstants.CMS_COLLECTOR},
                     sum = 10.0, avg = 10.0, max = 10.0, min = 10.0
                 )
             }
@@ -120,7 +121,8 @@ import org.junit.runner.RunWith;
             hostTag = HostTag.ELECTED_MASTER,
             tuple = {
                 @ATuple(
-                    dimensionValues = {GCType.Constants.OLD_GEN_VALUE, JvmSizingITConstants.CMS_COLLECTOR},
+                    dimensionValues = {GCType.Constants.OLD_GEN_VALUE,
+                        JvmSizingITConstants.CMS_COLLECTOR},
                     sum = 10.0, avg = 10.0, max = 10.0, min = 10.0
                 )
             }
@@ -247,7 +249,16 @@ public class HeapSizeIncreaseMissingMetricsTest {
   @AErrorPatternIgnored(
       pattern = "BucketizedSlidingWindow:next()",
       reason = "Since the persistence path can be null for integration test, calls to next() is "
-          + "expected to fail")
+          + "expected to fail"
+  )
+  @AErrorPatternIgnored(
+      pattern = "NetServer:subscribe()",
+      reason = "Expected for a scheduler restart"
+  )
+  @AErrorPatternIgnored(
+      pattern = "PerformanceAnalyzerApp:readRcaConfig()",
+      reason = "Expected for a scheduler restart"
+  )
   public void testMissingHeapMetrics() throws Exception {
     // Same reasoning as the test case above.
     testApi.updateMetrics(MissingHeapMetricsAnnotationHolder.class);
@@ -319,7 +330,8 @@ public class HeapSizeIncreaseMissingMetricsTest {
               hostTag = HostTag.DATA_0,
               tuple = {
                   @ATuple(
-                      dimensionValues = {GCType.Constants.OLD_GEN_VALUE, JvmSizingITConstants.CMS_COLLECTOR},
+                      dimensionValues = {GCType.Constants.OLD_GEN_VALUE,
+                          JvmSizingITConstants.CMS_COLLECTOR},
                       sum = 10.0, avg = 10.0, max = 10.0, min = 10.0
                   )
               }
@@ -328,7 +340,8 @@ public class HeapSizeIncreaseMissingMetricsTest {
               hostTag = HostTag.ELECTED_MASTER,
               tuple = {
                   @ATuple(
-                      dimensionValues = {GCType.Constants.OLD_GEN_VALUE, JvmSizingITConstants.CMS_COLLECTOR},
+                      dimensionValues = {GCType.Constants.OLD_GEN_VALUE,
+                          JvmSizingITConstants.CMS_COLLECTOR},
                       sum = 10.0, avg = 10.0, max = 10.0, min = 10.0
                   )
               }
