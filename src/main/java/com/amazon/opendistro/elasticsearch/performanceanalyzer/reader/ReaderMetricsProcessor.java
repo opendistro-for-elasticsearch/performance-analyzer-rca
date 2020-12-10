@@ -113,7 +113,8 @@ public class ReaderMetricsProcessor implements Runnable {
 
   private final boolean processNewFormat;
   private final EventLogFileHandler eventLogFileHandler;
-  private static ReaderMetricsProcessor current = null;
+  // This needs to be volatile to avoid failure caused by thread local cached values.
+  private static volatile ReaderMetricsProcessor current = null;
 
   public static void setCurrentInstance(ReaderMetricsProcessor currentInstance) {
     current = currentInstance;
