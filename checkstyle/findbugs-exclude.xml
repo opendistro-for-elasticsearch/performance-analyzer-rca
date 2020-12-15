@@ -74,6 +74,10 @@
         <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.FileRotate"/>
         <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
     </Match>
+        <Match>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.samplers.MetricsDBFileSampler"/>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
+    </Match>
     <!--Exclude gRPC generated classes-->
     <Match>
         <Package name="com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc"/>

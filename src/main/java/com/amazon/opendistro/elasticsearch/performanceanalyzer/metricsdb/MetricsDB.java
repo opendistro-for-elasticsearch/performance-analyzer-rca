@@ -86,12 +86,16 @@ public class MetricsDB implements Removable {
   private long windowStartTime;
 
   public static String getDBFilePath(long windowStartTime) {
-    return PluginSettings.instance()
-            .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT) + windowStartTime;
+    return getFilePrefix() + windowStartTime;
   }
 
   public String getDBFilePath() {
     return getDBFilePath(windowStartTime);
+  }
+
+  public static String getFilePrefix() {
+    return PluginSettings.instance()
+        .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT);
   }
 
   public MetricsDB(long windowStartTime) throws Exception {
@@ -348,9 +352,8 @@ public class MetricsDB implements Removable {
    * @return the timestamps associated with on-disk files
    */
   public static Set<Long> listOnDiskFiles() {
-    String prefix = PluginSettings.instance().getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT);
-    Path prefixPath = Paths.get(prefix);
-    Path parentPath = prefixPath.getParent();
+    String prefix = getFilePrefix();
+    Path parentPath = Paths.get(prefix).getParent();
     Set<Long> found = new HashSet<Long>();
     try (Stream<Path> paths = Files.list(parentPath)) {
       PathMatcher matcher = FileSystems.getDefault().getPathMatcher("regex:" + prefix + "\\d+");
