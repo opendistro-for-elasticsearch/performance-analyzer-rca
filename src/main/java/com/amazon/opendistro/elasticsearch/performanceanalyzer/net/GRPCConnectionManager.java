@@ -16,7 +16,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.net;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.CertificateUtils;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpcServiceGrpc;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.InterNodeRpcServiceGrpc.InterNodeRpcServiceStub;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
@@ -26,7 +25,6 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
 import io.grpc.netty.shaded.io.netty.handler.ssl.SslContextBuilder;
-
 import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,7 +32,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,6 +45,7 @@ import org.apache.logging.log4j.Logger;
 public class GRPCConnectionManager {
 
   private static final Logger LOG = LogManager.getLogger(GRPCConnectionManager.class);
+  private static final int MAX_RETRY_ATTEMPTS = 2;
   private final int port;
   // TLS certificate, private key, and trusted root CA files
   private File certFile;
@@ -175,10 +173,12 @@ public class GRPCConnectionManager {
   }
 
   private ManagedChannel buildInsecureChannel(final InstanceDetails remoteHost) {
-    return ManagedChannelBuilder.forAddress(
-            remoteHost.getInstanceIp().toString(),
-            getPortFromHost(remoteHost)
-    ).usePlaintext().build();
+    return ManagedChannelBuilder.forAddress(remoteHost.getInstanceIp().toString(),
+        getPortFromHost(remoteHost))
+                                .usePlaintext()
+                                .enableRetry()
+                                .maxRetryAttempts(MAX_RETRY_ATTEMPTS)
+                                .build();
   }
 
   private ManagedChannel buildSecureChannel(final InstanceDetails remoteHost) {
@@ -187,11 +187,12 @@ public class GRPCConnectionManager {
       if (trustedCasFile != null) {
         sslContextBuilder.trustManager(trustedCasFile);
       }
-      return NettyChannelBuilder.forAddress(
-              remoteHost.getInstanceIp().toString(),
-              getPortFromHost(remoteHost))
-              .sslContext(sslContextBuilder.build())
-              .build();
+      return NettyChannelBuilder.forAddress(remoteHost.getInstanceIp().toString(),
+          getPortFromHost(remoteHost))
+                                .sslContext(sslContextBuilder.build())
+                                .enableRetry()
+                                .maxRetryAttempts(MAX_RETRY_ATTEMPTS)
+                                .build();
     } catch (SSLException e) {
       LOG.error("Unable to build an SSL gRPC client. Exception: {}", e.getMessage());
       e.printStackTrace();
