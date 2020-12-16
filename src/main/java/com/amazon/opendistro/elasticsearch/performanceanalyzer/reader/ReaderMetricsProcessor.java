@@ -104,8 +104,6 @@ public class ReaderMetricsProcessor implements Runnable {
   public static final boolean defaultBatchMetricsEnabled = false;
   // This needs to be concurrent since it may be concurrently accessed by the metrics processor thread and the query handler thread.
   private ConcurrentSkipListSet<Long> batchMetricsDBSet;
-  private Map<Long, Long> batchMetricsDBSizes;
-  private long batchMetricsTotalData;
 
   static {
     STATS_DATA.put("MethodName", "ProcessMetrics");
@@ -153,8 +151,6 @@ public class ReaderMetricsProcessor implements Runnable {
     this.appContext = appContext;
     batchMetricsEnabled = defaultBatchMetricsEnabled;
     batchMetricsDBSet = new ConcurrentSkipListSet<>();
-    batchMetricsDBSizes = new HashMap<>();
-    batchMetricsTotalData = 0;
     readBatchMetricsEnabledFromConf();
     restoreBatchMetricsState();
   }
@@ -256,9 +252,6 @@ public class ReaderMetricsProcessor implements Runnable {
       for (Long ts : recoveredMetricsdbFiles) {
         if (ts >= minTime) {
           batchMetricsDBSet.add(ts);
-          long dbSize = new File(MetricsDB.getDBFilePath(ts)).length();
-          batchMetricsDBSizes.put(ts, dbSize);
-          batchMetricsTotalData += dbSize;
         } else if (shouldCleanup) {
           MetricsDB.deleteOnDiskFile(ts);
         }
@@ -324,8 +317,6 @@ public class ReaderMetricsProcessor implements Runnable {
         }
       }
       batchMetricsDBSet.clear();
-      batchMetricsDBSizes.clear();
-      batchMetricsTotalData = 0;
     }
     readBatchMetricsEnabledFromConf();
     // The (retentionPeriod * 12 + 2)'th database can be safely removed, since getBatchMetrics never returns more than
@@ -338,12 +329,7 @@ public class ReaderMetricsProcessor implements Runnable {
       if (deleteDBFiles && !metricsDBMap.containsKey(timestamp)) {
         MetricsDB.deleteOnDiskFile(timestamp);
       }
-      batchMetricsTotalData -= batchMetricsDBSizes.remove(timestamp);
     }
-    PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(
-        ReaderMetrics.BATCH_METRICS_NUM_METRICSDB_FILES, "", batchMetricsDBSizes.size());
-    PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(
-        ReaderMetrics.BATCH_METRICS_DATA_SIZE, "", batchMetricsTotalData);
   }
 
   /** Deletes the lowest entries in the map till the size of the map is equal to maxSize. */
@@ -407,13 +393,10 @@ public class ReaderMetricsProcessor implements Runnable {
 
     metricsDB.commit();
     metricsDBMap.put(prevWindowStartTime, metricsDB);
-    long metricsDBSize = new File(metricsDB.getDBFilePath()).length();
     PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(
-        ReaderMetrics.METRICSDB_FILE_SIZE, "", metricsDBSize);
+        ReaderMetrics.METRICSDB_FILE_SIZE, "", new File(metricsDB.getDBFilePath()).length());
     if (batchMetricsEnabled) {
       batchMetricsDBSet.add(prevWindowStartTime);
-      batchMetricsDBSizes.put(prevWindowStartTime, metricsDBSize);
-      batchMetricsTotalData += metricsDBSize;
     }
     mFinalT = System.currentTimeMillis();
     LOG.debug("Total time taken for emitting Metrics: {}", mFinalT - mCurrT);
