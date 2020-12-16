@@ -282,7 +282,7 @@ public class MetricsDB implements Removable {
    * @param metric the desired metric
    * @return the result of the query
    */
-  public Result<Record> queryMetric(String metric) {
+  public Result<Record> queryMetric(String metric) throws DataAccessException {
     return create.select().from(DSL.table(metric)).fetch();
   }
 
