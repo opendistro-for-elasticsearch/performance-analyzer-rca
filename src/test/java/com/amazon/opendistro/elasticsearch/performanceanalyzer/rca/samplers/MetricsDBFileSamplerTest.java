@@ -30,7 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -62,7 +62,7 @@ public class MetricsDBFileSamplerTest {
     String metricsFolderPath = metricsFolder.getPath();
 
     // Setup matched and ignored metricsdb files
-    String metricsdbFilePrefix = Path.of(metricsFolderPath, "metricsdb_").toString();
+    String metricsdbFilePrefix = Paths.get(metricsFolderPath, "metricsdb_").toString();
     String[] randomFilenames = {
         "performance_analyzer_agent_stats.log",
         "PerformanceAnalyzer.log",
@@ -93,18 +93,18 @@ public class MetricsDBFileSamplerTest {
     long metricsdbTarFileSize = 16 * 1024;
 
     for (String fname : randomFilenames) {
-      Files.createFile(Path.of(metricsFolderPath, fname));
+      Files.createFile(Paths.get(metricsFolderPath, fname));
     }
     for (String fname : closeMatchFilenames) {
-      Files.createFile(Path.of(metricsFolderPath, fname));
+      Files.createFile(Paths.get(metricsFolderPath, fname));
     }
     for (String fname : metricsdbFiles) {
-      RandomAccessFile f = new RandomAccessFile(Path.of(metricsFolderPath, fname).toString(), "rw");
+      RandomAccessFile f = new RandomAccessFile(Paths.get(metricsFolderPath, fname).toString(), "rw");
       f.setLength(metricsdbFileSize);
       f.close();
     }
     for (String fname : metricsdbTarFiles) {
-      RandomAccessFile f = new RandomAccessFile(Path.of(metricsFolderPath, fname).toString(), "rw");
+      RandomAccessFile f = new RandomAccessFile(Paths.get(metricsFolderPath, fname).toString(), "rw");
       f.setLength(metricsdbTarFileSize);
       f.close();
     }
