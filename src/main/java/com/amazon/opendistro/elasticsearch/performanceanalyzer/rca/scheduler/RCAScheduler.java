@@ -54,6 +54,8 @@ public class RCAScheduler {
   private final NodeRole role;
   private final AppContext appContext;
 
+  private RCASchedulerTask schedulerTask = null;
+
   final ThreadFactory schedThreadFactory;
 
   // TODO: Fix number of threads based on config.
@@ -126,7 +128,7 @@ public class RCAScheduler {
       return;
     }
 
-    final RCASchedulerTask task = new RCASchedulerTask(
+    schedulerTask = new RCASchedulerTask(
         10000,
         rcaSchedulerPeriodicExecutor,
         connectedComponents,
@@ -146,7 +148,7 @@ public class RCAScheduler {
     while (schedulerState == RcaSchedulerState.STATE_STARTED) {
       try {
         long startTime = System.currentTimeMillis();
-        task.run();
+        schedulerTask.run();
         long duration = System.currentTimeMillis() - startTime;
         if (duration < PERIODICITY_IN_MS) {
           Thread.sleep(PERIODICITY_IN_MS - duration);
@@ -226,8 +228,15 @@ public class RCAScheduler {
   }
 
   @VisibleForTesting
-  public void setQueryable(Queryable queryable) {
+  public void setQueryable(Queryable queryable) throws InterruptedException {
     this.db = queryable;
+    if (schedulerTask != null) {
+      schedulerTask.setNewDb(queryable);
+
+      // The update for the DB is async and therefore, it waits for two scheduler cycles to
+      // make sure the change takes effect.
+      Thread.sleep(2 * PERIODICITY_IN_MS);
+    }
   }
 
   @VisibleForTesting

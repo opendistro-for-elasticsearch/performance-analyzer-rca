@@ -28,6 +28,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.uti
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.messages.IntentMsg;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.net.WireHopper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.Persistable;
+import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,6 +46,10 @@ public class RCASchedulerTask implements Runnable {
 
   private static final Logger LOG = LogManager.getLogger(RCASchedulerTask.class);
   private static final String EMPTY_STRING = "";
+
+
+  // This is to be used for tests only.
+  private Queryable newDb = null;
 
   /**
    * This is a wrapper class for return type of createTaskletAndSendIntent method. This is required
@@ -358,10 +363,31 @@ public class RCASchedulerTask implements Runnable {
     PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
         RcaGraphMetrics.NUM_GRAPH_NODES, "", Stats.getInstance().getTotalNodesCount());
 
+    changeDbForTasklets();
     List<CompletableFuture<Void>> lastLevelTasks = createAsyncTasks();
     preWait();
     lastLevelTasks.forEach(CompletableFuture::join);
     postCompletion(runStartTime);
+  }
+
+  /**
+   * This method is to be be able to change the MetricsDB instance between runs of the scheduler.
+   * The change of the MetricsDB happens async. The requester updates the newDB with a non-null reference.
+   * This methods checks if the reference is valid, and if so, runs through all the tasklets and updates
+   * them with the reference of the new DB. This request to change the underlying DB is only expected
+   * for tests.
+   */
+  private void changeDbForTasklets() {
+    if (newDb != null) {
+      for (List<Tasklet> taskletsAtThisLevel : locallyExecutableTasklets) {
+        for (Tasklet tasklet : taskletsAtThisLevel) {
+          tasklet.setDb(newDb);
+        }
+      }
+      // We change the newDB back to null, so that we don't go over the loop unless the metricsDB
+      // is changed again.
+      newDb = null;
+    }
   }
 
   protected List<CompletableFuture<Void>> createAsyncTasks() {
@@ -393,5 +419,10 @@ public class RCASchedulerTask implements Runnable {
         RcaGraphMetrics.GRAPH_EXECUTION_TIME, "", durationMillis);
     PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
         RcaGraphMetrics.NUM_GRAPH_NODES_MUTED, "", Stats.getInstance().getMutedGraphNodesCount());
+  }
+
+  @VisibleForTesting
+  public void setNewDb(Queryable newDb) {
+    this.newDb = newDb;
   }
 }

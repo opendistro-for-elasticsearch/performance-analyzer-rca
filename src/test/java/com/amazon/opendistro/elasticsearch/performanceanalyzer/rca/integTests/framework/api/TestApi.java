@@ -72,10 +72,6 @@ public class TestApi {
   public void updateMetrics(Class<?> clz) throws Exception {
     if (clz.isAnnotationPresent(AMetric.Metrics.class) || clz.isAnnotationPresent(AMetric.class)) {
       cluster.updateMetricsDB(clz.getAnnotationsByType(AMetric.class));
-
-      // The scheduler needs to be restarted to pick this change up.
-      cluster.stopRcaScheduler();
-      cluster.startRcaScheduler();
     }
   }
 }
