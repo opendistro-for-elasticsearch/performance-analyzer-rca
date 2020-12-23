@@ -87,7 +87,7 @@ public class TCPStatus extends MetricStatus {
   }
 
   @JsonProperty(TCPValue.Constants.SSTHRESH_VALUE)
-  public double getSSThresh() {
+  public double getSsThresh() {
     return ssThresh;
   }
 }

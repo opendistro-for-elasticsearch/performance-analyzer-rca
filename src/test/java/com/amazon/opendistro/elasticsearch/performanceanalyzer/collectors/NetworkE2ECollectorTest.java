@@ -24,7 +24,7 @@ public class NetworkE2ECollectorTest extends AbstractCollectorTest {
     Assert.assertTrue(curLost >= 0);
     double sndCWND = tcpStatus.getSndCWND();
     Assert.assertTrue(sndCWND >= 0);
-    double ssThresh = tcpStatus.getSSThresh();
+    double ssThresh = tcpStatus.getSsThresh();
     Assert.assertTrue(ssThresh >= 0);
   }
 }
