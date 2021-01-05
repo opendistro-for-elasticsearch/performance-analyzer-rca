@@ -131,6 +131,11 @@ public class JvmFlipFlopITest {
     this.api = api;
   }
 
+  /**
+   * in this IT, we start with low JVM usage and then increase the JVM after 10 seconds.
+   * JVM RCA is expected to be triggered and we should be able to observe JVM actions to lower
+   * heap usage in about 3-4 mins
+   */
   @Test
   @AExpect(
       what = AExpect.Type.REST_API,
@@ -171,11 +176,6 @@ public class JvmFlipFlopITest {
   @AErrorPatternIgnored(
       pattern = "OldGenRca:getMaxOldGenSizeOrDefault()",
       reason = "YoungGen metrics is expected to be missing.")
-  /**
-   * in this IT, we start with low JVM usage and then increase the JVM after 10 seconds.
-   * JVM RCA is expected to be triggered and we should be able to observe JVM actions to lower
-   * heap usage in about 3-4 mins
-   */
   public void testJvmActions() throws Exception {
     try {
       Thread.sleep(TimeUnit.SECONDS.toMillis(10));
@@ -185,6 +185,11 @@ public class JvmFlipFlopITest {
     api.updateMetrics(MetricsForUnhealthyOldGenUsage.class, false);
   }
 
+  /**
+   * Once JVM decisions are published, we lower the JVM usage to bring JVM RCA back to normal and
+   * immediately inject queue rejection metrics. Flip Flop detector should capture this and suppress
+   * queue rejection actions because increasing queue capacity will change JVM vector into a different direction.
+   */
   @Test
   @AExpect(
       what = AExpect.Type.REST_API,
@@ -228,11 +233,6 @@ public class JvmFlipFlopITest {
   @AErrorPatternIgnored(
       pattern = "BucketizedSlidingWindow:next()",
       reason = "BucketizedSlidingWindow is expected to be missing.")
-  /**
-   * Once JVM decisions are published, we lower the JVM usage to bring JVM RCA back to normal and
-   * immediately inject queue rejection metrics. Flip Flop detector should capture this and suppress
-   * queue rejection actions because increasing queue capacity will change JVM vector into a different direction.
-   */
   public void testFlipFlop() throws Exception {
     api.updateMetrics(MetricsForHealthyOldGenUsage.class, false);
     api.updateMetrics(MetricsForQueueRejection.class, false);

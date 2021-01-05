@@ -320,7 +320,7 @@ public class Host {
    * refresh/update metric DB provider in integ test
    * @param metricAnnotations AMetric annotations
    * @param reloadDB whether to refresh entire DB or update tables in existing DB
-   * @throws Exception
+   * @throws Exception db related exceptions
    */
   public void updateMetricsDB(AMetric[] metricAnnotations, boolean reloadDB) throws Exception {
     RcaItMetricsDBProvider dbProvider;
