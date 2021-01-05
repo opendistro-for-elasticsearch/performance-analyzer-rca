@@ -67,11 +67,12 @@ public class TestApi {
    * This API let's a gauntlet test writer swap out the metricsDB for a new one.
    *
    * @param clz The class whose AMetric@ should be used to replace it
+   * @param reloadDB whether to refresh entire DB or update tables in existing DB
    * @throws Exception Throws Exception
    */
-  public void updateMetrics(Class<?> clz) throws Exception {
+  public void updateMetrics(Class<?> clz, boolean reloadDB) throws Exception {
     if (clz.isAnnotationPresent(AMetric.Metrics.class) || clz.isAnnotationPresent(AMetric.class)) {
-      cluster.updateMetricsDB(clz.getAnnotationsByType(AMetric.class));
+      cluster.updateMetricsDB(clz.getAnnotationsByType(AMetric.class), reloadDB);
     }
   }
 }

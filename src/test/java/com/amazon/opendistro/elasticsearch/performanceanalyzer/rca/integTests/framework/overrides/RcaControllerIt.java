@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 public class RcaControllerIt extends RcaController {
   private final String rcaPath;
   private List<ConnectedComponent> rcaGraphComponents;
+  private RcaItMetricsDBProvider rcaItMetricsDBProvider;
 
   public RcaControllerIt(ThreadProvider threadProvider,
                          ScheduledExecutorService netOpsExecutorService,
@@ -82,8 +83,9 @@ public class RcaControllerIt extends RcaController {
     return rcaConfIt;
   }
 
-  public void setDbProvider(final Queryable db) throws InterruptedException {
+  public void setDbProvider(final RcaItMetricsDBProvider db) throws InterruptedException {
     dbProvider = db;
+    rcaItMetricsDBProvider = db;
     RCAScheduler sched = getRcaScheduler();
 
     // The change is optional and only happens in the next line if the scheduler is already running.
@@ -92,6 +94,10 @@ public class RcaControllerIt extends RcaController {
     if (sched != null) {
       sched.setQueryable(db);
     }
+  }
+
+  public RcaItMetricsDBProvider getDbProvider() {
+    return rcaItMetricsDBProvider;
   }
 
   public void setRcaGraphComponents(Class rcaGraphClass)
