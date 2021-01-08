@@ -264,9 +264,9 @@ public class Cluster {
     }
   }
 
-  public void updateMetricsDB(AMetric[] metricAnnotations) throws Exception {
+  public void updateMetricsDB(AMetric[] metricAnnotations, boolean reloadDB) throws Exception {
     for (Host host : hostList) {
-      host.updateMetricsDB(metricAnnotations);
+      host.updateMetricsDB(metricAnnotations, reloadDB);
     }
   }
 

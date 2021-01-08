@@ -39,7 +39,7 @@ public class TestEnvironment {
 
       if (testClass.isAnnotationPresent(AMetric.Metrics.class)
           || testClass.isAnnotationPresent(AMetric.class)) {
-        updateMetricsDB((AMetric[]) testClass.getAnnotationsByType(AMetric.class), env);
+        updateMetricsDB((AMetric[]) testClass.getAnnotationsByType(AMetric.class), env, true);
       }
     }
     if (env.rcaConfMap.isEmpty()) {
@@ -64,7 +64,7 @@ public class TestEnvironment {
       }
 
       if (method.isAnnotationPresent(AMetric.Metrics.class)) {
-        updateMetricsDB(method.getAnnotationsByType(AMetric.class), currentEnv);
+        updateMetricsDB(method.getAnnotationsByType(AMetric.class), currentEnv, true);
       }
     }
   }
@@ -89,8 +89,8 @@ public class TestEnvironment {
     cluster.updateGraph(graphClass);
   }
 
-  private void updateMetricsDB(AMetric[] metrics, Env env) throws Exception {
-    cluster.updateMetricsDB(metrics);
+  private void updateMetricsDB(AMetric[] metrics, Env env, boolean reloadDB) throws Exception {
+    cluster.updateMetricsDB(metrics, reloadDB);
     env.isMetricsDBProviderSet = true;
   }
 

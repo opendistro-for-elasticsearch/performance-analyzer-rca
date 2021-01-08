@@ -316,9 +316,19 @@ public class Host {
     rcaController.setRcaGraphComponents(rcaGraphClass);
   }
 
-  public void updateMetricsDB(AMetric[] metricAnnotations) throws Exception {
-    RcaItMetricsDBProvider dbProvider =
-        new RcaItMetricsDBProvider(Paths.get(hostDir.getPath(), "metricsdb").toString());
+  /**
+   * refresh/update metric DB provider in integ test
+   * @param metricAnnotations AMetric annotations
+   * @param reloadDB whether to refresh entire DB or update tables in existing DB
+   * @throws Exception db related exceptions
+   */
+  public void updateMetricsDB(AMetric[] metricAnnotations, boolean reloadDB) throws Exception {
+    RcaItMetricsDBProvider dbProvider;
+    if (reloadDB) {
+      dbProvider = new RcaItMetricsDBProvider(Paths.get(hostDir.getPath(), "metricsdb").toString());
+    } else {
+      dbProvider = rcaController.getDbProvider();
+    }
     for (AMetric metric : metricAnnotations) {
       boolean foundDataForHost = false;
       // Each metric can have only one data table that can be associated to a host.
@@ -328,15 +338,18 @@ public class Host {
       for (ATable table : metric.tables()) {
         for (HostTag dataTag : table.hostTag()) {
           if (myTag == dataTag) {
+            String metricName;
+            try {
+              metricName = (String) metric.name().getField("NAME").get(null);
+            } catch (Exception ex) {
+              LOG.error("Error getting metric name.", ex);
+              throw ex;
+            }
+            if (!reloadDB) {
+              dbProvider.clearTable(metricName);
+            }
             // First data-tag to match the hostTags is considered to be a match
             for (ATuple tuple : table.tuple()) {
-              String metricName;
-              try {
-                metricName = (String) metric.name().getField("NAME").get(null);
-              } catch (Exception ex) {
-                LOG.error("Error getting metric name.", ex);
-                throw ex;
-              }
               dbProvider.insertRow(
                   metricName,
                   metric.dimensionNames(),
