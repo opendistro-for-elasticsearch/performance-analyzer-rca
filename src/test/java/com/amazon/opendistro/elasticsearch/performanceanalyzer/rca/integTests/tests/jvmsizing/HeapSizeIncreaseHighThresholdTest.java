@@ -38,6 +38,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.jvmsizing.validator.HeapSizeIncreaseNonBreachingValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.PersistedAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.ElasticSearchAnalysisGraph;
+import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -152,7 +153,6 @@ import org.junit.runner.RunWith;
 )
 public class HeapSizeIncreaseHighThresholdTest {
 
-  private static final int S_TO_MS = 1000;
   public static final int SLEEP_DURATION_IN_S = 190;
 
   @Test
@@ -213,7 +213,7 @@ public class HeapSizeIncreaseHighThresholdTest {
     // wakeup, we check if the actions table contains the relevant row.
 
     try {
-      Thread.sleep(SLEEP_DURATION_IN_S * S_TO_MS);
+      Thread.sleep(TimeUnit.SECONDS.toMillis(SLEEP_DURATION_IN_S));
     } catch (InterruptedException e) {
       throw new RuntimeException("Sleep was interrupted. Underlying exception: ", e);
     }
@@ -274,7 +274,7 @@ public class HeapSizeIncreaseHighThresholdTest {
   public void testMasterNodeThresholdNotBreached() {
     // Same reasoning as the test case above.
     try {
-      Thread.sleep(SLEEP_DURATION_IN_S * S_TO_MS);
+      Thread.sleep(TimeUnit.SECONDS.toMillis(SLEEP_DURATION_IN_S));
     } catch (InterruptedException e) {
       throw new RuntimeException("Sleep was interrupted. Underlying exception: ", e);
     }
