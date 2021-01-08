@@ -28,7 +28,7 @@ public enum RcaVerticesMetrics implements MeasurementSet {
   NUM_YOUNG_GEN_RCA_TRIGGERED(
       "YoungGenRcaCount", "count", Collections.singletonList(Statistics.COUNT)),
   NUM_OLD_GEN_RCA_TRIGGERED(
-      "YoungGenRcaCount", "count", Collections.singletonList(Statistics.COUNT)),
+      "OldGenRcaCount", "count", Collections.singletonList(Statistics.COUNT)),
   NUM_HIGH_HEAP_CLUSTER_RCA_TRIGGERED(
       "HighHeapClusterRcaCount", "count", Collections.singletonList(Statistics.COUNT)),
   YOUNG_GEN_RCA_NAMED_COUNT(
