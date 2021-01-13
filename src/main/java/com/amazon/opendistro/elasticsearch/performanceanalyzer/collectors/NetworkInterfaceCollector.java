@@ -20,6 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsCo
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.IPMetricsGenerator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.OSMetricsGenerator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -28,7 +29,6 @@ public class NetworkInterfaceCollector extends PerformanceAnalyzerMetricsCollect
   private static final int sTimeInterval =
       MetricsConfiguration.CONFIG_MAP.get(NetworkInterfaceCollector.class).samplingInterval;
   private static final Logger LOG = LogManager.getLogger(NetworkInterfaceCollector.class);
-  private StringBuilder ret = new StringBuilder();
 
   public NetworkInterfaceCollector() {
     super(sTimeInterval, "NetworkInterfaceCollector");
@@ -36,11 +36,12 @@ public class NetworkInterfaceCollector extends PerformanceAnalyzerMetricsCollect
 
   @Override
   public void collectMetrics(long startTime) {
-
-    IPMetricsGenerator IPMetricsGenerator =
-        OSMetricsGeneratorFactory.getInstance().getIPMetricsGenerator();
+    OSMetricsGenerator generator = OSMetricsGeneratorFactory.getInstance();
+    if (generator == null) {
+      return;
+    }
+    IPMetricsGenerator IPMetricsGenerator = generator.getIPMetricsGenerator();
     IPMetricsGenerator.addSample();
-
     saveMetricValues(
         getMetrics(IPMetricsGenerator) + PerformanceAnalyzerMetrics.sMetricNewLineDelimitor,
         startTime);
@@ -58,8 +59,8 @@ public class NetworkInterfaceCollector extends PerformanceAnalyzerMetricsCollect
 
   private String getMetrics(IPMetricsGenerator IPMetricsGenerator) {
 
-    ret.setLength(0);
-    ret.append(PerformanceAnalyzerMetrics.getJsonCurrentMilliSeconds())
+    value.setLength(0);
+    value.append(PerformanceAnalyzerMetrics.getJsonCurrentMilliSeconds())
         .append(PerformanceAnalyzerMetrics.sMetricNewLineDelimitor);
 
     try {
@@ -81,8 +82,8 @@ public class NetworkInterfaceCollector extends PerformanceAnalyzerMetricsCollect
               IPMetricsGenerator.getOutDropRate6(),
               IPMetricsGenerator.getOutBps());
 
-      ret.append(inNetwork.serialize()).append(PerformanceAnalyzerMetrics.sMetricNewLineDelimitor);
-      ret.append(outNetwork.serialize()).append(PerformanceAnalyzerMetrics.sMetricNewLineDelimitor);
+      value.append(inNetwork.serialize()).append(PerformanceAnalyzerMetrics.sMetricNewLineDelimitor);
+      value.append(outNetwork.serialize()).append(PerformanceAnalyzerMetrics.sMetricNewLineDelimitor);
     } catch (Exception e) {
       LOG.debug(
           "Exception in NetworkInterfaceCollector: {} with ExceptionCode: {}",
@@ -91,6 +92,6 @@ public class NetworkInterfaceCollector extends PerformanceAnalyzerMetricsCollect
       StatsCollector.instance().logException(StatExceptionCode.NETWORK_COLLECTION_ERROR);
     }
 
-    return ret.toString();
+    return value.toString();
   }
 }

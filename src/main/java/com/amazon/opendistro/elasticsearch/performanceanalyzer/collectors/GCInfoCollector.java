@@ -21,6 +21,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsCo
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -35,11 +36,8 @@ public class GCInfoCollector extends PerformanceAnalyzerMetricsCollector impleme
       MetricsConfiguration.CONFIG_MAP.get(GCInfoCollector.class).samplingInterval;
   private static final int EXPECTED_KEYS_PATH_LENGTH = 0;
 
-  private final StringBuilder value;
-
   public GCInfoCollector() {
     super(SAMPLING_TIME_INTERVAL, "GCInfo");
-    this.value = new StringBuilder();
   }
 
   @Override
@@ -71,9 +69,10 @@ public class GCInfoCollector extends PerformanceAnalyzerMetricsCollector impleme
   }
 
   public static class GCInfo extends MetricStatus {
+    private String memoryPool;
+    private String collectorName;
 
-    private final String memoryPool;
-    private final String collectorName;
+    public GCInfo() {}
 
     public GCInfo(final String memoryPool, final String collectorName) {
       this.memoryPool = memoryPool;

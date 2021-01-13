@@ -1,5 +1,6 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.jvm;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
@@ -59,5 +60,10 @@ public class GarbageCollectorInfo {
 
   public static Map<String, Supplier<String>> getGcSuppliers() {
     return gcSuppliers;
+  }
+
+  @VisibleForTesting
+  public static ImmutableMap<String, String> getMemoryPoolMap() {
+    return memoryPoolMap;
   }
 }

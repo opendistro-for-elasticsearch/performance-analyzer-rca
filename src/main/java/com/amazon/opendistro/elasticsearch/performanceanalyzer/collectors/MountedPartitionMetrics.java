@@ -5,11 +5,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class MountedPartitionMetrics extends MetricStatus {
-  private final String mountPoint;
-  private final String devicePartition;
-  private final long totalSpace;
-  private final long freeSpace;
-  private final long usableFreeSpace;
+  private String mountPoint;
+  private String devicePartition;
+  private long totalSpace;
+  private long freeSpace;
+  private long usableFreeSpace;
+
+  public MountedPartitionMetrics() {}
 
   public MountedPartitionMetrics(String devicePartition, String mountPoint, long totalSpace,
       long freeSpace, long usableFreeSpace) {
