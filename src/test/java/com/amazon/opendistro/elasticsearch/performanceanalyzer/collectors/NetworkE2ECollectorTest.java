@@ -7,6 +7,7 @@ import org.junit.Before;
 
 public class NetworkE2ECollectorTest extends AbstractCollectorTest {
   private static final Logger LOG = LogManager.getLogger(NetworkE2ECollectorTest.class);
+
   @Before
   public void setup() {
     setUut(new NetworkE2ECollector());
