@@ -71,7 +71,7 @@ public class HighHeapUsageYoungGenRcaTest {
     gc_Collection_Time.createTestFlowUnitsWithMultipleRows(columnName, Lists.newArrayList(youngGcRow, fullGcRow));
     gc_Collection_Event.createTestFlowUnits(columnName, Arrays.asList(OLD_GEN.toString(), String.valueOf(fullGcEvents)));
     gc_Type.createTestFlowUnits(Arrays.asList(GCInfoDimension.MEMORY_POOL.toString(),
-        GCInfoDimension.COLLECTOR_NAME.toString()), Arrays.asList(EDEN.toString(), CMS_COLLECTOR));
+        GCInfoDimension.COLLECTOR_NAME.toString()), Arrays.asList(OLD_GEN.toString(), CMS_COLLECTOR));
   }
 
   @Before

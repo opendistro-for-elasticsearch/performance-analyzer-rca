@@ -5,6 +5,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsCo
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.MountedPartitionMetricsGenerator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.OSMetricsGenerator;
 import java.util.Set;
 
 public class MountedPartitionMetricsCollector extends PerformanceAnalyzerMetricsCollector implements
@@ -13,17 +14,19 @@ public class MountedPartitionMetricsCollector extends PerformanceAnalyzerMetrics
   private static final int SAMPLING_TIME_INTERVAL =
       MetricsConfiguration.CONFIG_MAP.get(MountedPartitionMetricsCollector.class).samplingInterval;
   private static final int EXPECTED_KEYS_PATH_LENGTH = 0;
-  private final StringBuilder value;
 
   public MountedPartitionMetricsCollector() {
     super(SAMPLING_TIME_INTERVAL, "MountedPartition");
-    this.value = new StringBuilder();
   }
 
   @Override
   void collectMetrics(long startTime) {
+    OSMetricsGenerator generator = OSMetricsGeneratorFactory.getInstance();
+    if (generator == null) {
+      return;
+    }
     MountedPartitionMetricsGenerator mountedPartitionMetricsGenerator =
-        OSMetricsGeneratorFactory.getInstance().getMountedPartitionMetricsGenerator();
+        generator.getMountedPartitionMetricsGenerator();
 
     mountedPartitionMetricsGenerator.addSample();
 

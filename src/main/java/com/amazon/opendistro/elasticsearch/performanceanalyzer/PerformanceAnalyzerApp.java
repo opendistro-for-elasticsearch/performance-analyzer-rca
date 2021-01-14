@@ -40,6 +40,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.sys
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.listener.MisbehavingGraphOperateMethodListener;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.samplers.BatchMetricsEnabledSampler;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.samplers.MetricsDBFileSampler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.samplers.RcaStateSamplers;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.RcaStatsReporter;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.collectors.SampleAggregator;
@@ -305,6 +306,7 @@ public class PerformanceAnalyzerApp {
     allSamplers.addAll(AllJvmSamplers.getJvmSamplers());
     allSamplers.add(RcaStateSamplers.getRcaEnabledSampler(appContext));
     allSamplers.add(new BatchMetricsEnabledSampler(appContext));
+    allSamplers.add(new MetricsDBFileSampler(appContext));
 
     return allSamplers;
   }
@@ -314,6 +316,10 @@ public class PerformanceAnalyzerApp {
     measurementSets.addAll(Arrays.asList(JvmMetrics.values()));
     measurementSets.add(RcaRuntimeMetrics.RCA_ENABLED);
     measurementSets.add(ReaderMetrics.BATCH_METRICS_ENABLED);
+    measurementSets.add(ReaderMetrics.METRICSDB_NUM_FILES);
+    measurementSets.add(ReaderMetrics.METRICSDB_SIZE_FILES);
+    measurementSets.add(ReaderMetrics.METRICSDB_NUM_UNCOMPRESSED_FILES);
+    measurementSets.add(ReaderMetrics.METRICSDB_SIZE_UNCOMPRESSED_FILES);
 
     return measurementSets.toArray(new MeasurementSet[]{});
   }

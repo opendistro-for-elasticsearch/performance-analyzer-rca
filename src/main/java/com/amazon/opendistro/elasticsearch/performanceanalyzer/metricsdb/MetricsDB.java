@@ -22,6 +22,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsC
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.Removable;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -86,12 +87,16 @@ public class MetricsDB implements Removable {
   private long windowStartTime;
 
   public static String getDBFilePath(long windowStartTime) {
-    return PluginSettings.instance()
-            .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT) + windowStartTime;
+    return getFilePrefix() + windowStartTime;
   }
 
   public String getDBFilePath() {
     return getDBFilePath(windowStartTime);
+  }
+
+  public static String getFilePrefix() {
+    return PluginSettings.instance()
+        .getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT);
   }
 
   public MetricsDB(long windowStartTime) throws Exception {
@@ -177,6 +182,17 @@ public class MetricsDB implements Removable {
         .set(DSL.field(MAX, Double.class), metric.getMax())
         .set(dimensions.getFieldMap())
         .execute();
+  }
+
+  /**
+   * Drop a metric table. This is for IT framework to use only
+   * @param metricName metric table to be deleted
+   */
+  @VisibleForTesting
+  public void deleteMetric(String metricName) {
+    if (DBUtils.checkIfTableExists(create, metricName)) {
+      create.dropTable(metricName).execute();
+    }
   }
 
   // We have a table per metric. We do a group by/aggregate on
@@ -282,7 +298,7 @@ public class MetricsDB implements Removable {
    * @param metric the desired metric
    * @return the result of the query
    */
-  public Result<Record> queryMetric(String metric) {
+  public Result<Record> queryMetric(String metric) throws DataAccessException {
     return create.select().from(DSL.table(metric)).fetch();
   }
 
@@ -348,9 +364,8 @@ public class MetricsDB implements Removable {
    * @return the timestamps associated with on-disk files
    */
   public static Set<Long> listOnDiskFiles() {
-    String prefix = PluginSettings.instance().getSettingValue(DB_FILE_PREFIX_PATH_CONF_NAME, DB_FILE_PREFIX_PATH_DEFAULT);
-    Path prefixPath = Paths.get(prefix);
-    Path parentPath = prefixPath.getParent();
+    String prefix = getFilePrefix();
+    Path parentPath = Paths.get(prefix).getParent();
     Set<Long> found = new HashSet<Long>();
     try (Stream<Path> paths = Files.list(parentPath)) {
       PathMatcher matcher = FileSystems.getDefault().getPathMatcher("regex:" + prefix + "\\d+");

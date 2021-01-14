@@ -25,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.Queryable;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.RcaConf;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RCAScheduler;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.RcaSchedulerState;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.threads.ThreadProvider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.WaitFor;
@@ -36,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 public class RcaControllerIt extends RcaController {
   private final String rcaPath;
   private List<ConnectedComponent> rcaGraphComponents;
+  private RcaItMetricsDBProvider rcaItMetricsDBProvider;
 
   public RcaControllerIt(ThreadProvider threadProvider,
                          ScheduledExecutorService netOpsExecutorService,
@@ -81,8 +83,21 @@ public class RcaControllerIt extends RcaController {
     return rcaConfIt;
   }
 
-  public void setDbProvider(final Queryable db) {
+  public void setDbProvider(final RcaItMetricsDBProvider db) throws InterruptedException {
     dbProvider = db;
+    rcaItMetricsDBProvider = db;
+    RCAScheduler sched = getRcaScheduler();
+
+    // The change is optional and only happens in the next line if the scheduler is already running.
+    // If the scheduler is not running at the moment, then it will pick up the new DB when it starts
+    // next.
+    if (sched != null) {
+      sched.setQueryable(db);
+    }
+  }
+
+  public RcaItMetricsDBProvider getDbProvider() {
+    return rcaItMetricsDBProvider;
   }
 
   public void setRcaGraphComponents(Class rcaGraphClass)

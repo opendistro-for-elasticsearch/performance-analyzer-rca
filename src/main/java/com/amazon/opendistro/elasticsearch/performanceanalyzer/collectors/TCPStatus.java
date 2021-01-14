@@ -36,6 +36,8 @@ public class TCPStatus extends MetricStatus {
   // make this field private so that Jackson uses getter method name
   private double ssThresh;
 
+  public TCPStatus() {}
+
   public TCPStatus(
       String dest,
       int numFlows,
@@ -85,7 +87,7 @@ public class TCPStatus extends MetricStatus {
   }
 
   @JsonProperty(TCPValue.Constants.SSTHRESH_VALUE)
-  public double getSSThresh() {
+  public double getSsThresh() {
     return ssThresh;
   }
 }

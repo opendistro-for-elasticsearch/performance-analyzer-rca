@@ -268,8 +268,8 @@ dependencies {
     }
 
     compile 'org.jooq:jooq:3.10.8'
-    compile 'org.bouncycastle:bcprov-jdk15on:1.66'
-    compile 'org.bouncycastle:bcpkix-jdk15on:1.66'
+    compile 'org.bouncycastle:bcprov-jdk15on:1.68'
+    compile 'org.bouncycastle:bcpkix-jdk15on:1.68'
     compile 'org.xerial:sqlite-jdbc:3.32.3.2'
     compile 'com.google.guava:guava:28.2-jre'
     compile 'com.fasterxml.jackson.core:jackson-annotations:2.10.4'

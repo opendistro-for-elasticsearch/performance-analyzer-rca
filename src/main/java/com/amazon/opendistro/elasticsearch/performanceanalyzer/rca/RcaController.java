@@ -526,7 +526,8 @@ public class RcaController {
     return rcaConf;
   }
 
-  public void setDbProvider(Queryable dbProvider) {
+  @VisibleForTesting
+  public void setDbProvider(Queryable dbProvider) throws InterruptedException {
     this.dbProvider = dbProvider;
   }
 

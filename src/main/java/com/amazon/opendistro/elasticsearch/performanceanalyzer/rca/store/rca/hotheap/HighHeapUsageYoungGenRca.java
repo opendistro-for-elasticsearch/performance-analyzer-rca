@@ -15,7 +15,6 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotheap;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.EDEN;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.OLD_GEN;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_FULL_GC;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.TOT_YOUNG_GC;
@@ -278,7 +277,7 @@ public class HighHeapUsageYoungGenRca extends Rca<ResourceFlowUnit<HotResourceSu
       Result<Record> records = gcTypeFlowUnit.getData();
       for (final Record record : records) {
         final String memType = record.get(memTypeField);
-        if (EDEN.toString().equals(memType)) {
+        if (OLD_GEN.toString().equals(memType)) {
           return CMS_COLLECTOR.equals(record.get(collectorField));
         }
       }

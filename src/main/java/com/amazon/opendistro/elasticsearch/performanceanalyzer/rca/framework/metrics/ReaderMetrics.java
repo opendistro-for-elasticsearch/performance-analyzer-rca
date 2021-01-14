@@ -15,6 +15,26 @@ public enum ReaderMetrics implements MeasurementSet {
     METRICSDB_FILE_SIZE("MetricsdbFileSize", "bytes", Arrays.asList(Statistics.MAX, Statistics.MEAN)),
 
     /**
+     * Number of compressed and uncompressed metricsdb files.
+     */
+    METRICSDB_NUM_FILES("MetricsdbNumFiles", "count", Statistics.SAMPLE),
+
+    /**
+     * Size of compressed and uncompressed metricsdb files.
+     */
+    METRICSDB_SIZE_FILES("MetricsdbSizeFiles", "bytes", Statistics.SAMPLE),
+
+    /**
+     * Number of uncompressed metricsdb files.
+     */
+    METRICSDB_NUM_UNCOMPRESSED_FILES("MetricsdbNumUncompressedFiles", "count", Statistics.SAMPLE),
+
+    /**
+     * Size of uncompressed metricsdb files.
+     */
+    METRICSDB_SIZE_UNCOMPRESSED_FILES("MetricsdbSizeUncompressedFiles", "bytes", Statistics.SAMPLE),
+
+    /**
      * Whether or not batch metrics is enabled (0 for enabled, 1 for disabled).
      */
     BATCH_METRICS_ENABLED("BatchMetricsEnabled", "count", Statistics.SAMPLE),
@@ -44,18 +64,6 @@ public enum ReaderMetrics implements MeasurementSet {
      */
     BATCH_METRICS_QUERY_PROCESSING_TIME("BatchMetricsQueryProcessingTime", "millis",
         Arrays.asList(Statistics.MAX, Statistics.MEAN, Statistics.SUM)),
-
-    /**
-     * Number of metricsdb files associated with batch metrics.
-     */
-    BATCH_METRICS_NUM_METRICSDB_FILES("BatchMetricsNumMetricsdbFiles", "count",
-        Arrays.asList(Statistics.MAX, Statistics.MEAN)),
-
-    /**
-     * Amount of locally stored data within the batch metrics retention period.
-     */
-    BATCH_METRICS_DATA_SIZE("BatchMetricsDataSize", "bytes",
-        Arrays.asList(Statistics.MAX, Statistics.MEAN)),
 
     /**
      * Amount of time taken to emit Shard State metrics.

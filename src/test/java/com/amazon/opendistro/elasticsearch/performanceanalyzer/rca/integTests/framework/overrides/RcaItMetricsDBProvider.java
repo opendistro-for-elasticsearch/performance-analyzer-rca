@@ -65,4 +65,8 @@ public class RcaItMetricsDBProvider extends MetricsDBProvider {
     db.createMetric(metric, Arrays.asList(dimensionNames));
     db.putMetric(metric, dimensions, 0);
   }
+
+  public void clearTable(String metricName) {
+    db.deleteMetric(metricName);
+  }
 }
