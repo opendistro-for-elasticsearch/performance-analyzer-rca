@@ -32,6 +32,7 @@ plugins {
     id "de.undercouch.download" version "4.0.4"
     id 'com.adarshr.test-logger' version '2.1.0'
     id 'org.gradle.test-retry' version '1.2.0'
+    id 'com.diffplug.spotless' version '5.8.2'
 }
 
 application {
@@ -85,6 +86,26 @@ ext {
 checkstyle {
     toolVersion '8.24'
     configFile file("configs/checkstyle/checkstyle.xml")
+}
+
+apply plugin: 'com.diffplug.spotless'
+
+spotless {
+    java {
+        licenseHeaderFile(file('license-header'))
+
+        // only apply formatting rules to updated files
+        // ratchetFrom 'origin/master'
+
+        // googleJavaFormat()
+        // importOrder()
+        // removeUnusedImports()
+        // trimTrailingWhitespace()
+        // endWithNewLine()
+
+        // add support for spotless:off and spotless:on tags to exclude sections of code
+        // toggleOffOn()
+    }
 }
 
 tasks.withType(Checkstyle) {
@@ -226,6 +247,7 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 compileJava {
+    dependsOn spotlessApply
     JavaVersion targetVersion = JavaVersion.toVersion(targetCompatibility);
     if (targetVersion.isJava9Compatible()) {
         options.compilerArgs += ["--add-exports", "jdk.attach/sun.tools.attach=ALL-UNNAMED"]
