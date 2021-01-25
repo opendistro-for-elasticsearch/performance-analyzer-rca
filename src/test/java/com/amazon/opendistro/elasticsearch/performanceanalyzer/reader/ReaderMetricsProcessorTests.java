@@ -145,20 +145,20 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
         new MemoryDBSnapshot(conn, MetricName.MASTER_PENDING, 6001L);
     long lastUpdateTime1 = 2000L;
     masterPendingSnap1.setLastUpdatedTime(lastUpdateTime1);
-    Object[][] values1 = {{0}};
+    Object[][] values1 = {{"delete-index",0}};
     masterPendingSnap1.insertMultiRows(values1);
 
     MemoryDBSnapshot masterPendingSnap2 =
         new MemoryDBSnapshot(conn, MetricName.MASTER_PENDING, 11001L);
     long lastUpdateTime2 = 7000L;
     masterPendingSnap2.setLastUpdatedTime(lastUpdateTime2);
-    Object[][] values2 = {{1}};
+    Object[][] values2 = {{"create-index",1}};
     masterPendingSnap2.insertMultiRows(values2);
 
     MemoryDBSnapshot masterPendingSnap3 =
         new MemoryDBSnapshot(conn, MetricName.MASTER_PENDING, 16001L);
     masterPendingSnap2.setLastUpdatedTime(lastUpdateTime3);
-    Object[][] values3 = {{3}};
+    Object[][] values3 = {{"updateSnapshot",3}};
     masterPendingSnap3.insertMultiRows(values3);
 
     NavigableMap<Long, MemoryDBSnapshot> metricMap = new TreeMap<>();
@@ -222,11 +222,15 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
             masterPendingFinal);
 
     Result<Record> res = alignedWindow.fetchAll();
-    assertTrue(1 == res.size());
+    assertTrue(2 == res.size());
+
     Field<Double> valueField =
         DSL.field(MasterPendingValue.MASTER_PENDING_QUEUE_SIZE.toString(), Double.class);
     Double pending = Double.parseDouble(res.get(0).get(valueField).toString());
-    assertEquals(2.2d, pending, 0.001);
+    assertEquals(1.0d,pending,0.001);
+    pending = Double.parseDouble(res.get(1).get(valueField).toString());
+    assertEquals(3.0d, pending, 0.001);
+
   }
 
   @Test
@@ -251,14 +255,20 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
         db);
 
     Result<Record> res = db.queryMetric(MasterPendingValue.MASTER_PENDING_QUEUE_SIZE.toString());
+    assertTrue(2 == res.size());
 
-    assertTrue(1 == res.size());
-
-    Record row0 = res.get(0);
-    for (int i = 0; i < row0.size(); i++) {
-      Double pending = Double.parseDouble(row0.get(i).toString());
-      assertEquals(2.2d, pending, 0.001);
+    Record row = res.get(0);
+    for (int i = 1; i < row.size(); i++) {
+      Double pending = Double.parseDouble(row.get(i).toString());
+      assertEquals(1.0d, pending, 0.001);
     }
+
+    row = res.get(1);
+    for (int i = 1; i < row.size(); i++) {
+      Double pending = Double.parseDouble(row.get(i).toString());
+      assertEquals(3.0d, pending, 0.001);
+    }
+
     db.remove();
   }
 
@@ -295,10 +305,10 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
 
     assertTrue(1 == res.size());
 
-    Record row0 = res.get(0);
-    for (int i = 0; i < row0.size(); i++) {
-      Double pending = Double.parseDouble(row0.get(i).toString());
-      assertEquals(3.0, pending, 0.001);
+    Record row = res.get(0);
+    for (int i = 1; i < row.size(); i++) {
+      Double pending = Double.parseDouble(row.get(i).toString());
+      assertEquals(3.0d, pending, 0.001);
     }
 
     // db tables should not be deleted

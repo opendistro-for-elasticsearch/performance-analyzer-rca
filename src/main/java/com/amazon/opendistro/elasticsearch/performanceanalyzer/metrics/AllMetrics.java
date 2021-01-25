@@ -821,6 +821,25 @@ public class AllMetrics {
     }
   }
 
+  public enum MasterPendingTaskDimension implements MetricDimension {
+    MASTER_PENDING_TASK_TYPE(Constants.PENDING_TASK_TYPE);
+
+    private final String value;
+
+    MasterPendingTaskDimension(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String PENDING_TASK_TYPE = "Master_PendingTaskType";
+    }
+  }
+
   public enum MasterThrottlingValue implements MetricValue {
     /**
      * Sum of total pending tasks throttled by master node.
