@@ -34,7 +34,7 @@ public class Util {
           + File.separator
           + "plugins"
           + File.separator
-          + "opendistro_performance_analyzer"
+          + "opendistro-performance-analyzer"
           + File.separator;
   public static final String READER_LOCATION =
           ES_HOME
