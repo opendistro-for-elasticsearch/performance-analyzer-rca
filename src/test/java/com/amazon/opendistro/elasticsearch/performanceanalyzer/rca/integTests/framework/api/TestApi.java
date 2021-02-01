@@ -67,6 +67,16 @@ public class TestApi {
    * This API let's a gauntlet test writer swap out the metricsDB for a new one.
    *
    * @param clz The class whose AMetric@ should be used to replace it
+   * @throws Exception Throws Exception
+   */
+  public void updateMetrics(Class<?> clz) throws Exception {
+    updateMetrics(clz, false);
+  }
+
+  /**
+   * This API let's a gauntlet test writer swap out the metricsDB for a new one.
+   *
+   * @param clz The class whose AMetric@ should be used to replace it
    * @param reloadDB whether to refresh entire DB or update tables in existing DB
    * @throws Exception Throws Exception
    */
