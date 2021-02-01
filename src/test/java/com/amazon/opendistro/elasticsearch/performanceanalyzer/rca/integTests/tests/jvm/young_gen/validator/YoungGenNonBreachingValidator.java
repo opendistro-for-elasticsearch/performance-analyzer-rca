@@ -2,11 +2,8 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.t
 
 import static org.junit.Assert.assertNotEquals;
 
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.CacheClearAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.HeapSizeIncreaseAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.JvmGenAction;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyCacheMaxSizeAction;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ModifyQueueCapacityAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.api.IValidator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.actions.PersistedAction;
 
@@ -24,11 +21,6 @@ public class YoungGenNonBreachingValidator implements IValidator {
   }
 
   private boolean checkPersistedAction(PersistedAction persistedAction) {
-    //validate no old gen action is emitted
-//    assertNotEquals(ModifyCacheMaxSizeAction.NAME, persistedAction.getActionName());
-//    assertNotEquals(ModifyQueueCapacityAction.NAME, persistedAction.getActionName());
-//    assertNotEquals(CacheClearAction.NAME, persistedAction.getActionName());
-
     //validate no heapSizeIncreaseAction is emitted
     assertNotEquals(HeapSizeIncreaseAction.NAME, persistedAction.getActionName());
 
