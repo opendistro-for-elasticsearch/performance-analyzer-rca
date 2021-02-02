@@ -21,7 +21,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.GC_Collection_Event;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.GC_Collection_Time;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.GC_Type;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Used;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.RcaItMarker;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.annotations.AClusterType;
@@ -140,7 +139,7 @@ public class YoungGenMissingMetricsTest {
 
   @Test
   @AExpect(
-      what = Type.DB_QUERY,
+      what = Type.REST_API,
       on = HostTag.ELECTED_MASTER,
       validator = YoungGenNonBreachingValidator.class,
       forRca = PersistedAction.class,
@@ -204,7 +203,7 @@ public class YoungGenMissingMetricsTest {
 
   @Test
   @AExpect(
-      what = Type.DB_QUERY,
+      what = Type.REST_API,
       on = HostTag.ELECTED_MASTER,
       validator = YoungGenNonBreachingValidator.class,
       forRca = PersistedAction.class,

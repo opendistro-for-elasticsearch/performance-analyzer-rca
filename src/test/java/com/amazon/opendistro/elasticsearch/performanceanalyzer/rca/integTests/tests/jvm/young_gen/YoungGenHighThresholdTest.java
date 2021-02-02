@@ -157,7 +157,7 @@ public class YoungGenHighThresholdTest {
   @ARcaConf(dataNode = YoungGenITConstants.RCA_HIGH_THRESHOLD_CONF_PATH, electedMaster =
       YoungGenITConstants.RCA_MASTER_CONF_PATH)
   @AExpect(
-      what = Type.DB_QUERY,
+      what = Type.REST_API,
       on = HostTag.ELECTED_MASTER,
       validator = YoungGenNonBreachingValidator.class,
       forRca = PersistedAction.class,
@@ -223,7 +223,7 @@ public class YoungGenHighThresholdTest {
   @ARcaConf(dataNode = YoungGenITConstants.RCA_CONF_PATH, electedMaster =
       YoungGenITConstants.RCA_MASTER_HIGH_THRESHOLD_CONF_PATH)
   @AExpect(
-      what = Type.DB_QUERY,
+      what = Type.REST_API,
       on = HostTag.ELECTED_MASTER,
       validator = YoungGenNonBreachingValidator.class,
       forRca = PersistedAction.class,
