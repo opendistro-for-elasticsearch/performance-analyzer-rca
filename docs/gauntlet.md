@@ -24,6 +24,7 @@ ARcaGraph|Yes|Class or Method|value|No|The RCA graph that will be executed by th
 AMetric|Yes|Class or Method|name, dimensionNames, tables|Yes|The metrics that will flow through the edges of the RCA graph. This is probably the most complicated annotation and is better understood with an example. Please checkout `class RcaItPocDedicated`.
 Expect|No|Method|what, on, timeoutSeconds, validator, forRca|Yes|If you want the framework to test for an expected condition at steady state to pass or fail a test.
 AErrorPatternIgnored|No|Method|pattern, reason|Yes|If you want the checking framework to bypass certain pattern in error logs.
+ARcaConf|No|Class or Method|value|No| This annotation can be used to specify an rca.conf file. Usually tests don't need to provide the rca.conf
 
 __@RunWith(RcaItNotEncryptedRunner.class)__
 
@@ -126,6 +127,9 @@ would be okay to ignore such an error. The reason is most for the reader of the 
 A test class can get access to the programmaticAPI to get information about hosts in the cluster
 or a particular host then the test class can declare a method with name `setTestApi(final TestApi api)`
 and the test runner will call this setter to give a reference of the TestApi to the testClass.
+
+__@ARcaConf__
+This annotation can be used to specify an rca.conf file. Usually tests don't need to provide the rca.conf. Therefore, it uses the rca.conf* files in the test/resources as defaults.
 
 ### Cluster Types
 The integration test framework let's us create three kinds of clusters as mentioned above. But

@@ -5,4 +5,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.fr
 public final class YoungGenITConstants {
   public static final String RCA_CONF_PATH = Consts.TEST_RESOURCES_DIR + "young_gen/rca.conf";
   public static final String RCA_MASTER_CONF_PATH = Consts.TEST_RESOURCES_DIR + "young_gen/rca_master.conf";
+
+  public static final String RCA_HIGH_THRESHOLD_CONF_PATH = Consts.TEST_RESOURCES_DIR + "young_gen/rca_high_threshold.conf";
+  public static final String RCA_MASTER_HIGH_THRESHOLD_CONF_PATH = Consts.TEST_RESOURCES_DIR + "young_gen/rca_master_high_threshold.conf";
 }

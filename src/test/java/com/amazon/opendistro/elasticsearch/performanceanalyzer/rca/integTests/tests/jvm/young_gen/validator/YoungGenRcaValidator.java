@@ -1,4 +1,4 @@
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.jvm.young_gen;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.jvm.young_gen.validator;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.MetricEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
