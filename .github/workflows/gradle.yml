@@ -3,36 +3,38 @@ name: Java CI
 on: 
   push: 
     branches: 
-      - main
-      - dev
-
+      - fargate-ci
   pull_request:
     branches: 
       - main
       - dev
+      - fargate-ci
 
 jobs:
   build_rca_pkg:
     runs-on: [ubuntu-latest]
     name: Building RCA package
+    env:
+      AWS_REGION: us-west-2
     steps:
+    - name: Set up JDK 1.12
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.12
     - name: Checkout RCA package
       uses: actions/checkout@v2
       with:
         path: ./tmp/performance-analyzer-rca
-    # fetch the main branch to make it available for spotless ratcheting
-    - name: Fetch 'main' branch
+      # fetch the main branch to make it available for spotless ratcheting
+    - name: Fetch RCA 'main' branch
       working-directory:  ./tmp/performance-analyzer-rca
       run: git fetch --depth=1 origin main
     - name: Checkout Performance Analyzer package
       uses: actions/checkout@v2
       with:
         repository: opendistro-for-elasticsearch/performance-analyzer
-        path: ./tmp/pa
-    - name: Set up JDK 1.12
-      uses: actions/setup-java@v1
-      with:
-        java-version: 1.12
+        ref: fargate-ci
+        path: ./tmp/performance-analyzer
     - name: Build RCA with Gradle
       working-directory:  ./tmp/performance-analyzer-rca
       run: ./gradlew build --stacktrace
@@ -53,22 +55,119 @@ jobs:
       working-directory: ./tmp/performance-analyzer-rca
       run: ./gradlew publishToMavenLocal
     - name: Build PA gradle using the new RCA jar
-      working-directory: ./tmp/pa
+      working-directory: ./tmp/performance-analyzer
       run: rm licenses/performanceanalyzer-rca-1.13.jar.sha1
     - name: Update SHA
-      working-directory: ./tmp/pa
+      working-directory: ./tmp/performance-analyzer
       run: ./gradlew updateShas
-    - name: Set docker-compose path
-      run: DOCKER_COMPOSE_LOCATION=$(which docker-compose)
-      # Set the vm.max_map_count system property to the minimum required to run Elasticsearch
-    - name: Set vm.max_map_count
-      run: sudo sysctl -w vm.max_map_count=262144
     - name: Build PA and run Unit Tests
-      working-directory: ./tmp/pa
+      working-directory: ./tmp/performance-analyzer
       run: ./gradlew build -i
-    - name: Spin up Docker cluster for integ testing
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.RCA_TESTS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.RCA_TESTS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+    - name: Log in to ECR
+      uses: aws-actions/amazon-ecr-login@v1
+      id: login-ecr
+    - name: Copy build artifacts
       working-directory: ./tmp/performance-analyzer-rca
-      run: ./gradlew enableRca
-    - name: Run integration tests
-      working-directory: ./tmp/pa
-      run: ./gradlew integTest --info --stacktrace -Dtests.enableIT=true
+      run: ./gradlew copyDockerArtifacts
+    - name: Push Elasticsearch docker image to ECR
+      working-directory: ./tmp/performance-analyzer-rca/build/elasticsearch-docker
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: rca-tests-es-pa-rca
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+    - name: Push Testrunner docker image to ECR
+      working-directory: ./tmp/performance-analyzer-rca/build/testrunner-docker
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: rca-tests-testrunner
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+  rca_integration_tests:
+    runs-on: [ubuntu-latest]
+    name: Running RCA integration tests
+    needs: build_rca_pkg
+    env:
+      AWS_REGION: us-west-2
+    steps:
+      - name: Checkout RCA package
+        uses: actions/checkout@v2
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.RCA_TESTS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.RCA_TESTS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Log in to ECR
+        uses: aws-actions/amazon-ecr-login@v1
+        id: login-ecr
+      - name: Debug image name
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: rca-tests-testrunner
+          IMAGE_TAG: ${{ github.sha }}
+        run: echo $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      - name: Render task definition
+        id: render-task-definition
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: rca-tests-testrunner
+          IMAGE_TAG: ${{ github.sha }}
+        with:
+          task-definition: ./configs/aws/task-definition.rca-it.json
+          container-name: testrunner
+          image: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+      - name: Debug task definition file
+        run: cat ${{ steps.render-task-definition.outputs.task-definition }}
+      - name: Deploy to ECS
+        id: deploy-to-ecs
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.render-task-definition.outputs.task-definition }}
+          cluster: rca-tests-cluster
+      - name: Wait for tests
+        run: |
+          set -euxo pipefail
+
+          # Run the IT task
+          TASK_ARN=$(aws ecs run-task --cluster rca-tests-cluster --task-definition ${{ steps.deploy-to-ecs.outputs.task-definition-arn }} --network-configuration '{"awsvpcConfiguration":{"subnets":["${{ secrets.RCA_TESTS_PUBLIC_SUBNET_1 }}","${{ secrets.RCA_TESTS_PUBLIC_SUBNET_2 }}"],"securityGroups":["${{ secrets.RCA_TESTS_SECURITY_GROUP }}"],"assignPublicIp":"ENABLED"}}' --launch-type FARGATE --region $AWS_REGION | jq '.tasks[0].taskArn')
+
+          # Extract the task ID from the full ARN
+          TASK_ID=$(echo $TASK_ARN | sed -n 's/.*\/\([^/]*\)"$/\1/p')
+
+          # Check the task status
+          CURRENT_STATUS=$(aws ecs describe-tasks --cluster rca-tests-cluster --tasks $TASK_ID --region $AWS_REGION | jq '.tasks[0].lastStatus');
+          echo "Current status is: $CURRENT_STATUS"
+          while [ $CURRENT_STATUS != "STOPPED" ];
+            do sleep 1m;
+            CURRENT_STATUS=$(aws ecs describe-tasks --cluster rca-tests-cluster --tasks $TASK_ID --region $AWS_REGION | jq '.tasks[0].lastStatus');
+            echo "Current status is: $CURRENT_STATUS"
+          done;
+
+          EXIT_CODE = $(aws ecs describe-tasks --cluster rca-tests-cluster --tasks $TASK_ID --region $AWS_REGION | jq '.tasks[0].containers[0].exitCode')
+          if [ $EXIT_CODE = null ];
+            echo Missing exit code;
+            exit 1;
+          fi
+          exit $EXIT_CODE
+
+    # - name: Spin up Docker cluster for integ testing
+    #   working-directory: ./tmp/performance-analyzer-rca
+    #   run: ./gradlew enableRca
+    # - name: Run integration tests
+    #   working-directory: ./tmp/pa
+    #   run: ./gradlew integTest --info --stacktrace -Dtests.enableIT=true
+    # - name: Build Docker image
+    #   working-directory: ./tmp/performance-analyzer-rca
+    #   run: ./gradlew buildDocker
