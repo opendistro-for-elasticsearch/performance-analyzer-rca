@@ -74,9 +74,13 @@
         <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence.FileRotate"/>
         <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
     </Match>
-        <Match>
+    <Match>
         <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.samplers.MetricsDBFileSampler"/>
         <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
+    </Match>
+    <Match>
+        <Class name="com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.AdmissionControlProcessor"/>
+        <Bug pattern="URF_UNREAD_FIELD"/>
     </Match>
     <!--Exclude gRPC generated classes-->
     <Match>
