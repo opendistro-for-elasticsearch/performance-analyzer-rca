@@ -92,19 +92,18 @@ apply plugin: 'com.diffplug.spotless'
 
 spotless {
     java {
-        licenseHeaderFile(file('license-header'))
-
         // only apply formatting rules to updated files
-        // ratchetFrom 'origin/master'
+        ratchetFrom 'origin/main'
 
-        // googleJavaFormat()
-        // importOrder()
-        // removeUnusedImports()
-        // trimTrailingWhitespace()
-        // endWithNewLine()
+        licenseHeaderFile(file('license-header'))
+        googleJavaFormat()
+        importOrder()
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
 
         // add support for spotless:off and spotless:on tags to exclude sections of code
-        // toggleOffOn()
+        toggleOffOn()
     }
 }
 

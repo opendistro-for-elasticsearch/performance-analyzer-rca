@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020-2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer;
 
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.InstanceDetails;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCache;
@@ -28,10 +29,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * The PA agent process is composed of multiple components. The PA Reader and RCA are two such components that are
- * independent in a way they process information but also share some information such as the node and the cluster
- * details. Today, some of these information is accessed by calling static methods and members. This is a bad idea.
- * This class encapsulates such information and is created right at the start in the {@code PerformanceAnalyzerApp}.
+ * The PA agent process is composed of multiple components. The PA Reader and RCA are two such
+ * components that are independent in a way they process information but also share some information
+ * such as the node and the cluster details. Today, some of these information is accessed by calling
+ * static methods and members. This is a bad idea. This class encapsulates such information and is
+ * created right at the start in the {@code PerformanceAnalyzerApp}.
  */
 public class AppContext {
   private volatile ClusterDetailsEventProcessor clusterDetailsEventProcessor;
@@ -47,22 +49,26 @@ public class AppContext {
   }
 
   public AppContext(AppContext other) {
-    this.clusterDetailsEventProcessor = new ClusterDetailsEventProcessor(other.clusterDetailsEventProcessor);
+    this.clusterDetailsEventProcessor =
+        new ClusterDetailsEventProcessor(other.clusterDetailsEventProcessor);
 
     // Initializing this as we don't want to copy the entire cache.
     this.nodeConfigCache = new NodeConfigCache();
     this.mutedActions = ImmutableSet.copyOf(other.getMutedActions());
   }
 
-  public void setClusterDetailsEventProcessor(final ClusterDetailsEventProcessor clusterDetailsEventProcessor) {
+  public void setClusterDetailsEventProcessor(
+      final ClusterDetailsEventProcessor clusterDetailsEventProcessor) {
     this.clusterDetailsEventProcessor = clusterDetailsEventProcessor;
   }
 
   public InstanceDetails getMyInstanceDetails() {
     InstanceDetails ret = new InstanceDetails(AllMetrics.NodeRole.UNKNOWN);
 
-    if (clusterDetailsEventProcessor != null && clusterDetailsEventProcessor.getCurrentNodeDetails() != null) {
-      ClusterDetailsEventProcessor.NodeDetails nodeDetails = clusterDetailsEventProcessor.getCurrentNodeDetails();
+    if (clusterDetailsEventProcessor != null
+        && clusterDetailsEventProcessor.getCurrentNodeDetails() != null) {
+      ClusterDetailsEventProcessor.NodeDetails nodeDetails =
+          clusterDetailsEventProcessor.getCurrentNodeDetails();
       ret = new InstanceDetails(nodeDetails);
     }
     return ret;
@@ -71,8 +77,8 @@ public class AppContext {
   /**
    * Can be used to get all the nodes in the cluster.
    *
-   * @return Returns an empty list of the details are not available or else it provides the immutable list of nodes in
-   *     the cluster.
+   * @return Returns an empty list of the details are not available or else it provides the
+   *     immutable list of nodes in the cluster.
    */
   public List<InstanceDetails> getAllClusterInstances() {
     List<InstanceDetails> ret = Collections.EMPTY_LIST;
@@ -107,10 +113,9 @@ public class AppContext {
 
   public Set<InstanceDetails> getPeerInstances() {
     return ImmutableSet.copyOf(
-            getAllClusterInstances()
-                    .stream()
-                    .skip(1)  // Skipping the first instance as it is self.
-                    .collect(Collectors.toSet()));
+        getAllClusterInstances().stream()
+            .skip(1) // Skipping the first instance as it is self.
+            .collect(Collectors.toSet()));
   }
 
   public NodeConfigCache getNodeConfigCache() {
@@ -118,12 +123,10 @@ public class AppContext {
   }
 
   public InstanceDetails getInstanceById(InstanceDetails.Id instanceIdKey) {
-    return getPeerInstances()
-            .stream()
-            .filter(
-                    x -> x.getInstanceId().equals(instanceIdKey))
-            .findFirst()
-            .orElse(new InstanceDetails(AllMetrics.NodeRole.UNKNOWN));
+    return getPeerInstances().stream()
+        .filter(x -> x.getInstanceId().equals(instanceIdKey))
+        .findFirst()
+        .orElse(new InstanceDetails(AllMetrics.NodeRole.UNKNOWN));
   }
 
   public boolean isActionMuted(final String action) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019-2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -77,8 +77,7 @@ public class RcaSpecTests {
       }
 
       @Override
-      public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-      }
+      public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {}
     }
 
     class AnalysisGraphX extends AnalysisGraph {
@@ -113,7 +112,8 @@ public class RcaSpecTests {
   // @Test(expected = RuntimeException.class)
   public void testAddToFlowFieldBeforeAddingAsDependency() {
     Metric heapUsed = new Heap_Used(5);
-    HighHeapUsageOldGenRca highHeapUsageOldGenRca = new HighHeapUsageOldGenRca(1, heapUsed, null, null, null);
+    HighHeapUsageOldGenRca highHeapUsageOldGenRca =
+        new HighHeapUsageOldGenRca(1, heapUsed, null, null, null);
     highHeapUsageOldGenRca.addAllUpstreams(Collections.singletonList(heapUsed));
   }
 
@@ -202,8 +202,7 @@ public class RcaSpecTests {
       }
 
       @Override
-      public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-      }
+      public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {}
     }
 
     class TestRCA2 extends Rca {
@@ -218,8 +217,7 @@ public class RcaSpecTests {
       }
 
       @Override
-      public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-      }
+      public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {}
     }
 
     class TestRCA3 extends Rca {
@@ -234,8 +232,7 @@ public class RcaSpecTests {
       }
 
       @Override
-      public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-      }
+      public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {}
     }
 
     class TestGraph extends AnalysisGraph {
@@ -262,6 +259,7 @@ public class RcaSpecTests {
         addLeaf(m4);
         addLeaf(m5);
 
+        // spotless:off
         /*
            m1      m2      m3    m4      m5
             \     /       /      /        |
@@ -275,6 +273,7 @@ public class RcaSpecTests {
                      \   /
                       r2
         */
+        // spotless:on
 
         s1.addAllUpstreams(Arrays.asList(m1, m2));
         s2.addAllUpstreams(Arrays.asList(s1, m3));
