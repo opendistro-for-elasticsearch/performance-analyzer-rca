@@ -41,6 +41,7 @@ public class AllMetrics {
     THREAD_POOL,
     SHARD_STATS,
     MASTER_PENDING,
+    ELECTION_TERM,
     MOUNTED_PARTITION_METRICS
   }
 
@@ -818,6 +819,25 @@ public class AllMetrics {
 
     public static class Constants {
       public static final String PENDING_TASKS_COUNT_VALUE = "Master_PendingQueueSize";
+    }
+  }
+
+  public enum ElectionTermValue implements MetricValue {
+    ELECTION_TERM(Constants.ELECTION_TERM_VALUE);
+
+    private final String value;
+
+    ElectionTermValue(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return this.value;
+    }
+
+    public static class Constants {
+      public static final String ELECTION_TERM_VALUE = "Election_Term";
     }
   }
 

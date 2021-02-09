@@ -53,7 +53,9 @@ public enum ExceptionsAndErrors implements MeasurementSet {
 
   MASTER_THROTTLING_COLLECTOR_ERROR("MasterThrottlingMetricsCollector"),
 
-  FAULT_DETECTION_COLLECTOR_ERROR("FaultDetectionMetricsCollector");
+  FAULT_DETECTION_COLLECTOR_ERROR("FaultDetectionMetricsCollector"),
+
+  ELECTION_TERM_COLLECTOR_ERROR("ElectionTermCollectorError");
 
   /** What we want to appear as the metric name. */
   private String name;
