@@ -20,8 +20,8 @@ jobs:
       uses: actions/checkout@v2
       with:
         path: ./tmp/performance-analyzer-rca
+    # fetch the main branch to make it available for spotless ratcheting
     - name: Fetch 'main' branch
-      description: Fetch the 'main' branch to make it available for spotless ratcheting
       working-directory:  ./tmp/performance-analyzer-rca
       run: git fetch --depth=1 origin main
     - name: Checkout Performance Analyzer package
