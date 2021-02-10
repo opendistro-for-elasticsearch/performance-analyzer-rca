@@ -73,10 +73,6 @@ public class CpuUtilDimensionTemperatureRca extends Rca<DimensionalTemperatureFl
                 THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT);
         LOG.info("CPU Utilization temperature calculated: {}",
                 cpuUtilTemperatureFlowUnit.getNodeDimensionProfile());
-        ResourceContext context = (cpuUtilTemperatureFlowUnit.getNodeDimensionProfile().getMeanTemperature()
-                .isGreaterThan(THRESHOLD_NORMALIZED_VAL_FOR_HEAT_ZONE_ASSIGNMENT)) ? new ResourceContext(Resources.State.UNHEALTHY) :
-                new ResourceContext(Resources.State.HEALTHY);
-        cpuUtilTemperatureFlowUnit.setResourceContext(context);
         return cpuUtilTemperatureFlowUnit;
     }
 }

@@ -149,8 +149,10 @@ public class ClusterTemperatureSummary extends GenericSummary {
         JsonArray nodesArr = new JsonArray();
         String elemName = "";
         for (CompactClusterLevelNodeSummary nodeSummary : nodes) {
-            nodesArr.add(nodeSummary.toJson());
-            elemName = nodeSummary.TABLE_NAME;
+            if (nodeSummary != null) {
+                nodesArr.add(nodeSummary.toJson());
+                elemName = nodeSummary.TABLE_NAME;
+            }
         }
         if (!elemName.isEmpty()) {
             summaryObj.add(elemName, nodesArr);

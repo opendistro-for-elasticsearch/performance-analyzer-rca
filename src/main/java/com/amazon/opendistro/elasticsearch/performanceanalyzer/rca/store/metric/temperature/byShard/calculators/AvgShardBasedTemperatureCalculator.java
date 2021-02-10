@@ -53,7 +53,7 @@ public class AvgShardBasedTemperatureCalculator extends ShardBasedTemperatureCal
 
         selectFieldsList.clear();
 
-        Field<?> avgOverShards = DSL.avg(DSL.field(DSL.name(ALIAS), Double.class)).as("shard_avg");
+        Field<?> avgOverShards = DSL.avg(DSL.field(DSL.name(ALIAS), Double.class)).as(SHARD_AVG);
 
         selectFieldsList.add(avgOverShards);
         Result<?> r = context.select(avgOverShards).from(sumByIndexShardGroupsClause).fetch();

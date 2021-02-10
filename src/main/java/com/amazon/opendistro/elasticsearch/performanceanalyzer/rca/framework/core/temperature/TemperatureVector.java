@@ -20,6 +20,16 @@ import com.google.gson.JsonObject;
 import java.util.Comparator;
 import javax.annotation.Nullable;
 
+/**
+ * This vector contains the normalized values across dimensions.
+ * normalized[0] gives the normalized value of the CPU on a scale of 0-10.
+ * This can be on a shard level as well as on a node level.
+ * On a shard level the normalized value is computed taking the resource used
+ * by that shard and the total used in the node.
+ * On a node level the normalized value is computed by taking into account the
+ * average usage by shards and the total used in the node.
+ */
+
 public class TemperatureVector {
     public static final String DIMENSION_KEY = "dimension";
     public static final String VALUE_KEY = "value";
