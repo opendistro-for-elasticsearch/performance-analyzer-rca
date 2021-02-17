@@ -5,12 +5,12 @@
  * You may not use this file except in compliance with the License.
  * A copy of the License is located at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * or in the "license" file accompanying this file. This file is distributed
  * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
  * express or implied. See the License for the specific language governing
- *  permissions and limitations under the License.
+ * permissions and limitations under the License.
  */
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store;
@@ -306,7 +306,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
     constructShardResourceUsageGraph();
 
-    //constructResourceHeatMapGraph();
+    constructResourceHeatMapGraph();
 
     // Collator - Collects actions from all deciders and aligns impact vectors
     Collator collator = new Collator(queueHealthDecider, cacheHealthDecider, heapHealthDecider);
@@ -454,9 +454,9 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     nodeTemperatureRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     nodeTemperatureRca.addAllUpstreams(Arrays.asList(cpuUtilHeat, heapAllocRateHeat, shardSizeHeat));
 
-    ClusterTemperatureRca clusterTemperatureRca = new ClusterTemperatureRca(nodeTemperatureRca);
-    clusterTemperatureRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    clusterTemperatureRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
-    clusterTemperatureRca.addAllUpstreams(Collections.singletonList(nodeTemperatureRca));
+    //    ClusterTemperatureRca clusterTemperatureRca = new ClusterTemperatureRca(nodeTemperatureRca);
+    //    clusterTemperatureRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    //    clusterTemperatureRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
+    //    clusterTemperatureRca.addAllUpstreams(Collections.singletonList(nodeTemperatureRca));
   }
 }

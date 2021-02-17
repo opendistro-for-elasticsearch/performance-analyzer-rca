@@ -1,3 +1,18 @@
+/*
+ * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.RcaControllerHelper;
@@ -39,7 +54,7 @@ public class TestEnvironment {
 
       if (testClass.isAnnotationPresent(AMetric.Metrics.class)
           || testClass.isAnnotationPresent(AMetric.class)) {
-        updateMetricsDB((AMetric[]) testClass.getAnnotationsByType(AMetric.class), env);
+        updateMetricsDB((AMetric[]) testClass.getAnnotationsByType(AMetric.class), env, true);
       }
     }
     if (env.rcaConfMap.isEmpty()) {
@@ -64,7 +79,7 @@ public class TestEnvironment {
       }
 
       if (method.isAnnotationPresent(AMetric.Metrics.class)) {
-        updateMetricsDB(method.getAnnotationsByType(AMetric.class), currentEnv);
+        updateMetricsDB(method.getAnnotationsByType(AMetric.class), currentEnv, true);
       }
     }
   }
@@ -89,8 +104,8 @@ public class TestEnvironment {
     cluster.updateGraph(graphClass);
   }
 
-  private void updateMetricsDB(AMetric[] metrics, Env env) throws Exception {
-    cluster.updateMetricsDB(metrics);
+  private void updateMetricsDB(AMetric[] metrics, Env env, boolean reloadDB) throws Exception {
+    cluster.updateMetricsDB(metrics, reloadDB);
     env.isMetricsDBProviderSet = true;
   }
 

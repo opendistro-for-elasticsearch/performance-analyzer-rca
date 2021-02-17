@@ -1,3 +1,18 @@
+/*
+ * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.api;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.Cluster;
@@ -70,8 +85,19 @@ public class TestApi {
    * @throws Exception Throws Exception
    */
   public void updateMetrics(Class<?> clz) throws Exception {
+    updateMetrics(clz, false);
+  }
+
+  /**
+   * This API let's a gauntlet test writer swap out the metricsDB for a new one.
+   *
+   * @param clz The class whose AMetric@ should be used to replace it
+   * @param reloadDB whether to refresh entire DB or update tables in existing DB
+   * @throws Exception Throws Exception
+   */
+  public void updateMetrics(Class<?> clz, boolean reloadDB) throws Exception {
     if (clz.isAnnotationPresent(AMetric.Metrics.class) || clz.isAnnotationPresent(AMetric.class)) {
-      cluster.updateMetricsDB(clz.getAnnotationsByType(AMetric.class));
+      cluster.updateMetricsDB(clz.getAnnotationsByType(AMetric.class), reloadDB);
     }
   }
 }

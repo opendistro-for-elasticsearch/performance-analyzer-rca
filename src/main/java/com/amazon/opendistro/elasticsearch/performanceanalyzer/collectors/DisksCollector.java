@@ -20,6 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsCo
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.DiskMetricsGenerator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.OSMetricsGenerator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,7 +29,6 @@ public class DisksCollector extends PerformanceAnalyzerMetricsCollector
 
   private static final int sTimeInterval =
       MetricsConfiguration.CONFIG_MAP.get(DisksCollector.class).samplingInterval;
-  private StringBuilder value = new StringBuilder();
 
   public DisksCollector() {
     super(sTimeInterval, "DisksCollector");
@@ -47,8 +47,11 @@ public class DisksCollector extends PerformanceAnalyzerMetricsCollector
 
   @Override
   public void collectMetrics(long startTime) {
-    DiskMetricsGenerator diskMetricsGenerator =
-        OSMetricsGeneratorFactory.getInstance().getDiskMetricsGenerator();
+    OSMetricsGenerator generator = OSMetricsGeneratorFactory.getInstance();
+    if (generator == null) {
+      return;
+    }
+    DiskMetricsGenerator diskMetricsGenerator = generator.getDiskMetricsGenerator();
     diskMetricsGenerator.addSample();
 
     saveMetricValues(getMetrics(diskMetricsGenerator), startTime);

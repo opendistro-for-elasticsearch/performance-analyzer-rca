@@ -3,14 +3,14 @@
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
- *  A copy of the License is located at
+ * A copy of the License is located at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  or in the "license" file accompanying this file. This file is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- *  express or implied. See the License for the specific language governing
- *  permissions and limitations under the License.
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
  */
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature;
@@ -30,6 +30,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
+
+/**
+ * Full Node Temperature Summary contains the Node Details (ID and Address) and the list of dimensional
+ * summaries for a node. This summary is used to construct the compact node level summary which
+ *  is passed over the wire to the master which is then used to construct the cluster temperature profile.
+*/
 
 public class FullNodeTemperatureSummary extends GenericSummary {
     private static final Logger LOG = LogManager.getLogger(FullNodeTemperatureSummary.class);
@@ -78,7 +84,7 @@ public class FullNodeTemperatureSummary extends GenericSummary {
     public void updateNodeDimensionProfile(NodeLevelDimensionalSummary nodeDimensionProfile) {
         TemperatureDimension dimension = nodeDimensionProfile.getProfileForDimension();
         this.nodeDimensionProfiles[dimension.ordinal()] = nodeDimensionProfile;
-        temperatureVector.updateTemperatureForDimension(dimension, nodeDimensionProfile.getMeanTemperature());
+        this.temperatureVector.updateTemperatureForDimension(dimension, nodeDimensionProfile.getMeanTemperature());
     }
 
     public List<GenericSummary> getNestedSummaryList() {

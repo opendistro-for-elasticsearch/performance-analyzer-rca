@@ -3,14 +3,14 @@
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
- *  A copy of the License is located at
+ * A copy of the License is located at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  or in the "license" file accompanying this file. This file is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- *  express or implied. See the License for the specific language governing
- *  permissions and limitations under the License.
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
  */
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.framework.overrides;
@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 public class RcaControllerIt extends RcaController {
   private final String rcaPath;
   private List<ConnectedComponent> rcaGraphComponents;
+  private RcaItMetricsDBProvider rcaItMetricsDBProvider;
 
   public RcaControllerIt(ThreadProvider threadProvider,
                          ScheduledExecutorService netOpsExecutorService,
@@ -82,8 +83,9 @@ public class RcaControllerIt extends RcaController {
     return rcaConfIt;
   }
 
-  public void setDbProvider(final Queryable db) throws InterruptedException {
+  public void setDbProvider(final RcaItMetricsDBProvider db) throws InterruptedException {
     dbProvider = db;
+    rcaItMetricsDBProvider = db;
     RCAScheduler sched = getRcaScheduler();
 
     // The change is optional and only happens in the next line if the scheduler is already running.
@@ -92,6 +94,10 @@ public class RcaControllerIt extends RcaController {
     if (sched != null) {
       sched.setQueryable(db);
     }
+  }
+
+  public RcaItMetricsDBProvider getDbProvider() {
+    return rcaItMetricsDBProvider;
   }
 
   public void setRcaGraphComponents(Class rcaGraphClass)

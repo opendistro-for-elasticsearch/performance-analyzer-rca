@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
+import com.google.common.annotations.VisibleForTesting;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,10 +26,12 @@ public abstract class PerformanceAnalyzerMetricsCollector implements Runnable {
   private int timeInterval;
   private long startTime;
   private String collectorName;
+  protected StringBuilder value;
 
   protected PerformanceAnalyzerMetricsCollector(int timeInterval, String collectorName) {
     this.timeInterval = timeInterval;
     this.collectorName = collectorName;
+    this.value = new StringBuilder();
   }
 
   private AtomicBoolean bInProgress = new AtomicBoolean(false);
@@ -67,5 +70,10 @@ public abstract class PerformanceAnalyzerMetricsCollector implements Runnable {
     } finally {
       bInProgress.set(false);
     }
+  }
+
+  @VisibleForTesting
+  public StringBuilder getValue() {
+    return value;
   }
 }

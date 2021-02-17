@@ -22,6 +22,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsC
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.PluginSettings;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.ExceptionsAndErrors;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.Removable;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -181,6 +182,17 @@ public class MetricsDB implements Removable {
         .set(DSL.field(MAX, Double.class), metric.getMax())
         .set(dimensions.getFieldMap())
         .execute();
+  }
+
+  /**
+   * Drop a metric table. This is for IT framework to use only
+   * @param metricName metric table to be deleted
+   */
+  @VisibleForTesting
+  public void deleteMetric(String metricName) {
+    if (DBUtils.checkIfTableExists(create, metricName)) {
+      create.dropTable(metricName).execute();
+    }
   }
 
   // We have a table per metric. We do a group by/aggregate on

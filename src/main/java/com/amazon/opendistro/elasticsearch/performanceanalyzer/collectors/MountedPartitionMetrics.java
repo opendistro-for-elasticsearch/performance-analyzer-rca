@@ -1,3 +1,18 @@
+/*
+ * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.DevicePartitionDimension;
@@ -5,11 +20,13 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class MountedPartitionMetrics extends MetricStatus {
-  private final String mountPoint;
-  private final String devicePartition;
-  private final long totalSpace;
-  private final long freeSpace;
-  private final long usableFreeSpace;
+  private String mountPoint;
+  private String devicePartition;
+  private long totalSpace;
+  private long freeSpace;
+  private long usableFreeSpace;
+
+  public MountedPartitionMetrics() {}
 
   public MountedPartitionMetrics(String devicePartition, String mountPoint, long totalSpace,
       long freeSpace, long usableFreeSpace) {

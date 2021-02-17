@@ -34,6 +34,8 @@ public class NetInterfaceSummary extends MetricStatus {
   private double dropRate6;
   private double bps;
 
+  public NetInterfaceSummary() {}
+
   public NetInterfaceSummary(
       Direction direction,
       double packetRate4,

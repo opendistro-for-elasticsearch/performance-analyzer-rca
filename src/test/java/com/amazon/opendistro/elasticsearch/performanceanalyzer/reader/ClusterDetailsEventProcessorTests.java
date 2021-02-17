@@ -13,7 +13,6 @@
  * permissions and limitations under the License.
  */
 
-
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
 import static org.junit.Assert.assertEquals;

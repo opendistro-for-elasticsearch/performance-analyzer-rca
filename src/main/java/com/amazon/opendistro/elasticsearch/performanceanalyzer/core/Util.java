@@ -5,12 +5,12 @@
  * You may not use this file except in compliance with the License.
  * A copy of the License is located at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * or in the "license" file accompanying this file. This file is distributed
  * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
  * express or implied. See the License for the specific language governing
- *  permissions and limitations under the License.
+ * permissions and limitations under the License.
  */
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.core;
@@ -34,7 +34,7 @@ public class Util {
           + File.separator
           + "plugins"
           + File.separator
-          + "opendistro_performance_analyzer"
+          + "opendistro-performance-analyzer"
           + File.separator;
   public static final String READER_LOCATION =
           ES_HOME

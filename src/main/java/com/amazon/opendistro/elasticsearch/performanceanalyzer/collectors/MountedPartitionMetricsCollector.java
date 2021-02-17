@@ -1,3 +1,18 @@
+/*
+ * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.OSMetricsGeneratorFactory;
@@ -5,6 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsCo
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsProcessor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.MountedPartitionMetricsGenerator;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.OSMetricsGenerator;
 import java.util.Set;
 
 public class MountedPartitionMetricsCollector extends PerformanceAnalyzerMetricsCollector implements
@@ -13,17 +29,19 @@ public class MountedPartitionMetricsCollector extends PerformanceAnalyzerMetrics
   private static final int SAMPLING_TIME_INTERVAL =
       MetricsConfiguration.CONFIG_MAP.get(MountedPartitionMetricsCollector.class).samplingInterval;
   private static final int EXPECTED_KEYS_PATH_LENGTH = 0;
-  private final StringBuilder value;
 
   public MountedPartitionMetricsCollector() {
     super(SAMPLING_TIME_INTERVAL, "MountedPartition");
-    this.value = new StringBuilder();
   }
 
   @Override
   void collectMetrics(long startTime) {
+    OSMetricsGenerator generator = OSMetricsGeneratorFactory.getInstance();
+    if (generator == null) {
+      return;
+    }
     MountedPartitionMetricsGenerator mountedPartitionMetricsGenerator =
-        OSMetricsGeneratorFactory.getInstance().getMountedPartitionMetricsGenerator();
+        generator.getMountedPartitionMetricsGenerator();
 
     mountedPartitionMetricsGenerator.addSample();
 
