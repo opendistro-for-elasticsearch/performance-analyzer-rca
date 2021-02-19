@@ -193,6 +193,10 @@ public class HeapSizeIncreaseIT {
   @AErrorPatternIgnored(
       pattern = "OldGenRca:getMaxHeapSizeOrDefault()",
       reason = "YoungGen metrics is expected to be missing.")
+  @AErrorPatternIgnored(
+      pattern = "BucketizedSlidingWindow:next()",
+      reason = "Since the persistence path can be null for integration test, calls to next() is "
+          + "expected to fail")
   public void testHeapSizeIncrease() {
 
   }
