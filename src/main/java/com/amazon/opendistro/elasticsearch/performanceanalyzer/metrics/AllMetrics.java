@@ -41,7 +41,8 @@ public class AllMetrics {
     THREAD_POOL,
     SHARD_STATS,
     MASTER_PENDING,
-    MOUNTED_PARTITION_METRICS
+    MOUNTED_PARTITION_METRICS,
+    SHARD_INDEXING_PRESSURE
   }
 
   // we don't store node details as a metric on reader side database.  We
@@ -1313,6 +1314,81 @@ public class AllMetrics {
 
     public static class Constants {
       public static final String SHARD_STATE = "Shard_State";
+    }
+  }
+
+  public enum ShardIndexingPressureNodeRoleType {
+    COORDINATING(Constants.COORDINATING_VALUE),
+    PRIMARY(Constants.PRIMARY_VALUE),
+    REPLICA(Constants.REPLICA_VALUE);
+
+    private final String value;
+
+    ShardIndexingPressureNodeRoleType(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String COORDINATING_VALUE = "Coordinating";
+      public static final String PRIMARY_VALUE = "Primary";
+      public static final String REPLICA_VALUE = "Replica";
+    }
+  }
+
+  public enum ShardIndexingPressureDimension implements  MetricDimension {
+    NODE_ROLE(Constants.NODE_ROLE_VALUE),
+    INDEX_NAME(Constants.INDEX_NAME_VALUE),
+    SHARD_ID(Constants.SHARD_ID_VALUE);
+
+    private final String value;
+
+    ShardIndexingPressureDimension(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String NODE_ROLE_VALUE = "NodeRole";
+      public static final String INDEX_NAME_VALUE = "IndexName";
+      public static final String SHARD_ID_VALUE = "ShardId";
+    }
+  }
+
+  public enum ShardIndexingPressureValue implements MetricValue {
+    IS_ACTIVE_SHARD(Constants.IS_ACTIVE_SHARD),
+    REJECTION_COUNT(Constants.REJECTION_COUNT_VALUE),
+    CURRENT_BYTES(Constants.CURRENT_BYTES),
+    CURRENT_LIMITS(Constants.CURRENT_LIMITS),
+    AVERAGE_WINDOW_THROUGHPUT(Constants.AVERAGE_WINDOW_THROUGHPUT),
+    LAST_SUCCESSFUL_TIMESTAMP(Constants.LAST_SUCCESSFUL_TIMESTAMP);
+
+    private final String value;
+
+    ShardIndexingPressureValue(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String IS_ACTIVE_SHARD = "IsActiveShard";
+      public static final String REJECTION_COUNT_VALUE = "Rejection_Count";
+      public static final String CURRENT_BYTES = "Current_Bytes";
+      public static final String CURRENT_LIMITS = "Current_Limits";
+      public static final String AVERAGE_WINDOW_THROUGHPUT = "Average_Window_Throughput";
+      public static final String LAST_SUCCESSFUL_TIMESTAMP = "Last_Successful_Timestamp";
     }
   }
 
