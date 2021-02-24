@@ -1317,14 +1317,15 @@ public class AllMetrics {
     }
   }
 
-  public enum ShardIndexingPressureNodeRoleType {
+  /** Enumeration of the indexing stages. */
+  public enum IndexingStage {
     COORDINATING(Constants.COORDINATING_VALUE),
     PRIMARY(Constants.PRIMARY_VALUE),
     REPLICA(Constants.REPLICA_VALUE);
 
     private final String value;
 
-    ShardIndexingPressureNodeRoleType(String value) {
+    IndexingStage(String value) {
       this.value = value;
     }
 
@@ -1340,8 +1341,9 @@ public class AllMetrics {
     }
   }
 
+  /** Enumeration of the Shard Indexing Pressure Dimension*/
   public enum ShardIndexingPressureDimension implements  MetricDimension {
-    NODE_ROLE(Constants.NODE_ROLE_VALUE),
+    INDEXING_STAGE(Constants.INDEXING_STAGE),
     INDEX_NAME(Constants.INDEX_NAME_VALUE),
     SHARD_ID(Constants.SHARD_ID_VALUE);
 
@@ -1357,14 +1359,29 @@ public class AllMetrics {
     }
 
     public static class Constants {
-      public static final String NODE_ROLE_VALUE = "NodeRole";
+      public static final String INDEXING_STAGE = "IndexingStage";
       public static final String INDEX_NAME_VALUE = "IndexName";
       public static final String SHARD_ID_VALUE = "ShardId";
     }
   }
 
+  /**
+   * Column names of Rejection_Count table
+   * NodeRole | IndexName | ShardID | sum | avg | min |max
+   * Column names of Current_Bytes table
+   * NodeRole | IndexName | ShardID | sum | avg | min |max
+   * Column names of Current_Limits table
+   * NodeRole | IndexName | ShardID | sum | avg | min |max
+   * Column names of Average_Window_Throughput table
+   * NodeRole | IndexName | ShardID | sum | avg | min |max
+   * Column names of Last_Successful_Timestamp table
+   * NodeRole | IndexName | ShardID | sum | avg | min |max
+   *
+   * <p>Example:
+   * Coordinating|pmc|4|1.0|1.0|1.0|1.0
+   * Primary|pmc|2|1.0|1.0|1.0|1.0
+   */
   public enum ShardIndexingPressureValue implements MetricValue {
-    IS_ACTIVE_SHARD(Constants.IS_ACTIVE_SHARD),
     REJECTION_COUNT(Constants.REJECTION_COUNT_VALUE),
     CURRENT_BYTES(Constants.CURRENT_BYTES),
     CURRENT_LIMITS(Constants.CURRENT_LIMITS),
@@ -1383,12 +1400,11 @@ public class AllMetrics {
     }
 
     public static class Constants {
-      public static final String IS_ACTIVE_SHARD = "IsActiveShard";
-      public static final String REJECTION_COUNT_VALUE = "Rejection_Count";
-      public static final String CURRENT_BYTES = "Current_Bytes";
-      public static final String CURRENT_LIMITS = "Current_Limits";
-      public static final String AVERAGE_WINDOW_THROUGHPUT = "Average_Window_Throughput";
-      public static final String LAST_SUCCESSFUL_TIMESTAMP = "Last_Successful_Timestamp";
+      public static final String REJECTION_COUNT_VALUE = "Indexing_Pressure_Rejection_Count";
+      public static final String CURRENT_BYTES = "Indexing_Pressure_Current_Bytes";
+      public static final String CURRENT_LIMITS = "Indexing_Pressure_Current_Limits";
+      public static final String AVERAGE_WINDOW_THROUGHPUT = "Indexing_Pressure_Average_Window_Throughput";
+      public static final String LAST_SUCCESSFUL_TIMESTAMP = "Indexing_Pressure_Last_Successful_Timestamp";
     }
   }
 
