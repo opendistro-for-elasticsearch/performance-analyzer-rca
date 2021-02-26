@@ -177,6 +177,7 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
 
     private Long currentCacheMaxSizeInBytes;
     private Long desiredCacheMaxSizeInBytes;
+    private Long currentCacheActualSizeInByte;
     private Long heapMaxSizeInBytes;
     private final long upperBoundInBytes;
     private final long lowerBoundInBytes;
@@ -196,6 +197,8 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
       this.canUpdate = DEFAULT_CAN_UPDATE;
 
       this.currentCacheMaxSizeInBytes = NodeConfigCacheReaderUtil.readCacheMaxSizeInBytes(
+          appContext.getNodeConfigCache(), esNode, cacheType);
+      this.currentCacheActualSizeInByte = NodeConfigCacheReaderUtil.readCacheActualSizeInBytes(
           appContext.getNodeConfigCache(), esNode, cacheType);
       this.heapMaxSizeInBytes = NodeConfigCacheReaderUtil.readHeapMaxSizeInBytes(
           appContext.getNodeConfigCache(), esNode);
@@ -261,6 +264,12 @@ public class ModifyCacheMaxSizeAction extends SuppressibleAction {
       // Ensure desired cache max size is within thresholds
       desiredCacheMaxSizeInBytes = Math.max(Math.min(desiredCacheMaxSizeInBytes, upperBoundInBytes), lowerBoundInBytes);
 
+      //ensure that we do not issue action to lower cache size if the actual cache size usage
+      //is below the target lower bound in each bucket level
+      if (!this.isIncrease && this.currentCacheActualSizeInByte != null
+          && this.currentCacheActualSizeInByte <= lowerBoundInBytes) {
+        this.canUpdate = false;
+      }
       return new ModifyCacheMaxSizeAction(esNode, cacheType, appContext,
           desiredCacheMaxSizeInBytes, currentCacheMaxSizeInBytes, coolOffPeriodInMillis, canUpdate);
     }

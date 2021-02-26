@@ -55,6 +55,19 @@ public class NodeConfigCacheReaderUtil {
     return null;
   }
 
+  public static Long readCacheActualSizeInBytes(
+      final NodeConfigCache nodeConfigCache, final NodeKey esNode, final ResourceEnum cacheType) {
+    try {
+      if (cacheType.equals(ResourceEnum.FIELD_DATA_CACHE)) {
+        return (long) nodeConfigCache.get(esNode, ResourceUtil.FIELD_DATA_CACHE_ACTUAL_SIZE);
+      }
+      return (long) nodeConfigCache.get(esNode, ResourceUtil.SHARD_REQUEST_CACHE_ACTUAL_SIZE);
+    } catch (final IllegalArgumentException e) {
+      LOG.error("Exception while reading cache actual size from Node Config Cache", e);
+    }
+    return null;
+  }
+
   public static Long readHeapMaxSizeInBytes(
       final NodeConfigCache nodeConfigCache, final NodeKey esNode) {
     try {

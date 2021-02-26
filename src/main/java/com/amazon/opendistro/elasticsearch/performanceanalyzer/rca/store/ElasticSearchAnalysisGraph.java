@@ -239,20 +239,12 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     cacheMaxSize.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     addLeaf(cacheMaxSize);
 
-    NodeConfigCollector nodeConfigCollector = new NodeConfigCollector(RCA_PERIOD, queueCapacity, cacheMaxSize, heapMax);
-    nodeConfigCollector.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
-    nodeConfigCollector.addAllUpstreams(Arrays.asList(queueCapacity, cacheMaxSize, heapMax));
-    NodeConfigClusterCollector nodeConfigClusterCollector = new NodeConfigClusterCollector(nodeConfigCollector);
-    nodeConfigClusterCollector.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
-    nodeConfigClusterCollector.addAllUpstreams(Collections.singletonList(nodeConfigCollector));
-    nodeConfigClusterCollector.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
-
     // Field Data Cache RCA
     Metric fieldDataCacheEvictions = new Cache_FieldData_Eviction(EVALUATION_INTERVAL_SECONDS);
     fieldDataCacheEvictions.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     addLeaf(fieldDataCacheEvictions);
 
-    Metric fieldDataCacheSizeGroupByOperation = new AggregateMetric(EVALUATION_INTERVAL_SECONDS,
+    AggregateMetric fieldDataCacheSizeGroupByOperation = new AggregateMetric(EVALUATION_INTERVAL_SECONDS,
             Cache_FieldData_Size.NAME,
             AggregateFunction.SUM,
             MetricsDB.MAX, ShardStatsDerivedDimension.INDEX_NAME.toString());
@@ -278,7 +270,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     shardRequestHits.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
     addLeaf(shardRequestHits);
 
-    Metric shardRequestCacheSizeGroupByOperation = new AggregateMetric(EVALUATION_INTERVAL_SECONDS,
+    AggregateMetric shardRequestCacheSizeGroupByOperation = new AggregateMetric(EVALUATION_INTERVAL_SECONDS,
             Cache_Request_Size.NAME,
             AggregateFunction.SUM,
             MetricsDB.MAX, ShardStatsDerivedDimension.INDEX_NAME.toString());
@@ -297,6 +289,16 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     shardRequestCacheClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     shardRequestCacheClusterRca.addAllUpstreams(Collections.singletonList(shardRequestCacheNodeRca));
     shardRequestCacheClusterRca.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
+
+    //node config collector
+    NodeConfigCollector nodeConfigCollector = new NodeConfigCollector(RCA_PERIOD, queueCapacity, cacheMaxSize, heapMax,
+        fieldDataCacheSizeGroupByOperation, shardRequestCacheSizeGroupByOperation);
+    nodeConfigCollector.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    nodeConfigCollector.addAllUpstreams(Arrays.asList(queueCapacity, cacheMaxSize, heapMax));
+    NodeConfigClusterCollector nodeConfigClusterCollector = new NodeConfigClusterCollector(nodeConfigCollector);
+    nodeConfigClusterCollector.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    nodeConfigClusterCollector.addAllUpstreams(Collections.singletonList(nodeConfigCollector));
+    nodeConfigClusterCollector.addTag(TAG_AGGREGATE_UPSTREAM, LOCUS_DATA_NODE);
 
     // Cache Health Decider
     CacheHealthDecider cacheHealthDecider = new CacheHealthDecider(

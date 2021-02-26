@@ -20,6 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.Resource;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,27 +34,20 @@ public class CacheUtil {
     public static final long MB_TO_BYTES = KB_TO_BYTES * 1024;
     public static final long GB_TO_BYTES = MB_TO_BYTES * 1024;
 
-    public static Double getTotalSizeInKB(final Metric cacheSizeGroupByOperation) {
-        double totalSizeInKB = 0;
+    public static Double getTotalSizeInKB(final Metric cacheSizeGroupByOperation) throws IllegalArgumentException {
+        double totalSizeInByte = 0;
 
         if (cacheSizeGroupByOperation.getFlowUnits().size() > 0) {
             // we expect the Metric to have single flow unit since it is consumed locally
             MetricFlowUnit flowUnit = cacheSizeGroupByOperation.getFlowUnits().get(0);
             if (flowUnit.isEmpty() || flowUnit.getData() == null) {
-                return totalSizeInKB;
+                return totalSizeInByte;
             }
-
-            // since the flow unit data is aggregated by index, summing the size across indices
-            if (flowUnit.getData().size() > 0) {
-                Result<Record> records = flowUnit.getData();
-                double size = records.stream().mapToDouble(
-                        record -> record.getValue(MetricsDB.SUM, Double.class)).sum();
-                totalSizeInKB += getSizeInKB(size);
-            }
+            totalSizeInByte = SQLParsingUtil.readSumFromSqlResult(flowUnit.getData());
         }
 
-        if (!Double.isNaN(totalSizeInKB)) {
-            return totalSizeInKB;
+        if (!Double.isNaN(totalSizeInByte)) {
+            return totalSizeInByte / ((double) KB_TO_BYTES);
         } else {
             throw new IllegalArgumentException("invalid value: {} in getTotalSizeInKB" + Float.NaN);
         }
