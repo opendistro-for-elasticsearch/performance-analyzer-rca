@@ -20,6 +20,7 @@ public enum StatExceptionCode {
   METRICS_WRITE_ERROR("MetricsWriteError"),
   METRICS_REMOVE_ERROR("MetricsRemoveError"),
   JVM_ATTACH_ERROR("JvmAttachErrror"),
+  JVM_ATTACH_LOCK_ACQUISITION_FAILED("JvmAttachLockAcquisitionFailed"),
   MASTER_METRICS_ERROR("MasterMetricsError"),
   DISK_METRICS_ERROR("DiskMetricsError"),
   THREAD_IO_ERROR("ThreadIOError"),

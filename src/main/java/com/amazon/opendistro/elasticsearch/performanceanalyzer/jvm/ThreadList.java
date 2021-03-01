@@ -32,6 +32,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -50,10 +53,14 @@ public class ThreadList {
   static final Logger LOGGER = LogManager.getLogger(ThreadList.class);
   static final int samplingInterval =
       MetricsConfiguration.CONFIG_MAP.get(ThreadList.class).samplingInterval;
+
+  // This value controls how often we do the thread dump.
   private static final long minRunInterval = samplingInterval;
   private static final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
   private static final Pattern linePattern = Pattern.compile("\"([^\"]*)\"");
   private static long lastRunTime = 0;
+
+  private static Lock vmAttachLock = new ReentrantLock();
 
   public static class ThreadState {
     public long javaTid;
@@ -104,19 +111,51 @@ public class ThreadList {
     }
   }
 
+  /**
+   * This is called by the PA collectors. So this is not as hot of a code path as the intercepted ES
+   * calls. So in this case we try to acquire the lock and are willing to wait for 100 milliseconds
+   * before we give up. In case of failure the
+   * @return
+   */
   public static Map<Long, ThreadState> getNativeTidMap() {
-    synchronized (ThreadList.class) {
-      if (System.currentTimeMillis() > lastRunTime + minRunInterval) {
-        runThreadDump(pid, new String[0]);
+    final int waitTimeOutMillis = 100;
+    try {
+      if (vmAttachLock.tryLock(waitTimeOutMillis, TimeUnit.MILLISECONDS)) {
+        try {
+          if (System.currentTimeMillis() > lastRunTime + minRunInterval) {
+            runThreadDump(pid, new String[0]);
+          }
+        } finally {
+          vmAttachLock.unlock();
+        }
+      } else {
+        StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_LOCK_ACQUISITION_FAILED);
       }
-      // - sending a copy so that if runThreadDump next iteration clears it; caller still has the
-      // state at the call time
-      // - not too expensive as this is only being called from Scheduled Collectors (only once in
-      // few seconds)
-      return new HashMap<>(nativeTidMap);
+    } catch (InterruptedException e) {
+      StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_LOCK_ACQUISITION_FAILED);
     }
+    // - sending a copy so that if runThreadDump next iteration clears it; caller still has the
+    // state at the call time
+    // - not too expensive as this is only being called from Scheduled Collectors (only once in
+    // few seconds)
+    return new HashMap<>(nativeTidMap);
   }
 
+  /**
+   * This method is called from the critical bulk and search paths which PA intercepts. The jTidMap
+   * is generated at each call to runThreadDump but that is performed by attaching to the JVM and
+   * then taking a threadump, which is very expensive. Once the threadId to thread state map is
+   * created, all further queries for the threadState do not need to re-attach. At steady state
+   * the threads in the JVM should not change and therefore the query should be served from the
+   * in-memory map. For the cases, it needs to do a thread-dump, this method tries to acquires a
+   * lock. If it cannot acquire a lock, then it will return a Null. This is better than blocking
+   * the thread till the state is generated as ES queries are first priority and not PA metrics.
+   * If a tryLock() fails, then it means that some other thread got the lock and might be doing
+   * the thread dump and there, on the next call, this thread will also have it. The bad part is
+   * the metrics for this ES query will be missed.
+   * @param threadId The threadId of the current thread.
+   * @return If we have successfully captured the ThreadState, then we emit it or Null otherwise.
+   */
   public static ThreadState getThreadState(long threadId) {
     ThreadState retVal = jTidMap.get(threadId);
 
@@ -124,16 +163,19 @@ public class ThreadList {
       return retVal;
     }
 
-    synchronized (ThreadList.class) {
-      retVal = jTidMap.get(threadId);
-
-      if (retVal != null) {
-        return retVal;
+    if (vmAttachLock.tryLock()) {
+      try {
+        retVal = jTidMap.get(threadId);
+        if (retVal != null) {
+          return retVal;
+        }
+        runThreadDump(pid, new String[0]);
+      } finally {
+        vmAttachLock.unlock();
       }
-
-      runThreadDump(pid, new String[0]);
+    } else {
+      StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_LOCK_ACQUISITION_FAILED);
     }
-
     return jTidMap.get(threadId);
   }
 
