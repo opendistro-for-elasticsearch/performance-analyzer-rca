@@ -168,6 +168,7 @@ public final class MetricPropertiesConfig {
     metricPathMap.put(MetricName.MASTER_PENDING, PerformanceAnalyzerMetrics.sPendingTasksPath);
     metricPathMap.put(MetricName.MOUNTED_PARTITION_METRICS,
         PerformanceAnalyzerMetrics.sMountedPartitionMetricsPath);
+    metricPathMap.put(MetricName.CLUSTER_APPLIER_SERVICE, PerformanceAnalyzerMetrics.sClusterApplierService);
 
     eventKeyToMetricNameMap = new HashMap<>();
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sCacheConfigPath, MetricName.CACHE_CONFIG);
@@ -183,6 +184,8 @@ public final class MetricPropertiesConfig {
         PerformanceAnalyzerMetrics.sPendingTasksPath, MetricName.MASTER_PENDING);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sMountedPartitionMetricsPath,
         MetricName.MOUNTED_PARTITION_METRICS);
+    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sClusterApplierService,
+            MetricName.CLUSTER_APPLIER_SERVICE);
 
     metricName2Property = new HashMap<>();
 
@@ -250,6 +253,13 @@ public final class MetricPropertiesConfig {
             DevicePartitionValue.values(),
             createFileHandler(metricPathMap.get(MetricName.MOUNTED_PARTITION_METRICS))
         ));
+    metricName2Property.put(
+            MetricName.CLUSTER_APPLIER_SERVICE,
+            new MetricProperties(
+                    MetricProperties.EMPTY_DIMENSION,
+                    AllMetrics.ClusterApplierServiceStatsValue.values(),
+                    createFileHandler(
+                            metricPathMap.get(MetricName.CLUSTER_APPLIER_SERVICE))));
   }
 
   public static MetricPropertiesConfig getInstance() {

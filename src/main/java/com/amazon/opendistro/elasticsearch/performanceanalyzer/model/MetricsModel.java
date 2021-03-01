@@ -374,6 +374,11 @@ public class MetricsModel {
         new MetricAttributes(
             MetricUnits.COUNT.toString(), AllMetrics.ShardStateDimension.values()));
 
+    allMetricsInitializer.put(
+            AllMetrics.ClusterApplierServiceStatsValue.CLUSTER_APPLIER_SERVICE_LATENCY.toString(),
+            new MetricAttributes(
+                    MetricUnits.MILLISECOND.toString(), EmptyDimension.values()));
+
     ALL_METRICS = Collections.unmodifiableMap(allMetricsInitializer);
   }
 }

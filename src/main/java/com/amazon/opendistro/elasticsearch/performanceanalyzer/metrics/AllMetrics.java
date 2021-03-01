@@ -41,7 +41,8 @@ public class AllMetrics {
     THREAD_POOL,
     SHARD_STATS,
     MASTER_PENDING,
-    MOUNTED_PARTITION_METRICS
+    MOUNTED_PARTITION_METRICS,
+    CLUSTER_APPLIER_SERVICE
   }
 
   // we don't store node details as a metric on reader side database.  We
@@ -818,6 +819,33 @@ public class AllMetrics {
 
     public static class Constants {
       public static final String PENDING_TASKS_COUNT_VALUE = "Master_PendingQueueSize";
+    }
+  }
+
+  public enum ClusterApplierServiceStatsValue implements MetricValue {
+    /**
+     * Sum of total pending tasks throttled by master node.
+     */
+    CLUSTER_APPLIER_SERVICE_LATENCY(ClusterApplierServiceStatsValue.Constants.CLUSTER_APPLIER_SERVICE_LATENCY),
+    /**
+     * Number of pending tasks on which data nodes are actively performing retries.
+     */
+    CLUSTER_APPLIER_SERVICE_FAILURE(ClusterApplierServiceStatsValue.Constants.CLUSTER_APPLIER_SERVICE_FAILURE);
+
+    private final String value;
+
+    ClusterApplierServiceStatsValue(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String CLUSTER_APPLIER_SERVICE_LATENCY = "ClusterApplierService_Latency";
+      public static final String CLUSTER_APPLIER_SERVICE_FAILURE = "ClusterApplierService_Failure";
     }
   }
 
