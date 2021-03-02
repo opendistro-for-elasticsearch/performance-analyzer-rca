@@ -374,6 +374,24 @@ public class MetricsModel {
         new MetricAttributes(
             MetricUnits.COUNT.toString(), AllMetrics.ShardStateDimension.values()));
 
+    // Shard Indexing Pressure Metrics
+    allMetricsInitializer.put(
+        AllMetrics.ShardIndexingPressureValue.REJECTION_COUNT.toString(),
+        new MetricAttributes(MetricUnits.COUNT.toString(), AllMetrics.ShardIndexingPressureDimension.values()));
+    allMetricsInitializer.put(
+        AllMetrics.ShardIndexingPressureValue.CURRENT_BYTES.toString(),
+        new MetricAttributes(MetricUnits.BYTE.toString(), AllMetrics.ShardIndexingPressureDimension.values()));
+    allMetricsInitializer.put(
+        AllMetrics.ShardIndexingPressureValue.CURRENT_LIMITS.toString(),
+        new MetricAttributes(MetricUnits.BYTE.toString(), AllMetrics.ShardIndexingPressureDimension.values()));
+    allMetricsInitializer.put(
+        AllMetrics.ShardIndexingPressureValue.AVERAGE_WINDOW_THROUGHPUT.toString(),
+        new MetricAttributes(MetricUnits.COUNT_PER_SEC.toString(), AllMetrics.ShardIndexingPressureDimension.values()));
+    allMetricsInitializer.put(
+        AllMetrics.ShardIndexingPressureValue.LAST_SUCCESSFUL_TIMESTAMP.toString(),
+        new MetricAttributes(MetricUnits.MILLISECOND.toString(), AllMetrics.ShardIndexingPressureDimension.values()));
+
+
     ALL_METRICS = Collections.unmodifiableMap(allMetricsInitializer);
   }
 }
