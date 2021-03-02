@@ -271,6 +271,8 @@ public class ThreadList {
     Util.invokePrivileged(() -> runAttachDump(pid, args));
     runMXDump();
 
+    StatsCollector.instance()
+        .logException(StatExceptionCode.JVM_THREAD_DUMP_SUCCESSFUL);
     lastRunTime = System.currentTimeMillis();
   }
 
