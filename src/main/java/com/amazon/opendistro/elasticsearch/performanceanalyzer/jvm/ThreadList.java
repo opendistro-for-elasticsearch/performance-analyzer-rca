@@ -112,10 +112,10 @@ public class ThreadList {
   }
 
   /**
-   * This is called by the PA collectors. So this is not as hot of a code path as the intercepted ES
-   * calls. So in this case we try to acquire the lock and are willing to wait for 100 milliseconds
-   * before we give up. In case of failure the
-   * @return
+   * This is called from OSMetricsCollector#collectMetrics. So this is not called
+   * in the critical path of ES request handling. Even for the collector thread,
+   * we do a timed wait to acquire this lock and move on if we could not get it.
+   * @return A hashmap of threadId to threadState.
    */
   public static Map<Long, ThreadState> getNativeTidMap() {
     final int waitTimeOutMillis = 100;
@@ -142,41 +142,24 @@ public class ThreadList {
   }
 
   /**
-   * This method is called from the critical bulk and search paths which PA intercepts. The jTidMap
-   * is generated at each call to runThreadDump but that is performed by attaching to the JVM and
-   * then taking a threadump, which is very expensive. Once the threadId to thread state map is
-   * created, all further queries for the threadState do not need to re-attach. At steady state
-   * the threads in the JVM should not change and therefore the query should be served from the
-   * in-memory map. For the cases, it needs to do a thread-dump, this method tries to acquires a
-   * lock. If it cannot acquire a lock, then it will return a Null. This is better than blocking
-   * the thread till the state is generated as ES queries are first priority and not PA metrics.
-   * If a tryLock() fails, then it means that some other thread got the lock and might be doing
-   * the thread dump and there, on the next call, this thread will also have it. The bad part is
-   * the metrics for this ES query will be missed.
+   * This method is called from the critical bulk and search paths which PA
+   * intercepts. This method used to try to do a thread dump if it could not
+   * find the information about the thread in question. The thread dump is an
+   * expensive operation and can stall see VirtualMachineImpl#VirtualMachineImpl()
+   * for jdk-11 u06. We don't want the ES threads to pay the price. We skip this
+   * iteration and then hopefully in the next call to getNativeTidMap(), the
+   * OSMetricsCollector#collectMetrics will fill the jTidMap. This transfers the
+   * responsibility from the ES threads to the PA collector threads.
+   *
    * @param threadId The threadId of the current thread.
    * @return If we have successfully captured the ThreadState, then we emit it or Null otherwise.
    */
   public static ThreadState getThreadState(long threadId) {
     ThreadState retVal = jTidMap.get(threadId);
-
-    if (retVal != null) {
-      return retVal;
+    if (retVal == null) {
+      StatsCollector.instance().logException(StatExceptionCode.NO_THREAD_STATE_INFO);
     }
-
-    if (vmAttachLock.tryLock()) {
-      try {
-        retVal = jTidMap.get(threadId);
-        if (retVal != null) {
-          return retVal;
-        }
-        runThreadDump(pid, new String[0]);
-      } finally {
-        vmAttachLock.unlock();
-      }
-    } else {
-      StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_LOCK_ACQUISITION_FAILED);
-    }
-    return jTidMap.get(threadId);
+    return retVal;
   }
 
   // Attach to pid and perform a thread dump
