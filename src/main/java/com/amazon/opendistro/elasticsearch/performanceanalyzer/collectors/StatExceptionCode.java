@@ -21,6 +21,8 @@ public enum StatExceptionCode {
   METRICS_REMOVE_ERROR("MetricsRemoveError"),
   // Tracks the number of VM attach/dataDump or detach failures.
   JVM_ATTACH_ERROR("JvmAttachErrror"),
+  // This error is thrown if the java_pid file is missing.
+  JVM_ATTACH_ERROR_JAVA_PID_FILE_MISSING("JvmAttachErrorJavaPidFileMissing"),
   // The lock could not be acquired within the timeout.
   JVM_ATTACH_LOCK_ACQUISITION_FAILED("JvmAttachLockAcquisitionFailed"),
   // ThreadState could not be found for an ES thread in the critical ES path.
@@ -28,6 +30,7 @@ public enum StatExceptionCode {
   // This metric indicates that we successfully completed a thread-dump. Likewise,
   // an omission of this should indicate that the thread taking the dump got stuck.
   JVM_THREAD_DUMP_SUCCESSFUL("JvmThreadDumpSuccessful"),
+  COLLECTORS_MUTED("CollectorsMutedCount"),
   MASTER_METRICS_ERROR("MasterMetricsError"),
   DISK_METRICS_ERROR("DiskMetricsError"),
   THREAD_IO_ERROR("ThreadIOError"),

@@ -20,6 +20,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatEx
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
+import com.sun.tools.attach.AttachNotSupportedException;
 import com.sun.tools.attach.VirtualMachine;
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -32,12 +33,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import sun.tools.attach.HotSpotVirtualMachine;
@@ -118,22 +117,20 @@ public class ThreadList {
    * @return A hashmap of threadId to threadState.
    */
   public static Map<Long, ThreadState> getNativeTidMap() {
-    final int waitTimeOutMillis = 100;
-    try {
-      if (vmAttachLock.tryLock(waitTimeOutMillis, TimeUnit.MILLISECONDS)) {
-        try {
-          if (System.currentTimeMillis() > lastRunTime + minRunInterval) {
-            runThreadDump(pid, new String[0]);
-          }
-        } finally {
-          vmAttachLock.unlock();
+    if (vmAttachLock.tryLock()) {
+      try {
+        // Thread dumps are expensive and therefore we make sure that at least
+        // minRunInterval milliseconds have elapsed between two attempts.
+        if (System.currentTimeMillis() > lastRunTime + minRunInterval) {
+          runThreadDump(pid, new String[0]);
         }
-      } else {
-        StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_LOCK_ACQUISITION_FAILED);
+      } finally {
+        vmAttachLock.unlock();
       }
-    } catch (InterruptedException e) {
+    } else {
       StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_LOCK_ACQUISITION_FAILED);
     }
+
     // - sending a copy so that if runThreadDump next iteration clears it; caller still has the
     // state at the call time
     // - not too expensive as this is only being called from Scheduled Collectors (only once in
@@ -167,6 +164,21 @@ public class ThreadList {
     VirtualMachine vm = null;
     try {
       vm = VirtualMachine.attach(pid);
+    } catch (AttachNotSupportedException ansEx) {
+      if (ansEx.getMessage().contains("java_pid")) {
+        LOGGER.debug(
+            "Error in Attaching to VM with exception: {} with ExceptionCode: {}",
+            () -> ansEx.toString(),
+            () -> StatExceptionCode.JVM_ATTACH_ERROR_JAVA_PID_FILE_MISSING.toString());
+        StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_ERROR_JAVA_PID_FILE_MISSING);
+      } else {
+        LOGGER.debug(
+            "Error in Attaching to VM with exception: {} with ExceptionCode: {}",
+            () -> ansEx.toString(),
+            () -> StatExceptionCode.JVM_ATTACH_ERROR.toString());
+        StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_ERROR);
+      }
+      return;
     } catch (Exception ex) {
       LOGGER.debug(
           "Error in Attaching to VM with exception: {} with ExceptionCode: {}",
@@ -188,6 +200,7 @@ public class ThreadList {
 
     try {
       vm.detach();
+      StatsCollector.instance().logException(StatExceptionCode.JVM_THREAD_DUMP_SUCCESSFUL);
     } catch (Exception ex) {
       LOGGER.debug(
           "Failed in VM Detach with exception: {} with ExceptionCode: {}",
@@ -270,9 +283,6 @@ public class ThreadList {
     // TODO: make this map update atomic
     Util.invokePrivileged(() -> runAttachDump(pid, args));
     runMXDump();
-
-    StatsCollector.instance()
-        .logException(StatExceptionCode.JVM_THREAD_DUMP_SUCCESSFUL);
     lastRunTime = System.currentTimeMillis();
   }
 

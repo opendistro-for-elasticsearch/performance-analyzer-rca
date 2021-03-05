@@ -16,7 +16,9 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -32,11 +34,20 @@ public class ScheduledMetricCollectorsExecutor extends Thread {
   private boolean paEnabled = false;
   private int minTimeIntervalToSleep = Integer.MAX_VALUE;
   private Map<PerformanceAnalyzerMetricsCollector, Long> metricsCollectors;
+
+  // The next two sets helps us track collectors that are running for too long and
+  // and if they run into long collections cycles more than once consecutively, we
+  // mute them.
+  private Set<PerformanceAnalyzerMetricsCollector> collectorsTakingTooLong;
+  private Set<PerformanceAnalyzerMetricsCollector> excludedCollectors;
+
   private ThreadPoolExecutor metricsCollectorsTP;
 
   public ScheduledMetricCollectorsExecutor(
       int collectorThreadCount, boolean checkFeatureDisabledFlag) {
     metricsCollectors = new HashMap<>();
+    collectorsTakingTooLong = new HashSet<>();
+    excludedCollectors = new HashSet<>();
     metricsCollectorsTP = null;
     this.collectorThreadCount = collectorThreadCount;
     this.checkFeatureDisabledFlag = checkFeatureDisabledFlag;
@@ -94,11 +105,22 @@ public class ScheduledMetricCollectorsExecutor extends Thread {
             metricsCollectors.entrySet()) {
           if (entry.getValue() <= currentTime) {
             PerformanceAnalyzerMetricsCollector collector = entry.getKey();
+            if (excludedCollectors.contains(collector)) {
+              StatsCollector.instance().logException(StatExceptionCode.COLLECTORS_MUTED);
+              continue;
+            }
             metricsCollectors.put(collector, entry.getValue() + collector.getTimeInterval());
             if (!collector.inProgress()) {
               collector.setStartTime(currentTime);
               metricsCollectorsTP.execute(collector);
             } else {
+              if (collectorsTakingTooLong.contains(collector)) {
+                excludedCollectors.add(collector);
+              } else {
+                // if this is the first time the collector could not complete in time, we
+                // add it to the collectorsTakingTooLong
+                collectorsTakingTooLong.add(collector);
+              }
               LOG.info(
                   "Collector {} is still in progress, so skipping this Interval",
                   collector.getCollectorName());
