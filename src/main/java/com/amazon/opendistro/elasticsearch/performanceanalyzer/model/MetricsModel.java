@@ -379,6 +379,10 @@ public class MetricsModel {
             new MetricAttributes(
                     MetricUnits.MILLISECOND.toString(), EmptyDimension.values()));
 
+    allMetricsInitializer.put(
+            AllMetrics.ClusterApplierServiceStatsValue.CLUSTER_APPLIER_SERVICE_FAILURE.toString(),
+            new MetricAttributes(
+                    MetricUnits.COUNT.toString(), EmptyDimension.values()));
     ALL_METRICS = Collections.unmodifiableMap(allMetricsInitializer);
   }
 }

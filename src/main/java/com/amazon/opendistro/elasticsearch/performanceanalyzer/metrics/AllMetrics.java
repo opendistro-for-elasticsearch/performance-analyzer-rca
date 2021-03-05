@@ -823,13 +823,7 @@ public class AllMetrics {
   }
 
   public enum ClusterApplierServiceStatsValue implements MetricValue {
-    /**
-     * Sum of total pending tasks throttled by master node.
-     */
     CLUSTER_APPLIER_SERVICE_LATENCY(ClusterApplierServiceStatsValue.Constants.CLUSTER_APPLIER_SERVICE_LATENCY),
-    /**
-     * Number of pending tasks on which data nodes are actively performing retries.
-     */
     CLUSTER_APPLIER_SERVICE_FAILURE(ClusterApplierServiceStatsValue.Constants.CLUSTER_APPLIER_SERVICE_FAILURE);
 
     private final String value;
