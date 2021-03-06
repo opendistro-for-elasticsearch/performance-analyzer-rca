@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.jvm;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.OSMetricsGeneratorFactory;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.ScheduledMetricCollectorsExecutor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
@@ -274,16 +275,24 @@ public class ThreadList {
   }
 
   static void runThreadDump(String pid, String[] args) {
-    jTidNameMap.clear();
-    oldNativeTidMap.putAll(nativeTidMap);
-    nativeTidMap.clear();
-    jTidMap.clear();
-    nameMap.clear();
+    String currentThreadName = Thread.currentThread().getName();
+    if (currentThreadName.startsWith(
+        ScheduledMetricCollectorsExecutor.COLLECTOR_THREAD_POOL_NAME) ||
+        currentThreadName.equals(ScheduledMetricCollectorsExecutor.class.getSimpleName())) {
+      jTidNameMap.clear();
+      oldNativeTidMap.putAll(nativeTidMap);
+      nativeTidMap.clear();
+      jTidMap.clear();
+      nameMap.clear();
 
-    // TODO: make this map update atomic
-    Util.invokePrivileged(() -> runAttachDump(pid, args));
-    runMXDump();
-    lastRunTime = System.currentTimeMillis();
+      // TODO: make this map update atomic
+      Util.invokePrivileged(() -> runAttachDump(pid, args));
+      runMXDump();
+      lastRunTime = System.currentTimeMillis();
+    } else {
+      StatsCollector.instance()
+          .logException(StatExceptionCode.THREAD_DUMP_FROM_NON_COLLECTOR_THREAD);
+    }
   }
 
   private static void parseLine(String line) {

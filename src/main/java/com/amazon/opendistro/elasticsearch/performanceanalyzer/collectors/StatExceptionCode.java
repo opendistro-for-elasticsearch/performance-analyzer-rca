@@ -30,6 +30,7 @@ public enum StatExceptionCode {
   // This metric indicates that we successfully completed a thread-dump. Likewise,
   // an omission of this should indicate that the thread taking the dump got stuck.
   JVM_THREAD_DUMP_SUCCESSFUL("JvmThreadDumpSuccessful"),
+  THREAD_DUMP_FROM_NON_COLLECTOR_THREAD("ThreadDumpFromNonCollectorThread"),
   COLLECTORS_MUTED("CollectorsMutedCount"),
   MASTER_METRICS_ERROR("MasterMetricsError"),
   DISK_METRICS_ERROR("DiskMetricsError"),

@@ -15,11 +15,13 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -35,9 +37,10 @@ public class ScheduledMetricCollectorsExecutor extends Thread {
   private int minTimeIntervalToSleep = Integer.MAX_VALUE;
   private Map<PerformanceAnalyzerMetricsCollector, Long> metricsCollectors;
 
+  public static final String COLLECTOR_THREAD_POOL_NAME = "pa-collectors-th";
+
   // The next two sets helps us track collectors that are running for too long and
-  // and if they run into long collections cycles more than once consecutively, we
-  // mute them.
+  // and if they run into long collections cycles more than once we mute them.
   private Set<PerformanceAnalyzerMetricsCollector> collectorsTakingTooLong;
   private Set<PerformanceAnalyzerMetricsCollector> excludedCollectors;
 
@@ -73,14 +76,20 @@ public class ScheduledMetricCollectorsExecutor extends Thread {
   }
 
   public void run() {
+    Thread.currentThread().setName(this.getClass().getSimpleName());
     if (metricsCollectorsTP == null) {
+      ThreadFactory taskThreadFactory = new ThreadFactoryBuilder()
+          .setNameFormat(COLLECTOR_THREAD_POOL_NAME)
+          .setDaemon(true)
+          .build();
       metricsCollectorsTP =
           new ThreadPoolExecutor(
               collectorThreadCount,
               collectorThreadCount,
               COLLECTOR_THREAD_KEEPALIVE_SECS,
               TimeUnit.SECONDS,
-              new ArrayBlockingQueue<>(metricsCollectors.size()));
+              new ArrayBlockingQueue<>(metricsCollectors.size()),
+              taskThreadFactory);
     }
 
     long prevStartTimestamp = System.currentTimeMillis();
@@ -115,6 +124,7 @@ public class ScheduledMetricCollectorsExecutor extends Thread {
               metricsCollectorsTP.execute(collector);
             } else {
               if (collectorsTakingTooLong.contains(collector)) {
+                collectorsTakingTooLong.remove(collector);
                 excludedCollectors.add(collector);
               } else {
                 // if this is the first time the collector could not complete in time, we
