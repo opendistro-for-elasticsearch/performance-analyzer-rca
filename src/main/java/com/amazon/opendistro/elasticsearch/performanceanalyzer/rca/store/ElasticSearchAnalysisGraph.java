@@ -21,6 +21,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_AGGREGATE_UPSTREAM;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.RcaConsts.RcaTagConstants.TAG_LOCUS;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.AdmissionControlDecider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.CacheHealthDecider;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.Publisher;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.QueueHealthDecider;
@@ -35,6 +36,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.AdmissionControl_CurrentValue;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.AdmissionControl_RejectionCount;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.AdmissionControl_ThresholdValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Bitset_Memory;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.CPU_Utilization;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_FieldData_Eviction;
@@ -86,6 +90,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.Hot
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.FieldDataCacheRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.ShardRequestCacheRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.admission_control.AdmissionControlClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.admission_control.AdmissionControllerRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.ShardRequestCacheClusterRca;
@@ -304,6 +310,8 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     cacheHealthDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
     cacheHealthDecider.addAllUpstreams(Arrays.asList(fieldDataCacheClusterRca, shardRequestCacheClusterRca, highHeapUsageClusterRca));
 
+    admissionControlRca();
+
     constructShardResourceUsageGraph();
 
     constructResourceHeatMapGraph();
@@ -322,6 +330,35 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
     PluginControllerConfig pluginControllerConfig = new PluginControllerConfig();
     PluginController pluginController = new PluginController(pluginControllerConfig, publisher);
     pluginController.initPlugins();
+  }
+
+  private void admissionControlRca() {
+    Metric acCurrent = new AdmissionControl_CurrentValue(EVALUATION_INTERVAL_SECONDS);
+    Metric acThreshold = new AdmissionControl_ThresholdValue(EVALUATION_INTERVAL_SECONDS);
+    Metric acRejectionCount = new AdmissionControl_RejectionCount(EVALUATION_INTERVAL_SECONDS);
+
+    acCurrent.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    acThreshold.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    acRejectionCount.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+
+    addLeaf(acCurrent);
+    addLeaf(acThreshold);
+    addLeaf(acRejectionCount);
+
+    AdmissionControllerRca admissionControllerRca = new AdmissionControllerRca(
+            RCA_PERIOD, acCurrent, acThreshold, acRejectionCount);
+    admissionControllerRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    admissionControllerRca.addAllUpstreams(Arrays.asList(acCurrent, acThreshold, acRejectionCount));
+
+    AdmissionControlClusterRca admissionControlClusterRca = new AdmissionControlClusterRca(
+            RCA_PERIOD, admissionControllerRca);
+    admissionControlClusterRca.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    admissionControlClusterRca.addAllUpstreams(Collections.singletonList(admissionControllerRca));
+
+    AdmissionControlDecider admissionControlDecider = new AdmissionControlDecider(
+            EVALUATION_INTERVAL_SECONDS, 12, admissionControlClusterRca);
+    admissionControlDecider.addTag(TAG_LOCUS, LOCUS_MASTER_NODE);
+    admissionControlDecider.addAllUpstreams(Collections.singletonList(admissionControlClusterRca));
   }
 
   private void constructShardResourceUsageGraph() {

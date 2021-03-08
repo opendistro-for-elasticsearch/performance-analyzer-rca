@@ -458,6 +458,24 @@ public class MetricsEmitterTests extends AbstractReaderTests {
   }
 
   @Test
+  public void testEmitAdmissionControlMetric() throws Exception {
+    Connection connection = DriverManager.getConnection(DB_URL);
+    String testController = "testController";
+    String testRejectionCount = "1";
+    long currentTimeMillis = System.currentTimeMillis();
+
+    AdmissionControlSnapshot snapshot = new AdmissionControlSnapshot(connection, currentTimeMillis);
+    BatchBindStep handle = snapshot.startBatchPut();
+    handle.bind(testController, Long.parseLong(testRejectionCount)).execute();
+
+    MetricsDB metricsDB = new MetricsDB(currentTimeMillis);
+    MetricsEmitter.emitAdmissionControlMetrics(metricsDB, snapshot);
+
+    Result<Record> result = metricsDB.queryMetric(AllMetrics.AdmissionControlValue.REJECTION_COUNT.toString());
+    assertEquals(1, result.size());
+  }
+
+  @Test
   public void testMasterThrottlingMetricsEmitter() throws Exception {
     Connection conn = DriverManager.getConnection(DB_URL);
     MasterThrottlingMetricsSnapshot masterThrottlingMetricsSnapshot = new MasterThrottlingMetricsSnapshot(conn, 1L);
