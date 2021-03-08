@@ -1361,7 +1361,7 @@ public class AllMetrics {
     public static class Constants {
       public static final String INDEXING_STAGE = "IndexingStage";
       public static final String INDEX_NAME_VALUE = "IndexName";
-      public static final String SHARD_ID_VALUE = "ShardId";
+      public static final String SHARD_ID_VALUE = "ShardID";
     }
   }
 
