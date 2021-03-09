@@ -16,6 +16,8 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.model;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.AdmissionControlDimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.AdmissionControlValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.AggregatedOSDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheConfigDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheConfigValue;
@@ -374,6 +376,19 @@ public class MetricsModel {
         new MetricAttributes(
             MetricUnits.COUNT.toString(), AllMetrics.ShardStateDimension.values()));
 
+    allMetricsInitializer.put(
+            AdmissionControlValue.REJECTION_COUNT.toString(),
+            new MetricAttributes(MetricUnits.COUNT.toString(), AdmissionControlDimension.values())
+    );
+    allMetricsInitializer.put(
+            AdmissionControlValue.THRESHOLD_VALUE.toString(),
+            new MetricAttributes(MetricUnits.COUNT.toString(), AdmissionControlDimension.values())
+    );
+    allMetricsInitializer.put(
+            AdmissionControlValue.CURRENT_VALUE.toString(),
+            new MetricAttributes(MetricUnits.COUNT.toString(), AdmissionControlDimension.values())
+    );
+
     // Shard Indexing Pressure Metrics
     allMetricsInitializer.put(
         AllMetrics.ShardIndexingPressureValue.REJECTION_COUNT.toString(),
@@ -390,7 +405,6 @@ public class MetricsModel {
     allMetricsInitializer.put(
         AllMetrics.ShardIndexingPressureValue.LAST_SUCCESSFUL_TIMESTAMP.toString(),
         new MetricAttributes(MetricUnits.MILLISECOND.toString(), AllMetrics.ShardIndexingPressureDimension.values()));
-
 
     ALL_METRICS = Collections.unmodifiableMap(allMetricsInitializer);
   }

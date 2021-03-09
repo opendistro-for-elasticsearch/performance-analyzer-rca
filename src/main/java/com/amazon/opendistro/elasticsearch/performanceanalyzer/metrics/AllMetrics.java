@@ -42,6 +42,7 @@ public class AllMetrics {
     SHARD_STATS,
     MASTER_PENDING,
     MOUNTED_PARTITION_METRICS,
+    ADMISSION_CONTROL_METRICS,
     SHARD_INDEXING_PRESSURE
   }
 
@@ -1405,6 +1406,72 @@ public class AllMetrics {
       public static final String CURRENT_LIMITS = "Indexing_Pressure_Current_Limits";
       public static final String AVERAGE_WINDOW_THROUGHPUT = "Indexing_Pressure_Average_Window_Throughput";
       public static final String LAST_SUCCESSFUL_TIMESTAMP = "Indexing_Pressure_Last_Successful_Timestamp";
+    }
+  }
+
+  /*
+   * Column names of AdmissionControl_RejectionCount table
+   * ControllerName | sum | avg | min | max
+   *
+   * Column names of AdmissionControl_ThresholdValue table
+   * ControllerName | sum | avg | min | max
+   *
+   * Column names of AdmissionControl_CurrentValue table
+   * ControllerName | sum | avg | min | max
+   *
+   * Example:
+   * Global_JVMMP|41.0|8.2|8.0|9.0
+   * Request_Size|0.0|0.0|0.0|0.0
+   */
+  public enum AdmissionControlDimension implements MetricDimension, JooqFieldValue {
+    CONTROLLER_NAME(Constants.CONTROLLER_NAME);
+
+    private final String value;
+
+    AdmissionControlDimension(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    @Override
+    public Field<String> getField() {
+      return DSL.field(DSL.name(this.value), String.class);
+    }
+
+    @Override
+    public String getName() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String CONTROLLER_NAME = "ControllerName";
+    }
+  }
+
+  public enum AdmissionControlValue implements MetricValue {
+    CURRENT_VALUE(Constants.CURRENT_VALUE),
+    THRESHOLD_VALUE(Constants.THRESHOLD_VALUE),
+    REJECTION_COUNT(Constants.REJECTION_COUNT);
+
+    private final String value;
+
+    AdmissionControlValue(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String CURRENT_VALUE = "AdmissionControl_CurrentValue";
+      public static final String THRESHOLD_VALUE = "AdmissionControl_ThresholdValue";
+      public static final String REJECTION_COUNT = "AdmissionControl_RejectionCount";
     }
   }
 

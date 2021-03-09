@@ -19,6 +19,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.DBUtils;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.TroubleshootingConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.AdmissionControlDimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.AdmissionControlValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.FaultDetectionDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.FaultDetectionMetric;
@@ -670,6 +672,43 @@ public class MetricsEmitter {
     long mFinalT = System.currentTimeMillis();
     LOG.debug("Total time taken for writing garbage collection info into metricsDB: {}",
         mFinalT - mCurrT);
+  }
+
+  public static void emitAdmissionControlMetrics(MetricsDB metricsDB, AdmissionControlSnapshot snapshot) {
+
+    long startTime = System.currentTimeMillis();
+    Result<Record> records = snapshot.fetchAll();
+
+    List<String> dims = new ArrayList<String>() {
+      {
+        this.add(AdmissionControlDimension.CONTROLLER_NAME.toString());
+      }
+    };
+
+    metricsDB.createMetric(new Metric<Double>(AdmissionControlValue.REJECTION_COUNT.toString(), 0d), dims);
+    BatchBindStep handle = metricsDB.startBatchPut(
+            new Metric<Double>(AdmissionControlValue.REJECTION_COUNT.toString(), 0d), dims);
+
+    for (Record record : records) {
+      Optional<Object> controllerObj = Optional.ofNullable(record.get(AdmissionControlDimension.CONTROLLER_NAME.toString()));
+      Optional<Object> rejectionCountObj = Optional.ofNullable(record.get(AdmissionControlValue.REJECTION_COUNT.toString()));
+
+      if (controllerObj.isPresent() && rejectionCountObj.isPresent()) {
+        handle.bind(
+                controllerObj.orElseGet(Object::new).toString(),
+                rejectionCountObj.map(o -> Long.parseLong(o.toString())).orElse(0L),
+                // the rest are agg fields: sum, avg, min, max
+                rejectionCountObj.map(o -> Long.parseLong(o.toString())).orElse(0L),
+                rejectionCountObj.map(o -> Long.parseLong(o.toString())).orElse(0L),
+                rejectionCountObj.map(o -> Long.parseLong(o.toString())).orElse(0L),
+                rejectionCountObj.map(o -> Long.parseLong(o.toString())).orElse(0L));
+      }
+    }
+
+    handle.execute();
+
+    long endTime = System.currentTimeMillis();
+    LOG.debug("Total time taken for writing AdmissionControl into metricsDB: {}", endTime - startTime);
   }
 
   public static void emitMasterEventMetrics(

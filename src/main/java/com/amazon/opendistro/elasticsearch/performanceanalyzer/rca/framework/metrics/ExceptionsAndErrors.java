@@ -51,6 +51,8 @@ public enum ExceptionsAndErrors implements MeasurementSet {
 
   SHARD_STATE_COLLECTOR_ERROR("ShardStateCollectorError"),
 
+  ADMISSION_CONTROL_COLLECTOR_ERROR("AdmissionControlCollectorError"),
+
   MASTER_THROTTLING_COLLECTOR_ERROR("MasterThrottlingMetricsCollector"),
 
   FAULT_DETECTION_COLLECTOR_ERROR("FaultDetectionMetricsCollector"),
