@@ -20,12 +20,9 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyz
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.config.TroubleshootingConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonMetric;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.FaultDetectionDimension;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.FaultDetectionMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCInfoDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCInfoValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.OSMetrics;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Dimensions;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -102,14 +99,6 @@ public class MetricsEmitter {
               this.add(AllMetrics.ShardStateDimension.SHARD_TYPE.toString());
               this.add(AllMetrics.ShardStateDimension.NODE_NAME.toString());
               this.add(AllMetrics.ShardStateDimension.SHARD_STATE.toString());
-            }
-          };
-
-  private static final List<String> FAULT_DETECTION_TABLE_DIMENSIONS =
-          new ArrayList<String>() {
-            {
-              this.add(FaultDetectionDimension.SOURCE_NODE_ID.toString());
-              this.add(FaultDetectionDimension.TARGET_NODE_ID.toString());
             }
           };
 
@@ -874,136 +863,6 @@ public class MetricsEmitter {
     }
   }
 
-    public static void emitFaultDetectionMetrics(MetricsDB db, FaultDetectionMetricsSnapshot faultDetectionSnapshot) {
-
-      long mCurrT = System.currentTimeMillis();
-      Dimensions dimensions = new Dimensions();
-      Result<Record> res = faultDetectionSnapshot.fetchAggregatedTable();
-
-      db.createMetric(
-              new Metric<Double>(FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString(), 0d),
-              FAULT_DETECTION_TABLE_DIMENSIONS);
-
-      db.createMetric(
-              new Metric<Double>(FaultDetectionMetric.LEADER_CHECK_LATENCY.toString(), 0d),
-              FAULT_DETECTION_TABLE_DIMENSIONS);
-
-      db.createMetric(
-              new Metric<Double>(FaultDetectionMetric.FOLLOWER_CHECK_FAILURE.toString(), 0d),
-              FAULT_DETECTION_TABLE_DIMENSIONS);
-
-      db.createMetric(
-              new Metric<Double>(FaultDetectionMetric.LEADER_CHECK_FAILURE.toString(), 0d),
-              FAULT_DETECTION_TABLE_DIMENSIONS);
-      for (Record r : res) {
-        dimensions.put(
-                FaultDetectionDimension.SOURCE_NODE_ID.toString(),
-                r.get(FaultDetectionDimension.SOURCE_NODE_ID.toString()).toString());
-        dimensions.put(
-                FaultDetectionDimension.TARGET_NODE_ID.toString(),
-                r.get(FaultDetectionDimension.TARGET_NODE_ID.toString()).toString());
-
-        Double sumLatency =
-                Double.parseDouble(
-                        r.get(
-                                DBUtils.getAggFieldName(
-                                        FaultDetectionMetricsSnapshot.Fields.LAT.toString(), MetricsDB.SUM))
-                                .toString());
-        Double avgLatency =
-                Double.parseDouble(
-                        r.get(
-                                DBUtils.getAggFieldName(
-                                        FaultDetectionMetricsSnapshot.Fields.LAT.toString(), MetricsDB.AVG))
-                                .toString());
-        Double minLatency =
-                Double.parseDouble(
-                        r.get(
-                                DBUtils.getAggFieldName(
-                                        FaultDetectionMetricsSnapshot.Fields.LAT.toString(), MetricsDB.MIN))
-                                .toString());
-        Double maxLatency =
-                Double.parseDouble(
-                        r.get(
-                                DBUtils.getAggFieldName(
-                                        FaultDetectionMetricsSnapshot.Fields.LAT.toString(), MetricsDB.MAX))
-                                .toString());
-
-        Double sumFault =
-                Double.parseDouble(
-                        r.get(
-                                DBUtils.getAggFieldName(
-                                        FaultDetectionMetricsSnapshot.Fields.FAULT.toString(),
-                                        MetricsDB.SUM))
-                                .toString());
-        Double avgFault =
-                Double.parseDouble(
-                        r.get(
-                                DBUtils.getAggFieldName(
-                                        FaultDetectionMetricsSnapshot.Fields.FAULT.toString(),
-                                        MetricsDB.AVG))
-                                .toString());
-        Double minFault =
-                Double.parseDouble(
-                        r.get(
-                                DBUtils.getAggFieldName(
-                                        FaultDetectionMetricsSnapshot.Fields.FAULT.toString(),
-                                        MetricsDB.MIN))
-                                .toString());
-        Double maxFault =
-                Double.parseDouble(
-                        r.get(
-                                DBUtils.getAggFieldName(
-                                        FaultDetectionMetricsSnapshot.Fields.FAULT.toString(),
-                                        MetricsDB.MAX))
-                                .toString());
-        if (r.get(FaultDetectionMetricsSnapshot.Fields.FAULT_DETECTION_TYPE.toString()).toString()
-                .equals(PerformanceAnalyzerMetrics.FAULT_DETECTION_FOLLOWER_CHECK)) {
-          db.putMetric(
-                  new Metric<Double>(
-                          FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString(),
-                          sumLatency,
-                          avgLatency,
-                          minLatency,
-                          maxLatency),
-                  dimensions,
-                  0);
-          db.putMetric(
-                  new Metric<Double>(
-                          FaultDetectionMetric.FOLLOWER_CHECK_FAILURE.toString(),
-                          sumFault,
-                          avgFault,
-                          minFault,
-                          maxFault),
-                  dimensions,
-                  0);
-        } else if (r.get(FaultDetectionMetricsSnapshot.Fields.FAULT_DETECTION_TYPE.toString()).toString()
-                .equals(PerformanceAnalyzerMetrics.FAULT_DETECTION_LEADER_CHECK)) {
-          db.putMetric(
-                  new Metric<Double>(
-                          FaultDetectionMetric.LEADER_CHECK_LATENCY.toString(),
-                          sumLatency,
-                          avgLatency,
-                          minLatency,
-                          maxLatency),
-                  dimensions,
-                  0);
-          db.putMetric(
-                  new Metric<Double>(
-                          FaultDetectionMetric.LEADER_CHECK_FAILURE.toString(),
-                          sumFault,
-                          avgFault,
-                          minFault,
-                          maxFault),
-                  dimensions,
-                  0);
-        }
-      }
-      long mFinalT = System.currentTimeMillis();
-      PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(
-              ReaderMetrics.FAULT_DETECTION_METRICS_EMITTER_EXECUTION_TIME, "", mFinalT - mCurrT);
-      LOG.debug("Total time taken for writing fault detection metrics to metricsdb: {}", mFinalT - mCurrT);
-    }
-
   public static void emitMasterThrottledTaskMetric(
           MetricsDB metricsDB, MasterThrottlingMetricsSnapshot masterThrottlingMetricsSnapshot) {
     long mCurrT = System.currentTimeMillis();
@@ -1159,5 +1018,230 @@ public class MetricsEmitter {
             "Total time taken for writing shard state event queue metrics metricsdb: {}", mFinalT - mCurrT);
     PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(ReaderMetrics.SHARD_STATE_EMITTER_EXECUTION_TIME,
             "", mFinalT - mCurrT);
+  }
+
+  public static void emitFaultDetectionMetrics(
+          MetricsDB metricsDB, FaultDetectionStatsSnapshot faultDetectionStatsSnapshot) {
+    long mCurrT = System.currentTimeMillis();
+    Result<Record> faultDetectionMetrics = faultDetectionStatsSnapshot.fetchAggregatedMetrics();
+
+    collectFollowerCheckLatency(metricsDB, faultDetectionMetrics);
+    collectFollowerCheckFailure(metricsDB, faultDetectionMetrics);
+    collectLeaderCheckLatency(metricsDB, faultDetectionMetrics);
+    collectLeaderCheckFailure(metricsDB, faultDetectionMetrics);
+
+    long mFinalT = System.currentTimeMillis();
+    LOG.debug(
+            "Total time taken for writing Fault Detection event queue metrics metricsdb: {}", mFinalT - mCurrT);
+    PerformanceAnalyzerApp.READER_METRICS_AGGREGATOR.updateStat(ReaderMetrics.FAULT_DETECTION_METRICS_EMITTER_EXECUTION_TIME,
+            "", mFinalT - mCurrT);
+  }
+
+  private static void collectLeaderCheckFailure(MetricsDB metricsDB, Result<Record> faultDetectionMetrics) {
+    metricsDB.createMetric(
+            new Metric<Double>(AllMetrics.FaultDetectionMetric.LEADER_CHECK_FAILURE.toString(), 0d),
+            new ArrayList<>());
+
+    BatchBindStep handle =
+            metricsDB.startBatchPut(
+                    new Metric<Double>(AllMetrics.FaultDetectionMetric.LEADER_CHECK_FAILURE.toString(), 0d),
+                    new ArrayList<>());
+
+    for (Record r : faultDetectionMetrics) {
+      Double sumLeaderCheckFailure =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.FaultDetectionMetric.LEADER_CHECK_FAILURE.toString(),
+                                      MetricsDB.SUM))
+                              .toString());
+
+      Double avgLeaderCheckFailure =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.FaultDetectionMetric.LEADER_CHECK_FAILURE.toString(),
+                                      MetricsDB.AVG))
+                              .toString());
+
+      Double minLeaderCheckFailure =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.FaultDetectionMetric.LEADER_CHECK_FAILURE.toString(),
+                                      MetricsDB.MIN))
+                              .toString());
+
+      Double maxLeaderCheckFailure =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.FaultDetectionMetric.LEADER_CHECK_FAILURE.toString(),
+                                      MetricsDB.MAX))
+                              .toString());
+
+      handle.bind(
+              sumLeaderCheckFailure,
+              avgLeaderCheckFailure,
+              minLeaderCheckFailure,
+              maxLeaderCheckFailure);
+    }
+    handle.execute();
+  }
+
+  private static void collectLeaderCheckLatency(MetricsDB metricsDB, Result<Record> faultDetectionMetrics) {
+    metricsDB.createMetric(
+            new Metric<Double>(AllMetrics.FaultDetectionMetric.LEADER_CHECK_LATENCY.toString(), 0d),
+            new ArrayList<>());
+
+    BatchBindStep handle =
+            metricsDB.startBatchPut(
+                    new Metric<Double>(AllMetrics.FaultDetectionMetric.LEADER_CHECK_LATENCY.toString(), 0d),
+                    new ArrayList<>());
+
+    for (Record r : faultDetectionMetrics) {
+      Double sumLeaderCheckLatency =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.FaultDetectionMetric.LEADER_CHECK_LATENCY.toString(),
+                                      MetricsDB.SUM))
+                              .toString());
+
+      Double avgLeaderCheckLatency =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.FaultDetectionMetric.LEADER_CHECK_LATENCY.toString(),
+                                      MetricsDB.AVG))
+                              .toString());
+
+      Double minLeaderCheckLatency =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.FaultDetectionMetric.LEADER_CHECK_LATENCY.toString(),
+                                      MetricsDB.MIN))
+                              .toString());
+
+      Double maxLeaderCheckLatency =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.FaultDetectionMetric.LEADER_CHECK_LATENCY.toString(),
+                                      MetricsDB.MAX))
+                              .toString());
+
+      handle.bind(
+              sumLeaderCheckLatency,
+              avgLeaderCheckLatency,
+              minLeaderCheckLatency,
+              maxLeaderCheckLatency);
+    }
+    handle.execute();
+  }
+
+  private static void collectFollowerCheckFailure(MetricsDB metricsDB, Result<Record> faultDetectionMetrics) {
+    metricsDB.createMetric(
+            new Metric<Double>(AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_FAILURE.toString(), 0d),
+            new ArrayList<>());
+
+    BatchBindStep handle =
+            metricsDB.startBatchPut(
+                    new Metric<Double>(AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_FAILURE.toString(), 0d),
+                    new ArrayList<>());
+
+    for (Record r : faultDetectionMetrics) {
+      Double sumFollowerCheckFailure =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_FAILURE.toString(),
+                                      MetricsDB.SUM))
+                              .toString());
+
+      Double avgFollowerCheckFailure=
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_FAILURE.toString(),
+                                      MetricsDB.AVG))
+                              .toString());
+
+      Double minFollowerCheckFailure =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_FAILURE.toString(),
+                                      MetricsDB.MIN))
+                              .toString());
+
+      Double maxFollowerCheckFailure =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_FAILURE.toString(),
+                                      MetricsDB.MAX))
+                              .toString());
+
+      handle.bind(
+              sumFollowerCheckFailure,
+              avgFollowerCheckFailure,
+              minFollowerCheckFailure,
+              maxFollowerCheckFailure);
+    }
+    handle.execute();
+  }
+
+  private static void collectFollowerCheckLatency(MetricsDB metricsDB, Result<Record> faultDetectionMetrics) {
+    metricsDB.createMetric(
+            new Metric<Double>(AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString(), 0d),
+            new ArrayList<>());
+
+    BatchBindStep handle =
+            metricsDB.startBatchPut(
+                    new Metric<Double>(AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString(), 0d),
+                    new ArrayList<>());
+
+    for (Record r : faultDetectionMetrics) {
+      Double sumFollowerCheckLatency =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString(),
+                                      MetricsDB.SUM))
+                              .toString());
+
+      Double avgFollowerCheckLatency =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString(),
+                                      MetricsDB.AVG))
+                              .toString());
+
+      Double minFollowerCheckLatency =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString(),
+                                      MetricsDB.MIN))
+                              .toString());
+
+      Double maxFollowerCheckLatency =
+              Double.parseDouble(
+                      r.get(
+                              DBUtils.getAggFieldName(
+                                      AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString(),
+                                      MetricsDB.MAX))
+                              .toString());
+
+      handle.bind(
+              sumFollowerCheckLatency,
+              avgFollowerCheckLatency,
+              minFollowerCheckLatency,
+              maxFollowerCheckLatency);
+    }
+    handle.execute();
   }
 }

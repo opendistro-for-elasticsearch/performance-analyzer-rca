@@ -1099,27 +1099,6 @@ public class AllMetrics {
     }
   }
 
-  public enum FaultDetectionDimension implements MetricDimension {
-    SOURCE_NODE_ID(Constants.SOURCE_NODE_ID),
-    TARGET_NODE_ID(Constants.TARGET_NODE_ID);
-
-    private final String value;
-
-    FaultDetectionDimension(String value) {
-      this.value = value;
-    }
-
-    @Override
-    public String toString() {
-      return value;
-    }
-
-    public static class Constants {
-      public static final String SOURCE_NODE_ID = "SourceNodeID";
-      public static final String TARGET_NODE_ID = "TargetNodeID";
-    }
-  }
-
   public enum CommonDimension implements MetricDimension {
     INDEX_NAME(Constants.INDEX_NAME_VALUE),
     OPERATION(Constants.OPERATION_VALUE),

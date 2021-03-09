@@ -79,7 +79,7 @@ public class ReaderMetricsProcessor implements Runnable {
   private NavigableMap<Long, MasterEventMetricsSnapshot> masterEventMetricsMap;
   private NavigableMap<Long, GarbageCollectorInfoSnapshot> gcInfoMap;
   private Map<AllMetrics.MetricName, NavigableMap<Long, MemoryDBSnapshot>> nodeMetricsMap;
-  private NavigableMap<Long, FaultDetectionMetricsSnapshot> faultDetectionMetricsMap;
+  private NavigableMap<Long, FaultDetectionStatsSnapshot> faultDetectionStatsMap;
   private NavigableMap<Long, MasterThrottlingMetricsSnapshot> masterThrottlingMetricsMap;
   private NavigableMap<Long, ShardStateMetricsSnapshot> shardStateMetricsMap;
 
@@ -134,7 +134,7 @@ public class ReaderMetricsProcessor implements Runnable {
     shardRqMetricsMap = new TreeMap<>();
     httpRqMetricsMap = new TreeMap<>();
     masterEventMetricsMap = new TreeMap<>();
-    faultDetectionMetricsMap = new TreeMap<>();
+    faultDetectionStatsMap = new TreeMap<>();
     shardStateMetricsMap = new TreeMap<>();
     gcInfoMap = new TreeMap<>();
     masterThrottlingMetricsMap = new TreeMap<>();
@@ -271,7 +271,7 @@ public class ReaderMetricsProcessor implements Runnable {
     trimMap(shardRqMetricsMap, RQ_SNAPSHOTS);
     trimMap(httpRqMetricsMap, HTTP_RQ_SNAPSHOTS);
     trimMap(masterEventMetricsMap, MASTER_EVENT_SNAPSHOTS);
-    trimMap(faultDetectionMetricsMap, FAULT_DETECTION_SNAPSHOTS);
+    trimMap(faultDetectionStatsMap, FAULT_DETECTION_SNAPSHOTS);
     trimMap(shardStateMetricsMap, SHARD_STATE_SNAPSHOTS);
     trimMap(gcInfoMap, GC_INFO_SNAPSHOTS);
     trimMap(masterThrottlingMetricsMap, MASTER_THROTTLING_SNAPSHOTS);
@@ -404,9 +404,9 @@ public class ReaderMetricsProcessor implements Runnable {
   }
   
   private void emitFaultDetectionMetrics(long prevWindowStartTime, MetricsDB metricsDB) {
-    if (faultDetectionMetricsMap.containsKey(prevWindowStartTime)) {
+    if (faultDetectionStatsMap.containsKey(prevWindowStartTime)) {
 
-      FaultDetectionMetricsSnapshot prevFaultDetectionSnap = faultDetectionMetricsMap.get(prevWindowStartTime);
+      FaultDetectionStatsSnapshot prevFaultDetectionSnap = faultDetectionStatsMap.get(prevWindowStartTime);
       MetricsEmitter.emitFaultDetectionMetrics(metricsDB, prevFaultDetectionSnap);
     } else {
       LOG.debug(
@@ -584,8 +584,8 @@ public class ReaderMetricsProcessor implements Runnable {
         HttpRequestEventProcessor.buildHttpRequestMetricEventsProcessor(
             currWindowStartTime, currWindowEndTime, conn, httpRqMetricsMap);
     EventProcessor faultDetectionProcessor =
-            FaultDetectionMetricsProcessor.buildFaultDetectionMetricsProcessor(
-                    currWindowStartTime, conn, faultDetectionMetricsMap);
+            FaultDetectionStatsProcessor.buildFaultDetectionStatsProcessor(
+                    currWindowStartTime, conn, faultDetectionStatsMap);
     EventProcessor masterEventsProcessor =
         MasterMetricsEventProcessor.buildMasterMetricEventsProcessor(
             currWindowStartTime, conn, masterEventMetricsMap);

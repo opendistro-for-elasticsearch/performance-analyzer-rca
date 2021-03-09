@@ -39,28 +39,22 @@ public class FaultDetectionMetricsSnapshotTests {
 
     @Test
     public void testPutMetrics() {
-        FaultDetectionMetricsSnapshot faultDetectionMetricsSnapshot =
-                new FaultDetectionMetricsSnapshot(conn, 1535065195000L);
+        FaultDetectionStatsSnapshot faultDetectionMetricsSnapshot =
+                new FaultDetectionStatsSnapshot(conn, 1535065195000L);
         BatchBindStep handle = faultDetectionMetricsSnapshot.startBatchPut();
 
-        handle.bind("1", "sourceNode", "targetNodeId", "follower_check",1535065195000L, null, 0);
-        handle.bind("1", "sourceNode", "targetNodeId", "follower_check", null, 1535065195050L, 0);
+        handle.bind("1.8", "2.0", "2.6", "3.0");
         handle.execute();
-        Result<Record> rt = faultDetectionMetricsSnapshot.fetchAggregatedTable();
+        Result<Record> rt = faultDetectionMetricsSnapshot.fetchAll();
 
         assertEquals(1, rt.size());
-        Double latency = Double.parseDouble(rt.get(0).get("sum_" + FaultDetectionMetricsSnapshot.Fields.LAT.toString()).toString());
-        assertEquals(50d, latency.doubleValue(), 0);
         assertEquals(
-                "sourceNode", rt.get(0).get(AllMetrics.FaultDetectionDimension.SOURCE_NODE_ID.toString()));
+                "1.0", rt.get(0).get(AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString()));
         assertEquals(
-                "targetNodeId",
-                rt.get(0).get(AllMetrics.FaultDetectionDimension.TARGET_NODE_ID.toString()));
+                "2.0", rt.get(0).get(AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_FAILURE.toString()));
         assertEquals(
-                "follower_check",
-                rt.get(0).get(FaultDetectionMetricsSnapshot.Fields.FAULT_DETECTION_TYPE.toString()));
+                "2.6", rt.get(0).get(AllMetrics.FaultDetectionMetric.LEADER_CHECK_LATENCY.toString()));
         assertEquals(
-                0,
-                Integer.parseInt(rt.get(0).get("sum_" + FaultDetectionMetricsSnapshot.Fields.FAULT.toString()).toString()));
+                "3.0", rt.get(0).get(AllMetrics.FaultDetectionMetric.LEADER_CHECK_FAILURE.toString()));
     }
 }

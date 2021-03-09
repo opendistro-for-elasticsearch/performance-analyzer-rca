@@ -376,41 +376,6 @@ public class MetricsEmitterTests extends AbstractReaderTests {
     }
     db.remove();
   }
-  
-  @Test
-  public void testFaultDetectionMetricsEmitter() throws Exception {
-    Connection conn = DriverManager.getConnection(DB_URL);
-    FaultDetectionMetricsSnapshot faultDetectionMetricsSnapshot = new FaultDetectionMetricsSnapshot(conn, 1L);
-    Map<String, String> dimensions = new HashMap<>();
-    dimensions.put(AllMetrics.FaultDetectionDimension.SOURCE_NODE_ID.toString(), "sourceNodeId");
-    dimensions.put(AllMetrics.FaultDetectionDimension.TARGET_NODE_ID.toString(), "targetNodeId");
-    dimensions.put(FaultDetectionMetricsSnapshot.Fields.FAULT_DETECTION_TYPE.toString(), "follower_check");
-    dimensions.put(FaultDetectionMetricsSnapshot.Fields.RID.toString(), "1");
-    faultDetectionMetricsSnapshot.putStartMetric(12345L, dimensions);
-    faultDetectionMetricsSnapshot.putEndMetric(33325L, 0, dimensions);
-
-    dimensions.put(FaultDetectionMetricsSnapshot.Fields.RID.toString(), "2");
-    faultDetectionMetricsSnapshot.putStartMetric(22245L, dimensions);
-
-    dimensions.put(FaultDetectionMetricsSnapshot.Fields.RID.toString(), "3");
-    faultDetectionMetricsSnapshot.putStartMetric(10000L, dimensions);
-    faultDetectionMetricsSnapshot.putEndMetric(30000L, 1, dimensions);
-
-    MetricsDB db = new MetricsDB(1553713438);
-    MetricsEmitter.emitFaultDetectionMetrics(db, faultDetectionMetricsSnapshot);
-    Result<Record> res =
-            db.queryMetric(
-                    Arrays.asList(
-                            AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString(),
-                            AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_FAILURE.toString()),
-                    Arrays.asList("avg", "sum"),
-                    Arrays.asList(AllMetrics.FaultDetectionDimension.SOURCE_NODE_ID.toString()));
-
-    Float latency = Float.parseFloat(res.get(0).get(AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString())
-            .toString());
-    db.remove();
-    assertEquals(20490.0f, latency.floatValue(), 0);
-  }
 
   public void testShardStateMetricsEmitter() throws Exception {
     Connection conn = DriverManager.getConnection(DB_URL);
