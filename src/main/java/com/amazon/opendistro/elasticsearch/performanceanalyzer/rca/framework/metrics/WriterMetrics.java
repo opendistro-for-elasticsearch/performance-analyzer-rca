@@ -32,6 +32,12 @@ public enum WriterMetrics implements MeasurementSet {
     MASTER_THROTTLING_COLLECTOR_NOT_AVAILABLE("MasterThrottlingCollectorNotAvailable", "count", Arrays.asList(
             Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
 
+    ADMISSION_CONTROL_COLLECTOR_EXECUTION_TIME("AdmissionControlCollectorExecutionTime", "millis", Arrays.asList(
+            Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
+
+    ADMISSION_CONTROL_COLLECTOR_NOT_AVAILABLE("AdmissionControlCollectorNotAvailable", "count", Arrays.asList(
+            Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
+
     FAULT_DETECTION_COLLECTOR_EXECUTION_TIME("FaultDetectionCollectorExecutionTime", "millis", Arrays.asList(
     Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
 
