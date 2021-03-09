@@ -22,6 +22,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.Metrics
 import java.sql.Connection;
 import java.util.*;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.jooq.BatchBindStep;
 import org.jooq.DSLContext;
 import org.jooq.Field;
@@ -96,6 +97,22 @@ public class FaultDetectionStatsSnapshot implements Removable {
                 new ArrayList<>();
 
         return create.select(fields).from(DSL.table(this.tableName)).groupBy(groupByFields).fetch();
+    }
+
+    @VisibleForTesting
+    public void putMetrics(double followerCheckLatency, double followerCheckFailure, double leaderCheckLatency,
+                           double leaderCheckFailure) {
+        create
+                .insertInto(DSL.table(this.tableName))
+                .set(DSL.field(DSL.name(AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_FAILURE.toString()), Double.class),
+                        followerCheckFailure)
+                .set(DSL.field(DSL.name(AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString()), Double.class),
+                        followerCheckLatency)
+                .set(DSL.field(DSL.name(AllMetrics.FaultDetectionMetric.LEADER_CHECK_FAILURE.toString()), Double.class),
+                        leaderCheckFailure)
+                .set(DSL.field(DSL.name(AllMetrics.FaultDetectionMetric.LEADER_CHECK_LATENCY.toString()), Double.class),
+                        leaderCheckLatency)
+                .execute();
     }
 
     private List<SelectField<?>> aggregateFollowerCheckLatency() {

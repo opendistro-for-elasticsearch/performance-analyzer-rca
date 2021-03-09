@@ -74,12 +74,9 @@ public class FaultDetectionStatsProcessor implements EventProcessor {
 
     /**
      * Sample event :
-     * ^fault_detection
-     * {"current_time":1615040619474}
-     * {"FollowerCheck_Latency":0.2,"FollowerCheck_Failure":0.0}$
-     * ^fault_detection
-     * {"current_time":1615040619474}
-     * {"LeaderCheck_Latency":0.0,"LeaderCheck_Failure":0.0}$
+     * ^^fault_detection
+     * {"current_time":1566413996768}
+     * {"FollowerCheck_Latency":1.28,"LeaderCheck_Latency":1.8,"FollowerCheck_Failure":3.0,"LeaderCheck_Failure":4.0}$
      */
     @Override
     public void processEvent(Event event) {
