@@ -16,6 +16,8 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.AdmissionControlDimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.AdmissionControlValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheConfigDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheConfigValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CircuitBreakerDimension;
@@ -169,6 +171,8 @@ public final class MetricPropertiesConfig {
     metricPathMap.put(MetricName.MOUNTED_PARTITION_METRICS,
         PerformanceAnalyzerMetrics.sMountedPartitionMetricsPath);
     metricPathMap.put(MetricName.CLUSTER_APPLIER_SERVICE, PerformanceAnalyzerMetrics.sClusterApplierService);
+    metricPathMap.put(MetricName.ADMISSION_CONTROL_METRICS, PerformanceAnalyzerMetrics.sAdmissionControlMetricsPath);
+    metricPathMap.put(MetricName.SHARD_INDEXING_PRESSURE, PerformanceAnalyzerMetrics.sShardIndexingPressurePath);
 
     eventKeyToMetricNameMap = new HashMap<>();
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sCacheConfigPath, MetricName.CACHE_CONFIG);
@@ -186,6 +190,8 @@ public final class MetricPropertiesConfig {
         MetricName.MOUNTED_PARTITION_METRICS);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sClusterApplierService,
             MetricName.CLUSTER_APPLIER_SERVICE);
+    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sAdmissionControlMetricsPath, MetricName.ADMISSION_CONTROL_METRICS);
+    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sShardIndexingPressurePath, MetricName.SHARD_INDEXING_PRESSURE);
 
     metricName2Property = new HashMap<>();
 
@@ -260,6 +266,18 @@ public final class MetricPropertiesConfig {
                     AllMetrics.ClusterApplierServiceStatsValue.values(),
                     createFileHandler(
                             metricPathMap.get(MetricName.CLUSTER_APPLIER_SERVICE))));
+    metricName2Property.put(MetricName.ADMISSION_CONTROL_METRICS,
+        new MetricProperties(
+            AdmissionControlDimension.values(),
+            AdmissionControlValue.values(),
+            createFileHandler(metricPathMap.get(MetricName.ADMISSION_CONTROL_METRICS))
+        ));
+    metricName2Property.put(
+        MetricName.SHARD_INDEXING_PRESSURE,
+        new MetricProperties(
+            AllMetrics.ShardIndexingPressureDimension.values(),
+            AllMetrics.ShardIndexingPressureValue.values(),
+            createFileHandler(metricPathMap.get(MetricName.SHARD_INDEXING_PRESSURE))));
   }
 
   public static MetricPropertiesConfig getInstance() {

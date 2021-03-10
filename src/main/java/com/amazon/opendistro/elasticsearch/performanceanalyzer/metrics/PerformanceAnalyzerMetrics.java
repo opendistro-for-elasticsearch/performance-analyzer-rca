@@ -57,6 +57,8 @@ public class PerformanceAnalyzerMetrics {
   public static final String sIPPath = "ip_metrics";
   public static final String sGcInfoPath = "gc_info";
   public static final String sMountedPartitionMetricsPath = "mounted_part_space";
+  public static final String sAdmissionControlMetricsPath = "admission_control_metrics";
+  public static final String sShardIndexingPressurePath = "shard_indexing_pressure_metrics";
   public static final String sKeyValueDelimitor = ":";
   public static final String sMetricNewLineDelimitor = System.getProperty("line.separator");
   public static final String START_FILE_NAME = "start";
