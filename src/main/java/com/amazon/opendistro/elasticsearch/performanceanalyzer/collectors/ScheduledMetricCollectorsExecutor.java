@@ -15,9 +15,13 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -32,6 +36,9 @@ public class ScheduledMetricCollectorsExecutor extends Thread {
   private boolean paEnabled = false;
   private int minTimeIntervalToSleep = Integer.MAX_VALUE;
   private Map<PerformanceAnalyzerMetricsCollector, Long> metricsCollectors;
+
+  public static final String COLLECTOR_THREAD_POOL_NAME = "pa-collectors-th";
+
   private ThreadPoolExecutor metricsCollectorsTP;
 
   public ScheduledMetricCollectorsExecutor(
@@ -62,14 +69,20 @@ public class ScheduledMetricCollectorsExecutor extends Thread {
   }
 
   public void run() {
+    Thread.currentThread().setName(this.getClass().getSimpleName());
     if (metricsCollectorsTP == null) {
+      ThreadFactory taskThreadFactory = new ThreadFactoryBuilder()
+          .setNameFormat(COLLECTOR_THREAD_POOL_NAME)
+          .setDaemon(true)
+          .build();
       metricsCollectorsTP =
           new ThreadPoolExecutor(
               collectorThreadCount,
               collectorThreadCount,
               COLLECTOR_THREAD_KEEPALIVE_SECS,
               TimeUnit.SECONDS,
-              new ArrayBlockingQueue<>(metricsCollectors.size()));
+              new ArrayBlockingQueue<>(metricsCollectors.size()),
+              taskThreadFactory);
     }
 
     long prevStartTimestamp = System.currentTimeMillis();
@@ -94,11 +107,20 @@ public class ScheduledMetricCollectorsExecutor extends Thread {
             metricsCollectors.entrySet()) {
           if (entry.getValue() <= currentTime) {
             PerformanceAnalyzerMetricsCollector collector = entry.getKey();
+            if (collector.getState() == PerformanceAnalyzerMetricsCollector.State.MUTED) {
+              StatsCollector.instance().logException(StatExceptionCode.COLLECTORS_MUTED);
+              continue;
+            }
             metricsCollectors.put(collector, entry.getValue() + collector.getTimeInterval());
             if (!collector.inProgress()) {
               collector.setStartTime(currentTime);
               metricsCollectorsTP.execute(collector);
             } else {
+              if (collector.getState() == PerformanceAnalyzerMetricsCollector.State.HEALTHY) {
+                collector.setState(PerformanceAnalyzerMetricsCollector.State.SLOW);
+              } else if (collector.getState() == PerformanceAnalyzerMetricsCollector.State.SLOW) {
+                collector.setState(PerformanceAnalyzerMetricsCollector.State.MUTED);
+              }
               LOG.info(
                   "Collector {} is still in progress, so skipping this Interval",
                   collector.getCollectorName());
