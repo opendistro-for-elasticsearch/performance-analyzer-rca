@@ -167,46 +167,31 @@ public class ThreadList {
       vm = VirtualMachine.attach(pid);
     } catch (AttachNotSupportedException ansEx) {
       if (ansEx.getMessage().contains("java_pid")) {
-        LOGGER.debug(
-            "Error in Attaching to VM with exception: {} with ExceptionCode: {}",
-            () -> ansEx.toString(),
-            () -> StatExceptionCode.JVM_ATTACH_ERROR_JAVA_PID_FILE_MISSING.toString());
         StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_ERROR_JAVA_PID_FILE_MISSING);
       } else {
-        LOGGER.debug(
-            "Error in Attaching to VM with exception: {} with ExceptionCode: {}",
-            () -> ansEx.toString(),
-            () -> StatExceptionCode.JVM_ATTACH_ERROR.toString());
         StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_ERROR);
       }
+      // If the thread dump failed then we clean up the old map. So, next time when the collection
+      // happens as it would after a bootup.
+      oldNativeTidMap.clear();
       return;
     } catch (Exception ex) {
-      LOGGER.debug(
-          "Error in Attaching to VM with exception: {} with ExceptionCode: {}",
-          () -> ex.toString(),
-          () -> StatExceptionCode.JVM_ATTACH_ERROR.toString());
       StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_ERROR);
+      oldNativeTidMap.clear();
       return;
     }
 
     try (InputStream in = ((HotSpotVirtualMachine) vm).remoteDataDump(args); ) {
       createMap(in);
     } catch (Exception ex) {
-      LOGGER.debug(
-          "Cannot list threads with exception: {} with ExceptionCode: {}",
-          () -> ex.toString(),
-          () -> StatExceptionCode.JVM_ATTACH_ERROR.toString());
       StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_ERROR);
+      oldNativeTidMap.clear();
     }
 
     try {
       vm.detach();
       StatsCollector.instance().logException(StatExceptionCode.JVM_THREAD_DUMP_SUCCESSFUL);
     } catch (Exception ex) {
-      LOGGER.debug(
-          "Failed in VM Detach with exception: {} with ExceptionCode: {}",
-          () -> ex.toString(),
-          () -> StatExceptionCode.JVM_ATTACH_ERROR.toString());
       StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_ERROR);
     }
   }
@@ -276,23 +261,23 @@ public class ThreadList {
 
   static void runThreadDump(String pid, String[] args) {
     String currentThreadName = Thread.currentThread().getName();
-    if (currentThreadName.startsWith(
-        ScheduledMetricCollectorsExecutor.COLLECTOR_THREAD_POOL_NAME) ||
-        currentThreadName.equals(ScheduledMetricCollectorsExecutor.class.getSimpleName())) {
-      jTidNameMap.clear();
-      oldNativeTidMap.putAll(nativeTidMap);
-      nativeTidMap.clear();
-      jTidMap.clear();
-      nameMap.clear();
+    assert currentThreadName.startsWith(ScheduledMetricCollectorsExecutor.COLLECTOR_THREAD_POOL_NAME) ||
+        currentThreadName.equals(ScheduledMetricCollectorsExecutor.class.getSimpleName()) :
+        String.format("Thread dump called from a non os collector thread: %s", currentThreadName);
+    jTidNameMap.clear();
+    oldNativeTidMap.putAll(nativeTidMap);
+    nativeTidMap.clear();
+    jTidMap.clear();
+    nameMap.clear();
 
-      // TODO: make this map update atomic
-      Util.invokePrivileged(() -> runAttachDump(pid, args));
+    // TODO: make this map update atomic
+    Util.invokePrivileged(() -> runAttachDump(pid, args));
+    // oldNativeTidMap gets cleared if the attach Fails, so that the
+    // metrics collection starts as it would after a restart.
+    if (!oldNativeTidMap.isEmpty()) {
       runMXDump();
-      lastRunTime = System.currentTimeMillis();
-    } else {
-      StatsCollector.instance()
-          .logException(StatExceptionCode.THREAD_DUMP_FROM_NON_COLLECTOR_THREAD);
     }
+    lastRunTime = System.currentTimeMillis();
   }
 
   private static void parseLine(String line) {

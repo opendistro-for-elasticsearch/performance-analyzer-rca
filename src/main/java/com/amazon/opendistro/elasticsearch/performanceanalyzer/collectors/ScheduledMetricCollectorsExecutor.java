@@ -39,18 +39,11 @@ public class ScheduledMetricCollectorsExecutor extends Thread {
 
   public static final String COLLECTOR_THREAD_POOL_NAME = "pa-collectors-th";
 
-  // The next two sets helps us track collectors that are running for too long and
-  // and if they run into long collections cycles more than once we mute them.
-  private Set<PerformanceAnalyzerMetricsCollector> collectorsTakingTooLong;
-  private Set<PerformanceAnalyzerMetricsCollector> excludedCollectors;
-
   private ThreadPoolExecutor metricsCollectorsTP;
 
   public ScheduledMetricCollectorsExecutor(
       int collectorThreadCount, boolean checkFeatureDisabledFlag) {
     metricsCollectors = new HashMap<>();
-    collectorsTakingTooLong = new HashSet<>();
-    excludedCollectors = new HashSet<>();
     metricsCollectorsTP = null;
     this.collectorThreadCount = collectorThreadCount;
     this.checkFeatureDisabledFlag = checkFeatureDisabledFlag;
@@ -114,7 +107,7 @@ public class ScheduledMetricCollectorsExecutor extends Thread {
             metricsCollectors.entrySet()) {
           if (entry.getValue() <= currentTime) {
             PerformanceAnalyzerMetricsCollector collector = entry.getKey();
-            if (excludedCollectors.contains(collector)) {
+            if (collector.getState() == PerformanceAnalyzerMetricsCollector.State.MUTED) {
               StatsCollector.instance().logException(StatExceptionCode.COLLECTORS_MUTED);
               continue;
             }
@@ -123,13 +116,10 @@ public class ScheduledMetricCollectorsExecutor extends Thread {
               collector.setStartTime(currentTime);
               metricsCollectorsTP.execute(collector);
             } else {
-              if (collectorsTakingTooLong.contains(collector)) {
-                collectorsTakingTooLong.remove(collector);
-                excludedCollectors.add(collector);
-              } else {
-                // if this is the first time the collector could not complete in time, we
-                // add it to the collectorsTakingTooLong
-                collectorsTakingTooLong.add(collector);
+              if (collector.getState() == PerformanceAnalyzerMetricsCollector.State.HEALTHY) {
+                collector.setState(PerformanceAnalyzerMetricsCollector.State.SLOW);
+              } else if (collector.getState() == PerformanceAnalyzerMetricsCollector.State.SLOW) {
+                collector.setState(PerformanceAnalyzerMetricsCollector.State.MUTED);
               }
               LOG.info(
                   "Collector {} is still in progress, so skipping this Interval",
