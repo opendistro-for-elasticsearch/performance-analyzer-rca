@@ -3,14 +3,14 @@
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
- *  A copy of the License is located at
+ * A copy of the License is located at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  or in the "license" file accompanying this file. This file is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- *  express or implied. See the License for the specific language governing
- *  permissions and limitations under the License.
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
  */
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.jvmsizing;
@@ -193,6 +193,10 @@ public class HeapSizeIncreaseIT {
   @AErrorPatternIgnored(
       pattern = "OldGenRca:getMaxHeapSizeOrDefault()",
       reason = "YoungGen metrics is expected to be missing.")
+  @AErrorPatternIgnored(
+      pattern = "BucketizedSlidingWindow:next()",
+      reason = "Since the persistence path can be null for integration test, calls to next() is "
+          + "expected to fail")
   public void testHeapSizeIncrease() {
 
   }

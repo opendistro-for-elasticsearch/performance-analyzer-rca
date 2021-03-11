@@ -5,12 +5,12 @@
  * You may not use this file except in compliance with the License.
  * A copy of the License is located at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * or in the "license" file accompanying this file. This file is distributed
  * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
  * express or implied. See the License for the specific language governing
- *  permissions and limitations under the License.
+ * permissions and limitations under the License.
  */
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.persistence;
@@ -914,13 +914,11 @@ class SQLitePersistor extends PersistorBase {
       // made from a data node, it returns a 400 saying it can only be queried from the elected
       // master.
       if (rca.equals(ClusterTemperatureRca.TABLE_NAME)) {
-        Field<Integer> foreignKeyField = DSL.field(
-            SQLiteQueryUtils.getPrimaryKeyColumnName(ResourceFlowUnit.RCA_TABLE_NAME),
-            Integer.class);
-        SelectJoinStep<Record> query = SQLiteQueryUtils
-            .buildSummaryQuery(create, ClusterTemperatureSummary.TABLE_NAME,
-                mostRecentRecord.get(primaryKeyField),
-                foreignKeyField);
+        SelectJoinStep<Record> query = SQLiteQueryUtils.buildSummaryQuery(
+            create,
+            ClusterTemperatureSummary.TABLE_NAME,
+            mostRecentRecord.get(primaryKeyField),
+            primaryKeyField);
         Result<Record> temperatureSummary = query.fetch();
         GenericSummary summary =
             ClusterTemperatureSummary.buildSummaryFromDatabase(temperatureSummary, create);
@@ -933,8 +931,7 @@ class SQLitePersistor extends PersistorBase {
             primaryKeyField);
         Result<Record> nodeTemperatureCompactSummary = query.fetch();
         GenericSummary summary =
-            CompactNodeSummary.buildSummaryFromDatabase(
-                nodeTemperatureCompactSummary, create);
+            CompactNodeSummary.buildSummaryFromDatabase(nodeTemperatureCompactSummary, create);
         response.addNestedSummaryList(summary);
       } else {
         // This gives you the full temperature profile for this node.

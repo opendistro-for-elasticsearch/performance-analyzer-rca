@@ -16,6 +16,8 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.model;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.AdmissionControlDimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.AdmissionControlValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.AggregatedOSDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheConfigDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CacheConfigValue;
@@ -378,6 +380,36 @@ public class MetricsModel {
         AllMetrics.ShardStateValue.SHARD_STATE.toString(),
         new MetricAttributes(
             MetricUnits.COUNT.toString(), AllMetrics.ShardStateDimension.values()));
+
+    allMetricsInitializer.put(
+            AdmissionControlValue.REJECTION_COUNT.toString(),
+            new MetricAttributes(MetricUnits.COUNT.toString(), AdmissionControlDimension.values())
+    );
+    allMetricsInitializer.put(
+            AdmissionControlValue.THRESHOLD_VALUE.toString(),
+            new MetricAttributes(MetricUnits.COUNT.toString(), AdmissionControlDimension.values())
+    );
+    allMetricsInitializer.put(
+            AdmissionControlValue.CURRENT_VALUE.toString(),
+            new MetricAttributes(MetricUnits.COUNT.toString(), AdmissionControlDimension.values())
+    );
+
+    // Shard Indexing Pressure Metrics
+    allMetricsInitializer.put(
+        AllMetrics.ShardIndexingPressureValue.REJECTION_COUNT.toString(),
+        new MetricAttributes(MetricUnits.COUNT.toString(), AllMetrics.ShardIndexingPressureDimension.values()));
+    allMetricsInitializer.put(
+        AllMetrics.ShardIndexingPressureValue.CURRENT_BYTES.toString(),
+        new MetricAttributes(MetricUnits.BYTE.toString(), AllMetrics.ShardIndexingPressureDimension.values()));
+    allMetricsInitializer.put(
+        AllMetrics.ShardIndexingPressureValue.CURRENT_LIMITS.toString(),
+        new MetricAttributes(MetricUnits.BYTE.toString(), AllMetrics.ShardIndexingPressureDimension.values()));
+    allMetricsInitializer.put(
+        AllMetrics.ShardIndexingPressureValue.AVERAGE_WINDOW_THROUGHPUT.toString(),
+        new MetricAttributes(MetricUnits.COUNT_PER_SEC.toString(), AllMetrics.ShardIndexingPressureDimension.values()));
+    allMetricsInitializer.put(
+        AllMetrics.ShardIndexingPressureValue.LAST_SUCCESSFUL_TIMESTAMP.toString(),
+        new MetricAttributes(MetricUnits.MILLISECOND.toString(), AllMetrics.ShardIndexingPressureDimension.values()));
 
     ALL_METRICS = Collections.unmodifiableMap(allMetricsInitializer);
   }
