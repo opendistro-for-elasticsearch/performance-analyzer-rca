@@ -21,7 +21,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatEx
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.MetricsConfiguration;
-import com.sun.tools.attach.AttachNotSupportedException;
 import com.sun.tools.attach.VirtualMachine;
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -165,18 +164,14 @@ public class ThreadList {
     VirtualMachine vm = null;
     try {
       vm = VirtualMachine.attach(pid);
-    } catch (AttachNotSupportedException ansEx) {
-      if (ansEx.getMessage().contains("java_pid")) {
+    } catch (Exception ex) {
+      if (ex.getMessage().contains("java_pid")) {
         StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_ERROR_JAVA_PID_FILE_MISSING);
       } else {
         StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_ERROR);
       }
       // If the thread dump failed then we clean up the old map. So, next time when the collection
       // happens as it would after a bootup.
-      oldNativeTidMap.clear();
-      return;
-    } catch (Exception ex) {
-      StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_ERROR);
       oldNativeTidMap.clear();
       return;
     }
@@ -261,9 +256,9 @@ public class ThreadList {
 
   static void runThreadDump(String pid, String[] args) {
     String currentThreadName = Thread.currentThread().getName();
-    assert currentThreadName.startsWith(ScheduledMetricCollectorsExecutor.COLLECTOR_THREAD_POOL_NAME) ||
-        currentThreadName.equals(ScheduledMetricCollectorsExecutor.class.getSimpleName()) :
-        String.format("Thread dump called from a non os collector thread: %s", currentThreadName);
+    assert currentThreadName.startsWith(ScheduledMetricCollectorsExecutor.COLLECTOR_THREAD_POOL_NAME)
+                   || currentThreadName.equals(ScheduledMetricCollectorsExecutor.class.getSimpleName()) :
+            String.format("Thread dump called from a non os collector thread: %s", currentThreadName);
     jTidNameMap.clear();
     oldNativeTidMap.putAll(nativeTidMap);
     nativeTidMap.clear();

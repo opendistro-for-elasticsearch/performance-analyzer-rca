@@ -34,6 +34,7 @@ public abstract class PerformanceAnalyzerMetricsCollector implements Runnable {
     // ScheduledMetricCollectorsExecutor. A muted collector is skipped.
     MUTED
   }
+
   private static final Logger LOG = LogManager.getLogger(PerformanceAnalyzerMetricsCollector.class);
   private int timeInterval;
   private long startTime;
