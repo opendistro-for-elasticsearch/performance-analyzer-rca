@@ -26,5 +26,7 @@ public class PerformanceAnalyzerAppTest {
     PerformanceAnalyzerApp.main(new String[0]);
     Assert.assertFalse(ConfigStatus.INSTANCE.haveValidConfig());
     Assert.assertEquals(StatsCollector.instance().getCounters().get("ReaderThreadStopped").get(), 1);
+    Assert.assertEquals(StatsCollector.instance().getCounters().get("TotalError").get(), 1);
+    Assert.assertFalse(StatsCollector.instance().getCounters().containsKey("ReaderRestartProcessing"));
   }
 }

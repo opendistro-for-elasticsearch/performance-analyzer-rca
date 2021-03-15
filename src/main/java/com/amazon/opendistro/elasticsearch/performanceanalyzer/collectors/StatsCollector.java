@@ -124,7 +124,6 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
     super(samplingIntervalMillis, name);
     this.metadata = metadata;
     addRcaVersionMetadata(this.metadata);
-    defaultExceptionCodes.add(StatExceptionCode.TOTAL_ERROR);
   }
 
   private StatsCollector(Map<String, String> metadata) {
