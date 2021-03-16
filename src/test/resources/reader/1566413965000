@@ -9,7 +9,7 @@ $
 {"Data_RetryingPendingTasksCount":0,"Master_ThrottledPendingTasksCount":33}
 ^cluster_applier_service
 {"current_time":1566413966544}
-{"ClusterApplierService_Latency":23,"ClusterApplierService_Failure":3}
+{"ClusterApplierService_Latency":23,"ClusterApplierService_Failure":3}$
 ^shard_state_metrics
 {"current_time":1566413966493}
 {"IndexName":"pmc"}

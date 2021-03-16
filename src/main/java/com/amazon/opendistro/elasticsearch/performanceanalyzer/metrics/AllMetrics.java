@@ -44,7 +44,7 @@ public class AllMetrics {
     MOUNTED_PARTITION_METRICS,
     CLUSTER_APPLIER_SERVICE,
     ADMISSION_CONTROL_METRICS,
-    SHARD_INDEXING_PRESSURE;
+    SHARD_INDEXING_PRESSURE,
   }
 
   // we don't store node details as a metric on reader side database.  We
