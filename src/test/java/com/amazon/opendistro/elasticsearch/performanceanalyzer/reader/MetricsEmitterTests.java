@@ -444,38 +444,4 @@ public class MetricsEmitterTests extends AbstractReaderTests {
     db.remove();
     assertEquals(1.0, retrying_task.doubleValue(), 0);
   }
-
-  @Test
-  public void testFaultDetectionMetricsEmitter() throws Exception {
-    Connection conn = DriverManager.getConnection(DB_URL);
-    FaultDetectionStatsSnapshot faultDetectionStatsSnapshot = new FaultDetectionStatsSnapshot(conn, 1L);
-
-    faultDetectionStatsSnapshot.putMetrics(1.23, 3.0, 2.3, 2.0);
-
-    MetricsDB db = new MetricsDB(1553713438);
-    MetricsEmitter.emitFaultDetectionMetrics(db, faultDetectionStatsSnapshot);
-    Result<Record> res =
-            db.queryMetric(
-                    Arrays.asList(
-                            AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString(),
-                            AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_FAILURE.toString(),
-                            AllMetrics.FaultDetectionMetric.LEADER_CHECK_LATENCY.toString(),
-                            AllMetrics.FaultDetectionMetric.LEADER_CHECK_FAILURE.toString()),
-                    Arrays.asList("sum", "sum", "sum", "sum"),
-                    new ArrayList<>());
-
-    Double followerCheckLatency = Double.parseDouble(res.get(0).get(AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString())
-            .toString());
-    Double followerCheckFailure = Double.parseDouble(res.get(0).get(AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_FAILURE.toString())
-            .toString());
-    Double leaderCheckLatency = Double.parseDouble(res.get(0).get(AllMetrics.FaultDetectionMetric.LEADER_CHECK_LATENCY.toString())
-            .toString());
-    Double leaderCheckFailure = Double.parseDouble(res.get(0).get(AllMetrics.FaultDetectionMetric.LEADER_CHECK_FAILURE.toString())
-            .toString());
-    db.remove();
-    assertEquals(1.23, followerCheckLatency.doubleValue(), 0);
-    assertEquals(3.0, followerCheckFailure.doubleValue(), 0);
-    assertEquals(2.3, leaderCheckLatency.doubleValue(), 0);
-    assertEquals(2.0, leaderCheckFailure.doubleValue(), 0);
-  }
 }

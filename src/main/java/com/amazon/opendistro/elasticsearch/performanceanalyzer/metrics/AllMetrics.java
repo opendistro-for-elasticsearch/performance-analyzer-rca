@@ -42,7 +42,8 @@ public class AllMetrics {
     SHARD_STATS,
     MASTER_PENDING,
     MOUNTED_PARTITION_METRICS,
-    SHARD_INDEXING_PRESSURE
+    SHARD_INDEXING_PRESSURE,
+    FAULT_DETECTION,
   }
 
   // we don't store node details as a metric on reader side database.  We

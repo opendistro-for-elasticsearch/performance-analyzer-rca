@@ -169,6 +169,7 @@ public final class MetricPropertiesConfig {
     metricPathMap.put(MetricName.MOUNTED_PARTITION_METRICS,
         PerformanceAnalyzerMetrics.sMountedPartitionMetricsPath);
     metricPathMap.put(MetricName.SHARD_INDEXING_PRESSURE, PerformanceAnalyzerMetrics.sShardIndexingPressurePath);
+    metricPathMap.put(MetricName.FAULT_DETECTION, PerformanceAnalyzerMetrics.sFaultDetection);
 
     eventKeyToMetricNameMap = new HashMap<>();
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sCacheConfigPath, MetricName.CACHE_CONFIG);
@@ -185,6 +186,7 @@ public final class MetricPropertiesConfig {
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sMountedPartitionMetricsPath,
         MetricName.MOUNTED_PARTITION_METRICS);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sShardIndexingPressurePath, MetricName.SHARD_INDEXING_PRESSURE);
+    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sFaultDetection, MetricName.FAULT_DETECTION);
 
     metricName2Property = new HashMap<>();
 
@@ -258,6 +260,13 @@ public final class MetricPropertiesConfig {
             AllMetrics.ShardIndexingPressureDimension.values(),
             AllMetrics.ShardIndexingPressureValue.values(),
             createFileHandler(metricPathMap.get(MetricName.SHARD_INDEXING_PRESSURE))));
+
+    metricName2Property.put(
+            MetricName.FAULT_DETECTION,
+            new MetricProperties(
+                    MetricProperties.EMPTY_DIMENSION,
+                    AllMetrics.FaultDetectionMetric.values(),
+                    createFileHandler(metricPathMap.get(MetricName.FAULT_DETECTION))));
   }
 
   public static MetricPropertiesConfig getInstance() {
