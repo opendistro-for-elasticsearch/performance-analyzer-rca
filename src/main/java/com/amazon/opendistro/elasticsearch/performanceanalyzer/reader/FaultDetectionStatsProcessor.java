@@ -18,7 +18,7 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared.Event;
-import java.io.File;
+
 import java.io.IOException;
 import java.sql.Connection;
 import java.util.HashMap;
@@ -48,7 +48,7 @@ public class FaultDetectionStatsProcessor implements EventProcessor {
             long currWindowStartTime,
             Connection conn,
             NavigableMap<Long, FaultDetectionStatsSnapshot>
-                faultDetectionMetricsMap) {
+                    faultDetectionMetricsMap) {
         FaultDetectionStatsSnapshot faultDetectionStatsSnapshot = faultDetectionMetricsMap.get(currWindowStartTime);
         if (faultDetectionStatsSnapshot == null) {
             faultDetectionStatsSnapshot = new FaultDetectionStatsSnapshot(conn, currWindowStartTime);

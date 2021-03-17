@@ -377,6 +377,7 @@ public class MetricsEmitterTests extends AbstractReaderTests {
     db.remove();
   }
 
+  @Test
   public void testShardStateMetricsEmitter() throws Exception {
     Connection conn = DriverManager.getConnection(DB_URL);
     ShardStateMetricsSnapshot shardStateMetricsSnapshot = new ShardStateMetricsSnapshot(conn, 1L);

@@ -26,7 +26,7 @@ import org.jooq.Result;
 import org.junit.Before;
 import org.junit.Test;
 
-public class FaultDetectionMetricsSnapshotTests {
+public class FaultDetectionStatsSnapshotTests {
     private static final String DB_URL = "jdbc:sqlite:";
     private Connection conn;
 
@@ -49,12 +49,12 @@ public class FaultDetectionMetricsSnapshotTests {
 
         assertEquals(1, rt.size());
         assertEquals(
-                "1.0", rt.get(0).get(AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString()));
+                1.8, rt.get(0).get(AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.toString()));
         assertEquals(
-                "2.0", rt.get(0).get(AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_FAILURE.toString()));
+                2.0, rt.get(0).get(AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_FAILURE.toString()));
         assertEquals(
-                "2.6", rt.get(0).get(AllMetrics.FaultDetectionMetric.LEADER_CHECK_LATENCY.toString()));
+                2.6, rt.get(0).get(AllMetrics.FaultDetectionMetric.LEADER_CHECK_LATENCY.toString()));
         assertEquals(
-                "3.0", rt.get(0).get(AllMetrics.FaultDetectionMetric.LEADER_CHECK_FAILURE.toString()));
+                3.0, rt.get(0).get(AllMetrics.FaultDetectionMetric.LEADER_CHECK_FAILURE.toString()));
     }
 }
