@@ -19,7 +19,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
 
 public class FollowerCheck_Latency extends Metric {
-    public FollowerCheck_Latency( long evaluationIntervalSeconds) {
+    public FollowerCheck_Latency(long evaluationIntervalSeconds) {
         super(AllMetrics.FaultDetectionMetric.FOLLOWER_CHECK_LATENCY.name(), evaluationIntervalSeconds);
     }
 }
