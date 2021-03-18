@@ -8,6 +8,9 @@ $
 ^master_throttling_metrics
 {"current_time":1566413996947}
 {"Data_RetryingPendingTasksCount":0,"Master_ThrottledPendingTasksCount":33}
+^cluster_applier_service
+{"current_time":1566413996947}
+{"ClusterApplierService_Latency":23,"ClusterApplierService_Failure":3}$
 ^shard_state_metrics
 {"current_time":1566413996664}
 {"IndexName":"pmc"}

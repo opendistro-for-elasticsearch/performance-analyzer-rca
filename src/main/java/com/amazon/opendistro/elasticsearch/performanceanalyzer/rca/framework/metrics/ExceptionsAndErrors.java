@@ -59,6 +59,8 @@ public enum ExceptionsAndErrors implements MeasurementSet {
 
   ELECTION_TERM_COLLECTOR_ERROR("ElectionTermCollectorError"),
 
+  CLUSTER_APPLIER_SERVICE_STATS_COLLECTOR_ERROR("ClusterApplierServiceStatsCollector"),
+
   SHARD_INDEXING_PRESSURE_COLLECTOR_ERROR("ShardIndexingPressureMetricsCollector");
 
   /** What we want to appear as the metric name. */

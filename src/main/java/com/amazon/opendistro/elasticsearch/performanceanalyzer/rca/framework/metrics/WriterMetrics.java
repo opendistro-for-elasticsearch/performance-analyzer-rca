@@ -39,7 +39,11 @@ public enum WriterMetrics implements MeasurementSet {
             Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
 
     FAULT_DETECTION_COLLECTOR_EXECUTION_TIME("FaultDetectionCollectorExecutionTime", "millis", Arrays.asList(
-    Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
+            Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
+
+    CLUSTER_APPLIER_SERVICE_STATS_COLLECTOR_EXECUTION_TIME("ClusterApplierServiceStatsCollectorExecutionTime",
+            "millis", Arrays.asList(Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT,
+            Statistics.SUM)),
 
     ELECTION_TERM_COLLECTOR_EXECUTION_TIME("ElectionTermCollectorExecutionTime", "millis", Arrays.asList(
             Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),

@@ -382,6 +382,16 @@ public class MetricsModel {
             MetricUnits.COUNT.toString(), AllMetrics.ShardStateDimension.values()));
 
     allMetricsInitializer.put(
+            AllMetrics.ClusterApplierServiceStatsValue.CLUSTER_APPLIER_SERVICE_LATENCY.toString(),
+            new MetricAttributes(
+                    MetricUnits.MILLISECOND.toString(), EmptyDimension.values()));
+
+    allMetricsInitializer.put(
+            AllMetrics.ClusterApplierServiceStatsValue.CLUSTER_APPLIER_SERVICE_FAILURE.toString(),
+            new MetricAttributes(
+                    MetricUnits.COUNT.toString(), EmptyDimension.values()));
+    
+    allMetricsInitializer.put(
             AdmissionControlValue.REJECTION_COUNT.toString(),
             new MetricAttributes(MetricUnits.COUNT.toString(), AdmissionControlDimension.values())
     );

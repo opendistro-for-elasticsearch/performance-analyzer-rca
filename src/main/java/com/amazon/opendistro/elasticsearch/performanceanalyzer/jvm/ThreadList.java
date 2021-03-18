@@ -16,6 +16,7 @@
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.jvm;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.OSMetricsGeneratorFactory;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.ScheduledMetricCollectorsExecutor;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatExceptionCode;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors.StatsCollector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
@@ -32,9 +33,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import sun.tools.attach.HotSpotVirtualMachine;
@@ -50,10 +52,14 @@ public class ThreadList {
   static final Logger LOGGER = LogManager.getLogger(ThreadList.class);
   static final int samplingInterval =
       MetricsConfiguration.CONFIG_MAP.get(ThreadList.class).samplingInterval;
+
+  // This value controls how often we do the thread dump.
   private static final long minRunInterval = samplingInterval;
   private static final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
   private static final Pattern linePattern = Pattern.compile("\"([^\"]*)\"");
   private static long lastRunTime = 0;
+
+  private static Lock vmAttachLock = new ReentrantLock();
 
   public static class ThreadState {
     public long javaTid;
@@ -104,37 +110,53 @@ public class ThreadList {
     }
   }
 
+  /**
+   * This is called from OSMetricsCollector#collectMetrics. So this is not called
+   * in the critical path of ES request handling. Even for the collector thread,
+   * we do a timed wait to acquire this lock and move on if we could not get it.
+   * @return A hashmap of threadId to threadState.
+   */
   public static Map<Long, ThreadState> getNativeTidMap() {
-    synchronized (ThreadList.class) {
-      if (System.currentTimeMillis() > lastRunTime + minRunInterval) {
-        runThreadDump(pid, new String[0]);
+    if (vmAttachLock.tryLock()) {
+      try {
+        // Thread dumps are expensive and therefore we make sure that at least
+        // minRunInterval milliseconds have elapsed between two attempts.
+        if (System.currentTimeMillis() > lastRunTime + minRunInterval) {
+          runThreadDump(pid, new String[0]);
+        }
+      } finally {
+        vmAttachLock.unlock();
       }
-      // - sending a copy so that if runThreadDump next iteration clears it; caller still has the
-      // state at the call time
-      // - not too expensive as this is only being called from Scheduled Collectors (only once in
-      // few seconds)
-      return new HashMap<>(nativeTidMap);
+    } else {
+      StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_LOCK_ACQUISITION_FAILED);
     }
+
+    // - sending a copy so that if runThreadDump next iteration clears it; caller still has the
+    // state at the call time
+    // - not too expensive as this is only being called from Scheduled Collectors (only once in
+    // few seconds)
+    return new HashMap<>(nativeTidMap);
   }
 
+  /**
+   * This method is called from the critical bulk and search paths which PA
+   * intercepts. This method used to try to do a thread dump if it could not
+   * find the information about the thread in question. The thread dump is an
+   * expensive operation and can stall see VirtualMachineImpl#VirtualMachineImpl()
+   * for jdk-11 u06. We don't want the ES threads to pay the price. We skip this
+   * iteration and then hopefully in the next call to getNativeTidMap(), the
+   * OSMetricsCollector#collectMetrics will fill the jTidMap. This transfers the
+   * responsibility from the ES threads to the PA collector threads.
+   *
+   * @param threadId The threadId of the current thread.
+   * @return If we have successfully captured the ThreadState, then we emit it or Null otherwise.
+   */
   public static ThreadState getThreadState(long threadId) {
     ThreadState retVal = jTidMap.get(threadId);
-
-    if (retVal != null) {
-      return retVal;
+    if (retVal == null) {
+      StatsCollector.instance().logException(StatExceptionCode.NO_THREAD_STATE_INFO);
     }
-
-    synchronized (ThreadList.class) {
-      retVal = jTidMap.get(threadId);
-
-      if (retVal != null) {
-        return retVal;
-      }
-
-      runThreadDump(pid, new String[0]);
-    }
-
-    return jTidMap.get(threadId);
+    return retVal;
   }
 
   // Attach to pid and perform a thread dump
@@ -143,31 +165,28 @@ public class ThreadList {
     try {
       vm = VirtualMachine.attach(pid);
     } catch (Exception ex) {
-      LOGGER.debug(
-          "Error in Attaching to VM with exception: {} with ExceptionCode: {}",
-          () -> ex.toString(),
-          () -> StatExceptionCode.JVM_ATTACH_ERROR.toString());
-      StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_ERROR);
+      if (ex.getMessage().contains("java_pid")) {
+        StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_ERROR_JAVA_PID_FILE_MISSING);
+      } else {
+        StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_ERROR);
+      }
+      // If the thread dump failed then we clean up the old map. So, next time when the collection
+      // happens as it would after a bootup.
+      oldNativeTidMap.clear();
       return;
     }
 
     try (InputStream in = ((HotSpotVirtualMachine) vm).remoteDataDump(args); ) {
       createMap(in);
     } catch (Exception ex) {
-      LOGGER.debug(
-          "Cannot list threads with exception: {} with ExceptionCode: {}",
-          () -> ex.toString(),
-          () -> StatExceptionCode.JVM_ATTACH_ERROR.toString());
       StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_ERROR);
+      oldNativeTidMap.clear();
     }
 
     try {
       vm.detach();
+      StatsCollector.instance().logException(StatExceptionCode.JVM_THREAD_DUMP_SUCCESSFUL);
     } catch (Exception ex) {
-      LOGGER.debug(
-          "Failed in VM Detach with exception: {} with ExceptionCode: {}",
-          () -> ex.toString(),
-          () -> StatExceptionCode.JVM_ATTACH_ERROR.toString());
       StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_ERROR);
     }
   }
@@ -236,6 +255,10 @@ public class ThreadList {
   }
 
   static void runThreadDump(String pid, String[] args) {
+    String currentThreadName = Thread.currentThread().getName();
+    assert currentThreadName.startsWith(ScheduledMetricCollectorsExecutor.COLLECTOR_THREAD_POOL_NAME)
+                   || currentThreadName.equals(ScheduledMetricCollectorsExecutor.class.getSimpleName()) :
+            String.format("Thread dump called from a non os collector thread: %s", currentThreadName);
     jTidNameMap.clear();
     oldNativeTidMap.putAll(nativeTidMap);
     nativeTidMap.clear();
@@ -244,8 +267,11 @@ public class ThreadList {
 
     // TODO: make this map update atomic
     Util.invokePrivileged(() -> runAttachDump(pid, args));
-    runMXDump();
-
+    // oldNativeTidMap gets cleared if the attach Fails, so that the
+    // metrics collection starts as it would after a restart.
+    if (!oldNativeTidMap.isEmpty()) {
+      runMXDump();
+    }
     lastRunTime = System.currentTimeMillis();
   }
 
