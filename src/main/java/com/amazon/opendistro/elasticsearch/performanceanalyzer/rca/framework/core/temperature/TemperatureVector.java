@@ -3,14 +3,14 @@
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
- *  A copy of the License is located at
+ * A copy of the License is located at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  or in the "license" file accompanying this file. This file is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- *  express or implied. See the License for the specific language governing
- *  permissions and limitations under the License.
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
  */
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature;
@@ -19,6 +19,16 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.util.Comparator;
 import javax.annotation.Nullable;
+
+/**
+ * This vector contains the normalized values across dimensions.
+ * normalized[0] gives the normalized value of the CPU on a scale of 0-10.
+ * This can be on a shard level as well as on a node level.
+ * On a shard level the normalized value is computed taking the resource used
+ * by that shard and the total used in the node.
+ * On a node level the normalized value is computed by taking into account the
+ * average usage by shards and the total used in the node.
+ */
 
 public class TemperatureVector {
     public static final String DIMENSION_KEY = "dimension";

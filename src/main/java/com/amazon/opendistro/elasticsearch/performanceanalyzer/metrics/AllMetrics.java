@@ -41,7 +41,10 @@ public class AllMetrics {
     THREAD_POOL,
     SHARD_STATS,
     MASTER_PENDING,
-    MOUNTED_PARTITION_METRICS
+    MOUNTED_PARTITION_METRICS,
+    CLUSTER_APPLIER_SERVICE,
+    ADMISSION_CONTROL_METRICS,
+    SHARD_INDEXING_PRESSURE,
   }
 
   // we don't store node details as a metric on reader side database.  We
@@ -829,6 +832,26 @@ public class AllMetrics {
     MasterPendingTaskDimension(String value) {
       this.value = value;
     }
+    
+    @Override
+    public String toString() {
+      return value;
+    }
+    
+    public static class Constants {
+      public static final String PENDING_TASK_TYPE = "Master_PendingTaskType";
+    }
+  }
+  
+  public enum ClusterApplierServiceStatsValue implements MetricValue {
+    CLUSTER_APPLIER_SERVICE_LATENCY(ClusterApplierServiceStatsValue.Constants.CLUSTER_APPLIER_SERVICE_LATENCY),
+    CLUSTER_APPLIER_SERVICE_FAILURE(ClusterApplierServiceStatsValue.Constants.CLUSTER_APPLIER_SERVICE_FAILURE);
+
+    private final String value;
+
+    ClusterApplierServiceStatsValue(String value) {
+      this.value = value;
+    }
 
     @Override
     public String toString() {
@@ -836,7 +859,8 @@ public class AllMetrics {
     }
 
     public static class Constants {
-      public static final String PENDING_TASK_TYPE = "Master_PendingTaskType";
+      public static final String CLUSTER_APPLIER_SERVICE_LATENCY = "ClusterApplierService_Latency";
+      public static final String CLUSTER_APPLIER_SERVICE_FAILURE = "ClusterApplierService_Failure";
     }
   }
 
@@ -1332,6 +1356,163 @@ public class AllMetrics {
 
     public static class Constants {
       public static final String SHARD_STATE = "Shard_State";
+    }
+  }
+
+  /** Enumeration of the indexing stages. */
+  public enum IndexingStage {
+    COORDINATING(Constants.COORDINATING_VALUE),
+    PRIMARY(Constants.PRIMARY_VALUE),
+    REPLICA(Constants.REPLICA_VALUE);
+
+    private final String value;
+
+    IndexingStage(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String COORDINATING_VALUE = "Coordinating";
+      public static final String PRIMARY_VALUE = "Primary";
+      public static final String REPLICA_VALUE = "Replica";
+    }
+  }
+
+  /** Enumeration of the Shard Indexing Pressure Dimension*/
+  public enum ShardIndexingPressureDimension implements  MetricDimension {
+    INDEXING_STAGE(Constants.INDEXING_STAGE),
+    INDEX_NAME(Constants.INDEX_NAME_VALUE),
+    SHARD_ID(Constants.SHARD_ID_VALUE);
+
+    private final String value;
+
+    ShardIndexingPressureDimension(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String INDEXING_STAGE = "IndexingStage";
+      public static final String INDEX_NAME_VALUE = "IndexName";
+      public static final String SHARD_ID_VALUE = "ShardID";
+    }
+  }
+
+  /**
+   * Column names of Rejection_Count table
+   * NodeRole | IndexName | ShardID | sum | avg | min |max
+   * Column names of Current_Bytes table
+   * NodeRole | IndexName | ShardID | sum | avg | min |max
+   * Column names of Current_Limits table
+   * NodeRole | IndexName | ShardID | sum | avg | min |max
+   * Column names of Average_Window_Throughput table
+   * NodeRole | IndexName | ShardID | sum | avg | min |max
+   * Column names of Last_Successful_Timestamp table
+   * NodeRole | IndexName | ShardID | sum | avg | min |max
+   *
+   * <p>Example:
+   * Coordinating|pmc|4|1.0|1.0|1.0|1.0
+   * Primary|pmc|2|1.0|1.0|1.0|1.0
+   */
+  public enum ShardIndexingPressureValue implements MetricValue {
+    REJECTION_COUNT(Constants.REJECTION_COUNT_VALUE),
+    CURRENT_BYTES(Constants.CURRENT_BYTES),
+    CURRENT_LIMITS(Constants.CURRENT_LIMITS),
+    AVERAGE_WINDOW_THROUGHPUT(Constants.AVERAGE_WINDOW_THROUGHPUT),
+    LAST_SUCCESSFUL_TIMESTAMP(Constants.LAST_SUCCESSFUL_TIMESTAMP);
+
+    private final String value;
+
+    ShardIndexingPressureValue(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String REJECTION_COUNT_VALUE = "Indexing_Pressure_Rejection_Count";
+      public static final String CURRENT_BYTES = "Indexing_Pressure_Current_Bytes";
+      public static final String CURRENT_LIMITS = "Indexing_Pressure_Current_Limits";
+      public static final String AVERAGE_WINDOW_THROUGHPUT = "Indexing_Pressure_Average_Window_Throughput";
+      public static final String LAST_SUCCESSFUL_TIMESTAMP = "Indexing_Pressure_Last_Successful_Timestamp";
+    }
+  }
+
+  /*
+   * Column names of AdmissionControl_RejectionCount table
+   * ControllerName | sum | avg | min | max
+   *
+   * Column names of AdmissionControl_ThresholdValue table
+   * ControllerName | sum | avg | min | max
+   *
+   * Column names of AdmissionControl_CurrentValue table
+   * ControllerName | sum | avg | min | max
+   *
+   * Example:
+   * Global_JVMMP|41.0|8.2|8.0|9.0
+   * Request_Size|0.0|0.0|0.0|0.0
+   */
+  public enum AdmissionControlDimension implements MetricDimension, JooqFieldValue {
+    CONTROLLER_NAME(Constants.CONTROLLER_NAME);
+
+    private final String value;
+
+    AdmissionControlDimension(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    @Override
+    public Field<String> getField() {
+      return DSL.field(DSL.name(this.value), String.class);
+    }
+
+    @Override
+    public String getName() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String CONTROLLER_NAME = "ControllerName";
+    }
+  }
+
+  public enum AdmissionControlValue implements MetricValue {
+    CURRENT_VALUE(Constants.CURRENT_VALUE),
+    THRESHOLD_VALUE(Constants.THRESHOLD_VALUE),
+    REJECTION_COUNT(Constants.REJECTION_COUNT);
+
+    private final String value;
+
+    AdmissionControlValue(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String CURRENT_VALUE = "AdmissionControl_CurrentValue";
+      public static final String THRESHOLD_VALUE = "AdmissionControl_ThresholdValue";
+      public static final String REJECTION_COUNT = "AdmissionControl_RejectionCount";
     }
   }
 

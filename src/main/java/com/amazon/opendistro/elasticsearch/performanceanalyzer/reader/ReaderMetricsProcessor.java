@@ -82,6 +82,7 @@ public class ReaderMetricsProcessor implements Runnable {
   private NavigableMap<Long, FaultDetectionMetricsSnapshot> faultDetectionMetricsMap;
   private NavigableMap<Long, MasterThrottlingMetricsSnapshot> masterThrottlingMetricsMap;
   private NavigableMap<Long, ShardStateMetricsSnapshot> shardStateMetricsMap;
+  private NavigableMap<Long, AdmissionControlSnapshot> admissionControlMetricsMap;
 
   private static final int MAX_DATABASES = 2;
   private static final int OS_SNAPSHOTS = 4;
@@ -92,6 +93,7 @@ public class ReaderMetricsProcessor implements Runnable {
   private static final int FAULT_DETECTION_SNAPSHOTS = 2;
   private static final int GC_INFO_SNAPSHOTS = 4;
   private static final int MASTER_THROTTLING_SNAPSHOTS = 2;
+  private static final int AC_SNAPSHOTS = 2;
   private final String rootLocation;
   private static final Map<String, Double> TIMING_STATS = new HashMap<>();
   private static final Map<String, String> STATS_DATA = new HashMap<>();
@@ -138,6 +140,7 @@ public class ReaderMetricsProcessor implements Runnable {
     shardStateMetricsMap = new TreeMap<>();
     gcInfoMap = new TreeMap<>();
     masterThrottlingMetricsMap = new TreeMap<>();
+    admissionControlMetricsMap = new TreeMap<>();
     this.rootLocation = rootLocation;
     this.configOverridesApplier = new ConfigOverridesApplier();
 
@@ -275,6 +278,7 @@ public class ReaderMetricsProcessor implements Runnable {
     trimMap(shardStateMetricsMap, SHARD_STATE_SNAPSHOTS);
     trimMap(gcInfoMap, GC_INFO_SNAPSHOTS);
     trimMap(masterThrottlingMetricsMap, MASTER_THROTTLING_SNAPSHOTS);
+    trimMap(admissionControlMetricsMap, AC_SNAPSHOTS);
 
     for (NavigableMap<Long, MemoryDBSnapshot> snap : nodeMetricsMap.values()) {
       // do the same thing as OS_SNAPSHOTS.  Eventually MemoryDBSnapshot
@@ -383,6 +387,7 @@ public class ReaderMetricsProcessor implements Runnable {
     MetricsDB metricsDB = createMetricsDB(prevWindowStartTime);
 
     emitGarbageCollectionInfo(prevWindowStartTime, metricsDB);
+    emitAdmissionControlMetrics(prevWindowStartTime, metricsDB);
     emitMasterMetrics(prevWindowStartTime, metricsDB);
     emitShardRequestMetrics(prevWindowStartTime, alignedOSSnapHolder, osAlignedSnap, metricsDB);
     emitHttpRequestMetrics(prevWindowStartTime, metricsDB);
@@ -431,6 +436,15 @@ public class ReaderMetricsProcessor implements Runnable {
     } else {
       LOG.debug("Garbage collector information snapshot does not exist for the previous window. "
           + "Not emitting metrics.");
+    }
+  }
+
+  private void emitAdmissionControlMetrics(long prevWindowStartTime, MetricsDB metricsDB) throws Exception {
+    if (admissionControlMetricsMap.containsKey(prevWindowStartTime)) {
+      AdmissionControlSnapshot previousSnapshot = admissionControlMetricsMap.get(prevWindowStartTime);
+      MetricsEmitter.emitAdmissionControlMetrics(metricsDB, previousSnapshot);
+    } else {
+      LOG.debug("Admission control snapshot does not exist for the previous window. Not emitting metrics.");
     }
   }
 
@@ -603,6 +617,8 @@ public class ReaderMetricsProcessor implements Runnable {
                     currWindowStartTime, conn, masterThrottlingMetricsMap);
     ClusterDetailsEventProcessor clusterDetailsEventsProcessor =
         new ClusterDetailsEventProcessor(configOverridesApplier);
+    EventProcessor admissionControlProcessor =
+            AdmissionControlProcessor.build(currWindowStartTime, conn, admissionControlMetricsMap);
 
     // The event dispatcher dispatches events to each of the registered event processors.
     // In addition to event processing each processor has an initialize/finalize function that is
@@ -623,6 +639,7 @@ public class ReaderMetricsProcessor implements Runnable {
     eventDispatcher.registerEventProcessor(clusterDetailsEventsProcessor);
     eventDispatcher.registerEventProcessor(faultDetectionProcessor);
     eventDispatcher.registerEventProcessor(garbageCollectorInfoProcessor);
+    eventDispatcher.registerEventProcessor(admissionControlProcessor);
 
     eventDispatcher.initializeProcessing(
         currWindowStartTime, currWindowStartTime + MetricsConfiguration.SAMPLING_INTERVAL);

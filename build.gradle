@@ -32,6 +32,7 @@ plugins {
     id "de.undercouch.download" version "4.0.4"
     id 'com.adarshr.test-logger' version '2.1.0'
     id 'org.gradle.test-retry' version '1.2.0'
+    id 'com.diffplug.spotless' version '5.8.2'
 }
 
 application {
@@ -71,20 +72,40 @@ publishing {
         maven(MavenPublication) {
             groupId = 'com.amazon.opendistro.elasticsearch'
             artifactId = 'performanceanalyzer-rca'
-            version = '1.12'
+            version = '1.13'
             from components.java
         }
     }
 }
 
 ext {
-    opendistroVersion = '1.12'
+    opendistroVersion = '1.13'
     isSnapshot = "true" == System.getProperty("build.snapshot", "true")
 }
 
 checkstyle {
     toolVersion '8.24'
     configFile file("configs/checkstyle/checkstyle.xml")
+}
+
+apply plugin: 'com.diffplug.spotless'
+
+spotless {
+    java {
+        licenseHeaderFile(file('license-header'))
+
+        // only apply formatting rules to updated files
+        // ratchetFrom 'origin/master'
+
+        // googleJavaFormat()
+        // importOrder()
+        // removeUnusedImports()
+        // trimTrailingWhitespace()
+        // endWithNewLine()
+
+        // add support for spotless:off and spotless:on tags to exclude sections of code
+        // toggleOffOn()
+    }
 }
 
 tasks.withType(Checkstyle) {
@@ -226,6 +247,7 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 compileJava {
+    dependsOn spotlessApply
     JavaVersion targetVersion = JavaVersion.toVersion(targetCompatibility);
     if (targetVersion.isJava9Compatible()) {
         options.compilerArgs += ["--add-exports", "jdk.attach/sun.tools.attach=ALL-UNNAMED"]
@@ -272,8 +294,8 @@ dependencies {
     compile 'org.bouncycastle:bcpkix-jdk15on:1.68'
     compile 'org.xerial:sqlite-jdbc:3.32.3.2'
     compile 'com.google.guava:guava:28.2-jre'
-    compile 'com.fasterxml.jackson.core:jackson-annotations:2.10.4'
-    compile 'com.fasterxml.jackson.core:jackson-databind:2.10.4'
+    compile 'com.fasterxml.jackson.core:jackson-annotations:2.10.5'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.10.5.1'
     compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.13.0'
     compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.13.0'
     compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.9'
@@ -352,7 +374,7 @@ task cloneGitRepo(type: GitClone) {
 
 task removeLicenses(type: Delete) {
     dependsOn(cloneGitRepo)
-    def toDelete = Paths.get(paDir, 'licenses', 'performanceanalyzer-rca-1.12.jar.sha1')
+    def toDelete = Paths.get(paDir, 'licenses', 'performanceanalyzer-rca-1.13.jar.sha1')
     delete(toDelete)
 }
 
@@ -375,7 +397,7 @@ task copyAllArtifacts(type: Copy) {
     def projectPathStr = getProjectDir().toPath().toString()
     def dockerArtifacts = Paths.get(projectPathStr, 'docker').toString()
     def rcaArtifacts = Paths.get(projectPathStr, 'build', 'distributions', 'performance-analyzer-rca.zip')
-    def paArtifacts = Paths.get(paDir, 'build', 'distributions', 'opendistro_performance_analyzer-1.12.0.0-SNAPSHOT.zip')
+    def paArtifacts = Paths.get(paDir, 'build', 'distributions', 'opendistro-performance-analyzer-1.13.0.0-SNAPSHOT.zip')
 
     dockerArtifactsDir = Paths.get(dockerBuildDir, 'rca-docker')
     from(dockerArtifacts)

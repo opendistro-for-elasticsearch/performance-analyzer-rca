@@ -3,14 +3,14 @@
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
- *  A copy of the License is located at
+ * A copy of the License is located at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  or in the "license" file accompanying this file. This file is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- *  express or implied. See the License for the specific language governing
- *  permissions and limitations under the License.
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
  */
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.temperature;
@@ -22,6 +22,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.cor
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.core.temperature.TemperatureVector;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.util.SQLiteQueryUtils;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.hotshard.IndexShardKey;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -41,7 +42,8 @@ import org.jooq.SelectJoinStep;
 import org.jooq.impl.DSL;
 
 /**
- * A node dimension profile is categorization of all shards in the node into different heatZones.
+ * A node dimension profile is categorization of all shards in the node into different heatZones across 1 dimension.
+ * The dimension_key stores the dimension value.
  */
 public class NodeLevelDimensionalSummary extends GenericSummary {
 
@@ -60,6 +62,14 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
     private final NodeLevelZoneSummary[] zoneProfiles;
     private int numberOfShards;
 
+    // Mean Temperature is a mean of the normalized heat of the resource used across shards on the node.
+    // e.g. if there are 10 shards on the node and the normalized sum of the resource used
+    // across shards is 33. The mean would be 3.3
+    // This aim is the balance this parameter across the nodes and have as little delta
+    // as possible across nodes.
+    // TotalUsage is the total value of the resource used in that node.
+    // Note that normalized(totalUsage) != meanTemperature*numberofshards as total usage
+    // also has shard Independent component.
     public NodeLevelDimensionalSummary(final TemperatureDimension profileForDimension,
                                        final TemperatureVector.NormalizedValue meanTemperature,
                                        double totalUsage) {
@@ -245,7 +255,8 @@ public class NodeLevelDimensionalSummary extends GenericSummary {
                     element.getAsJsonObject().get(ShardProfileSummary.INDEX_NAME_KEY).getAsString();
             int shardId =
                     element.getAsJsonObject().get(ShardProfileSummary.SHARD_ID_KEY).getAsInt();
-            ShardProfileSummary shard = shardStore.getOrCreateIfAbsent(indexName, shardId);
+            IndexShardKey indexShardKey = new IndexShardKey(indexName, shardId);
+            ShardProfileSummary shard = shardStore.getOrCreateIfAbsent(indexShardKey);
             JsonArray temperatureProfiles =
                     element.getAsJsonObject().get(ShardProfileSummary.TEMPERATURE_KEY).getAsJsonArray();
 
