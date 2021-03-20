@@ -22,7 +22,6 @@ buildscript {
 
 plugins {
     id 'java'
-    id 'checkstyle'
     id 'application'
     id 'maven-publish'
     id 'com.google.protobuf' version '0.8.8'
@@ -32,7 +31,7 @@ plugins {
     id "de.undercouch.download" version "4.0.4"
     id 'com.adarshr.test-logger' version '2.1.0'
     id 'org.gradle.test-retry' version '1.2.0'
-    id 'com.diffplug.spotless' version '5.8.2'
+    id 'com.diffplug.spotless' version '5.11.0'
 }
 
 application {
@@ -81,30 +80,23 @@ publishing {
 ext {
     opendistroVersion = '1.13'
     isSnapshot = "true" == System.getProperty("build.snapshot", "true")
+    gitDefaultBranch = 'main'
 }
-
-checkstyle {
-    toolVersion '8.24'
-    configFile file("configs/checkstyle/checkstyle.xml")
-}
-
-apply plugin: 'com.diffplug.spotless'
 
 spotless {
     java {
-        licenseHeaderFile(file('license-header'))
-
         // only apply formatting rules to updated files
-        // ratchetFrom 'origin/master'
+        ratchetFrom "origin/${gitDefaultBranch}"
 
-        // googleJavaFormat()
-        // importOrder()
-        // removeUnusedImports()
-        // trimTrailingWhitespace()
-        // endWithNewLine()
+        licenseHeaderFile(file('license-header'))
+        googleJavaFormat().aosp()
+        importOrder()
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
 
         // add support for spotless:off and spotless:on tags to exclude sections of code
-        // toggleOffOn()
+        toggleOffOn()
     }
 }
 
@@ -219,8 +211,6 @@ test {
 }
 
 task rcaTest(type: Test) {
-    dependsOn checkstyleMain
-    dependsOn checkstyleTest
     retry {
         maxRetries = 2
     }
@@ -231,8 +221,6 @@ task rcaTest(type: Test) {
 }
 
 task rcaIt(type: Test) {
-    dependsOn checkstyleMain
-    dependsOn checkstyleTest
     dependsOn spotbugsMain
     retry {
         maxRetries = 2
@@ -367,6 +355,7 @@ task cloneGitRepo(type: GitClone) {
 
     def destination = file(paDir)
     uri = "https://github.com/opendistro-for-elasticsearch/performance-analyzer.git"
+    branch = gitDefaultBranch
     destinationPath = destination
     bare = false
     enabled = !destination.exists() //to clone only once
