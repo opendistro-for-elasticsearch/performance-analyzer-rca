@@ -946,13 +946,14 @@ class SQLitePersistor extends PersistorBase {
         response.addNestedSummaryList(nodeLevelDimSummary);
       }
     } catch (DataAccessException dex) {
+      JsonObject json = new JsonObject();
       if (dex.getMessage().contains("no such table")) {
-        JsonObject json = new JsonObject();
         json.addProperty("error", "RCAs are not created yet.");
-        return json;
       } else {
         LOG.error("Failed to read temperature profile RCA for {}.", rca, dex);
+        json.addProperty("error", "Failed to read temperature profile RCA.");
       }
+      return json;
     }
     return response.toJson();
   }
