@@ -30,6 +30,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.IPDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.IPValue;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MasterPendingTaskDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MasterPendingValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MetricName;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardStatsDerivedDimension;
@@ -247,7 +248,7 @@ public final class MetricPropertiesConfig {
     metricName2Property.put(
         MetricName.MASTER_PENDING,
         new MetricProperties(
-            MetricProperties.EMPTY_DIMENSION,
+            MasterPendingTaskDimension.values(),
             MasterPendingValue.values(),
             createFileHandler(
                 metricPathMap.get(MetricName.MASTER_PENDING),
