@@ -34,6 +34,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.IPDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.IPValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.LatencyDimension;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MasterPendingTaskDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MasterPendingValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.MetricUnits;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.OSMetrics;
@@ -330,7 +331,7 @@ public class MetricsModel {
     // Master Metrics
     allMetricsInitializer.put(
         MasterPendingValue.MASTER_PENDING_QUEUE_SIZE.toString(),
-        new MetricAttributes(MetricUnits.COUNT.toString(), EmptyDimension.values()));
+        new MetricAttributes(MetricUnits.COUNT.toString(), MasterPendingTaskDimension.values()));
 
     allMetricsInitializer.put(
         AllMetrics.MasterMetricValues.MASTER_TASK_QUEUE_TIME.toString(),
