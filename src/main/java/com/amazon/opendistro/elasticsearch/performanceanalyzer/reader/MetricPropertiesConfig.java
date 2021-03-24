@@ -26,6 +26,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.DevicePartitionValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.DiskDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.DiskValue;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ElectionTermValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.IPDimension;
@@ -168,6 +169,7 @@ public final class MetricPropertiesConfig {
     metricPathMap.put(MetricName.THREAD_POOL, PerformanceAnalyzerMetrics.sThreadPoolPath);
     metricPathMap.put(MetricName.SHARD_STATS, PerformanceAnalyzerMetrics.sIndicesPath);
     metricPathMap.put(MetricName.MASTER_PENDING, PerformanceAnalyzerMetrics.sPendingTasksPath);
+    metricPathMap.put(MetricName.ELECTION_TERM, PerformanceAnalyzerMetrics.sElectionTermPath);
     metricPathMap.put(MetricName.MOUNTED_PARTITION_METRICS,
         PerformanceAnalyzerMetrics.sMountedPartitionMetricsPath);
     metricPathMap.put(MetricName.CLUSTER_APPLIER_SERVICE, PerformanceAnalyzerMetrics.sClusterApplierService);
@@ -186,6 +188,8 @@ public final class MetricPropertiesConfig {
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sIndicesPath, MetricName.SHARD_STATS);
     eventKeyToMetricNameMap.put(
         PerformanceAnalyzerMetrics.sPendingTasksPath, MetricName.MASTER_PENDING);
+    eventKeyToMetricNameMap.put(
+            PerformanceAnalyzerMetrics.sElectionTermPath, MetricName.ELECTION_TERM);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sMountedPartitionMetricsPath,
         MetricName.MOUNTED_PARTITION_METRICS);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sClusterApplierService,
@@ -253,6 +257,12 @@ public final class MetricPropertiesConfig {
                 metricPathMap.get(MetricName.MASTER_PENDING),
                 PerformanceAnalyzerMetrics.MASTER_CURRENT,
                 PerformanceAnalyzerMetrics.MASTER_META_DATA)));
+    metricName2Property.put(
+            MetricName.ELECTION_TERM,
+            new MetricProperties(
+                    MetricProperties.EMPTY_DIMENSION,
+                    ElectionTermValue.values(),
+                    createFileHandler(metricPathMap.get(MetricName.ELECTION_TERM))));
     metricName2Property.put(MetricName.MOUNTED_PARTITION_METRICS,
         new MetricProperties(
             DevicePartitionDimension.values(),

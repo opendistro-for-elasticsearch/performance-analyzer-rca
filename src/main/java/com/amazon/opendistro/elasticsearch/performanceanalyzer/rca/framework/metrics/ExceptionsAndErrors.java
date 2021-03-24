@@ -57,6 +57,8 @@ public enum ExceptionsAndErrors implements MeasurementSet {
 
   FAULT_DETECTION_COLLECTOR_ERROR("FaultDetectionMetricsCollector"),
 
+  ELECTION_TERM_COLLECTOR_ERROR("ElectionTermCollectorError"),
+
   CLUSTER_APPLIER_SERVICE_STATS_COLLECTOR_ERROR("ClusterApplierServiceStatsCollector"),
 
   SHARD_INDEXING_PRESSURE_COLLECTOR_ERROR("ShardIndexingPressureMetricsCollector");

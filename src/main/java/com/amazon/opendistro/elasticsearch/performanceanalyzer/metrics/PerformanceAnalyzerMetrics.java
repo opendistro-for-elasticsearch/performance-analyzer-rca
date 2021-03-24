@@ -44,6 +44,7 @@ public class PerformanceAnalyzerMetrics {
   public static final String sShardQueryPath = "shardquery";
   public static final String sMasterTaskPath = "master_task";
   public static final String sFaultDetection = "fault_detection";
+  public static final String sElectionTermPath = "election_term";
   public static final String sClusterApplierService = "cluster_applier_service";
   public static final String sHttpPath = "http";
   public static final String sOSPath = "os_metrics";
