@@ -26,6 +26,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetric
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.CommonMetric;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.DiskDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.DiskValue;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ElectionTermValue;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.EmptyDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.HeapValue;
@@ -380,6 +381,10 @@ public class MetricsModel {
             AllMetrics.ClusterApplierServiceStatsValue.CLUSTER_APPLIER_SERVICE_LATENCY.toString(),
             new MetricAttributes(
                     MetricUnits.MILLISECOND.toString(), EmptyDimension.values()));
+
+    allMetricsInitializer.put(
+            ElectionTermValue.ELECTION_TERM.toString(),
+            new MetricAttributes(MetricUnits.COUNT.toString(), EmptyDimension.values()));
 
     allMetricsInitializer.put(
             AllMetrics.ClusterApplierServiceStatsValue.CLUSTER_APPLIER_SERVICE_FAILURE.toString(),

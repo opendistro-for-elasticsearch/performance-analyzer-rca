@@ -53,13 +53,15 @@ public enum ExceptionsAndErrors implements MeasurementSet {
 
   ADMISSION_CONTROL_COLLECTOR_ERROR("AdmissionControlCollectorError"),
 
-  MASTER_THROTTLING_COLLECTOR_ERROR("MasterThrottlingMetricsCollector"),
+  MASTER_THROTTLING_COLLECTOR_ERROR("MasterThrottlingMetricsCollectorError"),
 
-  FAULT_DETECTION_COLLECTOR_ERROR("FaultDetectionMetricsCollector"),
+  FAULT_DETECTION_COLLECTOR_ERROR("FaultDetectionMetricsCollectorError"),
 
-  CLUSTER_APPLIER_SERVICE_STATS_COLLECTOR_ERROR("ClusterApplierServiceStatsCollector"),
+  CLUSTER_APPLIER_SERVICE_STATS_COLLECTOR_ERROR("ClusterApplierServiceStatsCollectorError"),
 
-  SHARD_INDEXING_PRESSURE_COLLECTOR_ERROR("ShardIndexingPressureMetricsCollector");
+  ELECTION_TERM_COLLECTOR_ERROR("ElectionTermCollectorError"),
+
+  SHARD_INDEXING_PRESSURE_COLLECTOR_ERROR("ShardIndexingPressureMetricsCollectorError");
 
   /** What we want to appear as the metric name. */
   private String name;
