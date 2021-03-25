@@ -11,6 +11,9 @@ $
 ^cluster_applier_service
 {"current_time":1566413936555}
 {"ClusterApplierService_Latency":23,"ClusterApplierService_Failure":3}$
+^master_cluster_update
+{"current_time":1566413936555}
+{"PublishClusterState_Latency":23,"PublishClusterState_Failure":3}$
 ^shard_state_metrics
 {"current_time":1566413936488}
 {"IndexName":"pmc"}
