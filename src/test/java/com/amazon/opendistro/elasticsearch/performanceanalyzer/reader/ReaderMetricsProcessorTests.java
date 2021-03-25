@@ -272,7 +272,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     Record row1 = res.get(1);
     for (int i = 1; i < row1.size(); i++) {
       Double pending = Double.parseDouble(row1.get(i).toString());
-      assertEquals(1.0d, pending, 0.001);
+      assertEquals(3.0d, pending, 0.001);
     }
     assertEquals("updateSnapshot", row1.get(0).toString());
 
