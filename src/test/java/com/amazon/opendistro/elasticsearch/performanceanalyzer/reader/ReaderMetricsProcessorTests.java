@@ -223,7 +223,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
             masterPendingFinal);
 
     Result<Record> res = alignedWindow.fetchAll();
-        assertTrue(2 == res.size());
+    assertTrue(2 == res.size());
     Field<Double> valueField =
         DSL.field(MasterPendingValue.MASTER_PENDING_QUEUE_SIZE.toString(), Double.class);
     Field<String> dimensionField =
