@@ -146,20 +146,20 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
         new MemoryDBSnapshot(conn, MetricName.MASTER_PENDING, 6001L);
     long lastUpdateTime1 = 2000L;
     masterPendingSnap1.setLastUpdatedTime(lastUpdateTime1);
-        Object[][] values1 = {{"delete-index", 0}};
+    Object[][] values1 = {{"delete-index", 0}};
     masterPendingSnap1.insertMultiRows(values1);
 
     MemoryDBSnapshot masterPendingSnap2 =
         new MemoryDBSnapshot(conn, MetricName.MASTER_PENDING, 11001L);
     long lastUpdateTime2 = 7000L;
     masterPendingSnap2.setLastUpdatedTime(lastUpdateTime2);
-        Object[][] values2 = {{"create-index", 1}};
+    Object[][] values2 = {{"create-index", 1}};
     masterPendingSnap2.insertMultiRows(values2);
 
     MemoryDBSnapshot masterPendingSnap3 =
         new MemoryDBSnapshot(conn, MetricName.MASTER_PENDING, 16001L);
     masterPendingSnap2.setLastUpdatedTime(lastUpdateTime3);
-        Object[][] values3 = {{"updateSnapshot", 3}};
+    Object[][] values3 = {{"updateSnapshot", 3}};
     masterPendingSnap3.insertMultiRows(values3);
 
     NavigableMap<Long, MemoryDBSnapshot> metricMap = new TreeMap<>();
@@ -265,7 +265,7 @@ public class ReaderMetricsProcessorTests extends AbstractReaderTests {
     Record row0 = res.get(0);
     for (int i = 1; i < row0.size(); i++) {
       Double pending = Double.parseDouble(row0.get(i).toString());
-        assertEquals(1.0d, pending, 0.001);
+      assertEquals(1.0d, pending, 0.001);
     }
     assertEquals("create-index", row0.get(0).toString());
 
