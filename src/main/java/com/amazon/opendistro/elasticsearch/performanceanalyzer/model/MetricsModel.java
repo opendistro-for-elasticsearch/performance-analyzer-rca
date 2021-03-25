@@ -385,6 +385,16 @@ public class MetricsModel {
             AllMetrics.ClusterApplierServiceStatsValue.CLUSTER_APPLIER_SERVICE_FAILURE.toString(),
             new MetricAttributes(
                     MetricUnits.COUNT.toString(), EmptyDimension.values()));
+
+    allMetricsInitializer.put(
+            AllMetrics.MasterClusterUpdateStatsValue.PUBLISH_CLUSTER_STATE_LATENCY.toString(),
+            new MetricAttributes(
+                    MetricUnits.MILLISECOND.toString(), EmptyDimension.values()));
+
+    allMetricsInitializer.put(
+            AllMetrics.MasterClusterUpdateStatsValue.PUBLISH_CLUSTER_STATE_FAILURE.toString(),
+            new MetricAttributes(
+                    MetricUnits.COUNT.toString(), EmptyDimension.values()));
     
     allMetricsInitializer.put(
             AdmissionControlValue.REJECTION_COUNT.toString(),

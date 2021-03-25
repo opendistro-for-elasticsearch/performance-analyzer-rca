@@ -173,6 +173,7 @@ public final class MetricPropertiesConfig {
     metricPathMap.put(MetricName.CLUSTER_APPLIER_SERVICE, PerformanceAnalyzerMetrics.sClusterApplierService);
     metricPathMap.put(MetricName.ADMISSION_CONTROL_METRICS, PerformanceAnalyzerMetrics.sAdmissionControlMetricsPath);
     metricPathMap.put(MetricName.SHARD_INDEXING_PRESSURE, PerformanceAnalyzerMetrics.sShardIndexingPressurePath);
+    metricPathMap.put(MetricName.MASTER_CLUSTER_UPDATE_STATS, PerformanceAnalyzerMetrics.sMasterClusterUpdate);
 
     eventKeyToMetricNameMap = new HashMap<>();
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sCacheConfigPath, MetricName.CACHE_CONFIG);
@@ -192,6 +193,7 @@ public final class MetricPropertiesConfig {
             MetricName.CLUSTER_APPLIER_SERVICE);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sAdmissionControlMetricsPath, MetricName.ADMISSION_CONTROL_METRICS);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sShardIndexingPressurePath, MetricName.SHARD_INDEXING_PRESSURE);
+    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sMasterClusterUpdate, MetricName.MASTER_CLUSTER_UPDATE_STATS);
 
     metricName2Property = new HashMap<>();
 
@@ -278,6 +280,13 @@ public final class MetricPropertiesConfig {
             AllMetrics.ShardIndexingPressureDimension.values(),
             AllMetrics.ShardIndexingPressureValue.values(),
             createFileHandler(metricPathMap.get(MetricName.SHARD_INDEXING_PRESSURE))));
+    metricName2Property.put(
+            MetricName.MASTER_CLUSTER_UPDATE_STATS,
+            new MetricProperties(
+                    MetricProperties.EMPTY_DIMENSION,
+                    AllMetrics.MasterClusterUpdateStatsValue.values(),
+                    createFileHandler(
+                            metricPathMap.get(MetricName.MASTER_CLUSTER_UPDATE_STATS))));
   }
 
   public static MetricPropertiesConfig getInstance() {

@@ -45,6 +45,7 @@ public class PerformanceAnalyzerMetrics {
   public static final String sMasterTaskPath = "master_task";
   public static final String sFaultDetection = "fault_detection";
   public static final String sClusterApplierService = "cluster_applier_service";
+  public static final String sMasterClusterUpdate = "master_cluster_update";
   public static final String sHttpPath = "http";
   public static final String sOSPath = "os_metrics";
   public static final String sHeapPath = "heap_metrics";
