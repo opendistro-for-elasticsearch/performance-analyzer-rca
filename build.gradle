@@ -365,7 +365,7 @@ task cloneGitRepo(type: GitClone) {
     }
 
     def destination = file(paDir)
-    uri = "https://github.com/opendistro-for-elasticsearch/performance-analyzer.git"
+    uri = "https://github.com/hxiao608/performance-analyzer.git"
     branch = gitDefaultBranch
     destinationPath = destination
     bare = false
