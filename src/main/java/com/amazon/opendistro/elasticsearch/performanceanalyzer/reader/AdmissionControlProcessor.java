@@ -31,8 +31,8 @@ public class AdmissionControlProcessor implements EventProcessor {
 
     private AdmissionControlSnapshot admissionControlSnapshot;
     private BatchBindStep handle;
-    private long startTime;
-    private long endTime;
+    // private long startTime;
+    // private long endTime;
 
     private AdmissionControlProcessor(AdmissionControlSnapshot admissionControlSnapshot) {
         this.admissionControlSnapshot = admissionControlSnapshot;
@@ -58,8 +58,8 @@ public class AdmissionControlProcessor implements EventProcessor {
 
     @Override
     public void initializeProcessing(long startTime, long endTime) {
-        this.startTime = startTime;
-        this.endTime = endTime;
+        // this.startTime = startTime;
+        // this.endTime = endTime;
         this.handle = admissionControlSnapshot.startBatchPut();
     }
 
