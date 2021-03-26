@@ -244,16 +244,14 @@ public class PluginSettings {
       LOG.info("Trying to create directory {}.", path);
     }
 
-    boolean valid = dictCreated && dict.isDirectory() && dict.canWrite();
+    boolean valid = dictCreated && dict.isDirectory();
     if (!valid) {
       LOG.error(
           "Invalid metrics location {}."
-              + " Created: {} (Expect True), Directory: {} (Expect True),"
-              + " CanWrite: {} (Expect True)",
+              + " Created: {} (Expect True), Directory: {} (Expect True)",
           path,
           dict.exists(),
-          dict.isDirectory(),
-          dict.canWrite());
+          dict.isDirectory());
       throw new ConfigFatalException("Having issue to use path: " + path);
     }
   }
