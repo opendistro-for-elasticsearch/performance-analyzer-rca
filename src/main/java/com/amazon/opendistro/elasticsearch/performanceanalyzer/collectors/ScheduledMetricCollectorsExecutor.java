@@ -85,6 +85,16 @@ public class ScheduledMetricCollectorsExecutor extends Thread {
               taskThreadFactory);
     }
 
+    // Ensure that OSMetricsCollector runs once, so jTidMap has thread state persisted.
+    metricsCollectors.keySet()
+        .stream()
+        .forEach(collector -> {
+            if (collector instanceof OSMetricsCollector) {
+                LOG.info("Executing OSMetricsCollector once before starting metric collection");
+                metricsCollectorsTP.execute(collector);
+            }
+        });
+
     long prevStartTimestamp = System.currentTimeMillis();
 
     while (true) {
