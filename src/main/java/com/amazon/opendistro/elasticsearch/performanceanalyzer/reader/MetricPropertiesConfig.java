@@ -178,24 +178,22 @@ public final class MetricPropertiesConfig {
 
     eventKeyToMetricNameMap = new HashMap<>();
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sCacheConfigPath, MetricName.CACHE_CONFIG);
-    eventKeyToMetricNameMap.put(
-        PerformanceAnalyzerMetrics.sCircuitBreakerPath, MetricName.CIRCUIT_BREAKER);
+    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sCircuitBreakerPath, MetricName.CIRCUIT_BREAKER);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sHeapPath, MetricName.HEAP_METRICS);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sDisksPath, MetricName.DISK_METRICS);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sTCPPath, MetricName.TCP_METRICS);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sIPPath, MetricName.IP_METRICS);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sThreadPoolPath, MetricName.THREAD_POOL);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sIndicesPath, MetricName.SHARD_STATS);
-    eventKeyToMetricNameMap.put(
-        PerformanceAnalyzerMetrics.sPendingTasksPath, MetricName.MASTER_PENDING);
+    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sPendingTasksPath, MetricName.MASTER_PENDING);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sMountedPartitionMetricsPath,
-        MetricName.MOUNTED_PARTITION_METRICS);
-    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sClusterApplierService,
-            MetricName.CLUSTER_APPLIER_SERVICE);
-    eventKeyToMetricNameMap.put(
-            PerformanceAnalyzerMetrics.sElectionTermPath, MetricName.ELECTION_TERM);
-    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sAdmissionControlMetricsPath, MetricName.ADMISSION_CONTROL_METRICS);
-    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sShardIndexingPressurePath, MetricName.SHARD_INDEXING_PRESSURE);
+            MetricName.MOUNTED_PARTITION_METRICS);
+    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sClusterApplierService, MetricName.CLUSTER_APPLIER_SERVICE);
+    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sElectionTermPath, MetricName.ELECTION_TERM);
+    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sAdmissionControlMetricsPath,
+            MetricName.ADMISSION_CONTROL_METRICS);
+    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sShardIndexingPressurePath,
+            MetricName.SHARD_INDEXING_PRESSURE);
 
     metricName2Property = new HashMap<>();
 
