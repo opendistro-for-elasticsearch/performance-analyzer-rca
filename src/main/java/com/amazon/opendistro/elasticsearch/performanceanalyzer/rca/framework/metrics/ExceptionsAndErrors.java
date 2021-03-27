@@ -61,6 +61,8 @@ public enum ExceptionsAndErrors implements MeasurementSet {
 
   MASTER_CLUSTER_UPDATE_STATS_COLLECTOR_ERROR("MasterClusterStateUpdateStatsCollectorError"),
 
+  MASTER_CLUSTER_UPDATE_STATS_COLLECTOR_DISABLED("MasterClusterStateUpdateStatsCollectorDisabled"),
+
   SHARD_INDEXING_PRESSURE_COLLECTOR_ERROR("ShardIndexingPressureMetricsCollector");
 
   /** What we want to appear as the metric name. */
