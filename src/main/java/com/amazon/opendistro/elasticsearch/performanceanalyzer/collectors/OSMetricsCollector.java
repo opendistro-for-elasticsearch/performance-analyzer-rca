@@ -26,6 +26,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.OSMetricsGenerator;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics_generator.SchedMetricsGenerator;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class OSMetricsCollector extends PerformanceAnalyzerMetricsCollector
     implements MetricsProcessor {
@@ -34,6 +36,7 @@ public class OSMetricsCollector extends PerformanceAnalyzerMetricsCollector
   private static final int KEYS_PATH_LENGTH = 1;
   private StringBuilder value;
   private OSMetricsGenerator osMetricsGenerator;
+  static final Logger LOGGER = LogManager.getLogger(OSMetricsCollector.class);
 
   public enum MetaDataFields {
     threadName
@@ -54,6 +57,7 @@ public class OSMetricsCollector extends PerformanceAnalyzerMetricsCollector
     SchedMetricsGenerator schedMetricsGenerator = osMetricsGenerator.getSchedMetricsGenerator();
     schedMetricsGenerator.addSample();
 
+    LOGGER.info("MOMO, Inside OSMetricsCollector#collectMetrics(). Invoking ThreadList.getNativeTidMap()");
     Map<Long, ThreadList.ThreadState> threadStates = ThreadList.getNativeTidMap();
 
     DiskIOMetricsGenerator diskIOMetricsGenerator = osMetricsGenerator.getDiskIOMetricsGenerator();

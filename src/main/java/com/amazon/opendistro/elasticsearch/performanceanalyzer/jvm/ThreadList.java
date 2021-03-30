@@ -122,6 +122,7 @@ public class ThreadList {
         // Thread dumps are expensive and therefore we make sure that at least
         // minRunInterval milliseconds have elapsed between two attempts.
         if (System.currentTimeMillis() > lastRunTime + minRunInterval) {
+          LOGGER.info("MOMO, performing runThreadDump. minRunInterval: {}", minRunInterval);
           runThreadDump(pid, new String[0]);
         }
       } finally {
@@ -161,6 +162,7 @@ public class ThreadList {
 
   // Attach to pid and perform a thread dump
   private static void runAttachDump(String pid, String[] args) {
+    LOGGER.info("MOMO, inside runAttachDump. Invoking createMap()");
     VirtualMachine vm = null;
     try {
       vm = VirtualMachine.attach(pid);
@@ -256,6 +258,7 @@ public class ThreadList {
 
   static void runThreadDump(String pid, String[] args) {
     String currentThreadName = Thread.currentThread().getName();
+    LOGGER.info("MOMO, currentThreadName: {}. Inside runThreadDump() and Executing runAttachDump()", currentThreadName);
     assert currentThreadName.startsWith(ScheduledMetricCollectorsExecutor.COLLECTOR_THREAD_POOL_NAME)
                    || currentThreadName.equals(ScheduledMetricCollectorsExecutor.class.getSimpleName()) :
             String.format("Thread dump called from a non os collector thread: %s", currentThreadName);
@@ -315,6 +318,7 @@ public class ThreadList {
   }
 
   private static void createMap(InputStream in) throws Exception {
+    LOGGER.info("MOMO, creating the jTidMap!!");
     BufferedReader br = new BufferedReader(new InputStreamReader(in));
     String line = null;
     while ((line = br.readLine()) != null) {
@@ -322,6 +326,10 @@ public class ThreadList {
         parseLine(line);
       }
     }
+
+    /*jTidMap.entrySet().forEach(entry -> {
+        LOGGER.info("MOMO, key: {}, value: {} ", entry.getKey(), entry.getValue());
+    });*/
   }
 
   // currently stores thread states to track locking periods

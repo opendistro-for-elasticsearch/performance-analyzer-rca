@@ -86,17 +86,20 @@ public class ScheduledMetricCollectorsExecutor extends Thread {
     }
 
     // Ensure that OSMetricsCollector runs once, so jTidMap has thread state persisted.
+    LOG.info("MOMO, executing OSMetricsCollector to update jTidMap");
     metricsCollectors.keySet()
         .stream()
         .forEach(collector -> {
-            if (collector instanceof OSMetricsCollector) {
-                LOG.info("Executing OSMetricsCollector once before starting metric collection");
+            LOG.info("MOMO, the Collector is: {}", collector.getCollectorName());
+            if (collector.getCollectorName().equals("OSMetrics")) {
+		LOG.info("MOMO, found the OSMetricsCollector!!");
+                LOG.info("MOMO, Executing OSMetricsCollector once before starting metric collection");
                 metricsCollectorsTP.execute(collector);
             }
         });
 
     long prevStartTimestamp = System.currentTimeMillis();
-
+    LOG.info("MOMO, starting the infinite while loop");
     while (true) {
       try {
         long millisToSleep =
@@ -105,7 +108,8 @@ public class ScheduledMetricCollectorsExecutor extends Thread {
           Thread.sleep(millisToSleep);
         }
       } catch (Exception ex) {
-        LOG.error("Exception in Thread Sleep", ex);
+        LOG.info("MOMO, exiting the infinite while loop. Exception in Thread Sleep");
+	LOG.error("Exception in Thread Sleep", ex);
       }
 
       prevStartTimestamp = System.currentTimeMillis();
