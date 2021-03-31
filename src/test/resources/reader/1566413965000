@@ -4,6 +4,9 @@
 {"DestAddr":"00000000000000000000000000000000","Net_TCP_NumFlows":4,"Net_TCP_TxQ":0.0,"Net_TCP_RxQ":0.0,"Net_TCP_Lost":0.0,"Net_TCP_SendCWND":10.0,"Net_TCP_SSThresh":0.0}
 {"DestAddr":"0000000000000000FFFF0000534ED40A","Net_TCP_NumFlows":26,"Net_TCP_TxQ":0.0,"Net_TCP_RxQ":0.0,"Net_TCP_Lost":0.0,"Net_TCP_SendCWND":14.461538461538462,"Net_TCP_SSThresh":13.153846153846153}
 $
+^election_term
+{"current_time":1566413966544}
+{"Election_Term":18}$
 ^master_throttling_metrics
 {"current_time":1566413966544}
 {"Data_RetryingPendingTasksCount":0,"Master_ThrottledPendingTasksCount":33}
