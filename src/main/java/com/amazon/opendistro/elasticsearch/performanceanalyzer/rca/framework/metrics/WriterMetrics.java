@@ -45,6 +45,10 @@ public enum WriterMetrics implements MeasurementSet {
             "millis", Arrays.asList(Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT,
             Statistics.SUM)),
 
+    MASTER_CLUSTER_UPDATE_STATS_COLLECTOR_DISABLED("MasterClusterUpdateStatsCollectorDisabled", "count", Arrays.asList(
+            Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
+
+
     MASTER_CLUSTER_UPDATE_STATS_COLLECTOR_EXECUTION_TIME("MasterClusterUpdateStatsCollectorExecutionTime",
             "millis", Arrays.asList(Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT,
             Statistics.SUM)),
