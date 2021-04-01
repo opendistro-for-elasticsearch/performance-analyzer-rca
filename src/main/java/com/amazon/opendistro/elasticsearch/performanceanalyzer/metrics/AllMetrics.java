@@ -43,6 +43,7 @@ public class AllMetrics {
     MASTER_PENDING,
     MOUNTED_PARTITION_METRICS,
     CLUSTER_APPLIER_SERVICE,
+    ELECTION_TERM,
     ADMISSION_CONTROL_METRICS,
     SHARD_INDEXING_PRESSURE,
     MASTER_CLUSTER_UPDATE_STATS,
@@ -882,6 +883,25 @@ public class AllMetrics {
     public static class Constants {
       public static final String PUBLISH_CLUSTER_STATE_LATENCY = "PublishClusterState_Latency";
       public static final String PUBLISH_CLUSTER_STATE_FAILURE = "PublishClusterState_Failure";
+    }
+  }
+  
+  public enum ElectionTermValue implements MetricValue {
+    ELECTION_TERM(Constants.ELECTION_TERM_VALUE);
+
+    private final String value;
+
+    ElectionTermValue(String value) {
+      this.value = value;
+    }
+    
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String ELECTION_TERM_VALUE = "Election_Term";
     }
   }
 

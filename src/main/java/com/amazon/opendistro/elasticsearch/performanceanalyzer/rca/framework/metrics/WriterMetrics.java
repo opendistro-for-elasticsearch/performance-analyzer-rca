@@ -53,6 +53,9 @@ public enum WriterMetrics implements MeasurementSet {
             "millis", Arrays.asList(Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT,
             Statistics.SUM)),
 
+    ELECTION_TERM_COLLECTOR_EXECUTION_TIME("ElectionTermCollectorExecutionTime", "millis", Arrays.asList(
+            Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
+
     SHARD_INDEXING_PRESSURE_COLLECTOR_EXECUTION_TIME("ShardIndexingPressureCollectorExecutionTime", "millis", Arrays.asList(
         Statistics.MAX, Statistics.MIN, Statistics.MEAN, Statistics.COUNT, Statistics.SUM)),
 
