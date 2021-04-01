@@ -176,6 +176,7 @@ public final class MetricPropertiesConfig {
     metricPathMap.put(MetricName.ELECTION_TERM, PerformanceAnalyzerMetrics.sElectionTermPath);
     metricPathMap.put(MetricName.ADMISSION_CONTROL_METRICS, PerformanceAnalyzerMetrics.sAdmissionControlMetricsPath);
     metricPathMap.put(MetricName.SHARD_INDEXING_PRESSURE, PerformanceAnalyzerMetrics.sShardIndexingPressurePath);
+    metricPathMap.put(MetricName.MASTER_CLUSTER_UPDATE_STATS, PerformanceAnalyzerMetrics.sMasterClusterUpdate);
 
     eventKeyToMetricNameMap = new HashMap<>();
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sCacheConfigPath, MetricName.CACHE_CONFIG);
@@ -187,8 +188,8 @@ public final class MetricPropertiesConfig {
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sThreadPoolPath, MetricName.THREAD_POOL);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sIndicesPath, MetricName.SHARD_STATS);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sPendingTasksPath, MetricName.MASTER_PENDING);
-    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sMountedPartitionMetricsPath,
-            MetricName.MOUNTED_PARTITION_METRICS);
+    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sMountedPartitionMetricsPath, MetricName.MOUNTED_PARTITION_METRICS);
+    eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sMasterClusterUpdate, MetricName.MASTER_CLUSTER_UPDATE_STATS);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sClusterApplierService, MetricName.CLUSTER_APPLIER_SERVICE);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sElectionTermPath, MetricName.ELECTION_TERM);
     eventKeyToMetricNameMap.put(PerformanceAnalyzerMetrics.sAdmissionControlMetricsPath,
@@ -287,6 +288,13 @@ public final class MetricPropertiesConfig {
             AllMetrics.ShardIndexingPressureDimension.values(),
             AllMetrics.ShardIndexingPressureValue.values(),
             createFileHandler(metricPathMap.get(MetricName.SHARD_INDEXING_PRESSURE))));
+    metricName2Property.put(
+            MetricName.MASTER_CLUSTER_UPDATE_STATS,
+            new MetricProperties(
+                    MetricProperties.EMPTY_DIMENSION,
+                    AllMetrics.MasterClusterUpdateStatsValue.values(),
+                    createFileHandler(
+                            metricPathMap.get(MetricName.MASTER_CLUSTER_UPDATE_STATS))));
   }
 
   public static MetricPropertiesConfig getInstance() {

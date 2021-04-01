@@ -46,6 +46,7 @@ public class AllMetrics {
     ELECTION_TERM,
     ADMISSION_CONTROL_METRICS,
     SHARD_INDEXING_PRESSURE,
+    MASTER_CLUSTER_UPDATE_STATS,
   }
 
   // we don't store node details as a metric on reader side database.  We
@@ -864,7 +865,27 @@ public class AllMetrics {
     }
   }
 
+  public enum MasterClusterUpdateStatsValue implements MetricValue {
+    PUBLISH_CLUSTER_STATE_LATENCY(Constants.PUBLISH_CLUSTER_STATE_LATENCY),
+    PUBLISH_CLUSTER_STATE_FAILURE(Constants.PUBLISH_CLUSTER_STATE_FAILURE);
 
+    private final String value;
+
+    MasterClusterUpdateStatsValue(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String toString() {
+      return value;
+    }
+
+    public static class Constants {
+      public static final String PUBLISH_CLUSTER_STATE_LATENCY = "PublishClusterState_Latency";
+      public static final String PUBLISH_CLUSTER_STATE_FAILURE = "PublishClusterState_Failure";
+    }
+  }
+  
   public enum ElectionTermValue implements MetricValue {
     ELECTION_TERM(Constants.ELECTION_TERM_VALUE);
 
@@ -873,7 +894,7 @@ public class AllMetrics {
     ElectionTermValue(String value) {
       this.value = value;
     }
-
+    
     @Override
     public String toString() {
       return value;
