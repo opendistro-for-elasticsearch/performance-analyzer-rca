@@ -108,7 +108,7 @@ public class ScheduledMetricCollectorsExecutor extends Thread {
           if (entry.getValue() <= currentTime) {
             PerformanceAnalyzerMetricsCollector collector = entry.getKey();
             if (collector.getState() == PerformanceAnalyzerMetricsCollector.State.MUTED) {
-              StatsCollector.instance().logException(StatExceptionCode.COLLECTORS_MUTED);
+              StatsCollector.instance().logMetric(StatExceptionCode.COLLECTORS_MUTED.toString());
               continue;
             }
             metricsCollectors.put(collector, entry.getValue() + collector.getTimeInterval());
