@@ -185,7 +185,7 @@ public class ThreadList {
 
     try {
       vm.detach();
-      StatsCollector.instance().logException(StatExceptionCode.JVM_THREAD_DUMP_SUCCESSFUL);
+      StatsCollector.instance().logMetric(StatExceptionCode.JVM_THREAD_DUMP_SUCCESSFUL.toString());
     } catch (Exception ex) {
       StatsCollector.instance().logException(StatExceptionCode.JVM_ATTACH_ERROR);
     }
