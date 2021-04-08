@@ -5,6 +5,7 @@ on:
     branches: 
       - main
       - dev
+      - haoruxia-rca-fix
 
   pull_request:
     branches: 
