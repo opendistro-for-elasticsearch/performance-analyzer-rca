@@ -204,15 +204,13 @@ if (isSnapshot) {
 }
 
 test {
-    // Skip some test cases that might fail the RCA build
+    // Ignore failing tests
     filter {
-        // Test testMissingHeapMetricsfailed
+        // Test testMissingHeapMetrics failed
         excludeTestsMatching 'com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.jvmsizing.HeapSizeIncreaseMissingMetricsTest'
-
-        // Tests running more than 30 minutes
+        // Test testJvmActions failed
         excludeTestsMatching 'com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.consolidate_tuning.JvmFlipFlopITest'
-
-        // Tests testFlipFlop and testJvmActions failed
+        // Tests testFlipFlop failed
         excludeTestsMatching 'java.lang.Class'
     }
     enabled = true
