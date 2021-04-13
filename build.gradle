@@ -210,8 +210,6 @@ test {
         excludeTestsMatching 'com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.jvmsizing.HeapSizeIncreaseMissingMetricsTest'
         // Test testJvmActions failed
         excludeTestsMatching 'com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.consolidate_tuning.JvmFlipFlopITest'
-        // Tests testFlipFlop failed
-        excludeTestsMatching 'com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.integTests.tests.jvm.old_gen_policy.validator.LevelOneValidator'
     }
     enabled = true
     retry {
