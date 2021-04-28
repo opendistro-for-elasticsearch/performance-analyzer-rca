@@ -47,7 +47,7 @@ public class MetricsServerHandler {
 
       collectStats(db, dbTimestamp, metricList, aggList, dimList, responseObserver);
     } catch (Exception e) {
-      e.printStackTrace();
+      LOG.error("Exception during collecting API data", e);
     }
   }
 

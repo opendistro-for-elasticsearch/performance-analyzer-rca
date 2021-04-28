@@ -17,11 +17,16 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.i
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.Statistics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.stats.eval.impl.vals.NamedAggregateValue;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class NamedCounter implements IStatistic<NamedAggregateValue> {
+
+  private static final Logger LOG = LogManager.getLogger(NamedCounter.class);
   private boolean empty;
   private Map<String, NamedAggregateValue> counters;
 
@@ -48,7 +53,7 @@ public class NamedCounter implements IStatistic<NamedAggregateValue> {
         counters.put(key, mapValue);
         empty = false;
       } catch (Exception ex) {
-        ex.printStackTrace();
+        LOG.error("Caught an exception while calculating the counter value", ex);
       }
     }
   }

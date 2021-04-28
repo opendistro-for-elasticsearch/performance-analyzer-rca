@@ -109,8 +109,7 @@ public class PublishRequestHandler {
      */
     @Override
     public void onError(Throwable throwable) {
-      LOG.error("Client ran into an error while streaming flow units: {}", throwable.getMessage());
-      throwable.printStackTrace();
+      LOG.error("Client ran into an error while streaming flow units:", throwable);
     }
 
     @Override

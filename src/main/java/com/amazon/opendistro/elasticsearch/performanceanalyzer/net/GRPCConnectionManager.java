@@ -194,8 +194,7 @@ public class GRPCConnectionManager {
                                 .maxRetryAttempts(MAX_RETRY_ATTEMPTS)
                                 .build();
     } catch (SSLException e) {
-      LOG.error("Unable to build an SSL gRPC client. Exception: {}", e.getMessage());
-      e.printStackTrace();
+      LOG.error("Unable to build an SSL gRPC client.", e);
 
       // Wrap the SSL Exception in a generic RTE and re-throw.
       throw new RuntimeException(e);

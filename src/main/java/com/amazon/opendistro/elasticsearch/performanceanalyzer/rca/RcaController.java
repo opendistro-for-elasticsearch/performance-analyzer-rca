@@ -349,8 +349,7 @@ public class RcaController {
               LOG.info("RCA enabled changed from {} to {}", oldVal, newVal);
             }
           } catch (IOException e) {
-            LOG.error("Error reading file '{}': {}", filePath.toString(), e);
-            e.printStackTrace();
+            LOG.error("Error reading file {}", filePath.toString(), e);
             rcaEnabled = rcaEnabledDefaultValue;
           }
         });

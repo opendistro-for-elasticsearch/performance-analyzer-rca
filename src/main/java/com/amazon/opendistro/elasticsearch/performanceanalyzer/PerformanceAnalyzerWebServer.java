@@ -62,7 +62,7 @@ public class PerformanceAnalyzerWebServer {
       LOG.error("Could not create HttpServer on port {}", webServerPort, ex);
       Runtime.getRuntime().halt(1);
     } catch (Exception ex) {
-      ex.printStackTrace();
+      LOG.error("Unable to create HttpServer", ex);
       Runtime.getRuntime().halt(1);
     }
     return null;

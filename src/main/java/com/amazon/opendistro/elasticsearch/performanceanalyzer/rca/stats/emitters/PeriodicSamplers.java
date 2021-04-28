@@ -62,8 +62,7 @@ public class PeriodicSamplers implements Runnable {
                 } catch (CancellationException cex) {
                   LOG.info("Periodic sampler cancellation requested.");
                 } catch (Exception ex) {
-                  LOG.error("Resource state poller exception cause : {}", ex.getCause());
-                  ex.printStackTrace();
+                  LOG.error("Resource state poller exception cause : {}", ex.getCause(), ex);
                 }
               }
             })
