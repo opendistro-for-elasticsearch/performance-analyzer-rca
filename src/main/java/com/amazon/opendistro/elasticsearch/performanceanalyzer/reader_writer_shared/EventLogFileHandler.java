@@ -89,9 +89,8 @@ public class EventLogFileHandler {
             }
         } catch (IOException e) {
             LOG.error(
-                    "Error writing entry '{}'. Cause: {}",
+                    "Error writing entry '{}'. Cause:",
                     currEntry == null ? "NOT_INITIALIZED" : currEntry.key,
-                    e.getMessage(),
                     e);
         }
     }
