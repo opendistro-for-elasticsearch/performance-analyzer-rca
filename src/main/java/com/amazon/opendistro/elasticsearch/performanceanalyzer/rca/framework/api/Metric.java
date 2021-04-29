@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2019-2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License").
  * You may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api;
 
+
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
@@ -25,7 +26,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.met
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaGraphMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.FlowUnitOperationArgWrapper;
 import java.util.Collections;
-import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jooq.Record;
@@ -33,88 +33,89 @@ import org.jooq.Result;
 import org.jooq.exception.DataAccessException;
 
 public abstract class Metric extends LeafNode<MetricFlowUnit> {
-  static final String[] metricList;
+    static final String[] metricList;
 
-  static {
-    AllMetrics.OSMetrics[] osMetrics = AllMetrics.OSMetrics.values();
-    metricList = new String[osMetrics.length];
-    for (int i = 0; i < osMetrics.length; ++i) {
-      metricList[i] = osMetrics[i].name();
+    static {
+        AllMetrics.OSMetrics[] osMetrics = AllMetrics.OSMetrics.values();
+        metricList = new String[osMetrics.length];
+        for (int i = 0; i < osMetrics.length; ++i) {
+            metricList[i] = osMetrics[i].name();
+        }
     }
-  }
 
-  private String name;
-  private static final Logger LOG = LogManager.getLogger(Metric.class);
+    private String name;
+    private static final Logger LOG = LogManager.getLogger(Metric.class);
 
-  public Metric(String name, long evaluationIntervalSeconds) {
-    super(0, evaluationIntervalSeconds);
-    this.name = name.isEmpty() ? this.getClass().getSimpleName() : name;
-  }
-
-  @Override
-  public String name() {
-    return name;
-  }
-
-  public MetricFlowUnit gather(Queryable queryable) {
-    LOG.debug("Trying to gather metrics for {}", name);
-    MetricsDB db;
-    try {
-      db = queryable.getMetricsDB();
-    } catch (Exception e) {
-      PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
-          ExceptionsAndErrors.EXCEPTION_IN_GATHER, name(), 1);
-      // TODO: Emit log/stats that gathering failed.
-      LOG.error("RCA: Caught an exception while getting the DB", e);
-      e.printStackTrace();
-      return MetricFlowUnit.generic();
+    public Metric(String name, long evaluationIntervalSeconds) {
+        super(0, evaluationIntervalSeconds);
+        this.name = name.isEmpty() ? this.getClass().getSimpleName() : name;
     }
-    try {
-      Result<Record> result = queryable.queryMetrics(db, name);
-      return new MetricFlowUnit(queryable.getDBTimestamp(db), result);
-    } catch (DataAccessException dex) {
-      // This can happen if the RCA started querying for metrics before the Reader obtained them.
-      // This is not an error.
-      // And node stats metrics can be enabled/disabled on writer side so we might end up being here
-      // if RCA is trying to read node stats which are not enabled yet.
-      LOG.warn("Looking for metric {}, when it does not exist.", name);
-    } catch (Exception e) {
-      PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
-          ExceptionsAndErrors.EXCEPTION_IN_GATHER, name(), 1);
-      LOG.error("Metric exception:", e);
+
+    @Override
+    public String name() {
+        return name;
     }
-    return MetricFlowUnit.generic();
-  }
 
-  public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
-    long startTime = System.currentTimeMillis();
-    MetricFlowUnit mfu = gather(args.getQueryable());
-    long endTime = System.currentTimeMillis();
-    long duration = endTime - startTime;
+    public MetricFlowUnit gather(Queryable queryable) {
+        LOG.debug("Trying to gather metrics for {}", name);
+        MetricsDB db;
+        try {
+            db = queryable.getMetricsDB();
+        } catch (Exception e) {
+            PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
+                    ExceptionsAndErrors.EXCEPTION_IN_GATHER, name(), 1);
+            // TODO: Emit log/stats that gathering failed.
+            LOG.error("RCA: Caught an exception while getting the DB", e);
+            return MetricFlowUnit.generic();
+        }
+        try {
+            Result<Record> result = queryable.queryMetrics(db, name);
+            return new MetricFlowUnit(queryable.getDBTimestamp(db), result);
+        } catch (DataAccessException dex) {
+            // This can happen if the RCA started querying for metrics before the Reader obtained
+            // them.
+            // This is not an error.
+            // And node stats metrics can be enabled/disabled on writer side so we might end up
+            // being here
+            // if RCA is trying to read node stats which are not enabled yet.
+            LOG.warn("Looking for metric {}, when it does not exist.", name);
+        } catch (Exception e) {
+            PerformanceAnalyzerApp.ERRORS_AND_EXCEPTIONS_AGGREGATOR.updateStat(
+                    ExceptionsAndErrors.EXCEPTION_IN_GATHER, name(), 1);
+            LOG.error("Metric exception:", e);
+        }
+        return MetricFlowUnit.generic();
+    }
 
-    PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
-        RcaGraphMetrics.METRIC_GATHER_CALL, this.name(), duration);
-    setFlowUnits(Collections.singletonList(mfu));
-  }
+    public void generateFlowUnitListFromLocal(FlowUnitOperationArgWrapper args) {
+        long startTime = System.currentTimeMillis();
+        MetricFlowUnit mfu = gather(args.getQueryable());
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
 
-  /**
-   * Persists the given flow unit.
-   *
-   * @param args The arg wrapper.
-   */
-  @Override
-  public void persistFlowUnit(FlowUnitOperationArgWrapper args) {}
+        PerformanceAnalyzerApp.RCA_GRAPH_METRICS_AGGREGATOR.updateStat(
+                RcaGraphMetrics.METRIC_GATHER_CALL, this.name(), duration);
+        setFlowUnits(Collections.singletonList(mfu));
+    }
 
-  public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-    LOG.error("we are not supposed to read metric flowunit from wire.");
-  }
+    /**
+     * Persists the given flow unit.
+     *
+     * @param args The arg wrapper.
+     */
+    @Override
+    public void persistFlowUnit(FlowUnitOperationArgWrapper args) {}
 
-  /**
-   * This method specifies what needs to be done when the current node is muted for throwing
-   * exceptions.
-   */
-  @Override
-  public void handleNodeMuted() {
-    setLocalFlowUnit(MetricFlowUnit.generic());
-  }
+    public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
+        LOG.error("we are not supposed to read metric flowunit from wire.");
+    }
+
+    /**
+     * This method specifies what needs to be done when the current node is muted for throwing
+     * exceptions.
+     */
+    @Override
+    public void handleNodeMuted() {
+        setLocalFlowUnit(MetricFlowUnit.generic());
+    }
 }
