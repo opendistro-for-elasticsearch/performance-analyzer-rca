@@ -154,7 +154,7 @@ public class JvmGenTuningPolicy implements DecisionPolicy {
    * @return a ratio that will decrease the young generation size based on the current ratio
    */
   public int computeDecrease(double currentRatio) {
-    // Don't decrease the (old:young) ratio beyond 5:1
+    // Don't increase the (old:young) ratio beyond 5:1
     if (currentRatio < 0 || currentRatio > 5) {
       return -1;
     }
@@ -166,8 +166,8 @@ public class JvmGenTuningPolicy implements DecisionPolicy {
    * @return a ratio that will increase the young generation size based on the current ratio
    */
   public int computeIncrease(double currentRatio) {
-    // Don't increase the (old:young) ratio beyond 3:1
-    if (currentRatio < 3) {
+    // Don't decrease the (old:young) ratio below 3:1
+    if (currentRatio < 4) {
       return -1;
     }
     // If the current ratio is egregious (e.g. 50:1) set the ratio to 3:1 immediately
