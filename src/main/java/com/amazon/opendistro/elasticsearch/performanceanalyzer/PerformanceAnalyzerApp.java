@@ -121,8 +121,6 @@ public class PerformanceAnalyzerApp {
               (MetricsConfiguration.CONFIG_MAP.get(StatsCollector.class).samplingInterval) / 2,
               TimeUnit.MILLISECONDS);
       METRIC_COLLECTOR_EXECUTOR.addScheduledMetricCollector(StatsCollector.instance());
-      StatsCollector.instance()
-          .addDefaultExceptionCode(StatExceptionCode.READER_RESTART_PROCESSING);
       METRIC_COLLECTOR_EXECUTOR.setEnabled(true);
       METRIC_COLLECTOR_EXECUTOR.start();
 
