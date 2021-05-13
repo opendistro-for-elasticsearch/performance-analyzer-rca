@@ -38,7 +38,9 @@ public enum RcaVerticesMetrics implements MeasurementSet {
   NUM_SHARD_REQUEST_CACHE_RCA_TRIGGERED(
           "ShardRequestCacheCount", "count", Collections.singletonList(Statistics.COUNT)),
   CLUSTER_RCA_NAMED_COUNT(
-          "ClusterRcaNamedCount", "namedCount", Collections.singletonList(Statistics.NAMED_COUNTERS));
+          "ClusterRcaNamedCount", "namedCount", Collections.singletonList(Statistics.NAMED_COUNTERS)),
+  ADMISSION_CONTROL_RCA_TRIGGERED(
+      "AdmissionControlRcaCount", "count", Collections.singletonList(Statistics.COUNT));
 
   /** What we want to appear as the metric name. */
   private String name;
