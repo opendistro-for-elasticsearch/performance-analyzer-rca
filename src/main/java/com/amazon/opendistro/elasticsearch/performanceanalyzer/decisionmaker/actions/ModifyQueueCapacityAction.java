@@ -19,6 +19,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionma
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.CPU;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.HEAP;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.ImpactVector.Dimension.NETWORK;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum.WRITE_THREADPOOL;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.QueueActionConfig;
@@ -152,6 +153,7 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
     public static final long DEFAULT_COOL_OFF_PERIOD_IN_MILLIS = 300 * 1_000;
     public static final boolean DEFAULT_IS_INCREASE = true;
     public static final boolean DEFAULT_CAN_UPDATE = true;
+    private static final int DEFAULT_WRITE_QUEUE_SIZE_ES_7_9 = 5000;
 
     private int stepSize;
     private boolean increase;
@@ -178,6 +180,12 @@ public class ModifyQueueCapacityAction extends SuppressibleAction {
       this.desiredCapacity = null;
       this.currentCapacity = NodeConfigCacheReaderUtil.readQueueCapacity(
           appContext.getNodeConfigCache(), esNode, threadPool);
+
+      // write queue size for ES 7.9+ is unbounded. We should suppress
+        // the write queue actions if found to be running on ES 7.9+
+      if (this.currentCapacity >= DEFAULT_WRITE_QUEUE_SIZE_ES_7_9 && threadPool == WRITE_THREADPOOL) {
+          this.canUpdate = false;
+      }
 
       QueueActionConfig queueActionConfig = new QueueActionConfig(rcaConf);
       this.upperBound = queueActionConfig.getThresholdConfig(threadPool).upperBound();
