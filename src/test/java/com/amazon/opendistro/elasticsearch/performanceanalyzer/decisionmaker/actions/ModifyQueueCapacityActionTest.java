@@ -224,6 +224,29 @@ public class ModifyQueueCapacityActionTest {
     assertEquals(modifyQueueCapacityAction.getThreadPool(), objectFromSummary.getThreadPool());
   }
 
+  @Test
+  public void testSuppressWriteQueueTuningForES79() {
+    NodeKey node1 =
+            new NodeKey(new InstanceDetails.Id("node-1"), new InstanceDetails.Ip("1.2.3.4"));
+    dummyCache.put(node1, ResourceUtil.WRITE_QUEUE_CAPACITY, 10000);
+    dummyCache.put(node1, ResourceUtil.SEARCH_QUEUE_CAPACITY, 10000);
+    ModifyQueueCapacityAction.Builder builder =
+            ModifyQueueCapacityAction.newBuilder(
+                    node1, ResourceEnum.WRITE_THREADPOOL, testAppContext, rcaConf);
+    ModifyQueueCapacityAction increaseAction = builder.increase(true).build();
+    assertFalse(increaseAction.isActionable());
+
+    ModifyQueueCapacityAction decreaseAction = builder.increase(false).build();
+    assertFalse(decreaseAction.isActionable());
+
+    ModifyQueueCapacityAction searchQueueAction =
+            ModifyQueueCapacityAction.newBuilder(
+                    node1, ResourceEnum.SEARCH_THREADPOOL, testAppContext, rcaConf)
+                    .increase(false)
+                    .build();
+    assertTrue(searchQueueAction.isActionable());
+  }
+
   private void assertNoImpact(NodeKey node, ModifyQueueCapacityAction modifyQueueCapacityAction) {
     Map<Dimension, Impact> impact = modifyQueueCapacityAction.impact().get(node).getImpact();
     assertEquals(Impact.NO_IMPACT, impact.get(HEAP));
