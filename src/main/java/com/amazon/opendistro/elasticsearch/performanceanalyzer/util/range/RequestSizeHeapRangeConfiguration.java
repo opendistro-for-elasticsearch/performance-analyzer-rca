@@ -19,12 +19,29 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.util.range;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 /** RequestSize controller threshold based on heap occupancy percent range */
 public class RequestSizeHeapRangeConfiguration implements RangeConfiguration {
 
-    private static Collection<Range> rangeConfiguration = defaultRangeConfiguration();
+    /**
+     * Default request-size controller threshold for lower and upper bound of heap percent Here, new
+     * Range(0, 75, 15.0) => for heap percent between 0% and 75% set threshold to 15%
+     */
+    private final Collection<Range> DEFAULT_RANGE_CONFIGURATION =
+            Collections.unmodifiableList(
+                    Arrays.asList(
+                            new Range(0, 75, 15.0),
+                            new Range(76, 80, 12.5),
+                            new Range(81, 85, 10.0),
+                            new Range(86, 90, 7.5),
+                            new Range(91, 95, 5.0),
+                            new Range(96, 100, 2.5)));
+
+    private Collection<Range> rangeConfiguration;
+
+    public RequestSizeHeapRangeConfiguration() {
+        this.rangeConfiguration = DEFAULT_RANGE_CONFIGURATION;
+    }
 
     @Override
     public Range getRange(double value) {
@@ -38,32 +55,14 @@ public class RequestSizeHeapRangeConfiguration implements RangeConfiguration {
     public boolean hasRangeChanged(double previousValue, double currentValue) {
         Range previousRange = getRange(previousValue);
         Range currentRange = getRange(currentValue);
-        if (previousRange == null && currentRange == null) {
-            return false;
-        }
         if (previousRange == null || currentRange == null) {
-            return true;
+            return false;
         }
         return !previousRange.equals(currentRange);
     }
 
     @Override
     public void setRangeConfiguration(Collection<Range> rangeConfiguration) {
-        RequestSizeHeapRangeConfiguration.rangeConfiguration = rangeConfiguration;
-    }
-
-    /**
-     * @return list of request-size controller threshold for lower and upper bound of heap percent
-     *     new Range(0, 75, 15.0) => for heap percent between 0% and 75% set threshold to 15%
-     */
-    private static List<Range> defaultRangeConfiguration() {
-        return Collections.unmodifiableList(
-                Arrays.asList(
-                        new Range(0, 75, 15.0),
-                        new Range(76, 80, 12.5),
-                        new Range(81, 85, 10.0),
-                        new Range(86, 90, 7.5),
-                        new Range(91, 95, 5.0),
-                        new Range(96, 100, 2.5)));
+        this.rangeConfiguration = rangeConfiguration;
     }
 }

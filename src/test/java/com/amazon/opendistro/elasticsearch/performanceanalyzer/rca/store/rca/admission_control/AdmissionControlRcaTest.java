@@ -28,7 +28,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.MetricTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.admission_control.AdmissionControlRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.admissioncontrol.AdmissionControlRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.range.Range;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -90,6 +91,27 @@ public class AdmissionControlRcaTest {
     }
 
     @Test
+    public void testAdmissionControlRcaRangeGapConfigured() {
+        rca.getRequestSizeHeapRange()
+                .setRangeConfiguration(
+                        Arrays.asList(
+                                new Range(0, 75, 15),
+                                // Simulating configuration gap from 75% to 85%
+                                new Range(85, 100, 10)));
+
+        setupMockHeapMetric(mockHeapMaxValue, 100);
+        setupMockHeapMetric(mockHeapUsedValue, 70);
+        IntStream.range(0, PERIOD).forEach(i -> rca.operate());
+
+        setupMockHeapMetric(mockHeapUsedValue, 80);
+        ResourceFlowUnit<HotNodeSummary> flowUnit = rca.operate();
+
+        assertFalse(flowUnit.isEmpty());
+        ResourceContext context = flowUnit.getResourceContext();
+        assertTrue(context.isHealthy());
+    }
+
+    @Test
     public void testAdmissionControlRcaInvalidMaxHeap() {
         setupMockHeapMetric(mockHeapMaxValue, 0);
         setupMockHeapMetric(mockHeapUsedValue, 0);
@@ -111,7 +133,11 @@ public class AdmissionControlRcaTest {
                         valueString,
                         valueString);
         when(metric.getFlowUnits())
-                .thenReturn(Collections.singletonList(
-                        new MetricFlowUnit(0, metricTestHelper.createTestResult(heapTableColumns, data))));
+                .thenReturn(
+                        Collections.singletonList(
+                                new MetricFlowUnit(
+                                        0,
+                                        metricTestHelper.createTestResult(
+                                                heapTableColumns, data))));
     }
 }

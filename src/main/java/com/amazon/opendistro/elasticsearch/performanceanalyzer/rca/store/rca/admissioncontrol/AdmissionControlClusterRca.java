@@ -13,7 +13,7 @@
  * permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.admission_control;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.admissioncontrol;
 
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Rca;

@@ -15,14 +15,14 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders;
 
-import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.admission_control.AdmissionControlRca.REQUEST_SIZE;
+import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.admissioncontrol.AdmissionControlRca.REQUEST_SIZE;
 
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.AdmissionControlAction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotResourceSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.admission_control.AdmissionControlClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.admissioncontrol.AdmissionControlClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -33,7 +33,7 @@ import java.util.Objects;
 public class AdmissionControlDecider extends Decider {
 
     private int counter = 0;
-    private static final String NAME = "AdmissionControl";
+    private static final String NAME = "admissionControlDecider";
     private AdmissionControlClusterRca admissionControlClusterRca;
 
     public AdmissionControlDecider(

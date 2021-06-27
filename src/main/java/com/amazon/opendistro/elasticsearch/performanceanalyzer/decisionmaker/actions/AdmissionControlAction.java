@@ -32,7 +32,7 @@ public class AdmissionControlAction extends SuppressibleAction {
 
     public static final String NAME = "AdmissionControlAction";
 
-    protected static final long DEFAULT_COOL_OFF_PERIOD_IN_MILLIS = TimeUnit.MINUTES.toMillis(5);
+    public static final long DEFAULT_COOL_OFF_PERIOD_IN_MILLIS = TimeUnit.MINUTES.toMillis(15);
 
     private final NodeKey esNode;
     private final String controllerName;

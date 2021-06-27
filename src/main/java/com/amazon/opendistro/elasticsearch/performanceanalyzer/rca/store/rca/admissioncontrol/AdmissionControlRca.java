@@ -13,7 +13,7 @@
  * permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.admission_control;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.admissioncontrol;
 
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp.RCA_VERTICES_METRICS_AGGREGATOR;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType.HEAP;
@@ -24,6 +24,7 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framew
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil.HEAP_MAX_SIZE;
 import static com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.RcaVerticesMetrics.ADMISSION_CONTROL_RCA_TRIGGERED;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.FlowUnitMessage;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.configs.AdmissionControlRcaConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.Metric;
@@ -38,6 +39,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.scheduler.Flo
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.range.Range;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.range.RangeConfiguration;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.range.RequestSizeHeapRangeConfiguration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -57,19 +59,20 @@ public class AdmissionControlRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
     private final Metric heapUsedValue;
     private final Metric heapMaxValue;
 
-    private final RangeConfiguration requestSizeHeapRange = new RequestSizeHeapRangeConfiguration();
+    private final RangeConfiguration requestSizeHeapRange;
     private final int rcaPeriod;
     private int counter;
-
-    private double previousHeapPercent = 0.0;
+    private double previousHeapPercent;
 
     public <M extends Metric> AdmissionControlRca(
             final int rcaPeriodInSeconds, final M heapUsedValue, final M heapMaxValue) {
         super(rcaPeriodInSeconds);
         this.counter = 0;
+        this.previousHeapPercent = 0.0;
         this.rcaPeriod = rcaPeriodInSeconds;
         this.heapUsedValue = heapUsedValue;
         this.heapMaxValue = heapMaxValue;
+        this.requestSizeHeapRange = new RequestSizeHeapRangeConfiguration();
     }
 
     private <M extends Metric> double getMetric(
@@ -165,9 +168,18 @@ public class AdmissionControlRca extends Rca<ResourceFlowUnit<HotNodeSummary>> {
         return Objects.isNull(range) ? 0 : range.getThreshold();
     }
 
+    public RangeConfiguration getRequestSizeHeapRange() {
+        return this.requestSizeHeapRange;
+    }
+
     @Override
     public void generateFlowUnitListFromWire(FlowUnitOperationArgWrapper args) {
-        throw new IllegalArgumentException(name() + ": not expected to be called over the wire");
+        List<FlowUnitMessage> flowUnitMessages = args.getWireHopper().readFromWire(args.getNode());
+        List<ResourceFlowUnit<HotNodeSummary>> flowUnitList = new ArrayList<>();
+        for (FlowUnitMessage flowUnitMessage : flowUnitMessages) {
+            flowUnitList.add(ResourceFlowUnit.buildFlowUnitFromWrapper(flowUnitMessage));
+        }
+        setFlowUnits(flowUnitList);
     }
 
     private static class HeapMetrics {

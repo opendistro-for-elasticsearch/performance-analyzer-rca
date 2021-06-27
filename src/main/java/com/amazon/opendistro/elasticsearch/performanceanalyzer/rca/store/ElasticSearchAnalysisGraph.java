@@ -87,8 +87,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.Hot
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.HotNodeRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.FieldDataCacheRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.ShardRequestCacheRca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.admission_control.AdmissionControlClusterRca;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.admission_control.AdmissionControlRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.admissioncontrol.AdmissionControlClusterRca;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.admissioncontrol.AdmissionControlRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.FieldDataCacheClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.QueueRejectionClusterRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.ShardRequestCacheClusterRca;
@@ -331,7 +331,7 @@ public class ElasticSearchAnalysisGraph extends AnalysisGraph {
 
   private AdmissionControlDecider buildAdmissionControlDecider(Metric heapUsed, Metric heapMax) {
     AdmissionControlRca admissionControlRca = new AdmissionControlRca(RCA_PERIOD, heapUsed, heapMax);
-    admissionControlRca.addTag(TAG_LOCUS, LOCUS_DATA_MASTER_NODE);
+    admissionControlRca.addTag(TAG_LOCUS, LOCUS_DATA_NODE);
     admissionControlRca.addAllUpstreams(Arrays.asList(heapUsed, heapMax));
 
     AdmissionControlClusterRca admissionControlClusterRca = new AdmissionControlClusterRca(
