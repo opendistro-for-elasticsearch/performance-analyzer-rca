@@ -60,7 +60,7 @@ public class PerformanceAnalyzerMetricsTests {
         PerformanceAnalyzerMetrics.getMetric(
                 PluginSettings.instance().getMetricsLocation() + "/dir1/test2"));
 
-    PerformanceAnalyzerMetrics.removeMetrics(PluginSettings.instance().getMetricsLocation() + "/dir1");
+    //PerformanceAnalyzerMetrics.removeMetrics(PluginSettings.instance().getMetricsLocation() + "/dir1");
   }
 
   // TODO: Turn it on later

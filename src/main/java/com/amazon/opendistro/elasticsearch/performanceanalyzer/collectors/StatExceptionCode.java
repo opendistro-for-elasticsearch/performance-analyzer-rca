@@ -17,16 +17,19 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.collectors;
 
 public enum StatExceptionCode {
   TOTAL_ERROR("TotalError"),
-  METRICS_WRITE_ERROR("MetricsWriteError"),
-  METRICS_REMOVE_ERROR("MetricsRemoveError"),
+
   // Tracks the number of VM attach/dataDump or detach failures.
   JVM_ATTACH_ERROR("JvmAttachErrror"),
+
   // This error is thrown if the java_pid file is missing.
   JVM_ATTACH_ERROR_JAVA_PID_FILE_MISSING("JvmAttachErrorJavaPidFileMissing"),
+
   // The lock could not be acquired within the timeout.
   JVM_ATTACH_LOCK_ACQUISITION_FAILED("JvmAttachLockAcquisitionFailed"),
+
   // ThreadState could not be found for an ES thread in the critical ES path.
   NO_THREAD_STATE_INFO("NoThreadStateInfo"),
+
   // This metric indicates that we successfully completed a thread-dump. Likewise,
   // an omission of this should indicate that the thread taking the dump got stuck.
   JVM_THREAD_DUMP_SUCCESSFUL("JvmThreadDumpSuccessful"),

@@ -15,11 +15,15 @@
 
 package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_shared;
 
-import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.PerformanceAnalyzerMetrics;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.WriterMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.EventDispatcher;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.ParameterizedMessage;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -31,8 +35,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.function.Supplier;
+
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class EventLogFileHandler {
     private static final Logger LOG = LogManager.getLogger(EventLogFileHandler.class);
@@ -67,8 +73,8 @@ public class EventLogFileHandler {
      * data.
      *
      * <p>If any of the above steps fail, then the tmp file is not deleted from the filesystem. This
-     * is fine as the MetricsPurgeActivity, will eventually clean it. The copies are atomic and
-     * therefore the reader never reads incompletely written file.
+     * is fine as the {@link deleteFiles()}, will eventually clean it. The
+     * copies are atomic and therefore the reader never reads incompletely written file.
      *
      * @param dataEntries The metrics to be written to file.
      * @param epoch The epoch all the metrics belong to.
@@ -153,6 +159,58 @@ public class EventLogFileHandler {
             }
         } catch (IOException ex) {
             LOG.error("Error reading file", ex);
+        }
+    }
+
+    private void deleteFiles(long referenceTime, int purgeInterval) {
+        LOG.debug("Starting to delete old writer files");
+        File root = new File(metricsLocation);
+        String[] children = root.list();
+        if (children == null) {
+            return;
+        }
+        int filesDeletedCount = 0;
+        for (String child : children) {
+            File fileToDelete = new File(root, child);
+            if (fileToDelete.lastModified()
+                    < PerformanceAnalyzerMetrics.getTimeInterval(referenceTime - purgeInterval)) {
+                removeMetrics(fileToDelete);
+                filesDeletedCount += 1;
+            }
+        }
+        LOG.debug("'{}' Old writer files cleaned up.", filesDeletedCount);
+    }
+
+    public static void removeMetrics(String keyPath) {
+        removeMetrics(new File(keyPath));
+    }
+
+    public static void removeMetrics(File keyPathFile) {
+        if (keyPathFile.isDirectory()) {
+            String[] children = keyPathFile.list();
+            if (children != null) {
+                for (String child : children) {
+                    removeMetrics(new File(keyPathFile, child));
+                }
+            }
+        }
+        try {
+            if (!keyPathFile.delete()) {
+                PerformanceAnalyzerApp.WRITER_METRICS_AGGREGATOR.updateStat(
+                        WriterMetrics.METRICS_REMOVE_FAILURE, "", 1);
+                LOG.debug("Purge Could not delete file {}", keyPathFile);
+            }
+        } catch (Exception ex) {
+            PerformanceAnalyzerApp.WRITER_METRICS_AGGREGATOR.updateStat(
+                    WriterMetrics.METRICS_REMOVE_ERROR, "", 1);
+            LOG.debug(
+                    (Supplier<?>)
+                            () -> new ParameterizedMessage(
+                                    "Error in deleting file: {} for keyPath:{} with ExceptionCode: {}",
+                                    ex.toString(),
+                                    keyPathFile.getAbsolutePath(),
+                                    WriterMetrics.METRICS_REMOVE_ERROR.toString()),
+                    ex);
         }
     }
 }
