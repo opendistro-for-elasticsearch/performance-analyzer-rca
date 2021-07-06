@@ -21,17 +21,22 @@ import static com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.Al
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.AppContext;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.GCType;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ShardStatsDerivedDimension;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metrics.AllMetrics.ThreadPoolType;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.metricsdb.MetricsDB;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.GradleTaskForRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.MetricFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.NodeConfigFlowUnit;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_FieldData_Size;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Max_Size;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Cache_Request_Size;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.Heap_Max;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_QueueCapacity;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.flow_units.MetricFlowUnitTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.collector.NodeConfigCollector;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric.AggregateFunction;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.ClusterDetailsEventProcessor;
 import java.util.Arrays;
@@ -49,13 +54,24 @@ public class NodeConfigCollectorTest {
   private Cache_Max_Size cacheMaxSize;
   private Heap_Max heapMax;
   private NodeConfigCollector nodeConfigCollector;
+  private AggregateMetric fieldDataCacheSizeGroupByAggregation;
+  private AggregateMetric shardRequestCacheSizeGroupByAggregation;
 
   @Before
   public void init() {
     threadPool_QueueCapacity = new ThreadPool_QueueCapacity();
     cacheMaxSize = new Cache_Max_Size(5);
     heapMax = new Heap_Max(5);
-    nodeConfigCollector = new NodeConfigCollector(1, threadPool_QueueCapacity, cacheMaxSize, heapMax);
+    fieldDataCacheSizeGroupByAggregation =  new AggregateMetric(5,
+        Cache_FieldData_Size.NAME,
+        AggregateFunction.SUM,
+        MetricsDB.MAX, ShardStatsDerivedDimension.INDEX_NAME.toString());
+    shardRequestCacheSizeGroupByAggregation = new AggregateMetric(5,
+        Cache_Request_Size.NAME,
+        AggregateFunction.SUM,
+        MetricsDB.MAX, ShardStatsDerivedDimension.INDEX_NAME.toString());
+    nodeConfigCollector = new NodeConfigCollector(1, threadPool_QueueCapacity, cacheMaxSize, heapMax,
+        fieldDataCacheSizeGroupByAggregation, shardRequestCacheSizeGroupByAggregation);
 
     ClusterDetailsEventProcessor clusterDetailsEventProcessor = new ClusterDetailsEventProcessor();
     ClusterDetailsEventProcessor.NodeDetails node1 =
@@ -95,6 +111,21 @@ public class NodeConfigCollectorTest {
             Arrays.asList(GCType.SURVIVOR.toString(), String.valueOf(survivorMaxSize))
         );
     heapMax.setLocalFlowUnit(flowUnit);
+  }
+
+  /**
+   * generate flowunit and bind the flowunits it generate to metrics
+   */
+  @SuppressWarnings("unchecked")
+  private void mockFieldDataCacheSizeFlowUnits() {
+    MetricFlowUnit flowUnit =
+        MetricFlowUnitTestHelper.createFlowUnit(
+            Arrays.asList(ShardStatsDerivedDimension.INDEX_NAME.toString(), MetricsDB.SUM),
+            Arrays.asList("index1", "500"),
+            Arrays.asList("index2", "1500"),
+            Arrays.asList("index4", "900")
+        );
+    fieldDataCacheSizeGroupByAggregation.setLocalFlowUnit(flowUnit);
   }
 
   @Test
@@ -159,5 +190,15 @@ public class NodeConfigCollectorTest {
     Assert.assertEquals(heapMaxSize, appContext.getNodeConfigCache().get(nodeKey, ResourceUtil.HEAP_MAX_SIZE), 0.01);
     Assert.assertEquals(oldGenMaxSize, appContext.getNodeConfigCache().get(nodeKey, ResourceUtil.OLD_GEN_MAX_SIZE), 0.01);
     Assert.assertEquals(expectedYoungGenMaxSize, appContext.getNodeConfigCache().get(nodeKey, ResourceUtil.YOUNG_GEN_MAX_SIZE), 0.01);
+  }
+
+  @Test
+  public void testFieldDataCacheActualSizeCollection() {
+    mockFieldDataCacheSizeFlowUnits();
+    NodeConfigFlowUnit flowUnit = nodeConfigCollector.operate();
+    Assert.assertFalse(flowUnit.isEmpty());
+    Assert.assertTrue(flowUnit.hasConfig(ResourceUtil.FIELD_DATA_CACHE_ACTUAL_SIZE));
+    Assert.assertEquals(2900, flowUnit.readConfig(ResourceUtil.FIELD_DATA_CACHE_ACTUAL_SIZE), 0.01);
+    Assert.assertEquals(2900, appContext.getNodeConfigCache().get(nodeKey, ResourceUtil.FIELD_DATA_CACHE_ACTUAL_SIZE), 0.01);
   }
 }

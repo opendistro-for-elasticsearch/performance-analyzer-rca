@@ -24,6 +24,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.CacheActionConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.QueueActionConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.jvm.LevelTwoActionBuilderConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.old_gen.LevelOneActionBuilder;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.old_gen.LevelTwoActionBuilder;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.test_utils.DeciderActionParserUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
@@ -352,5 +353,34 @@ public class LevelTwoActionBuilderTest {
     int expectedQueueSize = writeQueueSize - writeQueueStep;
     Assert.assertEquals(expectedQueueSize, writeQueueAction.getDesiredCapacity());
     Assert.assertEquals(writeQueueSize, writeQueueAction.getCurrentCapacity());
+  }
+
+  @Test
+  public void testSuppressActionWhenCacheUsageIsLow() {
+    final double fielddataCacheSizeInPercent = 0.3;
+    final double shardRequestCacheSizeInPercent = 0.04;
+    dummyCache.put(node, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE,
+        (long)(heapMaxSizeInBytes * fielddataCacheSizeInPercent));
+    dummyCache.put(node, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE,
+        (long)(heapMaxSizeInBytes * shardRequestCacheSizeInPercent));
+    final double fielddataCacheUsageInPercent = 0.02;
+    final double shardRequestCacheUsageInPercent = 0.02;
+    dummyCache.put(node, ResourceUtil.FIELD_DATA_CACHE_ACTUAL_SIZE,
+        (long)(heapMaxSizeInBytes * fielddataCacheUsageInPercent));
+    dummyCache.put(node, ResourceUtil.SHARD_REQUEST_CACHE_ACTUAL_SIZE,
+        (long)(heapMaxSizeInBytes * shardRequestCacheUsageInPercent));
+    List<Action> actions = LevelTwoActionBuilder.newBuilder(node, testAppContext, rcaConf).build();
+    deciderActionParser.addActions(actions);
+
+    Assert.assertEquals(1, actions.size());
+    long expectedCacheSize;
+    long currentCacheSize;
+    ModifyCacheMaxSizeAction requestCacheAction = deciderActionParser.readCacheAction(ResourceEnum.SHARD_REQUEST_CACHE);
+    Assert.assertNotNull(requestCacheAction);
+    expectedCacheSize =
+        (long) ((shardRequestCacheSizeInPercent - shardRequestCacheStepSize) * heapMaxSizeInBytes);
+    currentCacheSize = (long) (shardRequestCacheSizeInPercent * heapMaxSizeInBytes);
+    Assert.assertEquals(expectedCacheSize, requestCacheAction.getDesiredCacheMaxSizeInBytes(), 10);
+    Assert.assertEquals(currentCacheSize, requestCacheAction.getCurrentCacheMaxSizeInBytes(), 10);
   }
 }

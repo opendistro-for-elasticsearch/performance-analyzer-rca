@@ -25,6 +25,7 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.act
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.CacheActionConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.actions.configs.QueueActionConfig;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.configs.jvm.LevelThreeActionBuilderConfig;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.old_gen.LevelOneActionBuilder;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.jvm.old_gen.LevelThreeActionBuilder;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.decisionmaker.deciders.test_utils.DeciderActionParserUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.grpc.ResourceEnum;
@@ -197,5 +198,39 @@ public class LevelThreeActionBuilderTest {
     Assert.assertNotNull(cacheClearAction);
     Assert.assertTrue(cacheClearAction.isActionable());
     Assert.assertEquals(2, cacheClearAction.impactedNodes().size());
+  }
+
+  @Test
+  public void testSuppressActionWhenCacheUsageIsLow() {
+    final double fielddataCacheSizeInPercent = 0.3;
+    final double shardRequestCacheSizeInPercent = 0.04;
+    final int writeQueueSize = QueueActionConfig.DEFAULT_WRITE_QUEUE_LOWER_BOUND;
+    final int searchQueueSize = 2000;
+    dummyCache.put(node, ResourceUtil.FIELD_DATA_CACHE_MAX_SIZE,
+        (long)(heapMaxSizeInBytes * fielddataCacheSizeInPercent));
+    dummyCache.put(node, ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE,
+        (long)(heapMaxSizeInBytes * shardRequestCacheSizeInPercent));
+    final double fielddataCacheUsageInPercent = 0.02;
+    final double shardRequestCacheUsageInPercent = 0.02;
+    dummyCache.put(node, ResourceUtil.FIELD_DATA_CACHE_ACTUAL_SIZE,
+        (long)(heapMaxSizeInBytes * fielddataCacheUsageInPercent));
+    dummyCache.put(node, ResourceUtil.SHARD_REQUEST_CACHE_ACTUAL_SIZE,
+        (long)(heapMaxSizeInBytes * shardRequestCacheUsageInPercent));
+    dummyCache.put(node, ResourceUtil.WRITE_QUEUE_CAPACITY, writeQueueSize);
+    dummyCache.put(node, ResourceUtil.SEARCH_QUEUE_CAPACITY, searchQueueSize);
+    List<Action> actions = LevelThreeActionBuilder.newBuilder(node, testAppContext, rcaConf).build();
+    deciderActionParser.addActions(actions);
+
+    Assert.assertEquals(3, actions.size());
+    long expectedCacheSize;
+    long currentCacheSize;
+    ModifyCacheMaxSizeAction requestCacheAction = deciderActionParser.readCacheAction(ResourceEnum.SHARD_REQUEST_CACHE);
+    Assert.assertNotNull(requestCacheAction);
+    expectedCacheSize = (long) (CacheActionConfig.DEFAULT_SHARD_REQUEST_CACHE_LOWER_BOUND * heapMaxSizeInBytes);
+    currentCacheSize = (long) (shardRequestCacheSizeInPercent * heapMaxSizeInBytes);
+    Assert.assertEquals(expectedCacheSize, requestCacheAction.getDesiredCacheMaxSizeInBytes(), 10);
+    Assert.assertEquals(currentCacheSize, requestCacheAction.getCurrentCacheMaxSizeInBytes(), 10);
+    ModifyCacheMaxSizeAction fielddatatCacheAction = deciderActionParser.readCacheAction(ResourceEnum.FIELD_DATA_CACHE);
+    Assert.assertNull(fielddatatCacheAction);
   }
 }

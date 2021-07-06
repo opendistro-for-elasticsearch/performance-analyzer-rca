@@ -33,6 +33,8 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.ThreadPool_QueueCapacity;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.persist.SQLParsingUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.ResourceUtil;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.metric.AggregateMetric;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cache.CacheUtil;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.cluster.NodeKey;
 import java.util.HashMap;
 import org.apache.logging.log4j.LogManager;
@@ -48,6 +50,8 @@ public class NodeConfigCollector extends EsConfigNode {
   private final ThreadPool_QueueCapacity threadPool_queueCapacity;
   private final Cache_Max_Size cacheMaxSize;
   private final Heap_Max heapMaxSize;
+  private final AggregateMetric fieldDataCacheSizeGroupByAggregation;
+  private final AggregateMetric shardRequestCacheSizeGroupByAggregation;
   private final int rcaPeriod;
   private int counter;
   private final HashMap<Resource, Double> configResult;
@@ -55,10 +59,14 @@ public class NodeConfigCollector extends EsConfigNode {
   public NodeConfigCollector(int rcaPeriod,
                              ThreadPool_QueueCapacity threadPool_queueCapacity,
                              Cache_Max_Size cacheMaxSize,
-                             Heap_Max heapMaxSize) {
+                             Heap_Max heapMaxSize,
+                             AggregateMetric fieldDataCacheSizeGroupByAggregation,
+                             AggregateMetric shardRequestCacheSizeGroupByAggregation) {
     this.threadPool_queueCapacity = threadPool_queueCapacity;
     this.cacheMaxSize = cacheMaxSize;
     this.heapMaxSize = heapMaxSize;
+    this.fieldDataCacheSizeGroupByAggregation = fieldDataCacheSizeGroupByAggregation;
+    this.shardRequestCacheSizeGroupByAggregation = shardRequestCacheSizeGroupByAggregation;
     this.rcaPeriod = rcaPeriod;
     this.counter = 0;
     this.configResult = new HashMap<>();
@@ -82,6 +90,16 @@ public class NodeConfigCollector extends EsConfigNode {
     final double shardRequestCacheMaxSize = SQLParsingUtil.readDataFromSqlResult(cacheMaxSize.getData(),
             CACHE_TYPE.getField(), CacheType.SHARD_REQUEST_CACHE.toString(), MetricsDB.MAX);
     collectAndPublishMetric(ResourceUtil.SHARD_REQUEST_CACHE_MAX_SIZE, shardRequestCacheMaxSize);
+  }
+
+  private void collectFieldDataCacheActualSize(MetricFlowUnit fieldDataCacheSizeGroupByOperation) {
+    final double fieldDataCacheActualSize = SQLParsingUtil.readSumFromSqlResult(fieldDataCacheSizeGroupByOperation.getData());
+    collectAndPublishMetric(ResourceUtil.FIELD_DATA_CACHE_ACTUAL_SIZE, fieldDataCacheActualSize);
+  }
+
+  private void collectShardRequestCacheActualSize(MetricFlowUnit shardRequestCacheSizeGroupByOperation) {
+    final double shardRequestCacheActualSize = SQLParsingUtil.readSumFromSqlResult(shardRequestCacheSizeGroupByOperation.getData());
+    collectAndPublishMetric(ResourceUtil.SHARD_REQUEST_CACHE_ACTUAL_SIZE, shardRequestCacheActualSize);
   }
 
   private void collectHeapStats(MetricFlowUnit heapMax) {
@@ -139,6 +157,18 @@ public class NodeConfigCollector extends EsConfigNode {
         continue;
       }
       collectHeapStats(flowUnit);
+    }
+    for (MetricFlowUnit flowUnit : fieldDataCacheSizeGroupByAggregation.getFlowUnits()) {
+      if (flowUnit.isEmpty()) {
+        continue;
+      }
+      collectFieldDataCacheActualSize(flowUnit);
+    }
+    for (MetricFlowUnit flowUnit : shardRequestCacheSizeGroupByAggregation.getFlowUnits()) {
+      if (flowUnit.isEmpty()) {
+        continue;
+      }
+      collectShardRequestCacheActualSize(flowUnit);
     }
 
     if (counter == rcaPeriod) {

@@ -89,6 +89,9 @@ public class ResourceUtil {
   public static final Resource FIELD_DATA_CACHE_MAX_SIZE = Resource.newBuilder()
           .setResourceEnum(ResourceEnum.FIELD_DATA_CACHE)
           .setMetricEnum(MetricEnum.CACHE_MAX_SIZE).build();
+  public static final Resource FIELD_DATA_CACHE_ACTUAL_SIZE = Resource.newBuilder()
+          .setResourceEnum(ResourceEnum.FIELD_DATA_CACHE)
+          .setMetricEnum(MetricEnum.CACHE_ACTUAL_SIZE).build();
   public static final Resource SHARD_REQUEST_CACHE_EVICTION = Resource.newBuilder()
           .setResourceEnum(ResourceEnum.SHARD_REQUEST_CACHE)
           .setMetricEnum(MetricEnum.CACHE_EVICTION).build();
@@ -98,6 +101,9 @@ public class ResourceUtil {
   public static final Resource SHARD_REQUEST_CACHE_MAX_SIZE = Resource.newBuilder()
           .setResourceEnum(ResourceEnum.SHARD_REQUEST_CACHE)
           .setMetricEnum(MetricEnum.CACHE_MAX_SIZE).build();
+  public static final Resource SHARD_REQUEST_CACHE_ACTUAL_SIZE = Resource.newBuilder()
+          .setResourceEnum(ResourceEnum.SHARD_REQUEST_CACHE)
+          .setMetricEnum(MetricEnum.CACHE_ACTUAL_SIZE).build();
 
   /**
    * Read the resourceType name from the ResourceType object

@@ -39,7 +39,7 @@ public class NodeConfigClusterCollectorTest {
 
   @Before
   public void init() {
-    collector = new NodeConfigCollector(1, null, null, null);
+    collector = new NodeConfigCollector(1, null, null, null, null, null);
     clusterCollector = new NodeConfigClusterCollector(collector);
     observer = new RcaTestHelper<>();
     AppContext appContext = new AppContext();

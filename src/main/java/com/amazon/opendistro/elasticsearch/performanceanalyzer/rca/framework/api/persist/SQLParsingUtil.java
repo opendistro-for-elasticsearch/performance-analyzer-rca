@@ -83,4 +83,23 @@ public class SQLParsingUtil {
     }
     return ret;
   }
+
+  /**
+   * Sums up the SUM field of all tuples in the SQL result
+   * @param records the record result from SQL query
+   * @return sum value
+   */
+  public static Double readSumFromSqlResult(final Result<Record> records) {
+    if (records == null) {
+      LOG.error("sql result is null");
+      return Double.NaN;
+    }
+    double size = 0;
+    // since the flow unit data is aggregated by index, summing the size across indices
+    if (records.size() > 0) {
+      size = records.stream().mapToDouble(
+          record -> record.getValue(MetricsDB.SUM, Double.class)).sum();
+    }
+    return size;
+  }
 }
