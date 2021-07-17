@@ -18,7 +18,9 @@ package com.amazon.opendistro.elasticsearch.performanceanalyzer.reader_writer_sh
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.PerformanceAnalyzerApp;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.core.Util;
+import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.metrics.WriterMetrics;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.reader.EventDispatcher;
 import java.io.File;
 import java.io.IOException;
@@ -102,11 +104,19 @@ public class EventLogFileHandler {
     public void renameFromTmpWithPrivilege(long epoch) {
         Path path = Paths.get(metricsLocation, String.valueOf(epoch));
         Path tmpPath = Paths.get(path.toString() + TMP_FILE_EXT);
-        // This is done only when no exception is thrown.
-        try {
-            Files.move(tmpPath, path, REPLACE_EXISTING, ATOMIC_MOVE);
-        } catch (IOException e) {
-            LOG.error("Error moving file {} to {}.", tmpPath.toString(), path.toString(), e);
+        File tempFile = new File(tmpPath.toString());
+        // Only if the tmp file is present, we want to create the writer file.
+        // If not, we will publish a metric.
+        if (tempFile.exists()) {
+            // This is done only when no exception is thrown.
+            try {
+                Files.move(tmpPath, path, REPLACE_EXISTING, ATOMIC_MOVE);
+            } catch (IOException e) {
+                LOG.error("Error moving file {} to {}.", tmpPath.toString(), path.toString(), e);
+            }
+        } else {
+            PerformanceAnalyzerApp.WRITER_METRICS_AGGREGATOR.updateStat(
+                    WriterMetrics.WRITER_FILE_CREATION_SKIPPED, "", 1);
         }
     }
 
@@ -120,7 +130,7 @@ public class EventLogFileHandler {
         File tempFile = new File(pathToFile.toString());
         if (!tempFile.exists()) {
             long mCurrT = System.currentTimeMillis();
-            LOG.info("Didnt find {} at {}", filename, mCurrT);
+            LOG.debug("Didnt find {} at {}", filename, mCurrT);
             return;
         }
         readInternal(pathToFile, BUFFER_SIZE, processor);
