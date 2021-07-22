@@ -130,7 +130,7 @@ public class AdmissionControlActionTest {
                         .append("\"Ip\":\"1.2.3.4\",")
                         .append("\"desiredValue\":20.0,")
                         .append("\"currentValue\":10.0,")
-                        .append("\"coolOffPeriodInMillis\":300000,")
+                        .append("\"coolOffPeriodInMillis\":900000,")
                         .append("\"canUpdate\":true}")
                         .toString(),
                 summary);
