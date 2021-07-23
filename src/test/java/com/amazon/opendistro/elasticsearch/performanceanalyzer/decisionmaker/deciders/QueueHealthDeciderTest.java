@@ -99,9 +99,9 @@ public class QueueHealthDeciderTest {
     appContext.getNodeConfigCache().put(new NodeKey(new InstanceDetails.Id("node1"),
             new InstanceDetails.Ip("127.0.0.1")), SEARCH_QUEUE_CAPACITY,5000);
     appContext.getNodeConfigCache().put(new NodeKey(new InstanceDetails.Id("node1"),
-            new InstanceDetails.Ip("127.0.0.1")), WRITE_QUEUE_CAPACITY,5000);
+            new InstanceDetails.Ip("127.0.0.1")), WRITE_QUEUE_CAPACITY,2000);
     appContext.getNodeConfigCache().put(new NodeKey(new InstanceDetails.Id("node2"),
-            new InstanceDetails.Ip("127.0.0.2")), WRITE_QUEUE_CAPACITY,5000);
+            new InstanceDetails.Ip("127.0.0.2")), WRITE_QUEUE_CAPACITY,2000);
     appContext.getNodeConfigCache().put(new NodeKey(new InstanceDetails.Id("node3"),
             new InstanceDetails.Ip("127.0.0.3")), SEARCH_QUEUE_CAPACITY,5000);
 
