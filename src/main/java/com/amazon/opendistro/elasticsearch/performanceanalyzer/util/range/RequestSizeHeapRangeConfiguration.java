@@ -25,17 +25,17 @@ public class RequestSizeHeapRangeConfiguration implements RangeConfiguration {
 
     /**
      * Default request-size controller threshold for lower and upper bound of heap percent Here, new
-     * Range(0, 75, 15.0) => for heap percent between 0% and 75% set threshold to 15%
+     * Range(0, 80, 15.0) => for heap percent between 0% and 80% set threshold to 15% Idea here is
+     * to incentivize with more buckets to request-size controller if more heap is available. As
+     * memory pressure increases we reduce buckets to further reduce number of acceptable incoming
+     * requests.
      */
     private final Collection<Range> DEFAULT_RANGE_CONFIGURATION =
             Collections.unmodifiableList(
                     Arrays.asList(
-                            new Range(0, 75, 15.0),
-                            new Range(76, 80, 12.5),
-                            new Range(81, 85, 10.0),
-                            new Range(86, 90, 7.5),
-                            new Range(91, 95, 5.0),
-                            new Range(96, 100, 2.5)));
+                            new Range(0, 80, 15.0),
+                            new Range(81, 90, 10.0),
+                            new Range(91, 100, 5.0)));
 
     private Collection<Range> rangeConfiguration;
 

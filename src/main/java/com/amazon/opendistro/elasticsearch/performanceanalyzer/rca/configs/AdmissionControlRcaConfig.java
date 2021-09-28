@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+// spotless:off
 /**
  * Defines config for request-size controller threshold tuning.
  * Example config below - for heap percent between 0% and 75% set threshold to 15%
@@ -36,20 +37,16 @@ import java.util.stream.Collectors;
  *       "heap-range": [
  *         {
  *           "lower-bound": 0,
- *           "upper-bound": 75,
- *           "threshold": 15
- *         },
- *         {
- *           "lower-bound": 76,
  *           "upper-bound": 80,
- *           "threshold": 12.5
- *         }
+ *           "threshold": 15.0
+ *         },
  *         ...
  *       ]
  *     }
  *   }
  * }
  */
+// spotless:on
 public class AdmissionControlRcaConfig {
     public static final String CONFIG_NAME = "admission-control-rca";
     private static final String REQUEST_SIZE = "request-size";
@@ -91,12 +88,27 @@ public class AdmissionControlRcaConfig {
             if (controllerConfig.getValue() != null) {
                 List<Map> rangeList = (List<Map>) controllerConfig.getValue().get(RANGE);
                 if (Objects.isNull(rangeList) == false) {
-                    heapRangeConfiguration = rangeList.stream()
-                        .map(r -> new Range(
-                            Double.parseDouble(r.getOrDefault(LOWER_BOUND, DEFAULT_LOWER_BOUND).toString()),
-                            Double.parseDouble(r.getOrDefault(UPPER_BOUND, DEFAULT_UPPER_BOUND).toString()),
-                            Double.parseDouble(r.getOrDefault(THRESHOLD, DEFAULT_REQUEST_SIZE_THRESHOLD).toString())))
-                        .collect(Collectors.toList());
+                    heapRangeConfiguration =
+                            rangeList.stream()
+                                    .map(
+                                            r ->
+                                                    new Range(
+                                                            Double.parseDouble(
+                                                                    r.getOrDefault(
+                                                                                    LOWER_BOUND,
+                                                                                    DEFAULT_LOWER_BOUND)
+                                                                            .toString()),
+                                                            Double.parseDouble(
+                                                                    r.getOrDefault(
+                                                                                    UPPER_BOUND,
+                                                                                    DEFAULT_UPPER_BOUND)
+                                                                            .toString()),
+                                                            Double.parseDouble(
+                                                                    r.getOrDefault(
+                                                                                    THRESHOLD,
+                                                                                    DEFAULT_REQUEST_SIZE_THRESHOLD)
+                                                                            .toString())))
+                                    .collect(Collectors.toList());
                 }
             }
         }

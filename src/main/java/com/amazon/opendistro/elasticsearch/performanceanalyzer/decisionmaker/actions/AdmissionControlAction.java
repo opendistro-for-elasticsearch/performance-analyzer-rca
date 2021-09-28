@@ -96,6 +96,8 @@ public class AdmissionControlAction extends SuppressibleAction {
             impactVector.increasesPressure(ADMISSION_CONTROL);
         } else if (desiredValue < currentValue) {
             impactVector.decreasesPressure(ADMISSION_CONTROL);
+        } else {
+            impactVector.noImpact(ADMISSION_CONTROL);
         }
         return Collections.singletonMap(esNode, impactVector);
     }

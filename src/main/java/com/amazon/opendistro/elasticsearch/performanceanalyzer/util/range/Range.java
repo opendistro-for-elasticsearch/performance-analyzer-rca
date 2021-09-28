@@ -20,9 +20,9 @@ import java.util.Objects;
 
 public class Range {
 
-    private double lowerBound;
-    private double upperBound;
-    private double threshold;
+    private final double lowerBound;
+    private final double upperBound;
+    private final double threshold;
 
     public Range(double lowerBound, double upperBound, double threshold) {
         this.lowerBound = lowerBound;

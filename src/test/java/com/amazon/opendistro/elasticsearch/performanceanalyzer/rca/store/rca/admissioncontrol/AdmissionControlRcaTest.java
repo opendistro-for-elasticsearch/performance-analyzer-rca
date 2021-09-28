@@ -13,7 +13,7 @@
  * permissions and limitations under the License.
  */
 
-package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.admision_control;
+package com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.admissioncontrol;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -28,7 +28,6 @@ import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.flow_units.ResourceFlowUnit;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.metrics.MetricTestHelper;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.framework.api.summaries.HotNodeSummary;
-import com.amazon.opendistro.elasticsearch.performanceanalyzer.rca.store.rca.admissioncontrol.AdmissionControlRca;
 import com.amazon.opendistro.elasticsearch.performanceanalyzer.util.range.Range;
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,6 +42,9 @@ public class AdmissionControlRcaTest {
     @Mock private Metric mockHeapUsedValue;
     @Mock private Metric mockHeapMaxValue;
 
+    private static final double MAX_HEAP_SMALL = 4294967296.0;
+    private static final double MAX_HEAP_MEDIUM = 32749125632.0;
+    private static final double MAX_HEAP_LARGE = 68719476736.0;
     private static final int PERIOD = 5;
     private AdmissionControlRca rca;
     private MetricTestHelper metricTestHelper;
@@ -64,11 +66,11 @@ public class AdmissionControlRcaTest {
 
     @Test
     public void testAdmissionControlRcaRangeChange() {
-        setupMockHeapMetric(mockHeapMaxValue, 100);
-        setupMockHeapMetric(mockHeapUsedValue, 70);
+        setupMockHeapMetric(mockHeapMaxValue, MAX_HEAP_MEDIUM);
+        setupMockHeapMetric(mockHeapUsedValue, MAX_HEAP_MEDIUM * 0.7);
         IntStream.range(0, PERIOD - 1).forEach(i -> rca.operate());
 
-        setupMockHeapMetric(mockHeapUsedValue, 80);
+        setupMockHeapMetric(mockHeapUsedValue, MAX_HEAP_MEDIUM * 0.85);
         ResourceFlowUnit<HotNodeSummary> flowUnit = rca.operate();
 
         assertFalse(flowUnit.isEmpty());
@@ -78,11 +80,11 @@ public class AdmissionControlRcaTest {
 
     @Test
     public void testAdmissionControlRcaNoRangeChange() {
-        setupMockHeapMetric(mockHeapMaxValue, 100);
-        setupMockHeapMetric(mockHeapUsedValue, 70);
-        IntStream.range(0, PERIOD).forEach(i -> rca.operate());
+        setupMockHeapMetric(mockHeapMaxValue, MAX_HEAP_MEDIUM);
+        setupMockHeapMetric(mockHeapUsedValue, MAX_HEAP_MEDIUM * 0.7);
+        IntStream.range(0, PERIOD - 1).forEach(i -> rca.operate());
 
-        setupMockHeapMetric(mockHeapUsedValue, 74);
+        setupMockHeapMetric(mockHeapUsedValue, MAX_HEAP_MEDIUM * 0.75);
         ResourceFlowUnit<HotNodeSummary> flowUnit = rca.operate();
 
         assertFalse(flowUnit.isEmpty());
@@ -99,11 +101,11 @@ public class AdmissionControlRcaTest {
                                 // Simulating configuration gap from 75% to 85%
                                 new Range(85, 100, 10)));
 
-        setupMockHeapMetric(mockHeapMaxValue, 100);
-        setupMockHeapMetric(mockHeapUsedValue, 70);
-        IntStream.range(0, PERIOD).forEach(i -> rca.operate());
+        setupMockHeapMetric(mockHeapMaxValue, MAX_HEAP_MEDIUM);
+        setupMockHeapMetric(mockHeapUsedValue, MAX_HEAP_MEDIUM * 0.7);
+        IntStream.range(0, PERIOD - 1).forEach(i -> rca.operate());
 
-        setupMockHeapMetric(mockHeapUsedValue, 80);
+        setupMockHeapMetric(mockHeapUsedValue, MAX_HEAP_MEDIUM * 0.8);
         ResourceFlowUnit<HotNodeSummary> flowUnit = rca.operate();
 
         assertFalse(flowUnit.isEmpty());
@@ -115,7 +117,31 @@ public class AdmissionControlRcaTest {
     public void testAdmissionControlRcaInvalidMaxHeap() {
         setupMockHeapMetric(mockHeapMaxValue, 0);
         setupMockHeapMetric(mockHeapUsedValue, 0);
-        IntStream.range(0, PERIOD).forEach(i -> rca.operate());
+        IntStream.range(0, PERIOD - 1).forEach(i -> rca.operate());
+        ResourceFlowUnit<HotNodeSummary> flowUnit = rca.operate();
+
+        assertFalse(flowUnit.isEmpty());
+        ResourceContext context = flowUnit.getResourceContext();
+        assertTrue(context.isHealthy());
+    }
+
+    @Test
+    public void testAdmissionControlRcaSmallMaxHeap() {
+        setupMockHeapMetric(mockHeapMaxValue, MAX_HEAP_SMALL);
+        setupMockHeapMetric(mockHeapUsedValue, MAX_HEAP_SMALL * 0.8);
+        IntStream.range(0, PERIOD - 1).forEach(i -> rca.operate());
+        ResourceFlowUnit<HotNodeSummary> flowUnit = rca.operate();
+
+        assertFalse(flowUnit.isEmpty());
+        ResourceContext context = flowUnit.getResourceContext();
+        assertTrue(context.isHealthy());
+    }
+
+    @Test
+    public void testAdmissionControlRcaLargeMaxHeap() {
+        setupMockHeapMetric(mockHeapMaxValue, MAX_HEAP_LARGE);
+        setupMockHeapMetric(mockHeapUsedValue, MAX_HEAP_LARGE * 0.8);
+        IntStream.range(0, PERIOD - 1).forEach(i -> rca.operate());
         ResourceFlowUnit<HotNodeSummary> flowUnit = rca.operate();
 
         assertFalse(flowUnit.isEmpty());
