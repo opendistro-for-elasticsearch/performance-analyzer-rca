@@ -274,8 +274,8 @@ dependencies {
     compile 'com.google.guava:guava:28.2-jre'
     compile 'com.fasterxml.jackson.core:jackson-annotations:2.10.5'
     compile 'com.fasterxml.jackson.core:jackson-databind:2.10.5.1'
-    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.13.0'
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.13.0'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.15.0'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.15.0'
     compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.9'
     compile group: 'commons-io', name: 'commons-io', version: '2.3'
     implementation 'io.grpc:grpc-netty-shaded:1.28.0'
@@ -345,6 +345,7 @@ task cloneGitRepo(type: GitClone) {
 
     def destination = file(paDir)
     uri = "https://github.com/opendistro-for-elasticsearch/performance-analyzer.git"
+    branch = "opendistro-1.13"
     destinationPath = destination
     bare = false
     enabled = !destination.exists() //to clone only once
@@ -375,7 +376,7 @@ task copyAllArtifacts(type: Copy) {
     def projectPathStr = getProjectDir().toPath().toString()
     def dockerArtifacts = Paths.get(projectPathStr, 'docker').toString()
     def rcaArtifacts = Paths.get(projectPathStr, 'build', 'distributions', 'performance-analyzer-rca.zip')
-    def paArtifacts = Paths.get(paDir, 'build', 'distributions', 'opendistro-performance-analyzer-1.13.0.0-SNAPSHOT.zip')
+    def paArtifacts = Paths.get(paDir, 'build', 'distributions', 'opendistro-performance-analyzer-1.13.3.0-SNAPSHOT.zip')
 
     dockerArtifactsDir = Paths.get(dockerBuildDir, 'rca-docker')
     from(dockerArtifacts)
