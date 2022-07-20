@@ -376,7 +376,7 @@ task copyAllArtifacts(type: Copy) {
     def projectPathStr = getProjectDir().toPath().toString()
     def dockerArtifacts = Paths.get(projectPathStr, 'docker').toString()
     def rcaArtifacts = Paths.get(projectPathStr, 'build', 'distributions', 'performance-analyzer-rca.zip')
-    def paArtifacts = Paths.get(paDir, 'build', 'distributions', 'opendistro-performance-analyzer-1.13.3.0-SNAPSHOT.zip')
+    def paArtifacts = Paths.get(paDir, 'build', 'distributions', 'opendistro-performance-analyzer-1.13.3.1-SNAPSHOT.zip')
 
     dockerArtifactsDir = Paths.get(dockerBuildDir, 'rca-docker')
     from(dockerArtifacts)
