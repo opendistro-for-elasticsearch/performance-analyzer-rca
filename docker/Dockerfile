@@ -49,10 +49,10 @@ COPY --chown=1000:0 elasticsearch.yml log4j2.properties config/
 
 COPY --chown=1000:0 performance-analyzer-rca.zip config/
 
-COPY --chown=1000:0 opendistro-performance-analyzer-1.13.3.0-SNAPSHOT.zip /tmp/
+COPY --chown=1000:0 opendistro-performance-analyzer-1.13.3.1-SNAPSHOT.zip /tmp/
 
-RUN elasticsearch-plugin install --batch file:///tmp/opendistro-performance-analyzer-1.13.3.0-SNAPSHOT.zip; \
-        rm /tmp/opendistro-performance-analyzer-1.13.3.0-SNAPSHOT.zip
+RUN elasticsearch-plugin install --batch file:///tmp/opendistro-performance-analyzer-1.13.3.1-SNAPSHOT.zip; \
+        rm /tmp/opendistro-performance-analyzer-1.13.3.1-SNAPSHOT.zip
 
 USER 0
 
