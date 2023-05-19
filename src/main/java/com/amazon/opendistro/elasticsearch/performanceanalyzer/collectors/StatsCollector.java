@@ -26,6 +26,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -51,6 +52,12 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
   private final Map<String, String> metadata;
   private Map<String, AtomicInteger> counters = new ConcurrentHashMap<>();
   private Date objectCreationTime = new Date();
+
+  private static final Map<String, String> DEFAULT_STATS_DATA = new HashMap<>();
+
+  static {
+    DEFAULT_STATS_DATA.put("MethodName", "CollectStatsMetric");
+  }
 
   private List<StatExceptionCode> defaultExceptionCodes = new Vector<>();
 
@@ -124,7 +131,6 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
     super(samplingIntervalMillis, name);
     this.metadata = metadata;
     addRcaVersionMetadata(this.metadata);
-    defaultExceptionCodes.add(StatExceptionCode.TOTAL_ERROR);
   }
 
   private StatsCollector(Map<String, String> metadata) {
@@ -150,7 +156,7 @@ public class StatsCollector extends PerformanceAnalyzerMetricsCollector {
     }
 
     writeStats(
-        metadata, currentCounters, null, null, objectCreationTime.getTime(), new Date().getTime());
+        metadata, currentCounters, DEFAULT_STATS_DATA, null, objectCreationTime.getTime(), new Date().getTime());
     collectAndWriteRcaStats();
     objectCreationTime = new Date();
   }
